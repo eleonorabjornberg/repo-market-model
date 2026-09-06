@@ -25,6 +25,13 @@ Contract test 4 (identity preservation) is absent: the registry declares no
 accounting identities and no tolerances, so there is nothing to reconcile
 against. It arrives with the registry work in Track A.
 
+`repo_model.event_eval` scores the contract's single-evaluation windows on a
+separate path from `rolling_origin`, because the splitter's training window
+expands and a late fold would train on an earlier stress episode before scoring
+a later one. Its tests are in `tests/test_event_eval.py`; what is here is the
+one declaration it still cannot make -- the windows themselves, which belong in
+`metadata/events.json`.
+
 `SplitterPurgeTests` is not a stand-in. `repo_model.splits.rolling_origin`
 exists, so the splitter half of the contract is tested against the real thing:
 the purge gap, the no-look-ahead invariant, and fold ordering. It replaces the
@@ -84,6 +91,10 @@ tests:
     mutation either way, which is exactly why the comparison was run on the
     guard directly rather than through the suite.
 
+A fourth, on the strict purge boundary shared by the splitter and the event
+evaluator, is recorded in `tests/test_event_eval.py` beside the tests that
+catch it.
+
 Neither of the first two runs is a claim about the whole contract -- both leaks
 live in the interval, the only learned parameter here. A leak in a future point
 forecast or in the loader is not covered by any of the three.
@@ -106,6 +117,7 @@ from repo_model.data import (
     audit_panel,
     load_daily_panel,
 )
+from repo_model.event_eval import load_event_windows
 from repo_model.splits import rolling_origin
 
 
@@ -606,6 +618,26 @@ class TargetSchemaTests(unittest.TestCase):
                 hasattr(baseline, name),
                 msg=f"no {name!r}; quantile levels are not yet comparable across models",
             )
+
+    @unittest.expectedFailure
+    def test_event_metadata_declares_the_single_evaluation_windows(self):
+        """The contract names Sep 2019 and Mar 2020 as single-evaluation windows.
+
+        `repo_model.event_eval` can score one, but it takes the window as an
+        argument: the declarations belong in `metadata/events.json`, which does
+        not exist yet. Until it does, every event holdout runs against a window
+        somebody typed, and nothing checks it is the window that was declared.
+        """
+
+        payload = json.loads(
+            (REPO_ROOT / "metadata" / "events.json").read_text(encoding="utf-8")
+        )
+        windows = load_event_windows(payload)
+        declared = {window.name for window in windows}
+        for event in ("sep-2019", "mar-2020"):
+            self.assertIn(event, declared)
+        for window in windows:
+            self.assertTrue(window.checksum, msg=f"{window.name} has no checksum")
 
     @unittest.expectedFailure
     def test_source_registry_declares_identities_and_structural_zeros(self):

@@ -78,7 +78,15 @@ from datetime import date, timedelta
 from typing import Iterator, Sequence, Tuple
 
 
-__all__ = ["Fold", "LookAheadError", "SplitError", "rolling_origin"]
+__all__ = [
+    "Fold",
+    "LookAheadError",
+    "SplitError",
+    "clears_purge",
+    "ensure_strictly_ascending",
+    "require_purge_days",
+    "rolling_origin",
+]
 
 
 #: ``(train_indices, test_indices)``, both index into the `dates` passed in.
@@ -97,6 +105,55 @@ class LookAheadError(SplitError):
     `python -O` strips `assert`; a leakage guard that disappears under an
     optimisation flag is not a guard.
     """
+
+
+def clears_purge(row_date: date, opens: date, purge: int) -> bool:
+    """Is a row dated `row_date` eligible to train for a window opening `opens`?
+
+    The one definition of the purge boundary in this project, but the two
+    callers reach it differently and it is worth being exact about that.
+    `repo_model.event_eval` selects its training rows with this function, so a
+    change here changes what it trains on. `rolling_origin` finds its prefix
+    with `bisect` on the equivalent boundary date and then states the boundary
+    through this function in `_assert_no_look_ahead`. So tightening this
+    comparison makes the splitter's guard fire on folds `_train_end` still
+    builds -- the disagreement surfaces. Loosening it does not change the
+    splitter's folds at all; it only makes the guard stop objecting, and what
+    defends that direction is the reference oracle in `tests/test_splits.py`.
+
+    A row observed at `row_date` and published `purge` days later is first
+    observable on ``row_date + purge``. It is eligible only if that falls
+    strictly before the window opens -- on the day itself the value is not yet
+    in hand when the window starts, so the comparison is `<`, not `<=`.
+    """
+
+    return row_date + timedelta(days=purge) < opens
+
+
+def ensure_strictly_ascending(dates: Sequence[date], label: str = "dates") -> None:
+    """Reject a panel whose dates repeat or go backwards."""
+
+    for index in range(1, len(dates)):
+        if dates[index] <= dates[index - 1]:
+            raise SplitError(
+                f"{label} must be strictly ascending and unique; "
+                f"{dates[index]} at position {index} follows {dates[index - 1]}"
+            )
+
+
+def require_purge_days(purge: int) -> None:
+    """Reject anything that is not a deliberate non-negative day count.
+
+    `bool` is an `int`, and a `True` that means "one day" is a typo. `None` is
+    rejected rather than read as "no gap": a silent default is the failure the
+    purge exists to prevent, and that reasoning is the same for the event
+    evaluator as for the splitter.
+    """
+
+    if isinstance(purge, bool) or not isinstance(purge, int):
+        raise SplitError(f"purge must be an int, got {purge!r}")
+    if purge < 0:
+        raise SplitError(f"purge must be a non-negative number of days, got {purge}")
 
 
 def rolling_origin(
@@ -141,23 +198,15 @@ def _validate_arguments(
 ) -> None:
     if not dates:
         raise SplitError("cannot split an empty panel")
-    for index in range(1, len(dates)):
-        if dates[index] <= dates[index - 1]:
-            raise SplitError(
-                "dates must be strictly ascending and unique; "
-                f"{dates[index]} at position {index} follows {dates[index - 1]}"
-            )
-    # `bool` is an `int`, and `rolling_origin(dates, 10, 1, True)` meaning a
-    # one-day gap is a typo, not an intention.
-    for name, value in (("min_train", min_train), ("step", step), ("purge", purge)):
+    ensure_strictly_ascending(dates)
+    require_purge_days(purge)
+    for name, value in (("min_train", min_train), ("step", step)):
         if isinstance(value, bool) or not isinstance(value, int):
             raise SplitError(f"{name} must be an int, got {value!r}")
     if min_train < 1:
         raise SplitError(f"min_train must be at least 1, got {min_train}")
     if step < 1:
         raise SplitError(f"step must be at least 1, got {step}")
-    if purge < 0:
-        raise SplitError(f"purge must be a non-negative number of days, got {purge}")
 
 
 def _train_end(dates: Sequence[date], test_start: int, purge: int) -> int:
@@ -238,8 +287,10 @@ def _assert_no_look_ahead(
         raise LookAheadError(
             f"training row {last_train} is not strictly before test row {first_test}"
         )
-    # The gap itself: max(train) + purge < min(test), in calendar days.
-    if not dates[last_train] + timedelta(days=purge) < dates[first_test]:
+    # The gap itself: max(train) + purge < min(test), in calendar days. Stated
+    # through `clears_purge` so `_train_end`'s bisect is checked against the
+    # authoritative comparison on every fold rather than trusted to agree.
+    if not clears_purge(dates[last_train], dates[first_test], purge):
         raise LookAheadError(
             f"training ends {dates[last_train]} and testing opens {dates[first_test]}, "
             f"which is inside the {purge}-day purge gap"
