@@ -1,6 +1,13 @@
 {
   "fred_macro_latest_vintage": {
     "access": "public",
+    "coverage": [
+      "administered reserve rates",
+      "reserve balances",
+      "Treasury General Account",
+      "overnight reverse repurchase agreements",
+      "effective federal funds rate"
+    ],
     "fields": ["IORB", "IOER", "WRESBAL", "WTREGEN", "RRPONTSYD", "DFF"],
     "frequency": "mixed daily and weekly",
     "identities": [],
@@ -19,7 +26,13 @@
   },
   "nyfed_sofr": {
     "access": "public",
-    "fields": ["rate", "percentiles", "volume", "revision indicator"],
+    "coverage": [
+      "SOFR rate",
+      "distribution percentiles",
+      "transaction volume",
+      "revision status"
+    ],
+    "fields": ["rate", "percentiles", "volume", "revision_indicator"],
     "frequency": "business daily",
     "identities": [],
     "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
@@ -37,11 +50,15 @@
   },
   "sec_nmfp": {
     "access": "public",
-    "fields": [
-      "fund",
+    "coverage": [
+      "fund identity",
       "portfolio holdings",
       "liquid assets",
       "shareholder flows",
+      "series balance sheet"
+    ],
+    "fields": [
+      "fund",
       "cash",
       "portfolio_securities",
       "other_assets",
@@ -75,7 +92,21 @@
   },
   "treasury_auctions": {
     "access": "public",
-    "fields": ["CUSIP", "announcement", "auction", "issue", "maturity", "offering amount"],
+    "coverage": [
+      "security identity",
+      "announcement timing",
+      "auction timing",
+      "issue and maturity timing",
+      "offering amount"
+    ],
+    "fields": [
+      "cusip",
+      "announcement_date",
+      "auction_date",
+      "issue_date",
+      "maturity_date",
+      "offering_amount"
+    ],
     "frequency": "event",
     "identities": [],
     "limitation": "Announcement and result vintages must be separated to avoid using auction outcomes too early.",
