@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # No install step: the project is stdlib-only by contract. If this job
+      # ever needs a `pip install`, that is a dependency decision for the human,
+      # not a CI fix.
+      #
+      # -B and PYTHONDONTWRITEBYTECODE=1 because a stale __pycache__ has already
+      # produced one false mutation result on this project. CPython's mtime+size
+      # check does not notice an edit that preserves byte length.
+      #
+      # Note: unittest exits non-zero on an *unexpected success* as well as on a
+      # failure. That is intended. The TargetSchemaTests are expectedFailure
+      # placeholders for interfaces Track A has not built; when Track A builds
+      # them they start passing, and this job goes red until the same pull
+      # request converts them into real assertions.
+      - name: Run the suite
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+        run: python3 -B -m unittest discover -s tests -v
+
+  ownership:
+    name: contract ownership
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the check diffs against the merge base, which a
+          # shallow clone does not have.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the track ownership split
+        run: |
+          python3 .github/check_ownership.py \
+            "origin/${{ github.base_ref }}" \
+            "${{ github.head_ref }}"
