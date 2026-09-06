@@ -1,0 +1,35 @@
+{
+  "fred_macro_latest_vintage": {
+    "access": "public",
+    "fields": ["IORB", "IOER", "WRESBAL", "WTREGEN", "RRPONTSYD", "DFF"],
+    "frequency": "mixed daily and weekly",
+    "limitation": "Latest revised vintage; not point-in-time historical data. Weekly series require release-lag treatment.",
+    "provider": "Federal Reserve Bank of St. Louis FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv"
+  },
+  "nyfed_sofr": {
+    "access": "public",
+    "fields": ["rate", "percentiles", "volume", "revision indicator"],
+    "frequency": "business daily",
+    "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
+    "provider": "Federal Reserve Bank of New York",
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
+  },
+  "sec_nmfp": {
+    "access": "public",
+    "fields": ["fund", "portfolio holdings", "liquid assets", "shareholder flows"],
+    "frequency": "monthly",
+    "limitation": "As-filed data may contain reporting errors and becomes available after month-end.",
+    "provider": "U.S. Securities and Exchange Commission",
+    "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
+  },
+  "treasury_auctions": {
+    "access": "public",
+    "fields": ["CUSIP", "announcement", "auction", "issue", "maturity", "offering amount"],
+    "frequency": "event",
+    "limitation": "Announcement and result vintages must be separated to avoid using auction outcomes too early.",
+    "provider": "U.S. Department of the Treasury Fiscal Data",
+    "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
+  }
+}
+

@@ -27,6 +27,7 @@ The initial vertical slice contains:
 - a no-dependency persistence baseline with calibrated empirical intervals;
 - time-ordered backtesting; and
 - unit tests runnable with the Python standard library.
+- immutable, checksummed downloads from official public sources.
 
 It intentionally does not yet claim to be an ML model. The persistence baseline is
 the benchmark that every later statistical or ML model must beat out of sample.
@@ -38,6 +39,8 @@ cd repo-market-model
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 -m repo_model.cli audit data/sample/daily_market.csv
 PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv
+PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-sofr
+PYTHONPATH=src python3 -m repo_model.cli fetch fred-macro
 ```
 
 No installation is required for these initial commands.
@@ -56,5 +59,5 @@ No installation is required for these initial commands.
 6. **Keep forecasting separate from policy claims:** predictive ML does not, by
    itself, identify causal effects of a Fed intervention.
 
-See [PLAN.md](PLAN.md) for the implementation roadmap and [DATA.md](DATA.md) for
-the data map.
+See [PLAN.md](PLAN.md) for the implementation roadmap, [DATA.md](DATA.md) for
+the data map, and [METHODOLOGY.md](METHODOLOGY.md) for the academic protocol.

@@ -8,9 +8,11 @@ version = "0.1.0"
 description = "Probabilistic modeling of Treasury repo-market pressure"
 requires-python = ">=3.9"
 
+[project.scripts]
+repo-model = "repo_model.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
