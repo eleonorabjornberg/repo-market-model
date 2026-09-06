@@ -1,10 +1,25 @@
 """Tests for `repo_model.event_eval`.
 
-The event holdout exists because the rolling-origin window expands: by the time
-a late fold scores one stress episode it has trained on every earlier one. So
-the thing worth testing hardest is the boundary -- that the training set stops
-where it is supposed to, that the scored rows are exactly the declared window,
-and that a label computed at the event edge cannot see across it.
+This module produces the **knowledge holdout** of `AGENT_CONTRACT.md`, "Two
+holdout roles" -- crises stripped from training entirely, scored once per
+window, reported separately and never averaged into the main table. The
+**scoring holdout**, which keeps crisis dates out of the headline metric but
+lets them train once they are past, is `repo_model.splits.rolling_origin` and
+is tested in `tests/test_splits.py`.
+
+The knowledge holdout needs its own evaluator because the rolling-origin window
+expands: by the time a late fold scores one stress episode it has trained on
+every earlier one. So the thing worth testing hardest is the boundary -- that
+the training set stops where it is supposed to, that the scored rows are exactly
+the declared window, and that the window scored is the one that was declared.
+
+The label at the event edge is *not* tested here. It was, against a
+`trailing_percentile` in `repo_model.event_eval`, until that turned out to be a
+second implementation of a Track A rule -- `AGENT_CONTRACT.md`, "Ownership",
+gives the data layer "the label column and its point-in-time rule". The
+implementation is deleted and the property it demonstrated now lives in
+`tests/test_contract.py::TargetSchemaTests`, as an `expectedFailure` Track A
+codes against.
 
 Mutation record. The strict comparison in `splits.clears_purge` was flipped
 from `<` to `<=` -- a one-day loosening, the smallest change the boundary
@@ -29,20 +44,51 @@ admits -- and the suite run against it, stdlib only, under `-B` with
     builds. These tests are what stands behind the comparison in the direction
     the splitter cannot see.
 
-The run says nothing about the exceedance report or the journal; no mutation
-was planted in either.
+Mutation record, the window-pinning guards (`UnpinnedWindowTests`). Two leaks
+planted, each the smallest change that reopens the hole the guard closes. Both
+runs stdlib only, under `-B` with `PYTHONDONTWRITEBYTECODE=1` and `__pycache__`
+cleared:
+
+  * `EventWindow.__post_init__`, checksum check disabled -- an unpinned window
+    becomes constructible again. Fails 3 tests. Two are the direct
+    "SplitError not raised" on the empty and whitespace checksums. The third is
+    `test_no_journal_line_can_carry_an_empty_checksum`, and it is the one worth
+    having: it fails on the *contents of the journal*, reporting a line written
+    for a window that cannot be shown to be the one declared. That is the
+    damage, as opposed to the missing exception. The test was rewritten to
+    attempt the scoring and tolerate the refusal precisely so it would carry
+    that power -- as first written it only asserted over well-formed runs and
+    stayed green under this mutation.
+
+  * The `isinstance(window, EventWindow)` check in `evaluate_event_window`
+    removed. Fails 1 test, as an error rather than a failure: a bare
+    `(start, end)` tuple gets past the gate and dies later on `window.start`.
+    The error is the right shape -- nothing scored, nothing journalled -- but
+    the annotation alone is not a guard, and the check is what turns a later
+    `AttributeError` into a refusal at the boundary.
+
+Neither mutation touches the purge boundary, so the whole of
+`PurgeBoundaryTests` stays green under both. That is correct and worth stating:
+these guards are about *which* window is scored, not about where training stops.
+
+The runs say nothing about the exceedance report or the journal's append-only
+behaviour; no mutation was planted in either.
 """
 
+import inspect
 import json
 import sys
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.event_eval import (
+    KNOWLEDGE_HOLDOUT,
+    SCORING_HOLDOUT,
+    EventWindow,
     EventWindowReport,
     LookAheadError,
     SplitError,
@@ -52,8 +98,6 @@ from repo_model.event_eval import (
     evaluate_event_window,
     load_event_windows,
     read_journal,
-    trailing_percentile,
-    trailing_threshold_path,
 )
 
 
@@ -101,26 +145,37 @@ class EvaluatorHarness(unittest.TestCase):
         self.journal = Path(directory.name) / "events.jsonl"
 
     def evaluate(self, **overrides):
+        """Run one evaluation, with `event_start`/`event_end` as conveniences.
+
+        The evaluator takes an `EventWindow`; this helper assembles one so that
+        a test which only cares about the boundary does not have to. Tests that
+        care about the window *type* pass `window=` directly.
+        """
+
         kwargs = dict(
             dates=PANEL_DATES,
             y=PANEL_VALUES,
             fit_predict=flat_predictor(),
-            event_start=EVENT_START,
-            event_end=EVENT_END,
             purge=3,
             taus=TAUS,
             model_config={"model": "persistence", "seed": 0},
             journal_path=self.journal,
-            window_name="feb-2026",
-            window_checksum="abc123",
         )
         kwargs.update(overrides)
+        if "window" not in kwargs:
+            kwargs["window"] = EventWindow(
+                overrides.get("window_name", "feb-2026"),
+                overrides.pop("event_start", EVENT_START),
+                overrides.pop("event_end", EVENT_END),
+                overrides.get("window_checksum", "abc123"),
+            )
+        for consumed in ("event_start", "event_end", "window_name", "window_checksum"):
+            kwargs.pop(consumed, None)
         positional = (
             kwargs.pop("dates"),
             kwargs.pop("y"),
             kwargs.pop("fit_predict"),
-            kwargs.pop("event_start"),
-            kwargs.pop("event_end"),
+            kwargs.pop("window"),
             kwargs.pop("purge"),
         )
         return evaluate_event_window(*positional, **kwargs)
@@ -265,110 +320,6 @@ class WindowGuardTests(unittest.TestCase):
         _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, 3)
 
 
-class LabelLeakageTests(unittest.TestCase):
-    """Contract test 2's shape, applied to the label at the event edge.
-
-    A stress label defined against a trailing percentile is a learned
-    parameter. If its window reaches forward -- by including the current row,
-    by centring, or by being fitted on the whole series -- then the label on the
-    first day of an event window is informed by the event itself, and every
-    score computed against it is circular.
-    """
-
-    WINDOW = 10
-    PROBABILITY = 0.9
-
-    def setUp(self):
-        self.dates = business_days(date(2026, 1, 5), 40)
-        self.values = [4.30 + 0.01 * (index % 5) for index in range(len(self.dates))]
-        self.event_index = 25
-        self.event_start = self.dates[self.event_index]
-
-    def shock_from(self, index, factor=50.0):
-        """Every row at or after `index` moved. Earlier rows untouched."""
-
-        return [
-            value + factor if position >= index else value
-            for position, value in enumerate(self.values)
-        ]
-
-    def test_the_label_at_the_event_edge_ignores_the_event_and_everything_after(self):
-        before = trailing_percentile(
-            self.values, self.event_index, self.WINDOW, self.PROBABILITY
-        )
-        after = trailing_percentile(
-            self.shock_from(self.event_index),
-            self.event_index,
-            self.WINDOW,
-            self.PROBABILITY,
-        )
-        self.assertEqual(
-            after,
-            before,
-            msg="the label at event_start moved when the event window was shocked",
-        )
-
-    def test_the_current_row_is_excluded_from_its_own_threshold(self):
-        """The off-by-one that would make the label see one day of the event."""
-
-        shocked = list(self.values)
-        shocked[self.event_index] += 100.0
-        self.assertEqual(
-            trailing_percentile(shocked, self.event_index, self.WINDOW, self.PROBABILITY),
-            trailing_percentile(
-                self.values, self.event_index, self.WINDOW, self.PROBABILITY
-            ),
-        )
-
-    def test_the_shock_is_visible_somewhere(self):
-        """Guards the two tests above from passing because nothing moved."""
-
-        shocked = self.shock_from(self.event_index)
-        later = self.event_index + self.WINDOW
-        self.assertNotEqual(
-            trailing_percentile(shocked, later, self.WINDOW, self.PROBABILITY),
-            trailing_percentile(self.values, later, self.WINDOW, self.PROBABILITY),
-            msg="the shock changed no threshold at all; the leakage tests have no power",
-        )
-
-    def test_a_full_sample_threshold_would_differ_from_the_trailing_one(self):
-        """The comparison the tests above would be vacuous without.
-
-        If a trailing threshold and a whole-series threshold coincided on this
-        panel, a leaky implementation would pass by accident.
-        """
-
-        shocked = self.shock_from(self.event_index)
-        trailing = trailing_percentile(
-            shocked, self.event_index, self.WINDOW, self.PROBABILITY
-        )
-        full_sample = trailing_percentile(
-            shocked, len(shocked), len(shocked), self.PROBABILITY
-        )
-        self.assertNotEqual(trailing, full_sample)
-
-    def test_every_threshold_on_the_path_uses_only_earlier_rows(self):
-        path = trailing_threshold_path(self.values, self.WINDOW, self.PROBABILITY)
-        for offset in range(len(path)):
-            index = self.WINDOW + offset
-            shocked = self.shock_from(index)
-            self.assertEqual(
-                trailing_threshold_path(shocked, self.WINDOW, self.PROBABILITY)[offset],
-                path[offset],
-                msg=f"threshold at row {index} moved when row {index} onward moved",
-            )
-
-    def test_insufficient_history_raises_rather_than_shortening_the_window(self):
-        with self.assertRaisesRegex(SplitError, "needs 10"):
-            trailing_percentile(self.values, 5, self.WINDOW, self.PROBABILITY)
-
-    def test_degenerate_window_and_probability_are_rejected(self):
-        with self.assertRaisesRegex(SplitError, "window must be at least 1"):
-            trailing_percentile(self.values, 20, 0, self.PROBABILITY)
-        with self.assertRaisesRegex(SplitError, "probability must be in"):
-            trailing_percentile(self.values, 20, self.WINDOW, 1.5)
-
-
 class ExceedanceReportTests(EvaluatorHarness):
     """What the report carries, and what it deliberately does not."""
 
@@ -471,6 +422,34 @@ class RunOnceJournalTests(EvaluatorHarness):
         self.assertTrue(entry["evaluated_at"].startswith("20"))
         self.assertTrue(entry["git_rev"])
         self.assertEqual(len(entry["config_sha256"]), 64)
+
+    def test_the_record_names_the_knowledge_holdout_role(self):
+        """The contract: the two roles must not be conflated "in reporting".
+
+        The journal is reporting. Without the role on the line, a reader has to
+        know which module wrote it to know whether the number beside it may be
+        averaged into the main table -- and the whole point of the split is
+        that one of them may not.
+        """
+
+        self.evaluate()
+        entry = read_journal(self.journal)[0]
+        self.assertEqual(entry["holdout_role"], KNOWLEDGE_HOLDOUT)
+        self.assertEqual(entry["holdout_role"], "knowledge")
+        self.assertNotEqual(KNOWLEDGE_HOLDOUT, SCORING_HOLDOUT)
+
+    def test_the_evaluator_never_records_the_scoring_holdout_role(self):
+        """This module produces one role. A scoring-holdout line here is a bug."""
+
+        self.evaluate()
+        self.evaluate(model_config={"model": "ar1"})
+        for entry in read_journal(self.journal):
+            self.assertNotEqual(
+                entry["holdout_role"],
+                SCORING_HOLDOUT,
+                msg="event_eval journalled a scoring-holdout run; that role "
+                "belongs to rolling_origin and the two are never averaged",
+            )
 
     def test_a_different_config_hashes_differently(self):
         self.evaluate(model_config={"model": "persistence", "seed": 0})
@@ -590,16 +569,131 @@ class EventWindowMetadataTests(unittest.TestCase):
             PANEL_DATES,
             PANEL_VALUES,
             flat_predictor(),
-            window.start,
-            window.end,
+            window,
             3,
             taus=TAUS,
             model_config={"model": "persistence"},
             journal_path=Path(directory.name) / "events.jsonl",
-            window_name=window.name,
-            window_checksum=window.checksum,
         )
         self.assertEqual(report.window, window)
+
+
+class UnpinnedWindowTests(EvaluatorHarness):
+    """A window that cannot be shown to be the declared one is never scored.
+
+    `load_event_windows` has always refused a declaration with no checksum.
+    The evaluator used to reopen that hole one call downstream: `window_name`
+    defaulted to `"unnamed"` and `window_checksum` to `""`, so a caller could
+    pass boundaries it had typed and get them scored and journalled exactly
+    like declared ones -- and the journal line, which is the whole record that
+    a single-evaluation budget was spent, would say the window had no name and
+    no checksum without anything objecting.
+
+    That is the cherry-pick the contract names: "moving a window edge is the
+    realistic cherry-pick, not swapping window type." Taking an `EventWindow`
+    closes it by construction rather than by validation, because the only way
+    to hold one is to have supplied a checksum.
+    """
+
+    def test_the_signature_takes_a_window_and_offers_no_loose_boundaries(self):
+        parameters = inspect.signature(evaluate_event_window).parameters
+        self.assertIn("window", parameters)
+        for gone in ("event_start", "event_end", "window_name", "window_checksum"):
+            self.assertNotIn(
+                gone,
+                parameters,
+                msg=f"{gone!r} is back; loose boundaries let an unpinned window "
+                "be scored and journalled",
+            )
+
+    def test_no_argument_of_the_evaluator_has_a_default(self):
+        """A default is how the hole appeared the first time."""
+
+        for name, parameter in inspect.signature(evaluate_event_window).parameters.items():
+            self.assertIs(
+                parameter.default,
+                inspect.Parameter.empty,
+                msg=f"{name!r} acquired a default",
+            )
+
+    def test_a_window_with_an_empty_checksum_cannot_be_constructed(self):
+        for blank in ("", "   "):
+            with self.subTest(checksum=blank):
+                with self.assertRaisesRegex(SplitError, "has no checksum"):
+                    EventWindow("feb-2026", EVENT_START, EVENT_END, blank)
+
+    def test_an_unnamed_window_cannot_be_constructed(self):
+        with self.assertRaisesRegex(SplitError, "has no name"):
+            EventWindow("", EVENT_START, EVENT_END, "abc123")
+
+    def test_a_backwards_window_cannot_be_constructed(self):
+        with self.assertRaisesRegex(SplitError, "ends .* before it starts"):
+            EventWindow("feb-2026", EVENT_END, EVENT_START, "abc123")
+
+    def test_a_datetime_is_not_accepted_where_a_date_is_declared(self):
+        """`datetime` is a `date` subclass and would compare against the panel."""
+
+        with self.assertRaisesRegex(SplitError, "must be a date"):
+            EventWindow(
+                "feb-2026",
+                datetime(2026, 2, 2, 9, 30),
+                EVENT_END,
+                "abc123",
+            )
+
+    def test_loose_dates_are_refused_by_the_evaluator(self):
+        """Belt and braces: the type is checked, not merely annotated."""
+
+        with self.assertRaisesRegex(SplitError, "must be an EventWindow"):
+            self.evaluate(window=(EVENT_START, EVENT_END))
+
+    def test_omitting_the_window_is_a_type_error(self):
+        with self.assertRaises(TypeError):
+            evaluate_event_window(
+                PANEL_DATES,
+                PANEL_VALUES,
+                flat_predictor(),
+                taus=TAUS,
+                model_config={},
+                journal_path=self.journal,
+            )
+
+    def test_the_journalled_name_and_checksum_come_from_the_window(self):
+        window = EventWindow("sep-2019-rehearsal", EVENT_START, EVENT_END, "f" * 64)
+        self.evaluate(window=window)
+        entry = read_journal(self.journal)[0]
+        self.assertEqual(entry["window_name"], "sep-2019-rehearsal")
+        self.assertEqual(entry["window_checksum"], "f" * 64)
+        self.assertEqual(entry["window_start"], EVENT_START.isoformat())
+        self.assertEqual(entry["window_end"], EVENT_END.isoformat())
+
+    def test_no_journal_line_can_carry_an_empty_checksum(self):
+        """The property the defaults used to violate, stated over the file.
+
+        Written as an attempt rather than as an assertion about well-formed
+        runs, so that it has power: it tries to score an unpinned window,
+        accepts a refusal, and then requires that the journal contain no
+        unpinned line either way. A guard that stops raising fails here on the
+        contents of the file, not merely on a missing exception.
+        """
+
+        self.evaluate()
+        for name, checksum in (("unpinned", ""), ("blank", "   ")):
+            with self.subTest(checksum=checksum):
+                try:
+                    self.evaluate(
+                        window=EventWindow(name, EVENT_START, EVENT_END, checksum)
+                    )
+                except SplitError:
+                    pass  # the refusal is the intended path
+        for entry in read_journal(self.journal):
+            self.assertTrue(
+                entry["window_checksum"].strip(),
+                msg=f"journalled {entry['window_name']!r} with no checksum; a "
+                "single-evaluation budget was spent on a window that cannot be "
+                "shown to be the one that was declared",
+            )
+            self.assertNotEqual(entry["window_name"], "unnamed")
 
 
 class PanelValidationTests(EvaluatorHarness):

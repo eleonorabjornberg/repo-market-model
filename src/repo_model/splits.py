@@ -7,6 +7,27 @@ The contract (`AGENT_CONTRACT.md`, "The splitter interface") specifies::
 Random splits are prohibited and there is no configuration flag that enables
 them. This module implements the one permitted scheme.
 
+Which holdout this is
+---------------------
+
+`AGENT_CONTRACT.md`, "Two holdout roles", names two and this module produces
+exactly one of them: the **scoring holdout**, where crisis dates are excluded
+from the headline metric but are available for training once they are in the
+past. That is the deployable model -- it is trained the way the deployed one
+would be, on everything known at the cutoff.
+
+The other role, the **knowledge holdout** -- crises stripped from training
+entirely, scored once per window as an extrapolation check -- is produced by
+`repo_model.event_eval`, and the contract says so in as many words: "Produced
+by event_eval, not by a splitter flag." No argument here yields it and none
+should be added. The reason is structural rather than stylistic: training is an
+expanding prefix, so a fold that scores a late crisis has already trained on
+every earlier one, and no setting of `min_train`, `step` or `purge` changes
+that. A flag purporting to give the knowledge holdout from here would produce
+a fold contaminated by earlier events while being labelled as though it were
+not, which is worse than not offering it. The two numbers are never averaged
+together, so they are never produced by one call.
+
 Shape of a fold
 ---------------
 
@@ -163,6 +184,9 @@ def rolling_origin(
     purge: int,
 ) -> Iterator[Fold]:
     """Yield purged rolling-origin folds over `dates`, earliest fold first.
+
+    These are scoring-holdout folds. See "Which holdout this is" in the module
+    docstring for what that does and does not certify.
 
     Args:
         dates: the panel's `ref_date` column, strictly ascending and unique.

@@ -25,12 +25,22 @@ Contract test 4 (identity preservation) is absent: the registry declares no
 accounting identities and no tolerances, so there is nothing to reconcile
 against. It arrives with the registry work in Track A.
 
-`repo_model.event_eval` scores the contract's single-evaluation windows on a
-separate path from `rolling_origin`, because the splitter's training window
-expands and a late fold would train on an earlier stress episode before scoring
-a later one. Its tests are in `tests/test_event_eval.py`; what is here is the
-one declaration it still cannot make -- the windows themselves, which belong in
-`metadata/events.json`.
+`AGENT_CONTRACT.md`, "Two holdout roles", names two and keeps them distinct.
+`rolling_origin` produces the **scoring holdout**; `repo_model.event_eval`
+produces the **knowledge holdout**, on a separate path, because the splitter's
+training window expands and a late fold would train on an earlier stress episode
+before scoring a later one. Their tests are in `tests/test_splits.py` and
+`tests/test_event_eval.py`; what is here is the one declaration neither can
+make -- the windows themselves, which belong in `metadata/events.json`. The
+fixture-level spec Track A codes that file against is
+`tests/test_events_metadata.py`.
+
+The two label tests in `TargetSchemaTests` are likewise specs rather than tests
+of existing code. The stress label column and its point-in-time rule are Track
+A's, per `AGENT_CONTRACT.md` "Ownership" and `CLAUDE.md`; a `trailing_percentile`
+in `repo_model.event_eval` briefly implemented the trailing rule and was deleted
+as a second implementation of a Track A rule, with its behaviour preserved here
+as a requirement on Track A rather than as model-eval code.
 
 `SplitterPurgeTests` is not a stand-in. `repo_model.splits.rolling_origin`
 exists, so the splitter half of the contract is tested against the real thing:
@@ -93,7 +103,32 @@ tests:
 
 A fourth, on the strict purge boundary shared by the splitter and the event
 evaluator, is recorded in `tests/test_event_eval.py` beside the tests that
-catch it.
+catch it, along with two on the window-pinning guards.
+
+Mutation record, the label spec. An `expectedFailure` is only worth having if
+it discriminates, so `test_the_stress_label_is_point_in_time_and_never_full_
+sample` was run against four stand-in implementations of
+`repo_model.data.stress_label_threshold`, injected at runtime rather than
+written to Track A's module:
+
+  * Correct trailing rule, plus declared threshold metadata: both label tests
+    go to unexpected success -- a red build, which is the intended handoff
+    signal and not a defect.
+  * Full-sample percentile, the rule the contract prohibits by name: stays an
+    expected failure. Caught by assertion 2.
+  * Off-by-one including the current row -- the subtle version, where the
+    label on the first day of a knowledge-holdout window is informed by that
+    day: stays an expected failure. Caught by assertion 1. This is the one
+    worth having, because it is the mistake an implementation makes by
+    accident rather than by choice.
+  * Correct rule but no threshold metadata: the label test succeeds
+    unexpectedly while the tau-declaration test stays failing, so the two
+    tests are independent rather than one test in two pieces.
+
+The spec therefore accepts exactly the implementations the contract describes
+and rejects both leak shapes. It says nothing about whether fixed-bp labels are
+computed correctly, only that a trailing threshold does not reach forward; the
+primary fixed-bp rule has no leak of this class to have.
 
 Neither of the first two runs is a claim about the whole contract -- both leaks
 live in the interval, the only learned parameter here. A leak in a future point
@@ -638,6 +673,103 @@ class TargetSchemaTests(unittest.TestCase):
             self.assertIn(event, declared)
         for window in windows:
             self.assertTrue(window.checksum, msg=f"{window.name} has no checksum")
+
+    @unittest.expectedFailure
+    def test_the_stress_label_is_point_in_time_and_never_full_sample(self):
+        """The label rule from "Decided: stress target and event holdouts".
+
+        The contract:
+
+            The label MUST NOT use a full-sample percentile -- same leak class
+            the contract suite already catches. Fixed bp thresholds are
+            primary; trailing-window percentile is secondary; full-sample is
+            prohibited. At an event boundary the trailing window is computed
+            from pre-event rows only.
+
+        Ownership: "Data layer: metadata/events.json, the label column and its
+        point-in-time rule." `CLAUDE.md` puts the stress label column and its
+        point-in-time rule outside Track B entirely, so this is a spec rather
+        than a test of anything model-eval provides. `repo_model.event_eval`
+        briefly carried a `trailing_percentile` that satisfied the property
+        below; it was a second implementation of a Track A rule, which
+        `CLAUDE.md` prohibits even as a stopgap, and it was deleted in favour
+        of this test. The behaviour it demonstrated is preserved here as a
+        requirement on Track A's implementation instead of as code.
+
+        The symbol named below is a proposal. Track A may site or rename it
+        freely -- what is not negotiable is the property, which is contract
+        test 2's shape applied to the label: a threshold in force at row `i`
+        must not move when rows at or after `i` move. If it does, the label on
+        the first day of a knowledge-holdout window is informed by the event
+        itself and every score computed against it is circular.
+
+        Three assertions, and the third is the one that gives the other two
+        teeth: without it, an implementation whose trailing and full-sample
+        thresholds happened to coincide on this series would pass by accident.
+        """
+
+        from repo_model.data import stress_label_threshold
+
+        window, probability = 10, 0.9
+        values = [4.30 + 0.01 * (index % 5) for index in range(40)]
+        event_index = 25
+        shocked = [
+            value + 50.0 if position >= event_index else value
+            for position, value in enumerate(values)
+        ]
+
+        # 1. The threshold at the event edge ignores the event and everything
+        #    after it. This is the leak the rule exists to prevent.
+        self.assertEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(values, event_index, window, probability),
+            msg="the label at the event boundary moved when the event was shocked; "
+            "the trailing window is reaching across the boundary",
+        )
+
+        # 2. It is not a full-sample percentile wearing a trailing name.
+        self.assertNotEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(shocked, len(shocked), len(shocked), probability),
+            msg="the trailing threshold equals the full-sample one; full-sample "
+            "is prohibited",
+        )
+
+        # 3. The shock is visible somewhere, so 1 and 2 are not vacuous.
+        later = event_index + window
+        self.assertNotEqual(
+            stress_label_threshold(shocked, later, window, probability),
+            stress_label_threshold(values, later, window, probability),
+            msg="the shock changed no threshold at all; assertions 1 and 2 have "
+            "no power against this implementation",
+        )
+
+    @unittest.expectedFailure
+    def test_fixed_bp_thresholds_are_the_primary_label_and_are_declared(self):
+        """"Fixed bp thresholds are primary", and tau is declared, not tuned.
+
+        The contract puts the exceedance family at tau in {5, 10, 20, 50} bp and
+        requires the threshold value be "declared in metadata/, versioned, not
+        tunable after the fact". `repo_model.event_eval` takes `taus` as an
+        argument precisely so that it is not the thing declaring them; this test
+        is where the declaration is required to exist.
+
+        Which file in `metadata/` is Track A's call -- the assertion is that
+        some versioned metadata declares the family, and that the primary label
+        is that fixed-bp rule rather than a percentile.
+        """
+
+        from repo_model.data import load_stress_thresholds
+
+        declared = load_stress_thresholds()
+        self.assertIn("version", declared)
+        self.assertEqual(tuple(declared["taus_bp"]), (5.0, 10.0, 20.0, 50.0))
+        self.assertEqual(
+            declared["primary_rule"],
+            "fixed_bp",
+            msg="fixed bp thresholds are primary; trailing-window percentile is "
+            "secondary and full-sample is prohibited",
+        )
 
     @unittest.expectedFailure
     def test_source_registry_declares_identities_and_structural_zeros(self):

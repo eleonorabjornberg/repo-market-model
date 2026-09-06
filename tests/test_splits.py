@@ -1,5 +1,11 @@
 """Tests for `repo_model.splits`.
 
+`rolling_origin` produces the **scoring holdout** of `AGENT_CONTRACT.md`,
+"Two holdout roles": crisis dates kept out of the headline metric but available
+for training once they are past. The **knowledge holdout** is not produced here
+and cannot be -- see `tests/test_event_eval.py`, and the module docstring for
+why no flag would give it.
+
 The splitter has one job -- keep the training window strictly behind the test
 block by at least the longest release lag -- and exactly one way to fail at it
 quietly. So these tests are weighted towards the gap: that it is measured in
@@ -357,6 +363,43 @@ class PurgeIsRequiredTests(unittest.TestCase):
     def test_zero_is_accepted_when_chosen_explicitly(self):
         folds = list(rolling_origin(business_days(date(2026, 1, 5), 20), 10, 3, 0))
         self.assertTrue(folds)
+
+
+class HoldoutRoleTests(unittest.TestCase):
+    """The splitter produces the scoring holdout and only that.
+
+    `AGENT_CONTRACT.md`, "Two holdout roles": the knowledge holdout is
+    "produced by event_eval, not by a splitter flag", and "Splitter default"
+    adds "Expanding train window, no window-type flag." Both are pinned here,
+    because the cheap way to satisfy a request for a knowledge holdout is to
+    add a keyword to this function, and the result would be a fold that had
+    trained on every earlier crisis while carrying a name that says it had not.
+    """
+
+    def test_the_signature_offers_no_holdout_or_window_type_flag(self):
+        parameters = set(inspect.signature(rolling_origin).parameters)
+        self.assertEqual(parameters, {"dates", "min_train", "step", "purge"})
+
+    def test_no_argument_name_suggests_a_second_holdout_role(self):
+        parameters = " ".join(inspect.signature(rolling_origin).parameters).lower()
+        for forbidden in ("holdout", "knowledge", "event", "window_type", "expanding"):
+            self.assertNotIn(
+                forbidden,
+                parameters,
+                msg=f"rolling_origin grew a {forbidden!r} argument; the knowledge "
+                "holdout comes from event_eval, and an expanding fold cannot "
+                "produce one whatever it is called",
+            )
+
+    def test_training_is_an_expanding_prefix_in_every_fold(self):
+        """Why no flag would help: every fold has seen everything before it."""
+
+        dates = business_days(date(2026, 1, 5), 40)
+        previous = -1
+        for train, _test in rolling_origin(dates, 10, 3, RELEASE_LAG_DAYS):
+            self.assertEqual(train, tuple(range(len(train))))
+            self.assertGreaterEqual(len(train), previous)
+            previous = len(train)
 
 
 class InvalidInputTests(unittest.TestCase):

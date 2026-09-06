@@ -1,15 +1,29 @@
-"""Single-evaluation event holdouts.
+"""The knowledge holdout: crises stripped from training entirely.
 
-`AGENT_CONTRACT.md` names Sep 2019 and Mar 2020 as single-evaluation windows.
-A rolling-origin fold cannot serve that purpose: the training window expands,
-so by the time a later fold scores March 2020 it has already trained on
-September 2019, and the score answers "can this model forecast a repo spike
-having seen one" rather than "having seen a calm history". Those are different
-claims, and the second is the one an event holdout is supposed to certify.
+`AGENT_CONTRACT.md`, "Two holdout roles", separates two things that one word
+for both would conflate, and requires that they stay separate in code and in
+reporting:
+
+1. **Scoring holdout** -- crisis dates excluded from the headline metric but
+   available for training once they are in the past. This is the deployable
+   model, and it is produced by `repo_model.splits.rolling_origin`.
+2. **Knowledge holdout** -- crises stripped from training entirely, scored once
+   per window. An extrapolation check, reported separately and never averaged
+   into the main table. This module produces it, and produces nothing else.
+
+The contract adds that the knowledge holdout is "produced by event_eval, not by
+a splitter flag", and the reason is the shape of a rolling-origin fold rather
+than a preference about where code lives. The training window expands, so by
+the time a later fold scores March 2020 it has already trained on September
+2019, and the score answers "can this model forecast a repo spike having seen
+one" rather than "having seen a calm history". Those are different claims. The
+first is the scoring holdout's and is the honest one to deploy on; the second
+is the knowledge holdout's, and no configuration of an expanding splitter
+produces it.
 
 So this is an evaluator, not a splitter mode. It trains strictly on rows that
-precede the event by more than the purge gap, scores the event window once, and
-records that it did.
+precede the event by more than the purge gap, scores the knowledge-holdout
+window once, and records that it did.
 
 Relationship to `repo_model.splits`
 -----------------------------------
@@ -21,27 +35,49 @@ whichever evaluation path found it, and for the same reason it is a raise and
 never an `assert`: `python -O` strips asserts, and a guard that vanishes under
 an optimisation flag is not a guard.
 
+What this module deliberately does not own
+------------------------------------------
+
+The stress label. `AGENT_CONTRACT.md`, "Ownership", puts "the label column and
+its point-in-time rule" with the data layer, and `CLAUDE.md` puts it outside
+Track B in as many words. A `trailing_percentile` lived here for one commit,
+implementing the contract's secondary trailing-window rule so that the label at
+an event boundary could be shown to use pre-event rows only. It was a second
+implementation of a Track A rule, which is prohibited even as a stopgap and for
+a good reason -- two implementations of a point-in-time rule agree until they
+do not, and the disagreement surfaces as a scoring result nobody can explain.
+It was deleted, and the property it demonstrated now lives as
+`tests/test_contract.py::TargetSchemaTests::test_the_stress_label_is_point_in_time_and_never_full_sample`,
+an `expectedFailure` spec Track A must satisfy.
+
 What this module deliberately does not compute
 ----------------------------------------------
 
 No Brier score, no reliability curve, no aggregate skill number of any kind.
-An event window is on the order of ten stressed days. A calibration statistic
+The contract is explicit -- "Event windows get the exceedance curve and
+realized path. No aggregate Brier or reliability number on a single event
+window" -- and the arithmetic behind that ruling is that a knowledge-holdout
+window is on the order of ten stressed days. A calibration statistic
 over ten points is dominated by its own sampling error, and reporting one
 invites exactly the comparison it cannot support -- across events, across model
-versions, across reruns -- while looking like evidence. What the report carries
-is the predicted exceedance curve over the tau family for each scored day and
+versions, across reruns -- while looking like evidence. It would also be the
+exact conflation the two-role split exists to prevent: a number from here,
+formatted like a number from the scoring holdout, averaged into the main table
+by whoever reads the two as the same kind of thing. What the report carries is
+the predicted exceedance curve over the tau family for each scored day and
 the realized path beside it. That is an extrapolation check: did the predictive
 distribution put weight where the event actually went. Reading it takes a human
 looking at a curve, which is the honest cost of a ten-day sample.
 
-If a metric is wanted later it belongs to a pooled evaluation over many
-windows, declared in advance, not to this function.
+The metrics in `repo_model.metrics` are the scoring holdout's. If a metric is
+wanted for knowledge-holdout windows later it belongs to a pooled evaluation
+over many windows, declared in advance, not to this function.
 
 Run-once discipline
 -------------------
 
-The contract's open decision asks how many times each window may be scored and
-who authorises it. This module cannot answer that, and does not try to enforce
+A knowledge-holdout window is scored once per window. The contract's open
+decision asks how many times that is in practice and who authorises it. This module cannot answer that, and does not try to enforce
 an answer it was not given: `journal_path` is required, every evaluation
 appends a record, and the journal is append-only. Reruns are therefore visible
 -- a second record for the same window is a fact in the file, timestamped, with
@@ -71,6 +107,8 @@ from .splits import (
 
 
 __all__ = [
+    "KNOWLEDGE_HOLDOUT",
+    "SCORING_HOLDOUT",
     "EvaluationRecord",
     "EventWindow",
     "EventWindowReport",
@@ -81,9 +119,18 @@ __all__ = [
     "evaluate_event_window",
     "load_event_windows",
     "read_journal",
-    "trailing_percentile",
-    "trailing_threshold_path",
 ]
+
+
+#: The two holdout roles from `AGENT_CONTRACT.md`, "Two holdout roles". They
+#: are constants rather than bare strings at the call site so that the journal
+#: cannot record a role nobody declared, and so that a grep for either name
+#: finds every place the distinction is made. `SCORING_HOLDOUT` is defined here
+#: and used nowhere in this module: this module only ever produces the other
+#: one, and a role field that could only ever hold one value would not be
+#: recording anything.
+SCORING_HOLDOUT = "scoring"
+KNOWLEDGE_HOLDOUT = "knowledge"
 
 
 #: `fit_predict(train_dates, train_values, test_dates, taus)` returns one row
@@ -96,21 +143,62 @@ FitPredict = Callable[
 
 @dataclass(frozen=True)
 class EventWindow:
-    """One declared holdout window. Comes from metadata, never from code."""
+    """One declared knowledge-holdout window.
+
+    Comes from metadata, never from code. The contract: "Event window
+    boundaries are frozen in versioned, checksummed metadata/events.json ...
+    Boundaries are never constants in evaluator code -- moving a window edge is
+    the realistic cherry-pick, not swapping window type."
+    """
 
     name: str
     start: date
     end: date
     checksum: str
 
+    def __post_init__(self) -> None:
+        """Reject a window that is not pinned, at construction.
+
+        `evaluate_event_window` takes one of these rather than loose dates
+        precisely so that the checks live here: the type is then the guarantee,
+        and there is no argument list in which a caller can supply boundaries
+        without also supplying the checksum that says which declaration they
+        came from. `load_event_windows` validates the same things earlier and
+        with the position in the file in the message; this is the backstop for
+        a window built by hand.
+        """
+
+        for field, value in (("start", self.start), ("end", self.end)):
+            if not isinstance(value, date) or isinstance(value, datetime):
+                raise SplitError(f"window {field} must be a date, got {value!r}")
+        if not str(self.name).strip():
+            raise SplitError("window has no name")
+        if self.end < self.start:
+            raise SplitError(
+                f"window {self.name!r} ends {self.end} before it starts {self.start}"
+            )
+        if not str(self.checksum).strip():
+            raise SplitError(
+                f"window {self.name!r} has no checksum; an unpinned window cannot "
+                "be shown to be the window that was declared, and scoring one "
+                "spends a single-evaluation budget on nothing in particular"
+            )
+
 
 @dataclass(frozen=True)
 class EvaluationRecord:
-    """Provenance for one scoring of one window. Append-only, never amended."""
+    """Provenance for one scoring of one window. Append-only, never amended.
+
+    `holdout_role` is on the record because the contract requires the two roles
+    stay distinct "in code or in reporting", and the journal is reporting. A
+    reader of the file should not have to know which module wrote a line to
+    know whether the number beside it may be averaged into the main table.
+    """
 
     evaluated_at: str
     git_rev: str
     config_sha256: str
+    holdout_role: str
     window_name: str
     window_checksum: str
     window_start: str
@@ -125,7 +213,7 @@ class EvaluationRecord:
 
 @dataclass(frozen=True)
 class EventWindowReport:
-    """The result of scoring one event window exactly once.
+    """The result of scoring one knowledge-holdout window exactly once.
 
     Carries the exceedance curve and the realized path, and nothing that
     aggregates them. See the module docstring for why.
@@ -193,58 +281,6 @@ def load_event_windows(payload: Any) -> Tuple[EventWindow, ...]:
 
 
 # --------------------------------------------------------------------------
-# Labels
-# --------------------------------------------------------------------------
-
-
-def trailing_percentile(
-    values: Sequence[float],
-    index: int,
-    window: int,
-    probability: float,
-) -> float:
-    """Percentile of the `window` values *strictly before* `index`.
-
-    A stress label defined against a trailing percentile is a learned
-    parameter, and the contract puts learned parameters inside the training
-    window. The slice here is `values[index - window:index]` -- open at the top,
-    so `values[index]` is excluded along with everything after it. At the first
-    scored day of an event window that slice is entirely pre-event, which is
-    what makes the label at the event edge safe.
-    """
-
-    if window < 1:
-        raise SplitError(f"window must be at least 1, got {window}")
-    if not 0.0 <= probability <= 1.0:
-        raise SplitError(f"probability must be in [0, 1], got {probability}")
-    if index - window < 0:
-        raise SplitError(
-            f"index {index} has only {index} prior values, needs {window}"
-        )
-    ordered = sorted(values[index - window:index])
-    position = probability * (len(ordered) - 1)
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return ordered[lower]
-    weight = position - lower
-    return ordered[lower] * (1.0 - weight) + ordered[upper] * weight
-
-
-def trailing_threshold_path(
-    values: Sequence[float],
-    window: int,
-    probability: float,
-) -> Tuple[float, ...]:
-    """`trailing_percentile` at every index that has enough history."""
-
-    return tuple(
-        trailing_percentile(values, index, window, probability)
-        for index in range(window, len(values))
-    )
-
-
-# --------------------------------------------------------------------------
 # Evaluation
 # --------------------------------------------------------------------------
 
@@ -253,33 +289,40 @@ def evaluate_event_window(
     dates: Sequence[date],
     y: Sequence[float],
     fit_predict: FitPredict,
-    event_start: date,
-    event_end: date,
+    window: EventWindow,
     purge: int,
     *,
     taus: Sequence[float],
     model_config: Mapping[str, Any],
     journal_path: Path,
-    window_name: str = "unnamed",
-    window_checksum: str = "",
 ) -> EventWindowReport:
-    """Train strictly before the event, score the event once, record the run.
+    """Score one knowledge-holdout window: train strictly before it, once.
+
+    The training set is every row that clears the purge gap ahead of
+    `event_start`, and nothing else -- the event is stripped from training
+    rather than merely withheld from the headline metric, which is what makes
+    this the knowledge holdout and not the scoring one.
 
     Args:
         dates: panel dates, strictly ascending and unique.
         y: the target, aligned to `dates`.
         fit_predict: called once, with the training rows, the scored dates and
             `taus`. Returns `P(value > tau)` per scored day per tau.
-        event_start, event_end: the window, inclusive at both ends.
-        event_end: see `event_start`.
-        purge: calendar days between the last training row and `event_start`.
+        window: the declared knowledge-holdout window, inclusive at both ends.
+            An `EventWindow`, not loose dates, and the reason is the checksum.
+            `load_event_windows` refuses a declaration without one; taking the
+            boundaries as bare arguments here reopened that hole one call
+            downstream, because a caller could pass dates it had typed and the
+            evaluator would score and journal them as readily as declared ones.
+            There is now no argument list that scores an unpinned window: the
+            only way to obtain an `EventWindow` is to have supplied a checksum,
+            and the ordinary way is `load_event_windows(metadata)`.
+        purge: calendar days between the last training row and `window.start`.
             Required, for the reasons in `splits.require_purge_days`.
         taus: the exceedance family, strictly ascending.
         model_config: hashed into the evaluation record, so a rerun with
             different settings is distinguishable from a repeat of the same one.
         journal_path: append-only provenance log. Required.
-        window_name, window_checksum: carried into the record from the declared
-            window so the log says which window was scored.
 
     Raises:
         SplitError: malformed panel, window, taus or predictions.
@@ -292,8 +335,12 @@ def evaluate_event_window(
     _validate_panel(ordered_dates, values)
     require_purge_days(purge)
     tau_family = _validate_taus(taus)
-    if event_end < event_start:
-        raise SplitError(f"window ends {event_end} before it starts {event_start}")
+    if not isinstance(window, EventWindow):
+        raise SplitError(
+            f"window must be an EventWindow from load_event_windows, got "
+            f"{type(window).__name__}"
+        )
+    event_start, event_end = window.start, window.end
 
     train_index = [
         i for i, when in enumerate(ordered_dates) if clears_purge(when, event_start, purge)
@@ -324,8 +371,9 @@ def evaluate_event_window(
         evaluated_at=datetime.now(timezone.utc).isoformat(),
         git_rev=_git_rev(),
         config_sha256=config_digest(model_config),
-        window_name=window_name,
-        window_checksum=window_checksum,
+        holdout_role=KNOWLEDGE_HOLDOUT,
+        window_name=window.name,
+        window_checksum=window.checksum,
         window_start=event_start.isoformat(),
         window_end=event_end.isoformat(),
         purge_days=purge,
@@ -335,7 +383,7 @@ def evaluate_event_window(
     append_record(journal_path, record)
 
     return EventWindowReport(
-        window=EventWindow(window_name, event_start, event_end, window_checksum),
+        window=window,
         purge_days=purge,
         train_rows=len(train_index),
         last_train_date=ordered_dates[train_index[-1]],
