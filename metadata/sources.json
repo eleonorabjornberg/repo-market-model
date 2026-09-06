@@ -3,33 +3,92 @@
     "access": "public",
     "fields": ["IORB", "IOER", "WRESBAL", "WTREGEN", "RRPONTSYD", "DFF"],
     "frequency": "mixed daily and weekly",
+    "identities": [],
     "limitation": "Latest revised vintage; not point-in-time historical data. Weekly series require release-lag treatment.",
     "provider": "Federal Reserve Bank of St. Louis FRED",
+    "release_lag": {
+      "available_time": "00:00:00",
+      "basis": "snapshot_retrieved_at",
+      "calendar": "none",
+      "days": 0,
+      "note": "Latest-vintage observations inherit the immutable snapshot retrieval timestamp; ref_date plus a nominal publication lag would falsely predate later revisions.",
+      "timezone": "UTC"
+    },
+    "structural_zeros": [],
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv"
   },
   "nyfed_sofr": {
     "access": "public",
     "fields": ["rate", "percentiles", "volume", "revision indicator"],
     "frequency": "business daily",
+    "identities": [],
     "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
     "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00:00",
+      "basis": "ref_date",
+      "calendar": "business_days",
+      "days": 1,
+      "note": "SOFR is first published at about 08:00 ET on the next business day and may be revised at about 14:30 ET that day; 15:00 ET is the conservative finalized availability time.",
+      "timezone": "America/New_York"
+    },
+    "structural_zeros": [],
     "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
   },
   "sec_nmfp": {
     "access": "public",
-    "fields": ["fund", "portfolio holdings", "liquid assets", "shareholder flows"],
+    "fields": [
+      "fund",
+      "portfolio holdings",
+      "liquid assets",
+      "shareholder flows",
+      "cash",
+      "portfolio_securities",
+      "other_assets",
+      "liabilities",
+      "net_assets"
+    ],
     "frequency": "monthly",
+    "identities": [
+      {
+        "left": ["cash", "portfolio_securities", "other_assets"],
+        "name": "series_assets_reconcile_to_liabilities_and_net_assets",
+        "right": ["liabilities", "net_assets"],
+        "tolerance": {
+          "absolute": 0.02,
+          "unit": "USD"
+        }
+      }
+    ],
     "limitation": "As-filed data may contain reporting errors and becomes available after month-end.",
     "provider": "U.S. Securities and Exchange Commission",
+    "release_lag": {
+      "available_time": "00:00:00",
+      "basis": "snapshot_retrieved_at",
+      "calendar": "none",
+      "days": 0,
+      "note": "The bulk extract is a monthly compilation of as-filed submissions; rows inherit the immutable extract retrieval timestamp rather than the filing deadline or report date.",
+      "timezone": "UTC"
+    },
+    "structural_zeros": [],
     "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
   },
   "treasury_auctions": {
     "access": "public",
     "fields": ["CUSIP", "announcement", "auction", "issue", "maturity", "offering amount"],
     "frequency": "event",
+    "identities": [],
     "limitation": "Announcement and result vintages must be separated to avoid using auction outcomes too early.",
     "provider": "U.S. Department of the Treasury Fiscal Data",
+    "release_lag": {
+      "available_time": "23:59:59",
+      "basis": "record_date",
+      "calendar": "calendar_days",
+      "days": 0,
+      "note": "Fiscal Data defines record_date as the publication date; end-of-day availability conservatively avoids assuming an intraday publication time.",
+      "timezone": "America/New_York"
+    },
+    "structural_zeros": [],
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
   }
 }
-
