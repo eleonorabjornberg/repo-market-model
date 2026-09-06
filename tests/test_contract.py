@@ -31,6 +31,22 @@ are executable specification, not decoration: `unittest` reports an unexpected
 success as a build failure, so the day a track implements one of these
 interfaces the suite goes red and forces the stand-ins above to be rewritten
 against the real thing rather than extended around it.
+
+Mutation record. Two leaks were planted in `rolling_persistence_backtest` and
+the suite run against each, on the sample panel, stdlib only:
+
+  * Full-sample quantile: the interval fitted on residuals from the whole
+    panel instead of the expanding window. Fails five tests -- the truncation
+    test, both `FuturePerturbationTests` behavioural tests, and both
+    `TransformIsolationTests`. The perturbation-visibility guard stays green,
+    which is correct; it is not a leakage test.
+  * Residual ordering: `residuals.append` moved above the interval
+    computation, so a forecast's own realized residual enters its own
+    quantile. Fails the sweep, the T+1 test, and the transform test.
+
+Neither run is a claim about the whole contract -- both leaks live in the
+interval, the only learned parameter here. A leak in a future point forecast
+or in the loader is not covered by either.
 """
 
 import json
@@ -201,6 +217,14 @@ class FuturePerturbationTests(unittest.TestCase):
             # point, rows[0..i-1] for the residual quantile. Only `actual_bps`
             # touches rows[i]. So every forecast through index cutoff_index + 1
             # -- including the T+1 forecast the contract names -- must hold.
+            #
+            # The `+ 2` is load-bearing. Under the residual-ordering leak in
+            # the module docstring, this sweep fails at `+ 2` (cutoff
+            # 2026-01-16, forecast 1: upper 128.0 against 4.0) and passes at
+            # `+ 1`, because `+ 1` stops one slot short of the T+1 forecast --
+            # exactly the slot the contract names. The leak is caught by two
+            # other tests either way, so `+ 2` is not the suite's only line of
+            # defence; it is what makes this test carry its own weight.
             unaffected = cutoff_index - MINIMUM_HISTORY + 2
             for position in range(unaffected):
                 self.assertEqual(
@@ -381,6 +405,12 @@ class TargetSchemaTests(unittest.TestCase):
     Every test here is expected to fail today. When one starts passing,
     `unittest` reports an unexpected success and the build goes red -- which is
     the signal to delete the stand-in above it and write the real test.
+
+    The two `hasattr` tests below are presence tripwires, not conformance
+    checks: they fire on a name existing and say nothing about whether it
+    behaves as the contract requires. Read a red build from either as "an
+    interface landed, go write the real test", never as "the interface is
+    correct".
     """
 
     @unittest.expectedFailure
