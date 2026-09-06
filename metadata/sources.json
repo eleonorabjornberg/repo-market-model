@@ -22,6 +22,8 @@
       "timezone": "UTC"
     },
     "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the FRED series definitions; the empty declaration is not a finding.",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv"
   },
   "nyfed_sofr": {
@@ -46,6 +48,8 @@
       "timezone": "America/New_York"
     },
     "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
     "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
   },
   "sec_nmfp": {
@@ -88,6 +92,8 @@
       "timezone": "UTC"
     },
     "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed across the Form N-MFP tables and filing variants; the empty declaration is not a finding.",
     "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
   },
   "treasury_auctions": {
@@ -120,6 +126,8 @@
       "timezone": "America/New_York"
     },
     "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
   }
 }
