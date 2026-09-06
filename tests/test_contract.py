@@ -25,6 +25,14 @@ Contract test 4 (identity preservation) is absent: the registry declares no
 accounting identities and no tolerances, so there is nothing to reconcile
 against. It arrives with the registry work in Track A.
 
+`SplitterPurgeTests` is not a stand-in. `repo_model.splits.rolling_origin`
+exists, so the splitter half of the contract is tested against the real thing:
+the purge gap, the no-look-ahead invariant, and fold ordering. It replaces the
+`expectedFailure` placeholder that used to sit in `TargetSchemaTests`, which
+went to unexpected-success -- a red build -- the moment the module landed. That
+is the mechanism working, not a bug. The gap is still passed in by hand,
+because the registry declares no `release_lag` for the splitter to read.
+
 `TargetSchemaTests` at the bottom holds the tests the contract actually asks
 for, written against the target interfaces and marked `expectedFailure`. They
 are executable specification, not decoration: `unittest` reports an unexpected
@@ -44,16 +52,32 @@ the suite run against each, on the sample panel, stdlib only:
     computation, so a forecast's own realized residual enters its own
     quantile. Fails the sweep, the T+1 test, and the transform test.
 
-Neither run is a claim about the whole contract -- both leaks live in the
-interval, the only learned parameter here. A leak in a future point forecast
-or in the loader is not covered by either.
+One further leak was planted in `repo_model.splits`, against the splitter
+tests:
+
+  * Permissive gap boundary: `bisect_left` to `bisect_right` in `_train_end`,
+    which keeps a training row whose value first becomes observable exactly as
+    the test block opens -- a one-day off-by-one, and the smallest leak the
+    module can have. Fails eight tests: all three purge tests here and five in
+    `tests/test_splits.py`. All eight fail as errors rather than assertion
+    failures, because `_assert_no_look_ahead` raises before the test can
+    inspect the fold ("training ends 2026-01-21 and testing opens 2026-01-23,
+    which is inside the 2-day purge gap"). The in-module guard reaches it
+    first; the tests confirm the guard is wired to the folds actually yielded.
+    The four structural tests in `FoldShapeTests` stay green, correctly -- a
+    gap that is one day too small changes no shape.
+
+Neither of the first two runs is a claim about the whole contract -- both leaks
+live in the interval, the only learned parameter here. A leak in a future point
+forecast or in the loader is not covered by any of the three.
 """
 
+import inspect
 import json
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
@@ -65,6 +89,7 @@ from repo_model.data import (
     audit_panel,
     load_daily_panel,
 )
+from repo_model.splits import rolling_origin
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -399,6 +424,127 @@ class StructuralZeroTests(unittest.TestCase):
         self.assertEqual(rows[0].values["on_rrp"], 0.0)
 
 
+class SplitterPurgeTests(unittest.TestCase):
+    """The contract's splitter interface: rolling origin, with a purge gap.
+
+    Replaces the `expectedFailure` placeholder that used to sit in
+    `TargetSchemaTests`. That placeholder tripped the moment `repo_model.splits`
+    existed, which is what it was for; this is the real test it demanded.
+
+    `purge` is a number of calendar days, because a release lag is a duration
+    and the panel is business-daily -- the last row before a weekend is three
+    days from the next row, the last row inside a week is one. The gap the
+    splitter must clear is therefore the same in both places even though the row
+    distance is not.
+
+    The lag below is a stand-in. The registry declares no `release_lag` yet (see
+    `TargetSchemaTests.test_source_registry_declares_identities_and_structural_zeros`,
+    still expected to fail), so the splitter takes the gap as a required
+    argument and the number here is the value this test reasons about, not a
+    value read from anywhere. When the registry gains the key, this constant is
+    replaced by the largest declared lag over the fields in use, and the
+    splitter's caller stops passing a literal.
+    """
+
+    #: Stand-in for the longest release lag over the fields in the panel.
+    LONGEST_RELEASE_LAG_DAYS = 2
+
+    MIN_TRAIN = 10
+    STEP = 3
+
+    def setUp(self):
+        self.dates = [row.date for row in load_sample()]
+
+    def folds(self, purge):
+        return list(rolling_origin(self.dates, self.MIN_TRAIN, self.STEP, purge))
+
+    def test_the_gap_closes_a_leak_that_a_zero_gap_leaves_open(self):
+        """The contract property, and the test's own power in one place.
+
+        A value dated on the last training day is not observable until
+        `release_lag` days later. If the test block opens within that window,
+        the training window contains a row whose value the forecaster could not
+        have had -- and worse, whose eventual revision is informed by the test
+        period. With no gap the sample panel is in exactly that position on
+        every fold. With the gap set to the lag, on none of them.
+        """
+
+        leaky = [
+            (self.dates[train[-1]], self.dates[test[0]])
+            for train, test in self.folds(purge=0)
+        ]
+        self.assertTrue(leaky, msg="no folds; the comparison below is vacuous")
+        self.assertTrue(
+            any(
+                (opens - ends).days <= self.LONGEST_RELEASE_LAG_DAYS
+                for ends, opens in leaky
+            ),
+            msg=(
+                "a zero gap leaked nothing on this panel, so passing the purged "
+                "case proves nothing about the purge"
+            ),
+        )
+
+        for ends, opens in [
+            (self.dates[train[-1]], self.dates[test[0]])
+            for train, test in self.folds(purge=self.LONGEST_RELEASE_LAG_DAYS)
+        ]:
+            self.assertGreater(
+                (opens - ends).days,
+                self.LONGEST_RELEASE_LAG_DAYS,
+                msg=(
+                    f"training ends {ends} and testing opens {opens}, within the "
+                    f"{self.LONGEST_RELEASE_LAG_DAYS}-day release lag"
+                ),
+            )
+
+    def test_no_fold_trains_on_a_row_inside_its_gap(self):
+        """max(train) + purge < min(test), for every fold, at every gap."""
+
+        for purge in (0, 1, 2, 4):
+            folds = self.folds(purge)
+            self.assertTrue(folds, msg=f"purge={purge} produced no folds")
+            for train, test in folds:
+                self.assertLess(
+                    self.dates[train[-1]] + timedelta(days=purge),
+                    self.dates[test[0]],
+                    msg=f"purge={purge}: fold trains inside its own gap",
+                )
+                self.assertLess(train[-1], test[0])
+
+    def test_folds_are_in_time_order_and_test_blocks_do_not_overlap(self):
+        """Rolling origin, not cross-validation: each day is scored once."""
+
+        for purge in (0, 2):
+            scored = []
+            previous_open = None
+            for _, test in self.folds(purge):
+                opens = self.dates[test[0]]
+                if previous_open is not None:
+                    self.assertGreater(opens, previous_open, msg="folds are out of order")
+                previous_open = opens
+                scored.extend(test)
+            self.assertEqual(scored, sorted(scored))
+            self.assertEqual(
+                len(scored), len(set(scored)), msg="an observation is scored twice"
+            )
+
+    def test_the_gap_has_no_default(self):
+        """A silent default is the failure the whole splitter exists to prevent.
+
+        Until the registry declares `release_lag`, there is no number the
+        splitter could default to that is not a guess, and a guessed gap
+        produces a backtest that looks fine and is not.
+        """
+
+        self.assertIs(
+            inspect.signature(rolling_origin).parameters["purge"].default,
+            inspect.Parameter.empty,
+        )
+        with self.assertRaises(TypeError):
+            rolling_origin(self.dates, self.MIN_TRAIN, self.STEP)
+
+
 class TargetSchemaTests(unittest.TestCase):
     """The contract's real requirements, against interfaces that do not exist.
 
@@ -431,14 +577,6 @@ class TargetSchemaTests(unittest.TestCase):
         from repo_model.data import load_point_in_time_panel  # noqa: F401
 
         raise AssertionError("no point-in-time loader to test revision appending against")
-
-    @unittest.expectedFailure
-    def test_rolling_origin_splitter_exists_and_purges(self):
-        """Contract splitter interface, including the purge gap."""
-
-        from repo_model.splits import rolling_origin  # noqa: F401
-
-        raise AssertionError("no splitter to test purge behaviour against")
 
     @unittest.expectedFailure
     def test_forecast_interface_is_fit_predict_predict_stress(self):
