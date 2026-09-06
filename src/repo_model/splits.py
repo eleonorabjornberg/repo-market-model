@@ -81,15 +81,40 @@ model that saw its own test period. So `purge` is required, and passing
 something that is not an int -- `None` included -- is an error rather than a
 fallback.
 
-TODO(track-a): size `purge` from the registry instead of the caller. Once
-`metadata/sources.json` declares a per-source ``"release_lag"`` -- the key
-asserted by
-``tests/test_contract.py::TargetSchemaTests::test_source_registry_declares_identities_and_structural_zeros``
--- add a helper here that resolves each field in the feature set to its source,
-reads ``registry[source]["release_lag"]``, and returns the maximum as the purge
-for that feature set. Callers then pass a feature set rather than a number and
-cannot get the gap wrong by hand. Until that key exists there is nothing to
-read, and guessing a lag is worse than requiring one.
+Where the number comes from
+---------------------------
+
+Not from here. `AGENT_CONTRACT.md`, "Decided: release lag and the purge gap",
+assigns the conversion to the data layer::
+
+    repo_model.registry.max_release_lag_days(registry, sources, *, decision_time) -> int
+
+Callers resolve their feature set to a set of source ids, call that, and pass
+the resulting int as `purge`. This module never reads `metadata/sources.json`,
+never reads a `release_lag` field, and does not reimplement the conversion.
+
+An earlier draft of this docstring proposed the opposite -- a helper here that
+read ``registry[source]["release_lag"]`` and took a maximum. That was wrong on
+both counts. The key is a structured object, not a number, so "take the
+maximum" was not a well-defined operation on it; and the judgement it needs --
+what a business-day lag is worth in calendar days, whether a publication time
+falls before or after the decision time, which bases contribute a lag at all --
+is knowledge about provenance, not about evaluation. The contract puts it with
+the people who know what the registry's fields mean, and says why: "A wrong
+conversion is a provenance error, not an evaluation error."
+
+The split is what keeps this module auditable. The purge is the leakage guard,
+and a guard whose correctness depended on a holiday calendar could not be
+checked by reading it. All the judgement lives in a function that can be tested
+on its own; what is left here is one comparison, ``dates[i] + purge < opens``,
+which either holds or does not.
+
+`repo_model.registry` does not exist yet and is Track A's to write. It is not
+imported here, not even conditionally: an import of a module that may or may not
+be present is a second code path, and the one that runs when the import fails is
+the one nobody tests. The interface is pinned instead by
+`tests/test_registry_interface.py`, a fixture-level executable spec in the same
+form as `tests/test_events_metadata.py`.
 """
 
 from __future__ import annotations
@@ -193,9 +218,12 @@ def rolling_origin(
         min_train: training rows the first fold must have *after* purging.
         step: observations per test block, and the stride between blocks.
         purge: calendar days that must separate the last training row from the
-            first test row. Required; size it to the longest release lag of any
-            field in the feature set. Zero is legal but must be chosen, not
-            defaulted.
+            first test row. Required. Size it with
+            `repo_model.registry.max_release_lag_days(registry, sources,
+            decision_time=...)` over the sources the feature set actually uses
+            -- not over the whole registry, which purges more than the evidence
+            requires and destroys training rows silently. Zero is legal but must
+            be chosen, not defaulted.
 
     Yields:
         `(train_indices, test_indices)` as tuples of positions into `dates`.

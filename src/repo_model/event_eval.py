@@ -318,6 +318,10 @@ def evaluate_event_window(
             only way to obtain an `EventWindow` is to have supplied a checksum,
             and the ordinary way is `load_event_windows(metadata)`.
         purge: calendar days between the last training row and `window.start`.
+            Sized by `repo_model.registry.max_release_lag_days` over the feature
+            set's sources, exactly as for `rolling_origin` -- the two evaluation
+            paths mean the same thing by a gap and take the number from the same
+            place.
             Required, for the reasons in `splits.require_purge_days`.
         taus: the exceedance family, strictly ascending.
         model_config: hashed into the evaluation record, so a rerun with
