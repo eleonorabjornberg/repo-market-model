@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import time
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class RegistryContractError(ValueError):
@@ -27,11 +28,30 @@ def _selected_sources(sources: object) -> list[tuple[str, object | None]]:
 def _parse_decision_time(decision_time: object) -> time:
     if not isinstance(decision_time, time):
         raise TypeError("decision_time must be a datetime.time")
-    if decision_time.tzinfo is not None:
-        raise RegistryContractError(
-            "decision_time must be a local wall-clock time matching registry availability times"
-        )
     return decision_time
+
+
+def _decision_timezone(decision_time: time) -> str | None:
+    if decision_time.tzinfo is None:
+        return None
+    key = getattr(decision_time.tzinfo, "key", None)
+    name = key or decision_time.tzname()
+    if not name:
+        raise RegistryContractError("decision_time has an unnamed timezone")
+    return name
+
+
+def _declared_timezone(source_id: str, release_lag: Mapping[str, Any]) -> str:
+    declared = release_lag.get("timezone")
+    if not isinstance(declared, str) or not declared:
+        raise RegistryContractError(f"{source_id}: release_lag.timezone is required")
+    try:
+        ZoneInfo(declared)
+    except ZoneInfoNotFoundError as exc:
+        raise RegistryContractError(
+            f"{source_id}: unknown release_lag.timezone {declared!r}"
+        ) from exc
+    return declared
 
 
 def _available_time(source_id: str, release_lag: Mapping[str, Any]) -> time:
@@ -66,14 +86,16 @@ def _rows_have_available_at(rows: object | None) -> bool:
         except TypeError:
             candidates = iter((rows,))
 
+    found_row = False
     for row in candidates:
+        found_row = True
         if isinstance(row, Mapping):
             available_at = row.get("available_at")
         else:
             available_at = getattr(row, "available_at", None)
         if available_at is None or available_at == "":
             return False
-    return True
+    return found_row
 
 
 def max_release_lag_days(
@@ -90,8 +112,15 @@ def max_release_lag_days(
     """
 
     cutoff_time = _parse_decision_time(decision_time)
+    cutoff_timezone = _decision_timezone(cutoff_time)
+    cutoff_wall_clock = cutoff_time.replace(tzinfo=None)
+    selected = _selected_sources(sources)
+    if not selected:
+        raise RegistryContractError("sources must select at least one feature source")
+
     maximum = 0
-    for source_id, rows in _selected_sources(sources):
+    inferred_wall_clock_timezone = None
+    for source_id, rows in selected:
         try:
             source = registry[source_id]
         except KeyError as exc:
@@ -104,6 +133,7 @@ def max_release_lag_days(
         basis = release_lag.get("basis")
         calendar = release_lag.get("calendar")
         days = _nonnegative_int(source_id, "days", release_lag.get("days"))
+        declared_timezone = _declared_timezone(source_id, release_lag)
 
         if basis == "ref_date" and calendar == "business_days":
             bound = _nonnegative_int(
@@ -117,7 +147,22 @@ def max_release_lag_days(
                 )
             contribution = bound
         elif basis == "record_date" and calendar == "calendar_days":
-            contribution = days + int(_available_time(source_id, release_lag) > cutoff_time)
+            if cutoff_timezone is not None:
+                if declared_timezone != cutoff_timezone:
+                    raise RegistryContractError(
+                        f"{source_id}: release timezone {declared_timezone!r} does not "
+                        f"match decision_time timezone {cutoff_timezone!r}"
+                    )
+            elif inferred_wall_clock_timezone is None:
+                inferred_wall_clock_timezone = declared_timezone
+            elif inferred_wall_clock_timezone != declared_timezone:
+                raise RegistryContractError(
+                    "naive decision_time cannot be compared across release timezones "
+                    f"{inferred_wall_clock_timezone!r} and {declared_timezone!r}"
+                )
+            contribution = days + int(
+                _available_time(source_id, release_lag) > cutoff_wall_clock
+            )
         elif basis == "snapshot_retrieved_at":
             if calendar != "none":
                 raise RegistryContractError(
