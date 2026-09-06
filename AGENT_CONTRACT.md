@@ -126,12 +126,76 @@ written before either track starts producing models.
 
 ## Open decision for the human
 
-Event holdouts and stress calibration are in tension. September 2019 and
-March 2020 are both designated holdouts and are also most of the available
-positive labels for the stress target. Held out, the classifier trains
-almost entirely on quarter-end and year-end spikes, and Brier score on the
-holdouts then measures extrapolation to unprecedented conditions rather
-than calibration — which METHODOLOGY.md already declines to claim.
+The stress target is a calibrated probability of a threshold event on a forecast quantity, read off the predictive distribution rather than from a separate classifier. Threshold value is declared in metadata/, versioned, not tunable after the fact.
+The holdout rule: Sep 2019 and Mar 2020 are single-evaluation windows. State how many times each may be scored against and who authorises it.
 
-Resolve before Track B builds the stress head, since it determines whether
-target 4 is a calibrated probability or a declared stress score.
+## Decided: stress target and event holdouts
+
+Resolved by the human. Supersedes the open decision on whether the stress
+target is a calibrated probability or a declared score.
+
+### Target
+
+Stress is not a separately fitted rare-event classifier. It is an exceedance
+derived from the predictive distribution of SOFR - IORB:
+
+    P(spread_{t+1} > tau)  for tau in {5, 10, 20, 50} bp
+
+Low tau carries the calibration evidence (hundreds of positives at quarter-ends,
+tax dates, month-ends). High tau inherits calibration from the shared
+distributional fit. Above the top of the observed range, use a peaks-over-
+threshold GPD with covariates in the scale parameter rather than direct
+frequency estimation.
+
+Scored quantity is state ("t+1 is stressed"), not onset. Onset has too few
+events to score and is reported qualitatively only.
+
+### Label rule
+
+The label MUST NOT use a full-sample percentile — same leak class the contract
+suite already catches. Fixed bp thresholds are primary; trailing-window
+percentile is secondary; full-sample is prohibited. At an event boundary the
+trailing window is computed from pre-event rows only.
+
+### Two holdout roles
+
+These are distinct and must not be conflated in code or in reporting.
+
+1. Scoring holdout — crisis dates excluded from the headline metric but
+   available for training once they are in the past. This is the deployable
+   model. Produced by rolling_origin.
+2. Knowledge holdout — crises stripped from training entirely, scored once per
+   window. An extrapolation check, reported separately and never averaged into
+   the main table. Produced by event_eval, not by a splitter flag.
+
+Event window boundaries are frozen in versioned, checksummed metadata/events.json
+(data layer owns the file; model-eval consumes it). Boundaries are never
+constants in evaluator code — moving a window edge is the realistic cherry-pick,
+not swapping window type.
+
+Purge at the event boundary uses splitter semantics: dates[i] + purge 
+event_start, calendar days, strict.
+
+### Splitter default
+
+Expanding train window, no window-type flag. Deferred on scope. If added later
+it is a pre-declared ablation reporting both arms, never a tuned parameter.
+
+### Metrics
+
+- Brier skill score against climatology, plus Murphy decomposition, so
+  reliability is reported separately from resolution. Raw Brier is retained
+  only to satisfy the stated commitment; it is not the headline.
+- Log score and threshold-weighted CRPS on the continuous target.
+- Precision-recall, not ROC.
+- CORP/isotonic reliability with consistency bands. Fixed-bin ECE is prohibited
+  at these base rates.
+- All intervals from a stationary block bootstrap.
+- Event windows get the exceedance curve and realized path. No aggregate Brier
+  or reliability number on a single event window.
+
+### Ownership
+
+- Data layer: metadata/events.json, the label column and its point-in-time rule.
+- Model-eval: event_eval.py, the metric implementations.
+- Neither track edits this file.
