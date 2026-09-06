@@ -49,6 +49,7 @@ TRACKS = {
             "metadata/",
             "src/repo_model/ingest.py",
             "src/repo_model/data.py",
+            "src/repo_model/registry.py",
             "data/",
         ),
         "owner": "Track A (data layer)",

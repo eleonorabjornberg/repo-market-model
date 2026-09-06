@@ -199,3 +199,76 @@ it is a pre-declared ablation reporting both arms, never a tuned parameter.
 - Data layer: metadata/events.json, the label column and its point-in-time rule.
 - Model-eval: event_eval.py, the metric implementations.
 - Neither track edits this file.
+
+## Decided: release lag and the purge gap
+
+Resolved by the human after the source registry landed with a structured
+`release_lag`. Track B's splitter still assumes that key is a number; it is not,
+and nobody owned the conversion. This section assigns it.
+
+### The purge stays a scalar
+
+`rolling_origin(dates, min_train, step, purge)` and `evaluate_event_window`
+keep their pinned semantics: `purge` is an integer of calendar days, the
+boundary is `dates[i] + purge < start`, strict. Neither learns about
+calendars, timezones or vintages.
+
+This is deliberate. The purge is the leakage guard, and a guard whose
+correctness depends on a holiday calendar cannot be audited by reading it. All
+the judgement moves into a function that produces the number, where it can be
+tested on its own.
+
+### The conversion belongs to the data layer
+
+`src/repo_model/registry.py`, owned by Track A:
+
+    max_release_lag_days(registry, sources, *, decision_time) -> int
+
+Track B imports it and passes the result as `purge`. Track B does not
+reimplement it, and does not read `release_lag` directly. A wrong conversion is
+a provenance error, not an evaluation error, and it belongs with the people who
+know what the registry's fields mean.
+
+`decision_time` is required and has no default. A default would be a silent
+assumption about when the forecast is made, which is the assumption the whole
+as-of rule exists to make explicit.
+
+### One rule per basis
+
+- `ref_date` + `business_days` — converted to a conservative calendar-day
+  bound. Until a holiday calendar exists, each such source declares
+  `worst_case_calendar_days` explicitly, and it must be at least `days + 5`: a
+  weekend plus up to three consecutive holidays. When the point-in-time panel
+  lands, a test asserts no observed publication gap exceeds the declared bound.
+- `record_date` + `calendar_days` — the lag is `days`, plus one further day if
+  `available_time` falls after `decision_time`.
+- `snapshot_retrieved_at` — contributes no purge, and MUST NOT be mapped to
+  zero. Those rows are valid only from their snapshot timestamp, which is an
+  `available_at` fact about a row, not a lag on a source.
+  `max_release_lag_days` raises if such a source is passed without every row
+  carrying `available_at`.
+
+### Purge over the feature set, not the registry
+
+The purge for a backtest is the maximum over the sources whose fields the
+feature set actually uses. Taking the maximum over the whole registry purges
+more than the evidence requires and silently destroys training rows, which
+reads as a weak model rather than as a configuration mistake.
+
+### Two registry corrections
+
+- `fields` is machine field names only. Human-readable coverage moves to a
+  separate `coverage` key. Identity terms must be a subset of `fields`, and
+  that check is only meaningful if `fields` is not also prose.
+- An empty `structural_zeros` is not a finding. Each source declares
+  `structural_zeros_reviewed` with a `reviewed_note`. Empty plus unreviewed
+  means not yet analyzed, and contract test 5 stays a stand-in for that source.
+  Absence of evidence is not to be recorded as evidence of absence anywhere in
+  this repo.
+
+### Ownership
+
+- Data layer: `registry.py`, `metadata/sources.json`, `metadata/events.json`,
+  the label column and its point-in-time rule.
+- Model-eval: `splits.py`, `event_eval.py`, `metrics.py`.
+- Neither track edits this file.
