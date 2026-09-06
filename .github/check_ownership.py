@@ -42,6 +42,16 @@ HUMAN_ONLY = (
 # Owned by neither track. Allowed, but always surfaced for human review.
 SHARED = ("tests/test_contract.py",)
 
+# Each track's counterpart. Two branches that independently ADD the same new
+# path are not caught by the ownership lists -- both can be perfectly in lane --
+# but they are an add/add conflict waiting at the merge, and usually a sign the
+# same artifact was specified twice. tests/ is the usual site: it belongs to
+# neither track wholesale, so nothing else notices.
+COUNTERPART = {
+    "feature/model-eval": "feature/data-layer",
+    "feature/data-layer": "feature/model-eval",
+}
+
 TRACKS = {
     "feature/model-eval": {
         "name": "Track B (model and evaluation)",
@@ -85,6 +95,53 @@ def changed_files(base: str, head: str) -> list[str]:
     return [line for line in out.stdout.splitlines() if line]
 
 
+def added_files(base: str, head: str) -> set[str]:
+    """Paths this branch adds that did not exist on the base."""
+    out = subprocess.run(
+        ["git", "diff", "--name-status", f"{base}...{head}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    added = set()
+    for line in out.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 2 and parts[0].startswith("A"):
+            added.add(parts[1])
+    return added
+
+
+def ref_exists(ref: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", ref],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+
+
+def collisions(base: str, head: str, branch: str) -> tuple[set[str], str | None]:
+    """New paths this branch and the other track's branch both create.
+
+    Prefers a local ref, falling back to the remote, and names the ref it used.
+    A stale ref is more dangerous than a missing one: it returns a confident
+    empty answer. In CI only the remote exists, so the check is exactly as fresh
+    as the counterpart's last push, and the summary has to say so rather than
+    print an unqualified "no collision".
+
+    Returns (paths, ref_used). An absent counterpart is reported, not treated as
+    evidence of no collision.
+    """
+    other = COUNTERPART.get(branch)
+    if other is None:
+        return set(), None
+    for ref in (other, f"origin/{other}"):
+        if ref_exists(ref):
+            return added_files(base, head) & added_files(base, ref), ref
+    return set(), None
+
+
 def summarise(text: str) -> None:
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -125,7 +182,14 @@ def main(argv: list[str]) -> int:
         if any(matches(path, p) for p in track["forbidden"]):
             breaches.append((path, f"owned by {track['owner']}"))
 
+    both_added, counterpart_ref = collisions(base, head, branch)
+
     lines = [f"## Ownership check - {track['name']}", ""]
+    if both_added:
+        breaches.extend(
+            (path, f"also added by {COUNTERPART[branch]}; one track must own it")
+            for path in sorted(both_added)
+        )
     if notices:
         lines += [
             "**Review required.** These files are owned by neither track, so a",
@@ -146,6 +210,14 @@ def main(argv: list[str]) -> int:
         summarise("\n".join(lines))
         return 1
 
+    if counterpart_ref is None:
+        lines.append(
+            f"Collision check SKIPPED: no ref found for {COUNTERPART.get(branch)}. "
+            "This is not evidence that no path is claimed twice."
+        )
+    else:
+        lines.append(f"Collision check ran against `{counterpart_ref}` (as fresh as its last push).")
+    lines.append("")
     lines.append(f"No breach. {len(files)} file(s) changed, all within scope.")
     summarise("\n".join(lines))
     return 0

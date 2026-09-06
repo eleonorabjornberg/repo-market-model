@@ -272,3 +272,71 @@ reads as a weak model rather than as a configuration mistake.
   the label column and its point-in-time rule.
 - Model-eval: `splits.py`, `event_eval.py`, `metrics.py`.
 - Neither track edits this file.
+
+## Decided: the `sources` argument, and two escalations answered
+
+Track B read the previous section carefully enough to find a hole in it, and
+was right to stop rather than pick a reading. The hole: the section requires
+`max_release_lag_days` to raise when a `snapshot_retrieved_at` source is passed
+without every row carrying `available_at`, but the signature it pins takes no
+rows, so the function cannot evaluate that condition.
+
+### The resolution
+
+`sources` is a mapping from source id to the rows being used from it:
+
+    max_release_lag_days(registry, {"nyfed_sofr": None, "sec_nmfp": rows},
+                         decision_time=time(16, 0))
+
+A value of `None` means the caller is not supplying rows for that source. For a
+lag-based source that is fine — its purge comes from the registry, not from
+rows. For a `snapshot_retrieved_at` source it raises, because the only reason
+such a source contributes no purge is that its rows carry `available_at`, and
+a caller that supplies no rows has not shown that.
+
+An iterable of bare source ids is accepted as sugar for
+`{source_id: None for source_id in ids}`. The signature is unchanged; what was
+underspecified was the type of its second argument, not its arity.
+
+This is the shape Track A had already built. It is now written down, which is
+the difference that matters: an interface discovered by reading the other
+track's implementation is not pinned, it is merely observed.
+
+### An empty source set raises
+
+`max_release_lag_days(registry, {}, ...)` raises. It does not return 0. A purge
+of zero derived from an empty feature set is the same silent-zero failure this
+contract keeps legislating against, and it is the likeliest form of it, because
+an empty feature set is what a partially-wired pipeline produces.
+
+Likewise a `snapshot_retrieved_at` source whose row collection is empty: an
+empty collection satisfies "every row carries `available_at`" vacuously, and
+vacuous satisfaction is not evidence. It raises.
+
+### The two escalations
+
+Track B pinned two requirements beyond what it was asked for, and asked whether
+to drop them. It should not. Both are adopted:
+
+1. **The two registry corrections** (`fields` versus `coverage`,
+   `structural_zeros_reviewed`) were stated in this contract without an owner.
+   They are Track A's.
+2. **The publication-gap check** — that no observed publication gap exceeds a
+   source's declared `worst_case_calendar_days` — is Track A's, and it is the
+   more important of the two. Its reasoning is correct and worth recording: a
+   declared bound that is too small makes every purge sized from it too small,
+   and no test in `splits.py` can detect that. The splitter remains correct with
+   respect to a number that was already wrong. A guard that can only be written
+   on one side of an interface belongs to that side, whatever the passive voice
+   in the prose suggested.
+
+### On where specs live
+
+Track B put its interface specs in its own files rather than in
+`tests/test_contract.py`, reasoning that every edit there costs a CI review
+notice. That is the right instinct and it stands. The correction is only to the
+naming: a spec file that describes an artifact the other track will build must
+be named for the track that wrote it — `test_events_metadata_spec.py`, not
+`test_events_metadata.py` — because both tracks reaching for the obvious
+filename is an add/add conflict that no ownership list can see. The gate now
+checks for it directly.
