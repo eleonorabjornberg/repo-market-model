@@ -9,8 +9,10 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model.data import (
     DataContractError,
     audit_panel,
+    fixed_bp_stress_label_columns,
     load_daily_panel,
     load_point_in_time_panel,
+    stress_label_threshold,
 )
 
 
@@ -94,6 +96,28 @@ class PointInTimeDataContractTests(unittest.TestCase):
 
         with self.assertRaisesRegex(DataContractError, "SHA-256"):
             load_point_in_time_panel(path)
+
+
+class StressLabelTests(unittest.TestCase):
+    def test_fixed_bp_labels_use_strict_exceedance(self):
+        declaration = {"primary_rule": "fixed_bp", "taus_bp": [5, 10, 20, 50]}
+
+        rows = fixed_bp_stress_label_columns([5.0, 10.01, 51.0], declaration)
+
+        self.assertEqual(rows[0]["stress_gt_5bp"], 0)
+        self.assertEqual(rows[1]["stress_gt_5bp"], 1)
+        self.assertEqual(rows[1]["stress_gt_10bp"], 1)
+        self.assertEqual(rows[1]["stress_gt_20bp"], 0)
+        self.assertEqual(rows[2]["stress_gt_50bp"], 1)
+
+    def test_trailing_threshold_excludes_the_current_row(self):
+        values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+
+        self.assertEqual(stress_label_threshold(values, 4, 4, 1.0), 4.0)
+
+    def test_trailing_threshold_requires_declared_history(self):
+        with self.assertRaisesRegex(DataContractError, "insufficient"):
+            stress_label_threshold([1.0, 2.0], 1, 2, 0.9)
 
 
 if __name__ == "__main__":

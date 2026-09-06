@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import math
 import re
 from dataclasses import dataclass
@@ -36,6 +37,9 @@ POINT_IN_TIME_FIELDS = (
     "source_sha",
 )
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+DEFAULT_STRESS_THRESHOLDS = (
+    Path(__file__).parents[2] / "metadata" / "stress_thresholds.json"
+)
 
 
 class DataContractError(ValueError):
@@ -226,6 +230,109 @@ def load_point_in_time_panel(
     if cutoff is None:
         return observations
     return [row for row in observations if row.available_at <= cutoff]
+
+
+def load_stress_thresholds(
+    path: Path = DEFAULT_STRESS_THRESHOLDS,
+) -> Mapping[str, object]:
+    """Load and validate the versioned stress-target declaration."""
+
+    try:
+        declaration = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DataContractError(f"cannot load stress threshold metadata: {exc}") from exc
+    if not isinstance(declaration, dict):
+        raise DataContractError("stress threshold metadata must be an object")
+    if isinstance(declaration.get("version"), bool) or not isinstance(
+        declaration.get("version"), int
+    ):
+        raise DataContractError("stress threshold metadata needs an integer version")
+    if declaration.get("primary_rule") != "fixed_bp":
+        raise DataContractError("stress threshold primary_rule must be 'fixed_bp'")
+    raw_taus = declaration.get("taus_bp")
+    if not isinstance(raw_taus, list):
+        raise DataContractError("stress threshold metadata needs a taus_bp list")
+    try:
+        taus = tuple(float(tau) for tau in raw_taus)
+    except (TypeError, ValueError) as exc:
+        raise DataContractError("stress thresholds must be numeric") from exc
+    if taus != (5.0, 10.0, 20.0, 50.0):
+        raise DataContractError("stress thresholds must be exactly 5, 10, 20, and 50 bp")
+    expected_columns = [f"stress_gt_{tau:g}bp" for tau in taus]
+    if declaration.get("label_columns") != expected_columns:
+        raise DataContractError("stress label_columns must match the declared taus_bp")
+    secondary = declaration.get("secondary_rule")
+    if not isinstance(secondary, dict):
+        raise DataContractError("stress threshold metadata needs a secondary_rule")
+    if secondary.get("type") != "trailing_percentile":
+        raise DataContractError("secondary stress rule must be 'trailing_percentile'")
+    if secondary.get("history") != "rows_strictly_before_label_row":
+        raise DataContractError("trailing stress rule must use only pre-label rows")
+    if secondary.get("full_sample_allowed") is not False:
+        raise DataContractError("full-sample stress percentiles are prohibited")
+    return declaration
+
+
+def _finite_values(values: Sequence[float]) -> List[float]:
+    checked: List[float] = []
+    for position, value in enumerate(values):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise DataContractError(f"stress value {position} is not numeric")
+        number = float(value)
+        if not math.isfinite(number):
+            raise DataContractError(f"stress value {position} is not finite")
+        checked.append(number)
+    return checked
+
+
+def stress_label_threshold(
+    values: Sequence[float],
+    index: int,
+    window: int,
+    probability: float,
+) -> float:
+    """Return a trailing percentile based strictly on rows before ``index``."""
+
+    if isinstance(index, bool) or not isinstance(index, int):
+        raise DataContractError("stress label index must be an integer")
+    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:
+        raise DataContractError("stress label window must be a positive integer")
+    if index < window or index > len(values):
+        raise DataContractError("stress label threshold has insufficient trailing history")
+    if isinstance(probability, bool) or not isinstance(probability, (int, float)):
+        raise DataContractError("stress label probability must be numeric")
+    quantile = float(probability)
+    if not 0.0 <= quantile <= 1.0:
+        raise DataContractError("stress label probability must be in [0, 1]")
+
+    history = sorted(_finite_values(values[index - window : index]))
+    position = (len(history) - 1) * quantile
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return history[lower]
+    weight = position - lower
+    return history[lower] * (1.0 - weight) + history[upper] * weight
+
+
+def fixed_bp_stress_label_columns(
+    spreads_bp: Sequence[float],
+    declaration: Optional[Mapping[str, object]] = None,
+) -> List[Mapping[str, int]]:
+    """Build the primary state-label columns from declared fixed thresholds."""
+
+    metadata = declaration or load_stress_thresholds()
+    if metadata.get("primary_rule") != "fixed_bp":
+        raise DataContractError("fixed-bp labels require primary_rule 'fixed_bp'")
+    raw_taus = metadata.get("taus_bp")
+    if not isinstance(raw_taus, (list, tuple)):
+        raise DataContractError("fixed-bp labels require taus_bp")
+    taus = _finite_values(raw_taus)  # type: ignore[arg-type]
+    values = _finite_values(spreads_bp)
+    return [
+        {f"stress_gt_{tau:g}bp": int(spread > tau) for tau in taus}
+        for spread in values
+    ]
 
 
 def audit_panel(observations: Iterable[DailyObservation]) -> AuditReport:
