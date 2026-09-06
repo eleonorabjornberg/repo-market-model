@@ -45,7 +45,8 @@
       "calendar": "business_days",
       "days": 1,
       "note": "SOFR is first published at about 08:00 ET on the next business day and may be revised at about 14:30 ET that day; 15:00 ET is the conservative finalized availability time.",
-      "timezone": "America/New_York"
+      "timezone": "America/New_York",
+      "worst_case_calendar_days": 6
     },
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
