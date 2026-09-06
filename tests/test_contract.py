@@ -58,14 +58,31 @@ tests:
   * Permissive gap boundary: `bisect_left` to `bisect_right` in `_train_end`,
     which keeps a training row whose value first becomes observable exactly as
     the test block opens -- a one-day off-by-one, and the smallest leak the
-    module can have. Fails eight tests: all three purge tests here and five in
-    `tests/test_splits.py`. All eight fail as errors rather than assertion
-    failures, because `_assert_no_look_ahead` raises before the test can
-    inspect the fold ("training ends 2026-01-21 and testing opens 2026-01-23,
-    which is inside the 2-day purge gap"). The in-module guard reaches it
-    first; the tests confirm the guard is wired to the folds actually yielded.
-    The four structural tests in `FoldShapeTests` stay green, correctly -- a
-    gap that is one day too small changes no shape.
+    module can have. Fails 15 tests: 10 assertion failures and 5 errors.
+
+    The split between the two is the point of separating `_folds_unchecked`
+    from the guard. The content tests run on the unchecked generator, so they
+    report the defect as data -- the reference-oracle comparison prints the
+    survivor set that changed, `((..., 10, 11), (13,))` against the correct
+    `((..., 10), (13,))`, one row too many on the training side. The 5 errors
+    are the three contract purge tests and the two `rolling_origin` cases,
+    which run the guarded public path and so raise `LookAheadError` before any
+    assertion is reached ("training ends 2026-01-21 and testing opens
+    2026-01-23, which is inside the 2-day purge gap"). Failures say what is
+    wrong; the errors say the shipped path refuses to emit it.
+
+    `FoldShapeTests` stays green throughout, correctly: a gap one day too small
+    changes no block boundary, only which rows survive behind it.
+
+    Run again under `python3 -O`, the same mutation gives byte-identical
+    output -- 10 failures, 5 errors. That is what the raise buys. Rebuilding
+    the gap check in `_assert_no_look_ahead` as `assert cond, msg` and running
+    the same mutation under `-O`, the splitter emits five folds with no error
+    at all, the smallest gap two days against a two-day purge: a leaky fold
+    handed to the caller silently. Under `-O` the assert form is not a weaker
+    guard, it is no guard. The content tests still catch this particular
+    mutation either way, which is exactly why the comparison was run on the
+    guard directly rather than through the suite.
 
 Neither of the first two runs is a claim about the whole contract -- both leaks
 live in the interval, the only learned parameter here. A leak in a future point

@@ -20,21 +20,36 @@ advanced by more would silently discard evaluation data.
 Why the gap is measured in days, not rows
 -----------------------------------------
 
-`purge` is the release lag of the slowest field in the feature set, and a
-release lag is a duration. The panel is business-daily, so a row gap and a
-calendar gap are not the same thing: the last training row before a weekend is
-three calendar days from the next test row, and the last row before a holiday
-weekend is four. Purging a fixed number of *rows* would therefore over-purge
-across weekends and under-purge inside a week -- and under-purging is the
-failure this module exists to prevent. So `purge` is an integer number of
-calendar days, and a training row survives only if
+`purge` is the release lag of the slowest field in the feature set. A release
+lag is a duration, so the gap that covers it is a duration too. A training row
+survives only if
 
     dates[i] + purge < dates[test_start]
 
 strictly. A field observed at `ref_date` i and published `purge` days later is
-first observable on `dates[i] + purge`; if that date falls on or after the test
-block opens, the training row carries information the forecaster could not have
-had, and the row is dropped.
+first observable on ``dates[i] + purge``; if that date falls on or after the
+test block opens, the training row carries information the forecaster could not
+have had, and the row is dropped.
+
+Counting dropped *rows* instead would not be unsafe on the panel as it stands,
+and it is worth being exact about why. `repo_model.data` loads one row per
+business date, so consecutive rows are at least one calendar day apart and
+dropping k rows always leaves a gap of at least k + 1 days. Here a row count
+can only ever purge too much, never too little. What it costs is training data:
+a row-counted gap of two drops the Thursday *and* the Friday before a Monday
+block, even though that Friday already sits three calendar days ahead of the
+block -- four, when a holiday Monday pushes it out. A day-counted gap of two
+keeps that Friday, and drops the Thursday before a Friday block, which is one
+calendar day away and genuinely inside the lag.
+
+Row counting stops being merely wasteful and becomes wrong the moment two rows
+can share a date -- which is precisely the schema the contract is aiming at.
+The long point-in-time panel (`series_id`, `ref_date`, `available_at`,
+`vintage_id`) puts many series on one `ref_date`, and a revision appends
+another row at a `ref_date` already present. There, k dropped rows can span
+zero calendar days, and a row-counted gap degenerates to no gap at all without
+changing shape or raising anything. Counting days now means this module does
+not have to be revisited, or re-audited, when that panel lands.
 
 Why `purge` has no default
 --------------------------
@@ -115,7 +130,7 @@ def rolling_origin(
 
     ordered = list(dates)
     _validate_arguments(ordered, min_train, step, purge)
-    return _iter_folds(ordered, min_train, step, purge)
+    return _checked(ordered, min_train, step, purge)
 
 
 def _validate_arguments(
@@ -156,12 +171,20 @@ def _train_end(dates: Sequence[date], test_start: int, purge: int) -> int:
     return bisect_left(dates, boundary, 0, test_start)
 
 
-def _iter_folds(
+def _folds_unchecked(
     dates: Sequence[date],
     min_train: int,
     step: int,
     purge: int,
 ) -> Iterator[Fold]:
+    """Construct folds. No look-ahead checking -- that is `_checked`'s job.
+
+    Kept separate so the two can be tested apart: a construction bug shows up
+    here as a wrong fold that a test can inspect and diff, rather than as a
+    `LookAheadError` from the guard intercepting it first. Nothing outside this
+    module should call this; `rolling_origin` is the checked entry point.
+    """
+
     count = len(dates)
     first_start = None
     for candidate in range(count):
@@ -174,13 +197,23 @@ def _iter_folds(
             f"with {min_train} training rows behind a {purge}-day purge gap"
         )
 
-    previous_stop = 0
     for start in range(first_start, count, step):
         stop = min(start + step, count)
-        train = tuple(range(_train_end(dates, start, purge)))
-        test = tuple(range(start, stop))
+        yield tuple(range(_train_end(dates, start, purge))), tuple(range(start, stop))
+
+
+def _checked(
+    dates: Sequence[date],
+    min_train: int,
+    step: int,
+    purge: int,
+) -> Iterator[Fold]:
+    """Every constructed fold, past the look-ahead guard."""
+
+    previous_stop = 0
+    for train, test in _folds_unchecked(dates, min_train, step, purge):
         _assert_no_look_ahead(dates, train, test, purge, previous_stop)
-        previous_stop = stop
+        previous_stop = test[-1] + 1
         yield train, test
 
 

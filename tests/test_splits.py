@@ -21,18 +21,63 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from repo_model.data import load_daily_panel
 from repo_model.splits import (
     LookAheadError,
     SplitError,
     _assert_no_look_ahead,
+    _folds_unchecked,
     rolling_origin,
 )
+
+
+SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
 
 # The lag a purge gap has to cover in these tests. Two days is enough to be
 # violated by an ordinary Tuesday-to-Wednesday adjacency and satisfied by a
 # Friday-to-Monday one, which is what makes the day/row distinction visible.
 RELEASE_LAG_DAYS = 2
+
+
+def reference_folds(dates, min_train, step, purge):
+    """Brute-force rolling-origin folds, written to share nothing with `splits`.
+
+    An oracle computed the same way as the implementation cannot catch an error
+    the two have in common, so this deliberately avoids every mechanism the
+    module uses. No `bisect`; a plain scan over every earlier row. No
+    `timedelta` on either side of the comparison; a day count taken from the
+    date difference, which is a third arithmetic form -- the module subtracts
+    the lag from the block's date, the module's docstring states it as adding
+    the lag to the row's date, and this asks how many days apart they are. All
+    three agree only if the boundary is right.
+
+    Returns `[]` where the module raises, so callers can assert both.
+    """
+
+    def survivors(test_start):
+        keep = []
+        for index in range(test_start):
+            if (dates[test_start] - dates[index]).days > purge:
+                keep.append(index)
+        return keep
+
+    count = len(dates)
+    first_start = None
+    for candidate in range(count):
+        if len(survivors(candidate)) >= min_train:
+            first_start = candidate
+            break
+    if first_start is None:
+        return []
+
+    folds = []
+    start = first_start
+    while start < count:
+        stop = min(start + step, count)
+        folds.append((tuple(survivors(start)), tuple(range(start, stop))))
+        start += step
+    return folds
 
 
 def business_days(start: date, count: int):
@@ -52,7 +97,9 @@ class FoldShapeTests(unittest.TestCase):
 
     def setUp(self):
         self.dates = business_days(date(2026, 1, 5), 40)
-        self.folds = list(rolling_origin(self.dates, min_train=10, step=3, purge=0))
+        # Unchecked on purpose: a construction bug must surface as a wrong fold
+        # these tests can diff, not as a `LookAheadError` from the guard.
+        self.folds = list(_folds_unchecked(self.dates, min_train=10, step=3, purge=0))
 
     def test_at_least_one_fold_is_produced(self):
         self.assertTrue(self.folds, msg="no folds; every other test here is vacuous")
@@ -95,7 +142,7 @@ class FoldShapeTests(unittest.TestCase):
         # 21 rows, min_train 10, step 4: whatever the tail length, the last
         # observation must be scored rather than dropped for not filling a block.
         dates = business_days(date(2026, 1, 5), 21)
-        folds = list(rolling_origin(dates, min_train=10, step=4, purge=0))
+        folds = list(_folds_unchecked(dates, min_train=10, step=4, purge=0))
         self.assertEqual(folds[-1][1][-1], len(dates) - 1)
 
 
@@ -107,7 +154,7 @@ class PurgeGapTests(unittest.TestCase):
 
     def test_every_fold_clears_the_gap(self):
         for purge in (0, 1, 2, 5, 10):
-            for train, test in rolling_origin(self.dates, 10, 3, purge):
+            for train, test in _folds_unchecked(self.dates, 10, 3, purge):
                 last_train = self.dates[train[-1]]
                 first_test = self.dates[test[0]]
                 self.assertLess(
@@ -118,7 +165,7 @@ class PurgeGapTests(unittest.TestCase):
 
     def test_purge_drops_the_rows_inside_the_gap_and_no_others(self):
         purge = RELEASE_LAG_DAYS
-        for train, test in rolling_origin(self.dates, 10, 3, purge):
+        for train, test in _folds_unchecked(self.dates, 10, 3, purge):
             first_test = self.dates[test[0]]
             # Everything between the training window and the block is dropped
             # precisely because it sits inside the gap.
@@ -142,7 +189,7 @@ class PurgeGapTests(unittest.TestCase):
 
         leaky = [
             (self.dates[train[-1]], self.dates[test[0]])
-            for train, test in rolling_origin(self.dates, 10, 3, purge=0)
+            for train, test in _folds_unchecked(self.dates, 10, 3, purge=0)
         ]
         self.assertTrue(
             any(
@@ -154,7 +201,7 @@ class PurgeGapTests(unittest.TestCase):
 
         purged = [
             (self.dates[train[-1]], self.dates[test[0]])
-            for train, test in rolling_origin(self.dates, 10, 3, purge=RELEASE_LAG_DAYS)
+            for train, test in _folds_unchecked(self.dates, 10, 3, purge=RELEASE_LAG_DAYS)
         ]
         for last_train, first_test in purged:
             self.assertGreater(
@@ -173,7 +220,7 @@ class PurgeGapTests(unittest.TestCase):
         """
 
         dates = business_days(date(2026, 1, 5), 20)
-        folds = list(rolling_origin(dates, min_train=5, step=1, purge=RELEASE_LAG_DAYS))
+        folds = list(_folds_unchecked(dates, min_train=5, step=1, purge=RELEASE_LAG_DAYS))
         weekend_blocks = [
             (train, test)
             for train, test in folds
@@ -192,13 +239,87 @@ class PurgeGapTests(unittest.TestCase):
     def test_a_larger_gap_never_keeps_more_training_rows(self):
         sizes = {}
         for purge in (0, 1, 2, 3, 5):
-            folds = list(rolling_origin(self.dates, 10, 1, purge))
+            folds = list(_folds_unchecked(self.dates, 10, 1, purge))
             sizes[purge] = {test[0]: len(train) for train, test in folds}
         for smaller, larger in ((0, 1), (1, 2), (2, 3), (3, 5)):
             shared = set(sizes[smaller]) & set(sizes[larger])
             self.assertTrue(shared, msg="no shared test block to compare across gaps")
             for start in shared:
                 self.assertLessEqual(sizes[larger][start], sizes[smaller][start])
+
+
+class ReferenceOracleTests(unittest.TestCase):
+    """The splitter against a brute-force reference, on the real sample panel.
+
+    Every other test here states a property. A property test can only catch
+    what it thought to ask about; this one compares the whole fold sequence --
+    survivor sets, block boundaries, fold count and order -- against an
+    independent construction, so a survivor set that is wrong in a way nobody
+    anticipated still shows up, as a diff.
+    """
+
+    # Chosen to exercise short and long gaps, unit and multi-day blocks, a gap
+    # of zero, and a gap wide enough that the module refuses to split at all.
+    CASES = [
+        (5, 1, 0),
+        (10, 3, 0),
+        (10, 1, 2),
+        (10, 3, 2),
+        (8, 4, 4),
+        (12, 2, 1),
+        (5, 7, 3),
+        (10, 3, 10),
+        (10, 2, 400),
+    ]
+
+    def setUp(self):
+        self.dates = [row.date for row in load_daily_panel(SAMPLE_PANEL)]
+
+    def test_folds_match_the_reference_on_the_sample_panel(self):
+        exercised = 0
+        for min_train, step, purge in self.CASES:
+            expected = reference_folds(self.dates, min_train, step, purge)
+            with self.subTest(min_train=min_train, step=step, purge=purge):
+                if not expected:
+                    # The reference found no fold; the module must say so.
+                    with self.assertRaisesRegex(SplitError, "yield no fold"):
+                        list(_folds_unchecked(self.dates, min_train, step, purge))
+                    continue
+                actual = list(_folds_unchecked(self.dates, min_train, step, purge))
+                self.assertEqual(actual, expected)
+                exercised += 1
+        self.assertEqual(
+            exercised,
+            len(self.CASES) - 1,
+            msg="a case silently produced no folds; the comparison is thinner than it looks",
+        )
+
+    def test_the_reference_disagrees_with_a_deliberately_wrong_gap(self):
+        """Guards the oracle: it must be able to tell gaps apart at all.
+
+        If `reference_folds` ignored `purge`, the comparison above would pass
+        against an implementation that ignored it too.
+        """
+
+        two = reference_folds(self.dates, 10, 3, 2)
+        zero = reference_folds(self.dates, 10, 3, 0)
+        self.assertNotEqual(two, zero)
+        off_by_one = reference_folds(self.dates, 10, 3, 1)
+        self.assertNotEqual(two, off_by_one, msg="oracle cannot see a one-day error")
+
+    def test_the_public_entry_point_yields_the_constructed_folds(self):
+        """The guard passes clean folds through rather than reshaping them.
+
+        Content is tested against `_folds_unchecked`; this is what ties that
+        coverage to what callers actually receive.
+        """
+
+        for min_train, step, purge in [(10, 3, 0), (10, 3, 2), (5, 1, 4)]:
+            with self.subTest(min_train=min_train, step=step, purge=purge):
+                self.assertEqual(
+                    list(rolling_origin(self.dates, min_train, step, purge)),
+                    list(_folds_unchecked(self.dates, min_train, step, purge)),
+                )
 
 
 class PurgeIsRequiredTests(unittest.TestCase):
