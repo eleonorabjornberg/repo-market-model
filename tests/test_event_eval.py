@@ -71,6 +71,41 @@ Neither mutation touches the purge boundary, so the whole of
 `PurgeBoundaryTests` stays green under both. That is correct and worth stating:
 these guards are about *which* window is scored, not about where training stops.
 
+Mutation record, checksum verification (`ChecksumVerificationTests` and
+`load_events_file`). Two leaks planted, both stdlib only, run under `-B` with
+`PYTHONDONTWRITEBYTECODE=1` against a copy of the tree with `__pycache__`
+cleared, each copy given a control run first. `src/repo_model/contract.py` is
+`HUMAN_ONLY` in the ownership gate, so the mutation that touches it was applied
+to a scratch copy outside the worktree and never to the file itself:
+
+  * The comparison in `load_event_windows` disabled -- the digest still
+    computed and its result discarded, which is precisely the shape the guard
+    had before this block: a checksum required and never checked. Fails 11
+    across 6 test methods. Four are the direct refusals here. The other two are
+    in `tests/test_events_metadata_spec.py::ConsumerCompatibilityTests`, and
+    they are the ones worth having: they fail on the loader and the validator
+    disagreeing about the same document, rather than on a missing exception.
+    That disagreement is the damage -- a file that passes review here and blows
+    up at evaluation time, or worse, the reverse.
+
+  * `sort_keys=True` dropped from `event_window_digest`'s `json.dumps`. The
+    three keys are inserted as name, start, end, which is not their sorted
+    order, so the canonical form changes and with it every digest. Fails 3, all
+    in `tests/test_events_metadata_spec.py::DeclaredFileTests`, all against the
+    real `metadata/events.json`.
+
+    Nothing in *this* file fails under it, and that is the finding rather than a
+    gap. Every fixture here seals itself by calling `event_window_digest`, so a
+    change to the rule moves the fixture and the expectation together and these
+    tests stay green by construction. What they test is the wiring -- that the
+    loader calls that function and refuses what disagrees with it -- and the
+    wiring is exactly what the first mutation kills and the second leaves
+    intact. The rule itself is pinned by the one document whose checksums were
+    computed without reference to it, which is Track A's file. A suite made only
+    of self-sealing fixtures could not tell the declared digest from any other
+    function of the same three fields; `DeclaredFileTests` is what stands behind
+    the rule, and it is not a formality.
+
 The runs say nothing about the exceedance report or the journal's append-only
 behaviour; no mutation was planted in either.
 """
@@ -82,9 +117,12 @@ import tempfile
 import unittest
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from repo_model import contract, event_eval
+from repo_model.contract import event_window_digest
 from repo_model.event_eval import (
     KNOWLEDGE_HOLDOUT,
     SCORING_HOLDOUT,
@@ -97,6 +135,7 @@ from repo_model.event_eval import (
     config_digest,
     evaluate_event_window,
     load_event_windows,
+    load_events_file,
     read_journal,
 )
 
@@ -163,11 +202,22 @@ class EvaluatorHarness(unittest.TestCase):
         )
         kwargs.update(overrides)
         if "window" not in kwargs:
+            # The checksum defaults to the digest of the boundaries actually
+            # used, not to a placeholder. `"abc123"` was a window that could
+            # not exist in a declared file, and a fixture that could not
+            # survive `load_event_windows` is a fixture testing a shape the
+            # loader no longer accepts.
+            name = overrides.get("window_name", "feb-2026")
+            start = overrides.pop("event_start", EVENT_START)
+            end = overrides.pop("event_end", EVENT_END)
             kwargs["window"] = EventWindow(
-                overrides.get("window_name", "feb-2026"),
-                overrides.pop("event_start", EVENT_START),
-                overrides.pop("event_end", EVENT_END),
-                overrides.get("window_checksum", "abc123"),
+                name,
+                start,
+                end,
+                overrides.get(
+                    "window_checksum",
+                    event_window_digest(name, start.isoformat(), end.isoformat()),
+                ),
             )
         for consumed in ("event_start", "event_end", "window_name", "window_checksum"):
             kwargs.pop(consumed, None)
@@ -415,7 +465,12 @@ class RunOnceJournalTests(EvaluatorHarness):
         report = self.evaluate()
         entry = read_journal(self.journal)[0]
         self.assertEqual(entry["window_name"], "feb-2026")
-        self.assertEqual(entry["window_checksum"], "abc123")
+        self.assertEqual(
+            entry["window_checksum"],
+            event_window_digest(
+                "feb-2026", EVENT_START.isoformat(), EVENT_END.isoformat()
+            ),
+        )
         self.assertEqual(entry["purge_days"], 3)
         self.assertEqual(entry["scored_rows"], len(report.scored_dates))
         self.assertEqual(entry["train_rows"], report.train_rows)
@@ -488,19 +543,27 @@ class RunOnceJournalTests(EvaluatorHarness):
 class EventWindowMetadataTests(unittest.TestCase):
     """Windows are parsed from loaded metadata, never named in code."""
 
+    # Checksums are computed, never written by hand. `"0" * 64` and
+    # `"1" * 64` were windows that could not exist in a declared file, and once
+    # `load_event_windows` verifies the digest they stop being fixtures for the
+    # loader and start being fixtures for a loader nobody has.
     FIXTURE = {
         "windows": [
             {
                 "name": "sep-2019",
                 "start": "2019-09-16",
                 "end": "2019-09-20",
-                "checksum": "0" * 64,
+                "checksum": event_window_digest(
+                    "sep-2019", "2019-09-16", "2019-09-20"
+                ),
             },
             {
                 "name": "mar-2020",
                 "start": "2020-03-09",
                 "end": "2020-03-20",
-                "checksum": "1" * 64,
+                "checksum": event_window_digest(
+                    "mar-2020", "2020-03-09", "2020-03-20"
+                ),
             },
         ]
     }
@@ -510,7 +573,10 @@ class EventWindowMetadataTests(unittest.TestCase):
         self.assertEqual([w.name for w in windows], ["sep-2019", "mar-2020"])
         self.assertEqual(windows[0].start, date(2019, 9, 16))
         self.assertEqual(windows[1].end, date(2020, 3, 20))
-        self.assertEqual(windows[0].checksum, "0" * 64)
+        self.assertEqual(
+            windows[0].checksum,
+            event_window_digest("sep-2019", "2019-09-16", "2019-09-20"),
+        )
 
     def test_a_bare_list_is_accepted(self):
         self.assertEqual(len(load_event_windows(self.FIXTURE["windows"])), 2)
@@ -561,7 +627,9 @@ class EventWindowMetadataTests(unittest.TestCase):
                     "name": "feb-2026",
                     "start": EVENT_START.isoformat(),
                     "end": EVENT_END.isoformat(),
-                    "checksum": "deadbeef",
+                    "checksum": event_window_digest(
+                        "feb-2026", EVENT_START.isoformat(), EVENT_END.isoformat()
+                    ),
                 }
             ]
         )[0]
@@ -576,6 +644,251 @@ class EventWindowMetadataTests(unittest.TestCase):
             journal_path=Path(directory.name) / "events.jsonl",
         )
         self.assertEqual(report.window, window)
+
+
+class ChecksumVerificationTests(unittest.TestCase):
+    """The checksum is checked, not merely required.
+
+    `AGENT_CONTRACT.md`, "Decided: the event-window checksum": "A checksum that
+    is only required, never verified, is a field that looks like a guard."
+    `load_event_windows` demanded a non-empty string and compared it to nothing,
+    so the one edit the field exists to catch -- a boundary moved, the digest
+    left alone -- produced a document that loaded and scored exactly like a
+    declared one.
+
+    The digest is `repo_model.contract.event_window_digest`, and these tests
+    check that it is *that function* and not a second correct reading of the
+    same rule living in `event_eval.py`. A duplicated correct implementation is
+    the failure mode the move into `contract.py` was made to prevent: it agrees
+    with the original until somebody edits one of them, and then the
+    disagreement surfaces as a window that validates on one path and not the
+    other.
+    """
+
+    NAME = "sep-2019"
+    START = "2019-09-16"
+    END = "2019-09-20"
+
+    def declaration(self, **changes):
+        """One well-formed window, sealed with the contract digest."""
+
+        window = {
+            "name": self.NAME,
+            "start": self.START,
+            "end": self.END,
+            "checksum": event_window_digest(self.NAME, self.START, self.END),
+        }
+        window.update(changes)
+        return [window]
+
+    def test_a_window_whose_checksum_does_not_match_its_boundaries_is_rejected(self):
+        """The plain case: a digest that is not the digest of anything."""
+
+        for wrong in ("0" * 64, "1" * 64, "deadbeef", "abc123"):
+            with self.subTest(checksum=wrong):
+                with self.assertRaisesRegex(SplitError, "does not match its boundaries"):
+                    load_event_windows(self.declaration(checksum=wrong))
+
+    def test_moving_a_boundary_without_recomputing_the_digest_is_caught(self):
+        """The cherry-pick the contract names, at the loader.
+
+        "What is not visible is March 2020 starting a week later than it used
+        to, which quietly moves the worst days out of the scored window and into
+        the training set." Every one of these edits leaves a well-formed,
+        parseable, non-empty-checksum document; only the comparison catches it.
+        """
+
+        for key, moved in (
+            ("start", "2019-09-17"),
+            ("end", "2019-09-19"),
+            ("name", "sep-2019-revised"),
+        ):
+            with self.subTest(moved=key):
+                with self.assertRaisesRegex(SplitError, "does not match its boundaries"):
+                    load_event_windows(self.declaration(**{key: moved}))
+
+    def test_resealing_the_moved_boundary_loads_and_that_is_the_honest_limit(self):
+        """Recorded because it is a limit, not a gap.
+
+        A checksum cannot detect an edit that recomputes it. What it buys is
+        that the value changes, so the edit shows in a diff and disagrees with
+        every journal line that scored the old window. Asserting the limit here
+        keeps the guard from being read as more than it is.
+        """
+
+        moved = self.declaration(
+            start="2019-09-17",
+            checksum=event_window_digest(self.NAME, "2019-09-17", self.END),
+        )
+        self.assertEqual(load_event_windows(moved)[0].start, date(2019, 9, 17))
+
+    def test_the_digest_is_the_contract_function_and_not_a_local_reading(self):
+        """Fails on a *correct* reimplementation, not only on a wrong one.
+
+        Two halves, because either alone is passable by the thing this block
+        exists to prevent. The identity check catches a local copy under any
+        name that is then used; the substitution check catches a digest inlined
+        into `load_event_windows` itself, which would keep accepting a document
+        sealed with the real rule while the name it is supposed to call has been
+        replaced by one that disagrees with everything.
+        """
+
+        self.assertIs(
+            event_eval.event_window_digest,
+            contract.event_window_digest,
+            msg="event_eval holds its own event_window_digest; a second correct "
+            "reading of a shared shape is the collision contract.py exists to end",
+        )
+
+        sealed = self.declaration()
+        with mock.patch.object(
+            event_eval, "event_window_digest", lambda name, start, end: "z" * 64
+        ):
+            with self.assertRaises(SplitError) as caught:
+                load_event_windows(sealed)
+        self.assertIn(
+            "z" * 64,
+            str(caught.exception),
+            msg="the loader did not route through event_window_digest; a digest "
+            "computed inline is a duplicated reading even when it is correct",
+        )
+
+    def test_there_is_no_way_to_load_a_window_without_verifying_it(self):
+        """No opt-out parameter, on either entry point.
+
+        A `verify=False` would be a way for the one caller that matters to skip
+        the guard, and the caller that matters is whichever one is in a hurry.
+        The bare-list form is checked too: it is the form fixtures use, and a
+        check that only the mapping form performs is a check with a documented
+        bypass.
+        """
+
+        for loader in (load_event_windows, load_events_file):
+            parameters = inspect.signature(loader).parameters
+            with self.subTest(loader=loader.__name__):
+                self.assertEqual(len(parameters), 1, msg=f"{loader.__name__} grew an argument")
+                for name, parameter in parameters.items():
+                    self.assertIs(
+                        parameter.default,
+                        inspect.Parameter.empty,
+                        msg=f"{loader.__name__}({name}=...) acquired a default",
+                    )
+
+        source = inspect.getsource(event_eval)
+        for opt_out in ("verify=", "check_checksum", "skip_checksum", "strict="):
+            self.assertNotIn(
+                opt_out,
+                source,
+                msg=f"{opt_out!r} in event_eval; an opt-out is a bypass with a "
+                "polite name",
+            )
+
+        wrong = self.declaration(checksum="0" * 64)
+        with self.assertRaisesRegex(SplitError, "does not match its boundaries"):
+            load_event_windows(wrong)
+        with self.assertRaisesRegex(SplitError, "does not match its boundaries"):
+            load_event_windows({"version": 1, "windows": wrong})
+
+
+class EventsFileTests(unittest.TestCase):
+    """`load_events_file`: reads a declared file the caller names.
+
+    The path is an argument. `metadata/events.json` is Track A's file, and
+    model-eval hard-coding its location would be model-eval deciding Track A's
+    layout -- the same reason `load_event_windows` takes a payload. That the
+    file is now real is exactly when a baked-in default would start being obeyed
+    instead of noticed.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.directory = Path(directory.name)
+
+    def written(self, payload):
+        path = self.directory / "events.json"
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return path
+
+    def conforming(self):
+        return {
+            "version": 1,
+            "windows": [
+                {
+                    "name": name,
+                    "start": start,
+                    "end": end,
+                    "checksum": event_window_digest(name, start, end),
+                }
+                for name, start, end in (
+                    ("example-alpha", "2001-03-05", "2001-03-09"),
+                    ("example-beta", "2002-11-18", "2002-11-22"),
+                )
+            ],
+        }
+
+    def test_the_loader_takes_a_path_and_declares_no_default(self):
+        parameters = inspect.signature(load_events_file).parameters
+        self.assertEqual(list(parameters), ["path"])
+        self.assertIs(parameters["path"].default, inspect.Parameter.empty)
+        with self.assertRaises(TypeError):
+            load_events_file()
+
+    def test_a_conforming_file_loads_into_event_windows(self):
+        windows = load_events_file(self.written(self.conforming()))
+        self.assertEqual(
+            [w.name for w in windows], ["example-alpha", "example-beta"]
+        )
+        for window in windows:
+            self.assertIsInstance(window, EventWindow)
+
+    def test_a_document_failing_the_shared_validator_raises_with_every_problem_named(self):
+        """One raise, every fault. Not one key per run.
+
+        The validator returns a list precisely so a malformed file is fixed in a
+        single pass, and a loader that raised on the first problem would throw
+        that away at the only place it matters.
+        """
+
+        payload = self.conforming()
+        del payload["version"]
+        payload["windows"][0]["start"] = "2001-03-06"  # digest no longer matches
+        payload["windows"][1]["end"] = "18/11/2002"
+
+        path = self.written(payload)
+        problems = contract.validate_event_windows_document(payload)
+        self.assertGreaterEqual(len(problems), 3)
+
+        with self.assertRaises(SplitError) as caught:
+            load_events_file(path)
+        message = str(caught.exception)
+        self.assertIn(str(path), message)
+        for problem in problems:
+            self.assertIn(
+                problem,
+                message,
+                msg="the raise dropped a problem the validator reported",
+            )
+
+    def test_the_file_is_validated_before_it_is_parsed(self):
+        """A bare list has nowhere to carry a version, so the file form rejects it.
+
+        `load_event_windows` accepts one -- that is the fixture form. The
+        declared file is held to the document schema, and this is the difference
+        between the two entry points stated rather than left to be discovered.
+        """
+
+        path = self.written(self.conforming()["windows"])
+        with self.assertRaisesRegex(SplitError, "must be a JSON object"):
+            load_events_file(path)
+
+    def test_the_loader_names_no_file_of_its_own(self):
+        source = inspect.getsource(load_events_file)
+        self.assertNotIn(
+            "events.json",
+            source.split('"""')[-1],
+            msg="load_events_file names a file; the path is the caller's",
+        )
 
 
 class UnpinnedWindowTests(EvaluatorHarness):
