@@ -2,7 +2,8 @@ import sys
 import tempfile
 import unittest
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
@@ -228,6 +229,127 @@ class StressLabelTests(unittest.TestCase):
         with self.assertRaisesRegex(DataContractError, "insufficient"):
             stress_label_threshold([1.0, 2.0], 1, 2, 0.9)
 
+
+
+class RealSnapshotPublicationGapTests(unittest.TestCase):
+    """The publication-gap bound, actually executed -- and what it cannot tell us.
+
+    Replaces `PublicationGapTests` in `tests/test_registry_interface.py`, deleted on
+    8 September 2026 under the standing invitation in its own docstring ("If Track A
+    would rather site the test in its own suite, delete this class; what must not
+    happen is that it exists in neither"). Track A owns the panel and the registry,
+    so the check lives here.
+
+    Why it had to move rather than be fixed in place. That class called
+    `load_point_in_time_panel()` with no arguments; the implementation has always
+    required a `path`. It was marked `expectedFailure`, so the `TypeError` read as
+    "waiting on real snapshots" for as long as it existed, and the guard the contract
+    calls the more important of Track A's two escalations never ran once. An
+    `expectedFailure` is a claim that the assertion is right and the code is not.
+    A missing input is not that, and marking it that way hides a signature error
+    behind a red square. This class skips instead, and says what is missing.
+
+    And now the finding, which is worse than the signature error.
+
+    For every `ref_date` source in the registry today, `available_at` is not observed.
+    `_nyfed_rows` computes it as `ref_date` plus one business day at 15:00 ET, because
+    the API exposes no publication timestamp. The gap this test measures is therefore
+    a function of the declaration it is being compared against: with `days: 1` the
+    derived gap is 1, or 3 across a weekend, and `worst_case_calendar_days` is
+    required by contract to be at least `days + 5`. The check cannot fail. It is the
+    self-sealing-fixture problem from the `sort_keys` mutation record, arrived at from
+    the other direction -- there the fixture moved with the rule, here the observation
+    moves with the declaration.
+
+    So this class asserts the thing that is actually true and actually checkable: no
+    row claims to have been available later than the registry says it would be. The
+    day a source arrives carrying a real provider publication timestamp, that
+    assertion starts doing the work the bound was written for, and the skip message
+    below stops being the whole story. Until then the guard with teeth is
+    `AvailableAtDerivationTests` in `tests/test_ingest.py`, which pins the adapter's
+    derivation to the registry's declaration.
+
+    Known gap, not fixed here: snapshot manifests record the absolute path of the
+    machine that captured them, so a panel cannot be rebuilt from a manifest in a
+    different checkout without rebasing paths as this test does. Provenance that is
+    not portable is provenance that only reproduces on one laptop.
+    """
+
+    RAW_ROOT = Path(__file__).parents[1] / "data" / "raw"
+    REGISTRY_PATH = Path(__file__).parents[1] / "metadata" / "sources.json"
+
+    def observations(self):
+        from repo_model.ingest import SnapshotArtifact, observations_from_snapshots
+
+        manifests = sorted(self.RAW_ROOT.glob("*/*.manifest.json"))
+        if not manifests:
+            self.skipTest(
+                f"no raw snapshots under {self.RAW_ROOT}; data/raw/ is gitignored, so "
+                "this check runs only where the adapters have been run. It is not "
+                "waiting on an unwritten implementation."
+            )
+        artifacts = []
+        for manifest_path in manifests:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifacts.append(
+                SnapshotArtifact(
+                    source_id=manifest["source_id"],
+                    # Rebased off the capture host; see the class docstring.
+                    path=manifest_path.parent / Path(manifest["path"]).name,
+                    retrieved_at=manifest["retrieved_at"],
+                    sha256=manifest["sha256"],
+                    url=manifest["url"],
+                    byte_count=int(manifest["byte_count"]),
+                )
+            )
+        # Payload checksums are verified on read, so a tampered snapshot fails here.
+        return list(observations_from_snapshots(artifacts))
+
+    def test_no_observed_publication_gap_exceeds_the_declared_bound(self):
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        validate_publication_gaps(self.observations(), registry)
+
+    def test_no_row_is_available_later_than_the_registry_declares(self):
+        """Row resolution, where the bound is only source resolution.
+
+        A source may satisfy its worst case in aggregate and still emit a single row
+        that postdates its own declaration. This is the assertion that will start
+        failing when an observed publication timestamp replaces a derived one.
+        """
+
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        declarations = {}
+        for source in registry.values():
+            lag = source.get("release_lag", {})
+            if lag.get("basis") != "ref_date":
+                continue
+            for series_id in source["fields"]:
+                declarations[series_id] = lag
+
+        checked = 0
+        for row in self.observations():
+            lag = declarations.get(row.series_id)
+            if lag is None:
+                continue
+            current = row.ref_date
+            remaining = lag["days"]
+            while remaining:
+                current += timedelta(days=1)
+                if current.weekday() < 5:
+                    remaining -= 1
+            declared = datetime.combine(
+                current,
+                time.fromisoformat(lag["available_time"]),
+                tzinfo=ZoneInfo(lag["timezone"]),
+            )
+            self.assertLessEqual(
+                row.available_at,
+                declared,
+                msg=f"{row.series_id} for {row.ref_date} became available at "
+                f"{row.available_at}, later than the {declared} the registry declares.",
+            )
+            checked += 1
+        self.assertGreater(checked, 0, "no ref_date rows were checked")
 
 if __name__ == "__main__":
     unittest.main()

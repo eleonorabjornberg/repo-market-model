@@ -668,58 +668,15 @@ class RegistryCorrectionsTests(unittest.TestCase):
         )
 
 
-class PublicationGapTests(unittest.TestCase):
-    """The one requirement in this contract section nobody was assigned.
-
-    "When the point-in-time panel lands, a test asserts no observed publication
-    gap exceeds the declared bound." The contract states it in the passive voice
-    and the Ownership list does not mention it, so it was on course to be
-    nobody's. It is pinned here because Track B is the consumer of the number
-    the bound produces: if a real publication gap exceeds the declared
-    `worst_case_calendar_days`, then a purge sized from that declaration is too
-    small, and every backtest run behind it has a leak that no test in
-    `repo_model.splits` can see -- the splitter is correct with respect to a
-    number that was wrong before it arrived.
-
-    Track A owns the panel and the registry, so Track A implements it. If Track A
-    would rather site the test in its own suite, delete this class; what must not
-    happen is that it exists in neither.
-    """
-
-    @unittest.expectedFailure
-    def test_no_observed_publication_gap_exceeds_the_declared_bound(self):
-        from repo_model.data import load_point_in_time_panel
-
-        registry_path = REPO_ROOT / "metadata" / "sources.json"
-        import json
-
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-        rows = load_point_in_time_panel()
-
-        worst_observed = {}
-        for row in rows:
-            gap = (row.available_at.date() - row.ref_date).days
-            worst_observed[row.series_id] = max(
-                worst_observed.get(row.series_id, 0), gap
-            )
-
-        for source_id, source in registry.items():
-            declaration = source.get("release_lag", {})
-            if declaration.get("basis") != "ref_date":
-                continue
-            bound = declaration["worst_case_calendar_days"]
-            for series_id in source["fields"]:
-                observed = worst_observed.get(series_id)
-                if observed is None:
-                    continue
-                self.assertLessEqual(
-                    observed,
-                    bound,
-                    msg=f"{series_id} was published {observed} calendar days "
-                    f"after its ref_date, but {source_id} declares a worst case "
-                    f"of {bound}. Every purge sized from that declaration was "
-                    "too small.",
-                )
+# `PublicationGapTests` was here until 8 September 2026. It is now
+# `RealSnapshotPublicationGapTests` in `tests/test_data.py`, moved under the standing
+# invitation in its own docstring: Track A owns the panel and the registry, so Track A
+# sites the check. Two things were wrong with it in place, both recorded at the new
+# site. It called `load_point_in_time_panel()` with no arguments against an
+# implementation that requires a `path`, and its `expectedFailure` marker made that
+# `TypeError` read as "waiting on real snapshots" for the whole time it existed. And
+# the bound it checks cannot fail for any source now in the registry, because their
+# `available_at` is derived from that same declaration rather than observed.
 
 
 class RegistryModuleTests(unittest.TestCase):

@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import gzip
 import io
 import json
@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import load_point_in_time_panel
 from repo_model.ingest import (
+    SnapshotArtifact,
     _decode_transport,
     build_point_in_time_snapshot,
     fetch_fred_macro,
@@ -20,7 +21,9 @@ from repo_model.ingest import (
     fetch_sec_nmfp,
     fetch_treasury_auctions,
     load_snapshot_manifest,
+    observations_from_snapshots,
 )
+from zoneinfo import ZoneInfo
 
 
 class IngestTests(unittest.TestCase):
@@ -238,6 +241,132 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(values["mmf_repo_holdings"], 0.2)
         self.assertEqual(values["mmf_on_rrp"], 0.2)
 
+
+
+class AvailableAtDerivationTests(unittest.TestCase):
+    """The adapter's `available_at` must be the registry's declaration, not a twin of it.
+
+    `_nyfed_rows` computes `available_at` as `ref_date` plus one business day at
+    15:00 America/New_York. Those three values are literals in `ingest.py`, and they
+    are also `days`, `available_time` and `timezone` in `metadata/sources.json`.
+    Nothing made the pair agree. Editing the registry to `days: 2` would leave the
+    adapter emitting one, and every consumer of `available_at` would be reading a lag
+    the registry no longer declares.
+
+    This is the failure the contract keeps naming -- a value stated twice with nothing
+    checking that the statements match -- caught here rather than at the next merge.
+    The duplication is not removed; it is made detectable. Removing it means threading
+    the registry into the row parsers, which changes the adapters and belongs in its
+    own block.
+
+    See `RealSnapshotPublicationGapTests` in `tests/test_data.py` for why this test,
+    and not the publication-gap bound, is the one with teeth for these sources.
+    """
+
+    REGISTRY = json.loads(
+        (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    def nyfed_snapshot(self, source_id, ref_date, retrieved):
+        rate_name = source_id.split("_", 1)[1]
+        payload = json.dumps(
+            {
+                "refRates": [
+                    {
+                        "effectiveDate": ref_date,
+                        "percentRate": 4.31,
+                        "revisionIndicator": "final",
+                    }
+                ]
+            }
+        ).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / f"{source_id}.json"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=source_id,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=(
+                "https://markets.newyorkfed.org/api/rates/secured/"
+                f"{rate_name}/search.json?type=rate"
+            ),
+            byte_count=len(payload),
+        )
+
+    def declared_available_at(self, lag, ref_date):
+        """Recompute `available_at` from a registry declaration alone, touching no adapter code."""
+
+        self.assertEqual(lag["basis"], "ref_date")
+        self.assertEqual(lag["unit"], "business_days")
+        current = ref_date
+        remaining = lag["days"]
+        while remaining:
+            current += timedelta(days=1)
+            if current.weekday() < 5:
+                remaining -= 1
+        return datetime.combine(
+            current,
+            time.fromisoformat(lag["available_time"]),
+            tzinfo=ZoneInfo(lag["timezone"]),
+        )
+
+    def ref_date_sources(self):
+        return sorted(
+            source_id
+            for source_id, source in self.REGISTRY.items()
+            if source.get("release_lag", {}).get("basis") == "ref_date"
+        )
+
+    def test_every_ref_date_source_is_covered_by_this_test(self):
+        """A source added to the registry without a case here would go unchecked."""
+
+        self.assertEqual(
+            self.ref_date_sources(), ["nyfed_bgcr", "nyfed_sofr", "nyfed_tgcr"]
+        )
+
+    def test_adapter_available_at_matches_the_registry_declaration(self):
+        for source_id in self.ref_date_sources():
+            lag = self.REGISTRY[source_id]["release_lag"]
+            # A midweek date and a Friday: the Friday is the only one whose
+            # calendar gap differs from its business-day lag.
+            for ref_date in (date(2026, 1, 6), date(2026, 1, 9)):
+                with self.subTest(source=source_id, ref_date=ref_date):
+                    snapshot = self.nyfed_snapshot(
+                        source_id,
+                        ref_date.isoformat(),
+                        # Retrieved long after, so the min() against retrieval time
+                        # cannot mask a disagreement with the declaration.
+                        "2026-06-01T00:00:00+00:00",
+                    )
+                    rows = list(observations_from_snapshots([snapshot]))
+                    self.assertTrue(rows)
+                    expected = self.declared_available_at(lag, ref_date)
+                    for row in rows:
+                        self.assertEqual(row.available_at, expected)
+
+    def test_a_registry_lag_the_adapter_does_not_honour_is_caught(self):
+        """The tripwire above is only worth having if a divergence actually fails it.
+
+        Written because an equality assertion between two values computed the same
+        way passes whatever either one says.
+        """
+
+        source_id = "nyfed_sofr"
+        ref_date = date(2026, 1, 6)
+        snapshot = self.nyfed_snapshot(
+            source_id, ref_date.isoformat(), "2026-06-01T00:00:00+00:00"
+        )
+        rows = list(observations_from_snapshots([snapshot]))
+        drifted = dict(self.REGISTRY[source_id]["release_lag"])
+        drifted["days"] = drifted["days"] + 1
+        self.assertNotEqual(
+            rows[0].available_at, self.declared_available_at(drifted, ref_date)
+        )
 
 if __name__ == "__main__":
     unittest.main()
