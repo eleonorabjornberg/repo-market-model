@@ -62,28 +62,38 @@ declared_ones` is the tripwire on that.
 versioned, but does not say it lives in this file, and guessing its home would
 be model-eval deciding Track A's file layout.
 
-How this file signals when the work lands
------------------------------------------
+How this file signalled when the work landed
+--------------------------------------------
 
-Two tests point at the real path, doing different jobs:
+Two tests pointed at the real path, doing different jobs:
 
   * `DeclaredFileTests` skips while the file is absent and runs the full
     validator the moment it exists. This is the test that holds Track A to the
     spec: a malformed file fails it, loudly, with every fault listed at once.
-  * `TargetDeclarationTests` is `expectedFailure`, the pattern
-    `tests/test_contract.py` already uses. A conforming file makes it an
-    unexpected success, which `unittest` reports as a build failure -- the
-    signal to come back here, delete it, and promote `DeclaredFileTests` to the
-    plain requirement it will by then be.
+  * `TargetDeclarationTests` was an `expectedFailure` tripwire. A conforming
+    file made it an unexpected success, which `unittest` reports as a build
+    failure -- the signal to come back here, delete it, and promote
+    `DeclaredFileTests` to the plain requirement it would by then be.
 
-Neither alone is enough: `expectedFailure` cannot tell "not written yet" from
-"written wrong", and the skipping test is silent about a file that never
-arrives. Together they cover both.
+That is what happened. The 7 September 2026 trial merge turned the tripwire
+green, so it is gone and `DeclaredFileTests` is the requirement. The two were
+needed together while the file was hypothetical -- `expectedFailure` cannot tell
+"not written yet" from "written wrong", and the skipping test is silent about a
+file that never arrives -- but only one of those jobs is still open, and keeping
+a fired tripwire would mean a permanently red build.
+
+The residual gap is honest and worth naming: `DeclaredFileTests` skips on a
+branch where `metadata/events.json` is absent, which on `feature/model-eval`
+alone it is. It is present on `feature/data-layer`, so on `main` after the merge
+these tests run unconditionally. The skip is what keeps this branch green in
+isolation, not a way for the file to go missing unnoticed.
 """
 
 import hashlib
+import io
 import json
 import sys
+import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
@@ -558,18 +568,25 @@ class ConsumerCompatibilityTests(unittest.TestCase):
 
 
 class DeclaredFileTests(unittest.TestCase):
-    """The real `metadata/events.json`, once it exists.
+    """The real `metadata/events.json`. The requirement, not a placeholder.
 
-    Skips while absent, so this file is green on a branch where Track A has not
-    landed yet. The moment the file appears it is held to the full spec, and a
-    malformed one fails here with every fault listed.
+    Promoted from tripwire to plain requirement on 7 September 2026, when the
+    trial merge showed Track A's file conforming and turned
+    `TargetDeclarationTests` into an unexpected success. That class is deleted;
+    everything it asserted is asserted here, against the same document, by tests
+    that report which fault they found instead of only that something changed.
+
+    Still skips while the file is absent, so this branch is green in isolation.
+    The moment the file appears it is held to the full spec, and a malformed one
+    fails here with every fault listed at once.
     """
 
     def setUp(self):
         if not EVENTS_PATH.exists():
             self.skipTest(
                 "metadata/events.json does not exist yet; it is Track A's to "
-                "write, and TargetDeclarationTests is the tripwire for its arrival"
+                "write, and it is present on feature/data-layer, so this skip "
+                "should not survive the merge"
             )
         try:
             self.payload = json.loads(EVENTS_PATH.read_text(encoding="utf-8"))
@@ -600,23 +617,222 @@ class DeclaredFileTests(unittest.TestCase):
                 msg=f"the contract names {required} as a single-evaluation window",
             )
 
+# --------------------------------------------------------------------------
+# The mutation record
+# --------------------------------------------------------------------------
 
-class TargetDeclarationTests(unittest.TestCase):
-    """`expectedFailure` tripwire: goes red when Track A lands the file.
 
-    Same mechanism as `TargetSchemaTests` in `tests/test_contract.py`. An
-    unexpected success is a build failure, which is the signal to come back
-    here, delete this class, and promote `DeclaredFileTests` to the plain
-    requirement it will by then be.
+#: A conforming document that names the windows the contract names, for the
+#: mutation record alone. The dates are 1900, which is not a plausible repo
+#: market observation and could not be pasted into `metadata/events.json`
+#: without somebody noticing -- the same reason `REFERENCE_WINDOWS` is
+#: fictional, applied to the one fixture that has to carry the real names.
+#: `test_the_record_document_cannot_be_mistaken_for_a_declaration` is the
+#: tripwire on that.
+RECORD_WINDOWS = (
+    ("sep-2019", "1900-01-01", "1900-01-05"),
+    ("mar-2020", "1900-02-01", "1900-02-05"),
+)
+
+
+def record_document():
+    return {
+        "version": 1,
+        "windows": [
+            {
+                "name": name,
+                "start": start,
+                "end": end,
+                "checksum": window_digest(name, start, end),
+            }
+            for name, start, end in RECORD_WINDOWS
+        ],
+    }
+
+
+#: The assertions `TargetDeclarationTests` was promoted into.
+PROMOTED_TESTS = (
+    "test_the_declared_file_conforms_to_this_spec",
+    "test_the_declared_file_loads_into_event_windows",
+    "test_the_declared_file_names_the_windows_the_contract_names",
+)
+
+
+class MutationRecordTests(unittest.TestCase):
+    """The mutation record for the promoted assertions, as assertions.
+
+    `CLAUDE.md` requires a mutation for every new guard, and
+    `tests/test_metrics.py` established the form: a record written as prose goes
+    stale silently, because the mutation stops being caught and the paragraph
+    still says it is.
+
+    What was promoted here is not new code -- `DeclaredFileTests` predates this
+    block -- but its status changed. It was one of two tests on the same file,
+    backed by an `expectedFailure` tripwire that would fire if it ever went
+    quiet. The tripwire is gone, so these three are now the only thing standing
+    between a tampered `metadata/events.json` and a green build, and that is
+    worth a record.
+
+    Each test names one edit to a conforming document, points `EVENTS_PATH` at
+    the result, and asserts exactly which of the three catch it. The negative
+    half matters as much as the positive: a resealed edit is *not* caught, by
+    design, and recording that keeps the checksum from being mistaken for more
+    than it is.
     """
 
-    @unittest.expectedFailure
-    def test_events_metadata_exists_and_declares_the_contract_windows(self):
-        payload = json.loads(EVENTS_PATH.read_text(encoding="utf-8"))
-        self.assertEqual(validate_events_document(payload), [])
-        declared = {window.name for window in load_event_windows(payload)}
-        for required in REQUIRED_WINDOWS:
-            self.assertIn(required, declared)
+    def setUp(self):
+        self.saved_path = EVENTS_PATH
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        globals()["EVENTS_PATH"] = self.saved_path
+
+    def caught_by(self, payload):
+        """Names of the promoted tests that fail against `payload`."""
+
+        path = Path(self.directory.name) / "events.json"
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        globals()["EVENTS_PATH"] = path
+
+        failing = set()
+        for name in PROMOTED_TESTS:
+            result = unittest.TextTestRunner(
+                stream=io.StringIO(), verbosity=0
+            ).run(unittest.TestSuite([DeclaredFileTests(name)]))
+            if not result.wasSuccessful():
+                failing.add(name)
+            self.assertEqual(
+                len(result.skipped),
+                0,
+                msg=f"{name} skipped; the record would then be recording nothing",
+            )
+        return failing
+
+    def assertMutationCaughtBy(self, payload, expected):
+        caught = self.caught_by(payload)
+        self.assertEqual(
+            caught,
+            set(expected),
+            msg="the mutation record has drifted: caught by "
+            f"{sorted(caught)}, recorded as {sorted(expected)}",
+        )
+
+    def edited(self, **changes):
+        """`record_document()` with window 0 changed, checksum left alone."""
+
+        payload = record_document()
+        payload["windows"][0].update(changes)
+        return payload
+
+    def test_the_record_document_cannot_be_mistaken_for_a_declaration(self):
+        """The tripwire `REFERENCE_WINDOWS` has, for the one fixture that
+        cannot use fictional names.
+
+        This document has to carry `sep-2019` and `mar-2020` -- the name check
+        is one of the things being recorded -- so the safeguard moves onto the
+        dates. If somebody makes these realistic, the temptation to paste them
+        into `metadata/events.json` becomes real, and then model-eval has set
+        the boundaries after all.
+        """
+
+        for name, start, end in RECORD_WINDOWS:
+            self.assertIn(name, REQUIRED_WINDOWS)
+            self.assertTrue(start.startswith("1900-"))
+            self.assertTrue(end.startswith("1900-"))
+
+    def test_the_conforming_document_passes_every_promoted_assertion(self):
+        """The control for the whole record."""
+
+        self.assertEqual(self.caught_by(record_document()), set())
+
+    def test_an_edge_moved_without_resealing_is_caught(self):
+        """The cherry-pick the contract names.
+
+        "What is not visible is March 2020 starting a week later than it used
+        to, which quietly moves the worst days out of the scored window and into
+        the training set." Caught by the conformance test alone: the loader has
+        no opinion about checksums, and the name is untouched.
+        """
+
+        self.assertMutationCaughtBy(
+            self.edited(start="1900-01-02"),
+            {"test_the_declared_file_conforms_to_this_spec"},
+        )
+
+    def test_a_resealed_edge_move_is_not_caught_and_that_is_the_honest_limit(self):
+        """Recorded because it is a limit, not an oversight.
+
+        A checksum cannot detect an edit that updates it. What it buys is that
+        the value changes, so the edit shows up in a diff and disagrees with
+        every journal line that scored the old window. Anyone who expects this
+        suite to catch a resealed edit expects the wrong thing, and the place to
+        say so is a test rather than a comment.
+        """
+
+        payload = self.edited(start="1900-01-02")
+        window = payload["windows"][0]
+        window["checksum"] = window_digest(
+            window["name"], window["start"], window["end"]
+        )
+        self.assertMutationCaughtBy(payload, set())
+
+    def test_a_renamed_window_is_caught_even_when_resealed(self):
+        """The name check is what survives a resealing.
+
+        Renaming `sep-2019` to something else -- the shape a "revised
+        definition" of an event window would take -- reseals cleanly and passes
+        the conformance and loader tests. Only the check against the names the
+        contract itself declares sees it.
+        """
+
+        payload = record_document()
+        window = payload["windows"][0]
+        window["name"] = "sep-2019-revised"
+        window["checksum"] = window_digest(
+            window["name"], window["start"], window["end"]
+        )
+        self.assertMutationCaughtBy(
+            payload,
+            {"test_the_declared_file_names_the_windows_the_contract_names"},
+        )
+
+    def test_a_dropped_window_is_caught(self):
+        """A single-evaluation window quietly removed from the file."""
+
+        payload = record_document()
+        del payload["windows"][1]
+        self.assertMutationCaughtBy(
+            payload,
+            {"test_the_declared_file_names_the_windows_the_contract_names"},
+        )
+
+    def test_a_missing_version_is_caught(self):
+        """The contract requires the file be versioned."""
+
+        payload = record_document()
+        del payload["version"]
+        self.assertMutationCaughtBy(
+            payload, {"test_the_declared_file_conforms_to_this_spec"}
+        )
+
+    def test_a_malformed_date_is_caught_by_both_the_validator_and_the_loader(self):
+        """Where the two agree, which is most places.
+
+        `test_the_loader_and_the_validator_agree_on_what_is_broken` asserts the
+        agreement on fixtures; this records that it holds through the real file
+        path as well.
+        """
+
+        self.assertMutationCaughtBy(
+            self.edited(start="01/01/1900"),
+            {
+                "test_the_declared_file_conforms_to_this_spec",
+                "test_the_declared_file_loads_into_event_windows",
+                "test_the_declared_file_names_the_windows_the_contract_names",
+            },
+        )
 
 
 if __name__ == "__main__":

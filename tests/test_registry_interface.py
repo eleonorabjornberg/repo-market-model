@@ -2,7 +2,7 @@
 
 Track A owns `src/repo_model/registry.py`. It is in Track B's forbidden paths
 and CI enforces that, so what is here is a spec Track A codes against, in the
-form `CLAUDE.md` names and `tests/test_events_metadata.py` already uses.
+form `CLAUDE.md` names and `tests/test_events_metadata_spec.py` already uses.
 
 Why the conversion is not in splits.py
 --------------------------------------
@@ -29,6 +29,30 @@ twice: the key is a structured object rather than a number, so "take the
 maximum" was not defined on it, and the judgement involved is about provenance
 rather than evaluation. The TODO is gone and this file replaces it.
 
+The shape is imported, not restated
+-----------------------------------
+
+An earlier revision of this file carried its own `validate_release_lag`, written
+from the contract's prose. Track A wrote one too, from the same prose. Both were
+faithful readings; they disagreed on the key name (`unit` versus `calendar`), on
+whether a snapshot source carries `days: 0`, and on whether `available_time` is
+`HH:MM` or `HH:MM:SS`. The path-level ownership gate could not see any of it,
+because neither track had touched a file the other owned.
+
+`AGENT_CONTRACT.md`, "Decided: the `release_lag` schema", settles all three and
+makes the shape executable in `src/repo_model/contract.py`, owned by neither
+track. This file imports `validate_release_lag`, `validate_registry_release_lags`
+and `UNIT_FOR_BASIS` from there rather than reading the prose a second time. A
+second reading is what collided, so a second reading is what was deleted.
+
+What survives here is what only Track B can test, and none of it is shape:
+
+  * that `max_release_lag_days` takes the maximum over the *named* sources
+    rather than over the whole registry,
+  * that each basis converts to the number the contract says it does,
+  * that the result is a type `require_purge_days` accepts,
+  * that the three silent-zero cases raise instead of returning a number.
+
 Nothing here computes a lag
 ---------------------------
 
@@ -39,43 +63,8 @@ a helper in this file. A local conversion function -- even one written "just for
 the test" -- would be a second implementation of a Track A rule, and two
 implementations of a point-in-time rule agree until they do not.
 
-What *is* here is a shape validator, `validate_release_lag`, which checks that a
-declaration is well formed and that its declared invariants hold. Checking that
-``worst_case_calendar_days >= days + 5`` is not converting a lag; it is
-verifying a bound the contract requires the source to declare. The distinction
-is that the validator never answers "how many days is this worth".
-
-Names: which are the contract's and which are proposed
--------------------------------------------------------
-
-From the contract, non-negotiable: `max_release_lag_days`, its three parameters,
-`decision_time`, `days`, `worst_case_calendar_days`, `available_time`, and the
-three basis names `ref_date`, `record_date`, `snapshot_retrieved_at`.
-
-Proposed by this file, and Track A's to rename: the container key `release_lag`
-on a source, and the keys `basis` and `unit` inside it. The contract describes
-the rules as "`ref_date` + `business_days`" and "`record_date` +
-`calendar_days`" without saying how the pair is spelled in JSON. If Track A
-spells it differently, change `FIXTURE_REGISTRY` here and the spec still holds --
-what must not change is the arithmetic in `MaxReleaseLagDaysSpecTests`.
-
-One thing the contract does not determine
-------------------------------------------
-
-The `snapshot_retrieved_at` rule says `max_release_lag_days` "raises if such a
-source is passed without every row carrying `available_at`". The pinned
-signature takes `(registry, sources, *, decision_time)` and no rows, so the
-function cannot inspect rows and cannot evaluate that condition. Two readings:
-
-  a. It always raises when a snapshot source is named, and the `available_at`
-     check lives with the panel loader.
-  b. The signature needs a fourth argument, which is a change to a pinned
-     interface and therefore a human decision, not Track B's and not Track A's.
-
-This file pins only the half both readings agree on -- that such a source is
-never silently worth 0 -- and flags the rest. See
-`test_a_snapshot_source_is_never_worth_zero`. **This needs the human's ruling
-before Track A implements it.**
+Importing the shared validator is not an exception to that rule. It answers "is
+this declaration well formed", never "how many days is it worth".
 
 Does this spec actually discriminate?
 -------------------------------------
@@ -85,23 +74,26 @@ no spec, so five stand-in implementations of `max_release_lag_days` were
 injected at runtime -- into `sys.modules`, never into `src/repo_model/` -- and
 the spec run against each:
 
-  * **Conforming.** 9 unexpected successes: the whole spec flips, which is the
-    intended red build and the signal to promote these assertions.
-  * **Snapshot mapped to 0** instead of raising. Caught -- the one thing both
-    readings of the snapshot rule agree on holds.
+  * **Conforming.** The whole spec flips, which is the intended red build and
+    the signal to promote these assertions.
+  * **Snapshot mapped to 0** instead of raising. Caught.
   * **Maximum taken over the whole registry** rather than the named sources.
-    Caught by 5 tests, including the feature-set test, which is the one that
-    reports the actual damage: 9 days where 3 was correct, six calendar days of
-    training rows deleted from the front of every fold.
+    Caught, including by the feature-set test, which is the one that reports the
+    actual damage: 9 days where 3 was correct, six calendar days of training rows
+    deleted from the front of every fold.
   * **`available_time` ignored**, so the record_date rule never adds its day.
-    Caught by 3.
-  * **`decision_time` given a default.** Caught by 8 -- it is the argument the
-    as-of rule exists to make explicit, so nearly everything depends on it.
+  * **`decision_time` given a default.** Caught nearly everywhere -- it is the
+    argument the as-of rule exists to make explicit.
 
-In every run one real failure also appears: `test_the_declared_registry_is_well_
-formed`, reporting that no source in `metadata/sources.json` declares a
-`release_lag` at all. That is correct and is the point -- the registry on `main`
-has not been updated yet, and the spec says so by name rather than by silence.
+Five of these went green in the 7 September trial merge and have been promoted
+out of `expectedFailure` into `RegistryModuleTests`, which is the class that can
+tell "not written yet" from "written wrong". Promoting them was not a rename:
+three of the five asserted only `assertRaises(Exception)`, and against Track A's
+tip at the time every one of them passed for the wrong reason -- the fixture
+registry omitted the `timezone` that implementation then demanded, so the call
+raised before it ever reached the rule under test. Each promoted test now pairs
+its raise with a control call on the same registry that must succeed, so a
+registry that is broken outright cannot masquerade as the rule holding.
 
 Two further requirements from the same section
 -----------------------------------------------
@@ -116,53 +108,54 @@ has to live there. These do not.
     fixture tests that run today. `fields` becomes machine field names only with
     prose moving to `coverage`, and `structural_zeros_reviewed` plus
     `reviewed_note` make "reviewed and empty" distinguishable from "not yet
-    analyzed". Run against `metadata/sources.json` as it stands, every one of
-    the four sources fails: all four lack `coverage`, `structural_zeros` and
-    `structural_zeros_reviewed`, and three carry prose in `fields`
-    ("revision indicator", "portfolio holdings", "liquid assets",
-    "shareholder flows", "offering amount").
+    analyzed". The contract adopted both and assigned them to Track A.
 
   * **The publication-gap check.** The contract says "a test asserts no observed
     publication gap exceeds the declared bound" in the passive voice, and the
-    Ownership list does not mention it, so it was on course to be nobody's. See
+    Ownership list did not mention it, so it was on course to be nobody's. See
     `PublicationGapTests` for why Track B cares: a bound that is too small makes
     every purge sized from it too small, and no test in `repo_model.splits` can
     see that -- the splitter stays correct with respect to a number that was
-    already wrong.
+    already wrong. The contract adopted it too, and it is Track A's.
 
 How this file signals when the work lands
 -----------------------------------------
 
-Same two-part pattern as `tests/test_events_metadata.py`:
+Same two-part pattern as `tests/test_events_metadata_spec.py`:
 
   * `RegistryModuleTests` skips while `repo_model.registry` is absent and runs
-    the full spec the moment it exists, so a wrong implementation fails loudly.
-  * `MaxReleaseLagDaysSpecTests` is `expectedFailure`; a conforming
-    implementation turns it into an unexpected success, which `unittest` and CI
-    both treat as a build failure. That is the signal to delete it and promote
-    the assertions.
+    the full spec the moment it exists, so a wrong implementation fails loudly
+    with a real diff rather than as an anonymous unexpected success.
+  * `MaxReleaseLagDaysSpecTests` holds what is still unbuilt as
+    `expectedFailure`; a conforming implementation turns each into an unexpected
+    success, which `unittest` and CI both treat as a build failure. That is the
+    signal to move it into `RegistryModuleTests` and give it a control.
 """
 
 import ast
 import importlib
 import inspect
+import io
+import json
 import sys
+import types
 import unittest
 from datetime import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from repo_model.contract import (
+    UNIT_FOR_BASIS,
+    validate_registry_release_lags,
+    validate_release_lag,
+)
+
 
 REPO_ROOT = Path(__file__).parents[1]
 SPLITS_PATH = REPO_ROOT / "src" / "repo_model" / "splits.py"
 EVENT_EVAL_PATH = REPO_ROOT / "src" / "repo_model" / "event_eval.py"
-
-#: The contract's three bases.
-BASES = ("ref_date", "record_date", "snapshot_retrieved_at")
-
-#: "at least `days` + 5: a weekend plus up to three consecutive holidays."
-WORST_CASE_MARGIN = 5
+SOURCES_PATH = REPO_ROOT / "metadata" / "sources.json"
 
 
 def registry_module():
@@ -178,18 +171,25 @@ def registry_module():
 # The fixture registry
 # --------------------------------------------------------------------------
 
-# Fictional sources. Like tests/test_events_metadata.py, this is a template for
-# the shape and not a declaration -- the real registry is metadata/sources.json
-# and Track A's to fill in.
+# Fictional sources. Like tests/test_events_metadata_spec.py, this is a template
+# for the shape and not a declaration -- the real registry is
+# metadata/sources.json and Track A's to fill in.
 #
 # Both business-day sources sit exactly on the `days + 5` bound, which is the
 # interesting case: one day looser and the invariant is untested, one day
 # tighter and it is violated.
+#
+# Both filings declare the same timezone. That is not incidental: `DECISION_TIME`
+# below is a naive wall clock, and a naive time compared against two different
+# declared zones is meaningless. One zone keeps the fixture about the day-count
+# rule, which is what it is here to exercise.
+FIXTURE_TIMEZONE = "America/New_York"
+
 FIXTURE_REGISTRY = {
     "daily_rate": {
         "release_lag": {
             "basis": "ref_date",
-            "unit": "business_days",
+            "unit": UNIT_FOR_BASIS["ref_date"],
             "days": 1,
             "worst_case_calendar_days": 6,
         }
@@ -197,7 +197,7 @@ FIXTURE_REGISTRY = {
     "weekly_balance": {
         "release_lag": {
             "basis": "ref_date",
-            "unit": "business_days",
+            "unit": UNIT_FOR_BASIS["ref_date"],
             "days": 4,
             "worst_case_calendar_days": 9,
         }
@@ -205,21 +205,40 @@ FIXTURE_REGISTRY = {
     "morning_filing": {
         "release_lag": {
             "basis": "record_date",
-            "unit": "calendar_days",
+            "unit": UNIT_FOR_BASIS["record_date"],
             "days": 1,
             "available_time": "09:00",
+            "timezone": FIXTURE_TIMEZONE,
         }
     },
     "evening_filing": {
         "release_lag": {
             "basis": "record_date",
-            "unit": "calendar_days",
+            "unit": UNIT_FOR_BASIS["record_date"],
             "days": 2,
             "available_time": "18:00",
+            "timezone": FIXTURE_TIMEZONE,
         }
     },
-    "vendor_snapshot": {"release_lag": {"basis": "snapshot_retrieved_at"}},
+    # `basis` and `note`, and nothing else. No unit, no days, no available_time,
+    # and therefore no timezone: a declared-and-never-read zone is how naive
+    # times came to be compared across zones in the first place.
+    "vendor_snapshot": {
+        "release_lag": {
+            "basis": "snapshot_retrieved_at",
+            "note": "Rows are valid from their snapshot timestamp, which is an "
+            "available_at fact about a row rather than a lag on a source.",
+        }
+    },
 }
+
+#: Rows for the snapshot source, each carrying the `available_at` that is the
+#: only reason such a source can contribute no purge. Only that field matters
+#: here; the rest of the panel schema is Track A's.
+SNAPSHOT_ROWS = (
+    {"series_id": "vendor_px", "ref_date": "2020-03-16", "available_at": "2020-03-17T09:00:00-04:00"},
+    {"series_id": "vendor_px", "ref_date": "2020-03-17", "available_at": "2020-03-18T09:00:00-04:00"},
+)
 
 #: The decision time every expectation below is worked against.
 DECISION_TIME = time(16, 0)
@@ -236,7 +255,7 @@ DECISION_TIME = time(16, 0)
 #   evening_filing  record_date + calendar_days, days=2. available_time 18:00 is
 #                   after 16:00, so one further day: 2 + 1 = 3.
 #   vendor_snapshot snapshot_retrieved_at. Contributes no purge and must not be
-#                   mapped to 0; passing it raises.
+#                   mapped to 0; passing it without rows raises.
 EXPECTED_LAG = {
     "daily_rate": 6,
     "weekly_balance": 9,
@@ -245,196 +264,46 @@ EXPECTED_LAG = {
 }
 
 
-# --------------------------------------------------------------------------
-# Shape validation -- not conversion
-# --------------------------------------------------------------------------
+class FixtureRegistryTests(unittest.TestCase):
+    """The fixture, checked against the shared validator rather than a local one.
 
-
-def validate_release_lag(entry):
-    """Problems with one source's `release_lag` declaration, as a list.
-
-    Checks that the declaration is well formed and that the invariants the
-    contract requires a source to declare actually hold. Deliberately does not
-    compute, return or imply a number of days -- that is
-    `max_release_lag_days`, and it is Track A's.
+    This is what makes the fixture trustworthy as a template. It runs today and
+    does not depend on Track A. It deliberately asserts nothing about *shape* in
+    its own words: every rule it enforces is `repo_model.contract`'s, so a
+    fixture that drifts from the schema fails here instead of quietly teaching
+    Track A the wrong thing.
     """
-
-    problems = []
-    if not isinstance(entry, dict):
-        return [f"release_lag must be an object, got {type(entry).__name__}"]
-
-    basis = entry.get("basis")
-    if basis is None:
-        return ["release_lag has no 'basis'"]
-    if basis not in BASES:
-        return [f"unknown basis {basis!r}; the contract declares one rule per {BASES}"]
-
-    if basis == "snapshot_retrieved_at":
-        for forbidden in ("days", "worst_case_calendar_days"):
-            if forbidden in entry:
-                problems.append(
-                    f"a snapshot_retrieved_at source declares {forbidden!r}; it "
-                    "contributes no purge, and a day count here invites exactly "
-                    "the mapping-to-zero the contract prohibits"
-                )
-        return problems
-
-    unit = entry.get("unit")
-    days = entry.get("days")
-    if not isinstance(days, int) or isinstance(days, bool) or days < 0:
-        problems.append(f"'days' must be a non-negative int, got {days!r}")
-        days = None
-
-    if basis == "ref_date":
-        if unit != "business_days":
-            problems.append(
-                f"a ref_date source must declare unit 'business_days', got {unit!r}"
-            )
-        bound = entry.get("worst_case_calendar_days")
-        if not isinstance(bound, int) or isinstance(bound, bool):
-            problems.append(
-                "a ref_date + business_days source must declare "
-                f"'worst_case_calendar_days', got {bound!r}; until a holiday "
-                "calendar exists the conservative bound is declared, not derived"
-            )
-        elif days is not None and bound < days + WORST_CASE_MARGIN:
-            problems.append(
-                f"worst_case_calendar_days {bound} is below days + "
-                f"{WORST_CASE_MARGIN} ({days + WORST_CASE_MARGIN}); the bound must "
-                "cover a weekend plus up to three consecutive holidays"
-            )
-    elif basis == "record_date":
-        if unit != "calendar_days":
-            problems.append(
-                f"a record_date source must declare unit 'calendar_days', got {unit!r}"
-            )
-        available = entry.get("available_time")
-        if not isinstance(available, str) or not _is_hh_mm(available):
-            problems.append(
-                f"'available_time' must be an HH:MM string, got {available!r}; the "
-                "rule adds a day when it falls after decision_time, which cannot "
-                "be evaluated without it"
-            )
-
-    return problems
-
-
-def _is_hh_mm(text):
-    try:
-        hours, minutes = text.split(":")
-        return 0 <= int(hours) <= 23 and 0 <= int(minutes) <= 59
-    except (ValueError, AttributeError):
-        return False
-
-
-class ReleaseLagShapeTests(unittest.TestCase):
-    """The validator, exercised against the fixture and against each fault.
-
-    These run today and do not depend on Track A. They are what makes the
-    fixture trustworthy as a template.
-    """
-
-    def assertRejected(self, entry, fragment):
-        problems = validate_release_lag(entry)
-        self.assertTrue(problems, msg=f"expected a problem mentioning {fragment!r}")
-        self.assertTrue(
-            any(fragment in problem for problem in problems),
-            msg=f"no problem mentioned {fragment!r}; got {problems}",
-        )
 
     def test_every_fixture_source_is_well_formed(self):
         for name, source in FIXTURE_REGISTRY.items():
             with self.subTest(source=name):
-                self.assertEqual(validate_release_lag(source["release_lag"]), [])
+                self.assertEqual(validate_release_lag(name, source["release_lag"]), [])
 
-    def test_an_unknown_basis_is_rejected(self):
-        self.assertRejected({"basis": "publication_date"}, "unknown basis")
+    def test_the_fixture_registry_as_a_whole_is_well_formed(self):
+        self.assertEqual(validate_registry_release_lags(FIXTURE_REGISTRY), {})
 
-    def test_a_missing_basis_is_rejected(self):
-        self.assertRejected({"days": 2}, "no 'basis'")
+    def test_the_fixture_survives_a_json_round_trip(self):
+        """It is a stand-in for a file on disk, not for a Python literal."""
 
-    def test_a_business_day_source_must_declare_its_worst_case_bound(self):
-        self.assertRejected(
-            {"basis": "ref_date", "unit": "business_days", "days": 2},
-            "worst_case_calendar_days",
-        )
-
-    def test_a_worst_case_bound_below_days_plus_five_is_rejected(self):
-        """The margin the contract sets: a weekend plus three holidays."""
-
-        self.assertRejected(
-            {
-                "basis": "ref_date",
-                "unit": "business_days",
-                "days": 4,
-                "worst_case_calendar_days": 8,
-            },
-            "below days + 5",
-        )
-
-    def test_a_bound_exactly_on_the_margin_is_accepted(self):
         self.assertEqual(
-            validate_release_lag(
-                {
-                    "basis": "ref_date",
-                    "unit": "business_days",
-                    "days": 4,
-                    "worst_case_calendar_days": 9,
-                }
+            validate_registry_release_lags(
+                json.loads(json.dumps(FIXTURE_REGISTRY))
             ),
-            [],
+            {},
         )
 
-    def test_a_ref_date_source_measured_in_calendar_days_is_rejected(self):
-        self.assertRejected(
-            {
-                "basis": "ref_date",
-                "unit": "calendar_days",
-                "days": 2,
-                "worst_case_calendar_days": 7,
-            },
-            "must declare unit 'business_days'",
-        )
+    def test_the_fixture_exercises_every_basis(self):
+        """A template that omitted a basis would under-specify the interface."""
 
-    def test_a_record_date_source_must_declare_an_available_time(self):
-        self.assertRejected(
-            {"basis": "record_date", "unit": "calendar_days", "days": 1},
-            "available_time",
-        )
+        declared = {
+            source["release_lag"]["basis"] for source in FIXTURE_REGISTRY.values()
+        }
+        self.assertEqual(declared, set(UNIT_FOR_BASIS))
 
-    def test_a_malformed_available_time_is_rejected(self):
-        for bad in ("6pm", "25:00", "16:99", 1600):
-            with self.subTest(available_time=bad):
-                self.assertRejected(
-                    {
-                        "basis": "record_date",
-                        "unit": "calendar_days",
-                        "days": 1,
-                        "available_time": bad,
-                    },
-                    "HH:MM",
-                )
+    def test_every_expected_lag_names_a_fixture_source(self):
+        """The arithmetic above and the fixture cannot drift apart silently."""
 
-    def test_a_snapshot_source_declaring_a_day_count_is_rejected(self):
-        """A day count on a snapshot source is the mapping-to-zero in disguise."""
-
-        self.assertRejected(
-            {"basis": "snapshot_retrieved_at", "days": 0}, "contributes no purge"
-        )
-
-    def test_a_bare_snapshot_source_is_well_formed(self):
-        self.assertEqual(validate_release_lag({"basis": "snapshot_retrieved_at"}), [])
-
-    def test_a_negative_day_count_is_rejected(self):
-        self.assertRejected(
-            {
-                "basis": "ref_date",
-                "unit": "business_days",
-                "days": -1,
-                "worst_case_calendar_days": 6,
-            },
-            "non-negative int",
-        )
+        self.assertLess(set(EXPECTED_LAG), set(FIXTURE_REGISTRY))
 
 
 # --------------------------------------------------------------------------
@@ -572,36 +441,24 @@ class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
             require_purge_days(3.0)
 
 
+
 # --------------------------------------------------------------------------
 # The interface Track A must satisfy
 # --------------------------------------------------------------------------
 
 
 class MaxReleaseLagDaysSpecTests(unittest.TestCase):
-    """`expectedFailure` specs. Each goes red as an unexpected success on landing.
+    """`expectedFailure` specs for what Track A has not built yet.
 
-    Every expected number here is worked out by hand in `EXPECTED_LAG` and its
+    Each goes red as an unexpected success on landing, which is the signal to
+    move it into `RegistryModuleTests` and give it a control call. Five tests
+    made that trip after the 7 September trial merge; what is left here is the
+    arithmetic, which the merge showed to be genuinely unbuilt rather than
+    merely unreached.
+
+    Every expected number is worked out by hand in `EXPECTED_LAG` and its
     comment. Nothing in this file computes one.
     """
-
-    @unittest.expectedFailure
-    def test_the_signature_is_the_one_the_contract_pins(self):
-        from repo_model.registry import max_release_lag_days
-
-        parameters = inspect.signature(max_release_lag_days).parameters
-        self.assertEqual(
-            list(parameters), ["registry", "sources", "decision_time"]
-        )
-        self.assertIs(
-            parameters["decision_time"].kind, inspect.Parameter.KEYWORD_ONLY
-        )
-        self.assertIs(
-            parameters["decision_time"].default,
-            inspect.Parameter.empty,
-            msg="decision_time acquired a default; that is a silent assumption "
-            "about when the forecast is made, which the as-of rule exists to "
-            "make explicit",
-        )
 
     @unittest.expectedFailure
     def test_each_basis_converts_as_the_contract_says(self):
@@ -701,52 +558,6 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
         self.assertIsInstance(purge, int)
         self.assertNotIsInstance(purge, bool)
         require_purge_days(purge)
-
-    @unittest.expectedFailure
-    def test_a_snapshot_source_is_never_worth_zero(self):
-        """The half of the snapshot rule both readings agree on.
-
-        "contributes no purge, and MUST NOT be mapped to zero." A function that
-        returned 0 for a snapshot source would hand the splitter a legal-looking
-        gap of zero -- exactly the silent failure `purge` has no default in
-        order to prevent.
-
-        This asserts only that passing one raises. Whether it *always* raises,
-        or only when rows lack `available_at`, is the open question in the module
-        docstring: the pinned signature takes no rows, so the function cannot
-        evaluate the condition the contract states. That needs the human.
-        """
-
-        from repo_model.registry import max_release_lag_days
-
-        with self.assertRaises(Exception):
-            max_release_lag_days(
-                FIXTURE_REGISTRY, ["vendor_snapshot"], decision_time=DECISION_TIME
-            )
-
-    @unittest.expectedFailure
-    def test_an_unknown_source_raises_rather_than_being_skipped(self):
-        """Skipping it would under-purge, which is the dangerous direction.
-
-        A typo in a source id must not quietly shrink the gap.
-        """
-
-        from repo_model.registry import max_release_lag_days
-
-        with self.assertRaises(Exception):
-            max_release_lag_days(
-                FIXTURE_REGISTRY, ["daily_rate", "typo_source"],
-                decision_time=DECISION_TIME,
-            )
-
-    @unittest.expectedFailure
-    def test_an_empty_source_set_raises_rather_than_returning_zero(self):
-        """An empty feature set is a caller bug, and 0 would look like an answer."""
-
-        from repo_model.registry import max_release_lag_days
-
-        with self.assertRaises(Exception):
-            max_release_lag_days(FIXTURE_REGISTRY, [], decision_time=DECISION_TIME)
 
 
 def validate_source_corrections(source):
@@ -925,8 +736,24 @@ class PublicationGapTests(unittest.TestCase):
 class RegistryModuleTests(unittest.TestCase):
     """The real module, once it exists. Skips until then.
 
-    `MaxReleaseLagDaysSpecTests` cannot tell "not written yet" from "written
-    wrong"; this can. A malformed implementation fails here with a real diff.
+    Two jobs. The first is the one it always had: `MaxReleaseLagDaysSpecTests`
+    cannot tell "not written yet" from "written wrong", and this can, because a
+    malformed implementation fails here with a real diff instead of as an
+    anonymous unexpected success.
+
+    The second is where the five promoted assertions live. The 7 September trial
+    merge turned five `expectedFailure` placeholders green, and a placeholder
+    that passes is evidence that an interface landed, not evidence that it is
+    correct. Three of the five asserted only that a call raised, and against
+    Track A's tip at the time every one of them raised for a reason unrelated to
+    the rule under test: the fixture registry omitted a `timezone` that
+    implementation demanded, so the call failed on the way in.
+
+    So each promoted test now carries a control -- a call on the same registry
+    that must *succeed* -- and the controls assert a type rather than a number.
+    Sizing the arithmetic is `MaxReleaseLagDaysSpecTests`' job, still red; what
+    is asserted here is that the raise came from the rule and not from a registry
+    that was broken outright.
     """
 
     def setUp(self):
@@ -937,36 +764,453 @@ class RegistryModuleTests(unittest.TestCase):
                 "and MaxReleaseLagDaysSpecTests is the tripwire for its arrival"
             )
 
+    # -- helpers ----------------------------------------------------------
+
+    def convert(self, sources, *, decision_time=DECISION_TIME):
+        return self.registry.max_release_lag_days(
+            FIXTURE_REGISTRY, sources, decision_time=decision_time
+        )
+
+    def assertConverts(self, sources):
+        """The control: this call must succeed and yield a usable purge.
+
+        Deliberately asserts a type and not a number. If it asserted the
+        arithmetic, a wrong conversion would fail every promoted test below and
+        bury the thing each one is actually about.
+        """
+
+        purge = self.convert(sources)
+        self.assertIsInstance(purge, int)
+        self.assertNotIsInstance(purge, bool)
+        return purge
+
+    def assertRaisesDeliberately(self, sources, *, decision_time=DECISION_TIME):
+        """Raises, and not by accident.
+
+        The contract says these cases raise; it does not name an exception type,
+        so pinning one would be this file inventing an interface. What is pinned
+        instead is that the failure is a deliberate rejection rather than the
+        implementation falling over: a `TypeError` from a signature mismatch, an
+        `AttributeError` from a half-built module or a bare `KeyError` from an
+        unguarded lookup would all satisfy `assertRaises(Exception)` while
+        telling us nothing about the rule.
+        """
+
+        accidents = (TypeError, AttributeError, NameError, KeyError, IndexError)
+        with self.assertRaises(Exception) as caught:
+            self.convert(sources, decision_time=decision_time)
+        self.assertNotIsInstance(
+            caught.exception,
+            accidents,
+            msg=f"raised {type(caught.exception).__name__}: "
+            f"{caught.exception}. That is the implementation falling over, not "
+            "the rule rejecting the input.",
+        )
+        return caught.exception
+
+    # -- the module itself ------------------------------------------------
+
     def test_the_module_exposes_max_release_lag_days(self):
         self.assertTrue(hasattr(self.registry, "max_release_lag_days"))
+
+    def test_the_signature_is_the_one_the_contract_pins(self):
+        """Promoted from `expectedFailure`, 7 September 2026.
+
+        `decision_time` is keyword-only and has no default. A default would be a
+        silent assumption about when the forecast is made, which is the
+        assumption the whole as-of rule exists to make explicit.
+        """
+
+        parameters = inspect.signature(
+            self.registry.max_release_lag_days
+        ).parameters
+        self.assertEqual(list(parameters), ["registry", "sources", "decision_time"])
+        self.assertIs(
+            parameters["decision_time"].kind, inspect.Parameter.KEYWORD_ONLY
+        )
+        self.assertIs(
+            parameters["decision_time"].default,
+            inspect.Parameter.empty,
+            msg="decision_time acquired a default; that is a silent assumption "
+            "about when the forecast is made, which the as-of rule exists to "
+            "make explicit",
+        )
 
     def test_the_fixture_registry_converts_as_specified(self):
         for source, expected in EXPECTED_LAG.items():
             with self.subTest(source=source):
+                self.assertEqual(self.convert([source]), expected)
+
+    # -- the three silent-zero cases --------------------------------------
+
+    def test_a_snapshot_source_without_rows_is_never_worth_zero(self):
+        """Promoted from `expectedFailure`, 7 September 2026.
+
+        "contributes no purge, and MUST NOT be mapped to zero." A function that
+        returned 0 here would hand the splitter a legal-looking gap of zero --
+        the silent failure `purge` has no default in order to prevent.
+
+        The control is `["daily_rate"]`, a lag-based source in the same registry:
+        if that converts, the registry is fine and the raise below is about the
+        snapshot rule. Without it this test passed against an implementation
+        that rejected the whole fixture for an unrelated reason.
+        """
+
+        self.assertConverts(["daily_rate"])
+        self.assertRaisesDeliberately(["vendor_snapshot"])
+        self.assertRaisesDeliberately({"vendor_snapshot": None})
+
+    def test_a_snapshot_source_with_no_rows_at_all_is_not_vacuously_satisfied(self):
+        """"An empty collection satisfies the check vacuously, and vacuous
+        satisfaction is not evidence."
+
+        `AGENT_CONTRACT.md`, "An empty source set raises". The only reason a
+        snapshot source can contribute no purge is that its rows carry
+        `available_at`; a caller supplying no rows has not shown that.
+        """
+
+        self.assertConverts(["daily_rate"])
+        self.assertRaisesDeliberately({"vendor_snapshot": []})
+
+    def test_a_snapshot_source_with_rows_contributes_no_purge(self):
+        """The other half of the rule, and what makes the raise above meaningful.
+
+        Supplied with rows that carry `available_at`, the snapshot source is
+        accepted and adds nothing. Asserted as "adds nothing to what the other
+        source alone is worth" rather than against a literal, so it holds
+        whatever the record_date arithmetic turns out to be.
+        """
+
+        alone = self.assertConverts(["morning_filing"])
+        with_snapshot = self.convert(
+            {"morning_filing": None, "vendor_snapshot": SNAPSHOT_ROWS}
+        )
+        self.assertEqual(
+            with_snapshot,
+            alone,
+            msg="a snapshot source whose rows carry available_at changed the "
+            "purge; it contributes none",
+        )
+
+    def test_an_unknown_source_raises_rather_than_being_skipped(self):
+        """Promoted from `expectedFailure`, 7 September 2026.
+
+        A typo in a source id must not quietly shrink the gap. Skipping it would
+        under-purge, which is the dangerous direction.
+
+        The control is the same call without the typo. The assertion that the
+        typo does not merely return the control's value is the substance: an
+        implementation that skipped unknown ids would return `daily_rate`'s lag
+        and look entirely healthy.
+        """
+
+        self.assertConverts(["daily_rate"])
+        self.assertRaisesDeliberately(["daily_rate", "typo_source"])
+        self.assertRaisesDeliberately(["typo_source", "daily_rate"])
+        self.assertRaisesDeliberately(["typo_source"])
+
+    def test_an_empty_source_set_raises_rather_than_returning_zero(self):
+        """Promoted from `expectedFailure`, 7 September 2026.
+
+        "An empty feature set is a caller bug, and 0 would look like an answer."
+        It is also the likeliest form of the silent zero, because an empty
+        feature set is what a partially-wired pipeline produces.
+
+        Both spellings of empty, because the contract accepts both an iterable of
+        ids and a source-to-rows mapping, and a guard written against one of them
+        leaves the other returning 0.
+        """
+
+        self.assertConverts(["daily_rate"])
+        self.assertRaisesDeliberately([])
+        self.assertRaisesDeliberately({})
+
+    # -- the declared registry --------------------------------------------
+
+    def test_the_declared_registry_is_well_formed(self):
+        """Every source in metadata/sources.json, against the shared validator.
+
+        `repo_model.contract`'s validator, not a local reading of the contract's
+        prose. That is the whole point of the module: Track A's `registry.py`
+        fails closed on a non-empty result from the same function, so the two
+        tracks cannot disagree about what conforming means.
+        """
+
+        registry = json.loads(SOURCES_PATH.read_text(encoding="utf-8"))
+        offenders = validate_registry_release_lags(registry)
+        self.assertEqual(
+            offenders,
+            {},
+            msg="metadata/sources.json does not conform to the release_lag "
+            f"schema: {offenders}",
+        )
+
+
+# --------------------------------------------------------------------------
+# The mutation record
+# --------------------------------------------------------------------------
+
+
+def _stand_in_registry(
+    *,
+    snapshot_worth_zero=False,
+    skip_unknown_sources=False,
+    empty_set_worth_zero=False,
+    decision_time_defaulted=False,
+):
+    """A stand-in `repo_model.registry`, correct except for the named fault.
+
+    This is the only thing in this file that computes a lag, and it is not a
+    source of truth for one: no expectation anywhere is taken from it, and
+    `test_the_conforming_stand_in_agrees_with_the_hand_derived_lags` below
+    asserts it against `EXPECTED_LAG` rather than the other way round. If the
+    two ever disagree, the hand-worked arithmetic wins and this function is the
+    thing that is wrong.
+
+    Its job is narrow: a guard is only worth having if some implementation fails
+    it, and the way to know is to run one. Each keyword introduces exactly one
+    fault, so a test that fires tells us which fault it saw.
+    """
+
+    def contribution(source_id, lag, rows, decision_time):
+        basis = lag["basis"]
+        if basis == "ref_date":
+            return lag["worst_case_calendar_days"]
+        if basis == "record_date":
+            hours, minutes = lag["available_time"].split(":")
+            published = time(int(hours), int(minutes))
+            return lag["days"] + int(published > decision_time)
+        if snapshot_worth_zero:
+            return 0
+        supplied = None if rows is None else list(rows)
+        if not supplied or any(
+            row.get("available_at") in (None, "") for row in supplied
+        ):
+            raise ValueError(
+                f"{source_id}: every snapshot row must carry available_at"
+            )
+        return 0
+
+    def body(registry, sources, decision_time):
+        if hasattr(sources, "items"):
+            selected = list(sources.items())
+        else:
+            selected = [(source_id, None) for source_id in sources]
+        if not selected and not empty_set_worth_zero:
+            raise ValueError("sources must select at least one feature source")
+
+        purge = 0
+        for source_id, rows in selected:
+            if source_id not in registry:
+                if skip_unknown_sources:
+                    continue
+                raise ValueError(f"unknown source: {source_id}")
+            purge = max(
+                purge,
+                contribution(
+                    source_id,
+                    registry[source_id]["release_lag"],
+                    rows,
+                    decision_time,
+                ),
+            )
+        return purge
+
+    if decision_time_defaulted:
+
+        def max_release_lag_days(registry, sources, *, decision_time=DECISION_TIME):
+            return body(registry, sources, decision_time)
+
+    else:
+
+        def max_release_lag_days(registry, sources, *, decision_time):
+            return body(registry, sources, decision_time)
+
+    module = types.ModuleType("repo_model.registry")
+    module.max_release_lag_days = max_release_lag_days
+    return module
+
+
+#: The promoted assertions, and nothing else. `test_the_module_exposes_...` is
+#: excluded on purpose: every stand-in exposes the function, so it discriminates
+#: nothing and would only pad the record.
+PROMOTED_TESTS = (
+    "test_the_signature_is_the_one_the_contract_pins",
+    "test_the_fixture_registry_converts_as_specified",
+    "test_a_snapshot_source_without_rows_is_never_worth_zero",
+    "test_a_snapshot_source_with_no_rows_at_all_is_not_vacuously_satisfied",
+    "test_a_snapshot_source_with_rows_contributes_no_purge",
+    "test_an_unknown_source_raises_rather_than_being_skipped",
+    "test_an_empty_source_set_raises_rather_than_returning_zero",
+)
+
+
+class MutationRecordTests(unittest.TestCase):
+    """The mutation record for the promoted assertions, as assertions.
+
+    `CLAUDE.md` requires a mutation for every new guard, and
+    `tests/test_metrics.py` established the form: a record written as a
+    paragraph goes stale silently -- the mutation stops being caught and the
+    paragraph still says it is. These re-run the mutations on every suite run,
+    so a guard that stops discriminating fails the build.
+
+    The record matters more than usual here. Five of these tests spent the last
+    block as `expectedFailure` placeholders, and three of them asserted nothing
+    beyond `assertRaises(Exception)`. All five went green in the 7 September
+    trial merge, and at least three did so for a reason unrelated to the rule
+    they name: Track A's implementation at that tip required a `timezone` key
+    the fixture registry did not carry, so the call raised before it reached
+    anything. Promoting them without checking would have converted five
+    accidents into five assertions that looked like evidence.
+
+    Each test below names one fault, injects a stand-in carrying it, and asserts
+    that the tests which should catch it do and the ones which should not do
+    not. The negative half is the part that keeps this honest -- a guard that
+    fires on every stand-in is not discriminating, it is just broken.
+    """
+
+    def setUp(self):
+        self.saved = sys.modules.get("repo_model.registry")
+
+    def tearDown(self):
+        if self.saved is None:
+            sys.modules.pop("repo_model.registry", None)
+        else:
+            sys.modules["repo_model.registry"] = self.saved
+
+    def caught_by(self, module):
+        """Names of the promoted tests that fail against `module`."""
+
+        sys.modules["repo_model.registry"] = module
+        failing = set()
+        for name in PROMOTED_TESTS:
+            result = unittest.TextTestRunner(
+                stream=io.StringIO(), verbosity=0
+            ).run(unittest.TestSuite([RegistryModuleTests(name)]))
+            if not result.wasSuccessful():
+                failing.add(name)
+        return failing
+
+    def assertMutationCaughtBy(self, module, expected):
+        caught = self.caught_by(module)
+        self.assertEqual(
+            caught,
+            set(expected),
+            msg="the mutation record has drifted: caught by "
+            f"{sorted(caught)}, recorded as {sorted(expected)}",
+        )
+
+    def test_the_conforming_stand_in_passes_every_promoted_assertion(self):
+        """The control for the whole record.
+
+        If a conforming implementation failed any of these, every "caught"
+        below would be meaningless -- the test would be firing on the stand-in
+        rather than on the fault.
+        """
+
+        self.assertEqual(self.caught_by(_stand_in_registry()), set())
+
+    def test_the_conforming_stand_in_agrees_with_the_hand_derived_lags(self):
+        """The stand-in is checked against the arithmetic, not consulted for it.
+
+        `EXPECTED_LAG` is worked out by hand from the contract's prose. This
+        asserts the stand-in reproduces it, so that the stand-in cannot become a
+        second, quieter source of truth for what a lag is worth.
+        """
+
+        module = _stand_in_registry()
+        for source, expected in EXPECTED_LAG.items():
+            with self.subTest(source=source):
                 self.assertEqual(
-                    self.registry.max_release_lag_days(
+                    module.max_release_lag_days(
                         FIXTURE_REGISTRY, [source], decision_time=DECISION_TIME
                     ),
                     expected,
                 )
 
-    def test_the_declared_registry_is_well_formed(self):
-        """Every source in metadata/sources.json, against the shape validator."""
+    def test_a_snapshot_source_mapped_to_zero_is_caught(self):
+        """"contributes no purge, and MUST NOT be mapped to zero."
 
-        import json
+        Caught by the two tests that pass no usable rows. Not caught by
+        `..._with_rows_contributes_no_purge`, and correctly so: supplied with
+        rows that carry `available_at`, zero is the right contribution, so that
+        test cannot tell the two implementations apart and is not the guard for
+        this fault.
+        """
 
-        path = REPO_ROOT / "metadata" / "sources.json"
-        registry = json.loads(path.read_text(encoding="utf-8"))
-        offenders = {}
-        for name, source in registry.items():
-            declaration = source.get("release_lag")
-            if declaration is None:
-                offenders[name] = ["no release_lag declared"]
-                continue
-            problems = validate_release_lag(declaration)
-            if problems:
-                offenders[name] = problems
-        self.assertEqual(offenders, {}, msg=f"malformed release_lag: {offenders}")
+        self.assertMutationCaughtBy(
+            _stand_in_registry(snapshot_worth_zero=True),
+            {
+                "test_a_snapshot_source_without_rows_is_never_worth_zero",
+                "test_a_snapshot_source_with_no_rows_at_all_is_not_vacuously_satisfied",
+            },
+        )
+
+    def test_skipping_an_unknown_source_is_caught(self):
+        """The dangerous direction: a typo silently shrinks the gap.
+
+        This is the fault the old `assertRaises(Exception)` placeholder was
+        least able to see, because an implementation that skips unknown ids
+        raises nothing at all and returns a healthy-looking number.
+        """
+
+        self.assertMutationCaughtBy(
+            _stand_in_registry(skip_unknown_sources=True),
+            {"test_an_unknown_source_raises_rather_than_being_skipped"},
+        )
+
+    def test_an_empty_source_set_returning_zero_is_caught(self):
+        """An empty feature set is a caller bug, and 0 would look like an answer."""
+
+        self.assertMutationCaughtBy(
+            _stand_in_registry(empty_set_worth_zero=True),
+            {"test_an_empty_source_set_raises_rather_than_returning_zero"},
+        )
+
+    def test_a_defaulted_decision_time_is_caught(self):
+        """Caught by the signature test alone, which is the whole reason it exists.
+
+        A default makes every call succeed and every number look right; nothing
+        that inspects a return value can see it. That it is caught by exactly
+        one test is not a weakness of the record, it is what a structural guard
+        looks like.
+        """
+
+        self.assertMutationCaughtBy(
+            _stand_in_registry(decision_time_defaulted=True),
+            {"test_the_signature_is_the_one_the_contract_pins"},
+        )
+
+    def test_the_promoted_tests_are_not_vacuous_without_their_controls(self):
+        """Why each promoted test carries a control call.
+
+        The three raise-based assertions passed in the trial merge against an
+        implementation that rejected the fixture registry outright. This
+        reproduces that: a stand-in that raises on everything satisfies a bare
+        `assertRaises` but must not satisfy these, because each one first
+        requires a call on the same registry to succeed.
+        """
+
+        module = types.ModuleType("repo_model.registry")
+
+        def raises_on_everything(registry, sources, *, decision_time):
+            raise ValueError("release_lag.timezone is required")
+
+        module.max_release_lag_days = raises_on_everything
+        caught = self.caught_by(module)
+        for name in (
+            "test_a_snapshot_source_without_rows_is_never_worth_zero",
+            "test_a_snapshot_source_with_no_rows_at_all_is_not_vacuously_satisfied",
+            "test_an_unknown_source_raises_rather_than_being_skipped",
+            "test_an_empty_source_set_raises_rather_than_returning_zero",
+        ):
+            with self.subTest(test=name):
+                self.assertIn(
+                    name,
+                    caught,
+                    msg="this test still passes against an implementation that "
+                    "raises on every input; its control is not doing its job",
+                )
 
 
 if __name__ == "__main__":

@@ -114,7 +114,7 @@ imported here, not even conditionally: an import of a module that may or may not
 be present is a second code path, and the one that runs when the import fails is
 the one nobody tests. The interface is pinned instead by
 `tests/test_registry_interface.py`, a fixture-level executable spec in the same
-form as `tests/test_events_metadata.py`.
+form as `tests/test_events_metadata_spec.py`.
 """
 
 from __future__ import annotations
