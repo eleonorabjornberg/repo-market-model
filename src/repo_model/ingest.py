@@ -46,6 +46,15 @@ TREASURY_AUCTIONS_BASE = (
 )
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
 
+# Snapshots captured before the registry adopted Python-style source IDs remain
+# immutable evidence. Normalize their manifest IDs at the parser boundary rather
+# than rewriting the checksummed artifacts in place.
+LEGACY_SOURCE_IDS = {
+    "fred-macro-latest-vintage": "fred_macro_latest_vintage",
+    "nyfed-sofr-rate": "nyfed_sofr",
+    "nyfed-sofr-volume": "nyfed_sofr",
+}
+
 
 @dataclass(frozen=True)
 class SnapshotArtifact:
@@ -663,6 +672,10 @@ def observations_from_snapshots(
     candidates = []
     for artifact in artifacts:
         payload = _artifact_payload(artifact)
+        artifact = replace(
+            artifact,
+            source_id=LEGACY_SOURCE_IDS.get(artifact.source_id, artifact.source_id),
+        )
         if artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload)
         elif artifact.source_id == "fred_macro_latest_vintage":

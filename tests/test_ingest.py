@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
 import gzip
 import io
@@ -143,6 +144,43 @@ class IngestTests(unittest.TestCase):
             hashlib.sha256(quality_path.read_bytes()).hexdigest(),
         )
         self.assertEqual(json.loads(quality_path.read_text())["rows"], 4)
+
+    def test_legacy_snapshot_source_ids_remain_parseable(self):
+        nyfed = fetch_nyfed_reference_rate(
+            self.output_root,
+            "sofr",
+            "2026-01-01",
+            "2026-01-03",
+            lambda url: (
+                b'{"refRates":[{"effectiveDate":"2026-01-02",'
+                b'"volumeInBillions":2000}]}'
+                if "type=volume" in url
+                else b'{"refRates":[{"effectiveDate":"2026-01-02",'
+                b'"percentRate":4.31}]}'
+            ),
+        )
+        fred = fetch_fred_macro(
+            self.output_root,
+            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+        )
+        legacy = [
+            replace(
+                artifact,
+                source_id=(
+                    "nyfed-sofr-volume"
+                    if "type=volume" in artifact.url
+                    else "nyfed-sofr-rate"
+                ),
+            )
+            for artifact in nyfed
+        ] + [replace(fred[0], source_id="fred-macro-latest-vintage")]
+
+        rows = observations_from_snapshots(legacy)
+
+        self.assertEqual(
+            {row.series_id for row in rows},
+            {"SOFR", "SOFR_volume", "IORB"},
+        )
 
     def test_panel_builder_rejects_a_tampered_raw_snapshot(self):
         artifacts = fetch_fred_macro(
