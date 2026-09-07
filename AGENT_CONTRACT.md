@@ -502,3 +502,95 @@ not fail a branch that edits it and does not surface it for review either, so bo
 can edit it and nothing says so until the merge — the same hole as a field named in prose
 with no key name. Nothing needs the CLI yet; the event-holdout subcommand is held out of
 Track B's next block until this is assigned.
+
+## Decided: who owns the CLI
+
+`src/repo_model/cli.py` belonged to nobody. It was in no track's `forbidden`
+list and not in `SHARED`, so the ownership gate neither failed a branch that
+edited it nor surfaced the edit for review. Both tracks could add a subcommand
+and nothing would say so until the merge. That is not a milder version of the
+four semantic collisions this contract has already recorded — it is the same
+failure with the volume turned down, because a file owned by nobody is worse
+than a file owned by the wrong track: the wrong owner is at least visible.
+
+### Assigning the whole file to one track was rejected
+
+The file straddles the split as it stands. `audit` and `fetch` sit on Track A's
+`data.py` and `ingest.py`; `backtest` sits on the benchmark side. The two
+subcommands next in line belong to different tracks — Track A's download
+adapters want a `fetch` variant, Track B's event holdout wants
+`event-holdout` — so whichever track were given the file, the other track's
+next block would open with a hard gate failure and route its CLI work through a
+human. Making the file `HUMAN_ONLY` outright has the same effect on both tracks
+at once.
+
+### It is split at the seam, and the seam is registration
+
+`src/repo_model/cli.py` is a **dispatcher, `HUMAN_ONLY`**. It builds the parser,
+loops over a tuple of registration callables, dispatches on
+`args.handler`, and translates `(OSError, ValueError)` into exit code 2. It
+names no subcommand and carries no track's vocabulary.
+
+Each track contributes its commands from a module it owns:
+
+| Module | Owner | Gate |
+|---|---|---|
+| `src/repo_model/cli.py` | human | `HUMAN_ONLY` |
+| `src/repo_model/cli_data.py` | Track A | forbidden to `feature/model-eval` |
+| `src/repo_model/cli_eval.py` | Track B | forbidden to `feature/data-layer` |
+
+A registration module exposes `register(subparsers)`, adds its subparsers, and
+calls `set_defaults(handler=...)` on each. A handler takes the parsed namespace
+and returns an exit code.
+
+**The property that closes the hole is not that the file got an owner. It is
+that adding a subcommand is a change to exactly one track-owned module and
+requires no edit to the human-owned file.** Ownership without that property
+would just relocate the bottleneck.
+
+The caught exception tuple is `(OSError, ValueError)` and not the original
+`(DataContractError, OSError, ValueError)`. That is not a narrowing:
+`data.DataContractError` and `splits.SplitError` both subclass `ValueError`, so
+the old tuple already denoted exactly this one. It is written without the
+track-owned names on purpose, so a track can add or rename its own error type
+without needing an edit in a file it may not touch.
+
+### Two more files were unowned, and the gate now says so mechanically
+
+Applying this decision surfaced that `src/repo_model/baseline.py` had the same
+hole one file over. The contract has always assigned benchmarks to Track B;
+`baseline.py` was simply never listed. It is now forbidden to
+`feature/data-layer`. That is an existing ruling being applied, not a new one.
+
+`tests/test_contract.py` then gained `CommandLineOwnershipTests`, whose last
+test asserts that **every** module under `src/repo_model/` is claimed by exactly
+one of `HUMAN_ONLY`, `SHARED`, or one track's `forbidden` list. It failed on its
+first run and named `__init__.py` and `__main__.py` — a fourth and fifth
+unowned file, found in seconds by a test rather than in months by a person
+reading the gate. Both are package plumbing and are now `HUMAN_ONLY`.
+
+This is the rule the CI-gate lessons had been circling: a path-level gate cannot
+see a semantic collision, but it *can* be made to prove its own coverage. An
+ownership list that is not asserted against the tree is a list that silently
+stops describing the tree.
+
+Mutation record for the new guard, four mutations, all caught:
+
+| Mutation | Result |
+|---|---|
+| drop `baseline.py` from Track A's `forbidden` | 1 failure |
+| register a subcommand inside the dispatcher | 3 failures |
+| a registration module omits `set_defaults(handler=...)` | 1 failure, 1 error |
+| dispatcher reaches into a track module beyond `register` | 1 failure |
+
+### Ownership of the follow-up
+
+- **Track B:** the `event-holdout` subcommand is now ordinary Track B work in
+  `src/repo_model/cli_eval.py`. It was held out of the event-window block only
+  because this file had no owner; that reason is spent. It is still not part of
+  that block — finish the checksum verification first.
+- **Track A:** download-adapter subcommands go in `src/repo_model/cli_data.py`.
+  Nothing else changes for Phase 1.
+- **Neither track** edits `src/repo_model/cli.py`, `__init__.py` or
+  `__main__.py`. Adding a *registration module* — a third track, say — is a
+  human edit to `REGISTRARS`. Adding a *command* is not.
