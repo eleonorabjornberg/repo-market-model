@@ -124,7 +124,11 @@ written before either track starts producing models.
   and kept in the results. Failed specifications are published, per
   METHODOLOGY.md.
 
-## Open decision for the human
+## Open decision for the human — RESOLVED, see "Decided: stress target and
+event holdouts" below
+
+Left in place as the record of what was asked. It is answered; do not treat
+it as open.
 
 The stress target is a calibrated probability of a threshold event on a forecast quantity, read off the predictive distribution rather than from a separate classifier. Threshold value is declared in metadata/, versioned, not tunable after the fact.
 The holdout rule: Sep 2019 and Mar 2020 are single-evaluation windows. State how many times each may be scored against and who authorises it.
@@ -340,3 +344,98 @@ be named for the track that wrote it — `test_events_metadata_spec.py`, not
 `test_events_metadata.py` — because both tracks reaching for the obvious
 filename is an add/add conflict that no ownership list can see. The gate now
 checks for it directly.
+
+
+## Decided: the `release_lag` schema
+
+Resolved by the human, 7 September 2026, after a trial merge of
+`feature/data-layer` and `feature/model-eval` showed the two halves do not
+compose. This section supersedes any earlier reading of "One rule per basis".
+
+### What went wrong
+
+"One rule per basis" above writes the pairings as `ref_date` + `business_days`
+and `record_date` + `calendar_days`. It never says what the key holding
+`business_days` is *called*. Track A implemented it as `calendar`, with a third
+value `none` for snapshot sources; Track B's blind spec pinned it as `unit`.
+Both were faithful readings. Both were in lane. Neither could have caught it,
+because the ownership gate checks who writes a file, not what a shared key
+means.
+
+This is the third collision of that class on this project. The first two were
+`release_lag` dict-versus-scalar and the duplicate spec filename. The pattern is
+now named: **a field named in prose without a key name gets two key names**, the
+same way a requirement stated without an owner gets done twice or not at all.
+
+### The schema
+
+`release_lag` is an object. `basis` is required and is one of `ref_date`,
+`record_date`, `snapshot_retrieved_at`. No other keys are permitted than those
+below.
+
+- **`unit`** — the key name is `unit`, not `calendar`. Values `business_days`
+  for a `ref_date` source and `calendar_days` for a `record_date` source.
+  `snapshot_retrieved_at` declares no unit.
+
+  The pairing is fixed, so `unit` is strictly redundant with `basis`. It is
+  declared anyway, and validated against `basis`, so that a source whose author
+  meant the other calendar is a validation error rather than a silent
+  reinterpretation. `calendar` was rejected for two reasons: one of its values
+  was `calendar_days`, which makes the key unreadable, and a holiday calendar is
+  already promised elsewhere in this contract, so the name is spoken for.
+
+- **`days`** — a non-negative integer, in the declared `unit`. Booleans do not
+  pass as integers. Required for `ref_date` and `record_date`.
+
+- **`worst_case_calendar_days`** — required for `ref_date`, and at least
+  `days + 5`, as already specified above.
+
+- **`available_time`** — an `HH:MM` wall-clock string, not `HH:MM:SS`. Nothing
+  in the as-of rule resolves below a minute, and a trailing `:59` invites the
+  reader to believe it does. Required for `record_date`. A source whose intraday
+  publication time is unknown declares `"23:59"`, the conservative end-of-day
+  convention.
+
+- **`timezone`** — a valid IANA zone. Required wherever `available_time` is
+  declared, and **forbidden where it is not**. A declared-and-never-read
+  timezone is exactly how naive times came to be compared across zones in the
+  first place; a key that nothing reads is not documentation, it is a latent
+  bug with a comment on it.
+
+- **`note`** — an optional string. Allowed everywhere.
+
+### A snapshot source declares no day count at all
+
+`snapshot_retrieved_at` sources declare `basis` and `note`, and nothing else.
+No `unit`, no `days`, no `available_time`, no `timezone`.
+
+This is not a new rule. "One rule per basis" above already says such a source
+contributes no purge and MUST NOT be mapped to zero. A `days: 0` on a snapshot
+source is that prohibited zero, written down as data, where the next reader will
+take it for a measurement. Track B's blind spec was right about this against the
+contract's own text, and Track A's `days: 0` was a violation of it.
+
+### The shape is executable, and owned by neither track
+
+`src/repo_model/contract.py` holds `validate_release_lag(source_id, obj)` and
+`validate_registry_release_lags(registry)`. Stdlib only. Both tracks import it:
+Track A's `registry.py` fails closed on a non-empty result, and Track B's specs
+assert against the same function rather than against a second reading of this
+prose.
+
+Neither track edits it. It is in `HUMAN_ONLY` in the ownership gate, alongside
+this file.
+
+Prose in this contract is how a shared shape gets described twice. Where a shape
+is shared by both tracks and can be expressed as code, it goes in that module
+and this file explains *why* rather than restating *what*. That is the general
+rule, not a one-off for `release_lag`.
+
+### Ownership of the follow-up
+
+- Track A: bring `metadata/sources.json` to this schema, and make `registry.py`
+  validate through `repo_model.contract` instead of its own inline checks.
+- Track B: rename `unit` expectations to read from `repo_model.contract`, drop
+  the duplicated shape rules from its specs, and declare `timezone` in the
+  fixture registries that now need one.
+- Neither track edits this file or `src/repo_model/contract.py`.

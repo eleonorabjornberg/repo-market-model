@@ -37,6 +37,10 @@ HUMAN_ONLY = (
     "DATA.md",
     "README.md",
     ".github/",
+    # Shared contract fixtures. Both tracks import them; neither edits them.
+    # A path-level gate cannot see a semantic collision, so the shape both
+    # tracks must agree on is made executable and put out of both their reach.
+    "src/repo_model/contract.py",
 )
 
 # Owned by neither track. Allowed, but always surfaced for human review.
