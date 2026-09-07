@@ -13,6 +13,7 @@ from repo_model.data import (
     PointInTimeObservation,
     audit_point_in_time_panel,
     audit_panel,
+    declared_coverage_floor,
     expected_ref_dates_from_registry,
     fixed_bp_stress_label_columns,
     load_daily_panel,
@@ -350,6 +351,209 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             )
             checked += 1
         self.assertGreater(checked, 0, "no ref_date rows were checked")
+
+class CoverageFloorDeclarationTests(unittest.TestCase):
+    """`declared_coverage_floor` fails closed, and says which way it failed.
+
+    Every branch here is a way the registry can stop guarding without anything
+    else noticing, so each one is exercised. An unreachable raise is a guard
+    that has never been shown to fire.
+    """
+
+    def test_a_source_that_declares_no_floor_is_a_contract_error(self):
+        with self.assertRaisesRegex(DataContractError, "declares no"):
+            declared_coverage_floor("sec_nmfp", {"access": "public"})
+
+    def test_a_floor_of_zero_is_rejected_as_the_prohibited_silent_zero(self):
+        with self.assertRaisesRegex(DataContractError, "guards nothing"):
+            declared_coverage_floor(
+                "sec_nmfp",
+                {
+                    "cross_section": {
+                        "entity_unit": "series_id",
+                        "minimum_reporting_entities": 0,
+                    }
+                },
+            )
+
+    def test_a_boolean_does_not_pass_as_a_floor(self):
+        with self.assertRaisesRegex(DataContractError, "must be an integer"):
+            declared_coverage_floor(
+                "sec_nmfp",
+                {
+                    "cross_section": {
+                        "entity_unit": "series_id",
+                        "minimum_reporting_entities": True,
+                    }
+                },
+            )
+
+    def test_an_unnamed_entity_unit_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "entity_unit"):
+            declared_coverage_floor(
+                "sec_nmfp",
+                {"cross_section": {"minimum_reporting_entities": 200}},
+            )
+
+    def test_an_unpermitted_key_is_rejected_rather_than_ignored(self):
+        with self.assertRaisesRegex(DataContractError, "unpermitted keys"):
+            declared_coverage_floor(
+                "sec_nmfp",
+                {
+                    "cross_section": {
+                        "entity_unit": "series_id",
+                        "minimum_reporting_entities": 200,
+                        "minimum_net_assets": 1000,
+                    }
+                },
+            )
+
+    def test_the_live_registry_declaration_is_readable(self):
+        registry = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        entity_unit, floor = declared_coverage_floor(
+            "sec_nmfp", registry["sec_nmfp"]
+        )
+        self.assertEqual(entity_unit, "series_id")
+        self.assertGreaterEqual(floor, 1)
+
+
+class RealSnapshotCoverageTests(unittest.TestCase):
+    """The coverage floor, against the extract in `data/raw/` rather than a fixture.
+
+    `CrossSectionCoverageTests` in `tests/test_ingest.py` proves the wiring on a
+    fixture this track wrote, and a fixture that seals itself proves only that
+    the code calls the code. These two run the same guard against the real SEC
+    bulk extract, where the numbers were not chosen by anyone here.
+
+    Test 2 below is the independent anchor -- the role `metadata/events.json`
+    plays for the event-window digest, and the role nothing was playing for the
+    publication-gap bound, which is why that guard ran its whole life without
+    ever being able to fail. Lower the declared floor in the registry far enough
+    to admit an amendment month and this test fails; no fixture can see that,
+    because every fixture declares its own floor.
+
+    Follows `RealSnapshotPublicationGapTests`: runs when `data/raw/` is
+    populated, skips with a stated reason when it is not. Not `expectedFailure`
+    -- that marker claims the assertion is right and the code is wrong, and it
+    hid a TypeError in this repo for the whole life of the class it was on.
+    """
+
+    RAW_ROOT = Path(__file__).parents[1] / "data" / "raw"
+    REGISTRY_PATH = Path(__file__).parents[1] / "metadata" / "sources.json"
+    SOURCE_ID = "sec_nmfp"
+
+    def parsed(self):
+        from repo_model.ingest import SnapshotArtifact, parse_snapshots
+
+        manifests = sorted(self.RAW_ROOT.glob(f"{self.SOURCE_ID}/*.manifest.json"))
+        if not manifests:
+            self.skipTest(
+                f"no {self.SOURCE_ID} snapshots under {self.RAW_ROOT}; data/raw/ is "
+                "gitignored, so this check runs only where the adapters have been "
+                "run. It is not waiting on an unwritten implementation."
+            )
+        artifacts = []
+        for manifest_path in manifests:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifacts.append(
+                SnapshotArtifact(
+                    source_id=manifest["source_id"],
+                    # Rebased off the capture host, as in the class above.
+                    path=manifest_path.parent / Path(manifest["path"]).name,
+                    retrieved_at=manifest["retrieved_at"],
+                    sha256=manifest["sha256"],
+                    url=manifest["url"],
+                    byte_count=int(manifest["byte_count"]),
+                )
+            )
+        # Payload checksums are verified on read, so a tampered snapshot fails here.
+        return parse_snapshots(
+            artifacts,
+            registry=json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8")),
+        )
+
+    def test_every_admitted_nmfp_cross_section_clears_the_declared_floor(self):
+        parsed = self.parsed()
+        admitted = [item for item in parsed.coverage if item.admitted]
+        self.assertGreater(
+            len(admitted),
+            0,
+            "the floor admitted no cross-section at all; a guard that empties the "
+            "panel is not a guard that passed",
+        )
+        for item in admitted:
+            self.assertGreaterEqual(
+                item.entity_count,
+                item.declared_floor,
+                msg=f"{item.source_id} {item.ref_date} was admitted with "
+                f"{item.entity_count} reporting {item.entity_unit} values against a "
+                f"declared floor of {item.declared_floor}",
+            )
+
+        admitted_dates = {item.ref_date for item in admitted}
+        excluded_dates = {
+            item.ref_date for item in parsed.coverage if not item.admitted
+        }
+        monthly = {
+            row.ref_date for row in parsed.rows if row.series_id == "mmf_net_assets"
+        }
+        self.assertTrue(
+            monthly.issubset(admitted_dates),
+            msg=f"monthly rows survive for un-admitted cross-sections "
+            f"{sorted(monthly - admitted_dates)}",
+        )
+        self.assertEqual(
+            monthly & excluded_dates,
+            set(),
+            msg="an excluded cross-section still contributes monthly rows",
+        )
+
+    def test_the_current_snapshot_contains_cross_sections_that_must_be_excluded(self):
+        parsed = self.parsed()
+        excluded = [item for item in parsed.coverage if not item.admitted]
+        self.assertGreater(
+            len(excluded),
+            0,
+            "the current extract carries amendment and straggler filings for "
+            "adjacent months, so at least one cross-section must be excluded. "
+            "Nothing was: either the guard is not running, or the floor declared "
+            "in metadata/sources.json is low enough to admit a partial month. "
+            "Reporting-entity counts seen: "
+            + ", ".join(
+                f"{item.ref_date}={item.entity_count}" for item in parsed.coverage
+            ),
+        )
+        for item in excluded:
+            self.assertLess(
+                item.entity_count,
+                item.declared_floor,
+                msg=f"{item.source_id} {item.ref_date} was excluded despite "
+                f"{item.entity_count} reporting {item.entity_unit} values clearing "
+                f"its declared floor of {item.declared_floor}",
+            )
+            self.assertGreater(
+                item.row_count,
+                0,
+                msg=f"{item.ref_date} excluded no rows, so nothing was guarded",
+            )
+
+        # An excluded cross-section leaves no rows behind, whatever their own
+        # ref_date: a daily shareholder-flow row is dated inside the reporting
+        # month but belongs to the submission's cross-section.
+        excluded_dates = {item.ref_date for item in excluded}
+        surviving = sorted(
+            {row.ref_date for row in parsed.rows} & excluded_dates
+        )
+        self.assertEqual(
+            surviving,
+            [],
+            msg=f"rows survive on excluded reference dates {surviving}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

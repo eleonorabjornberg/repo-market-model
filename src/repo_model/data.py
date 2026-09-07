@@ -92,6 +92,45 @@ class SeriesQuality:
 
 
 @dataclass(frozen=True)
+class CrossSectionCoverage:
+    """Reporting-entity coverage of one cross-section of a cross-sectional source.
+
+    A source that publishes a periodic cross-section can emit a `ref_date` that
+    is present, parseable and internally consistent while representing a small
+    fraction of its universe. Missingness reporting cannot see it -- every row
+    is there -- and an accounting identity holds just as well on a fraction of a
+    market as on all of it. The only thing that distinguishes the two is how
+    many entities reported, which is what this records.
+
+    `entity_count` is a count of distinct reporting entities, never a value
+    total: the values are the thing under suspicion, so a value threshold would
+    be circular.
+    """
+
+    source_id: str
+    ref_date: date
+    entity_unit: str
+    entity_count: int
+    declared_floor: int
+    admitted: bool
+    row_count: int
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "source_id": self.source_id,
+            "ref_date": self.ref_date.isoformat(),
+            "entity_unit": self.entity_unit,
+            "entity_count": self.entity_count,
+            "declared_floor": self.declared_floor,
+            "rows": self.row_count,
+            "reason": (
+                "reporting entities below the coverage floor declared in the "
+                "source registry"
+            ),
+        }
+
+
+@dataclass(frozen=True)
 class PointInTimeAuditReport:
     row_count: int
     reference_date_count: int
@@ -100,6 +139,7 @@ class PointInTimeAuditReport:
     series: Mapping[str, SeriesQuality]
     missing_series: Mapping[str, int]
     warnings: Sequence[str]
+    excluded_cross_sections: Sequence[CrossSectionCoverage] = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -122,6 +162,18 @@ class PointInTimeAuditReport:
                 for series_id, quality in sorted(self.series.items())
             },
             "missing_series": dict(sorted(self.missing_series.items())),
+            # Deliberately its own key, never folded into `missing_series` or a
+            # series' `missing_reference_dates`. "We declined to admit this
+            # cross-section" and "this cross-section had gaps" are different
+            # facts about the data, the same way a structural zero and a missing
+            # observation are, and a reader has to be able to tell them apart.
+            "excluded_cross_sections": [
+                coverage.as_dict()
+                for coverage in sorted(
+                    self.excluded_cross_sections,
+                    key=lambda item: (item.source_id, item.ref_date),
+                )
+            ],
             "warnings": list(self.warnings),
         }
 
@@ -285,6 +337,7 @@ def audit_point_in_time_panel(
     observations: Iterable[PointInTimeObservation],
     *,
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
+    excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
 ) -> PointInTimeAuditReport:
     """Summarize coverage and revisions without treating a revision as coverage.
 
@@ -367,6 +420,7 @@ def audit_point_in_time_panel(
             if series_id not in by_series
         },
         warnings=warnings,
+        excluded_cross_sections=tuple(excluded_cross_sections or ()),
     )
 
 
@@ -443,11 +497,14 @@ def write_point_in_time_audit_report(
     path: Path,
     *,
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
+    excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
 ) -> PointInTimeAuditReport:
     """Write a deterministic JSON missingness/revision report."""
 
     report = audit_point_in_time_panel(
-        observations, expected_ref_dates=expected_ref_dates
+        observations,
+        expected_ref_dates=expected_ref_dates,
+        excluded_cross_sections=excluded_cross_sections,
     )
     payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -455,6 +512,55 @@ def write_point_in_time_audit_report(
     temporary.write_text(payload, encoding="utf-8")
     temporary.replace(path)
     return report
+
+
+def declared_coverage_floor(
+    source_id: str,
+    source: Mapping[str, object],
+) -> tuple[str, int]:
+    """Read one source's declared cross-section coverage floor.
+
+    Returns `(entity_unit, minimum_reporting_entities)`. Raises if the source
+    does not declare one, or declares one that cannot guard anything.
+
+    Fails closed on purpose. An adapter reaches this function only because it
+    knows how to count that source's reporting entities, and a counted quantity
+    with no declared floor is a measurement nothing acts on. The registry is
+    where the floor lives -- it is a claim about the source, not about the code,
+    and Track A owns the registry.
+    """
+
+    declaration = source.get("cross_section")
+    if not isinstance(declaration, Mapping):
+        raise DataContractError(
+            f"{source_id}: emits cross-sections but the registry declares no "
+            "cross_section coverage floor"
+        )
+    permitted = {"entity_unit", "minimum_reporting_entities", "note"}
+    unknown = sorted(set(declaration) - permitted)
+    if unknown:
+        raise DataContractError(
+            f"{source_id}: cross_section has unpermitted keys {unknown}"
+        )
+    entity_unit = declaration.get("entity_unit")
+    if not isinstance(entity_unit, str) or not entity_unit.strip():
+        raise DataContractError(
+            f"{source_id}: cross_section.entity_unit must be a non-empty string "
+            "naming what is counted"
+        )
+    floor = declaration.get("minimum_reporting_entities")
+    if isinstance(floor, bool) or not isinstance(floor, int):
+        raise DataContractError(
+            f"{source_id}: cross_section.minimum_reporting_entities must be an integer"
+        )
+    if floor < 1:
+        # The prohibited silent zero, written down as data. A floor of 0 admits
+        # every cross-section and reads, to the next person, as a check that ran.
+        raise DataContractError(
+            f"{source_id}: cross_section.minimum_reporting_entities must be at "
+            f"least 1; {floor} admits every cross-section and guards nothing"
+        )
+    return entity_unit.strip(), floor
 
 
 def validate_publication_gaps(

@@ -564,28 +564,53 @@ def _nmfp_date(raw: object, field: str) -> date:
         raise ValueError(f"SEC Form N-MFP {field} is not DD-MON-YYYY: {raw!r}") from exc
 
 
+#: What `_sec_nmfp_rows` counts as one reporting entity, named here so the
+#: registry's `cross_section.entity_unit` can be checked against it rather than
+#: merely agreeing with it by coincidence -- the same twin-declaration hole
+#: `AvailableAtDerivationTests` closed for `available_at`. A fund series is the
+#: filing unit of Form N-MFP; an amendment is a second accession for the same
+#: series, so counting accessions would count an amended series twice.
+NMFP_ENTITY_UNIT = "series_id"
+
+
 def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
-    """Aggregate one SEC bulk extract without inventing absent holdings."""
+    """Aggregate one SEC bulk extract without inventing absent holdings.
+
+    Returns `(rows, entity_counts)`. Each element of `rows` pairs an observation
+    with the report date of the submission it came from -- its cross-section --
+    which is not always its own `ref_date`: a daily shareholder-flow row is dated
+    within the reporting month but belongs to that month's cross-section and
+    stands or falls with it. `entity_counts` maps each cross-section to the
+    number of distinct reporting entities that filed for it.
+    """
 
     from .data import PointInTimeObservation
 
     available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
     totals = {}
 
-    def add(series_id: str, ref_date: date, value: float) -> None:
-        key = (series_id, ref_date)
+    def add(section: date, series_id: str, ref_date: date, value: float) -> None:
+        key = (section, series_id, ref_date)
         totals[key] = totals.get(key, 0.0) + value
 
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         reports = {}
+        entities = {}
         for record in _nmfp_table(archive, "NMFP_SUBMISSION.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if not accession:
                 raise ValueError("SEC Form N-MFP submission lacks ACCESSION_NUMBER")
+            entity = (record.get("SERIESID") or "").strip()
+            if not entity:
+                raise ValueError(
+                    f"SEC Form N-MFP submission {accession} lacks SERIESID, so its "
+                    "cross-section cannot be counted in reporting entities"
+                )
             report_date = _nmfp_date(record.get("REPORTDATE"), "REPORTDATE")
             if accession in reports and reports[accession] != report_date:
                 raise ValueError(f"SEC Form N-MFP accession {accession} has two report dates")
             reports[accession] = report_date
+            entities.setdefault(report_date, set()).add(entity)
 
         balance_fields = {
             "CASH": "mmf_cash",
@@ -598,16 +623,28 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if accession not in reports:
                 raise ValueError(f"SEC Form N-MFP series row has unknown accession {accession}")
+            section = reports[accession]
             for raw_field, series_id in balance_fields.items():
                 value = _nmfp_number(record.get(raw_field), raw_field)
                 if value is not None:
-                    add(series_id, reports[accession], value / 1_000_000_000)
+                    add(section, series_id, section, value / 1_000_000_000)
 
         flow_fields = {
             "DAILYGROSSSUBSCRIPTIONS": "mmf_gross_subscriptions",
             "DAILYGROSSREDEMPTIONS": "mmf_gross_redemptions",
         }
         for record in _nmfp_table(archive, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"):
+            accession = (record.get("ACCESSION_NUMBER") or "").strip()
+            if accession not in reports:
+                raise ValueError(
+                    f"SEC Form N-MFP flow row has unknown accession {accession}"
+                )
+            # A daily flow date is its own ref_date, but the submission it was
+            # filed under is its cross-section. Deriving the cross-section from
+            # the flow date instead would be a guess that happens to be right on
+            # this extract, and wrong the first time a filing reports a day
+            # outside its own reporting month.
+            section = reports[accession]
             ref_date = _nmfp_date(
                 record.get("DAILYSHAREHOLDERFLOWDATE"),
                 "DAILYSHAREHOLDERFLOWDATE",
@@ -617,9 +654,10 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                 value = _nmfp_number(record.get(raw_field), raw_field)
                 if value is not None:
                     values[series_id] = value / 1_000_000_000
-                    add(series_id, ref_date, values[series_id])
+                    add(section, series_id, ref_date, values[series_id])
             if len(values) == 2:
                 add(
+                    section,
                     "mmf_net_flow",
                     ref_date,
                     values["mmf_gross_subscriptions"]
@@ -638,58 +676,162 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
             )
             if value is None:
                 continue
-            ref_date = reports[accession]
+            section = reports[accession]
             category = (record.get("INVESTMENTCATEGORY") or "").strip()
             if "Repurchase Agreement" in category:
-                add("mmf_repo_holdings", ref_date, value / 1_000_000_000)
+                add(section, "mmf_repo_holdings", section, value / 1_000_000_000)
                 counterparty = " ".join(
                     str(record.get(field) or "")
                     for field in ("NAMEOFISSUER", "TITLEOFISSUER", "BRIEFDESCRIPTION")
                 ).upper()
                 if "FEDERAL RESERVE" in counterparty:
-                    add("mmf_on_rrp", ref_date, value / 1_000_000_000)
+                    add(section, "mmf_on_rrp", section, value / 1_000_000_000)
             elif category == "U.S. Treasury Debt":
-                add("mmf_treasury_holdings", ref_date, value / 1_000_000_000)
+                add(section, "mmf_treasury_holdings", section, value / 1_000_000_000)
 
-    return [
-        PointInTimeObservation(
-            series_id=series_id,
-            ref_date=ref_date,
-            available_at=available_at,
-            value=value,
-            vintage_id=artifact.retrieved_at,
-            source_sha=artifact.sha256,
+    rows = [
+        (
+            section,
+            PointInTimeObservation(
+                series_id=series_id,
+                ref_date=ref_date,
+                available_at=available_at,
+                value=value,
+                vintage_id=artifact.retrieved_at,
+                source_sha=artifact.sha256,
+            ),
         )
-        for (series_id, ref_date), value in sorted(totals.items())
+        for (section, series_id, ref_date), value in sorted(totals.items())
     ]
+    return rows, {section: len(members) for section, members in entities.items()}
 
 
-def observations_from_snapshots(
+def load_source_registry(registry_path: Path = DEFAULT_SOURCE_REGISTRY):
+    """Read the source registry, reporting a bad path or bad JSON the same way."""
+
+    try:
+        return json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot load source registry: {exc}") from exc
+
+
+@dataclass(frozen=True)
+class ParsedSnapshots:
+    """Admitted observations, plus every cross-section the coverage floor saw.
+
+    `coverage` holds one entry per cross-section, admitted or not, so a caller
+    can report the exclusions rather than infer them from what is absent. An
+    exclusion that leaves no trace is the silent drop this guard exists to
+    replace.
+    """
+
+    rows: tuple
+    coverage: tuple
+
+
+def parse_snapshots(
     artifacts: Iterable[SnapshotArtifact],
-):
-    """Parse supported immutable snapshots into canonical long observations."""
+    *,
+    registry: Optional[Mapping[str, Mapping[str, object]]] = None,
+    registry_path: Path = DEFAULT_SOURCE_REGISTRY,
+) -> ParsedSnapshots:
+    """Parse immutable snapshots, applying each source's declared coverage floor.
+
+    A cross-sectional source can emit a `ref_date` whose rows are all present,
+    parseable and self-consistent while representing a small fraction of its
+    universe -- an amendment and straggler month in a quarterly bulk extract, in
+    the case that motivated this. Such a cross-section is excluded from the
+    panel and recorded in `coverage`. It is not raised on: a partial month is
+    the expected shape of the source, not a fault.
+    """
+
+    from .data import CrossSectionCoverage, declared_coverage_floor
+
+    if registry is None:
+        registry = load_source_registry(registry_path)
 
     candidates = []
+    coverage = []
     for artifact in artifacts:
         payload = _artifact_payload(artifact)
         artifact = replace(
             artifact,
             source_id=LEGACY_SOURCE_IDS.get(artifact.source_id, artifact.source_id),
         )
+        # `None` means "this source publishes no cross-section", which is not
+        # the same as "this source published an empty one". An empty extract
+        # must not satisfy a coverage floor vacuously.
+        entity_counts = None
         if artifact.source_id.startswith("nyfed_"):
-            parsed_rows = _nyfed_rows(artifact, payload)
+            parsed_rows = [(None, row) for row in _nyfed_rows(artifact, payload)]
         elif artifact.source_id == "fred_macro_latest_vintage":
-            parsed_rows = _fred_rows(artifact, payload)
+            parsed_rows = [(None, row) for row in _fred_rows(artifact, payload)]
         elif artifact.source_id == "treasury_auctions":
-            parsed_rows = _treasury_rows(artifact, payload)
+            parsed_rows = [(None, row) for row in _treasury_rows(artifact, payload)]
         elif artifact.source_id == "sec_nmfp":
-            parsed_rows = _sec_nmfp_rows(artifact, payload)
+            parsed_rows, entity_counts = _sec_nmfp_rows(artifact, payload)
+            _check_declared_entity_unit(
+                artifact.source_id, registry, NMFP_ENTITY_UNIT
+            )
         else:
             raise ValueError(f"no point-in-time parser for {artifact.source_id}")
         retrieved_at = datetime.fromisoformat(
             artifact.retrieved_at.replace("Z", "+00:00")
         )
-        candidates.extend((retrieved_at, row) for row in parsed_rows)
+
+        admitted = None
+        if entity_counts is not None:
+            try:
+                source = registry[artifact.source_id]
+            except KeyError as exc:
+                raise ValueError(
+                    f"snapshots have no source-registry entry: [{artifact.source_id!r}]"
+                ) from exc
+            entity_unit, floor = declared_coverage_floor(artifact.source_id, source)
+            admitted = {
+                section for section, count in entity_counts.items() if count >= floor
+            }
+            section_rows = {}
+            for section, _row in parsed_rows:
+                section_rows[section] = section_rows.get(section, 0) + 1
+            coverage.extend(
+                CrossSectionCoverage(
+                    source_id=artifact.source_id,
+                    ref_date=section,
+                    entity_unit=entity_unit,
+                    entity_count=count,
+                    declared_floor=floor,
+                    admitted=section in admitted,
+                    row_count=section_rows.get(section, 0),
+                )
+                for section, count in sorted(entity_counts.items())
+            )
+
+        kept = [
+            row
+            for section, row in parsed_rows
+            if admitted is None or section in admitted
+        ]
+        if admitted is not None:
+            # Contributions to one cell are aggregated across every admitted
+            # cross-section, which is what this adapter did before the floor
+            # existed. Splitting the aggregation by cross-section is how the
+            # floor decides what to admit; it is not a change to what an
+            # admitted cell means. Left unmerged, two admitted cross-sections
+            # that both report a shareholder-flow date would reach the revision
+            # logic as two vintages of the same cell with one availability
+            # timestamp, and be rejected as unorderable.
+            merged = {}
+            for row in kept:
+                key = (row.series_id, row.ref_date)
+                previous = merged.get(key)
+                merged[key] = (
+                    row if previous is None
+                    else replace(row, value=previous.value + row.value)
+                )
+            kept = [merged[key] for key in sorted(merged)]
+
+        candidates.extend((retrieved_at, row) for row in kept)
 
     # A later snapshot containing the same value is not a revision. If its value
     # changed but the source exposes no historical revision timestamp, retrieval
@@ -716,7 +858,50 @@ def observations_from_snapshots(
         rows.append(row)
         prior[key] = row
     rows.sort(key=lambda row: (row.available_at, row.series_id, row.ref_date, row.vintage_id))
-    return rows
+    return ParsedSnapshots(rows=tuple(rows), coverage=tuple(coverage))
+
+
+def _check_declared_entity_unit(
+    source_id: str,
+    registry: Mapping[str, Mapping[str, object]],
+    counted_unit: str,
+) -> None:
+    """Fail if the registry names a reporting entity the adapter does not count.
+
+    The declaration and the adapter are two statements of the same fact, and
+    nothing else makes them agree. A registry that said `entity_unit: "cik"`
+    would silently be guarded by a series count instead -- a floor measured in
+    the wrong unit, which is how a bound comes to be wrong in a way no test on
+    either side can see.
+    """
+
+    source = registry.get(source_id)
+    if not isinstance(source, Mapping):
+        return
+    declaration = source.get("cross_section")
+    if not isinstance(declaration, Mapping):
+        return
+    declared = declaration.get("entity_unit")
+    if declared != counted_unit:
+        raise ValueError(
+            f"{source_id}: registry declares cross_section.entity_unit "
+            f"{declared!r}, but the adapter counts {counted_unit!r}"
+        )
+
+
+def observations_from_snapshots(
+    artifacts: Iterable[SnapshotArtifact],
+    *,
+    registry: Optional[Mapping[str, Mapping[str, object]]] = None,
+    registry_path: Path = DEFAULT_SOURCE_REGISTRY,
+):
+    """Parse supported immutable snapshots into canonical long observations."""
+
+    return list(
+        parse_snapshots(
+            artifacts, registry=registry, registry_path=registry_path
+        ).rows
+    )
 
 
 def build_point_in_time_snapshot(
@@ -731,13 +916,11 @@ def build_point_in_time_snapshot(
     materialized = list(artifacts)
     if not materialized:
         raise ValueError("at least one raw snapshot is required")
-    rows = observations_from_snapshots(materialized)
+    registry = load_source_registry(registry_path)
+    parsed = parse_snapshots(materialized, registry=registry)
+    rows = list(parsed.rows)
     if not rows:
         raise ValueError("raw snapshots produced no point-in-time observations")
-    try:
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(f"cannot load source registry: {exc}") from exc
     unknown_sources = sorted(
         {item.source_id for item in materialized if item.source_id not in registry}
     )
@@ -778,7 +961,12 @@ def build_point_in_time_snapshot(
     quality_report_path = output_path.with_suffix(output_path.suffix + ".quality.json")
     expected_dates = expected_ref_dates_from_registry(rows, selected_registry)
     write_point_in_time_audit_report(
-        rows, quality_report_path, expected_ref_dates=expected_dates
+        rows,
+        quality_report_path,
+        expected_ref_dates=expected_dates,
+        excluded_cross_sections=[
+            item for item in parsed.coverage if not item.admitted
+        ],
     )
     quality_report_sha256 = hashlib.sha256(quality_report_path.read_bytes()).hexdigest()
     artifact = PanelArtifact(
