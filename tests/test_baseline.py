@@ -11,9 +11,11 @@ from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     FittedArx,
     FittedPersistence,
+    Forecast,
     MissingRegressorError,
     SingularDesignError,
     _dot,
+    _feature_index,
     _least_squares,
     _quantile,
     fit,
@@ -22,6 +24,7 @@ from repo_model.baseline import (
 )
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel
+from repo_model.splits import LookAheadError, SplitError, rolling_origin
 
 SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
@@ -116,7 +119,7 @@ class BaselineTests(unittest.TestCase):
             )
             for index in range(30)
         ]
-        report = rolling_persistence_backtest(rows, minimum_history=10)
+        report = rolling_persistence_backtest(rows, purge=0, minimum_history=10)
         self.assertEqual(len(report.forecasts), 20)
         self.assertAlmostEqual(report.mae_bps, 1.0)
         self.assertTrue(0.0 <= report.interval_coverage <= 1.0)
@@ -127,7 +130,7 @@ class BaselineTests(unittest.TestCase):
             DailyObservation(date(2026, 1, 2), {"sofr": 4.32, "iorb": 4.30}),
         ]
         with self.assertRaisesRegex(ValueError, "not enough"):
-            rolling_persistence_backtest(rows, minimum_history=2)
+            rolling_persistence_backtest(rows, purge=0, minimum_history=2)
 
 
 class FittedPersistenceTests(unittest.TestCase):
@@ -155,7 +158,9 @@ class FittedPersistenceTests(unittest.TestCase):
 
     def test_the_backtest_reports_the_fitted_model_and_does_not_re_derive_quantiles(self):
         rows = self.panel()
-        report = rolling_persistence_backtest(rows, minimum_history=self.MINIMUM_HISTORY)
+        report = rolling_persistence_backtest(
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
+        )
 
         # The run reports the model it finished on, and that model can say what
         # it was fitted at. A report that cannot name its own cutoff is the
@@ -190,9 +195,14 @@ class FittedPersistenceTests(unittest.TestCase):
 
         # The default reads the declaration, and stating the same interval
         # explicitly changes nothing.
-        default = rolling_persistence_backtest(rows, minimum_history=self.MINIMUM_HISTORY)
+        default = rolling_persistence_backtest(
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
+        )
         restated = rolling_persistence_backtest(
-            rows, minimum_history=self.MINIMUM_HISTORY, interval_probability=0.90
+            rows,
+            purge=0,
+            minimum_history=self.MINIMUM_HISTORY,
+            interval_probability=0.90,
         )
         self.assertEqual(list(default.forecasts), list(restated.forecasts))
 
@@ -201,7 +211,10 @@ class FittedPersistenceTests(unittest.TestCase):
         # reported interval out of step, silently.
         with self.assertRaisesRegex(ValueError, "declared levels"):
             rolling_persistence_backtest(
-                rows, minimum_history=self.MINIMUM_HISTORY, interval_probability=0.50
+                rows,
+                purge=0,
+                minimum_history=self.MINIMUM_HISTORY,
+                interval_probability=0.50,
             )
 
 
@@ -500,7 +513,7 @@ class RollingBacktestTests(unittest.TestCase):
         rows = self.sample()
         fitter = partial(fit_arx, regressors=REGRESSORS)
         report = rolling_persistence_backtest(
-            rows, minimum_history=self.MINIMUM_HISTORY, fit_model=fitter
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY, fit_model=fitter
         )
 
         self.assertIsInstance(report.model, FittedArx)
@@ -525,7 +538,7 @@ class RollingBacktestTests(unittest.TestCase):
         # report persistence's point rule beside the ARX's intervals, and the
         # MAE would be persistence's however the model was fitted.
         persistence = rolling_persistence_backtest(
-            rows, minimum_history=self.MINIMUM_HISTORY
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
         )
         self.assertNotEqual(
             [f.predicted_bps for f in report.forecasts],
@@ -543,9 +556,11 @@ class RollingBacktestTests(unittest.TestCase):
         """
 
         rows = self.sample()
-        default = rolling_persistence_backtest(rows, minimum_history=self.MINIMUM_HISTORY)
+        default = rolling_persistence_backtest(
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
+        )
         explicit = rolling_persistence_backtest(
-            rows, minimum_history=self.MINIMUM_HISTORY, fit_model=fit
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY, fit_model=fit
         )
 
         self.assertIsInstance(default.model, FittedPersistence)
@@ -562,6 +577,326 @@ class RollingBacktestTests(unittest.TestCase):
         self.assertEqual(len(default.forecasts), 15)
         self.assertAlmostEqual(default.mae_bps, 13.0 / 15.0, places=12)
         self.assertAlmostEqual(default.interval_coverage, 11.0 / 15.0, places=12)
+
+
+def unpurged_reference(rows, minimum_history, fitter):
+    """The index walk `rolling_persistence_backtest` used before it was purged.
+
+    Written out longhand rather than imported, for the reason
+    `design_and_targets` above is: a reproduction test that called the code it
+    is checking would reproduce whatever that code now does. This is the loop
+    as it stood at `c05d250` -- training frame `rows[:index]`, feature row
+    `rows[index - 1]`, one scored row per origin -- and it is the definition
+    every MAE and coverage number this project has reported was produced from.
+    """
+
+    forecasts = []
+    for index in range(minimum_history, len(rows)):
+        model = fitter(rows[:index], minimum_history=minimum_history)
+        feature_row = rows[index - 1]
+        quantiles = model.predict(feature_row)
+        forecasts.append(
+            Forecast(
+                actual_bps=rows[index].spread_bps,
+                predicted_bps=model.point_forecast(feature_row),
+                lower_bps=quantiles[0],
+                upper_bps=quantiles[-1],
+            )
+        )
+    mae = sum(abs(f.actual_bps - f.predicted_bps) for f in forecasts) / len(forecasts)
+    coverage = sum(
+        f.lower_bps <= f.actual_bps <= f.upper_bps for f in forecasts
+    ) / len(forecasts)
+    return forecasts, mae, coverage
+
+
+class PurgedBacktestTests(unittest.TestCase):
+    """The rolling backtest is a caller of `rolling_origin`, and the gap bites.
+
+    Before this block the benchmark walked the index itself: the training frame
+    ended on the calendar day before the scored day and the feature row was that
+    same day. `rolling_origin` was fully implemented, fully tested, carried the
+    project's only purge boundary -- and nothing in the model path called it, so
+    every reported MAE and coverage number came from an unpurged walk while a
+    purge existed one module over. A check anchored to nothing cannot fail.
+
+    Mutations are recorded in `docs/block-2026-09-10-purged-backtest/RECORD.md`
+    with the named test each one killed.
+    """
+
+    MINIMUM_HISTORY = 10
+
+    #: Large enough on this panel that the feature row moves and origins are
+    #: lost, small enough that folds remain. Not the registry's number -- the
+    #: registry is the CLI's business, and a number written here would be this
+    #: file restating `metadata/sources.json`.
+    PURGE = 6
+
+    def sample(self):
+        return load_daily_panel(SAMPLE_PANEL)
+
+    def fitters(self):
+        return (
+            ("persistence", None, fit),
+            ("arx", partial(fit_arx, regressors=REGRESSORS), partial(fit_arx, regressors=REGRESSORS)),
+        )
+
+    def test_purge_zero_reproduces_every_number_the_unpurged_backtest_reported(self):
+        """The refactor's spine: at `purge=0` nothing moved, for either model.
+
+        `purge=0, step=1, min_train=minimum_history` is the shape the hand-rolled
+        walk had, so it must produce the same forecasts, the same MAE and the
+        same coverage -- exactly, not nearly. If it does not, the refactor
+        changed something it was not asked to change, and the purge's effect
+        below could not be told apart from that change.
+        """
+
+        rows = self.sample()
+        for name, fit_model, reference_fitter in self.fitters():
+            with self.subTest(model=name):
+                report = rolling_persistence_backtest(
+                    rows,
+                    purge=0,
+                    minimum_history=self.MINIMUM_HISTORY,
+                    fit_model=fit_model,
+                )
+                forecasts, mae, coverage = unpurged_reference(
+                    rows, self.MINIMUM_HISTORY, reference_fitter
+                )
+
+                self.assertEqual(list(report.forecasts), forecasts)
+                self.assertEqual(report.mae_bps, mae)
+                self.assertEqual(report.interval_coverage, coverage)
+
+    def test_the_backtest_takes_its_folds_from_rolling_origin(self):
+        """One forecast per fold, in fold order, fitted on the fold's own rows.
+
+        The mutation this is aimed at is the quiet one: a `purge` argument
+        accepted and then not passed on, so the folds are built at zero. The
+        report still comes out, the intervals still look reasonable, and only a
+        comparison against independently enumerated folds says otherwise.
+        """
+
+        rows = self.sample()
+        dates = [row.date for row in rows]
+        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
+
+        report = rolling_persistence_backtest(
+            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        )
+
+        self.assertEqual(len(report.forecasts), len(folds))
+        # The gap costs origins on a 25-row panel, and the point of the test is
+        # that it does: a run whose fold count matched the unpurged one would
+        # mean the purge reached nothing.
+        unpurged = rolling_persistence_backtest(
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
+        )
+        self.assertLess(len(report.forecasts), len(unpurged.forecasts))
+
+        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
+            self.assertEqual(len(test_indices), 1)
+            scored = test_indices[0]
+            model = fit(
+                [rows[i] for i in train_indices],
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+            quantiles = model.predict(rows[train_indices[-1]])
+
+            self.assertEqual(forecast.actual_bps, rows[scored].spread_bps)
+            self.assertEqual(forecast.lower_bps, quantiles[0])
+            self.assertEqual(forecast.upper_bps, quantiles[-1])
+            # The fitted cutoff is the last row that cleared the gap, not the
+            # day before the scored day.
+            self.assertEqual(model.cutoff, dates[train_indices[-1]])
+            self.assertLess(model.cutoff, dates[scored - 1])
+
+    def test_the_feature_row_is_the_last_row_that_cleared_the_purge(self):
+        """The leak the purge does not otherwise cover, and it is silent.
+
+        Purging the training frame and then reading the feature row off
+        `rows[scored - 1]` drops rows from the fit while feeding the model the
+        one row that matters most -- for persistence, the only row it reads. The
+        numbers still come out and the intervals still look reasonable. So this
+        asserts the identity directly, and separately asserts that on this panel
+        the two candidate rows actually differ, without which the first
+        assertion would hold under the leak too.
+        """
+
+        rows = self.sample()
+        dates = [row.date for row in rows]
+        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
+        report = rolling_persistence_backtest(
+            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        )
+
+        moved = 0
+        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
+            scored = test_indices[0]
+            allowed = rows[train_indices[-1]]
+            yesterday = rows[scored - 1]
+            # Persistence's point rule is the feature row's spread, so the
+            # reported centre names which row was read.
+            self.assertEqual(forecast.predicted_bps, allowed.spread_bps)
+            if allowed.spread_bps != yesterday.spread_bps:
+                moved += 1
+        self.assertGreater(
+            moved,
+            0,
+            msg=(
+                "on this panel the purged feature row and the day before the "
+                "scored day carry the same spread everywhere, so this test "
+                "cannot tell the two apart"
+            ),
+        )
+
+        # And the selection itself, against a fold it is not entitled to trust.
+        # `rolling_origin` would never yield this one -- the prefix runs one row
+        # past the gap -- which is the point: the backtest states the boundary
+        # rather than inheriting it, so a relaxed comparison here is visible.
+        scored = dates.index(date(2026, 1, 22))
+        inside = dates.index(date(2026, 1, 16))  # 01-16 + 6 == 01-22, exactly
+        self.assertEqual(
+            _feature_index(dates, tuple(range(inside + 1)), scored, self.PURGE),
+            inside - 1,
+            msg=(
+                "the row whose date plus the gap lands exactly on the scored "
+                "day was accepted; the boundary is strict, and a `<=` here is "
+                "a row published the morning the window opened"
+            ),
+        )
+
+        # No row clears, so there is no feature row. It raises rather than
+        # falling back to one that does not clear -- and raises, never asserts,
+        # because `python -O` strips asserts.
+        with self.assertRaises(LookAheadError):
+            _feature_index(dates, (0, 1), 2, 365)
+
+    def test_the_backtest_declares_no_default_purge(self):
+        """`purge` is required and keyword-only. A default of `0` is the leak.
+
+        Checked on the signature as well as behaviourally, because the way this
+        regresses is somebody adding `purge=0` for convenience at a call site
+        that has grown tiresome to update -- and a default of zero reproduces
+        every number the project already published, so no behavioural test would
+        object.
+        """
+
+        parameter = inspect.signature(rolling_persistence_backtest).parameters["purge"]
+        self.assertIs(
+            parameter.default,
+            inspect.Parameter.empty,
+            msg="rolling_persistence_backtest grew a default purge; zero is the leak",
+        )
+        self.assertIs(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
+
+        rows = self.sample()
+        with self.assertRaises(TypeError):
+            rolling_persistence_backtest(rows, minimum_history=self.MINIMUM_HISTORY)
+
+        # And it is a day count, not a flag or a `None` read as "no gap".
+        for bad in (None, True, 1.0, -1):
+            with self.subTest(purge=bad):
+                with self.assertRaises(SplitError):
+                    rolling_persistence_backtest(
+                        rows, purge=bad, minimum_history=self.MINIMUM_HISTORY
+                    )
+
+    def test_a_purge_that_leaves_too_little_history_raises_rather_than_shrinking_min_train(self):
+        """The refusal is the feature. Recovering a fold by relaxing is not.
+
+        A gap wide enough to starve the first origin is exactly when shrinking
+        `min_train` is tempting, and a run that shrank it would report a number
+        produced by a rule nobody declared, under the `minimum_history` the
+        caller asked for.
+        """
+
+        rows = self.sample()
+        with self.assertRaises(SplitError) as caught:
+            rolling_persistence_backtest(rows, purge=10, minimum_history=20)
+        message = str(caught.exception)
+        self.assertIn("20 training rows", message)
+        self.assertIn("10-day purge gap", message)
+
+        # Same panel, same `minimum_history`, a gap it can carry: the refusal
+        # above is about the gap, not about the panel being short.
+        report = rolling_persistence_backtest(rows, purge=0, minimum_history=20)
+        self.assertEqual(len(report.forecasts), 5)
+
+    def test_the_purged_backtest_scores_whichever_model_it_is_given(self):
+        """Both implementers go through the purged path, on their own numbers.
+
+        The generalisation the last block bought has to survive this one. Each
+        forecast is compared against a model refit independently at the same
+        fold, so the report is checked against the interface rather than against
+        itself, and the two models are checked to disagree -- a purged backtest
+        that quietly scored persistence whatever it was handed would pass every
+        shape assertion here.
+        """
+
+        rows = self.sample()
+        dates = [row.date for row in rows]
+        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
+        fitter = partial(fit_arx, regressors=REGRESSORS)
+
+        report = rolling_persistence_backtest(
+            rows,
+            purge=self.PURGE,
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=fitter,
+        )
+        self.assertIsInstance(report.model, FittedArx)
+        self.assertEqual(report.model.regressors, REGRESSORS)
+        self.assertEqual(len(report.forecasts), len(folds))
+
+        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
+            train_frame = [rows[i] for i in train_indices]
+            model = fit_arx(
+                train_frame, REGRESSORS, minimum_history=self.MINIMUM_HISTORY
+            )
+            feature_row = rows[train_indices[-1]]
+            quantiles = model.predict(feature_row)
+            self.assertEqual(forecast.predicted_bps, model.point_forecast(feature_row))
+            self.assertEqual(forecast.lower_bps, quantiles[0])
+            self.assertEqual(forecast.upper_bps, quantiles[-1])
+            self.assertEqual(forecast.actual_bps, rows[test_indices[0]].spread_bps)
+            self.assertEqual(model.cutoff, dates[train_indices[-1]])
+
+        persistence = rolling_persistence_backtest(
+            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        )
+        self.assertIsInstance(persistence.model, FittedPersistence)
+        self.assertNotEqual(
+            [f.predicted_bps for f in report.forecasts],
+            [f.predicted_bps for f in persistence.forecasts],
+        )
+
+    def test_the_purge_moves_the_reported_numbers_and_the_move_is_kept(self):
+        """Purging changes the benchmark, and the changed benchmark is the one.
+
+        `AGENT_CONTRACT.md` working rules: a model that does not beat
+        persistence is reported as such and kept. The same applies to a purge
+        that makes the numbers worse, and on this panel it does. Pinned so that
+        a later change which quietly narrows the gap has to move these numbers
+        and say why; the before/after table and the synthetic caveat are in
+        `docs/block-2026-09-10-purged-backtest/RECORD.md`.
+        """
+
+        rows = self.sample()
+        before = rolling_persistence_backtest(
+            rows, purge=0, minimum_history=self.MINIMUM_HISTORY
+        )
+        after = rolling_persistence_backtest(
+            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        )
+
+        self.assertEqual(len(before.forecasts), 15)
+        self.assertEqual(len(after.forecasts), 12)
+        self.assertAlmostEqual(before.mae_bps, 13.0 / 15.0, places=12)
+        self.assertAlmostEqual(after.mae_bps, 25.0 / 12.0, places=12)
+        self.assertAlmostEqual(before.interval_coverage, 11.0 / 15.0, places=12)
+        self.assertAlmostEqual(after.interval_coverage, 0.5, places=12)
+        self.assertGreater(after.mae_bps, before.mae_bps)
 
 
 if __name__ == "__main__":

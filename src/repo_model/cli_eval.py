@@ -33,11 +33,43 @@ from .registry import max_release_lag_days
 from .splits import SplitError
 
 
+def _purge_days(args: argparse.Namespace) -> int:
+    """The gap, from `registry.max_release_lag_days` over the named sources.
+
+    Both evaluation paths reach it through this one function. `_event_holdout`'s
+    docstring states the design and it is not path-specific: the gap is a
+    function of which sources the features come from, `--source` is how a caller
+    changes it, and `--decision-time` is required because a default would be a
+    silent assumption about when the forecast is made.
+    """
+
+    registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
+    return max_release_lag_days(
+        registry, args.source, decision_time=time.fromisoformat(args.decision_time)
+    )
+
+
 def _backtest(args: argparse.Namespace) -> int:
+    """Run the purged rolling-origin benchmark and report what sized the gap.
+
+    **There is no `--purge` here either.** The event path has not had one since
+    it was written, and the two paths now mean the same thing by a gap and take
+    the number from the same place -- which was already written down in
+    `_event_holdout` and is only now true. A hand-set gap on this path would be
+    reached for at exactly the moment it must not be: the purge drops training
+    rows, a short panel then has fewer origins, and the flag would be right
+    there.
+
+    `purge_days` and `sources` are reported beside the metrics for the reason
+    `model_config` carries them on the event path: a benchmark whose gap came
+    from somewhere an auditor cannot follow is not a benchmark.
+    """
+
     rows = load_daily_panel(args.path)
     audit_panel(rows)
+    purge = _purge_days(args)
     report = rolling_persistence_backtest(
-        rows, minimum_history=args.minimum_history
+        rows, purge=purge, minimum_history=args.minimum_history
     )
     print(
         json.dumps(
@@ -45,6 +77,9 @@ def _backtest(args: argparse.Namespace) -> int:
                 "forecast_count": len(report.forecasts),
                 "mae_bps": round(report.mae_bps, 4),
                 "interval_coverage": round(report.interval_coverage, 4),
+                "purge_days": purge,
+                "sources": sorted(args.source),
+                "minimum_history": args.minimum_history,
             },
             indent=2,
             sort_keys=True,
@@ -91,10 +126,7 @@ def _event_holdout(args: argparse.Namespace) -> int:
     declaration = load_stress_thresholds(args.thresholds)
     taus = tuple(float(tau) for tau in declaration["taus_bp"])
 
-    registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
-    purge = max_release_lag_days(
-        registry, args.source, decision_time=time.fromisoformat(args.decision_time)
-    )
+    purge = _purge_days(args)
 
     windows = load_events_file(args.events)
     if args.window:
@@ -169,10 +201,20 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
     backtest = subparsers.add_parser(
-        "backtest", help="run the persistence benchmark"
+        "backtest", help="run the purged rolling-origin benchmark"
     )
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
+    backtest.add_argument("--registry", type=Path, required=True)
+    backtest.add_argument(
+        "--source",
+        action="append",
+        required=True,
+        metavar="ID",
+        help="a feature source, repeatable; these size the purge gap",
+    )
+    backtest.add_argument("--decision-time", required=True, metavar="HH:MM")
+    # No --purge. See _backtest.
     backtest.set_defaults(handler=_backtest)
 
     holdout = subparsers.add_parser(

@@ -326,6 +326,7 @@ class EligibilityTests(unittest.TestCase):
         rows = load_sample()
         full = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
@@ -333,6 +334,7 @@ class EligibilityTests(unittest.TestCase):
         for cutoff_position in range(MINIMUM_HISTORY, len(rows)):
             truncated = rolling_persistence_backtest(
                 rows[: cutoff_position + 1],
+                purge=0,
                 minimum_history=MINIMUM_HISTORY,
                 interval_probability=INTERVAL_PROBABILITY,
             )
@@ -358,11 +360,13 @@ class FuturePerturbationTests(unittest.TestCase):
 
         baseline = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
         shocked = rolling_persistence_backtest(
             perturb_after(rows, cutoff_index),
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
@@ -377,12 +381,14 @@ class FuturePerturbationTests(unittest.TestCase):
         rows = load_sample()
         baseline = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts
         for cutoff_index in range(MINIMUM_HISTORY, len(rows) - 1):
             shocked = rolling_persistence_backtest(
                 perturb_after(rows, cutoff_index),
+                purge=0,
                 minimum_history=MINIMUM_HISTORY,
                 interval_probability=INTERVAL_PROBABILITY,
             ).forecasts
@@ -425,11 +431,13 @@ class FuturePerturbationTests(unittest.TestCase):
         cutoff_index = 15
         shocked = rolling_persistence_backtest(
             perturb_after(rows, cutoff_index),
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
         baseline = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
@@ -462,6 +470,7 @@ class TransformIsolationTests(unittest.TestCase):
         rows = load_sample()
         report = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
@@ -505,6 +514,7 @@ class TransformIsolationTests(unittest.TestCase):
 
         forecast = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
@@ -569,6 +579,7 @@ class TransformIsolationTests(unittest.TestCase):
         # parameters produced by the full pipeline on that window" half.
         report = rolling_persistence_backtest(
             rows,
+            purge=0,
             minimum_history=20,
             fit_model=partial(fit_arx, regressors=CONFORMANCE_REGRESSORS),
         )
