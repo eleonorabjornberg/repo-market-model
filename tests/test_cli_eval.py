@@ -435,6 +435,126 @@ class JournalTests(EventHoldoutHarness):
         )
 
 
+class RollingBacktestCommandTests(unittest.TestCase):
+    """The rolling path, sized the way the event path has always been sized.
+
+    `_event_holdout`'s docstring already claimed the property: "The two
+    evaluation paths mean the same thing by a gap and take the number from the
+    same place." Until this block that was true of one path. The `backtest`
+    command ran an unpurged walk and had no `--source` to size a gap with, so
+    every benchmark number the project published came out of a backtest with no
+    gap at all while the sentence describing the design sat one function away.
+
+    The two tests here are the pair that keeps it true: one that the number
+    reaches the run and follows from the named sources, one that the absence of
+    a way to set it by hand is still an absence.
+    """
+
+    PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
+    MINIMUM_HISTORY = "10"
+
+    #: Two declared sources with different release lags. Named, never their
+    #: numbers -- the *number* is `metadata/sources.json`'s to state, and a
+    #: literal here would be this file restating it.
+    SLOW_SOURCE = "nyfed_sofr"
+    FAST_SOURCE = "treasury_auctions"
+
+    def run_backtest(self, *sources, decision_time=DECISION_TIME):
+        argv = [
+            "backtest", str(self.PANEL),
+            "--minimum-history", self.MINIMUM_HISTORY,
+            "--registry", str(REGISTRY),
+            "--decision-time", decision_time,
+        ]
+        for source in sources:
+            argv += ["--source", source]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def scored(self, *sources, **kwargs):
+        code, out, err = self.run_backtest(*sources, **kwargs)
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+        return json.loads(out)
+
+    def test_the_rolling_command_takes_its_purge_from_the_registry(self):
+        """The gap follows from `--source`, and it reaches the reported numbers.
+
+        Asserted as a relation between two source sets rather than against a
+        literal. Two sources declare different release lags, so naming the
+        slower one must widen the gap; a wider gap costs origins and moves the
+        metrics. A command that reported a `purge_days` it did not pass on --
+        the plausible mistake, since the field would still look right -- would
+        hold the first assertion and fail the second.
+        """
+
+        slow = self.scored(self.SLOW_SOURCE)
+        fast = self.scored(self.FAST_SOURCE)
+
+        self.assertGreater(fast["purge_days"], 0)
+        self.assertGreater(slow["purge_days"], fast["purge_days"])
+
+        # The gap reached the run: a wider one leaves fewer origins and a
+        # different benchmark, not merely a different field in the report.
+        self.assertLess(slow["forecast_count"], fast["forecast_count"])
+        self.assertNotEqual(slow["mae_bps"], fast["mae_bps"])
+
+        # Naming both sources takes the maximum, which is what "the purge for a
+        # backtest is the maximum over the sources the feature set uses" means.
+        both = self.scored(self.FAST_SOURCE, self.SLOW_SOURCE)
+        self.assertEqual(both["purge_days"], slow["purge_days"])
+
+        # And the report says what sized it. A number an auditor cannot follow
+        # back to a source list is not a benchmark.
+        self.assertEqual(both["sources"], sorted([self.FAST_SOURCE, self.SLOW_SOURCE]))
+        self.assertEqual(slow["sources"], [self.SLOW_SOURCE])
+
+        # A source the registry does not declare is refused rather than
+        # contributing nothing, which is the silent-zero failure again.
+        code, _, err = self.run_backtest("no_such_source")
+        self.assertEqual(code, 2)
+        self.assertIn("no_such_source", err)
+
+    def test_there_is_no_purge_flag(self):
+        """The absence is the guard, so the test reads the parser.
+
+        No behavioural test can catch a flag nobody passes. And this path is
+        where it would be reached for: the purge drops training rows, a short
+        panel then yields fewer origins or none, and a `--purge` sitting beside
+        `--minimum-history` would turn "the gap starved the backtest" into "the
+        gap is whatever gets a number out".
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        backtest = command.choices["backtest"]
+        options = {
+            option
+            for action in backtest._actions
+            for option in action.option_strings
+        }
+
+        for banned in ("--purge", "--purge-days", "--gap"):
+            self.assertNotIn(banned, options, msg=f"{banned} is back")
+        self.assertIn("--source", options)
+        self.assertIn("--decision-time", options)
+
+        # `--source`, `--registry` and `--decision-time` are required, not
+        # defaulted: a default decision time is a silent assumption about when
+        # the forecast is made, and a default source list is a feature set this
+        # repository does not declare.
+        required = {
+            action.dest for action in backtest._actions if getattr(action, "required", False)
+        }
+        self.assertLessEqual({"source", "registry", "decision_time"}, required)
+        for action in backtest._actions:
+            if action.dest in ("source", "registry", "decision_time"):
+                self.assertIsNone(
+                    action.default, msg=f"--{action.dest} acquired a default"
+                )
+
+
 class SeamTests(unittest.TestCase):
     """The property "Decided: who owns the CLI" was written to get."""
 

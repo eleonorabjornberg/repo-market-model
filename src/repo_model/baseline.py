@@ -34,6 +34,14 @@ defaults to persistence, so it scores the interface rather than one member of
 it. The name is unchanged because it is the name the last block's merge record
 and the existing assertions refer to; "persistence" in it now names the default,
 not the only option.
+
+It also takes its folds from `repo_model.splits.rolling_origin` rather than
+walking the index itself, which is what makes the purge gap reach the benchmark
+numbers at all. Until it did, `rolling_origin` was fully implemented, fully
+tested, carried the project's only purge boundary -- and nothing in the model
+path called it, so its guards had never guarded a reported number. `purge` is
+required here for the same reason it is required there, and the feature row
+follows from the fold rather than from the calendar: see `_feature_index`.
 """
 
 from __future__ import annotations
@@ -57,7 +65,12 @@ from typing import (
 from .contract import QUANTILE_LEVELS
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import _validate_levels
-from .splits import LookAheadError, ensure_strictly_ascending
+from .splits import (
+    LookAheadError,
+    clears_purge,
+    ensure_strictly_ascending,
+    rolling_origin,
+)
 
 
 #: `event_eval.FitPredict`, restated as a type alias rather than imported, so
@@ -899,19 +912,74 @@ def predict_stress(
 ModelFitter = Callable[..., FittedForecastModel]
 
 
+def _feature_index(
+    dates: Sequence[date],
+    train_indices: Sequence[int],
+    scored_index: int,
+    purge: int,
+) -> int:
+    """The last training row that cleared the purge gap before `scored_index`.
+
+    Under a gap of zero this is the row before the scored day, which is what the
+    backtest used unconditionally before it was purged. Under a gap it is often
+    not: `rows[scored_index - 1]` is frequently a row published after the
+    scoring window opened, and feeding it to the model is the leak the purge
+    exists to stop, re-entering through the one door the purge does not cover.
+    Dropping a row from the *training frame* and then reading the model's
+    feature off it is not a partial purge, it is no purge at all for the term
+    that dominates a persistence forecast.
+
+    The boundary is stated through `clears_purge` rather than by taking
+    `train_indices[-1]` on trust, for the reason `rolling_origin` states its own
+    guard that way: `rolling_origin` builds the prefix with a `bisect`, and a
+    consumer that re-derives the same answer from the same assumption cannot
+    disagree with it. Scanning back through the fold's own indices against the
+    authoritative comparison can, and the scan is over a prefix so the first
+    index it accepts is the last eligible one.
+
+    Raises:
+        LookAheadError: if no row in `train_indices` clears the gap. Reaching
+            this means the fold itself is malformed, since `rolling_origin`
+            refuses to yield such a fold -- so it raises rather than asserts,
+            and rather than falling back to a row that does not clear.
+    """
+
+    opens = dates[scored_index]
+    for index in reversed(tuple(train_indices)):
+        if clears_purge(dates[index], opens, purge):
+            return index
+    raise LookAheadError(
+        f"no training row clears the {purge}-day purge gap before "
+        f"{opens}; the fold is malformed"
+    )
+
+
 def rolling_persistence_backtest(
     observations: Iterable[DailyObservation],
+    *,
+    purge: int,
     minimum_history: int = 20,
     interval_probability: Optional[float] = None,
     fit_model: Optional[ModelFitter] = None,
 ) -> BacktestReport:
-    """Refit at every origin and score the next day. Persistence by default.
+    """Refit at every purged rolling origin and score the next day.
 
-    At each origin the model is fitted on the rows strictly before it and asked
-    for its quantiles; the reported interval is the outermost declared pair.
-    Prediction intervals therefore use only the fitted model's own numbers over
-    rows it was allowed to see, not a parallel derivation that happens to agree
-    with it today.
+    Folds come from `repo_model.splits.rolling_origin` at `step=1`, so this is
+    the scoring holdout that module documents and the purge is the one boundary
+    this project has. At each origin the model is fitted on the training rows
+    that cleared the gap and asked for its quantiles; the reported interval is
+    the outermost declared pair. Prediction intervals therefore use only the
+    fitted model's own numbers over rows it was allowed to see, not a parallel
+    derivation that happens to agree with it today.
+
+    **What the purge does to persistence.** With `purge=0` the feature row is
+    the day before the scored day and persistence is "yesterday's spread". With
+    `purge > 0` the feature row is `_feature_index`'s -- the last day the
+    forecaster was allowed to have seen -- and persistence becomes "the spread
+    of the last day I was allowed to see". That is a different forecast, and a
+    more honest one: at a six-day gap, yesterday's spread is a number that had
+    not been published when the forecast was made. Every model here inherits the
+    change, because every model reads its feature row from the same place.
 
     The fitting call is a parameter, so this scores the forecast interface
     rather than one member of it. The name is unchanged: it is what the existing
@@ -921,8 +989,21 @@ def rolling_persistence_backtest(
 
     Args:
         observations: the panel, ascending by date.
+        purge: calendar days that must separate the last training row from the
+            scored day. **Required, keyword-only, with no default**, for the
+            reason `rolling_origin` refuses a default `purge`,
+            `max_release_lag_days` refuses a default `decision_time` and
+            `fit_arx` refuses a default `regressors`: a default of `0` is the
+            leak wearing a convenience's clothes, and every number this function
+            ever reported was produced under one. Size it with
+            `repo_model.registry.max_release_lag_days(registry, sources,
+            decision_time=...)` over the sources the feature set actually uses.
+            This function never reads the registry and never learns what a
+            source is; the caller converts and passes the int.
         minimum_history: the first origin scored, and the shortest training
-            frame any fit is allowed.
+            frame any fit is allowed. Passed to `rolling_origin` as `min_train`,
+            which counts rows *after* purging -- so a gap that leaves too little
+            history raises rather than quietly scoring on a shorter frame.
         interval_probability: accepted only for callers that want to state the
             interval they expect. It is no longer an independent setting: the
             bounds come from `contract.QUANTILE_LEVELS`, and the only value
@@ -943,6 +1024,13 @@ def rolling_persistence_backtest(
             reported interval out of step, which is the drift the derivation
             exists to rule out; adjusting the levels to match is a contract
             question and not this function's to answer.
+        SplitError: if `purge` is not a non-negative int, if the panel's dates
+            repeat or go backwards, or if the gap leaves no origin with
+            `minimum_history` training rows behind it. That last one is a
+            refusal on purpose: shrinking `min_train` to recover a fold would
+            report a number produced by a rule nobody declared.
+        LookAheadError: if a fold's feature row does not clear the gap. That is
+            a bug here or in the splitter, not bad input.
     """
 
     if interval_probability is not None and not math.isclose(
@@ -963,12 +1051,23 @@ def rolling_persistence_backtest(
 
     forecasts: List[Forecast] = []
     model: Optional[FittedForecastModel] = None
+    dates = [row.date for row in rows]
 
-    for index in range(minimum_history, len(rows)):
-        # Fitted on rows[:index], so the cutoff is the feature row's own date
-        # and nothing dated at or after the scored day is in the frame.
-        model = fitter(rows[:index], minimum_history=minimum_history)
-        feature_row = rows[index - 1]
+    # `step=1` is the origin-by-origin shape this function has always had: one
+    # scored row per fold, blocks tiling the tail with no remainder. It is not a
+    # parameter, because a larger block would score a day on a model fitted at
+    # an origin further back than the day before it, which is a different
+    # backtest and would need its own reported horizon.
+    for train_indices, test_indices in rolling_origin(
+        dates, minimum_history, 1, purge
+    ):
+        index = test_indices[0]
+        # The training frame is the prefix that cleared the gap, so the cutoff
+        # `fit` derives from it is the last date the forecaster was allowed to
+        # see -- not the day before the scored day, which under a purge is a
+        # date whose value had not been published yet.
+        model = fitter([rows[i] for i in train_indices], minimum_history=minimum_history)
+        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
         forecasts.append(
             Forecast(
