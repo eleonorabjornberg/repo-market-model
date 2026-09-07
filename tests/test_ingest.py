@@ -15,6 +15,10 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model.data import load_point_in_time_panel
 from repo_model.ingest import (
     ArchiveRecord,
+    ArchiveRefusal,
+    NMFP_INVESTMENT_CATEGORY_ERAS,
+    REFUSAL_ABSENT_FIELDS,
+    REFUSAL_UNREADABLE,
     SnapshotArtifact,
     _decode_transport,
     _sec_nmfp_rows,
@@ -55,7 +59,26 @@ def registry_with_nmfp_coverage_floor(directory: Path, floor: int) -> Path:
     return path
 
 
-def nmfp_archive(submissions) -> bytes:
+#: The `INVESTMENTCATEGORY` strings the fixtures file. Taken verbatim from the
+#: declaration in `repo_model.ingest`, and therefore from what SEC actually
+#: files, so a fixture cannot pass by agreeing with the parser about a
+#: vocabulary the source does not use. Both are declared in the 2016-04..2024-05
+#: and 2024-06..2026-07 eras, which is every era the fixtures date themselves
+#: into.
+FIXTURE_TREASURY_CATEGORY = "U.S. Treasury Debt"
+FIXTURE_REPO_CATEGORY = (
+    "U.S. Treasury Repurchase Agreement, if collateralized only by "
+    "U.S. Treasuries (including Strips) and cash"
+)
+
+
+def nmfp_archive(
+    submissions,
+    *,
+    omit=(),
+    treasury_category=FIXTURE_TREASURY_CATEGORY,
+    repo_category=FIXTURE_REPO_CATEGORY,
+) -> bytes:
     """Build a minimal but structurally faithful Form N-MFP flat-file ZIP.
 
     `submissions` is a sequence of dicts with `accession`, `series`, `report`
@@ -63,8 +86,16 @@ def nmfp_archive(submissions) -> bytes:
     filing date, defaulting to the report date), `submission_type` (defaulting
     to `N-MFP3`) and `flows`, a sequence of
     `(flow_date, subscriptions, redemptions)`. The tables carry the same column
-    names and the same DD-MON-YYYY dates as the SEC extract, so a fixture cannot
-    pass by agreeing with the parser about a format the source does not use.
+    names, the same DD-MON-YYYY dates and the same INVESTMENTCATEGORY strings as
+    the SEC extract, so a fixture cannot pass by agreeing with the parser about
+    a format or a vocabulary the source does not use.
+
+    `omit` names tables to leave out of the ZIP entirely, which is how the
+    archives filed before 2024-06-10 are shaped: they carry no
+    `NMFP_DLYSHAREHOLDERFLOWREPORT.tsv` because daily shareholder flows were not
+    collected yet. It leaves the table out rather than writing an empty one --
+    an empty table is a claim that nothing was reported, and these archives make
+    no such claim.
     """
 
     submission_rows = [
@@ -99,24 +130,29 @@ def nmfp_archive(submissions) -> bytes:
         # missingness the quality report shows can only come from the coverage
         # floor and not from a series the fixture never supplied.
         holding_rows.append(
-            f"{entry['accession']}\tU.S. Treasury Debt\t{net // 2}\t"
+            f"{entry['accession']}\t{treasury_category}\t{net // 2}\t"
             "United States Treasury\tBill\t"
         )
         holding_rows.append(
-            f"{entry['accession']}\tU.S. Treasury Repurchase Agreement\t{net // 4}\t"
+            f"{entry['accession']}\t{repo_category}\t{net // 4}\t"
             "Federal Reserve Bank of New York\tReverse repo\t"
         )
 
+    tables = {
+        "NMFP_SUBMISSION.tsv": submission_rows,
+        "NMFP_SERIESLEVELINFO.tsv": series_rows,
+        "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv": flow_rows,
+        "NMFP_SCHPORTFOLIOSECURITIES.tsv": holding_rows,
+    }
+    unknown = frozenset(omit) - frozenset(tables)
+    if unknown:
+        raise AssertionError(f"fixture cannot omit tables it never writes: {unknown}")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("NMFP_SUBMISSION.tsv", "\n".join(submission_rows) + "\n")
-        archive.writestr("NMFP_SERIESLEVELINFO.tsv", "\n".join(series_rows) + "\n")
-        archive.writestr(
-            "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv", "\n".join(flow_rows) + "\n"
-        )
-        archive.writestr(
-            "NMFP_SCHPORTFOLIOSECURITIES.tsv", "\n".join(holding_rows) + "\n"
-        )
+        for name, rows in tables.items():
+            if name in omit:
+                continue
+            archive.writestr(name, "\n".join(rows) + "\n")
     return buffer.getvalue()
 
 
@@ -453,9 +489,12 @@ class ArchiveManifestTests(unittest.TestCase):
 
     `data/raw/` is gitignored, so the bytes that make up `sec_nmfp` are not in
     the repository and a fresh checkout has no way to know how much history is
-    supposed to exist. The manifest is that record. It also has to distinguish
-    three states that all look like an absent file: never declared, declared but
-    not fetched here, and fetched and refused.
+    supposed to exist. The manifest is that record. It has to distinguish four
+    states that all look like an absent file: never declared, declared but not
+    fetched here, fetched and read but carrying no table for some fields, and
+    fetched and unreadable. The last two were one state until refusal became
+    per-table, and collapsing them says "this archive is unreadable" about a file
+    whose only fault is that the data it is short of did not exist yet.
     """
 
     SEC_URL = "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/"
@@ -473,17 +512,37 @@ class ArchiveManifestTests(unittest.TestCase):
                 },
             )
         )
-        # The same archive with one required table removed -- the shape every
-        # Form N-MFP set published before the daily shareholder-flow report
-        # existed actually has.
-        stripped = io.BytesIO()
+        # The same archive with the daily shareholder-flow table removed -- the
+        # shape every Form N-MFP set published before that report existed
+        # actually has. It is read, not refused: it supplies everything its other
+        # tables supply and is short exactly three fields.
+        self.without_flow_table = nmfp_archive(
+            (
+                {
+                    "accession": "0000000000-26-000001",
+                    "series": "S000000001",
+                    "report": "31-JUL-2026",
+                },
+            ),
+            omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+        )
+        # A table that is present with a column the adapter reads renamed. This
+        # is the failure that has to refuse the whole archive: `record.get()`
+        # returns None, the row is skipped, and the archive parses
+        # "successfully" while contributing a partial balance sheet that
+        # satisfies the identity because both sides lost the same rows.
+        renamed = io.BytesIO()
         with zipfile.ZipFile(io.BytesIO(self.readable)) as original:
-            with zipfile.ZipFile(stripped, "w") as archive:
+            with zipfile.ZipFile(renamed, "w") as archive:
                 for name in original.namelist():
-                    if name == "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv":
-                        continue
-                    archive.writestr(name, original.read(name))
-        self.unreadable = stripped.getvalue()
+                    payload = original.read(name)
+                    if name == "NMFP_SUBMISSION.tsv":
+                        header, rows = payload.decode("utf-8").split("\n", 1)
+                        payload = (
+                            f"{header.replace('FILING_DATE', 'FILED')}\n{rows}"
+                        ).encode()
+                    archive.writestr(name, payload)
+        self.unreadable = renamed.getvalue()
 
     def _serve(self, payloads):
         calls = []
@@ -495,7 +554,7 @@ class ArchiveManifestTests(unittest.TestCase):
         return downloader, calls
 
     def test_an_archive_the_parser_cannot_read_never_reaches_the_raw_tree(self):
-        url = f"{self.SEC_URL}old.zip"
+        url = f"{self.SEC_URL}renamed.zip"
         downloader, calls = self._serve({url: self.unreadable})
         updated = fetch_sec_nmfp_archives(
             self.output_root,
@@ -504,10 +563,8 @@ class ArchiveManifestTests(unittest.TestCase):
             pause_seconds=0,
         )
         self.assertEqual(calls, [url])
-        self.assertEqual(
-            updated[0].refusals,
-            ("lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
-        )
+        self.assertEqual([item.kind for item in updated[0].refusals], [REFUSAL_UNREADABLE])
+        self.assertIn("FILING_DATE", updated[0].refusals[0].detail)
         self.assertFalse(updated[0].admitted)
         # Everything under data/raw/ is panel input by construction. An archive
         # the parser refuses is not panel input, so it is recorded and not
@@ -516,9 +573,46 @@ class ArchiveManifestTests(unittest.TestCase):
         self.assertEqual(list((self.output_root / "sec_nmfp").glob("*.zip")), [])
         self.assertNotEqual(updated[0].sha256, "")
 
+    def test_an_archive_missing_a_table_is_admitted_and_says_what_it_costs(self):
+        """The other half of the same rule, and the reason it is not one rule.
+
+        A missing table is loud, attributable to named fields, and its whole
+        consequence is that those fields have no observation. That is a state
+        the panel already represents, so the archive belongs in the raw tree
+        with the cost recorded -- not on the refused pile next to files nobody
+        can read.
+        """
+
+        url = f"{self.SEC_URL}old.zip"
+        downloader, calls = self._serve({url: self.without_flow_table})
+        updated = fetch_sec_nmfp_archives(
+            self.output_root,
+            [ArchiveRecord(url=url)],
+            downloader=downloader,
+            pause_seconds=0,
+        )
+        self.assertEqual(calls, [url])
+        self.assertEqual(
+            [item.kind for item in updated[0].refusals], [REFUSAL_ABSENT_FIELDS]
+        )
+        self.assertEqual(
+            updated[0].refusals[0].table, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+        )
+        self.assertEqual(
+            updated[0].absent_fields,
+            ("mmf_gross_redemptions", "mmf_gross_subscriptions", "mmf_net_flow"),
+        )
+        self.assertTrue(updated[0].admitted)
+        self.assertEqual(
+            len(list((self.output_root / "sec_nmfp").glob("*.zip"))),
+            1,
+            msg="an archive that is merely short a table was withheld from the "
+            "raw tree as though it were unreadable",
+        )
+
     def test_a_recorded_archive_is_not_downloaded_twice(self):
         readable_url = f"{self.SEC_URL}new.zip"
-        refused_url = f"{self.SEC_URL}old.zip"
+        refused_url = f"{self.SEC_URL}renamed.zip"
         payloads = {readable_url: self.readable, refused_url: self.unreadable}
         downloader, calls = self._serve(payloads)
         records = [ArchiveRecord(url=readable_url), ArchiveRecord(url=refused_url)]
@@ -530,7 +624,7 @@ class ArchiveManifestTests(unittest.TestCase):
         self.assertFalse(first[1].admitted)
 
         # Re-running fetches nothing: the readable archive is already on disk
-        # under its recorded digest, and the refused one has a verdict already
+        # under its recorded digest, and the unreadable one has a verdict already
         # written down. Re-downloading a hundred archives to re-derive a recorded
         # refusal is not politeness.
         again_downloader, again_calls = self._serve(payloads)
@@ -553,6 +647,35 @@ class ArchiveManifestTests(unittest.TestCase):
             pause_seconds=0,
         )
         self.assertCountEqual(recheck_calls, [readable_url, refused_url])
+
+    def test_an_archive_recorded_short_a_table_is_refetched_when_its_bytes_are_gone(self):
+        """The widened rule has to be able to re-earn the history it admits.
+
+        Under the per-archive rule these 71 archives were judged, recorded and
+        discarded. Their recorded verdict now says only which fields they are
+        short, which is not a reason to leave them unfetched -- and skipping them
+        because the `refusals` list is non-empty would mean the widening never
+        reached the bytes it was written for.
+        """
+
+        url = f"{self.SEC_URL}old.zip"
+        downloader, calls = self._serve({url: self.without_flow_table})
+        first = fetch_sec_nmfp_archives(
+            self.output_root, [ArchiveRecord(url=url)], downloader=downloader,
+            pause_seconds=0,
+        )
+        self.assertTrue(first[0].admitted)
+
+        for path in (self.output_root / "sec_nmfp").iterdir():
+            path.unlink()
+        again_downloader, again_calls = self._serve({url: self.without_flow_table})
+        fetch_sec_nmfp_archives(
+            self.output_root, first, downloader=again_downloader, pause_seconds=0
+        )
+        self.assertEqual(again_calls, [url])
+        self.assertEqual(
+            len(list((self.output_root / "sec_nmfp").glob("*.zip"))), 1
+        )
 
     def test_a_changed_digest_is_a_changed_source_and_raises(self):
         url = f"{self.SEC_URL}new.zip"
@@ -577,13 +700,57 @@ class ArchiveManifestTests(unittest.TestCase):
                 sha256="a" * 64,
                 byte_count=1,
                 first_retrieved_at="2026-09-07T00:00:00+00:00",
-                refusals=("lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+                refusals=(
+                    ArchiveRefusal(
+                        kind=REFUSAL_UNREADABLE,
+                        table="NMFP_SUBMISSION.tsv",
+                        detail="NMFP_SUBMISSION.tsv lacks required columns FILING_DATE",
+                    ),
+                ),
+            ),
+            ArchiveRecord(
+                url=f"{self.SEC_URL}c.zip",
+                sha256="c" * 64,
+                byte_count=3,
+                first_retrieved_at="2026-09-07T00:00:00+00:00",
+                refusals=(
+                    ArchiveRefusal(
+                        kind=REFUSAL_ABSENT_FIELDS,
+                        table="NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",
+                        fields=("mmf_net_flow",),
+                        detail="lacks NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",
+                    ),
+                ),
             ),
         )
         write_sec_nmfp_archive_manifest(records, path)
         loaded = load_sec_nmfp_archive_manifest(path)
         self.assertEqual([item.url for item in loaded], sorted(item.url for item in records))
-        self.assertEqual([item.admitted for item in loaded], [False, True])
+        # a.zip is unreadable; b.zip is clean; c.zip is read and short one field.
+        self.assertEqual([item.admitted for item in loaded], [False, True, True])
+        self.assertEqual(loaded[2].absent_fields, ("mmf_net_flow",))
+        self.assertEqual(loaded[0].absent_fields, ())
+
+        # A bare string cannot say which of the two happened, so it is not read
+        # as either. Silently treating it as one would re-collapse the states
+        # this record exists to separate.
+        legacy = self.output_root / "legacy.json"
+        legacy.write_text(
+            json.dumps(
+                {
+                    "archives": [
+                        {
+                            "url": f"{self.SEC_URL}a.zip",
+                            "sha256": "a" * 64,
+                            "refusals": ["lacks required table X"],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, r"must be an object naming its kind"):
+            load_sec_nmfp_archive_manifest(legacy)
 
         # A declared set of nothing is not a source with no history; it is a
         # source nobody has described, and must not read as the former.
@@ -607,12 +774,24 @@ class ArchiveManifestTests(unittest.TestCase):
             0,
             "the declared archive set admits nothing, so the source has no history",
         )
-        refused = [record for record in records if record.refusals]
+        short = [record for record in records if record.absent_fields]
         self.assertGreater(
-            len(refused),
+            len(short),
             0,
-            "no declared archive is refused, so this record is not distinguishing "
-            "the schema eras the backfill found",
+            "no declared archive is recorded as short a table, so this record is "
+            "not distinguishing the schema eras the backfill found",
+        )
+        # Every one of them is short the same three fields for the same reason:
+        # the daily shareholder-flow report did not exist before 2024-06-10.
+        self.assertEqual(
+            {record.absent_fields for record in short},
+            {("mmf_gross_redemptions", "mmf_gross_subscriptions", "mmf_net_flow")},
+        )
+        self.assertEqual(
+            [record.url for record in records if record.unreadable],
+            [],
+            "a declared archive is unreadable, which is a schema change nobody "
+            "has looked at rather than a table that did not exist yet",
         )
 
     def test_the_refusal_report_names_every_problem_not_just_the_first(self):
@@ -630,18 +809,43 @@ class ArchiveManifestTests(unittest.TestCase):
         # `_nmfp_table` stops at the first problem, which is right for a parse.
         # A verdict recorded in the manifest has to name all of them: an archive
         # from a schema nobody here has seen should be describable in one pass.
+        found = nmfp_schema_refusals(rewritten.getvalue())
         self.assertEqual(
-            nmfp_schema_refusals(rewritten.getvalue()),
-            (
-                "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",
-                "NMFP_SUBMISSION.tsv lacks required columns FILING_DATE",
-            ),
+            [(item.kind, item.table) for item in found],
+            [
+                (REFUSAL_ABSENT_FIELDS, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"),
+                (REFUSAL_UNREADABLE, "NMFP_SUBMISSION.tsv"),
+            ],
         )
+        self.assertIn("FILING_DATE", found[1].detail)
 
     def test_a_response_that_is_not_a_zip_is_refused_rather_than_crashing(self):
+        found = nmfp_schema_refusals(b"<html>rate limited</html>")
         self.assertEqual(
-            nmfp_schema_refusals(b"<html>rate limited</html>"),
-            ("not a valid ZIP archive",),
+            [(item.kind, item.detail) for item in found],
+            [(REFUSAL_UNREADABLE, "not a valid ZIP archive")],
+        )
+
+    def test_an_archive_without_the_spine_table_is_unreadable_not_merely_short(self):
+        """The one absent table that cannot cost only its own fields.
+
+        `NMFP_SUBMISSION.tsv` carries no panel value. It says which series and
+        which report date each accession speaks for, so without it no row in the
+        archive can be placed at all -- there is no cross-section to be short of
+        anything.
+        """
+
+        stripped = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(self.readable)) as original:
+            with zipfile.ZipFile(stripped, "w") as archive:
+                for name in original.namelist():
+                    if name == "NMFP_SUBMISSION.tsv":
+                        continue
+                    archive.writestr(name, original.read(name))
+        found = nmfp_schema_refusals(stripped.getvalue())
+        self.assertEqual(
+            [(item.kind, item.table) for item in found],
+            [(REFUSAL_UNREADABLE, "NMFP_SUBMISSION.tsv")],
         )
 
 
@@ -788,6 +992,253 @@ class OverlappingArchiveTests(unittest.TestCase):
             [dict(item.submission_types) for item in coverage],
             [{"N-MFP3": 4}, {"N-MFP3": 4, "N-MFP3/A": 1}],
         )
+
+
+class PerTableRefusalTests(unittest.TestCase):
+    """Refusal is per table, and the INVESTMENTCATEGORY vocabulary is declared.
+
+    These two rules land together because the first one opens the door the
+    second one has to close. Making an absent table cost its own fields is what
+    admits the 71 archives filed before 2024-06-10, which carry no daily
+    shareholder-flow table because the data did not exist. Every column this
+    adapter reads is present under the same name in all of them, so a header
+    check waves them all through -- and `INVESTMENTCATEGORY`, which the adapter
+    matches on by *value*, was relabelled from `Treasury Debt` to
+    `U.S. Treasury Debt` at the 2016-04 report month. Admitting the earlier
+    archives without declaring that boundary would have produced
+    `mmf_treasury_holdings` silently empty from 2010-11 to 2016-03 while
+    `mmf_repo_holdings` populated, with the balance-sheet identity satisfied and
+    nothing flagged.
+
+    The fixtures use the report dates and the INVESTMENTCATEGORY strings the SEC
+    extracts actually carry, so a fixture cannot pass by agreeing with the parser
+    about a vocabulary the source does not use.
+    """
+
+    FLOOR = 2
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.registry_path = registry_with_nmfp_coverage_floor(
+            self.output_root, self.FLOOR
+        )
+        self.registry = json.loads(self.registry_path.read_text(encoding="utf-8"))
+
+    def _parse(self, payload: bytes, name: str = "fixture"):
+        artifact = fetch_sec_nmfp(
+            self.output_root,
+            f"https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/{name}.zip",
+            lambda url: payload,
+        )[0]
+        return parse_snapshots([artifact], registry=self.registry)
+
+    @staticmethod
+    def _submissions(report: str):
+        return (
+            {
+                "accession": "A1",
+                "series": "S1",
+                "report": report,
+                "net_assets": 3_000_000_000,
+            },
+            {
+                "accession": "A2",
+                "series": "S2",
+                "report": report,
+                "net_assets": 5_000_000_000,
+            },
+        )
+
+    def test_an_archive_without_the_flow_table_still_supplies_the_balance_sheet(self):
+        """A missing table costs its own fields, and costs nothing else.
+
+        This is the shape of every Form N-MFP archive filed before 2024-06-10:
+        `NMFP_SERIESLEVELINFO` and `NMFP_SCHPORTFOLIOSECURITIES` are there,
+        `NMFP_DLYSHAREHOLDERFLOWREPORT` is not, because daily shareholder flows
+        were not collected. Fourteen years of balance sheets and holdings were
+        being discarded over the absence of a flow table.
+
+        The second half of the assertion matters as much as the first. The three
+        flow series must be **absent**, not zero. A month with no flow table has
+        no `mmf_net_flow` row; it does not have a zero one, and a zero would be
+        this adapter stating that subscriptions equalled redemptions on a day
+        nobody reported.
+        """
+
+        report_date = date(2023, 1, 31)
+        parsed = self._parse(
+            nmfp_archive(
+                self._submissions("31-JAN-2023"),
+                omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+            )
+        )
+
+        values = {}
+        for row in parsed.rows:
+            values.setdefault(row.series_id, {})[row.ref_date] = row.value
+
+        self.assertTrue(
+            {item.ref_date for item in parsed.coverage if item.admitted}
+            == {report_date},
+            msg="the cross-section was not admitted at all",
+        )
+        for series_id, expected in (
+            ("mmf_net_assets", 8.0),
+            ("mmf_portfolio_securities", 8.0),
+            ("mmf_treasury_holdings", 4.0),
+            ("mmf_repo_holdings", 2.0),
+            ("mmf_on_rrp", 2.0),
+        ):
+            self.assertEqual(
+                sorted(values.get(series_id, {})),
+                [report_date],
+                msg=f"{series_id} was lost with the absent flow table",
+            )
+            self.assertAlmostEqual(values[series_id][report_date], expected)
+
+        for series_id in (
+            "mmf_gross_subscriptions",
+            "mmf_gross_redemptions",
+            "mmf_net_flow",
+        ):
+            self.assertNotIn(
+                series_id,
+                values,
+                msg=f"{series_id} was emitted for an archive that carries no "
+                "flow table; an unobserved value has no row, not a zero one",
+            )
+
+        # The cost is recorded next to the coverage decision rather than left to
+        # be inferred from a row that is not there.
+        coverage = {item.ref_date: item for item in parsed.coverage}
+        self.assertEqual(
+            coverage[report_date].absent_fields,
+            ("mmf_gross_redemptions", "mmf_gross_subscriptions", "mmf_net_flow"),
+        )
+
+    def test_treasury_holdings_populate_under_the_pre_2016_category_vocabulary(self):
+        """The boundary, from the side that would otherwise be silently empty.
+
+        `Treasury Debt` is what the source filed through the 2016-03 report
+        month. Matching only `U.S. Treasury Debt` there yields no rows at all for
+        `mmf_treasury_holdings` while `mmf_repo_holdings` populates normally,
+        because the substring the repo rule matched survived the relabelling and
+        the exact string the treasury rule matched did not.
+        """
+
+        report_date = date(2013, 1, 31)
+        parsed = self._parse(
+            nmfp_archive(
+                self._submissions("31-JAN-2013"),
+                omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+                treasury_category="Treasury Debt",
+                repo_category="Treasury Repurchase Agreement",
+            ),
+            name="era1",
+        )
+
+        treasury = {
+            row.ref_date: row.value
+            for row in parsed.rows
+            if row.series_id == "mmf_treasury_holdings"
+        }
+        repo = {
+            row.ref_date: row.value
+            for row in parsed.rows
+            if row.series_id == "mmf_repo_holdings"
+        }
+        self.assertEqual(
+            sorted(treasury),
+            [report_date],
+            msg="mmf_treasury_holdings is silently empty in the pre-2016 "
+            "vocabulary era while mmf_repo_holdings populates -- the exact "
+            "partial balance sheet the era declaration exists to prevent",
+        )
+        self.assertAlmostEqual(treasury[report_date], 4.0)
+        self.assertAlmostEqual(repo[report_date], 2.0)
+
+    def test_a_category_the_era_does_not_declare_raises(self):
+        """An unmatched value is a moved vocabulary, not an uninteresting holding.
+
+        Falling through to no row would leave the holdings series short with the
+        identity still satisfied and nothing flagged, one layer below the failure
+        the era declaration was written for.
+        """
+
+        with self.assertRaises(ValueError) as raised:
+            self._parse(
+                nmfp_archive(
+                    self._submissions("31-JAN-2023"),
+                    omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+                    treasury_category="Sovereign Wealth Debt",
+                ),
+                name="undeclared_value",
+            )
+        self.assertIn("Sovereign Wealth Debt", str(raised.exception))
+        self.assertIn("2023-01-31", str(raised.exception))
+
+    def test_a_report_month_in_no_declared_era_costs_only_the_holdings_fields(self):
+        """An undeclared era refuses the field, not the archive.
+
+        The last era is bounded by the newest report month the declared archive
+        set carries, because the vocabulary is still moving. A report month past
+        it has no vocabulary anyone has read, so the categorical fields have no
+        observation -- and the balance sheet, which does not depend on the
+        categorical at all, is unaffected.
+        """
+
+        report_date = date(2005, 6, 30)
+        parsed = self._parse(
+            nmfp_archive(
+                self._submissions("30-JUN-2005"),
+                omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+                treasury_category="Whatever Was Filed In 2005",
+            ),
+            name="undeclared_era",
+        )
+
+        series = {row.series_id for row in parsed.rows}
+        self.assertIn("mmf_net_assets", series)
+        for series_id in (
+            "mmf_treasury_holdings",
+            "mmf_repo_holdings",
+            "mmf_on_rrp",
+        ):
+            self.assertNotIn(series_id, series)
+        coverage = {item.ref_date: item for item in parsed.coverage}
+        self.assertEqual(
+            coverage[report_date].absent_fields,
+            (
+                "mmf_gross_redemptions",
+                "mmf_gross_subscriptions",
+                "mmf_net_flow",
+                "mmf_on_rrp",
+                "mmf_repo_holdings",
+                "mmf_treasury_holdings",
+            ),
+        )
+
+    def test_the_declared_eras_do_not_overlap_and_classify_each_value_once(self):
+        """The declaration is a declaration, not three overlapping guesses."""
+
+        eras = NMFP_INVESTMENT_CATEGORY_ERAS
+        self.assertTrue(eras)
+        for era in eras:
+            self.assertLessEqual(era.start, era.end)
+            self.assertEqual(
+                len(era.treasury) + len(era.repo) + len(era.excluded),
+                len(era.declared),
+                msg=f"a category is classified twice in the {era.start} era",
+            )
+        for earlier, later in zip(eras, eras[1:]):
+            self.assertLess(
+                earlier.end,
+                later.start,
+                msg="declared vocabulary eras overlap, so one report month "
+                "would be read against two vocabularies",
+            )
 
 
 class CrossSectionCoverageTests(unittest.TestCase):

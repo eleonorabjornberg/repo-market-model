@@ -340,6 +340,71 @@ def fetch_sec_nmfp(
     ]
 
 
+#: The two things that can be wrong with an archive, which are not the same
+#: claim about the same file and must not be recorded as one.
+#:
+#: `UNREADABLE` -- a table the archive *does* carry has a column the adapter
+#: reads under a changed name, or the bytes are not a ZIP at all. That failure
+#: is silent: `record.get()` returns `None`, the row is skipped, and the archive
+#: parses "successfully" while contributing a partial balance sheet that
+#: satisfies the identity because both sides lost the same rows. Nothing
+#: downstream can see it, so the whole archive is refused.
+#:
+#: `ABSENT_FIELDS` -- a table is simply not in the archive. That is loud, it is
+#: attributable to named panel fields, and its only consequence is that those
+#: fields have no observation for this archive. The panel already represents
+#: that state, because absent is not zero and never has been. So it costs its
+#: own fields and nothing else.
+REFUSAL_UNREADABLE = "unreadable"
+REFUSAL_ABSENT_FIELDS = "absent_fields"
+
+
+@dataclass(frozen=True)
+class ArchiveRefusal:
+    """One thing the parser cannot get from an archive, and what it costs.
+
+    `kind` is `REFUSAL_UNREADABLE` or `REFUSAL_ABSENT_FIELDS`. `fields` names
+    the panel series an `ABSENT_FIELDS` entry costs, so the manifest records the
+    consequence and not only the cause: a reader should not have to know which
+    table supplies `mmf_net_flow` to see that this archive has none.
+    """
+
+    kind: str
+    detail: str
+    table: str = ""
+    fields: tuple = ()
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "kind": self.kind,
+            "table": self.table,
+            "fields": list(self.fields),
+            "detail": self.detail,
+        }
+
+    @classmethod
+    def from_mapping(cls, entry: object) -> "ArchiveRefusal":
+        if not isinstance(entry, Mapping):
+            raise ValueError(
+                "N-MFP archive manifest refusal must be an object naming its "
+                f"kind, not {entry!r}. A bare string cannot distinguish an "
+                "archive that is unreadable from one that merely lacks a table, "
+                "and those are different claims about the same file"
+            )
+        kind = str(entry.get("kind") or "")
+        if kind not in {REFUSAL_UNREADABLE, REFUSAL_ABSENT_FIELDS}:
+            raise ValueError(
+                f"N-MFP archive manifest refusal has unknown kind {kind!r}; "
+                f"expected {REFUSAL_UNREADABLE!r} or {REFUSAL_ABSENT_FIELDS!r}"
+            )
+        return cls(
+            kind=kind,
+            detail=str(entry.get("detail") or ""),
+            table=str(entry.get("table") or ""),
+            fields=tuple(str(item) for item in entry.get("fields") or ()),
+        )
+
+
 @dataclass(frozen=True)
 class ArchiveRecord:
     """One immutable Form N-MFP archive, as the committed manifest records it.
@@ -350,11 +415,12 @@ class ArchiveRecord:
 
     `refusals` is the parser's own verdict on the archive, computed by running
     `nmfp_schema_refusals` over the downloaded bytes rather than typed in by
-    hand. An empty tuple means the archive was read faithfully and is part of
-    the source; a non-empty one names every table and column the parser needs
-    and the archive does not have. Recording the verdict is what makes the
-    difference between "never existed", "not downloaded yet" and "downloaded,
-    and refused" visible from a fresh checkout.
+    hand. It holds `ArchiveRefusal` records rather than strings because refusal
+    is per-table: an archive missing a whole table is still read for every field
+    the tables it does carry supply. Recording the verdict this way is what
+    keeps "never existed", "not downloaded yet", "downloaded, read, and short
+    three fields" and "downloaded, and unreadable" four visibly different states
+    in a fresh checkout instead of two.
     """
 
     url: str
@@ -364,15 +430,33 @@ class ArchiveRecord:
     refusals: tuple = ()
 
     @property
+    def unreadable(self) -> tuple:
+        """The refusals that condemn the whole archive, if any."""
+
+        return tuple(item for item in self.refusals if item.kind == REFUSAL_UNREADABLE)
+
+    @property
+    def absent_fields(self) -> tuple:
+        """Every panel series this archive carries no table for."""
+
+        fields = set()
+        for item in self.refusals:
+            if item.kind == REFUSAL_ABSENT_FIELDS:
+                fields.update(item.fields)
+        return tuple(sorted(fields))
+
+    @property
     def admitted(self) -> bool:
-        """True only for an archive that was fetched and read faithfully.
+        """True for an archive that was fetched and can be read faithfully.
 
         An unfetched record is neither admitted nor refused, and must not be
         reported as either: `sha256` is empty precisely because nobody has
-        looked yet.
+        looked yet. An archive missing a table *is* admitted -- it supplies
+        every field its remaining tables supply, and `absent_fields` says which
+        ones it does not.
         """
 
-        return bool(self.sha256) and not self.refusals
+        return bool(self.sha256) and not self.unreadable
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -380,35 +464,73 @@ class ArchiveRecord:
             "sha256": self.sha256,
             "byte_count": self.byte_count,
             "first_retrieved_at": self.first_retrieved_at,
-            "refusals": list(self.refusals),
+            "refusals": [item.as_dict() for item in self.refusals],
         }
 
 
 def nmfp_schema_refusals(payload: bytes) -> tuple:
-    """Every reason the parser cannot read this archive faithfully, or none.
+    """What the parser cannot get from this archive, per table, or nothing.
 
-    Derived from `NMFP_REQUIRED_COLUMNS`, the same declaration `_nmfp_table`
-    enforces, so the manifest cannot record a verdict the parser disagrees with.
-    The difference is only that `_nmfp_table` raises on the first problem, which
-    is right for a parse and wrong for a report: an archive from a schema the
-    project has never seen should name everything it is missing in one pass.
+    Derived from `NMFP_REQUIRED_COLUMNS` and `NMFP_TABLE_FIELDS`, the same
+    declarations the parser reads, so the manifest cannot record a verdict the
+    parser disagrees with. The difference is only that a parse raises on the
+    first problem, which is right for a parse and wrong for a report: an archive
+    from a schema the project has never seen should name everything it is
+    missing in one pass.
+
+    The verdict is per table. An absent table costs the panel fields that table
+    supplies and is recorded as `REFUSAL_ABSENT_FIELDS`. A table that is present
+    with a column the adapter reads missing is `REFUSAL_UNREADABLE` and refuses
+    the whole archive, because a renamed column is indistinguishable from an
+    absent value at `record.get()` and produces a silently partial series. The
+    spine table is the one exception to the first rule: without
+    `NMFP_SUBMISSION.tsv` no row can be attributed to a series or a report date,
+    so its absence is unreadable rather than a cost in fields.
 
     A schema check on headers is not a schema check on meaning. It cannot see a
     column that kept its name and changed its units, or a categorical whose
-    vocabulary was rewritten. See `docs/track-a-decisions-2026-09-07.md` for a
-    dated instance of the second, which this function returns no refusal for.
+    vocabulary was rewritten -- `NMFP_INVESTMENT_CATEGORY_ERAS` is where the
+    second of those is declared, and this function returns no refusal for it.
     """
 
     problems = []
     try:
         archive = zipfile.ZipFile(io.BytesIO(payload))
     except zipfile.BadZipFile:
-        return ("not a valid ZIP archive",)
+        return (
+            ArchiveRefusal(
+                kind=REFUSAL_UNREADABLE, detail="not a valid ZIP archive"
+            ),
+        )
     with archive:
         names = frozenset(archive.namelist())
         for table, required in sorted(NMFP_REQUIRED_COLUMNS.items()):
             if table not in names:
-                problems.append(f"lacks required table {table}")
+                if table == NMFP_SPINE_TABLE:
+                    problems.append(
+                        ArchiveRefusal(
+                            kind=REFUSAL_UNREADABLE,
+                            table=table,
+                            detail=(
+                                f"lacks {table}, which attributes every other "
+                                "row to a series and a report date; nothing in "
+                                "the archive can be placed without it"
+                            ),
+                        )
+                    )
+                    continue
+                fields = NMFP_TABLE_FIELDS[table]
+                problems.append(
+                    ArchiveRefusal(
+                        kind=REFUSAL_ABSENT_FIELDS,
+                        table=table,
+                        fields=fields,
+                        detail=(
+                            f"lacks {table}; no observation of "
+                            f"{', '.join(fields)} for this archive"
+                        ),
+                    )
+                )
                 continue
             header = archive.open(table).readline().decode("utf-8-sig")
             reader = csv.reader(io.StringIO(header.rstrip("\r\n")), delimiter="\t")
@@ -416,7 +538,14 @@ def nmfp_schema_refusals(payload: bytes) -> tuple:
             missing = required - columns
             if missing:
                 problems.append(
-                    f"{table} lacks required columns {', '.join(sorted(missing))}"
+                    ArchiveRefusal(
+                        kind=REFUSAL_UNREADABLE,
+                        table=table,
+                        detail=(
+                            f"{table} lacks required columns "
+                            f"{', '.join(sorted(missing))}"
+                        ),
+                    )
                 )
     return tuple(problems)
 
@@ -452,7 +581,10 @@ def load_sec_nmfp_archive_manifest(
                 sha256=str(entry.get("sha256") or ""),
                 byte_count=int(entry.get("byte_count") or 0),
                 first_retrieved_at=str(entry.get("first_retrieved_at") or ""),
-                refusals=tuple(str(item) for item in entry.get("refusals") or ()),
+                refusals=tuple(
+                    ArchiveRefusal.from_mapping(item)
+                    for item in entry.get("refusals") or ()
+                ),
             )
         )
     return tuple(records)
@@ -473,9 +605,16 @@ def write_sec_nmfp_archive_manifest(
             "The Form N-MFP archives that constitute this source. data/raw/ is "
             "gitignored and these bytes are not committed, so this file is how a "
             "fresh checkout knows what history is supposed to exist. An entry "
-            "with an empty sha256 has never been fetched here. An entry with a "
-            "non-empty refusals list was fetched and refused: the parser cannot "
-            "read it faithfully, so it contributes no observations and is not "
+            "with an empty sha256 has never been fetched here. Refusal is per "
+            "table, so a refusals entry says which of two different things "
+            "happened. kind 'absent_fields' means the archive does not carry "
+            "that table at all: it is read for everything its other tables "
+            "supply, it is placed under data/raw/, and the named fields simply "
+            "have no observation from it -- absent, not zero. kind 'unreadable' "
+            "means a table the archive does carry has a column the adapter "
+            "reads under a changed name, which is indistinguishable from an "
+            "absent value at parse time and would yield a silently partial "
+            "series; such an archive contributes no observations and is not "
             "placed under data/raw/."
         ),
         "archives": [
@@ -502,10 +641,17 @@ def fetch_sec_nmfp_archives(
 
     Idempotent in both directions. An archive whose recorded `sha256` already
     matches a snapshot on disk is not downloaded again, and neither is one
-    already recorded as refused -- re-downloading a hundred archives to re-derive
-    a verdict that is written down is not politeness. `recheck=True` forces both,
-    for the day the parser's requirements change and the verdicts have to be
-    re-earned.
+    already recorded as unreadable -- re-downloading a hundred archives to
+    re-derive a verdict that is written down is not politeness. `recheck=True`
+    forces both, for the day the parser's requirements change and the verdicts
+    have to be re-earned.
+
+    A record whose only recorded refusals are absent tables is *not* skipped
+    when its bytes are missing from `output_root`. That archive is admitted
+    under the per-table rule and belongs in the raw tree; the recorded verdict
+    says which fields it lacks, not that it should stay unfetched. This is what
+    makes the widening of the refusal rule re-earn its own history without
+    `--recheck` re-downloading the archives that are already here.
 
     An archive is validated before it is placed under `output_root`, so
     `data/raw/` only ever holds archives the parser can read faithfully. This is
@@ -536,7 +682,7 @@ def fetch_sec_nmfp_archives(
                 f"{record.url}"
             )
         if not recheck and record.sha256:
-            if record.refusals or record.sha256 in existing:
+            if record.unreadable or record.sha256 in existing:
                 updated.append(record)
                 continue
         if index and pause_seconds:
@@ -558,7 +704,7 @@ def fetch_sec_nmfp_archives(
         retrieved_at = record.first_retrieved_at or datetime.now(
             timezone.utc
         ).isoformat()
-        if not refusals:
+        if not any(item.kind == REFUSAL_UNREADABLE for item in refusals):
             artifact = _save_snapshot(
                 source_id="sec_nmfp",
                 url=record.url,
@@ -847,6 +993,258 @@ NMFP_REQUIRED_COLUMNS = {
     ),
 }
 
+#: The table that attributes every other row. It carries no panel field of its
+#: own; it says which series and which report date each accession speaks for.
+#: An archive without it cannot place a single value, so its absence is the one
+#: absent table that refuses the archive rather than costing fields.
+NMFP_SPINE_TABLE = "NMFP_SUBMISSION.tsv"
+
+#: What each table costs the panel when the archive does not carry it. Derived
+#: from the same field mappings the parser reads, so a field added to the
+#: adapter cannot be left out of the accounting for an absent table.
+#:
+#: This is the declaration that makes refusal per-table rather than per-archive.
+#: The 71 Form N-MFP archives filed before 2024-06-10 predate
+#: `NMFP_DLYSHAREHOLDERFLOWREPORT`; the daily shareholder-flow data did not
+#: exist, and discarding fourteen years of balance sheets and holdings over its
+#: absence confuses "we have no flow observation for this month" with "we cannot
+#: read this file".
+NMFP_TABLE_FIELDS = {
+    NMFP_SPINE_TABLE: (),
+    "NMFP_SERIESLEVELINFO.tsv": tuple(sorted(NMFP_BALANCE_FIELDS.values())),
+    "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv": tuple(
+        sorted(set(NMFP_FLOW_FIELDS.values()) | {"mmf_net_flow"})
+    ),
+    "NMFP_SCHPORTFOLIOSECURITIES.tsv": (
+        "mmf_on_rrp",
+        "mmf_repo_holdings",
+        "mmf_treasury_holdings",
+    ),
+}
+
+#: The panel fields that come from matching `INVESTMENTCATEGORY` by value, named
+#: once so a cross-section whose era has no declared vocabulary can say which
+#: fields it is short.
+NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
+
+
+@dataclass(frozen=True)
+class InvestmentCategoryEra:
+    """The `INVESTMENTCATEGORY` vocabulary this adapter matches on, for one era.
+
+    Header compatibility is not value compatibility, and this is the declaration
+    that says so out loud. Every column the adapter reads is present under the
+    same name in every Form N-MFP archive back to 2010q4, so a header check
+    admits all of them -- and then `INVESTMENTCATEGORY`, which is a categorical
+    the adapter matches on by *value*, silently means something different. The
+    label for Treasury debt was rewritten from `Treasury Debt` to
+    `U.S. Treasury Debt` between the 2016-03-31 and 2016-04-30 report months, so
+    a header-only check would read a 2013 archive with `mmf_repo_holdings`
+    populated and `mmf_treasury_holdings` empty, the identity satisfied, and
+    nothing flagged.
+
+    Declaring the vocabulary per era, rather than widening the matcher to accept
+    both spellings, is the difference between "we have more history" and "we
+    changed what the number means". Each era states three closed sets and their
+    union is the complete vocabulary observed in that era:
+
+    - `treasury` -- categories counted into `mmf_treasury_holdings`.
+    - `repo` -- categories counted into `mmf_repo_holdings`, and into
+      `mmf_on_rrp` when the counterparty rule also matches.
+    - `excluded` -- categories this adapter deliberately reads no field from.
+      Declared rather than defaulted, because "we do not read commercial paper"
+      and "we have never seen this string" must not look the same.
+
+    A value in none of the three raises. Falling through to no row would be the
+    silent-partial failure this declaration exists to prevent, arriving one layer
+    down: the row would be dropped, the series would be short, and the identity
+    would still hold.
+
+    `start` and `end` are report dates, inclusive, and the last era is bounded by
+    the newest report month the declared archive set actually carries. It is not
+    left open-ended: the vocabulary is still moving -- `U.S. Government Agency
+    Debt` split into coupon-paying and no-coupon variants in the 2024-06 report
+    month -- so an open era would be a claim about months nobody has read. A
+    report date in no declared era costs `NMFP_CATEGORY_FIELDS` for that
+    cross-section and nothing else, the same per-table posture the absent-table
+    rule takes.
+    """
+
+    start: date
+    end: date
+    treasury: frozenset
+    repo: frozenset
+    excluded: frozenset
+
+    @property
+    def declared(self) -> frozenset:
+        return self.treasury | self.repo | self.excluded
+
+
+#: The `INVESTMENTCATEGORY` vocabulary, era by era, enumerated from all 97
+#: declared archives on 7 September 2026 rather than from documentation. Each
+#: era's three sets are exactly the distinct values observed in the report
+#: months it covers -- no value is declared that the source has never emitted,
+#: and no observed value is left undeclared.
+#:
+#: Two boundaries, both sharp, both at a report month rather than a filing date:
+#:
+#: 2016-04-30 -- the Form N-MFP2 relabelling. `Treasury Debt` becomes
+#: `U.S. Treasury Debt` and every other label is rewritten with it. This is the
+#: boundary the previous block found and could not act on: the adapter matched
+#: only the later spelling, so the whole 2010-11..2016-03 era would have parsed
+#: with `mmf_treasury_holdings` empty and `mmf_repo_holdings` populated -- the
+#: substring `Repurchase Agreement` survived the rewrite and exact equality on
+#: `U.S. Treasury Debt` did not.
+#:
+#: 2024-06-30 -- the Form N-MFP3 expansion. `U.S. Government Agency Debt` splits
+#: into coupon-paying and no-coupon variants, and `Other Repurchase Agreement,
+#: if any collateral falls outside ...` loses the word `any`. This adapter reads
+#: neither agency-debt variant, but the repo relabelling is one word away from
+#: dropping a repo category on the floor, and it is the reason the last era is
+#: bounded rather than open.
+#:
+#: Two single-month spelling artifacts are declared literally, with the double
+#: space the source filed: `Government  Agency Repurchase Agreement` in 2013-10
+#: and `Other  Note` in 2012-07. Normalising whitespace here would be this
+#: adapter deciding what a filer meant; declaring the string is the source
+#: saying it.
+NMFP_INVESTMENT_CATEGORY_ERAS = (
+    InvestmentCategoryEra(
+        start=date(2010, 11, 30),
+        end=date(2016, 3, 31),
+        treasury=frozenset({"Treasury Debt"}),
+        repo=frozenset(
+            {
+                "Government  Agency Repurchase Agreement",
+                "Government Agency Repurchase Agreement",
+                "Other Repurchase Agreement",
+                "Treasury Repurchase Agreement",
+            }
+        ),
+        excluded=frozenset(
+            {
+                "Asset Backed Commercial Paper",
+                "Certificate of Deposit",
+                "Financial Company Commercial Paper",
+                "Government Agency Debt",
+                "Insurance Company Funding Agreement",
+                "Investment Company",
+                "Other  Note",
+                "Other Commercial Paper",
+                "Other Instrument",
+                "Other Municipal Debt",
+                "Other Note",
+                "Structured Investment Vehicle Note",
+                "Variable Rate Demand Note",
+            }
+        ),
+    ),
+    InvestmentCategoryEra(
+        start=date(2016, 4, 1),
+        end=date(2024, 5, 31),
+        treasury=frozenset({"U.S. Treasury Debt"}),
+        repo=frozenset(
+            {
+                "Other Repurchase Agreement, if any collateral falls outside "
+                "Treasury, Government Agency and cash",
+                "U.S. Government Agency Repurchase Agreement, collateralized "
+                "only by U.S. Government Agency securities, U.S. Treasuries, "
+                "and cash",
+                "U.S. Treasury Repurchase Agreement, if collateralized only by "
+                "U.S. Treasuries (including Strips) and cash",
+            }
+        ),
+        excluded=frozenset(
+            {
+                "Asset Backed Commercial Paper",
+                "Certificate of Deposit",
+                "Financial Company Commercial Paper",
+                "Insurance Company Funding Agreement",
+                "Investment Company",
+                "Non-Financial Company Commercial Paper",
+                "Non-Negotiable Time Deposit",
+                "Non-U.S. Sovereign, Sub-Sovereign and Supra-National debt",
+                "Other Asset Backed Securities",
+                "Other Instrument",
+                "Other Municipal Security",
+                "Tender Option Bond",
+                "U.S. Government Agency Debt",
+                "Variable Rate Demand Note",
+            }
+        ),
+    ),
+    InvestmentCategoryEra(
+        start=date(2024, 6, 1),
+        end=date(2026, 7, 31),
+        treasury=frozenset({"U.S. Treasury Debt"}),
+        repo=frozenset(
+            {
+                "Other Repurchase Agreement, if collateral falls outside "
+                "Treasury, Government Agency and cash",
+                "U.S. Government Agency Repurchase Agreement, collateralized "
+                "only by U.S. Government Agency securities, U.S. Treasuries, "
+                "and cash",
+                "U.S. Treasury Repurchase Agreement, if collateralized only by "
+                "U.S. Treasuries (including Strips) and cash",
+            }
+        ),
+        excluded=frozenset(
+            {
+                "Asset Backed Commercial Paper",
+                "Certificate of Deposit",
+                "Financial Company Commercial Paper",
+                "Insurance Company Funding Agreement",
+                "Investment Company",
+                "Non-Financial Company Commercial Paper",
+                "Non-Negotiable Time Deposit",
+                "Non-U.S. Sovereign, Sub-Sovereign and Supra-National debt",
+                "Other Asset Backed Securities",
+                "Other Instrument",
+                "Other Municipal Security",
+                "Tender Option Bond",
+                "U.S. Government Agency Debt (if categorized as coupon-paying notes)",
+                "U.S. Government Agency Debt (if categorized as no-coupon "
+                "discount notes)",
+                "Variable Rate Demand Note",
+            }
+        ),
+    ),
+)
+
+
+def nmfp_investment_category_era(report_date: date):
+    """The declared vocabulary for a report month, or `None` if there is none."""
+
+    for era in NMFP_INVESTMENT_CATEGORY_ERAS:
+        if era.start <= report_date <= era.end:
+            return era
+    return None
+
+
+def _nmfp_category_field(era: InvestmentCategoryEra, category: str, report_date: date):
+    """Which holdings field a category feeds in this era, or `None` for neither.
+
+    Raises on a category the era does not declare at all. An undeclared value is
+    not evidence that the holding is uninteresting; it is evidence that the
+    vocabulary moved again and that nobody has looked.
+    """
+
+    if category in era.treasury:
+        return "mmf_treasury_holdings"
+    if category in era.repo:
+        return "mmf_repo_holdings"
+    if category in era.excluded:
+        return None
+    raise ValueError(
+        f"SEC Form N-MFP INVESTMENTCATEGORY {category!r} on {report_date.isoformat()} "
+        f"is not declared for the {era.start.isoformat()}..{era.end.isoformat()} "
+        "vocabulary era, neither as a category this adapter reads nor as one it "
+        "excludes. Matching it to nothing would leave a holdings series short "
+        "with the identity still satisfied and nothing flagged, which is exactly "
+        "the failure NMFP_INVESTMENT_CATEGORY_ERAS exists to prevent. Declare it"
+    )
+
 
 def _nmfp_table(archive: zipfile.ZipFile, name: str):
     """Open one N-MFP table only when its header supports faithful parsing."""
@@ -865,6 +1263,23 @@ def _nmfp_table(archive: zipfile.ZipFile, name: str):
             f"{', '.join(sorted(missing))}"
         )
     return reader
+
+
+def _nmfp_table_if_present(archive: zipfile.ZipFile, name: str):
+    """One table's reader, or `None` when the archive does not carry it at all.
+
+    The two failures this distinguishes are not the same claim about a file. A
+    table whose columns moved is unreadable and refuses the archive, because a
+    renamed column reaches `record.get()` as `None` and skips the row silently.
+    A table that is simply absent costs the panel fields it supplies -- named in
+    `NMFP_TABLE_FIELDS` -- and nothing else, because a field with no observation
+    is a state the panel already represents. So this returns `None` for absence
+    and still raises, through `_nmfp_table`, for a header that has moved.
+    """
+
+    if name not in frozenset(archive.namelist()):
+        return None
+    return _nmfp_table(archive, name)
 
 
 def _nmfp_number(raw: object, field: str) -> Optional[float]:
@@ -932,15 +1347,23 @@ def _resolve_nmfp_submissions(submissions):
 def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     """Aggregate one SEC bulk extract without inventing absent holdings.
 
-    Returns `(rows, entity_counts, submission_types)`. Each element of `rows`
-    pairs an observation with the report date of the submission it came from --
-    its cross-section -- which is not always its own `ref_date`: a daily
-    shareholder-flow row is dated within the reporting month but belongs to that
-    month's cross-section and stands or falls with it. `entity_counts` maps each
-    cross-section to the number of distinct reporting entities that filed for it.
-    `submission_types` maps each cross-section to how many submissions of each
-    `SUBMISSIONTYPE` it carries, superseded ones included: it corroborates the
-    coverage decision without participating in it.
+    Returns `(rows, entity_counts, submission_types, absent_fields)`. Each
+    element of `rows` pairs an observation with the report date of the
+    submission it came from -- its cross-section -- which is not always its own
+    `ref_date`: a daily shareholder-flow row is dated within the reporting month
+    but belongs to that month's cross-section and stands or falls with it.
+    `entity_counts` maps each cross-section to the number of distinct reporting
+    entities that filed for it. `submission_types` maps each cross-section to
+    how many submissions of each `SUBMISSIONTYPE` it carries, superseded ones
+    included: it corroborates the coverage decision without participating in it.
+    `absent_fields` maps each cross-section to the panel series this archive
+    could supply no observation of, because the table that carries them is not
+    in the archive or because the report month has no declared
+    `INVESTMENTCATEGORY` vocabulary. Absent, never zero.
+
+    An archive missing a whole table is read for everything its other tables
+    supply. Only `NMFP_SUBMISSION.tsv` is indispensable, because without it no
+    row can be attributed to a series or a report date.
     """
 
     from .data import PointInTimeObservation
@@ -984,77 +1407,130 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
             accession: submissions[accession][1] for accession in kept_accessions
         }
 
-        for record in _nmfp_table(archive, "NMFP_SERIESLEVELINFO.tsv"):
-            accession = (record.get("ACCESSION_NUMBER") or "").strip()
-            if accession in superseded:
-                continue
-            if accession not in reports:
-                raise ValueError(f"SEC Form N-MFP series row has unknown accession {accession}")
-            section = reports[accession]
-            for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
-                value = _nmfp_number(record.get(raw_field), raw_field)
-                if value is not None:
-                    add(section, series_id, section, value / 1_000_000_000)
+        # An absent table costs the fields it supplies, for every cross-section
+        # in this archive, and costs nothing else. `absent` records that per
+        # cross-section so an unobserved field is legible next to the coverage
+        # decision rather than inferred from a row that is not there.
+        absent = {section: set() for section in set(reports.values())}
 
-        for record in _nmfp_table(archive, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"):
-            accession = (record.get("ACCESSION_NUMBER") or "").strip()
-            if accession in superseded:
-                continue
-            if accession not in reports:
-                raise ValueError(
-                    f"SEC Form N-MFP flow row has unknown accession {accession}"
-                )
-            # A daily flow date is its own ref_date, but the submission it was
-            # filed under is its cross-section. Deriving the cross-section from
-            # the flow date instead would be a guess that happens to be right on
-            # this extract, and wrong the first time a filing reports a day
-            # outside its own reporting month.
-            section = reports[accession]
-            ref_date = _nmfp_date(
-                record.get("DAILYSHAREHOLDERFLOWDATE"),
-                "DAILYSHAREHOLDERFLOWDATE",
-            )
-            values = {}
-            for raw_field, series_id in NMFP_FLOW_FIELDS.items():
-                value = _nmfp_number(record.get(raw_field), raw_field)
-                if value is not None:
-                    values[series_id] = value / 1_000_000_000
-                    add(section, series_id, ref_date, values[series_id])
-            if len(values) == 2:
-                add(
-                    section,
-                    "mmf_net_flow",
-                    ref_date,
-                    values["mmf_gross_subscriptions"]
-                    - values["mmf_gross_redemptions"],
-                )
+        series_table = _nmfp_table_if_present(archive, "NMFP_SERIESLEVELINFO.tsv")
+        if series_table is None:
+            for fields in absent.values():
+                fields.update(NMFP_TABLE_FIELDS["NMFP_SERIESLEVELINFO.tsv"])
+        else:
+            for record in series_table:
+                accession = (record.get("ACCESSION_NUMBER") or "").strip()
+                if accession in superseded:
+                    continue
+                if accession not in reports:
+                    raise ValueError(
+                        f"SEC Form N-MFP series row has unknown accession {accession}"
+                    )
+                section = reports[accession]
+                for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
+                    value = _nmfp_number(record.get(raw_field), raw_field)
+                    if value is not None:
+                        add(section, series_id, section, value / 1_000_000_000)
 
-        for record in _nmfp_table(archive, "NMFP_SCHPORTFOLIOSECURITIES.tsv"):
-            accession = (record.get("ACCESSION_NUMBER") or "").strip()
-            if accession in superseded:
-                continue
-            if accession not in reports:
-                raise ValueError(
-                    f"SEC Form N-MFP security row has unknown accession {accession}"
+        # Every archive filed before 2024-06-10 predates this table: daily
+        # shareholder flows were not collected, so there is nothing to read and
+        # nothing to impute. A month with no flow table has no `mmf_net_flow`
+        # row. It does not have a zero one, and writing one here would turn
+        # fourteen years of absent observations into fourteen years of stated
+        # zero flows that every downstream check would accept.
+        flow_table = _nmfp_table_if_present(
+            archive, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+        )
+        if flow_table is None:
+            for fields in absent.values():
+                fields.update(NMFP_TABLE_FIELDS["NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"])
+        else:
+            for record in flow_table:
+                accession = (record.get("ACCESSION_NUMBER") or "").strip()
+                if accession in superseded:
+                    continue
+                if accession not in reports:
+                    raise ValueError(
+                        f"SEC Form N-MFP flow row has unknown accession {accession}"
+                    )
+                # A daily flow date is its own ref_date, but the submission it
+                # was filed under is its cross-section. Deriving the
+                # cross-section from the flow date instead would be a guess that
+                # happens to be right on this extract, and wrong the first time a
+                # filing reports a day outside its own reporting month.
+                section = reports[accession]
+                ref_date = _nmfp_date(
+                    record.get("DAILYSHAREHOLDERFLOWDATE"),
+                    "DAILYSHAREHOLDERFLOWDATE",
                 )
-            value = _nmfp_number(
-                record.get("INCLUDINGVALUEOFANYSPONSORSUPP"),
-                "INCLUDINGVALUEOFANYSPONSORSUPP",
-            )
-            if value is None:
-                continue
-            section = reports[accession]
-            category = (record.get("INVESTMENTCATEGORY") or "").strip()
-            if "Repurchase Agreement" in category:
-                add(section, "mmf_repo_holdings", section, value / 1_000_000_000)
-                counterparty = " ".join(
-                    str(record.get(field) or "")
-                    for field in ("NAMEOFISSUER", "TITLEOFISSUER", "BRIEFDESCRIPTION")
-                ).upper()
-                if "FEDERAL RESERVE" in counterparty:
-                    add(section, "mmf_on_rrp", section, value / 1_000_000_000)
-            elif category == "U.S. Treasury Debt":
-                add(section, "mmf_treasury_holdings", section, value / 1_000_000_000)
+                values = {}
+                for raw_field, series_id in NMFP_FLOW_FIELDS.items():
+                    value = _nmfp_number(record.get(raw_field), raw_field)
+                    if value is not None:
+                        values[series_id] = value / 1_000_000_000
+                        add(section, series_id, ref_date, values[series_id])
+                if len(values) == 2:
+                    add(
+                        section,
+                        "mmf_net_flow",
+                        ref_date,
+                        values["mmf_gross_subscriptions"]
+                        - values["mmf_gross_redemptions"],
+                    )
+
+        holdings_table = _nmfp_table_if_present(
+            archive, "NMFP_SCHPORTFOLIOSECURITIES.tsv"
+        )
+        if holdings_table is None:
+            for fields in absent.values():
+                fields.update(NMFP_CATEGORY_FIELDS)
+        else:
+            # A cross-section whose report month falls in no declared
+            # `INVESTMENTCATEGORY` era loses the holdings fields and keeps the
+            # rest of its balance sheet. Reading it against some other era's
+            # vocabulary is the failure this guard exists for: the strings would
+            # not match, the rows would be dropped, and the series would come out
+            # empty rather than refused.
+            undeclared = set()
+            for record in holdings_table:
+                accession = (record.get("ACCESSION_NUMBER") or "").strip()
+                if accession in superseded:
+                    continue
+                if accession not in reports:
+                    raise ValueError(
+                        f"SEC Form N-MFP security row has unknown accession {accession}"
+                    )
+                section = reports[accession]
+                era = nmfp_investment_category_era(section)
+                if era is None:
+                    undeclared.add(section)
+                    continue
+                # The category is classified before the value is read, so an
+                # undeclared string raises whether or not that particular row
+                # happens to carry a number. A vocabulary that moved is a fact
+                # about the archive, not about which rows were populated.
+                category = (record.get("INVESTMENTCATEGORY") or "").strip()
+                field = _nmfp_category_field(era, category, section)
+                if field is None:
+                    continue
+                value = _nmfp_number(
+                    record.get("INCLUDINGVALUEOFANYSPONSORSUPP"),
+                    "INCLUDINGVALUEOFANYSPONSORSUPP",
+                )
+                if value is None:
+                    continue
+                add(section, field, section, value / 1_000_000_000)
+                if field == "mmf_repo_holdings":
+                    counterparty = " ".join(
+                        str(record.get(name) or "")
+                        for name in (
+                            "NAMEOFISSUER", "TITLEOFISSUER", "BRIEFDESCRIPTION"
+                        )
+                    ).upper()
+                    if "FEDERAL RESERVE" in counterparty:
+                        add(section, "mmf_on_rrp", section, value / 1_000_000_000)
+            for section in undeclared:
+                absent.setdefault(section, set()).update(NMFP_CATEGORY_FIELDS)
 
     rows = [
         (
@@ -1074,6 +1550,7 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
         rows,
         {section: len(members) for section, members in entities.items()},
         submission_types,
+        {section: tuple(sorted(fields)) for section, fields in absent.items() if fields},
     )
 
 
@@ -1134,6 +1611,7 @@ def parse_snapshots(
         # must not satisfy a coverage floor vacuously.
         entity_counts = None
         submission_types = {}
+        absent_fields = {}
         if artifact.source_id.startswith("nyfed_"):
             parsed_rows = [(None, row) for row in _nyfed_rows(artifact, payload)]
         elif artifact.source_id == "fred_macro_latest_vintage":
@@ -1141,8 +1619,8 @@ def parse_snapshots(
         elif artifact.source_id == "treasury_auctions":
             parsed_rows = [(None, row) for row in _treasury_rows(artifact, payload)]
         elif artifact.source_id == "sec_nmfp":
-            parsed_rows, entity_counts, submission_types = _sec_nmfp_rows(
-                artifact, payload
+            parsed_rows, entity_counts, submission_types, absent_fields = (
+                _sec_nmfp_rows(artifact, payload)
             )
             _check_declared_entity_unit(
                 artifact.source_id, registry, NMFP_ENTITY_UNIT
@@ -1180,6 +1658,7 @@ def parse_snapshots(
                     submission_types=tuple(
                         sorted(submission_types.get(section, {}).items())
                     ),
+                    absent_fields=absent_fields.get(section, ()),
                 )
                 for section, count in sorted(entity_counts.items())
             )

@@ -94,12 +94,22 @@ def _backfill_nmfp(args: argparse.Namespace) -> int:
         ),
     )
     admitted = [record for record in updated if record.admitted]
+    # `refused` and `short_a_table` are counted separately because they are
+    # different claims about a file. An archive short a table is admitted and
+    # contributes every field its other tables supply; a refused one contributes
+    # nothing. Reporting them as one number was what made fourteen years of
+    # balance sheets look like fourteen years of unreadable archives.
+    short = [record for record in admitted if record.absent_fields]
     print(
         json.dumps(
             {
                 "declared": len(updated),
                 "admitted": len(admitted),
                 "refused": len(updated) - len(admitted),
+                "short_a_table": len(short),
+                "absent_fields": sorted(
+                    {field for record in short for field in record.absent_fields}
+                ),
                 "manifest": str(args.manifest),
             },
             indent=2,

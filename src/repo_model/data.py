@@ -113,6 +113,16 @@ class CrossSectionCoverage:
     amendments rather than a real month the floor got wrong. It must not become
     a filter: a legitimately amended complete month is entirely amendments and
     would be discarded by one.
+
+    `absent_fields` names the panel series the archive could supply no
+    observation of for this cross-section -- because it does not carry the table
+    that holds them, or because the report month has no declared
+    `INVESTMENTCATEGORY` vocabulary. It is not a coverage failure and does not
+    affect `admitted`: an archive filed before 2024-06-10 carries no daily
+    shareholder-flow table because the data did not exist, and its balance sheet
+    is no less complete for it. Recording it is what keeps "we have no
+    observation" from being read off the panel as "we observed nothing", which
+    is the same absent-is-not-zero distinction one level up from the rows.
     """
 
     source_id: str
@@ -123,6 +133,7 @@ class CrossSectionCoverage:
     admitted: bool
     row_count: int
     submission_types: tuple = ()
+    absent_fields: tuple = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -135,6 +146,7 @@ class CrossSectionCoverage:
             "submission_types": {
                 str(name): int(count) for name, count in self.submission_types
             },
+            "absent_fields": list(self.absent_fields),
             "reason": (
                 "reporting entities below the coverage floor declared in the "
                 "source registry"
