@@ -37,7 +37,7 @@ make -- the windows themselves, which belong in `metadata/events.json`. The
 fixture-level spec Track A codes that file against is
 `tests/test_events_metadata.py`.
 
-The two label tests in `TargetSchemaTests` are likewise specs rather than tests
+The two label tests in `StressLabelContractTests` are likewise specs rather than tests
 of existing code. The stress label column and its point-in-time rule are Track
 A's, per `AGENT_CONTRACT.md` "Ownership" and `CLAUDE.md`; a `trailing_percentile`
 in `repo_model.event_eval` briefly implemented the trailing rule and was deleted
@@ -52,12 +52,15 @@ went to unexpected-success -- a red build -- the moment the module landed. That
 is the mechanism working, not a bug. The gap is still passed in by hand,
 because the registry declares no `release_lag` for the splitter to read.
 
-`TargetSchemaTests` at the bottom holds the tests the contract actually asks
-for, written against the target interfaces and marked `expectedFailure`. They
-are executable specification, not decoration: `unittest` reports an unexpected
-success as a build failure, so the day a track implements one of these
-interfaces the suite goes red and forces the stand-ins above to be rewritten
-against the real thing rather than extended around it.
+`ForecastInterfaceTests` at the bottom is what that mechanism produced. It was
+`TargetSchemaTests`, a single `expectedFailure` checking `hasattr(baseline,
+"fit")` and two siblings; `repo_model.baseline` grew the fitted interface, the
+tripwire went to unexpected success -- a red build -- and it was replaced with
+the conformance assertions it stood in for. No `expectedFailure` remains in this
+file. That is the mechanism finishing, not the mechanism being switched off: the
+next absent interface gets a new tripwire, and the rule for reading a red one is
+unchanged. "An interface landed, go write the real test", never "the interface
+is correct".
 
 Mutation record. Two leaks were planted in `rolling_persistence_backtest` and
 the suite run against each, on the sample panel, stdlib only:
@@ -135,6 +138,57 @@ primary fixed-bp rule has no leak of this class to have.
 Neither of the first two runs is a claim about the whole contract -- both leaks
 live in the interval, the only learned parameter here. A leak in a future point
 forecast or in the loader is not covered by any of the three.
+
+Mutation record, the forecast interface. Three mutations were planted against
+`ForecastInterfaceTests` and `test_baseline.FittedPersistenceTests`, in a copy
+of the tree under `$HOME`, run with `-B` and `PYTHONDONTWRITEBYTECODE=1` after
+an unmutated control (370 tests, OK) and with `__pycache__` cleared each time:
+
+  * Separately fitted `predict_stress`. Not a broken one -- a well-calibrated
+    unconditional classifier on the `stress_gt_*` label columns, returning the
+    rate at which the *training spreads* exceeded each tau. It is monotone in
+    tau by construction, lands in [0, 1], has one entry per declared tau, and
+    saturates correctly outside the training range. Fails exactly one test:
+    `test_predict_stress_agrees_with_the_quantiles_predict_reports`. Every
+    other assertion in the class stays green, which is the finding rather than
+    a gap -- the shape checks cannot see where a number came from, and a
+    one-test kill is the evidence that the agreement test is carrying the
+    contract's "not a separately fitted classifier" on its own. Had the answer
+    been "none", the agreement test would not have been doing its job; had it
+    been "all of them", the mutation would have been a broken classifier rather
+    than a plausible one, and would have proved nothing.
+  * Cutoff dropped from the fitted object. `fit` keeps its eligibility guard,
+    so the leak that raises still raises; what is lost is the object's ability
+    to say afterwards what it was allowed to see, and `trained_beyond` degrades
+    to a constant `False`. Fails two, both by `AttributeError` on `cutoff`:
+    `test_a_fitted_model_carries_the_cutoff_it_was_fitted_at` and
+    `test_the_backtest_reports_the_fitted_model_and_does_not_re_derive_quantiles`.
+    The second is the one worth noting -- the backtest is what makes the cutoff
+    load-bearing rather than decorative, because a reported run that cannot
+    name its own cutoff cannot be audited at all.
+  * `QUANTILE_LEVELS` disturbed in a scratch copy of `contract.py`, in the two
+    ways that matter, because they fail differently:
+
+      - Reordered to `(0.95, 0.25, 0.50, 0.75, 0.05)`: 16 errors and 1 failure.
+        `metrics._validate_levels` raises `MetricError` from `FittedPersistence.
+        __init__`, so every path that fits a model errors out, including the
+        backtest and both `FuturePerturbationTests`. The suite does not merely
+        notice; it cannot construct a model at all.
+      - Truncated to `(0.05, 0.25, 0.50)`: 2 failures, and the interesting
+        result. `test_predict_returns_one_quantile_per_declared_level` stays
+        green, correctly -- it reads the declaration, and three levels really
+        are what was declared. What goes red is
+        `test_the_interval_probability_is_read_from_the_declared_levels`, since
+        the outermost pair now spans 0.45 rather than 0.90, plus the
+        transform-isolation guard whose upper bound became the median. A
+        truncation is only visible where a number was reconciled against the
+        grid, which is the argument for reconciling the interval against it
+        rather than restating it.
+
+The three together cover where the numbers come from, whether the object can be
+audited, and whether the declaration is actually read. They say nothing about
+whether persistence is a good forecast, which is not a property any of these
+tests claims.
 """
 
 import argparse
@@ -152,8 +206,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model import cli
-from repo_model.baseline import _quantile, rolling_persistence_backtest
-from repo_model.contract import validate_release_lag
+from repo_model.baseline import (
+    INTERVAL_PROBABILITY,
+    FittedPersistence,
+    _quantile,
+    fit,
+    predict,
+    predict_stress,
+    rolling_persistence_backtest,
+)
+from repo_model.contract import QUANTILE_LEVELS, validate_release_lag
 from repo_model.data import (
     DailyObservation,
     DataContractError,
@@ -164,7 +226,7 @@ from repo_model.data import (
     stress_label_threshold,
 )
 from repo_model.event_eval import load_event_windows
-from repo_model.splits import rolling_origin
+from repo_model.splits import LookAheadError, rolling_origin
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -172,7 +234,16 @@ SAMPLE_PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
 SOURCE_REGISTRY = REPO_ROOT / "metadata" / "sources.json"
 
 MINIMUM_HISTORY = 10
-INTERVAL_PROBABILITY = 0.90
+
+#: The interval bounds, read from the declared grid rather than restated. The
+#: two constants below used to be `alpha = (1 - 0.90) / 2` and its complement,
+#: and that restatement was never bit-equal to the declaration it stood for:
+#: `(1.0 - 0.90) / 2.0` is 0.050000000000000044, not 0.05. The interval it
+#: produced therefore differed from the declared one in the last two bits --
+#: harmless here, and exactly the kind of quiet divergence between two copies
+#: of one number that having a single declaration is meant to prevent.
+LOWER_LEVEL = QUANTILE_LEVELS[0]
+UPPER_LEVEL = QUANTILE_LEVELS[-1]
 
 
 def load_sample():
@@ -375,7 +446,6 @@ class TransformIsolationTests(unittest.TestCase):
 
     def test_interval_matches_parameters_refit_on_the_training_window(self):
         rows = load_sample()
-        alpha = (1.0 - INTERVAL_PROBABILITY) / 2.0
         report = rolling_persistence_backtest(
             rows,
             minimum_history=MINIMUM_HISTORY,
@@ -388,9 +458,11 @@ class TransformIsolationTests(unittest.TestCase):
             prediction = rows[forecast_index - 1].spread_bps
 
             self.assertEqual(forecast.predicted_bps, prediction)
-            self.assertEqual(forecast.lower_bps, prediction + _quantile(window, alpha))
             self.assertEqual(
-                forecast.upper_bps, prediction + _quantile(window, 1.0 - alpha)
+                forecast.lower_bps, prediction + _quantile(window, LOWER_LEVEL)
+            )
+            self.assertEqual(
+                forecast.upper_bps, prediction + _quantile(window, UPPER_LEVEL)
             )
 
     def test_window_parameters_differ_from_full_sample_parameters(self):
@@ -405,7 +477,6 @@ class TransformIsolationTests(unittest.TestCase):
         """
 
         rows = perturb_after(load_sample(), cutoff_index=15)
-        alpha = (1.0 - INTERVAL_PROBABILITY) / 2.0
         forecast_index = MINIMUM_HISTORY + 2
         position = forecast_index - MINIMUM_HISTORY
 
@@ -413,8 +484,8 @@ class TransformIsolationTests(unittest.TestCase):
         full_sample = residual_window(rows, len(rows))
 
         self.assertNotEqual(
-            _quantile(window, 1.0 - alpha),
-            _quantile(full_sample, 1.0 - alpha),
+            _quantile(window, UPPER_LEVEL),
+            _quantile(full_sample, UPPER_LEVEL),
             msg="test panel cannot distinguish window fitting from full-sample fitting",
         )
 
@@ -425,7 +496,7 @@ class TransformIsolationTests(unittest.TestCase):
         ).forecasts[position]
         prediction = rows[forecast_index - 1].spread_bps
         self.assertEqual(
-            forecast.upper_bps, prediction + _quantile(window, 1.0 - alpha)
+            forecast.upper_bps, prediction + _quantile(window, UPPER_LEVEL)
         )
 
 
@@ -513,7 +584,7 @@ class SplitterPurgeTests(unittest.TestCase):
     distance is not.
 
     The lag below is a stand-in. The registry declares no `release_lag` yet (see
-    `TargetSchemaTests.test_source_registry_declares_identities_and_structural_zeros`,
+    `SourceRegistryTests.test_source_registry_declares_identities_and_structural_zeros`,
     still expected to fail), so the splitter takes the gap as a required
     argument and the number here is the value this test reasons about, not a
     value read from anywhere. When the registry gains the key, this constant is
@@ -790,31 +861,231 @@ class StressLabelContractTests(unittest.TestCase):
         self.assertIs(declared["secondary_rule"]["full_sample_allowed"], False)
 
 
-class TargetSchemaTests(unittest.TestCase):
-    """The contract's expected-to-fail model requirements for absent interfaces.
+def distinct_residual_frame(count=60, seed=20260908):
+    """A panel whose one-step residuals are all distinct, and deterministic.
 
-    Every unimplemented interface here is expected to fail. When one starts
-    passing, `unittest` reports an unexpected success and the build goes red --
-    which is the signal to replace its tripwire with a real assertion.
-
-    The two `hasattr` tests below are presence tripwires, not conformance
-    checks: they fire on a name existing and say nothing about whether it
-    behaves as the contract requires. Read a red build from either as "an
-    interface landed, go write the real test", never as "the interface is
-    correct".
+    `data/sample/daily_market.csv` moves in whole basis points, so its residuals
+    repeat -- and a repeated residual makes the quantile function flat over a
+    range of probabilities, which has no single inverse. The exceedance test
+    below asserts an exact round trip through that function, so it needs a
+    sample the function is invertible on. The frame is generated rather than
+    stored because the property under test is a property of the numbers, not of
+    any particular panel, and `test_the_frame_this_class_relies_on_has_no_tied_residuals`
+    checks the property holds rather than assuming the generator delivered it.
     """
 
-    @unittest.expectedFailure
-    def test_forecast_interface_is_fit_predict_predict_stress(self):
-        """Models must be fitted objects carrying their cutoff, not a function."""
-
-        import repo_model.baseline as baseline
-
-        for name in ("fit", "predict", "predict_stress"):
-            self.assertTrue(
-                hasattr(baseline, name),
-                msg=f"no {name!r}; quantile levels are not yet comparable across models",
+    rows = []
+    state = seed
+    for index in range(count):
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        rows.append(
+            DailyObservation(
+                date(2026, 1, 1) + timedelta(days=index),
+                {"sofr": 4.30 + 0.0001 * (state % 9973), "iorb": 4.30},
             )
+        )
+    return rows
+
+
+class ForecastInterfaceTests(unittest.TestCase):
+    """AGENT_CONTRACT.md, "The forecast interface", against the real thing.
+
+    This class replaces the `expectedFailure` presence tripwire that stood here
+    while `fit`/`predict`/`predict_stress` did not exist. That tripwire tested
+    `hasattr` and nothing else; it went to unexpected success -- a red build --
+    the moment the interface landed, which is the mechanism working. What
+    follows are the conformance assertions it was a placeholder for.
+
+    The load-bearing one is
+    `test_predict_stress_agrees_with_the_quantiles_predict_reports`. The
+    contract's Target says stress "is not a separately fitted rare-event
+    classifier ... it is an exceedance derived from the predictive
+    distribution", and that is a claim about where the numbers come from, which
+    no shape check can see. A classifier fitted on the `stress_gt_*` columns
+    would satisfy every other test in this class -- right length, right order,
+    non-increasing, probabilities in [0, 1] -- and could be well calibrated on
+    its own terms while still contradicting the quantiles reported beside it.
+    The agreement test is the only one that can tell the two apart.
+    """
+
+    MINIMUM_HISTORY = 20
+
+    def setUp(self):
+        self.rows = distinct_residual_frame()
+        self.train = self.rows[:-1]
+        self.feature_row = self.rows[-2]
+        self.model = fit(self.train, minimum_history=self.MINIMUM_HISTORY)
+
+    def test_the_frame_this_class_relies_on_has_no_tied_residuals(self):
+        """Guards the agreement test: its exactness is only claimed on this."""
+
+        residuals = self.model.residuals
+        self.assertEqual(
+            len(set(residuals)),
+            len(residuals),
+            msg=(
+                "residuals tie, so the quantile function is flat somewhere and "
+                "has no single inverse; the agreement test's exact equality is "
+                "not a fair demand on this sample"
+            ),
+        )
+
+    def test_a_fitted_model_carries_the_cutoff_it_was_fitted_at(self):
+        """"Every fitted object carries the cutoff it was fitted at."
+
+        Fitting returns an object, not a function, and the object can say what
+        it was allowed to see. Without that a forecast cannot be audited for
+        leakage at all: the training frame is gone by the time anyone reads the
+        prediction, and "which rows went into this" becomes unanswerable.
+        """
+
+        self.assertIsInstance(self.model, FittedPersistence)
+        self.assertEqual(self.model.cutoff, self.train[-1].date)
+
+        # An explicitly declared cutoff is honoured rather than re-derived, and
+        # a frame reaching past it is a leak, not a rounding matter.
+        earlier = fit(
+            self.train[:-3],
+            cutoff=self.train[-4].date,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(earlier.cutoff, self.train[-4].date)
+        with self.assertRaises(LookAheadError):
+            fit(
+                self.train,
+                cutoff=self.train[-4].date,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+
+        # And the model can tell whether it was fitted past a feature row, which
+        # is the question "at or before its own cutoff" is asked to answer.
+        self.assertFalse(self.model.trained_beyond(self.feature_row))
+        self.assertTrue(self.model.trained_beyond(self.rows[0]))
+
+    def test_predict_returns_one_quantile_per_declared_level(self):
+        """"predict(feature_row) -> quantile vector at declared levels."
+
+        One value per `contract.QUANTILE_LEVELS`, in that order, ascending
+        because the levels are. The levels come from the declaration; a model
+        wanting others is a new model, not a config change.
+        """
+
+        quantiles = self.model.predict(self.feature_row)
+
+        self.assertEqual(len(quantiles), len(QUANTILE_LEVELS))
+        self.assertEqual(self.model.levels, QUANTILE_LEVELS)
+        for position in range(1, len(quantiles)):
+            self.assertLessEqual(
+                quantiles[position - 1],
+                quantiles[position],
+                msg=f"quantile {position} falls below quantile {position - 1}",
+            )
+        # The module-level name the contract lists is the same computation, not
+        # a second one that could drift from the method.
+        self.assertEqual(predict(self.model, self.feature_row), quantiles)
+
+    def test_predict_stress_returns_one_probability_per_declared_tau(self):
+        """"predict_stress(feature_row) -> exceedance vector aligned to taus_bp."
+
+        The family is read from `metadata/stress_thresholds.json`, where Track A
+        declared it, and the vector is aligned to that declared order. A length
+        that merely happens to match would not be alignment, so the tau count is
+        taken from the file rather than written down here.
+        """
+
+        declared = tuple(float(tau) for tau in load_stress_thresholds()["taus_bp"])
+        exceedance = self.model.predict_stress(self.feature_row)
+
+        self.assertEqual(len(exceedance), len(declared))
+        for position, probability in enumerate(exceedance):
+            self.assertGreaterEqual(probability, 0.0, msg=f"tau {declared[position]}")
+            self.assertLessEqual(probability, 1.0, msg=f"tau {declared[position]}")
+        self.assertEqual(
+            predict_stress(self.model, self.feature_row), exceedance
+        )
+
+    def test_predict_stress_never_rises_with_tau(self):
+        """`P(Y > tau)` cannot increase as `tau` increases.
+
+        The same invariant `event_eval._validate_predictions` enforces on any
+        predictor it scores, checked here on the model itself: a violation is a
+        broken distribution, and an aggregate over scored days would hide it.
+        Checked on a dense grid rather than the four declared taus, because four
+        points can be non-increasing while the curve between them is not.
+        """
+
+        anchor = self.feature_row.spread_bps
+        grid = [anchor - 40.0 + 0.5 * step for step in range(200)]
+        curve = self.model.predict_stress(self.feature_row, taus=grid)
+
+        self.assertEqual(len(curve), len(grid))
+        for position in range(1, len(curve)):
+            self.assertLessEqual(
+                curve[position],
+                curve[position - 1],
+                msg=(
+                    f"exceedance rises from tau {grid[position - 1]} to "
+                    f"{grid[position]}"
+                ),
+            )
+
+    def test_predict_stress_agrees_with_the_quantiles_predict_reports(self):
+        """Stress is derived from the predictive distribution, not fitted apart.
+
+        At a declared level `q`, `predict` reports the quantile `Q(q)` and
+        `predict_stress` must place exactly `1 - q` of its mass above it. The
+        two are then demonstrably statements about one distribution.
+
+        This is the assertion that separates a derived exceedance from a
+        separately fitted one. A classifier trained on the `stress_gt_*` label
+        columns has its own view of `P(Y > tau)`; nothing constrains that view
+        to agree with the quantiles, so it fails here even when it is correct on
+        its own terms -- which is the point, because a separately fitted stress
+        model is prohibited by the contract whether or not it is any good.
+
+        Exactness is claimed only because the residuals here do not tie; see
+        `test_the_frame_this_class_relies_on_has_no_tied_residuals`.
+        """
+
+        quantiles = self.model.predict(self.feature_row)
+        exceedance = self.model.predict_stress(self.feature_row, taus=quantiles)
+
+        self.assertEqual(len(exceedance), len(QUANTILE_LEVELS))
+        for level, reported in zip(QUANTILE_LEVELS, exceedance):
+            self.assertAlmostEqual(
+                reported,
+                1.0 - level,
+                places=12,
+                msg=(
+                    f"predict reports the {level} quantile, but predict_stress "
+                    f"puts {reported} above it instead of {1.0 - level}; the two "
+                    f"are not describing the same distribution"
+                ),
+            )
+
+    def test_the_exceedance_is_strictly_above_the_threshold(self):
+        """`P(spread > tau)`, matching the contract and the `stress_gt_*` columns.
+
+        Above the fitted support nothing exceeds, and the answer is a hard zero
+        rather than a smoothed small number -- the same refusal to invent a
+        prior that `climatology_exceedance` documents.
+        """
+
+        anchor = self.feature_row.spread_bps
+        far_above = anchor + max(self.model.residuals) + 1.0
+        far_below = anchor + min(self.model.residuals) - 1.0
+
+        self.assertEqual(self.model.predict_stress(self.feature_row, taus=[far_above])[0], 0.0)
+        self.assertEqual(self.model.predict_stress(self.feature_row, taus=[far_below])[0], 1.0)
+
+    def test_a_tau_family_that_is_not_ascending_is_refused(self):
+        """Monotonicity in tau is only meaningful against an increasing family."""
+
+        anchor = self.feature_row.spread_bps
+        with self.assertRaises(ValueError):
+            self.model.predict_stress(self.feature_row, taus=[anchor + 1.0, anchor])
+        with self.assertRaises(ValueError):
+            self.model.predict_stress(self.feature_row, taus=[])
 
 
 def _subparsers(parser):
