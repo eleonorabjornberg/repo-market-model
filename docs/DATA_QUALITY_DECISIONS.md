@@ -11,21 +11,23 @@ amendments and late filings for adjacent months. Aggregating every `REPORT_DATE`
 if it represented the full industry creates implausible level changes that could be
 mistaken for genuine stress.
 
-**Resolved** by `declared_coverage_floor` (branch `feature/data-layer`, commit
-`9e67f43`, pending merge to `main`): a minimum count of distinct reporting entities
-per reference date is declared in the source registry, cross-sections below the floor
-are excluded from the modeling panel, and the exclusion is recorded separately from
-ordinary missingness.
+**Resolved** by `declared_coverage_floor` (implemented at `9e67f43`, merged into
+`main` at `f52c7c8`): a minimum count of distinct reporting entities per reference
+date is declared in the source registry, cross-sections below the floor are excluded
+from the modeling panel, and the exclusion is recorded separately from ordinary
+missingness.
 
 **Consequence, and it is larger than the fix.** Applied to the single quarterly extract
 currently held, the floor admits exactly one reference date. See "N-MFP series length"
 below. The floor is correct; the panel it produces is one observation, and that is a
 property of how many archives have been downloaded rather than of the rule.
 
-Two questions the floor does not yet answer, and which a backfilled history will force:
-what the rule does at the **start** of a series, where there is no trailing window to
-take a median over; and whether a single fraction of the trailing median holds across an
-industry whose size changed several-fold over the archive period.
+The floor is an absolute count, not a fraction of a trailing median. That is
+deliberate: the trailing median in the held extract is itself computed from the
+adjacent straggler months, so deriving the guard from it would admit the incomplete
+cross-sections the guard exists to reject. A backfilled history must still establish
+whether the absolute floor remains conservative as the industry's reporting population
+changes, but any revision needs evidence independent of the cross-section it guards.
 
 ## N-MFP accounting-identity tolerance
 
