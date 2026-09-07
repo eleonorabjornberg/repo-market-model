@@ -25,6 +25,31 @@ Contract test 4 (identity preservation) is absent: the registry declares no
 accounting identities and no tolerances, so there is nothing to reconcile
 against. It arrives with the registry work in Track A.
 
+`AGENT_CONTRACT.md`, "Two holdout roles", names two and keeps them distinct.
+`rolling_origin` produces the **scoring holdout**; `repo_model.event_eval`
+produces the **knowledge holdout**, on a separate path, because the splitter's
+training window expands and a late fold would train on an earlier stress episode
+before scoring a later one. Their tests are in `tests/test_splits.py` and
+`tests/test_event_eval.py`; what is here is the one declaration neither can
+make -- the windows themselves, which belong in `metadata/events.json`. The
+fixture-level spec Track A codes that file against is
+`tests/test_events_metadata.py`.
+
+The two label tests in `TargetSchemaTests` are likewise specs rather than tests
+of existing code. The stress label column and its point-in-time rule are Track
+A's, per `AGENT_CONTRACT.md` "Ownership" and `CLAUDE.md`; a `trailing_percentile`
+in `repo_model.event_eval` briefly implemented the trailing rule and was deleted
+as a second implementation of a Track A rule, with its behaviour preserved here
+as a requirement on Track A rather than as model-eval code.
+
+`SplitterPurgeTests` is not a stand-in. `repo_model.splits.rolling_origin`
+exists, so the splitter half of the contract is tested against the real thing:
+the purge gap, the no-look-ahead invariant, and fold ordering. It replaces the
+`expectedFailure` placeholder that used to sit in `TargetSchemaTests`, which
+went to unexpected-success -- a red build -- the moment the module landed. That
+is the mechanism working, not a bug. The gap is still passed in by hand,
+because the registry declares no `release_lag` for the splitter to read.
+
 `TargetSchemaTests` at the bottom holds the tests the contract actually asks
 for, written against the target interfaces and marked `expectedFailure`. They
 are executable specification, not decoration: `unittest` reports an unexpected
@@ -44,16 +69,78 @@ the suite run against each, on the sample panel, stdlib only:
     computation, so a forecast's own realized residual enters its own
     quantile. Fails the sweep, the T+1 test, and the transform test.
 
-Neither run is a claim about the whole contract -- both leaks live in the
-interval, the only learned parameter here. A leak in a future point forecast
-or in the loader is not covered by either.
+One further leak was planted in `repo_model.splits`, against the splitter
+tests:
+
+  * Permissive gap boundary: `bisect_left` to `bisect_right` in `_train_end`,
+    which keeps a training row whose value first becomes observable exactly as
+    the test block opens -- a one-day off-by-one, and the smallest leak the
+    module can have. Fails 15 tests: 10 assertion failures and 5 errors.
+
+    The split between the two is the point of separating `_folds_unchecked`
+    from the guard. The content tests run on the unchecked generator, so they
+    report the defect as data -- the reference-oracle comparison prints the
+    survivor set that changed, `((..., 10, 11), (13,))` against the correct
+    `((..., 10), (13,))`, one row too many on the training side. The 5 errors
+    are the three contract purge tests and the two `rolling_origin` cases,
+    which run the guarded public path and so raise `LookAheadError` before any
+    assertion is reached ("training ends 2026-01-21 and testing opens
+    2026-01-23, which is inside the 2-day purge gap"). Failures say what is
+    wrong; the errors say the shipped path refuses to emit it.
+
+    `FoldShapeTests` stays green throughout, correctly: a gap one day too small
+    changes no block boundary, only which rows survive behind it.
+
+    Run again under `python3 -O`, the same mutation gives byte-identical
+    output -- 10 failures, 5 errors. That is what the raise buys. Rebuilding
+    the gap check in `_assert_no_look_ahead` as `assert cond, msg` and running
+    the same mutation under `-O`, the splitter emits five folds with no error
+    at all, the smallest gap two days against a two-day purge: a leaky fold
+    handed to the caller silently. Under `-O` the assert form is not a weaker
+    guard, it is no guard. The content tests still catch this particular
+    mutation either way, which is exactly why the comparison was run on the
+    guard directly rather than through the suite.
+
+A fourth, on the strict purge boundary shared by the splitter and the event
+evaluator, is recorded in `tests/test_event_eval.py` beside the tests that
+catch it, along with two on the window-pinning guards.
+
+Mutation record, the label spec. An `expectedFailure` is only worth having if
+it discriminates, so `test_the_stress_label_is_point_in_time_and_never_full_
+sample` was run against four stand-in implementations of
+`repo_model.data.stress_label_threshold`, injected at runtime rather than
+written to Track A's module:
+
+  * Correct trailing rule, plus declared threshold metadata: both label tests
+    go to unexpected success -- a red build, which is the intended handoff
+    signal and not a defect.
+  * Full-sample percentile, the rule the contract prohibits by name: stays an
+    expected failure. Caught by assertion 2.
+  * Off-by-one including the current row -- the subtle version, where the
+    label on the first day of a knowledge-holdout window is informed by that
+    day: stays an expected failure. Caught by assertion 1. This is the one
+    worth having, because it is the mistake an implementation makes by
+    accident rather than by choice.
+  * Correct rule but no threshold metadata: the label test succeeds
+    unexpectedly while the tau-declaration test stays failing, so the two
+    tests are independent rather than one test in two pieces.
+
+The spec therefore accepts exactly the implementations the contract describes
+and rejects both leak shapes. It says nothing about whether fixed-bp labels are
+computed correctly, only that a trailing threshold does not reach forward; the
+primary fixed-bp rule has no leak of this class to have.
+
+Neither of the first two runs is a claim about the whole contract -- both leaks
+live in the interval, the only learned parameter here. A leak in a future point
+forecast or in the loader is not covered by any of the three.
 """
 
+import inspect
 import json
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
@@ -65,6 +152,8 @@ from repo_model.data import (
     audit_panel,
     load_daily_panel,
 )
+from repo_model.event_eval import load_event_windows
+from repo_model.splits import rolling_origin
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -399,6 +488,127 @@ class StructuralZeroTests(unittest.TestCase):
         self.assertEqual(rows[0].values["on_rrp"], 0.0)
 
 
+class SplitterPurgeTests(unittest.TestCase):
+    """The contract's splitter interface: rolling origin, with a purge gap.
+
+    Replaces the `expectedFailure` placeholder that used to sit in
+    `TargetSchemaTests`. That placeholder tripped the moment `repo_model.splits`
+    existed, which is what it was for; this is the real test it demanded.
+
+    `purge` is a number of calendar days, because a release lag is a duration
+    and the panel is business-daily -- the last row before a weekend is three
+    days from the next row, the last row inside a week is one. The gap the
+    splitter must clear is therefore the same in both places even though the row
+    distance is not.
+
+    The lag below is a stand-in. The registry declares no `release_lag` yet (see
+    `TargetSchemaTests.test_source_registry_declares_identities_and_structural_zeros`,
+    still expected to fail), so the splitter takes the gap as a required
+    argument and the number here is the value this test reasons about, not a
+    value read from anywhere. When the registry gains the key, this constant is
+    replaced by the largest declared lag over the fields in use, and the
+    splitter's caller stops passing a literal.
+    """
+
+    #: Stand-in for the longest release lag over the fields in the panel.
+    LONGEST_RELEASE_LAG_DAYS = 2
+
+    MIN_TRAIN = 10
+    STEP = 3
+
+    def setUp(self):
+        self.dates = [row.date for row in load_sample()]
+
+    def folds(self, purge):
+        return list(rolling_origin(self.dates, self.MIN_TRAIN, self.STEP, purge))
+
+    def test_the_gap_closes_a_leak_that_a_zero_gap_leaves_open(self):
+        """The contract property, and the test's own power in one place.
+
+        A value dated on the last training day is not observable until
+        `release_lag` days later. If the test block opens within that window,
+        the training window contains a row whose value the forecaster could not
+        have had -- and worse, whose eventual revision is informed by the test
+        period. With no gap the sample panel is in exactly that position on
+        every fold. With the gap set to the lag, on none of them.
+        """
+
+        leaky = [
+            (self.dates[train[-1]], self.dates[test[0]])
+            for train, test in self.folds(purge=0)
+        ]
+        self.assertTrue(leaky, msg="no folds; the comparison below is vacuous")
+        self.assertTrue(
+            any(
+                (opens - ends).days <= self.LONGEST_RELEASE_LAG_DAYS
+                for ends, opens in leaky
+            ),
+            msg=(
+                "a zero gap leaked nothing on this panel, so passing the purged "
+                "case proves nothing about the purge"
+            ),
+        )
+
+        for ends, opens in [
+            (self.dates[train[-1]], self.dates[test[0]])
+            for train, test in self.folds(purge=self.LONGEST_RELEASE_LAG_DAYS)
+        ]:
+            self.assertGreater(
+                (opens - ends).days,
+                self.LONGEST_RELEASE_LAG_DAYS,
+                msg=(
+                    f"training ends {ends} and testing opens {opens}, within the "
+                    f"{self.LONGEST_RELEASE_LAG_DAYS}-day release lag"
+                ),
+            )
+
+    def test_no_fold_trains_on_a_row_inside_its_gap(self):
+        """max(train) + purge < min(test), for every fold, at every gap."""
+
+        for purge in (0, 1, 2, 4):
+            folds = self.folds(purge)
+            self.assertTrue(folds, msg=f"purge={purge} produced no folds")
+            for train, test in folds:
+                self.assertLess(
+                    self.dates[train[-1]] + timedelta(days=purge),
+                    self.dates[test[0]],
+                    msg=f"purge={purge}: fold trains inside its own gap",
+                )
+                self.assertLess(train[-1], test[0])
+
+    def test_folds_are_in_time_order_and_test_blocks_do_not_overlap(self):
+        """Rolling origin, not cross-validation: each day is scored once."""
+
+        for purge in (0, 2):
+            scored = []
+            previous_open = None
+            for _, test in self.folds(purge):
+                opens = self.dates[test[0]]
+                if previous_open is not None:
+                    self.assertGreater(opens, previous_open, msg="folds are out of order")
+                previous_open = opens
+                scored.extend(test)
+            self.assertEqual(scored, sorted(scored))
+            self.assertEqual(
+                len(scored), len(set(scored)), msg="an observation is scored twice"
+            )
+
+    def test_the_gap_has_no_default(self):
+        """A silent default is the failure the whole splitter exists to prevent.
+
+        Until the registry declares `release_lag`, there is no number the
+        splitter could default to that is not a guess, and a guessed gap
+        produces a backtest that looks fine and is not.
+        """
+
+        self.assertIs(
+            inspect.signature(rolling_origin).parameters["purge"].default,
+            inspect.Parameter.empty,
+        )
+        with self.assertRaises(TypeError):
+            rolling_origin(self.dates, self.MIN_TRAIN, self.STEP)
+
+
 class TargetSchemaTests(unittest.TestCase):
     """The contract's real requirements, against interfaces that do not exist.
 
@@ -433,14 +643,6 @@ class TargetSchemaTests(unittest.TestCase):
         raise AssertionError("no point-in-time loader to test revision appending against")
 
     @unittest.expectedFailure
-    def test_rolling_origin_splitter_exists_and_purges(self):
-        """Contract splitter interface, including the purge gap."""
-
-        from repo_model.splits import rolling_origin  # noqa: F401
-
-        raise AssertionError("no splitter to test purge behaviour against")
-
-    @unittest.expectedFailure
     def test_forecast_interface_is_fit_predict_predict_stress(self):
         """Models must be fitted objects carrying their cutoff, not a function."""
 
@@ -451,6 +653,123 @@ class TargetSchemaTests(unittest.TestCase):
                 hasattr(baseline, name),
                 msg=f"no {name!r}; quantile levels are not yet comparable across models",
             )
+
+    @unittest.expectedFailure
+    def test_event_metadata_declares_the_single_evaluation_windows(self):
+        """The contract names Sep 2019 and Mar 2020 as single-evaluation windows.
+
+        `repo_model.event_eval` can score one, but it takes the window as an
+        argument: the declarations belong in `metadata/events.json`, which does
+        not exist yet. Until it does, every event holdout runs against a window
+        somebody typed, and nothing checks it is the window that was declared.
+        """
+
+        payload = json.loads(
+            (REPO_ROOT / "metadata" / "events.json").read_text(encoding="utf-8")
+        )
+        windows = load_event_windows(payload)
+        declared = {window.name for window in windows}
+        for event in ("sep-2019", "mar-2020"):
+            self.assertIn(event, declared)
+        for window in windows:
+            self.assertTrue(window.checksum, msg=f"{window.name} has no checksum")
+
+    @unittest.expectedFailure
+    def test_the_stress_label_is_point_in_time_and_never_full_sample(self):
+        """The label rule from "Decided: stress target and event holdouts".
+
+        The contract:
+
+            The label MUST NOT use a full-sample percentile -- same leak class
+            the contract suite already catches. Fixed bp thresholds are
+            primary; trailing-window percentile is secondary; full-sample is
+            prohibited. At an event boundary the trailing window is computed
+            from pre-event rows only.
+
+        Ownership: "Data layer: metadata/events.json, the label column and its
+        point-in-time rule." `CLAUDE.md` puts the stress label column and its
+        point-in-time rule outside Track B entirely, so this is a spec rather
+        than a test of anything model-eval provides. `repo_model.event_eval`
+        briefly carried a `trailing_percentile` that satisfied the property
+        below; it was a second implementation of a Track A rule, which
+        `CLAUDE.md` prohibits even as a stopgap, and it was deleted in favour
+        of this test. The behaviour it demonstrated is preserved here as a
+        requirement on Track A's implementation instead of as code.
+
+        The symbol named below is a proposal. Track A may site or rename it
+        freely -- what is not negotiable is the property, which is contract
+        test 2's shape applied to the label: a threshold in force at row `i`
+        must not move when rows at or after `i` move. If it does, the label on
+        the first day of a knowledge-holdout window is informed by the event
+        itself and every score computed against it is circular.
+
+        Three assertions, and the third is the one that gives the other two
+        teeth: without it, an implementation whose trailing and full-sample
+        thresholds happened to coincide on this series would pass by accident.
+        """
+
+        from repo_model.data import stress_label_threshold
+
+        window, probability = 10, 0.9
+        values = [4.30 + 0.01 * (index % 5) for index in range(40)]
+        event_index = 25
+        shocked = [
+            value + 50.0 if position >= event_index else value
+            for position, value in enumerate(values)
+        ]
+
+        # 1. The threshold at the event edge ignores the event and everything
+        #    after it. This is the leak the rule exists to prevent.
+        self.assertEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(values, event_index, window, probability),
+            msg="the label at the event boundary moved when the event was shocked; "
+            "the trailing window is reaching across the boundary",
+        )
+
+        # 2. It is not a full-sample percentile wearing a trailing name.
+        self.assertNotEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(shocked, len(shocked), len(shocked), probability),
+            msg="the trailing threshold equals the full-sample one; full-sample "
+            "is prohibited",
+        )
+
+        # 3. The shock is visible somewhere, so 1 and 2 are not vacuous.
+        later = event_index + window
+        self.assertNotEqual(
+            stress_label_threshold(shocked, later, window, probability),
+            stress_label_threshold(values, later, window, probability),
+            msg="the shock changed no threshold at all; assertions 1 and 2 have "
+            "no power against this implementation",
+        )
+
+    @unittest.expectedFailure
+    def test_fixed_bp_thresholds_are_the_primary_label_and_are_declared(self):
+        """"Fixed bp thresholds are primary", and tau is declared, not tuned.
+
+        The contract puts the exceedance family at tau in {5, 10, 20, 50} bp and
+        requires the threshold value be "declared in metadata/, versioned, not
+        tunable after the fact". `repo_model.event_eval` takes `taus` as an
+        argument precisely so that it is not the thing declaring them; this test
+        is where the declaration is required to exist.
+
+        Which file in `metadata/` is Track A's call -- the assertion is that
+        some versioned metadata declares the family, and that the primary label
+        is that fixed-bp rule rather than a percentile.
+        """
+
+        from repo_model.data import load_stress_thresholds
+
+        declared = load_stress_thresholds()
+        self.assertIn("version", declared)
+        self.assertEqual(tuple(declared["taus_bp"]), (5.0, 10.0, 20.0, 50.0))
+        self.assertEqual(
+            declared["primary_rule"],
+            "fixed_bp",
+            msg="fixed bp thresholds are primary; trailing-window percentile is "
+            "secondary and full-sample is prohibited",
+        )
 
     @unittest.expectedFailure
     def test_source_registry_declares_identities_and_structural_zeros(self):
