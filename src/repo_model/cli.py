@@ -1,96 +1,94 @@
-"""Small command-line interface for the initial modeling workflow."""
+"""Command-line entry point. Owned by the human, and by neither track.
+
+This file is a dispatcher and nothing else. It names no subcommand, imports no
+handler, and carries no track's vocabulary. Every command is contributed by a
+track-owned registration module:
+
+    src/repo_model/cli_data.py   Track A (data layer)
+    src/repo_model/cli_eval.py   Track B (model and evaluation)
+
+### Why this file is split
+
+It previously belonged to nobody. It was in no track's `forbidden` list and not
+in `SHARED`, so the ownership gate neither blocked an edit to it nor surfaced
+one for review: both tracks could add a subcommand and nothing would say so
+until the merge. That is the same hole as a field named in prose without a key
+name -- the failure this project has now paid for four times.
+
+Assigning the whole file to one track would only move the hole. `audit` and
+`fetch` stand on the data layer; `backtest` stands on the benchmark side; and
+the two subcommands next in line -- Track A's download adapters and Track B's
+event holdout -- belong to different tracks. So the file is split at the seam
+instead, which is what this project does with every shared shape: name it, make
+it executable, and put it out of both tracks' reach.
+
+The property that closes the hole: **adding a subcommand is a change to exactly
+one track-owned module and requires no edit here.** `tests/test_contract.py`
+asserts it, by checking that this file calls `add_parser` nowhere.
+
+Stdlib only, by contract.
+"""
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-from datetime import date
-from pathlib import Path
 
-from .baseline import rolling_persistence_backtest
-from .data import DataContractError, audit_panel, load_daily_panel
-from .ingest import fetch_fred_macro, fetch_nyfed_reference_rate
+from . import cli_data, cli_eval
 
-
-def _audit(path: Path) -> int:
-    report = audit_panel(load_daily_panel(path))
-    print(
-        json.dumps(
-            {
-                "rows": report.row_count,
-                "start_date": report.start_date.isoformat(),
-                "end_date": report.end_date.isoformat(),
-                "missing_counts": report.missing_counts,
-                "warnings": list(report.warnings),
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
-    return 0
-
-
-def _backtest(path: Path, minimum_history: int) -> int:
-    rows = load_daily_panel(path)
-    audit_panel(rows)
-    report = rolling_persistence_backtest(rows, minimum_history=minimum_history)
-    print(
-        json.dumps(
-            {
-                "forecast_count": len(report.forecasts),
-                "mae_bps": round(report.mae_bps, 4),
-                "interval_coverage": round(report.interval_coverage, 4),
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
-    return 0
+#: Registration modules, in the order their commands appear in `--help`.
+#: A new *module* is added here by the human, once. A new *command* is not,
+#: which is the entire point of the split.
+REGISTRARS = (cli_data.register, cli_eval.register)
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Assemble the parser from every track's registration module.
+
+    Each `register` receives the subparsers action and must call
+    `set_defaults(handler=...)` on every subparser it adds. A handler takes the
+    parsed namespace and returns a process exit code.
+    """
+
     parser = argparse.ArgumentParser(prog="repo-model")
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-    audit = subparsers.add_parser("audit", help="validate and summarize a daily panel")
-    audit.add_argument("path", type=Path)
-
-    backtest = subparsers.add_parser("backtest", help="run the persistence benchmark")
-    backtest.add_argument("path", type=Path)
-    backtest.add_argument("--minimum-history", type=int, default=20)
-
-    fetch = subparsers.add_parser("fetch", help="download an immutable public-data snapshot")
-    fetch.add_argument("source", choices=("nyfed-sofr", "fred-macro"))
-    fetch.add_argument("--start", default="2018-04-03", help="effective start date")
-    fetch.add_argument("--end", default=date.today().isoformat(), help="effective end date")
-    fetch.add_argument("--output-root", type=Path, default=Path("data/raw"))
+    for register in REGISTRARS:
+        register(subparsers)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Parse, dispatch, and translate expected failures into exit code 2.
+
+    The caught tuple is `(OSError, ValueError)` rather than the original
+    `(DataContractError, OSError, ValueError)`. That is not a narrowing:
+    `data.DataContractError` and `splits.SplitError` both subclass `ValueError`,
+    so the old tuple already meant exactly this one. Writing it without the
+    track-owned names is deliberate -- it keeps a track's exception vocabulary
+    out of a human-owned file, so a track can add or rename its own error type
+    without needing an edit here. A track wanting a *different* failure mode
+    should catch it in its own handler and return an exit code.
+    """
+
     args = build_parser().parse_args(argv)
+
+    handler = getattr(args, "handler", None)
+    if handler is None:
+        # A subparser that registered no handler. A traceback here would blame
+        # the user for a registration module's omission, so name the command
+        # and the obligation instead.
+        print(
+            f"error: command {args.command!r} registered no handler; its "
+            "registration module must call set_defaults(handler=...)",
+            file=sys.stderr,
+        )
+        return 2
+
     try:
-        if args.command == "audit":
-            return _audit(args.path)
-        if args.command == "backtest":
-            return _backtest(args.path, args.minimum_history)
-        if args.command == "fetch":
-            if args.source == "nyfed-sofr":
-                artifacts = fetch_nyfed_reference_rate(
-                    output_root=args.output_root,
-                    rate_name="sofr",
-                    start=args.start,
-                    end=args.end,
-                )
-            else:
-                artifacts = fetch_fred_macro(output_root=args.output_root)
-            print(json.dumps([artifact.as_dict() for artifact in artifacts], indent=2))
-            return 0
-    except (DataContractError, OSError, ValueError) as exc:
+        return handler(args)
+    except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    return 2
 
 
 if __name__ == "__main__":

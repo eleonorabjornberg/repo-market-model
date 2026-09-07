@@ -41,6 +41,17 @@ HUMAN_ONLY = (
     # A path-level gate cannot see a semantic collision, so the shape both
     # tracks must agree on is made executable and put out of both their reach.
     "src/repo_model/contract.py",
+    # The CLI dispatcher. It names no subcommand; commands are contributed by
+    # the two track-owned registration modules below. Assigned here on 7 Sep
+    # because it previously belonged to nobody: not forbidden to either track
+    # and not in SHARED, so the gate neither blocked an edit nor surfaced one.
+    "src/repo_model/cli.py",
+    # Package plumbing: the version string and the `python -m repo_model`
+    # entry point, which does nothing but call `cli.main`. Found unowned on
+    # 7 Sep by the tripwire in tests/test_contract.py, on its first run --
+    # the fourth and fifth files the gate had nothing to say about.
+    "src/repo_model/__init__.py",
+    "src/repo_model/__main__.py",
 )
 
 # Owned by neither track. Allowed, but always surfaced for human review.
@@ -64,6 +75,7 @@ TRACKS = {
             "src/repo_model/ingest.py",
             "src/repo_model/data.py",
             "src/repo_model/registry.py",
+            "src/repo_model/cli_data.py",
             "data/",
         ),
         "owner": "Track A (data layer)",
@@ -74,6 +86,12 @@ TRACKS = {
             "src/repo_model/splits.py",
             "src/repo_model/event_eval.py",
             "src/repo_model/metrics.py",
+            "src/repo_model/cli_eval.py",
+            # The persistence benchmark. Listed 7 Sep: the contract has always
+            # assigned benchmarks to Track B, but this file was in no forbidden
+            # list -- the same hole as cli.py, one file over. Applying an
+            # existing ruling, not making a new one.
+            "src/repo_model/baseline.py",
         ),
         "owner": "Track B (model and evaluation)",
     },

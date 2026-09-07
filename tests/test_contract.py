@@ -137,6 +137,9 @@ live in the interval, the only learned parameter here. A leak in a future point
 forecast or in the loader is not covered by any of the three.
 """
 
+import argparse
+import ast
+import importlib.util
 import inspect
 import json
 import re
@@ -148,6 +151,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from repo_model import cli
 from repo_model.baseline import _quantile, rolling_persistence_backtest
 from repo_model.contract import validate_release_lag
 from repo_model.data import (
@@ -811,6 +815,168 @@ class TargetSchemaTests(unittest.TestCase):
                 hasattr(baseline, name),
                 msg=f"no {name!r}; quantile levels are not yet comparable across models",
             )
+
+
+def _subparsers(parser):
+    """The `{name: subparser}` map behind an argparse subparsers action."""
+
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return dict(action.choices)
+    raise AssertionError("parser declares no subcommands")
+
+
+class CommandLineOwnershipTests(unittest.TestCase):
+    """The CLI seam, from AGENT_CONTRACT.md "Decided: who owns the CLI".
+
+    `src/repo_model/cli.py` is a human-owned dispatcher and the two `cli_*.py`
+    modules are track-owned. The property that closes the ownership hole is not
+    that the file got assigned -- it is that **adding a subcommand never
+    requires editing the human-owned file**. A docstring cannot fail a build, so
+    that property is asserted here.
+
+    The last test is the tripwire for the next `cli.py`: it fails when any
+    module under `src/repo_model/` is not accounted for by the ownership lists.
+    Both holes this project found -- `cli.py` and `baseline.py` -- were found by
+    a person reading the gate, twice, months apart. This finds the third one on
+    the branch that introduces it.
+    """
+
+    GATE = REPO_ROOT / ".github" / "check_ownership.py"
+
+    @classmethod
+    def _gate(cls):
+        spec = importlib.util.spec_from_file_location("_ownership_gate", cls.GATE)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_the_dispatcher_registers_no_subcommand_of_its_own(self):
+        """`cli.py` must contain no `add_parser` call.
+
+        Parsed, not grepped: the file's own docstring names `add_parser` while
+        explaining this rule, and a text scan would fail on the explanation.
+        """
+
+        tree = ast.parse(Path(cli.__file__).read_text())
+        offenders = [
+            node.lineno
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_parser"
+        ]
+        self.assertEqual(
+            offenders,
+            [],
+            "cli.py calls add_parser at lines "
+            f"{offenders}. A subcommand registered in the dispatcher is a "
+            "subcommand a track cannot add without a human edit, which is the "
+            "hole the split closed.",
+        )
+
+    def test_every_registered_subcommand_declares_a_handler(self):
+        """A subparser without `handler` reaches the user as exit 2, not a crash.
+
+        The dispatcher degrades gracefully, but a missing handler is still a
+        registration bug and should fail here rather than in someone's shell.
+        """
+
+        for name, subparser in _subparsers(cli.build_parser()).items():
+            with self.subTest(command=name):
+                self.assertIn(
+                    "handler",
+                    subparser._defaults,
+                    f"subcommand {name!r} did not call set_defaults(handler=...)",
+                )
+
+    def test_the_split_preserved_the_three_existing_subcommands(self):
+        """`audit`, `backtest` and `fetch` still exist, from the right modules.
+
+        A refactor of a file with no test coverage is exactly where a command
+        goes missing quietly.
+        """
+
+        expected = {
+            "audit": "repo_model.cli_data",
+            "fetch": "repo_model.cli_data",
+            "backtest": "repo_model.cli_eval",
+        }
+        registered = _subparsers(cli.build_parser())
+        self.assertEqual(set(registered), set(expected))
+        for name, module in expected.items():
+            with self.subTest(command=name):
+                self.assertEqual(
+                    registered[name]._defaults["handler"].__module__, module
+                )
+
+    def test_the_dispatcher_names_neither_track_module_beyond_importing_it(self):
+        """`cli.py` may import the registration modules and nothing more.
+
+        It holds `REGISTRARS`, which is a list of `register` callables. If it
+        starts reaching into a track module for anything else, the seam has
+        started leaking track vocabulary back into the human-owned file.
+        """
+
+        tree = ast.parse(Path(cli.__file__).read_text())
+        reached = {
+            node.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id in ("cli_data", "cli_eval")
+        }
+        self.assertEqual(
+            reached,
+            {"register"},
+            f"cli.py reaches into the track modules for {sorted(reached)}; only "
+            "'register' is part of the seam.",
+        )
+
+    def test_every_source_module_is_owned_by_exactly_one_party(self):
+        """No module under `src/repo_model/` belongs to nobody.
+
+        This is the general form of the two holes already paid for. A module is
+        owned if it is HUMAN_ONLY, SHARED, or forbidden to exactly one track --
+        forbidden to Track B means owned by Track A, and vice versa. A module in
+        none of those lists is one the gate is silent about: both tracks may
+        edit it and nothing says so until the merge.
+        """
+
+        gate = self._gate()
+        a_owned = set(gate.TRACKS["feature/model-eval"]["forbidden"])
+        b_owned = set(gate.TRACKS["feature/data-layer"]["forbidden"])
+
+        unowned = []
+        contested = []
+        for module in sorted((REPO_ROOT / "src" / "repo_model").glob("*.py")):
+            path = f"src/repo_model/{module.name}"
+            claims = [
+                label
+                for label, patterns in (
+                    ("human", gate.HUMAN_ONLY),
+                    ("shared", gate.SHARED),
+                    ("track A", a_owned),
+                    ("track B", b_owned),
+                )
+                if any(gate.matches(path, pattern) for pattern in patterns)
+            ]
+            if not claims:
+                unowned.append(path)
+            elif len(claims) > 1:
+                contested.append(f"{path} ({', '.join(claims)})")
+
+        self.assertEqual(
+            unowned,
+            [],
+            f"{unowned} are in no ownership list. The gate will neither block "
+            "an edit to them nor surface one for review, so both tracks can "
+            "change them and nothing will say so until the merge. Assign each "
+            "in .github/check_ownership.py and say so in AGENT_CONTRACT.md.",
+        )
+        self.assertEqual(
+            contested, [], f"{contested} are claimed by more than one party."
+        )
 
 
 if __name__ == "__main__":
