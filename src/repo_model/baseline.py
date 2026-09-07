@@ -6,12 +6,34 @@ The forecast interface `AGENT_CONTRACT.md` declares --
     predict(feature_row)        -> quantile vector at contract.QUANTILE_LEVELS
     predict_stress(feature_row) -> exceedance vector aligned to the declared taus_bp
 
--- is implemented here by exactly one model, `FittedPersistence`: the
-persistence-plus-empirical-residual baseline `rolling_persistence_backtest` used
-to compute inline. Nothing new is forecast. What changed is that the numbers now
-have one origin: the backtest fits the model and reads its quantiles instead of
-deriving a second set beside it, so there is no longer a pair of interval
-computations that can drift apart.
+-- has two implementers here, which is the point of the second one.
+
+`FittedPersistence` is the persistence-plus-empirical-residual baseline. It
+reads exactly one thing from a feature row, `spread_bps`, and fits nothing but a
+residual vector.
+
+`FittedArx` is the first challenger: an autoregressive term plus caller-declared
+exogenous regressors, least squares by normal equations, with a predictive
+distribution taken from leave-one-out residuals. It exists to convert the
+interface from a description of `FittedPersistence` into a constraint. Three
+things only a second implementer can establish are established by it: that a
+model reading more of `values` than `spread_bps` can go through `fit`; that
+`_exceedance_from_residuals` derives stress from *an* empirical residual law
+rather than from persistence's in particular; and that a fitted transform with
+real parameters -- here the imputation means -- is confined to `fit`, which
+contract test 3 had nothing to bite on while persistence was the only model.
+
+`FittedForecastModel` is the shape both satisfy. It stays in this module rather
+than moving to `contract.py`: the rule at AGENT_CONTRACT.md's "The shape is
+executable, and owned by neither track" is for shapes shared *by both tracks*,
+and Track A fits no models. If Track A ever needs to import it, that is a
+contract question and not a refactor.
+
+`rolling_persistence_backtest` takes the fitting call as an argument and
+defaults to persistence, so it scores the interface rather than one member of
+it. The name is unchanged because it is the name the last block's merge record
+and the existing assertions refer to; "persistence" in it now names the default,
+not the only option.
 """
 
 from __future__ import annotations
@@ -20,7 +42,17 @@ import math
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable, Iterable, List, Optional, Sequence, Tuple
+from types import MappingProxyType
+from typing import (
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+)
 
 from .contract import QUANTILE_LEVELS
 from .data import DailyObservation, load_stress_thresholds
@@ -35,6 +67,84 @@ ExceedancePredictor = Callable[
     [Sequence[date], Sequence[float], Sequence[date], Sequence[float]],
     Sequence[Sequence[float]],
 ]
+
+
+class FittedForecastModel(Protocol):
+    """What `fit` returns and what every consumer of a fitted model may assume.
+
+    The contract writes the forecast interface as three calls and says "every
+    fitted object carries the cutoff it was fitted at". This is that sentence,
+    executable. It is a `typing.Protocol` rather than a base class on purpose:
+    the models here share an interface and no implementation, and a shared base
+    would invite one model's incidental shape to become the other's inheritance.
+
+    `predict_stress` takes `taus` so the derivation can be checked at the levels
+    `predict` reports -- see `FittedPersistence.predict_stress` -- and defaults
+    to the declared `taus_bp` family. `trained_beyond` is here because a fitted
+    model that cannot answer "were you fitted past this row?" cannot be audited
+    for look-ahead by anything downstream of the fit.
+
+    Structural, not nominal: nothing declares that it implements this, and
+    `tests/test_contract.py::ForecastInterfaceCoverageTests` discovers the
+    implementations in this module rather than reading a list.
+    """
+
+    cutoff: date
+    levels: Tuple[float, ...]
+
+    @property
+    def residuals(self) -> Tuple[float, ...]:
+        """The fitted residual sample, ascending; the law both outputs read."""
+
+    def trained_beyond(self, feature_row: DailyObservation) -> bool: ...
+
+    def point_forecast(self, feature_row: DailyObservation) -> float:
+        """The model's own point rule for the day after `feature_row`.
+
+        Named separately from `predict` because the two answer different
+        questions and only one of them is the same across models: `predict`
+        returns the declared quantile grid, while this is whatever the model
+        says the centre is -- the last observed spread for persistence, a
+        regression mean for the ARX. A backtest that read the centre off the
+        feature row instead would score every model on persistence's point rule
+        while reporting its intervals.
+        """
+
+    def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]: ...
+
+    def predict_stress(
+        self,
+        feature_row: DailyObservation,
+        taus: Optional[Sequence[float]] = None,
+    ) -> Tuple[float, ...]: ...
+
+
+class MissingRegressorError(ValueError):
+    """A feature row does not carry a regressor the fitted model declared.
+
+    Distinct from the regressor being present and unobserved. `values` is a
+    `Mapping[str, Optional[float]]`, so an absent key and a `None` are two
+    different facts, and AGENT_CONTRACT.md's contract test 5 requires they stay
+    distinguishable "at every stage". A model that cannot read a column it was
+    fitted on has been handed the wrong frame; a model handed a column with no
+    observation on that day has been handed a gap, which `fit` fitted an
+    imputation for. Collapsing the two -- in either direction -- is the silent
+    coercion the contract prohibits.
+
+    A `ValueError` subclass so the CLI dispatcher's `(OSError, ValueError)`
+    already covers it without naming a new type.
+    """
+
+
+class SingularDesignError(ValueError):
+    """The normal equations have no unique solution on this training window.
+
+    Raised rather than solved approximately. A rank-deficient design means the
+    declared regressors do not identify separate coefficients on this window --
+    a constant column, a duplicate, an exact linear combination -- and any
+    number returned would be one arbitrary point on a solution line. Reporting a
+    coefficient nobody can reproduce is worse than refusing to fit.
+    """
 
 
 @dataclass(frozen=True)
@@ -53,8 +163,9 @@ class BacktestReport:
     #: The model fitted at the last origin the backtest reached. Present so a
     #: reader can ask the reported run what it was fitted at, and so the
     #: interval bounds above have a named source rather than being a second
-    #: derivation that happens to agree.
-    model: Optional["FittedPersistence"] = None
+    #: derivation that happens to agree. Typed to the interface, not to
+    #: persistence: the backtest scores whichever model it was given.
+    model: Optional[FittedForecastModel] = None
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -140,6 +251,16 @@ class FittedPersistence:
 
         return feature_row.date < self.cutoff
 
+    def point_forecast(self, feature_row: DailyObservation) -> float:
+        """The last observed spread. The persistence rule, stated once.
+
+        `predict` and `rolling_persistence_backtest` both anchor here rather
+        than each writing `feature_row.spread_bps`, so the point rule and the
+        quantiles around it cannot drift apart.
+        """
+
+        return feature_row.spread_bps
+
     def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
         """One predicted spread quantile per declared level, in declared order.
 
@@ -148,7 +269,7 @@ class FittedPersistence:
         is non-decreasing in its probability.
         """
 
-        anchor = feature_row.spread_bps
+        anchor = self.point_forecast(feature_row)
         return tuple(anchor + _quantile(self._residuals, level) for level in self.levels)
 
     def predict_stress(
@@ -187,7 +308,7 @@ class FittedPersistence:
         family = _validate_taus_bp(
             load_stress_thresholds()["taus_bp"] if taus is None else taus
         )
-        anchor = feature_row.spread_bps
+        anchor = self.point_forecast(feature_row)
         return tuple(
             _exceedance_from_residuals(self._residuals, tau - anchor) for tau in family
         )
@@ -307,22 +428,461 @@ def fit(
     return FittedPersistence(residuals, declared, levels)
 
 
+def _solve(matrix: Sequence[Sequence[float]], rhs: Sequence[float]) -> Tuple[float, ...]:
+    """Gaussian elimination with partial pivoting. Stdlib, and deliberately dull.
+
+    Partial pivoting rather than none because the design columns here are raw
+    market levels -- reserve balances in the thousands beside a spread in single
+    basis points -- and without a pivot the elimination divides by whichever
+    number happened to be on the diagonal.
+
+    A pivot at or below `tolerance` is a rank-deficient system, not a small one:
+    the tolerance is scaled by the largest magnitude in the matrix so it means
+    the same thing whether the Gram entries are 1e0 or 1e8.
+
+    Raises:
+        SingularDesignError: if no usable pivot exists in a column.
+    """
+
+    size = len(rhs)
+    augmented = [list(row) + [float(value)] for row, value in zip(matrix, rhs)]
+    scale = max((abs(value) for row in matrix for value in row), default=0.0)
+    tolerance = 1e-12 * max(scale, 1.0)
+
+    for column in range(size):
+        pivot_row = max(range(column, size), key=lambda r: abs(augmented[r][column]))
+        if abs(augmented[pivot_row][column]) <= tolerance:
+            raise SingularDesignError(
+                f"the normal equations are rank deficient at column {column}: the "
+                f"largest available pivot is {augmented[pivot_row][column]!r}, at or "
+                f"below the scaled tolerance {tolerance!r}. The declared regressors "
+                f"do not identify separate coefficients on this window -- a constant "
+                f"column, a duplicate, or an exact linear combination of the others"
+            )
+        augmented[column], augmented[pivot_row] = augmented[pivot_row], augmented[column]
+        pivot = augmented[column][column]
+        for row in range(column + 1, size):
+            factor = augmented[row][column] / pivot
+            if factor == 0.0:
+                continue
+            for position in range(column, size + 1):
+                augmented[row][position] -= factor * augmented[column][position]
+
+    solution = [0.0] * size
+    for row in reversed(range(size)):
+        total = augmented[row][size] - sum(
+            augmented[row][position] * solution[position]
+            for position in range(row + 1, size)
+        )
+        solution[row] = total / augmented[row][row]
+    return tuple(solution)
+
+
+def _least_squares(
+    design: Sequence[Sequence[float]], targets: Sequence[float]
+) -> Tuple[float, ...]:
+    """Ordinary least squares by the normal equations `(X'X) b = X'y`.
+
+    Normal equations rather than a QR factorisation because the contract says
+    stdlib and a QR written here would be a numerical library nobody asked for.
+    The cost is a squared condition number, which is why `_solve` refuses a
+    rank-deficient system loudly instead of returning the smaller of two
+    indistinguishable answers, and why the design is left in its natural units:
+    centring the columns would condition the problem better and would also map
+    an imputed value onto exactly 0.0 inside the design matrix, which is the one
+    place AGENT_CONTRACT.md's test 5 says a zero must never appear by accident.
+    """
+
+    columns = len(design[0])
+    gram = [
+        [sum(row[i] * row[j] for row in design) for j in range(columns)]
+        for i in range(columns)
+    ]
+    moment = [
+        sum(row[i] * target for row, target in zip(design, targets))
+        for i in range(columns)
+    ]
+    return _solve(gram, moment)
+
+
+def _dot(coefficients: Sequence[float], row: Sequence[float]) -> float:
+    return sum(c * x for c, x in zip(coefficients, row))
+
+
+def _leave_one_out_residuals(
+    design: Sequence[Sequence[float]], targets: Sequence[float]
+) -> List[float]:
+    """Residuals from fits that never saw the row they are scored on.
+
+    An ARX chose its coefficients to make its in-sample residuals small, so
+    quantiles read off them describe how well the fit interpolated its own
+    training data, not how wide next period's forecast should be. The narrowing
+    grows with the number of regressors, which means the more regressors an ARX
+    declares the better calibrated it appears -- a reported coverage that
+    improves with model complexity for reasons that have nothing to do with
+    forecasting. `METHODOLOGY.md` sec. 9 exists to keep numbers like that out of
+    the record.
+
+    So the law reported here is the leave-one-out law: for each design row, refit
+    on every other row and score the held-out one. No residual in the vector was
+    ever minimised by the coefficients that produced it.
+
+    Refitting `n` times rather than using the closed form `e_i / (1 - h_ii)` --
+    which is algebraically the same number -- because the two-line version is
+    checkable by reading it, and the hat-matrix version needs `(X'X)^-1` and an
+    argument about why `h_ii` is safely below 1. The cost is `n` small solves per
+    fit; on this repository's panels that is microseconds, and if a real panel
+    ever makes it matter the closed form is the drop-in.
+
+    Raises:
+        SingularDesignError: if dropping a row leaves the design rank deficient.
+            That is a real property of the declared regressor set on this window
+            -- one row is carrying the identification of a coefficient -- and a
+            law assembled from the folds that happened to survive would be a
+            quiet subsample.
+    """
+
+    residuals = []
+    for index in range(len(design)):
+        reduced_design = list(design[:index]) + list(design[index + 1 :])
+        reduced_targets = list(targets[:index]) + list(targets[index + 1 :])
+        try:
+            coefficients = _least_squares(reduced_design, reduced_targets)
+        except SingularDesignError as error:
+            raise SingularDesignError(
+                f"the design is rank deficient with row {index} held out, though "
+                f"it is identified on the full window; one row is carrying a "
+                f"coefficient. Declare fewer regressors or fit on more history"
+            ) from error
+        residuals.append(targets[index] - _dot(coefficients, design[index]))
+    return residuals
+
+
+def _raw_regressor(
+    row: DailyObservation, name: str, where: str
+) -> Optional[float]:
+    """The declared regressor as the row carries it: a float, or `None`.
+
+    Absent key and `None` are returned as different things -- a raise and a
+    `None` -- because they are different facts. See `MissingRegressorError`.
+    """
+
+    try:
+        raw = row.values[name]
+    except KeyError:
+        raise MissingRegressorError(
+            f"{where} for {row.date} carries no {name!r}; the model was fitted on "
+            f"that regressor and cannot read it here. An absent column is not an "
+            f"unobserved value: an unobserved value arrives as None and is imputed "
+            f"from the fitted training-window mean, and treating a missing column "
+            f"as one would forecast from a number the row never contained"
+        ) from None
+    if raw is None:
+        return None
+    value = float(raw)
+    if not math.isfinite(value):
+        raise ValueError(
+            f"{where} for {row.date} carries a non-finite {name!r}: {raw!r}"
+        )
+    return value
+
+
+class FittedArx:
+    """An ARX quantile model, fitted: coefficients, imputations, a residual law.
+
+    The point forecast for the day after a feature row is
+
+        b0 + b1 * spread_bps(row) + sum_j c_j * x_j(row)
+
+    over the regressors the caller declared, fitted by least squares on the
+    training frame's own one-step-ahead pairs. The predictive distribution around
+    it is the empirical law of the leave-one-out residuals, read at
+    `contract.QUANTILE_LEVELS` exactly as persistence reads its one-step
+    differences -- same declared grid, same `_quantile`, same inversion for
+    stress. What differs between the two models is where the residuals come
+    from, and nothing else.
+
+    Fitted state, all of it set in `fit_arx` and nowhere else:
+
+    * `regressors` -- the ordered names this model was fitted on. Carried
+      because a model that cannot say what it read cannot be audited, and
+      because two models compared on quietly different regressor sets are not
+      being compared. There is no repository-wide feature-set declaration to
+      read them from; the caller declares them, and the fitted object records
+      the declaration. See the block record for why that is a stopgap.
+    * `imputations` -- the training-window mean of each regressor's observed
+      values. The only transform with learned parameters in either model, and
+      therefore the first thing contract test 3 has ever had to bite on.
+    * `coefficients` -- ordered to match `design_names`.
+    * `_residuals` -- the sorted leave-one-out residual vector.
+    * `cutoff` -- the last date the training frame was allowed to contain, with
+      the same meaning and the same `trained_beyond` question as persistence.
+
+    A feature row missing a declared regressor raises `MissingRegressorError`. A
+    feature row carrying it as `None` gets the fitted mean. Neither becomes
+    `0.0`.
+    """
+
+    __slots__ = (
+        "_residuals",
+        "coefficients",
+        "cutoff",
+        "imputations",
+        "levels",
+        "regressors",
+    )
+
+    def __init__(
+        self,
+        coefficients: Sequence[float],
+        regressors: Sequence[str],
+        imputations: Mapping[str, float],
+        residuals: Sequence[float],
+        cutoff: date,
+        levels: Sequence[float] = QUANTILE_LEVELS,
+    ) -> None:
+        self.regressors: Tuple[str, ...] = tuple(regressors)
+        self.coefficients: Tuple[float, ...] = tuple(float(c) for c in coefficients)
+        #: Read-only so a caller cannot retune a fitted transform after the
+        #: fact, which would put the reported coefficients and the imputation
+        #: that produced them out of step with no diff to show for it.
+        self.imputations: Mapping[str, float] = MappingProxyType(
+            {name: float(imputations[name]) for name in self.regressors}
+        )
+        self._residuals: Tuple[float, ...] = tuple(sorted(float(r) for r in residuals))
+        self.cutoff: date = cutoff
+        self.levels: Tuple[float, ...] = _validate_levels(levels)
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostic only
+        return (
+            f"FittedArx(cutoff={self.cutoff.isoformat()}, "
+            f"regressors={list(self.regressors)}, "
+            f"residuals={len(self._residuals)})"
+        )
+
+    @property
+    def design_names(self) -> Tuple[str, ...]:
+        """The coefficient order, named. `coefficients[i]` multiplies `[i]`."""
+
+        return ("intercept", "spread_bps") + self.regressors
+
+    @property
+    def residuals(self) -> Tuple[float, ...]:
+        """The fitted leave-one-out residual sample, ascending."""
+
+        return self._residuals
+
+    def trained_beyond(self, feature_row: DailyObservation) -> bool:
+        """Was this model fitted on rows dated after `feature_row`?
+
+        Same question, same answer, same reason as `FittedPersistence`.
+        """
+
+        return feature_row.date < self.cutoff
+
+    def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        """The feature row as this model reads it, in `design_names` order.
+
+        Public because it is the auditable half of a forecast: it says exactly
+        which numbers went into the point estimate, including which ones were
+        imputed. Raises `MissingRegressorError` if the row does not carry a
+        declared regressor.
+        """
+
+        values = [1.0, feature_row.spread_bps]
+        for name in self.regressors:
+            observed = _raw_regressor(feature_row, name, "feature row")
+            values.append(self.imputations[name] if observed is None else observed)
+        return tuple(values)
+
+    def point_forecast(self, feature_row: DailyObservation) -> float:
+        """The conditional mean the quantiles are centred on."""
+
+        return _dot(self.coefficients, self.design_row(feature_row))
+
+    def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        """One predicted spread quantile per declared level, in declared order.
+
+        The point forecast shifted by the fitted residual quantile at each
+        level. Ascending, because `levels` is ascending and `_quantile` is
+        non-decreasing in its probability.
+        """
+
+        anchor = self.point_forecast(feature_row)
+        return tuple(anchor + _quantile(self._residuals, level) for level in self.levels)
+
+    def predict_stress(
+        self,
+        feature_row: DailyObservation,
+        taus: Optional[Sequence[float]] = None,
+    ) -> Tuple[float, ...]:
+        """`P(spread > tau)` per tau, derived from the law `predict` reports.
+
+        Character for character the same derivation as persistence, over this
+        model's own residual vector: `_exceedance_from_residuals` inverts
+        `_quantile`, so `predict_stress` evaluated at `predict`'s `Q(q)` returns
+        `1 - q` here for the same reason it does there. That the function needed
+        no change to serve a second model is the evidence that the derivation
+        was a property of the interface rather than of persistence.
+
+        Not a classifier fitted on the `stress_gt_*` label columns; nothing in
+        this object was fitted to a label.
+        """
+
+        family = _validate_taus_bp(
+            load_stress_thresholds()["taus_bp"] if taus is None else taus
+        )
+        anchor = self.point_forecast(feature_row)
+        return tuple(
+            _exceedance_from_residuals(self._residuals, tau - anchor) for tau in family
+        )
+
+
+def fit_arx(
+    train_frame: Sequence[DailyObservation],
+    regressors: Sequence[str],
+    cutoff: Optional[date] = None,
+    minimum_history: int = 20,
+    levels: Sequence[float] = QUANTILE_LEVELS,
+) -> FittedArx:
+    """Fit the ARX on `train_frame` over `regressors` and return the fitted model.
+
+    Args:
+        train_frame: the training rows, strictly ascending by date. The design
+            is this frame's own one-step-ahead pairs and nothing else: row `i`'s
+            spread is regressed on row `i-1`'s spread and row `i-1`'s
+            regressors, so a fit on `n` rows has `n - 1` design rows, the same
+            count as persistence's `n - 1` residuals.
+        regressors: the ordered exogenous regressor names, read from each
+            origin row's `values`. **Required, with no default**, for the reason
+            `rolling_origin` refuses a default `purge` and `max_release_lag_days`
+            refuses a default `decision_time`: a default here would be a silent
+            assumption about which columns a model is entitled to, and nothing in
+            this repository declares that. Naming them at the call site keeps the
+            assumption visible and keeps the fitted object able to report it.
+        cutoff: the last date the model was allowed to see. Defaults to the
+            frame's own last date.
+        minimum_history: the shortest frame that may produce a fitted law.
+        levels: the quantile grid, defaulting to the declared one.
+
+    Returns:
+        A `FittedArx` carrying its coefficients, its regressor names, its fitted
+        imputation means, its sorted leave-one-out residuals and its cutoff.
+
+    Raises:
+        LookAheadError: if any training row is dated after `cutoff`.
+        SplitError: if the frame is not strictly ascending by date.
+        MissingRegressorError: if a training row does not carry a declared
+            regressor.
+        SingularDesignError: if the declared regressors do not identify separate
+            coefficients on this window.
+        ValueError: if no regressors are declared, if one is declared twice, if
+            the frame is shorter than `minimum_history`, if the design has too
+            few rows to leave one out, or if a regressor is unobserved on every
+            row of the training window.
+    """
+
+    names = tuple(str(name) for name in regressors)
+    if not names:
+        raise ValueError(
+            "no regressors declared; an ARX with no exogenous term is an AR, and "
+            "an empty list is how a caller omits the decision rather than makes "
+            "it. Name the regressors, even if the honest answer is one of them"
+        )
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        raise ValueError(
+            f"regressors declared more than once: {duplicates}; a duplicated "
+            f"column makes the design rank deficient and its two coefficients "
+            f"meaningless individually"
+        )
+
+    rows = list(train_frame)
+    if len(rows) < minimum_history:
+        raise ValueError(
+            f"arx needs at least {minimum_history} training rows, got {len(rows)}; "
+            f"a coefficient and a residual law from fewer is not a fitted model"
+        )
+
+    dates = [row.date for row in rows]
+    ensure_strictly_ascending(dates, label="training frame dates")
+
+    declared = dates[-1] if cutoff is None else cutoff
+    if dates[-1] > declared:
+        raise LookAheadError(
+            f"training frame reaches {dates[-1]}, past its cutoff {declared}; "
+            f"a fitted model may not contain a row it was not allowed to see"
+        )
+
+    # The origins: every row that has a successor in the frame. These, and only
+    # these, are the rows the transform below is fitted on -- which is what
+    # contract test 3 means by "recomputed on a training window alone".
+    origins = rows[:-1]
+    observed: Mapping[str, List[float]] = {name: [] for name in names}
+    for row in origins:
+        for name in names:
+            value = _raw_regressor(row, name, "training row")
+            if value is not None:
+                observed[name].append(value)
+
+    imputations = {}
+    for name in names:
+        seen = observed[name]
+        if not seen:
+            raise ValueError(
+                f"regressor {name!r} is unobserved on every row of the training "
+                f"window ({origins[0].date}..{origins[-1].date}); there is nothing "
+                f"to fit an imputation from, and filling it with 0.0 would be the "
+                f"coercion contract test 5 prohibits. Three columns of the sample "
+                f"panel are empty throughout and this is what happens to them"
+            )
+        imputations[name] = sum(seen) / len(seen)
+
+    design = []
+    targets = []
+    for index in range(1, len(rows)):
+        origin = rows[index - 1]
+        row = [1.0, origin.spread_bps]
+        for name in names:
+            value = _raw_regressor(origin, name, "training row")
+            row.append(imputations[name] if value is None else value)
+        design.append(row)
+        targets.append(rows[index].spread_bps)
+
+    columns = len(names) + 2
+    if len(design) - 1 < columns + 1:
+        raise ValueError(
+            f"{len(design)} design rows against {columns} coefficients; a "
+            f"leave-one-out fit needs at least {columns + 2} so every fold keeps "
+            f"a degree of freedom. Declare fewer regressors or fit on more history"
+        )
+
+    coefficients = _least_squares(design, targets)
+    residuals = _leave_one_out_residuals(design, targets)
+    return FittedArx(coefficients, names, imputations, residuals, declared, levels)
+
+
 def predict(
-    model: FittedPersistence, feature_row: DailyObservation
+    model: FittedForecastModel, feature_row: DailyObservation
 ) -> Tuple[float, ...]:
     """`model.predict(feature_row)`, as the module-level name the contract lists.
 
     The contract writes the interface as three calls. The fitted object is where
     the state lives, so these two are thin and deliberately hold no logic of
     their own -- a second implementation behind the same name is precisely what
-    this block exists to prevent.
+    the last block existed to prevent.
+
+    Typed to `FittedForecastModel` rather than to `FittedPersistence`: the
+    annotation used to name the only implementation there was, which is how a
+    second one gets read as an exception to the interface rather than a member
+    of it.
     """
 
     return model.predict(feature_row)
 
 
 def predict_stress(
-    model: FittedPersistence,
+    model: FittedForecastModel,
     feature_row: DailyObservation,
     taus: Optional[Sequence[float]] = None,
 ) -> Tuple[float, ...]:
@@ -331,19 +891,33 @@ def predict_stress(
     return model.predict_stress(feature_row, taus)
 
 
+#: The fitting call `rolling_persistence_backtest` refits at every origin:
+#: `(train_frame, minimum_history=...) -> fitted model`. `fit` and
+#: `functools.partial(fit_arx, regressors=(...))` both have this shape, and the
+#: partial is how the ARX's required regressor list reaches a backtest without
+#: the backtest knowing that regressors exist.
+ModelFitter = Callable[..., FittedForecastModel]
+
+
 def rolling_persistence_backtest(
     observations: Iterable[DailyObservation],
     minimum_history: int = 20,
     interval_probability: Optional[float] = None,
+    fit_model: Optional[ModelFitter] = None,
 ) -> BacktestReport:
-    """Forecast tomorrow's spread as today's spread, refitting at every origin.
+    """Refit at every origin and score the next day. Persistence by default.
 
     At each origin the model is fitted on the rows strictly before it and asked
     for its quantiles; the reported interval is the outermost declared pair.
-    Prediction intervals therefore use only previously observed one-step
-    residuals, ensuring that no future information leaks into a forecast -- and
-    they are the fitted model's own numbers, not a parallel derivation that
-    happens to agree with it today.
+    Prediction intervals therefore use only the fitted model's own numbers over
+    rows it was allowed to see, not a parallel derivation that happens to agree
+    with it today.
+
+    The fitting call is a parameter, so this scores the forecast interface
+    rather than one member of it. The name is unchanged: it is what the existing
+    assertions and the last block's merge record refer to, and "persistence" in
+    it now names the default rather than the only option. Renaming it is a
+    follow-up, not a silent side effect of generalising it.
 
     Args:
         observations: the panel, ascending by date.
@@ -354,6 +928,13 @@ def rolling_persistence_backtest(
             bounds come from `contract.QUANTILE_LEVELS`, and the only value
             those levels admit is `INTERVAL_PROBABILITY`. Pass `None`, the
             default, to read it from the declaration.
+        fit_model: the fitting call, `(train_frame, minimum_history=...) ->
+            fitted model`. `None`, the default, is persistence's `fit` and
+            leaves every number this function has ever reported unchanged. Pass
+            `functools.partial(fit_arx, regressors=(...))` to score the ARX. The
+            point forecast reported is the fitted model's median, so a model
+            whose centre is not the last observed spread is scored on its own
+            centre rather than on persistence's.
 
     Raises:
         ValueError: if the panel is too short, or if `interval_probability`
@@ -378,19 +959,28 @@ def rolling_persistence_backtest(
     if len(rows) <= minimum_history:
         raise ValueError("not enough observations for requested minimum history")
 
+    fitter: ModelFitter = fit if fit_model is None else fit_model
+
     forecasts: List[Forecast] = []
-    model: Optional[FittedPersistence] = None
+    model: Optional[FittedForecastModel] = None
 
     for index in range(minimum_history, len(rows)):
         # Fitted on rows[:index], so the cutoff is the feature row's own date
         # and nothing dated at or after the scored day is in the frame.
-        model = fit(rows[:index], minimum_history=minimum_history)
+        model = fitter(rows[:index], minimum_history=minimum_history)
         feature_row = rows[index - 1]
         quantiles = model.predict(feature_row)
         forecasts.append(
             Forecast(
                 actual_bps=rows[index].spread_bps,
-                predicted_bps=feature_row.spread_bps,
+                # The model's own point rule, not persistence's restated. For
+                # persistence this is `feature_row.spread_bps` and every number
+                # this function reported before the generalisation is bit-
+                # identical; for the ARX it is the regression's conditional
+                # mean. Reading it off the model rather than off the feature row
+                # is what stops a second model being scored against the first
+                # one's centre while wearing its own intervals.
+                predicted_bps=model.point_forecast(feature_row),
                 lower_bps=quantiles[0],
                 upper_bps=quantiles[-1],
             )

@@ -201,16 +201,19 @@ import sys
 import tempfile
 import unittest
 from datetime import date, datetime, timedelta, timezone
+from functools import partial
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model import cli
+from repo_model import baseline, cli
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
+    FittedArx,
     FittedPersistence,
     _quantile,
     fit,
+    fit_arx,
     predict,
     predict_stress,
     rolling_persistence_backtest,
@@ -440,8 +443,19 @@ class FuturePerturbationTests(unittest.TestCase):
 class TransformIsolationTests(unittest.TestCase):
     """Contract test 3: learned parameters come from the training window alone.
 
-    The residual quantile that sets the prediction interval is the only
-    transform with learned parameters in the codebase today.
+    This test had nothing to bite on until an ARX existed. `FittedPersistence`
+    learns only a residual vector, so "fitted transform parameters are
+    recomputed on a training window alone" was vacuously true of it: there is no
+    transform, and the first test below is really a statement about which
+    residuals the interval quantile is read from. True and worth keeping, but
+    not what the contract clause is for.
+
+    `FittedArx` fits a real transform -- one imputation mean per declared
+    regressor, the value an unobserved cell is filled with -- and the second
+    test is contract test 3 doing the work it was written for. A mean taken over
+    the whole panel rather than the training window is the classic leak: it is
+    invisible in the coefficients, it moves every forecast slightly, and it
+    cannot be recovered from the output.
     """
 
     def test_interval_matches_parameters_refit_on_the_training_window(self):
@@ -498,6 +512,75 @@ class TransformIsolationTests(unittest.TestCase):
         self.assertEqual(
             forecast.upper_bps, prediction + _quantile(window, UPPER_LEVEL)
         )
+
+    def test_arx_imputation_parameters_come_from_the_training_window_alone(self):
+        """The ARX's imputation means, refit on a window, against the pipeline.
+
+        The contract's clause has two halves and both are checked. First, the
+        parameters a standalone fit produces on a window are the training
+        window's own -- computed here from the rows the transform is entitled to
+        see, which is the window's *origin* rows: everything but the last, since
+        the last row of a training frame is a target and never a feature.
+        Second, the same window inside the full pipeline produces the same
+        parameters, so nothing about running the backtest over a longer panel
+        reaches back into a fit.
+
+        The panel is shocked in its tail on purpose. On an unshocked frame the
+        window mean and the full-sample mean nearly coincide, so equality would
+        prove almost nothing; the assertion that the two candidate parameters
+        really do differ is what makes the rest of this test evidence. Same
+        structure, and the same reason, as
+        `test_window_parameters_differ_from_full_sample_parameters` above.
+        """
+
+        rows = perturb_after(distinct_residual_frame(), cutoff_index=30)
+        window = rows[:32]
+
+        def observed_mean(frame, name):
+            # Origin rows only: frame[:-1]. A mean over one row more is a mean
+            # over a row the transform was never handed.
+            seen = [
+                float(row.values[name])
+                for row in frame[:-1]
+                if row.values[name] is not None
+            ]
+            return sum(seen) / len(seen)
+
+        model = fit_arx(window, CONFORMANCE_REGRESSORS, minimum_history=20)
+
+        for name in CONFORMANCE_REGRESSORS:
+            window_mean = observed_mean(window, name)
+            full_sample_mean = observed_mean(rows, name)
+
+            self.assertNotAlmostEqual(
+                window_mean,
+                full_sample_mean,
+                places=6,
+                msg=(
+                    f"test panel cannot distinguish window fitting from "
+                    f"full-sample fitting for {name}"
+                ),
+            )
+            self.assertAlmostEqual(model.imputations[name], window_mean, places=12)
+
+        # The same window reached through the full pipeline. The backtest's last
+        # origin trains on rows[:-1], so a standalone fit on those rows must
+        # produce the parameters the reported model carries -- the "equal to the
+        # parameters produced by the full pipeline on that window" half.
+        report = rolling_persistence_backtest(
+            rows,
+            minimum_history=20,
+            fit_model=partial(fit_arx, regressors=CONFORMANCE_REGRESSORS),
+        )
+        standalone = fit_arx(rows[:-1], CONFORMANCE_REGRESSORS, minimum_history=20)
+        self.assertEqual(dict(report.model.imputations), dict(standalone.imputations))
+        for name in CONFORMANCE_REGRESSORS:
+            self.assertAlmostEqual(
+                report.model.imputations[name],
+                observed_mean(rows[:-1], name),
+                places=12,
+            )
+        self.assertEqual(report.model.coefficients, standalone.coefficients)
 
 
 class StructuralZeroTests(unittest.TestCase):
@@ -872,6 +955,13 @@ def distinct_residual_frame(count=60, seed=20260908):
     stored because the property under test is a property of the numbers, not of
     any particular panel, and `test_the_frame_this_class_relies_on_has_no_tied_residuals`
     checks the property holds rather than assuming the generator delivered it.
+
+    The frame also carries two moving exogenous columns. Persistence reads
+    neither -- it reads `spread_bps` and nothing else, so every number it
+    reported before they were added is unchanged -- and the ARX conformance case
+    needs a frame it can be fitted on. Both models therefore run the conformance
+    suite over the same rows, which is what makes "the interface generalises" a
+    statement about the interface rather than about two fixtures.
     """
 
     rows = []
@@ -881,40 +971,82 @@ def distinct_residual_frame(count=60, seed=20260908):
         rows.append(
             DailyObservation(
                 date(2026, 1, 1) + timedelta(days=index),
-                {"sofr": 4.30 + 0.0001 * (state % 9973), "iorb": 4.30},
+                {
+                    "sofr": 4.30 + 0.0001 * (state % 9973),
+                    "iorb": 4.30,
+                    "sofr_volume": 2100.0 + (state % 1301) / 3.0,
+                    "on_rrp": 90.0 + (state % 211) / 10.0,
+                },
             )
         )
     return rows
 
 
-class ForecastInterfaceTests(unittest.TestCase):
-    """AGENT_CONTRACT.md, "The forecast interface", against the real thing.
+#: The regressor set the ARX conformance case declares. Named here because
+#: nothing in the repository declares a feature set and the ARX requires the
+#: caller to say -- see `fit_arx`, and the block record's note on what a
+#: declared feature set would have to say before this could stop being a
+#: call-site constant.
+CONFORMANCE_REGRESSORS = ("sofr_volume", "on_rrp")
 
-    This class replaces the `expectedFailure` presence tripwire that stood here
-    while `fit`/`predict`/`predict_stress` did not exist. That tripwire tested
+
+class ForecastInterfaceConformance:
+    """AGENT_CONTRACT.md, "The forecast interface", against every implementer.
+
+    These assertions were written against `FittedPersistence` concretely, when
+    it was the only fitted model in the repository. That was correct then and is
+    the problem now: an interface with one implementer is a description of that
+    implementer, and every incidental property of `FittedPersistence` -- that it
+    reads exactly `spread_bps`, that its residuals are one-step differences,
+    that it fits no transform at all -- was free to be read by callers as part
+    of the contract. Lifting the tests into a base that concrete cases inherit
+    is what turns them from a description into a constraint. The names are
+    unchanged; they are the acceptance criteria of the previous block and the
+    merge record refers to them.
+
+    They also carry their own provenance: this class replaced an
+    `expectedFailure` presence tripwire that stood here while
+    `fit`/`predict`/`predict_stress` did not exist. That tripwire tested
     `hasattr` and nothing else; it went to unexpected success -- a red build --
-    the moment the interface landed, which is the mechanism working. What
-    follows are the conformance assertions it was a placeholder for.
+    the moment the interface landed, which is the mechanism working.
 
-    The load-bearing one is
+    A plain mixin rather than a `TestCase`, so `unittest` collects it through
+    its concrete subclasses and does not also run it once with no model.
+
+    Subclasses declare `MODEL_CLASS` and a `fit_model` hook. Everything else is
+    shared, including the fixture: both models are fitted on the same rows, so a
+    difference between the cases is a difference between the models.
+
+    The load-bearing test is
     `test_predict_stress_agrees_with_the_quantiles_predict_reports`. The
     contract's Target says stress "is not a separately fitted rare-event
     classifier ... it is an exceedance derived from the predictive
     distribution", and that is a claim about where the numbers come from, which
     no shape check can see. A classifier fitted on the `stress_gt_*` columns
-    would satisfy every other test in this class -- right length, right order,
+    would satisfy every other test here -- right length, right order,
     non-increasing, probabilities in [0, 1] -- and could be well calibrated on
     its own terms while still contradicting the quantiles reported beside it.
-    The agreement test is the only one that can tell the two apart.
+    The agreement test is the only one that can tell the two apart, and it now
+    says so for both models rather than for one.
     """
 
     MINIMUM_HISTORY = 20
+
+    #: The implementation this case covers. Read by
+    #: `ForecastInterfaceCoverageTests`, which discovers the implementations in
+    #: `baseline` and checks each one is named by some case.
+    MODEL_CLASS = None
+
+    def fit_model(self, train_frame, cutoff=None):
+        """Fit `MODEL_CLASS` on `train_frame`. The one thing cases differ in."""
+
+        raise NotImplementedError
 
     def setUp(self):
         self.rows = distinct_residual_frame()
         self.train = self.rows[:-1]
         self.feature_row = self.rows[-2]
-        self.model = fit(self.train, minimum_history=self.MINIMUM_HISTORY)
+        self.model = self.fit_model(self.train)
 
     def test_the_frame_this_class_relies_on_has_no_tied_residuals(self):
         """Guards the agreement test: its exactness is only claimed on this."""
@@ -939,23 +1071,15 @@ class ForecastInterfaceTests(unittest.TestCase):
         prediction, and "which rows went into this" becomes unanswerable.
         """
 
-        self.assertIsInstance(self.model, FittedPersistence)
+        self.assertIsInstance(self.model, self.MODEL_CLASS)
         self.assertEqual(self.model.cutoff, self.train[-1].date)
 
         # An explicitly declared cutoff is honoured rather than re-derived, and
         # a frame reaching past it is a leak, not a rounding matter.
-        earlier = fit(
-            self.train[:-3],
-            cutoff=self.train[-4].date,
-            minimum_history=self.MINIMUM_HISTORY,
-        )
+        earlier = self.fit_model(self.train[:-3], cutoff=self.train[-4].date)
         self.assertEqual(earlier.cutoff, self.train[-4].date)
         with self.assertRaises(LookAheadError):
-            fit(
-                self.train,
-                cutoff=self.train[-4].date,
-                minimum_history=self.MINIMUM_HISTORY,
-            )
+            self.fit_model(self.train, cutoff=self.train[-4].date)
 
         # And the model can tell whether it was fitted past a feature row, which
         # is the question "at or before its own cutoff" is asked to answer.
@@ -1012,9 +1136,14 @@ class ForecastInterfaceTests(unittest.TestCase):
         broken distribution, and an aggregate over scored days would hide it.
         Checked on a dense grid rather than the four declared taus, because four
         points can be non-increasing while the curve between them is not.
+
+        The grid is centred on the model's own point forecast, not on the
+        feature row's spread: those coincide for persistence and do not for a
+        regression, and a grid pinned to persistence's centre would walk off the
+        support of any model whose centre sits elsewhere.
         """
 
-        anchor = self.feature_row.spread_bps
+        anchor = self.model.point_forecast(self.feature_row)
         grid = [anchor - 40.0 + 0.5 * step for step in range(200)]
         curve = self.model.predict_stress(self.feature_row, taus=grid)
 
@@ -1071,7 +1200,7 @@ class ForecastInterfaceTests(unittest.TestCase):
         prior that `climatology_exceedance` documents.
         """
 
-        anchor = self.feature_row.spread_bps
+        anchor = self.model.point_forecast(self.feature_row)
         far_above = anchor + max(self.model.residuals) + 1.0
         far_below = anchor + min(self.model.residuals) - 1.0
 
@@ -1081,11 +1210,154 @@ class ForecastInterfaceTests(unittest.TestCase):
     def test_a_tau_family_that_is_not_ascending_is_refused(self):
         """Monotonicity in tau is only meaningful against an increasing family."""
 
-        anchor = self.feature_row.spread_bps
+        anchor = self.model.point_forecast(self.feature_row)
         with self.assertRaises(ValueError):
             self.model.predict_stress(self.feature_row, taus=[anchor + 1.0, anchor])
         with self.assertRaises(ValueError):
             self.model.predict_stress(self.feature_row, taus=[])
+
+
+class ForecastInterfaceTests(ForecastInterfaceConformance, unittest.TestCase):
+    """The conformance suite against `FittedPersistence`."""
+
+    MODEL_CLASS = FittedPersistence
+
+    def fit_model(self, train_frame, cutoff=None):
+        return fit(train_frame, cutoff=cutoff, minimum_history=self.MINIMUM_HISTORY)
+
+
+class ArxForecastInterfaceTests(ForecastInterfaceConformance, unittest.TestCase):
+    """The conformance suite against `FittedArx`, on the same rows.
+
+    The second implementer is what converts each assertion above from a
+    description of persistence into a constraint on the interface. Three of them
+    had nothing to check against until this case existed:
+    `test_predict_stress_agrees_with_the_quantiles_predict_reports` was a
+    statement about `_exceedance_from_residuals` over one-step differences;
+    `predict` returning the declared grid was a statement about one anchor plus
+    a residual quantile; and the whole suite was silent on a model that reads
+    more of `values` than `spread_bps`.
+
+    The regressor set is declared at the call site because nothing in the
+    repository declares one. That is a stopgap, written up in the block record
+    rather than resolved here.
+    """
+
+    MODEL_CLASS = FittedArx
+
+    def fit_model(self, train_frame, cutoff=None):
+        return fit_arx(
+            train_frame,
+            CONFORMANCE_REGRESSORS,
+            cutoff=cutoff,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+
+def _forecast_implementations():
+    """Fitted-model implementations in `repo_model.baseline`, by name.
+
+    Discovered rather than listed. A class defined in `baseline` that offers
+    both `predict` and `predict_stress` is a fitted model as far as the contract
+    is concerned, whatever else it does. Protocols are excluded because
+    `FittedForecastModel` is the shape, not an implementation of it, and classes
+    merely imported into the module are excluded by `__module__` -- which is
+    where a class was defined, not where it was bound.
+    """
+
+    found = {}
+    for name, obj in vars(baseline).items():
+        if not inspect.isclass(obj) or obj.__module__ != baseline.__name__:
+            continue
+        if getattr(obj, "_is_protocol", False):
+            continue
+        if callable(getattr(obj, "predict", None)) and callable(
+            getattr(obj, "predict_stress", None)
+        ):
+            found[name] = obj
+    return found
+
+
+def _conformance_cases():
+    """`{model class: [test case, ...]}` over every subclass of the mixin."""
+
+    cases = {}
+    pending = list(ForecastInterfaceConformance.__subclasses__())
+    while pending:
+        case = pending.pop()
+        pending.extend(case.__subclasses__())
+        if issubclass(case, unittest.TestCase):
+            cases.setdefault(case.MODEL_CLASS, []).append(case)
+    return cases
+
+
+class ForecastInterfaceCoverageTests(unittest.TestCase):
+    """The guard that keeps the conformance suite a conformance suite.
+
+    Two models is what makes the interface a constraint. Three is where it stops
+    being one again, quietly: model three arrives with a bespoke test class of
+    its own, every test passes, and nothing anywhere says the contract's five
+    assertions were never run against it. By then the suite is a conformance
+    suite in name and a collection of per-model tests in fact, and the way that
+    is discovered is a sixth model breaking a caller that relied on something
+    only the first model ever guaranteed.
+
+    So the implementations are discovered from the module and checked against
+    the cases. Discovered, not enumerated: a list that has to be kept up to date
+    is exactly the failure this test exists to prevent, and it would be updated
+    in the same commit that added the model it was meant to catch.
+    """
+
+    def test_every_implementation_in_baseline_runs_the_conformance_suite(self):
+        implementations = _forecast_implementations()
+        self.assertIn(
+            "FittedPersistence",
+            implementations,
+            msg="discovery found no persistence model; the discovery is broken, "
+            "not the module",
+        )
+        self.assertIn("FittedArx", implementations)
+
+        cases = _conformance_cases()
+        uncovered = sorted(
+            name
+            for name, implementation in implementations.items()
+            if implementation not in cases
+        )
+        self.assertEqual(
+            uncovered,
+            [],
+            msg=(
+                f"{uncovered} implement the forecast interface in "
+                f"repo_model.baseline and no conformance case runs "
+                f"AGENT_CONTRACT.md's five assertions against them. Add a "
+                f"ForecastInterfaceConformance subclass rather than a bespoke "
+                f"test class: a model with its own tests and no conformance case "
+                f"is how the suite stops being one"
+            ),
+        )
+
+        # And each case really runs the suite: a subclass that shadowed the
+        # inherited tests away would otherwise satisfy the check above while
+        # asserting nothing the contract asked for. The names come from the
+        # mixin rather than a list here, for the same reason as above.
+        declared = sorted(
+            name
+            for name in vars(ForecastInterfaceConformance)
+            if name.startswith("test_")
+        )
+        self.assertGreaterEqual(len(declared), 5)
+        loader = unittest.TestLoader()
+        for implementation, owners in cases.items():
+            for case in owners:
+                self.assertLessEqual(
+                    set(declared),
+                    set(loader.getTestCaseNames(case)),
+                    msg=(
+                        f"{case.__name__} covers {implementation.__name__} but "
+                        f"does not run every conformance test"
+                    ),
+                )
 
 
 def _subparsers(parser):
