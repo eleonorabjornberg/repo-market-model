@@ -265,6 +265,34 @@ feature set actually uses. Taking the maximum over the whole registry purges
 more than the evidence requires and silently destroys training rows, which
 reads as a weak model rather than as a configuration mistake.
 
+### Decided: the feature-to-source map
+
+"The sources whose fields the feature set actually uses" was a principle with
+nothing behind it. Two blocks needed the mapping, and both designed around it.
+This section ends that.
+
+`contract.FEATURE_SOURCES` maps a panel column to the source IDs it draws on.
+`contract.sources_for_features(names)` resolves a feature set to source IDs and
+is the only supported way to get from one to the other. It is declared, not
+derived from `metadata/sources.json`: the registry names fields in source
+vocabulary, the panel names them in model vocabulary, and the correspondence
+includes pure renames that no rule recovers.
+
+**Neither agent edits the map.** It is in `contract.py`, which both tracks are
+already forbidden to touch. Track A adding a source, or Track B adding a
+regressor, makes a coverage assertion fail; the human resolves it. That failure
+is the point.
+
+**Sources are derived, never supplied.** A caller declares a feature set; the
+sources follow, and the purge follows from those. `cli_eval` has no `--source`
+and no `--purge`, for the same reason.
+
+**A feature set is fitted state, and a fitter may not exceed it.** The purge is
+sized before the first fold, from the declared feature set; the model is fitted
+after. A fitter that reads a column outside the declaration was purged against
+the wrong sources, so the backtest checks the fitted model's regressors against
+the declaration and raises `LookAheadError` if they exceed it.
+
 ### Two registry corrections
 
 - `fields` is machine field names only. Human-readable coverage moves to a

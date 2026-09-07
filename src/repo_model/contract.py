@@ -31,6 +31,7 @@ import hashlib
 import json
 import re
 from datetime import date
+from types import MappingProxyType
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 __all__ = [
@@ -44,6 +45,12 @@ __all__ = [
     "EVENT_WINDOW_KEYS",
     "event_window_digest",
     "validate_event_windows_document",
+    "UndeclaredFeatureError",
+    "FEATURE_SOURCES",
+    "DERIVED_FEATURES",
+    "CALENDAR_FEATURES",
+    "UNSOURCED_FEATURES",
+    "sources_for_features",
 ]
 
 #: Fixed across every model so pinball loss, interval coverage, and predictive
@@ -203,6 +210,119 @@ def validate_release_lag(source_id: str, release_lag: object) -> list[str]:
         )
 
     return problems
+
+
+# --- The feature-to-source map -------------------------------------------
+#
+# Which sources a model's feature set draws on. Declared, not derived: the
+# registry names fields in source vocabulary and the panel names them in
+# model vocabulary, and three of the correspondences are pure renames with
+# no rule behind them. An inversion that recovered them would be string
+# matching, which is the thing the purge block was written to avoid.
+#
+# Held honest by the three assertions in `tests/test_contract.py`, not by
+# anyone remembering to update it. An unasserted list stops describing the
+# tree the moment someone adds a column.
+
+
+class UndeclaredFeatureError(ValueError):
+    """A feature name has no declared source and no declared reason to lack one.
+
+    Distinct from a feature whose source is known to be absent: that is
+    `UNSOURCED_FEATURES`, which raises with the reason attached. This is the
+    name nobody has classified at all.
+    """
+
+
+FEATURE_SOURCES = MappingProxyType(
+    {
+        "sofr": ("nyfed_sofr",),
+        "sofr_volume": ("nyfed_sofr",),
+        "sofr_p25": ("nyfed_sofr",),
+        "sofr_p75": ("nyfed_sofr",),
+        "iorb": ("fred_macro_latest_vintage",),
+        "tgcr": ("nyfed_tgcr",),
+        "bgcr": ("nyfed_bgcr",),
+        "reserve_balances": ("fred_macro_latest_vintage",),
+        "tga": ("fred_macro_latest_vintage",),
+        "on_rrp": ("fred_macro_latest_vintage",),
+        "treasury_settlement": ("treasury_auctions",),
+        "mmf_assets": ("sec_nmfp",),
+    }
+)
+
+# Features computed from other features. Resolved to their constituents, so
+# `spread_bps` draws on whatever `sofr` and `iorb` draw on and cannot fall
+# out of step with them.
+DERIVED_FEATURES = MappingProxyType(
+    {
+        "spread_bps": ("sofr", "iorb"),
+    }
+)
+
+# Features that are a function of the scored date alone. These contribute no
+# source. They are enumerated rather than inferred: a feature that
+# contributes nothing to the purge is exactly the shape of an error, and the
+# registry's `snapshot_retrieved_at` rule already establishes that nothing
+# gets mapped to a zero gap by default.
+CALENDAR_FEATURES = frozenset({"quarter_end", "tax_date"})
+
+# Declared panel columns with no ingesting source. Using one raises, with the
+# reason, rather than resolving to an empty source set.
+UNSOURCED_FEATURES = MappingProxyType(
+    {
+        "dealer_treasury_position": (
+            "no ingesting source is declared in metadata/sources.json; the "
+            "column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of "
+            "the sample panel. Sizing a purge over it would purge zero days "
+            "for a weekly FR 2004 series."
+        ),
+    }
+)
+
+
+def sources_for_features(names):
+    """The source IDs a feature set draws on, for `max_release_lag_days`.
+
+    Derived features resolve to their constituents. Calendar features
+    contribute nothing. An unknown name raises, and so does a declared name
+    with no source -- the message carries the reason.
+
+    Returns a sorted tuple, deduplicated. An all-calendar feature set returns
+    an empty tuple; `registry.max_release_lag_days` then raises its own
+    "sources must select at least one feature source". That is deliberate:
+    the guard stays where it already is rather than being restated here,
+    where it would agree with itself.
+    """
+
+    resolved = set()
+    pending = list(names)
+    seen = set()
+    while pending:
+        name = str(pending.pop())
+        if name in seen:
+            continue
+        seen.add(name)
+        if name in DERIVED_FEATURES:
+            pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in CALENDAR_FEATURES:
+            continue
+        if name in UNSOURCED_FEATURES:
+            raise UndeclaredFeatureError(
+                f"feature {name!r} has no source: {UNSOURCED_FEATURES[name]}"
+            )
+        try:
+            resolved.update(FEATURE_SOURCES[name])
+        except KeyError as exc:
+            raise UndeclaredFeatureError(
+                f"feature {name!r} is not in contract.FEATURE_SOURCES, "
+                f"contract.DERIVED_FEATURES, contract.CALENDAR_FEATURES or "
+                f"contract.UNSOURCED_FEATURES. Every panel column must be "
+                f"classified in exactly one of them; add it there rather "
+                f"than at the call site"
+            ) from exc
+    return tuple(sorted(resolved))
 
 
 def validate_registry_release_lags(registry: dict) -> dict[str, list[str]]:

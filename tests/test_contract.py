@@ -198,6 +198,7 @@ import inspect
 import json
 import re
 import sys
+import textwrap
 import tempfile
 import unittest
 from datetime import date, datetime, timedelta, timezone
@@ -218,8 +219,19 @@ from repo_model.baseline import (
     predict_stress,
     rolling_persistence_backtest,
 )
-from repo_model.contract import QUANTILE_LEVELS, validate_release_lag
+from repo_model.contract import (
+    CALENDAR_FEATURES,
+    DERIVED_FEATURES,
+    FEATURE_SOURCES,
+    QUANTILE_LEVELS,
+    UNSOURCED_FEATURES,
+    UndeclaredFeatureError,
+    sources_for_features,
+    validate_release_lag,
+)
 from repo_model.data import (
+    OPTIONAL_NUMERIC_FIELDS,
+    REQUIRED_FIELDS,
     DailyObservation,
     DataContractError,
     audit_panel,
@@ -1568,6 +1580,255 @@ class CommandLineOwnershipTests(unittest.TestCase):
         self.assertEqual(
             contested, [], f"{contested} are claimed by more than one party."
         )
+
+
+class FeatureSourceMapCoverageTests(unittest.TestCase):
+    """The feature-to-source map describes the tree, or it fails.
+
+    An ownership list that is not asserted against the tree silently stops
+    describing the tree; five files were unowned before the gate could prove
+    its own coverage. `contract.FEATURE_SOURCES` is the same shape of hazard
+    one layer along -- a hand-written correspondence that nothing forces to
+    stay true -- so it ships with the assertions rather than with a comment
+    asking people to keep it current.
+
+    The map cannot be derived from `metadata/sources.json`: the registry names
+    fields in source vocabulary (`SOFR`, `WTREGEN`, `mmf_net_assets`) and the
+    panel names them in model vocabulary (`sofr`, `tga`, `mmf_assets`), and
+    three of the correspondences are pure renames with no rule behind them.
+    Deriving it would mean string matching on regressor names, which is what
+    the purged-backtest block was written to avoid. So it is declared once and
+    checked three ways here.
+    """
+
+    def _registry(self):
+        return json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+
+    def _panel_columns(self):
+        """Every column a modelling panel may carry, in model vocabulary."""
+
+        return tuple(
+            name for name in REQUIRED_FIELDS if name != "date"
+        ) + tuple(OPTIONAL_NUMERIC_FIELDS)
+
+    def test_every_mapped_source_exists_in_the_registry(self):
+        """Catches a source renamed or removed on Track A's side.
+
+        The map would otherwise keep resolving to an ID nobody ingests, and
+        `max_release_lag_days` would raise `unknown source` from inside an
+        evaluation run rather than here.
+        """
+
+        registry = self._registry()
+        for feature, sources in FEATURE_SOURCES.items():
+            with self.subTest(feature=feature):
+                self.assertTrue(
+                    sources,
+                    msg=(
+                        f"{feature!r} maps to no source; a feature that "
+                        "contributes nothing to the purge belongs in "
+                        "CALENDAR_FEATURES or UNSOURCED_FEATURES, where the "
+                        "reason is stated, not in FEATURE_SOURCES with an "
+                        "empty tuple"
+                    ),
+                )
+                for source_id in sources:
+                    self.assertIn(
+                        source_id,
+                        registry,
+                        msg=(
+                            f"{feature!r} maps to {source_id!r}, which is not "
+                            "in metadata/sources.json"
+                        ),
+                    )
+
+    def test_every_panel_column_is_classified_exactly_once(self):
+        """The assertion that fires when someone adds a panel column.
+
+        Every column must sit in exactly one of FEATURE_SOURCES,
+        CALENDAR_FEATURES and UNSOURCED_FEATURES. Unclassified is the failure
+        this test exists for; classified twice is worse, because the resolution
+        order in `sources_for_features` would then decide silently which
+        classification wins.
+        """
+
+        collections = {
+            "FEATURE_SOURCES": set(FEATURE_SOURCES),
+            "CALENDAR_FEATURES": set(CALENDAR_FEATURES),
+            "UNSOURCED_FEATURES": set(UNSOURCED_FEATURES),
+        }
+
+        for column in self._panel_columns():
+            holders = [
+                name for name, members in collections.items() if column in members
+            ]
+            with self.subTest(column=column):
+                self.assertEqual(
+                    len(holders),
+                    1,
+                    msg=(
+                        f"panel column {column!r} is classified in {holders} "
+                        "-- it must appear in exactly one of "
+                        f"{sorted(collections)}. Classify it in contract.py, "
+                        "not at the call site."
+                    ),
+                )
+
+        declared = set().union(*collections.values())
+        strays = sorted(declared - set(self._panel_columns()) - set(DERIVED_FEATURES))
+        self.assertEqual(
+            strays,
+            [],
+            msg=(
+                f"{strays} are classified in contract.py but are not panel "
+                "columns and not derived features. A map that describes "
+                "columns the loader cannot produce has stopped describing the "
+                "tree in the other direction."
+            ),
+        )
+
+    def test_a_derived_feature_declares_the_columns_its_implementation_reads(self):
+        """Anchored to `data.py`, not to the declaration it is checking.
+
+        The first version of this test asked whether resolving `spread_bps`
+        included the sources of `spread_bps`'s *declared* constituents. That is
+        true whatever the declaration says, so dropping `iorb` from
+        DERIVED_FEATURES killed nothing -- the fifth instance of *a check
+        anchored to the thing it is checking cannot fail*, found in this file
+        by the mutation that was supposed to confirm it.
+
+        The independent anchor is the implementation. `DailyObservation`
+        computes the spread from `values["sofr"]` and `values["iorb"]`; the
+        declaration must name exactly those. A future derived feature computed
+        somewhere other than `DailyObservation` needs its own reader here
+        rather than an exemption.
+        """
+
+        readers = {"spread_bps": DailyObservation.spread_bps.fget}
+        self.assertEqual(
+            set(DERIVED_FEATURES),
+            set(readers),
+            msg=(
+                "a derived feature was added without an independent reader to "
+                "check its declaration against; add one rather than trusting "
+                "DERIVED_FEATURES to describe itself"
+            ),
+        )
+
+        for feature, reader in readers.items():
+            with self.subTest(feature=feature):
+                tree = ast.parse(textwrap.dedent(inspect.getsource(reader)))
+                read = {
+                    node.slice.value
+                    for node in ast.walk(tree)
+                    if isinstance(node, ast.Subscript)
+                    and isinstance(node.value, ast.Attribute)
+                    and node.value.attr == "values"
+                    and isinstance(node.slice, ast.Constant)
+                    and isinstance(node.slice.value, str)
+                }
+                self.assertTrue(
+                    read,
+                    msg=(
+                        f"found no panel columns in the source of {feature!r}; "
+                        "the reader no longer matches the implementation and "
+                        "this test has stopped checking anything"
+                    ),
+                )
+                self.assertEqual(
+                    set(DERIVED_FEATURES[feature]),
+                    read,
+                    msg=(
+                        f"{feature!r} is declared over "
+                        f"{sorted(DERIVED_FEATURES[feature])} but its "
+                        f"implementation reads {sorted(read)}. A derived "
+                        "feature purged against fewer columns than it reads is "
+                        "purged against less evidence than it uses."
+                    ),
+                )
+
+    def test_every_derived_feature_resolves_to_classified_constituents(self):
+        """A derived feature cannot outlive the columns it is computed from."""
+
+        for feature, constituents in DERIVED_FEATURES.items():
+            with self.subTest(feature=feature):
+                self.assertTrue(constituents)
+                resolved = sources_for_features([feature])
+                for constituent in constituents:
+                    self.assertIn(
+                        constituent,
+                        set(FEATURE_SOURCES)
+                        | set(CALENDAR_FEATURES)
+                        | set(DERIVED_FEATURES),
+                        msg=(
+                            f"{feature!r} is computed from {constituent!r}, "
+                            "which is not classified"
+                        ),
+                    )
+                for constituent in constituents:
+                    for source_id in FEATURE_SOURCES.get(constituent, ()):
+                        self.assertIn(
+                            source_id,
+                            resolved,
+                            msg=(
+                                f"{feature!r} resolved to {resolved} and "
+                                f"dropped {source_id!r}, which {constituent!r} "
+                                "draws on. A derived feature that loses one of "
+                                "its constituents' sources is purged against "
+                                "less evidence than it uses."
+                            ),
+                        )
+
+    def test_every_registry_source_reaches_at_least_one_panel_column(self):
+        """Catches a source that is ingested and never modelled.
+
+        Also catches a source whose fields were collapsed away: if
+        `treasury_auctions` ever loses its one panel column, this fails rather
+        than the source quietly becoming unreachable.
+        """
+
+        reached = {
+            source_id
+            for sources in FEATURE_SOURCES.values()
+            for source_id in sources
+        }
+        unreached = sorted(set(self._registry()) - reached)
+        self.assertEqual(
+            unreached,
+            [],
+            msg=(
+                f"{unreached} are ingested but no panel column draws on them. "
+                "Either a column is missing from FEATURE_SOURCES or the source "
+                "is not modelled and should be recorded as such."
+            ),
+        )
+
+    def test_an_unclassified_feature_name_raises_rather_than_purging_zero(self):
+        """The failure mode the map exists to prevent.
+
+        A feature nobody classified must not resolve to an empty source set: an
+        empty set is a zero-day gap, which is the leak the purge exists to
+        stop, arriving as a silence rather than as an error.
+        """
+
+        with self.assertRaises(UndeclaredFeatureError):
+            sources_for_features(["not_a_panel_column"])
+
+    def test_a_declared_but_unsourced_feature_raises_with_its_reason(self):
+        """`dealer_treasury_position` is declared in four places and ingested by none.
+
+        It is in OPTIONAL_NUMERIC_FIELDS, DATA.md, the sample panel header and
+        two tests, and nothing in metadata/sources.json produces it. Declaring
+        a column is not the same as having provenance for it, and using one
+        must say so rather than purge zero days.
+        """
+
+        for feature, reason in UNSOURCED_FEATURES.items():
+            with self.subTest(feature=feature):
+                self.assertTrue(reason.strip())
+                with self.assertRaises(UndeclaredFeatureError) as caught:
+                    sources_for_features([feature])
+                self.assertIn(reason, str(caught.exception))
 
 
 if __name__ == "__main__":
