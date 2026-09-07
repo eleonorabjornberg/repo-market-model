@@ -17,6 +17,7 @@ from repo_model.ingest import (
     SnapshotArtifact,
     _decode_transport,
     build_point_in_time_snapshot,
+    parse_snapshots,
     fetch_fred_macro,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp,
@@ -25,6 +26,86 @@ from repo_model.ingest import (
     observations_from_snapshots,
 )
 from zoneinfo import ZoneInfo
+
+
+REPO_ROOT = Path(__file__).parents[1]
+SOURCE_REGISTRY = REPO_ROOT / "metadata" / "sources.json"
+
+
+def registry_with_nmfp_coverage_floor(directory: Path, floor: int) -> Path:
+    """The real registry with only `sec_nmfp`'s declared coverage floor changed.
+
+    A fixture cross-section is a handful of rows, so exercising the production
+    floor of 200 reporting series would mean fabricating a universe before any
+    assertion could be made. Overriding the single number keeps every other
+    declaration -- `entity_unit` above all -- exactly the shape the adapter reads
+    in production, so a registry that drifts still breaks these tests.
+    """
+
+    registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+    registry["sec_nmfp"]["cross_section"]["minimum_reporting_entities"] = floor
+    path = directory / "sources.json"
+    path.write_text(json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
+def nmfp_archive(submissions) -> bytes:
+    """Build a minimal but structurally faithful Form N-MFP flat-file ZIP.
+
+    `submissions` is a sequence of dicts with `accession`, `series`, `report`
+    and optional `net_assets` (USD, not billions) and `flows`, a sequence of
+    `(flow_date, subscriptions, redemptions)`. The tables carry the same column
+    names and the same DD-MON-YYYY dates as the SEC extract, so a fixture cannot
+    pass by agreeing with the parser about a format the source does not use.
+    """
+
+    submission_rows = ["ACCESSION_NUMBER\tSERIESID\tREPORTDATE"]
+    series_rows = [
+        "ACCESSION_NUMBER\tCASH\tTOTALVALUEPORTFOLIOSECURITIES\t"
+        "TOTALVALUEOTHERASSETS\tTOTALVALUELIABILITIES\tNETASSETOFSERIES"
+    ]
+    flow_rows = [
+        "ACCESSION_NUMBER\tDAILYGROSSSUBSCRIPTIONS\tDAILYGROSSREDEMPTIONS\t"
+        "DAILYSHAREHOLDERFLOWDATE"
+    ]
+    holding_rows = [
+        "ACCESSION_NUMBER\tINVESTMENTCATEGORY\tINCLUDINGVALUEOFANYSPONSORSUPP\t"
+        "NAMEOFISSUER\tTITLEOFISSUER\tBRIEFDESCRIPTION"
+    ]
+    for entry in submissions:
+        submission_rows.append(
+            f"{entry['accession']}\t{entry['series']}\t{entry['report']}"
+        )
+        net = entry.get("net_assets", 1_000_000_000)
+        # cash + portfolio + other == liabilities + net assets, to the dollar.
+        series_rows.append(f"{entry['accession']}\t0\t{net}\t0\t0\t{net}")
+        for flow_date, subscriptions, redemptions in entry.get("flows", ()):
+            flow_rows.append(
+                f"{entry['accession']}\t{subscriptions}\t{redemptions}\t{flow_date}"
+            )
+        # Every holdings series is populated for every filer, so that any
+        # missingness the quality report shows can only come from the coverage
+        # floor and not from a series the fixture never supplied.
+        holding_rows.append(
+            f"{entry['accession']}\tU.S. Treasury Debt\t{net // 2}\t"
+            "United States Treasury\tBill\t"
+        )
+        holding_rows.append(
+            f"{entry['accession']}\tU.S. Treasury Repurchase Agreement\t{net // 4}\t"
+            "Federal Reserve Bank of New York\tReverse repo\t"
+        )
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("NMFP_SUBMISSION.tsv", "\n".join(submission_rows) + "\n")
+        archive.writestr("NMFP_SERIESLEVELINFO.tsv", "\n".join(series_rows) + "\n")
+        archive.writestr(
+            "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv", "\n".join(flow_rows) + "\n"
+        )
+        archive.writestr(
+            "NMFP_SCHPORTFOLIOSECURITIES.tsv", "\n".join(holding_rows) + "\n"
+        )
+    return buffer.getvalue()
 
 
 class IngestTests(unittest.TestCase):
@@ -243,7 +324,7 @@ class IngestTests(unittest.TestCase):
         with zipfile.ZipFile(buffer, "w") as archive:
             archive.writestr(
                 "NMFP_SUBMISSION.tsv",
-                "ACCESSION_NUMBER\tREPORTDATE\nA1\t31-JUL-2026\n",
+                "ACCESSION_NUMBER\tSERIESID\tREPORTDATE\nA1\tS1\t31-JUL-2026\n",
             )
             archive.writestr(
                 "NMFP_SERIESLEVELINFO.tsv",
@@ -271,7 +352,15 @@ class IngestTests(unittest.TestCase):
             lambda url: buffer.getvalue(),
         )[0]
         panel_path = self.output_root / "nmfp.csv"
-        build_point_in_time_snapshot([artifact], panel_path)
+        # One filer is below the production coverage floor, and rightly so. This
+        # test is about the arithmetic of the aggregation, so it declares a floor
+        # its own cross-section meets; the floor itself is exercised in
+        # CrossSectionCoverageTests.
+        build_point_in_time_snapshot(
+            [artifact],
+            panel_path,
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 1),
+        )
         values = {row.series_id: row.value for row in load_point_in_time_panel(panel_path)}
         self.assertEqual(values["mmf_net_assets"], 5.0)
         self.assertEqual(values["mmf_net_flow"], 0.2)
@@ -279,6 +368,201 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(values["mmf_repo_holdings"], 0.2)
         self.assertEqual(values["mmf_on_rrp"], 0.2)
 
+
+
+class CrossSectionCoverageTests(unittest.TestCase):
+    """The declared coverage floor on a cross-sectional source.
+
+    `sec_nmfp` aggregates every REPORT_DATE in a quarterly bulk extract as though
+    each were a complete monthly cross-section. It is not: the extract carries
+    one complete month plus amendment and straggler filings for adjacent months.
+    Nothing caught it. Every row is present, so missingness reporting is silent,
+    and the assets-to-liabilities identity reconciles on a 0.02% sample of a
+    market exactly as well as on the whole of it.
+
+    So the guard counts reporting entities, which is the one quantity that
+    separates the two cases and is not itself under suspicion. A cross-section
+    below the floor declared in `metadata/sources.json` is excluded from the
+    panel and recorded in the quality report, under its own key: an exclusion
+    folded into missingness would be a third thing this repo cannot tell apart
+    from the first two.
+
+    Mutation record
+    ---------------
+    Run in a copy under $HOME with `data/` copied alongside, `-B` and
+    PYTHONDONTWRITEBYTECODE=1, `__pycache__` cleared before each run, against an
+    unmutated control of 371 tests, OK, 1 expected failure.
+
+    | Mutation                                                | Result       |
+    |---------------------------------------------------------|--------------|
+    | Floor comparison disabled: the count is computed and the | 4 failures   |
+    | result discarded, so every cross-section is admitted.    |              |
+    | `minimum_reporting_entities` lowered 200 -> 1 in          | 1 failure    |
+    | `metadata/sources.json`, admitting the 1-series April.   |              |
+    | Rows filtered on their own `ref_date` instead of on the  | 1 failure,   |
+    | cross-section they were filed under.                     | 1 error      |
+
+    Which tests fired, and why the split matters:
+
+    1. All four acceptance tests -- both here and both in
+       `RealSnapshotCoverageTests`. This is the mutation the guard exists for and
+       every anchor sees it.
+    2. Only
+       `RealSnapshotCoverageTests::test_the_current_snapshot_contains_cross_sections_that_must_be_excluded`,
+       which is the point of that test. Both tests in this class declare their
+       own floor, so no fixture here can see a wrong number in the real
+       registry; only the real extract can.
+    3. Only the two tests in this class -- the real-snapshot pair stays green,
+       because in the 2026-07 extract no straggler filing reports a flow date
+       inside the admitted month, so `ref_date` and cross-section happen to
+       agree. The fixture puts A4's flow row on 2 July precisely to break that
+       coincidence. This is the mirror of case 2: real data anchors the declared
+       number, a fixture reaches a structural case the real data does not
+       currently contain, and neither substitutes for the other.
+
+    The first mutation also caught a defect in the first draft of this guard
+    rather than in the mutant: keying the aggregation by cross-section split
+    contributions that the adapter had previously summed, so two admitted
+    cross-sections reporting the same shareholder-flow date reached the revision
+    logic as two vintages of one cell sharing one availability timestamp, and
+    were rejected as unorderable. `parse_snapshots` now re-merges admitted
+    contributions, which restores the pre-existing meaning of an admitted cell.
+    """
+
+    #: Three admitted filers and one straggler, against a declared floor of 3.
+    #: The straggler's flow row is dated inside the *admitted* month, so a guard
+    #: that excluded by `ref_date` rather than by cross-section would leave it in.
+    SUBMISSIONS = (
+        {
+            "accession": "A1",
+            "series": "S1",
+            "report": "31-JUL-2026",
+            "net_assets": 3_000_000_000,
+            "flows": (("02-JUL-2026", 100_000_000, 40_000_000),),
+        },
+        {
+            "accession": "A2",
+            "series": "S2",
+            "report": "31-JUL-2026",
+            "net_assets": 2_000_000_000,
+            "flows": (("02-JUL-2026", 200_000_000, 60_000_000),),
+        },
+        {
+            "accession": "A3",
+            "series": "S3",
+            "report": "31-JUL-2026",
+            "net_assets": 5_000_000_000,
+            "flows": (("02-JUL-2026", 300_000_000, 100_000_000),),
+        },
+        {
+            "accession": "A4",
+            "series": "S4",
+            "report": "30-JUN-2026",
+            "net_assets": 1_000_000_000,
+            "flows": (("02-JUL-2026", 900_000_000, 500_000_000),),
+        },
+    )
+
+    FLOOR = 3
+    ADMITTED = date(2026, 7, 31)
+    EXCLUDED = date(2026, 6, 30)
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.artifact = fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/fixture.zip",
+            lambda url: nmfp_archive(self.SUBMISSIONS),
+        )[0]
+        self.registry_path = registry_with_nmfp_coverage_floor(
+            self.output_root, self.FLOOR
+        )
+        self.registry = json.loads(self.registry_path.read_text(encoding="utf-8"))
+
+    def test_a_cross_section_below_the_declared_floor_is_excluded(self):
+        parsed = parse_snapshots([self.artifact], registry=self.registry)
+
+        coverage = {item.ref_date: item for item in parsed.coverage}
+        self.assertEqual(sorted(coverage), [self.EXCLUDED, self.ADMITTED])
+        self.assertEqual(coverage[self.ADMITTED].entity_count, 3)
+        self.assertEqual(coverage[self.EXCLUDED].entity_count, 1)
+        self.assertTrue(coverage[self.ADMITTED].admitted)
+        self.assertFalse(coverage[self.EXCLUDED].admitted)
+        self.assertEqual(coverage[self.EXCLUDED].declared_floor, self.FLOOR)
+        self.assertEqual(coverage[self.EXCLUDED].entity_unit, "series_id")
+
+        net_assets = {
+            row.ref_date: row.value
+            for row in parsed.rows
+            if row.series_id == "mmf_net_assets"
+        }
+        self.assertEqual(
+            sorted(net_assets),
+            [self.ADMITTED],
+            msg="the under-covered cross-section is still in the panel",
+        )
+        self.assertAlmostEqual(net_assets[self.ADMITTED], 10.0)
+
+        # The straggler's flow row is dated 2 July, inside the admitted month.
+        # Only the three admitted filers may contribute to it: 0.6 gross
+        # subscriptions, not the 1.5 that including A4 would give.
+        subscriptions = {
+            row.ref_date: row.value
+            for row in parsed.rows
+            if row.series_id == "mmf_gross_subscriptions"
+        }
+        self.assertEqual(sorted(subscriptions), [date(2026, 7, 2)])
+        self.assertAlmostEqual(
+            subscriptions[date(2026, 7, 2)],
+            0.6,
+            msg="a row was admitted on its own ref_date rather than on the "
+            "coverage of the cross-section it was filed under",
+        )
+
+    def test_an_excluded_cross_section_is_recorded_and_distinguishable_from_missingness(self):
+        panel_path = self.output_root / "panel.csv"
+        build_point_in_time_snapshot(
+            [self.artifact], panel_path, registry_path=self.registry_path
+        )
+        report = json.loads(
+            panel_path.with_suffix(panel_path.suffix + ".quality.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        excluded = report["excluded_cross_sections"]
+        self.assertEqual(
+            [item["ref_date"] for item in excluded], [self.EXCLUDED.isoformat()]
+        )
+        record = excluded[0]
+        self.assertEqual(record["source_id"], "sec_nmfp")
+        self.assertEqual(record["entity_unit"], "series_id")
+        self.assertEqual(record["entity_count"], 1)
+        self.assertEqual(record["declared_floor"], self.FLOOR)
+        self.assertGreater(record["rows"], 0)
+        self.assertIn("coverage floor", record["reason"])
+
+        # The distinguishing property, and the reason the record is a separate
+        # key rather than a warning or a missingness count: a reader must be able
+        # to tell "we declined to admit this cross-section" from "this
+        # cross-section had gaps". Nothing here is missing -- every row the
+        # source published for June is present in the extract and was dropped on
+        # purpose -- so no series may report a missing reference date for it.
+        self.assertEqual(report["missing_series"], {})
+        for series_id, quality in report["series"].items():
+            self.assertEqual(
+                quality["missing_reference_dates"],
+                0,
+                msg=f"{series_id} reports the excluded cross-section as missingness",
+            )
+        self.assertNotIn(
+            self.EXCLUDED.isoformat(),
+            json.dumps(report["series"]),
+            msg="the excluded reference date is reported as series coverage",
+        )
+        self.assertEqual(report["warnings"], [])
 
 
 class AvailableAtDerivationTests(unittest.TestCase):

@@ -137,6 +137,11 @@
   },
   "sec_nmfp": {
     "access": "public",
+    "cross_section": {
+      "entity_unit": "series_id",
+      "minimum_reporting_entities": 200,
+      "note": "Each quarterly bulk extract carries one complete monthly cross-section plus amendment and straggler filings for adjacent months, and the adjacent months are not a universe: in the 2026-07 extract, July has 325 reporting series and the other five report dates have between 1 and 5. A ref_date below this floor is excluded from the panel and recorded in the quality report. The floor counts distinct SERIESID and never a value total, because the values are what the floor exists to make trustworthy. It is an absolute count rather than a fraction of a trailing median because the trailing median is itself computed from straggler months: on this extract the straggler counts have a median of 4, so a quarter-of-median rule would set the floor at 1 and admit the 1-series April cross-section it was written to reject. 200 is about 60 percent of the 325 observed in the one complete month, so a real month missing a large minority of filers still clears it, while the largest straggler cross-section misses it by 40 times."
+    },
     "coverage": [
       "fund identity",
       "portfolio holdings",
