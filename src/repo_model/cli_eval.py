@@ -27,25 +27,46 @@ from datetime import time
 from pathlib import Path
 
 from .baseline import climatology_exceedance, rolling_persistence_backtest
+from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .event_eval import evaluate_event_window, load_events_file
 from .registry import max_release_lag_days
 from .splits import SplitError
 
 
-def _purge_days(args: argparse.Namespace) -> int:
-    """The gap, from `registry.max_release_lag_days` over the named sources.
+def _registry(args: argparse.Namespace) -> dict:
+    """The parsed source registry at `--registry`. One reader, two commands."""
 
-    Both evaluation paths reach it through this one function. `_event_holdout`'s
-    docstring states the design and it is not path-specific: the gap is a
-    function of which sources the features come from, `--source` is how a caller
-    changes it, and `--decision-time` is required because a default would be a
-    silent assumption about when the forecast is made.
+    return json.loads(Path(args.registry).read_text(encoding="utf-8"))
+
+
+def _derived_sources(args: argparse.Namespace) -> tuple[str, ...]:
+    """The sources the declared feature set draws on.
+
+    `contract.sources_for_features` is the only supported way from a feature set
+    to source IDs, and this module makes no second attempt at the mapping. There
+    is no `--source`: sources are derived, never supplied. A caller who could
+    name the sources by hand could name a set that did not cover what the model
+    reads, and the gap computed from it would be correct arithmetic over the
+    wrong evidence -- which is the failure that survives every check the purge
+    block installed, because the number itself looks fine.
     """
 
-    registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
+    return sources_for_features(args.feature)
+
+
+def _purge_days(args: argparse.Namespace) -> int:
+    """The gap, from `registry.max_release_lag_days` over the derived sources.
+
+    Both evaluation paths reach it through this one function, and now through
+    the same derivation as well. `--decision-time` is required because a default
+    would be a silent assumption about when the forecast is made.
+    """
+
     return max_release_lag_days(
-        registry, args.source, decision_time=time.fromisoformat(args.decision_time)
+        _registry(args),
+        _derived_sources(args),
+        decision_time=time.fromisoformat(args.decision_time),
     )
 
 
@@ -60,16 +81,28 @@ def _backtest(args: argparse.Namespace) -> int:
     rows, a short panel then has fewer origins, and the flag would be right
     there.
 
-    `purge_days` and `sources` are reported beside the metrics for the reason
-    `model_config` carries them on the event path: a benchmark whose gap came
-    from somewhere an auditor cannot follow is not a benchmark.
+    **And there is no `--source`.** The gap is derived from the sources, and the
+    sources are derived from the declared feature set. A caller who could name
+    the sources by hand could name a set that did not cover what the model
+    reads; the purge would then be computed correctly over the wrong evidence,
+    and nothing downstream could tell. `--feature` is the one declaration, and
+    everything else follows from it.
+
+    `features`, `sources` and `purge_days` are reported beside the metrics for
+    the reason `model_config` carries them on the event path: a benchmark whose
+    gap came from somewhere an auditor cannot follow is not a benchmark. All
+    three are read off the report rather than recomputed here, so what is
+    printed is what shaped the run.
     """
 
     rows = load_daily_panel(args.path)
     audit_panel(rows)
-    purge = _purge_days(args)
     report = rolling_persistence_backtest(
-        rows, purge=purge, minimum_history=args.minimum_history
+        rows,
+        features=args.feature,
+        registry=_registry(args),
+        decision_time=time.fromisoformat(args.decision_time),
+        minimum_history=args.minimum_history,
     )
     print(
         json.dumps(
@@ -77,8 +110,9 @@ def _backtest(args: argparse.Namespace) -> int:
                 "forecast_count": len(report.forecasts),
                 "mae_bps": round(report.mae_bps, 4),
                 "interval_coverage": round(report.interval_coverage, 4),
-                "purge_days": purge,
-                "sources": sorted(args.source),
+                "features": sorted(report.features),
+                "purge_days": report.purge_days,
+                "sources": sorted(report.sources),
                 "minimum_history": args.minimum_history,
             },
             indent=2,
@@ -102,16 +136,22 @@ def _event_holdout(args: argparse.Namespace) -> int:
       `--thresholds`. `AGENT_CONTRACT.md` declares `{5, 10, 20, 50}` bp and
       Track A's file carries it; this module contains no tau.
     * **The purge gap** comes from `registry.max_release_lag_days` over the
-      sources named by `--source`, exactly as `rolling_origin`'s caller sizes
-      it. The two evaluation paths mean the same thing by a gap and take the
-      number from the same place.
+      sources `contract.sources_for_features` derives from `--feature`, exactly
+      as the rolling path sizes it. The two evaluation paths mean the same thing
+      by a gap and take the number from the same place, by the same derivation.
 
     **There is no `--purge`.** A flag that set it by hand would be a way to
     shrink the gap at the one moment shrinking it is tempting -- when the
     training set that cleared it turned out to be too short -- and the row it
-    would admit is a row published after the window opened. The gap is a
-    function of which sources the features come from, so naming the sources is
-    how a caller changes it, and that change is one an auditor can follow.
+    would admit is a row published after the window opened.
+
+    **And no `--source`.** The gap is a function of which sources the features
+    come from, and which sources the features come from is a function of the
+    features -- declared once, in `contract.FEATURE_SOURCES`, which neither
+    track may edit. Naming sources by hand was the remaining way to size a gap
+    that did not cover what the model reads, and it was the way that left no
+    trace: the arithmetic is right, the reported number looks right, and the
+    only thing wrong is the set it ranged over.
 
     Reruns are visible, not blocked. `event_eval` appends a record per scoring
     and refuses to deduplicate; whether a second run was authorised is a
@@ -126,6 +166,7 @@ def _event_holdout(args: argparse.Namespace) -> int:
     declaration = load_stress_thresholds(args.thresholds)
     taus = tuple(float(tau) for tau in declaration["taus_bp"])
 
+    sources = _derived_sources(args)
     purge = _purge_days(args)
 
     windows = load_events_file(args.events)
@@ -145,7 +186,8 @@ def _event_holdout(args: argparse.Namespace) -> int:
         "minimum_history": args.minimum_history,
         "taus_bp": list(taus),
         "purge_days": purge,
-        "sources": sorted(args.source),
+        "features": sorted(args.feature),
+        "sources": sorted(sources),
     }
 
     reported = []
@@ -170,6 +212,12 @@ def _event_holdout(args: argparse.Namespace) -> int:
                 },
                 "holdout_role": report.record.holdout_role,
                 "purge_days": report.purge_days,
+                # The declaration and what it resolved to, beside the gap they
+                # produced. The journal carries them inside the hashed
+                # `model_config`; a reader of stdout should not have to open the
+                # journal to see which feature set this window was scored under.
+                "features": sorted(args.feature),
+                "sources": sorted(sources),
                 "train_rows": report.train_rows,
                 "last_train_date": report.last_train_date.isoformat(),
                 "taus_bp": list(report.taus),
@@ -207,14 +255,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     backtest.add_argument("--minimum-history", type=int, default=20)
     backtest.add_argument("--registry", type=Path, required=True)
     backtest.add_argument(
-        "--source",
+        "--feature",
         action="append",
         required=True,
-        metavar="ID",
-        help="a feature source, repeatable; these size the purge gap",
+        metavar="COLUMN",
+        help="a panel column the model reads, repeatable; these derive the "
+        "sources, which size the purge gap",
     )
     backtest.add_argument("--decision-time", required=True, metavar="HH:MM")
-    # No --purge. See _backtest.
+    # No --purge and no --source. See _backtest.
     backtest.set_defaults(handler=_backtest)
 
     holdout = subparsers.add_parser(
@@ -237,11 +286,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="append-only provenance log; a scoring that is not recorded did not happen",
     )
     holdout.add_argument(
-        "--source",
+        "--feature",
         action="append",
         required=True,
-        metavar="ID",
-        help="a feature source, repeatable; these size the purge gap",
+        metavar="COLUMN",
+        help="a panel column the model reads, repeatable; these derive the "
+        "sources, which size the purge gap",
     )
     holdout.add_argument("--decision-time", required=True, metavar="HH:MM")
     holdout.add_argument(
@@ -251,5 +301,5 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="score only this declared window, repeatable; default is all of them",
     )
     holdout.add_argument("--minimum-history", type=int, default=20)
-    # No --purge. See _event_holdout.
+    # No --purge and no --source. See _event_holdout.
     holdout.set_defaults(handler=_event_holdout)

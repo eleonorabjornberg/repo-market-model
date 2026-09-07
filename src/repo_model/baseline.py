@@ -39,9 +39,17 @@ It also takes its folds from `repo_model.splits.rolling_origin` rather than
 walking the index itself, which is what makes the purge gap reach the benchmark
 numbers at all. Until it did, `rolling_origin` was fully implemented, fully
 tested, carried the project's only purge boundary -- and nothing in the model
-path called it, so its guards had never guarded a reported number. `purge` is
-required here for the same reason it is required there, and the feature row
-follows from the fold rather than from the calendar: see `_feature_index`.
+path called it, so its guards had never guarded a reported number. The feature
+row follows from the fold rather than from the calendar: see `_feature_index`.
+
+The gap itself is no longer anybody's to type. The backtest takes a declared
+`features` set, resolves it through `contract.sources_for_features`, and sizes
+the gap with `registry.max_release_lag_days` over exactly those sources. That
+closes the question the purge block left open -- the number was required, and
+nothing checked that whoever produced it covered what the model reads -- and it
+is the first time this seam has been answered rather than routed around. The
+declaration is verified against the first fitted model, because a declaration
+nothing checks is a comment.
 """
 
 from __future__ import annotations
@@ -49,7 +57,7 @@ from __future__ import annotations
 import math
 from bisect import bisect_right
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, time
 from types import MappingProxyType
 from typing import (
     Callable,
@@ -62,9 +70,10 @@ from typing import (
     Tuple,
 )
 
-from .contract import QUANTILE_LEVELS
+from .contract import QUANTILE_LEVELS, sources_for_features
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import _validate_levels
+from .registry import max_release_lag_days
 from .splits import (
     LookAheadError,
     clears_purge,
@@ -108,6 +117,28 @@ class FittedForecastModel(Protocol):
     @property
     def residuals(self) -> Tuple[float, ...]:
         """The fitted residual sample, ascending; the law both outputs read."""
+
+    @property
+    def features_read(self) -> Tuple[str, ...]:
+        """The panel columns this fitted model reads off a feature row.
+
+        The model's own account of itself, in the panel's vocabulary. It exists
+        so `rolling_persistence_backtest` can check a fitted model against the
+        feature set the purge was sized from without asking what a source is,
+        and without matching on regressor names -- which is the derivation the
+        feature-to-source map was declared to avoid.
+
+        In model vocabulary, not source vocabulary: a fitted model does not know
+        that `iorb` arrives from `fred_macro_latest_vintage`, and it must not
+        have to. `contract.sources_for_features` is the only thing that makes
+        that step, and it makes it once, before the first fold.
+
+        Every column the model reads, not only the ones it was told about.
+        Persistence was never *given* a feature set and still reads
+        `spread_bps`; an ARX reads its autoregressive term as well as its
+        declared regressors. A model that answered with only what it was handed
+        would let the undeclared half through, which is the check inverted.
+        """
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool: ...
 
@@ -179,6 +210,17 @@ class BacktestReport:
     #: derivation that happens to agree. Typed to the interface, not to
     #: persistence: the backtest scores whichever model it was given.
     model: Optional[FittedForecastModel] = None
+    #: The feature set the caller declared, and the two facts derived from it:
+    #: the sources those features draw on and the gap those sources produced.
+    #:
+    #: Carried on the report rather than recomputed by whoever prints it. A
+    #: reporter that re-derived them would be a second derivation of the number
+    #: that shaped the run, and the two could agree today and drift later --
+    #: which is how a benchmark comes to report a `purge_days` it did not use.
+    #: `cli_eval` prints these three straight off the report for that reason.
+    features: Tuple[str, ...] = ()
+    sources: Tuple[str, ...] = ()
+    purge_days: int = 0
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -251,6 +293,20 @@ class FittedPersistence:
         """The fitted residual sample, ascending. A copy-free read-only view."""
 
         return self._residuals
+
+    @property
+    def features_read(self) -> Tuple[str, ...]:
+        """`spread_bps`, and nothing else. The persistence rule, as a claim.
+
+        A constant, because the model is one: `point_forecast` returns
+        `feature_row.spread_bps` and `predict` adds a residual quantile to it,
+        and neither touches `values` again. Stated here rather than inferred by
+        a caller, so that "persistence reads only the spread" stops being an
+        incidental property a reader of this class might rely on and becomes
+        something the class asserts and a backtest can check.
+        """
+
+        return ("spread_bps",)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
         """Was this model fitted on rows dated after `feature_row`?
@@ -685,6 +741,24 @@ class FittedArx:
 
         return self._residuals
 
+    @property
+    def features_read(self) -> Tuple[str, ...]:
+        """`spread_bps` plus the declared regressors, in `design_names` order.
+
+        Derived from `design_names` with the intercept dropped, rather than
+        rebuilt from `regressors`: `design_row` reads the feature row in
+        `design_names` order, so anything that column order gains this answer
+        gains too. A second tuple assembled here could agree today and diverge
+        the first time the design grows a term.
+
+        The intercept is dropped because it is the one design column that is not
+        read off the row -- it is the constant 1.0, and reporting it would have
+        the backtest demand that a caller declare `intercept` as a feature and
+        `contract.FEATURE_SOURCES` carry a source for it.
+        """
+
+        return tuple(name for name in self.design_names if name != "intercept")
+
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
         """Was this model fitted on rows dated after `feature_row`?
 
@@ -954,10 +1028,52 @@ def _feature_index(
     )
 
 
+def _check_fitter_stayed_inside(
+    model: FittedForecastModel,
+    features: Tuple[str, ...],
+    sources: Tuple[str, ...],
+    purge: int,
+) -> None:
+    """Raise unless the fitted model read only what the caller declared.
+
+    The purge was sized from `features`, before this model existed. If the
+    fitter read a column outside that set, the gap protecting this backtest was
+    computed over the wrong sources -- and the error is in the flattering
+    direction, because the undeclared column is the one whose release lag was
+    never taken into the maximum.
+
+    `LookAheadError`, not `ValueError`: this is a leakage condition, and it is
+    the same condition `_feature_index` raises for one level down. Not an
+    `assert`, because `python -O` strips asserts and this guard has to survive
+    the way the numbers are actually produced.
+
+    Set containment, not order or multiplicity: a model may read fewer columns
+    than were declared. Declaring more than the fitter uses purges more than the
+    evidence requires, which costs training rows and is visible in the report --
+    conservative and legible, so it is not refused here.
+    """
+
+    exceeded = tuple(
+        name for name in model.features_read if name not in frozenset(features)
+    )
+    if exceeded:
+        raise LookAheadError(
+            f"the fitted model reads {list(exceeded)}, which the declared "
+            f"feature set {list(features)} does not contain. The "
+            f"{purge}-day purge was sized over {list(sources)}, the sources of "
+            f"the declaration alone, so the release lag of every undeclared "
+            f"column is missing from the gap and the reported numbers were "
+            f"produced under too small a one. Declare the column the fitter "
+            f"reads rather than widening the gap by hand"
+        )
+
+
 def rolling_persistence_backtest(
     observations: Iterable[DailyObservation],
     *,
-    purge: int,
+    features: Sequence[str],
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
     minimum_history: int = 20,
     interval_probability: Optional[float] = None,
     fit_model: Optional[ModelFitter] = None,
@@ -981,6 +1097,31 @@ def rolling_persistence_backtest(
     not been published when the forecast was made. Every model here inherits the
     change, because every model reads its feature row from the same place.
 
+    **Where the gap comes from.** The caller declares a feature set; this
+    derives `contract.sources_for_features(features)`, then
+    `registry.max_release_lag_days(...)` over those sources, then builds folds
+    -- the order `cli_eval` already used on the event path. There is no `purge`
+    argument. Who computed the number was the open question the purge left
+    behind: a caller could declare an ARX on `on_rrp` and size the gap over
+    `nyfed_sofr` alone, and nothing checked it, so every number that came out
+    looked reasonable. That is the same silent-leak shape as `rows[index - 1]`
+    under a purge, one level up -- the gap computed correctly over the wrong
+    set.
+
+    **Declaration, then verification.** The gap must be sized before the first
+    fold, and the regressors are only known once a model is fitted, so this
+    cannot ask an unfitted model what it reads. It does not resolve that by
+    fitting a throwaway model to inspect: that fit would be on unpurged data,
+    which is the leak arriving through the door built to detect it. Instead the
+    declaration sizes the gap and the first fitted model is checked against the
+    declaration -- see `_check_fitter_stayed_inside`. The check is cheap and it
+    is the whole point: a fitter that exceeded the declaration was purged
+    against the wrong sources.
+
+    This module still does not know what a source is. It learns what a *feature
+    set* is, which is its own vocabulary, and passes tuples and ints between
+    `contract` and `registry`.
+
     The fitting call is a parameter, so this scores the forecast interface
     rather than one member of it. The name is unchanged: it is what the existing
     assertions and the last block's merge record refer to, and "persistence" in
@@ -989,17 +1130,24 @@ def rolling_persistence_backtest(
 
     Args:
         observations: the panel, ascending by date.
-        purge: calendar days that must separate the last training row from the
-            scored day. **Required, keyword-only, with no default**, for the
-            reason `rolling_origin` refuses a default `purge`,
-            `max_release_lag_days` refuses a default `decision_time` and
-            `fit_arx` refuses a default `regressors`: a default of `0` is the
-            leak wearing a convenience's clothes, and every number this function
-            ever reported was produced under one. Size it with
-            `repo_model.registry.max_release_lag_days(registry, sources,
-            decision_time=...)` over the sources the feature set actually uses.
-            This function never reads the registry and never learns what a
-            source is; the caller converts and passes the int.
+        features: the panel columns the model is declared to read.
+            **Required, keyword-only, with no default**, for the reason
+            `rolling_origin` refuses a default `purge`, `max_release_lag_days`
+            refuses a default `decision_time` and `fit_arx` refuses a default
+            `regressors`. A default here would be worse than any of those: it
+            would be a *silent claim about which sources the model draws on*,
+            and the gap derived from it would look computed while being a
+            guess. The sources follow from this, and the gap follows from the
+            sources; nothing about the gap is set by hand on this path.
+        registry: the parsed source registry, for `max_release_lag_days`. This
+            function never reads a `release_lag` itself -- a wrong conversion is
+            a provenance error and belongs with Track A, per
+            AGENT_CONTRACT.md's "The conversion belongs to the data layer".
+        decision_time: when the forecast is made, for `max_release_lag_days`.
+            Required and undefaulted there, so required and undefaulted here: a
+            default would be a silent assumption about the very thing the as-of
+            rule exists to make explicit, and passing one through would launder
+            it.
         minimum_history: the first origin scored, and the shortest training
             frame any fit is allowed. Passed to `rolling_origin` as `min_train`,
             which counts rows *after* purging -- so a gap that leaves too little
@@ -1029,8 +1177,21 @@ def rolling_persistence_backtest(
             `minimum_history` training rows behind it. That last one is a
             refusal on purpose: shrinking `min_train` to recover a fold would
             report a number produced by a rule nobody declared.
-        LookAheadError: if a fold's feature row does not clear the gap. That is
-            a bug here or in the splitter, not bad input.
+        LookAheadError: if a fold's feature row does not clear the gap -- a bug
+            here or in the splitter, not bad input -- or if the fitted model
+            reads a column outside `features`. The second is the declaration
+            being wrong about the model, which means the gap was sized over the
+            wrong sources; see `_check_fitter_stayed_inside`.
+        UndeclaredFeatureError: if `features` names a column that
+            `contract.sources_for_features` cannot classify, or one it declares
+            to have no ingesting source. Raised before any fold is built, since
+            a feature set that cannot be resolved has no gap and therefore no
+            backtest.
+        RegistryContractError: if the derived sources cannot support a safe
+            bound -- an unknown source, an unusable `release_lag`, or a
+            `snapshot_retrieved_at` source without `available_at` on every row.
+            Passed through unchanged. It is Track A's refusal and this function
+            has no standing to soften it.
     """
 
     if interval_probability is not None and not math.isclose(
@@ -1042,6 +1203,14 @@ def rolling_persistence_backtest(
             f"{QUANTILE_LEVELS[0]} to {QUANTILE_LEVELS[-1]}); the interval is read "
             f"from contract.QUANTILE_LEVELS, not set here"
         )
+
+    # Before anything else, and before a single fold: an unresolvable feature
+    # set has no gap, so it has no backtest. Resolving first also means the
+    # caller who misspells a column gets `UndeclaredFeatureError` naming the
+    # column rather than a fold-shaped complaint further in.
+    declared: Tuple[str, ...] = tuple(features)
+    sources = sources_for_features(declared)
+    purge = max_release_lag_days(registry, sources, decision_time=decision_time)
 
     rows = list(observations)
     if len(rows) <= minimum_history:
@@ -1066,7 +1235,16 @@ def rolling_persistence_backtest(
         # `fit` derives from it is the last date the forecaster was allowed to
         # see -- not the day before the scored day, which under a purge is a
         # date whose value had not been published yet.
-        model = fitter([rows[i] for i in train_indices], minimum_history=minimum_history)
+        fitted = fitter([rows[i] for i in train_indices], minimum_history=minimum_history)
+        if model is None:
+            # After the first fit, and only the first: the fitter is the same
+            # callable at every origin, so a model that stayed inside the
+            # declaration here stays inside it at every later one. Checking
+            # once keeps this off the hot path without weakening it, and
+            # checking *after* the fit is the only order available -- the
+            # regressors do not exist before it.
+            _check_fitter_stayed_inside(fitted, declared, sources, purge)
+        model = fitted
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
         forecasts.append(
@@ -1089,7 +1267,9 @@ def rolling_persistence_backtest(
     coverage = sum(
         item.lower_bps <= item.actual_bps <= item.upper_bps for item in forecasts
     ) / len(forecasts)
-    return BacktestReport(forecasts, mae, coverage, model)
+    return BacktestReport(
+        forecasts, mae, coverage, model, declared, sources, purge
+    )
 
 
 def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:

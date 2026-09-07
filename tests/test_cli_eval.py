@@ -98,13 +98,14 @@ import re
 import sys
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model import cli, cli_eval
-from repo_model.contract import event_window_digest
+from repo_model.contract import event_window_digest, sources_for_features
+from repo_model.registry import max_release_lag_days
 from repo_model.event_eval import read_journal
 
 
@@ -121,8 +122,52 @@ PANEL_COLUMNS = (
 #: A source whose `release_lag` is declared in `metadata/sources.json`. Named
 #: rather than computed because naming the sources is how a caller sets the gap;
 #: the *number* it produces is never written down here.
-SOURCE = "nyfed_sofr"
+#: What a caller declares now. `--source` is gone: sources are derived from the
+#: feature set, and the gap from the sources. `spread_bps` is what both
+#: evaluation paths actually read -- persistence forecasts it and climatology
+#: scores exceedances of it -- so it is the honest declaration for both.
+FEATURE = "spread_bps"
 DECISION_TIME = "16:30"
+
+
+def declared_registry_file(directory, purge=6, features=(FEATURE,)):
+    """Write a registry that prices the sources `features` uses at `purge` days.
+
+    A fixture, and the commands need one now. Against the real
+    `metadata/sources.json` **no feature set runs at all**: every model here
+    reads `spread_bps`, `spread_bps` is computed from `iorb`, `iorb` comes from
+    `fred_macro_latest_vintage`, and that source's basis is
+    `snapshot_retrieved_at` -- which `max_release_lag_days` refuses to price
+    unless every row carries `available_at`, and the daily panel carries none.
+
+    That refusal is a correct guard, pinned at the command level by
+    `RealRegistryTests`. It is not worked around here; it is why the other tests
+    declare their own registry, exactly as they already declare their own panel,
+    events file and thresholds.
+    """
+
+    from repo_model.contract import sources_for_features
+
+    path = Path(directory) / "registry.json"
+    path.write_text(
+        json.dumps(
+            {
+                source: {
+                    "release_lag": {
+                        "basis": "record_date",
+                        "unit": "calendar_days",
+                        "days": purge,
+                        "available_time": "00:00",
+                        "timezone": "America/New_York",
+                    }
+                }
+                for source in sources_for_features(features)
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return path
 
 
 def business_days(start, count):
@@ -146,6 +191,7 @@ class EventHoldoutHarness(unittest.TestCase):
         self.tmp = Path(directory.name)
         self.journal = self.tmp / "journal.jsonl"
 
+        self.registry = declared_registry_file(self.tmp)
         self.days = business_days(date(2025, 11, 3), 60)
         self.window_start, self.window_end = self.days[52], self.days[56]
         self.panel = self.write_panel()
@@ -190,9 +236,9 @@ class EventHoldoutHarness(unittest.TestCase):
             "--panel", str(self.panel),
             "--events", str(events or self.events),
             "--thresholds", str(thresholds or THRESHOLDS),
-            "--registry", str(REGISTRY),
+            "--registry", str(self.registry),
             "--journal", str(journal or self.journal),
-            "--source", SOURCE,
+            "--feature", FEATURE,
             "--decision-time", DECISION_TIME,
             *extra,
         ]
@@ -287,15 +333,16 @@ class DeclarationTests(EventHoldoutHarness):
 
         A flag setting the gap by hand would be reached for at exactly the
         moment it must not be: when the training set that cleared it came back
-        too short. The gap follows from which sources the features come from, so
-        `--source` is how a caller changes it, and that change is legible.
+        too short. The gap follows from the sources, and the sources follow from
+        the declared feature set, so `--feature` is how a caller changes it and
+        that change is legible.
         """
 
         parser = cli.build_parser()
         options = self._holdout_options(parser)
-        for banned in ("--purge", "--purge-days", "--gap"):
+        for banned in ("--purge", "--purge-days", "--gap", "--source"):
             self.assertNotIn(banned, options, msg=f"{banned} is back")
-        self.assertIn("--source", options)
+        self.assertIn("--feature", options)
 
     def test_no_path_this_command_reads_carries_a_default(self):
         parser = self._holdout_parser(cli.build_parser())
@@ -453,44 +500,77 @@ class RollingBacktestCommandTests(unittest.TestCase):
     PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
     MINIMUM_HISTORY = "10"
 
-    #: Two declared sources with different release lags. Named, never their
-    #: numbers -- the *number* is `metadata/sources.json`'s to state, and a
-    #: literal here would be this file restating it.
-    SLOW_SOURCE = "nyfed_sofr"
-    FAST_SOURCE = "treasury_auctions"
+    #: Two declarations, the slower a superset of the faster. Both contain
+    #: `spread_bps`, because every model here reads it -- a declaration that
+    #: omitted it is refused by the fitter check, which is that check working.
+    #: So the only way to widen the gap is to declare more, which is the shape
+    #: the design intends: sources follow features, gap follows sources.
+    FAST_FEATURES = ("spread_bps",)
+    SLOW_FEATURES = ("spread_bps", "treasury_settlement")
 
-    def run_backtest(self, *sources, decision_time=DECISION_TIME):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        # One registry pricing both feature sets, at different lags, so a run
+        # can name either and the gap has to follow the naming.
+        self.registry = self.tmp / "registry.json"
+        self.registry.write_text(
+            json.dumps(
+                {
+                    "nyfed_sofr": self._lag(1),
+                    "fred_macro_latest_vintage": self._lag(1),
+                    "treasury_auctions": self._lag(6),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _lag(days):
+        return {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": days,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        }
+
+    def run_backtest(self, *features, decision_time=DECISION_TIME, registry=None):
         argv = [
             "backtest", str(self.PANEL),
             "--minimum-history", self.MINIMUM_HISTORY,
-            "--registry", str(REGISTRY),
+            "--registry", str(registry or self.registry),
             "--decision-time", decision_time,
         ]
-        for source in sources:
-            argv += ["--source", source]
+        for feature in features:
+            argv += ["--feature", feature]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = cli.main(argv)
         return code, out.getvalue(), err.getvalue()
 
-    def scored(self, *sources, **kwargs):
-        code, out, err = self.run_backtest(*sources, **kwargs)
+    def scored(self, *features, **kwargs):
+        code, out, err = self.run_backtest(*features, **kwargs)
         self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
         return json.loads(out)
 
-    def test_the_rolling_command_takes_its_purge_from_the_registry(self):
-        """The gap follows from `--source`, and it reaches the reported numbers.
+    def test_the_rolling_command_takes_its_purge_from_the_declared_features(self):
+        """The gap follows from `--feature`, and it reaches the reported numbers.
 
-        Asserted as a relation between two source sets rather than against a
-        literal. Two sources declare different release lags, so naming the
-        slower one must widen the gap; a wider gap costs origins and moves the
-        metrics. A command that reported a `purge_days` it did not pass on --
-        the plausible mistake, since the field would still look right -- would
-        hold the first assertion and fail the second.
+        Asserted as a relation between two feature sets rather than against a
+        literal. The two resolve to sources the registry prices differently, so
+        naming the slower one must widen the gap; a wider gap costs origins and
+        moves the metrics. A command that reported a `purge_days` it did not
+        pass on -- the plausible mistake, since the field would still look right
+        -- would hold the first assertion and fail the second.
         """
 
-        slow = self.scored(self.SLOW_SOURCE)
-        fast = self.scored(self.FAST_SOURCE)
+        slow = self.scored(*self.SLOW_FEATURES)
+        fast = self.scored(*self.FAST_FEATURES)
 
         self.assertGreater(fast["purge_days"], 0)
         self.assertGreater(slow["purge_days"], fast["purge_days"])
@@ -500,21 +580,95 @@ class RollingBacktestCommandTests(unittest.TestCase):
         self.assertLess(slow["forecast_count"], fast["forecast_count"])
         self.assertNotEqual(slow["mae_bps"], fast["mae_bps"])
 
-        # Naming both sources takes the maximum, which is what "the purge for a
-        # backtest is the maximum over the sources the feature set uses" means.
-        both = self.scored(self.FAST_SOURCE, self.SLOW_SOURCE)
-        self.assertEqual(both["purge_days"], slow["purge_days"])
+        # The wider declaration takes the maximum over the union of its
+        # sources, which is what "the purge for a backtest is the maximum over
+        # the sources the feature set uses" means. Declaring more never narrows
+        # the gap.
+        self.assertEqual(
+            slow["sources"],
+            sorted(set(fast["sources"]) | {"treasury_auctions"}),
+        )
 
-        # And the report says what sized it. A number an auditor cannot follow
-        # back to a source list is not a benchmark.
-        self.assertEqual(both["sources"], sorted([self.FAST_SOURCE, self.SLOW_SOURCE]))
-        self.assertEqual(slow["sources"], [self.SLOW_SOURCE])
+    def test_both_commands_report_the_features_and_the_sources_they_derived(self):
+        """Derived facts, reported as such. An auditor must be able to follow it.
 
-        # A source the registry does not declare is refused rather than
-        # contributing nothing, which is the silent-zero failure again.
-        code, _, err = self.run_backtest("no_such_source")
+        The old report echoed the `--source` list back, which said only that
+        argparse worked. These three fields now say what the command *decided*:
+        the declaration it was given, the sources that declaration resolved to,
+        and the gap those sources produced. `sources` in particular is a fact
+        the caller never supplied and cannot have mistyped.
+        """
+
+        report = self.scored(*self.FAST_FEATURES)
+        self.assertEqual(report["features"], sorted(self.FAST_FEATURES))
+        # Not echoed: `spread_bps` is one name and resolves to two sources.
+        self.assertEqual(
+            report["sources"],
+            ["fred_macro_latest_vintage", "nyfed_sofr"],
+        )
+        self.assertEqual(report["purge_days"], 1)
+
+        # And the same three on the event path, per scored window.
+        holdout = EventHoldoutHarness("run_command")
+        holdout.setUp()
+        self.addCleanup(holdout.doCleanups)
+        window = holdout.scored()[0]
+        self.assertEqual(window["features"], [FEATURE])
+        self.assertEqual(
+            window["sources"], ["fred_macro_latest_vintage", "nyfed_sofr"]
+        )
+        self.assertEqual(window["purge_days"], 6)
+
+    def test_an_undeclared_feature_is_refused_before_any_fold_is_built(self):
+        """A name the map does not classify is refused, naming the column.
+
+        The silent-zero failure, one level up from the registry: a feature set
+        that resolved to an empty source set would produce a zero-day gap and a
+        perfectly ordinary-looking benchmark. `contract.sources_for_features`
+        raises instead, and the command must let that reach the caller rather
+        than defaulting around it.
+
+        The refusal has to arrive before the run, not after -- a benchmark that
+        printed numbers and then complained would have scored something.
+        """
+
+        code, out, err = self.run_backtest("no_such_column")
         self.assertEqual(code, 2)
-        self.assertIn("no_such_source", err)
+        self.assertIn("no_such_column", err)
+        self.assertEqual(out, "", msg="the run produced output before refusing")
+
+        # A declared column with no ingesting source is refused with its reason,
+        # rather than purging zero days over an empty source set.
+        code, out, err = self.run_backtest("dealer_treasury_position")
+        self.assertEqual(code, 2)
+        self.assertIn("dealer_treasury_position", err)
+        self.assertEqual(out, "")
+
+    def test_there_is_no_source_flag(self):
+        """Sources are derived, never supplied. The absence is the guard.
+
+        A caller who could name the sources by hand could name a set that did
+        not cover what the model reads. The purge would then be computed
+        correctly, by the right function, over the wrong evidence -- and every
+        number would look reasonable, because the arithmetic was never the
+        problem. That is the failure this block closed, and a `--source` added
+        back "for the conservative case" reopens it.
+
+        Checked on both commands: the event path had `--source` too, and a hole
+        reopened on one path is a hole.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        for name in ("backtest", "event-holdout"):
+            with self.subTest(command=name):
+                options = {
+                    option
+                    for action in command.choices[name]._actions
+                    for option in action.option_strings
+                }
+                self.assertNotIn("--source", options, msg="--source is back")
+                self.assertIn("--feature", options)
 
     def test_there_is_no_purge_flag(self):
         """The absence is the guard, so the test reads the parser.
@@ -537,22 +691,95 @@ class RollingBacktestCommandTests(unittest.TestCase):
 
         for banned in ("--purge", "--purge-days", "--gap"):
             self.assertNotIn(banned, options, msg=f"{banned} is back")
-        self.assertIn("--source", options)
+        self.assertIn("--feature", options)
         self.assertIn("--decision-time", options)
 
-        # `--source`, `--registry` and `--decision-time` are required, not
+        # `--feature`, `--registry` and `--decision-time` are required, not
         # defaulted: a default decision time is a silent assumption about when
-        # the forecast is made, and a default source list is a feature set this
-        # repository does not declare.
+        # the forecast is made, and a default feature set is a silent claim
+        # about which sources the model draws on.
         required = {
             action.dest for action in backtest._actions if getattr(action, "required", False)
         }
-        self.assertLessEqual({"source", "registry", "decision_time"}, required)
+        self.assertLessEqual({"feature", "registry", "decision_time"}, required)
         for action in backtest._actions:
-            if action.dest in ("source", "registry", "decision_time"):
+            if action.dest in ("feature", "registry", "decision_time"):
                 self.assertIsNone(
                     action.default, msg=f"--{action.dest} acquired a default"
                 )
+
+
+class RealRegistryTests(unittest.TestCase):
+    """What the commands do against `metadata/sources.json` as it stands today.
+
+    They refuse to run, and the refusal is correct.
+
+    `iorb` is a required panel column, `spread_bps` is computed from it, and
+    every model in this repository reads `spread_bps`. So every honest feature
+    set resolves to `fred_macro_latest_vintage`, whose declared basis is
+    `snapshot_retrieved_at`. `AGENT_CONTRACT.md` is explicit that such a source
+    contributes no purge and MUST NOT be mapped to zero -- those rows are valid
+    only from their snapshot timestamp, which is an `available_at` fact about a
+    row rather than a lag on a source -- and `max_release_lag_days` raises
+    unless every row carries one. `DailyObservation` carries no `available_at`.
+
+    The target variable draws on a snapshot-basis source. That is a Track A
+    question about `available_at` on the daily panel, deliberately left open,
+    and it is not this test's job to answer it. What this test does is stop the
+    fact from being quietly worked around: an exemption, a fabricated
+    `available_at`, or a basis mapped to zero would all make this test go green
+    while making every benchmark number in the project meaningless.
+
+    It is pinned rather than skipped because it will go red the day Track A
+    answers the question, which is the right alarm.
+    """
+
+    PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
+
+    def test_the_backtest_refuses_the_real_registry_for_want_of_available_at(self):
+        argv = [
+            "backtest", str(self.PANEL),
+            "--minimum-history", "10",
+            "--registry", str(REGISTRY),
+            "--feature", FEATURE,
+            "--decision-time", DECISION_TIME,
+        ]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+
+        self.assertEqual(code, 2)
+        self.assertIn("fred_macro_latest_vintage", err.getvalue())
+        self.assertIn("available_at", err.getvalue())
+        self.assertEqual(
+            out.getvalue(),
+            "",
+            msg="the command printed a benchmark and then refused; the gap it "
+            "could not size had already reached the folds",
+        )
+
+    def test_the_refusal_is_the_snapshot_source_and_not_the_whole_registry(self):
+        """A feature set clear of the snapshot sources runs against the real file.
+
+        Without this, the test above would also pass if the command refused
+        every feature set for some unrelated reason, and the finding it records
+        would be about nothing in particular.
+
+        `sofr` alone is not an honest declaration for any model here -- nothing
+        forecasts SOFR in levels -- so no fold is built from it. The parser and
+        the derivation are what this exercises, which is why it asserts on the
+        gap rather than on a benchmark.
+        """
+
+        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.assertEqual(
+            max_release_lag_days(
+                registry,
+                sources_for_features(("sofr",)),
+                decision_time=time.fromisoformat(DECISION_TIME),
+            ),
+            6,
+        )
 
 
 class SeamTests(unittest.TestCase):
@@ -571,7 +798,7 @@ class SeamTests(unittest.TestCase):
     def test_the_handler_is_registered_by_this_track_module(self):
         args = cli.build_parser().parse_args(
             ["event-holdout", "--panel", "p", "--events", "e", "--thresholds", "t",
-             "--registry", "r", "--journal", "j", "--source", "s",
+             "--registry", "r", "--journal", "j", "--feature", "spread_bps",
              "--decision-time", "16:30"]
         )
         self.assertIs(args.handler, cli_eval._event_holdout)
