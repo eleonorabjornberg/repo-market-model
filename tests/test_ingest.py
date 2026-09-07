@@ -16,6 +16,7 @@ from repo_model.data import load_point_in_time_panel
 from repo_model.ingest import (
     SnapshotArtifact,
     _decode_transport,
+    _sec_nmfp_rows,
     build_point_in_time_snapshot,
     parse_snapshots,
     fetch_fred_macro,
@@ -368,6 +369,71 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(values["mmf_repo_holdings"], 0.2)
         self.assertEqual(values["mmf_on_rrp"], 0.2)
 
+
+
+class NMFPSchemaGuardTests(unittest.TestCase):
+    """The N-MFP parser must fail closed when a required column drifts.
+
+    Mutation record
+    ---------------
+    Run in a disposable copy with the full 401-test suite, `-B`, and
+    `PYTHONDONTWRITEBYTECODE=1`; the unmutated control was OK.
+
+    | Mutation                                             | Result    |
+    |------------------------------------------------------|-----------|
+    | Disable the required-header comparison.              | 1 failure |
+    | Require only `ACCESSION_NUMBER` in the series table. | 1 failure |
+
+    In both cases this class's acceptance test was the failure: the renamed
+    balance columns reached the parser without raising `ValueError`.
+    """
+
+    def setUp(self):
+        self.artifact = SnapshotArtifact(
+            source_id="sec_nmfp",
+            url="https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/fixture.zip",
+            path=Path("unused.zip"),
+            retrieved_at="2026-08-01T00:00:00+00:00",
+            sha256="0" * 64,
+            byte_count=1,
+        )
+
+    def test_renamed_series_balance_columns_are_rejected_before_parsing(self):
+        source = nmfp_archive(
+            (
+                {
+                    "accession": "A1",
+                    "series": "S1",
+                    "report": "31-JUL-2026",
+                },
+            )
+        )
+        rewritten = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(source)) as original:
+            with zipfile.ZipFile(rewritten, "w") as archive:
+                for name in original.namelist():
+                    payload = original.read(name)
+                    if name == "NMFP_SERIESLEVELINFO.tsv":
+                        text = payload.decode("utf-8")
+                        header, rows = text.split("\n", 1)
+                        for column in (
+                            "CASH",
+                            "TOTALVALUEPORTFOLIOSECURITIES",
+                            "TOTALVALUEOTHERASSETS",
+                            "TOTALVALUELIABILITIES",
+                            "NETASSETOFSERIES",
+                        ):
+                            header = header.replace(column, f"{column}_RENAMED")
+                        payload = f"{header}\n{rows}".encode("utf-8")
+                    archive.writestr(name, payload)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"NMFP_SERIESLEVELINFO\.tsv lacks required columns "
+            r"CASH, NETASSETOFSERIES, TOTALVALUELIABILITIES, "
+            r"TOTALVALUEOTHERASSETS, TOTALVALUEPORTFOLIOSECURITIES$",
+        ):
+            _sec_nmfp_rows(self.artifact, rewritten.getvalue())
 
 
 class CrossSectionCoverageTests(unittest.TestCase):

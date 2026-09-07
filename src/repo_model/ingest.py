@@ -539,12 +539,66 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
     ]
 
 
+#: The value columns each N-MFP table contributes, mapped to the series they
+#: feed. Module-level rather than local to `_sec_nmfp_rows` so the required
+#: header below is derived from the mapping the parser actually reads.
+NMFP_BALANCE_FIELDS = {
+    "CASH": "mmf_cash",
+    "TOTALVALUEPORTFOLIOSECURITIES": "mmf_portfolio_securities",
+    "TOTALVALUEOTHERASSETS": "mmf_other_assets",
+    "TOTALVALUELIABILITIES": "mmf_liabilities",
+    "NETASSETOFSERIES": "mmf_net_assets",
+}
+
+NMFP_FLOW_FIELDS = {
+    "DAILYGROSSSUBSCRIPTIONS": "mmf_gross_subscriptions",
+    "DAILYGROSSREDEMPTIONS": "mmf_gross_redemptions",
+}
+
+#: Every column the adapter reads, stated once at the parser boundary. A
+#: renamed column otherwise looks exactly like an absent value to `record.get`
+#: and can silently erase or misclassify a series.
+NMFP_REQUIRED_COLUMNS = {
+    "NMFP_SUBMISSION.tsv": frozenset(
+        {"ACCESSION_NUMBER", "SERIESID", "REPORTDATE"}
+    ),
+    "NMFP_SERIESLEVELINFO.tsv": (
+        frozenset({"ACCESSION_NUMBER"}) | frozenset(NMFP_BALANCE_FIELDS)
+    ),
+    "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv": (
+        frozenset({"ACCESSION_NUMBER", "DAILYSHAREHOLDERFLOWDATE"})
+        | frozenset(NMFP_FLOW_FIELDS)
+    ),
+    "NMFP_SCHPORTFOLIOSECURITIES.tsv": frozenset(
+        {
+            "ACCESSION_NUMBER",
+            "INVESTMENTCATEGORY",
+            "INCLUDINGVALUEOFANYSPONSORSUPP",
+            "NAMEOFISSUER",
+            "TITLEOFISSUER",
+            "BRIEFDESCRIPTION",
+        }
+    ),
+}
+
+
 def _nmfp_table(archive: zipfile.ZipFile, name: str):
+    """Open one N-MFP table only when its header supports faithful parsing."""
+
     try:
         payload = archive.read(name)
     except KeyError as exc:
         raise ValueError(f"SEC Form N-MFP ZIP lacks required table {name}") from exc
-    return csv.DictReader(io.StringIO(payload.decode("utf-8-sig")), delimiter="\t")
+    reader = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")), delimiter="\t")
+    # A header-only table is valid and remains empty. A zero-byte table has no
+    # header, so all of its required columns are correctly reported missing.
+    missing = NMFP_REQUIRED_COLUMNS[name] - frozenset(reader.fieldnames or ())
+    if missing:
+        raise ValueError(
+            f"SEC Form N-MFP table {name} lacks required columns "
+            f"{', '.join(sorted(missing))}"
+        )
+    return reader
 
 
 def _nmfp_number(raw: object, field: str) -> Optional[float]:
@@ -612,27 +666,16 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
             reports[accession] = report_date
             entities.setdefault(report_date, set()).add(entity)
 
-        balance_fields = {
-            "CASH": "mmf_cash",
-            "TOTALVALUEPORTFOLIOSECURITIES": "mmf_portfolio_securities",
-            "TOTALVALUEOTHERASSETS": "mmf_other_assets",
-            "TOTALVALUELIABILITIES": "mmf_liabilities",
-            "NETASSETOFSERIES": "mmf_net_assets",
-        }
         for record in _nmfp_table(archive, "NMFP_SERIESLEVELINFO.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if accession not in reports:
                 raise ValueError(f"SEC Form N-MFP series row has unknown accession {accession}")
             section = reports[accession]
-            for raw_field, series_id in balance_fields.items():
+            for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
                 value = _nmfp_number(record.get(raw_field), raw_field)
                 if value is not None:
                     add(section, series_id, section, value / 1_000_000_000)
 
-        flow_fields = {
-            "DAILYGROSSSUBSCRIPTIONS": "mmf_gross_subscriptions",
-            "DAILYGROSSREDEMPTIONS": "mmf_gross_redemptions",
-        }
         for record in _nmfp_table(archive, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if accession not in reports:
@@ -650,7 +693,7 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                 "DAILYSHAREHOLDERFLOWDATE",
             )
             values = {}
-            for raw_field, series_id in flow_fields.items():
+            for raw_field, series_id in NMFP_FLOW_FIELDS.items():
                 value = _nmfp_number(record.get(raw_field), raw_field)
                 if value is not None:
                     values[series_id] = value / 1_000_000_000
