@@ -12,10 +12,11 @@ a key name, and each track picked its own.
 
 What lives here, therefore, is every shape both tracks must agree on:
 the release-lag schema (`validate_release_lag`, `validate_registry_release_lags`
-and the vocabulary they check against) and the event-window schema
-(`EVENT_WINDOW_KEYS`, `event_window_digest`, `validate_event_windows_document`).
-Neither was invented here -- each was lifted from the track that had reasoned it
-through, unchanged except in name.
+and the vocabulary they check against), the event-window schema
+(`EVENT_WINDOW_KEYS`, `event_window_digest`, `validate_event_windows_document`),
+and the forecast quantile grid (`QUANTILE_LEVELS`). None was invented here --
+each was lifted from the track that had reasoned it through, unchanged except
+in name.
 
 The fix is to make the shared shape executable and put it where neither track
 owns it. Both tracks import this module; neither edits it. Changing it is a
@@ -37,12 +38,18 @@ __all__ = [
     "UNIT_FOR_BASIS",
     "END_OF_DAY",
     "AVAILABLE_TIME_RE",
+    "QUANTILE_LEVELS",
     "validate_release_lag",
     "validate_registry_release_lags",
     "EVENT_WINDOW_KEYS",
     "event_window_digest",
     "validate_event_windows_document",
 ]
+
+#: Fixed across every model so pinball loss, interval coverage, and predictive
+#: distributions are comparable. The outer pair is the repository's existing
+#: 90% interval; the median and quartiles give CRPS more than a three-point grid.
+QUANTILE_LEVELS = (0.05, 0.25, 0.50, 0.75, 0.95)
 
 #: The three publication bases the contract recognises, and the day-count unit
 #: each one is measured in. The pairing is fixed: see "One rule per basis" in

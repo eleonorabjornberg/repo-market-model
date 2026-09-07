@@ -66,12 +66,17 @@ is wrong.
 ```
 fit(train_frame)            -> fitted model
 predict(feature_row)        -> quantile vector at declared levels
-predict_stress(feature_row) -> probability in [0, 1]
+predict_stress(feature_row) -> exceedance vector aligned to metadata taus_bp
 ```
 
-Quantile levels are declared once in the contract and fixed across all
-models, so pinball loss and interval coverage are comparable. A model that
-wants different levels is a new model, not a config change.
+Quantile levels are declared once as
+`src/repo_model/contract.py:QUANTILE_LEVELS = (0.05, 0.25, 0.50, 0.75, 0.95)`
+and fixed across all models, so pinball loss and interval coverage are
+comparable. A model that wants different levels is a new model, not a config
+change. `predict_stress` returns one exceedance probability for every
+`taus_bp` entry in `metadata/stress_thresholds.json`, in that declared order.
+Those probabilities are derived from the same fitted predictive distribution
+that supplies `predict`; they are not outputs of separately fitted classifiers.
 
 Every fitted object carries the cutoff it was fitted at. Any transform with
 learned parameters — scaling, imputation, encoding, hyperparameter choice —
