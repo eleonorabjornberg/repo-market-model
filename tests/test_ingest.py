@@ -14,9 +14,14 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import load_point_in_time_panel
 from repo_model.ingest import (
+    ArchiveRecord,
     SnapshotArtifact,
     _decode_transport,
     _sec_nmfp_rows,
+    fetch_sec_nmfp_archives,
+    load_sec_nmfp_archive_manifest,
+    nmfp_schema_refusals,
+    write_sec_nmfp_archive_manifest,
     build_point_in_time_snapshot,
     parse_snapshots,
     fetch_fred_macro,
@@ -54,13 +59,17 @@ def nmfp_archive(submissions) -> bytes:
     """Build a minimal but structurally faithful Form N-MFP flat-file ZIP.
 
     `submissions` is a sequence of dicts with `accession`, `series`, `report`
-    and optional `net_assets` (USD, not billions) and `flows`, a sequence of
+    and optional `net_assets` (USD, not billions), `filing` (the DD-MON-YYYY
+    filing date, defaulting to the report date), `submission_type` (defaulting
+    to `N-MFP3`) and `flows`, a sequence of
     `(flow_date, subscriptions, redemptions)`. The tables carry the same column
     names and the same DD-MON-YYYY dates as the SEC extract, so a fixture cannot
     pass by agreeing with the parser about a format the source does not use.
     """
 
-    submission_rows = ["ACCESSION_NUMBER\tSERIESID\tREPORTDATE"]
+    submission_rows = [
+        "ACCESSION_NUMBER\tFILING_DATE\tSUBMISSIONTYPE\tSERIESID\tREPORTDATE"
+    ]
     series_rows = [
         "ACCESSION_NUMBER\tCASH\tTOTALVALUEPORTFOLIOSECURITIES\t"
         "TOTALVALUEOTHERASSETS\tTOTALVALUELIABILITIES\tNETASSETOFSERIES"
@@ -75,7 +84,9 @@ def nmfp_archive(submissions) -> bytes:
     ]
     for entry in submissions:
         submission_rows.append(
-            f"{entry['accession']}\t{entry['series']}\t{entry['report']}"
+            f"{entry['accession']}\t{entry.get('filing', entry['report'])}\t"
+            f"{entry.get('submission_type', 'N-MFP3')}\t"
+            f"{entry['series']}\t{entry['report']}"
         )
         net = entry.get("net_assets", 1_000_000_000)
         # cash + portfolio + other == liabilities + net assets, to the dollar.
@@ -325,7 +336,8 @@ class IngestTests(unittest.TestCase):
         with zipfile.ZipFile(buffer, "w") as archive:
             archive.writestr(
                 "NMFP_SUBMISSION.tsv",
-                "ACCESSION_NUMBER\tSERIESID\tREPORTDATE\nA1\tS1\t31-JUL-2026\n",
+                "ACCESSION_NUMBER\tFILING_DATE\tSUBMISSIONTYPE\tSERIESID\t"
+                "REPORTDATE\nA1\t07-AUG-2026\tN-MFP3\tS1\t31-JUL-2026\n",
             )
             archive.writestr(
                 "NMFP_SERIESLEVELINFO.tsv",
@@ -434,6 +446,348 @@ class NMFPSchemaGuardTests(unittest.TestCase):
             r"TOTALVALUEOTHERASSETS, TOTALVALUEPORTFOLIOSECURITIES$",
         ):
             _sec_nmfp_rows(self.artifact, rewritten.getvalue())
+
+
+class ArchiveManifestTests(unittest.TestCase):
+    """The declared archive set, and the fetch that reads it.
+
+    `data/raw/` is gitignored, so the bytes that make up `sec_nmfp` are not in
+    the repository and a fresh checkout has no way to know how much history is
+    supposed to exist. The manifest is that record. It also has to distinguish
+    three states that all look like an absent file: never declared, declared but
+    not fetched here, and fetched and refused.
+    """
+
+    SEC_URL = "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/"
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.readable = nmfp_archive(
+            (
+                {
+                    "accession": "0000000000-26-000001",
+                    "series": "S000000001",
+                    "report": "31-JUL-2026",
+                },
+            )
+        )
+        # The same archive with one required table removed -- the shape every
+        # Form N-MFP set published before the daily shareholder-flow report
+        # existed actually has.
+        stripped = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(self.readable)) as original:
+            with zipfile.ZipFile(stripped, "w") as archive:
+                for name in original.namelist():
+                    if name == "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv":
+                        continue
+                    archive.writestr(name, original.read(name))
+        self.unreadable = stripped.getvalue()
+
+    def _serve(self, payloads):
+        calls = []
+
+        def downloader(url):
+            calls.append(url)
+            return payloads[url]
+
+        return downloader, calls
+
+    def test_an_archive_the_parser_cannot_read_never_reaches_the_raw_tree(self):
+        url = f"{self.SEC_URL}old.zip"
+        downloader, calls = self._serve({url: self.unreadable})
+        updated = fetch_sec_nmfp_archives(
+            self.output_root,
+            [ArchiveRecord(url=url)],
+            downloader=downloader,
+            pause_seconds=0,
+        )
+        self.assertEqual(calls, [url])
+        self.assertEqual(
+            updated[0].refusals,
+            ("lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+        )
+        self.assertFalse(updated[0].admitted)
+        # Everything under data/raw/ is panel input by construction. An archive
+        # the parser refuses is not panel input, so it is recorded and not
+        # written: leaving it there and filtering later is the same claim made
+        # in a place nothing reads.
+        self.assertEqual(list((self.output_root / "sec_nmfp").glob("*.zip")), [])
+        self.assertNotEqual(updated[0].sha256, "")
+
+    def test_a_recorded_archive_is_not_downloaded_twice(self):
+        readable_url = f"{self.SEC_URL}new.zip"
+        refused_url = f"{self.SEC_URL}old.zip"
+        payloads = {readable_url: self.readable, refused_url: self.unreadable}
+        downloader, calls = self._serve(payloads)
+        records = [ArchiveRecord(url=readable_url), ArchiveRecord(url=refused_url)]
+        first = fetch_sec_nmfp_archives(
+            self.output_root, records, downloader=downloader, pause_seconds=0
+        )
+        self.assertCountEqual(calls, [readable_url, refused_url])
+        self.assertTrue(first[0].admitted)
+        self.assertFalse(first[1].admitted)
+
+        # Re-running fetches nothing: the readable archive is already on disk
+        # under its recorded digest, and the refused one has a verdict already
+        # written down. Re-downloading a hundred archives to re-derive a recorded
+        # refusal is not politeness.
+        again_downloader, again_calls = self._serve(payloads)
+        second = fetch_sec_nmfp_archives(
+            self.output_root, first, downloader=again_downloader, pause_seconds=0
+        )
+        self.assertEqual(again_calls, [])
+        self.assertEqual(second, first)
+        self.assertEqual(
+            len(list((self.output_root / "sec_nmfp").glob("*.zip"))), 1
+        )
+
+        # recheck re-earns both verdicts against the bytes.
+        recheck_downloader, recheck_calls = self._serve(payloads)
+        fetch_sec_nmfp_archives(
+            self.output_root,
+            first,
+            downloader=recheck_downloader,
+            recheck=True,
+            pause_seconds=0,
+        )
+        self.assertCountEqual(recheck_calls, [readable_url, refused_url])
+
+    def test_a_changed_digest_is_a_changed_source_and_raises(self):
+        url = f"{self.SEC_URL}new.zip"
+        downloader, _calls = self._serve({url: self.readable})
+        record = ArchiveRecord(url=url, sha256="0" * 64, byte_count=1)
+        with self.assertRaisesRegex(ValueError, r"no longer matches its recorded digest"):
+            fetch_sec_nmfp_archives(
+                self.output_root, [record], downloader=downloader, pause_seconds=0
+            )
+
+    def test_the_manifest_round_trips_and_rejects_an_empty_declaration(self):
+        path = self.output_root / "archives.json"
+        records = (
+            ArchiveRecord(
+                url=f"{self.SEC_URL}b.zip",
+                sha256="b" * 64,
+                byte_count=2,
+                first_retrieved_at="2026-09-07T00:00:00+00:00",
+            ),
+            ArchiveRecord(
+                url=f"{self.SEC_URL}a.zip",
+                sha256="a" * 64,
+                byte_count=1,
+                first_retrieved_at="2026-09-07T00:00:00+00:00",
+                refusals=("lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
+            ),
+        )
+        write_sec_nmfp_archive_manifest(records, path)
+        loaded = load_sec_nmfp_archive_manifest(path)
+        self.assertEqual([item.url for item in loaded], sorted(item.url for item in records))
+        self.assertEqual([item.admitted for item in loaded], [False, True])
+
+        # A declared set of nothing is not a source with no history; it is a
+        # source nobody has described, and must not read as the former.
+        empty = self.output_root / "empty.json"
+        empty.write_text(json.dumps({"archives": []}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, r"declares no archives"):
+            load_sec_nmfp_archive_manifest(empty)
+
+    def test_the_committed_manifest_describes_the_declared_history(self):
+        records = load_sec_nmfp_archive_manifest()
+        self.assertTrue(
+            all(record.url.startswith("https://www.sec.gov/") for record in records)
+        )
+        # Every entry has been fetched at least once, so no entry is in the
+        # "declared but never looked at" state that would make its refusal list
+        # meaningless.
+        self.assertEqual([r.url for r in records if not r.sha256], [])
+        admitted = [record for record in records if record.admitted]
+        self.assertGreater(
+            len(admitted),
+            0,
+            "the declared archive set admits nothing, so the source has no history",
+        )
+        refused = [record for record in records if record.refusals]
+        self.assertGreater(
+            len(refused),
+            0,
+            "no declared archive is refused, so this record is not distinguishing "
+            "the schema eras the backfill found",
+        )
+
+    def test_the_refusal_report_names_every_problem_not_just_the_first(self):
+        rewritten = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(self.readable)) as original:
+            with zipfile.ZipFile(rewritten, "w") as archive:
+                for name in original.namelist():
+                    if name == "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv":
+                        continue
+                    payload = original.read(name)
+                    if name == "NMFP_SUBMISSION.tsv":
+                        header, rows = payload.decode("utf-8").split("\n", 1)
+                        payload = f"{header.replace('FILING_DATE', 'FILED')}\n{rows}".encode()
+                    archive.writestr(name, payload)
+        # `_nmfp_table` stops at the first problem, which is right for a parse.
+        # A verdict recorded in the manifest has to name all of them: an archive
+        # from a schema nobody here has seen should be describable in one pass.
+        self.assertEqual(
+            nmfp_schema_refusals(rewritten.getvalue()),
+            (
+                "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",
+                "NMFP_SUBMISSION.tsv lacks required columns FILING_DATE",
+            ),
+        )
+
+    def test_a_response_that_is_not_a_zip_is_refused_rather_than_crashing(self):
+        self.assertEqual(
+            nmfp_schema_refusals(b"<html>rate limited</html>"),
+            ("not a valid ZIP archive",),
+        )
+
+
+class OverlappingArchiveTests(unittest.TestCase):
+    """Two archives carrying one report date must not double count it.
+
+    `_sec_nmfp_rows` adds every accession's values together, which is what
+    aggregating a cross-section means -- across series. Across a series and its
+    own amendment it is a double count: `N-MFP3/A` is a second accession
+    restating the first, and the restated balance sheet gets booked on top of the
+    one it replaces. On a single archive this never happened, because a bulk
+    extract covers a filing window and an amendment falls in a later window than
+    its original. Backfilling makes overlap the normal case: a quarterly set and
+    the monthly sets after it carry the same report month, and stragglers and
+    amendments arrive in adjacent archives.
+
+    The composition of the two mechanisms is what is under test here. Within an
+    archive, `_resolve_nmfp_submissions` keeps the latest filing per (series,
+    report date). Across archives, the revision logic in `parse_snapshots`
+    appends a changed value as a new vintage rather than adding it. Neither half
+    is sufficient alone and neither had ever been exercised.
+
+    Mutation record
+    ---------------
+    Filled in below after the mutation run.
+    """
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        # Three series file for one report month. The floor is set to their
+        # count, so both cross-sections are admitted and the test is about
+        # arithmetic rather than about coverage.
+        self.registry_path = registry_with_nmfp_coverage_floor(self.output_root, 3)
+
+    #: Three series file for one report month.
+    #:
+    #: `S000000001` files once and is the control.
+    #: `S000000002` is amended in the later archive, a month after the fact --
+    #:   the ordinary case, and the one that decides original versus amendment.
+    #: `S000000003` files twice on the same day, so filing date cannot separate
+    #:   them and the accession tie-break is the only thing that does. Without it
+    #:   the winner is whichever row the archive happened to list first.
+    ORIGINALS = (
+        ("0000000000-23-000001", "S000000001", "10-FEB-2023", "N-MFP3", 1),
+        ("0000000000-23-000002", "S000000002", "10-FEB-2023", "N-MFP3", 2),
+        ("0000000000-23-000003", "S000000003", "10-FEB-2023", "N-MFP3", 3),
+        ("0000000000-23-000009", "S000000003", "10-FEB-2023", "N-MFP3", 30),
+    )
+    #: Filed a month later, restating `S000000002` tenfold.
+    AMENDMENT = ("0000000000-23-000099", "S000000002", "15-MAR-2023", "N-MFP3/A", 20)
+
+    @staticmethod
+    def _submissions(entries):
+        return [
+            {
+                "accession": accession,
+                "series": series,
+                "report": "31-JAN-2023",
+                "filing": filing,
+                "submission_type": submission_type,
+                "net_assets": billions * 1_000_000_000,
+            }
+            for accession, series, filing, submission_type, billions in entries
+        ]
+
+    def _archive(self, name, entries, retrieved_at):
+        artifact = fetch_sec_nmfp(
+            self.output_root / name,
+            f"https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/{name}.zip",
+            lambda url: nmfp_archive(self._submissions(entries)),
+        )[0]
+        # Retrieval order is what orders vintages, and two fetches in one test run
+        # are microseconds apart. Declaring the timestamps keeps the assertion
+        # about the adapter rather than about clock resolution.
+        return replace(artifact, retrieved_at=retrieved_at)
+
+    @staticmethod
+    def _latest_vintages(rows):
+        latest = {}
+        for row in rows:
+            key = (row.series_id, row.ref_date)
+            previous = latest.get(key)
+            if previous is None or row.available_at > previous.available_at:
+                latest[key] = row
+        return latest
+
+    def test_overlapping_archives_do_not_double_count_a_report_date(self):
+        quarterly = self._archive(
+            "quarterly", self.ORIGINALS, "2026-03-01T00:00:00+00:00"
+        )
+        monthly = self._archive(
+            "monthly",
+            self.ORIGINALS + (self.AMENDMENT,),
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [quarterly, monthly], registry_path=self.registry_path
+        )
+        ref_date = date(2023, 1, 31)
+        rows = [row for row in parsed.rows if row.ref_date == ref_date]
+
+        # No series is observed twice with one availability timestamp. A sum
+        # across archives is otherwise indistinguishable from a single value.
+        stamped = [(row.series_id, row.available_at) for row in rows]
+        self.assertCountEqual(stamped, set(stamped))
+
+        latest = self._latest_vintages(rows)
+        net_assets = latest[("mmf_net_assets", ref_date)]
+        # 1 + 20 + 30. Every wrong rule lands somewhere else and is named here so
+        # a future reader can tell which one broke:
+        #   56.0  no supersession -- every accession added
+        #    6.0  earliest filing wins -- the amendment discarded
+        #   24.0  no accession tie-break -- S000000003's first-listed row wins
+        self.assertEqual(net_assets.value, 51.0)
+        monthly_available = datetime(2026, 4, 1, tzinfo=timezone.utc)
+        self.assertEqual(net_assets.available_at, monthly_available)
+        self.assertEqual(net_assets.vintage_id, "2026-04-01T00:00:00+00:00")
+
+        # The earlier archive stays in the panel as the earlier vintage, so the
+        # correction is attributable rather than silent. 1 + 2 + 30.
+        first = min(
+            (row for row in rows if row.series_id == "mmf_net_assets"),
+            key=lambda row: row.available_at,
+        )
+        self.assertEqual(first.value, 33.0)
+        self.assertEqual(first.available_at, datetime(2026, 3, 1, tzinfo=timezone.utc))
+        self.assertLess(first.available_at, monthly_available)
+
+        # Every derived series resolves the same way, not just the balance-sheet
+        # total: the fixture gives each filer treasuries of half its net assets
+        # and a Federal Reserve repo of a quarter.
+        self.assertEqual(latest[("mmf_treasury_holdings", ref_date)].value, 25.5)
+        self.assertEqual(latest[("mmf_repo_holdings", ref_date)].value, 12.75)
+        self.assertEqual(latest[("mmf_on_rrp", ref_date)].value, 12.75)
+
+        # Superseded submissions leave the values but stay in the corroborating
+        # record: three reporting series either way, four submissions then five.
+        coverage = [item for item in parsed.coverage if item.ref_date == ref_date]
+        self.assertEqual([item.entity_count for item in coverage], [3, 3])
+        self.assertEqual(
+            [dict(item.submission_types) for item in coverage],
+            [{"N-MFP3": 4}, {"N-MFP3": 4, "N-MFP3/A": 1}],
+        )
 
 
 class CrossSectionCoverageTests(unittest.TestCase):
