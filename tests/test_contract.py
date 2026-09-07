@@ -201,7 +201,7 @@ import sys
 import textwrap
 import tempfile
 import unittest
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
@@ -286,15 +286,19 @@ def perturb_after(rows, cutoff_index, shock_bps=250.0):
     return perturbed
 
 
-def residual_window(rows, forecast_index):
-    """One-step residuals a forecast for `forecast_index` is entitled to see.
+def residual_window(rows, train_end):
+    """One-step residuals a forecast trained through `train_end` may see.
 
-    Everything strictly before the forecast date, and nothing else.
+    Everything strictly inside the training frame, and nothing else. Under a
+    purge the frame no longer ends the day before the scored day, so the bound
+    is the fold's last training index rather than the forecast index -- the same
+    "everything the forecaster was allowed to have seen", stated where the gap
+    has moved it to.
     """
 
     return [
         rows[j].spread_bps - rows[j - 1].spread_bps
-        for j in range(1, forecast_index)
+        for j in range(1, train_end + 1)
     ]
 
 
@@ -336,17 +340,21 @@ class EligibilityTests(unittest.TestCase):
         """
 
         rows = load_sample()
-        full = rolling_persistence_backtest(
+        full = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
 
-        for cutoff_position in range(MINIMUM_HISTORY, len(rows)):
-            truncated = rolling_persistence_backtest(
+        # The sweep starts where a purged run first has a fold at all. Under a
+        # gap the first origins are spent clearing it, so the shortest prefixes
+        # yield nothing and `rolling_origin` refuses them -- correctly, and not
+        # a fact about eligibility. `full` is unaffected; only the prefixes that
+        # cannot be scored are skipped.
+        shortest = MINIMUM_HISTORY + CONTRACT_PURGE + 1
+        for cutoff_position in range(shortest, len(rows)):
+            truncated = contract_backtest(
                 rows[: cutoff_position + 1],
-                purge=0,
                 minimum_history=MINIMUM_HISTORY,
                 interval_probability=INTERVAL_PROBABILITY,
             )
@@ -370,15 +378,13 @@ class FuturePerturbationTests(unittest.TestCase):
         forecast_index = cutoff_index + 1
         position = forecast_index - MINIMUM_HISTORY
 
-        baseline = rolling_persistence_backtest(
+        baseline = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
-        shocked = rolling_persistence_backtest(
+        shocked = contract_backtest(
             perturb_after(rows, cutoff_index),
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
@@ -391,33 +397,32 @@ class FuturePerturbationTests(unittest.TestCase):
 
     def test_every_forecast_at_or_before_the_cutoff_is_bit_identical(self):
         rows = load_sample()
-        baseline = rolling_persistence_backtest(
+        baseline = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts
         for cutoff_index in range(MINIMUM_HISTORY, len(rows) - 1):
-            shocked = rolling_persistence_backtest(
+            shocked = contract_backtest(
                 perturb_after(rows, cutoff_index),
-                purge=0,
                 minimum_history=MINIMUM_HISTORY,
                 interval_probability=INTERVAL_PROBABILITY,
             ).forecasts
 
-            # A forecast at panel index i uses rows[0..i-1]: rows[i-1] for the
-            # point, rows[0..i-1] for the residual quantile. Only `actual_bps`
-            # touches rows[i]. So every forecast through index cutoff_index + 1
-            # -- including the T+1 forecast the contract names -- must hold.
+            # A forecast whose fold reads no row after `cutoff_index` must be
+            # bit-identical. Under a gap the fold is no longer `rows[0..i-1]`
+            # with feature row `rows[i-1]`, so the bound is taken from the folds
+            # themselves rather than from `cutoff_index - MINIMUM_HISTORY`.
             #
-            # The `+ 2` is load-bearing. Under the residual-ordering leak in
-            # the module docstring, this sweep fails at `+ 2` (cutoff
-            # 2026-01-16, forecast 1: upper 128.0 against 4.0) and passes at
-            # `+ 1`, because `+ 1` stops one slot short of the T+1 forecast --
-            # exactly the slot the contract names. The leak is caught by two
-            # other tests either way, so `+ 2` is not the suite's only line of
-            # defence; it is what makes this test carry its own weight.
-            unaffected = cutoff_index - MINIMUM_HISTORY + 2
+            # This is the old `cutoff_index - MINIMUM_HISTORY + 2` restated
+            # against purged folds, and it still reaches the T+1 forecast the
+            # contract names -- the reach the `+ 2` was load-bearing for. At a
+            # gap of zero the two expressions are equal: fold `i` trained on
+            # `rows[0..i-1]`, so `train[-1] <= cutoff_index` counts exactly
+            # `cutoff_index - MINIMUM_HISTORY + 2` folds. Under a gap the fold
+            # is the only thing that knows which rows a forecast read.
+            folds = contract_folds(rows, MINIMUM_HISTORY)
+            unaffected = sum(1 for train, _ in folds if train[-1] <= cutoff_index)
             for position in range(unaffected):
                 self.assertEqual(
                     (
@@ -441,15 +446,13 @@ class FuturePerturbationTests(unittest.TestCase):
 
         rows = load_sample()
         cutoff_index = 15
-        shocked = rolling_persistence_backtest(
+        shocked = contract_backtest(
             perturb_after(rows, cutoff_index),
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
-        baseline = rolling_persistence_backtest(
+        baseline = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
@@ -480,17 +483,20 @@ class TransformIsolationTests(unittest.TestCase):
 
     def test_interval_matches_parameters_refit_on_the_training_window(self):
         rows = load_sample()
-        report = rolling_persistence_backtest(
+        report = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         )
 
-        for position, forecast in enumerate(report.forecasts):
-            forecast_index = MINIMUM_HISTORY + position
-            window = residual_window(rows, forecast_index)
-            prediction = rows[forecast_index - 1].spread_bps
+        for forecast, (train_indices, _) in zip(
+            report.forecasts, contract_folds(rows, MINIMUM_HISTORY)
+        ):
+            # The last row that cleared the gap. Under a purge this is not the
+            # day before the scored day, and the residual window the forecaster
+            # was entitled to see ends there too.
+            window = residual_window(rows, train_indices[-1])
+            prediction = rows[train_indices[-1]].spread_bps
 
             self.assertEqual(forecast.predicted_bps, prediction)
             self.assertEqual(
@@ -512,11 +518,14 @@ class TransformIsolationTests(unittest.TestCase):
         """
 
         rows = perturb_after(load_sample(), cutoff_index=15)
-        forecast_index = MINIMUM_HISTORY + 2
-        position = forecast_index - MINIMUM_HISTORY
+        # An early forecast, taken with its fold rather than by index
+        # arithmetic: under a gap the third scored day is not trained through
+        # `MINIMUM_HISTORY + 1`.
+        position = 2
+        train_indices, _ = contract_folds(rows, MINIMUM_HISTORY)[position]
 
-        window = residual_window(rows, forecast_index)
-        full_sample = residual_window(rows, len(rows))
+        window = residual_window(rows, train_indices[-1])
+        full_sample = residual_window(rows, len(rows) - 1)
 
         self.assertNotEqual(
             _quantile(window, UPPER_LEVEL),
@@ -524,13 +533,12 @@ class TransformIsolationTests(unittest.TestCase):
             msg="test panel cannot distinguish window fitting from full-sample fitting",
         )
 
-        forecast = rolling_persistence_backtest(
+        forecast = contract_backtest(
             rows,
-            purge=0,
             minimum_history=MINIMUM_HISTORY,
             interval_probability=INTERVAL_PROBABILITY,
         ).forecasts[position]
-        prediction = rows[forecast_index - 1].spread_bps
+        prediction = rows[train_indices[-1]].spread_bps
         self.assertEqual(
             forecast.upper_bps, prediction + _quantile(window, UPPER_LEVEL)
         )
@@ -585,22 +593,24 @@ class TransformIsolationTests(unittest.TestCase):
             )
             self.assertAlmostEqual(model.imputations[name], window_mean, places=12)
 
-        # The same window reached through the full pipeline. The backtest's last
-        # origin trains on rows[:-1], so a standalone fit on those rows must
-        # produce the parameters the reported model carries -- the "equal to the
-        # parameters produced by the full pipeline on that window" half.
-        report = rolling_persistence_backtest(
+        # The same window reached through the full pipeline. Under a gap the
+        # backtest's last origin no longer trains on `rows[:-1]` -- it trains on
+        # the last fold's own rows -- so the standalone fit is made on those.
+        # The half being checked is unchanged: nothing about running the
+        # backtest over a longer panel may reach back into a fit.
+        report = contract_backtest(
             rows,
-            purge=0,
             minimum_history=20,
             fit_model=partial(fit_arx, regressors=CONFORMANCE_REGRESSORS),
         )
-        standalone = fit_arx(rows[:-1], CONFORMANCE_REGRESSORS, minimum_history=20)
+        last_train, _ = contract_folds(rows, 20)[-1]
+        last_frame = [rows[i] for i in last_train]
+        standalone = fit_arx(last_frame, CONFORMANCE_REGRESSORS, minimum_history=20)
         self.assertEqual(dict(report.model.imputations), dict(standalone.imputations))
         for name in CONFORMANCE_REGRESSORS:
             self.assertAlmostEqual(
                 report.model.imputations[name],
-                observed_mean(rows[:-1], name),
+                observed_mean(last_frame, name),
                 places=12,
             )
         self.assertEqual(report.model.coefficients, standalone.coefficients)
@@ -1011,6 +1021,73 @@ def distinct_residual_frame(count=60, seed=20260908):
 #: declared feature set would have to say before this could stop being a
 #: call-site constant.
 CONFORMANCE_REGRESSORS = ("sofr_volume", "on_rrp")
+
+#: What the backtests below declare, and the gap they are pinned at.
+#:
+#: `rolling_persistence_backtest` no longer takes a `purge`: it takes a declared
+#: feature set, resolves it through `contract.sources_for_features`, and sizes
+#: the gap with `registry.max_release_lag_days`. The tests in this file are
+#: about eligibility, future perturbation and transform isolation rather than
+#: about the derivation, so they need a *known* gap -- and the only way to state
+#: one now is to declare a registry that produces it.
+#:
+#: **The gap is 1, not 0.** `max_release_lag_days` refuses to return zero
+#: ("selected sources must produce a nonzero purge"), so an unpurged backtest is
+#: no longer expressible through the declared path at all. Every assertion below
+#: that used to read `rows[i - 1]` therefore reads the fold's own last training
+#: row instead. That is a change in the arithmetic these tests do, not in what
+#: they claim: a leak still shows up as a forecast that moved.
+CONTRACT_FEATURES = ("spread_bps",) + CONFORMANCE_REGRESSORS
+CONTRACT_PURGE = 1
+CONTRACT_DECISION_TIME = time(16, 0)
+
+
+def contract_registry(purge=CONTRACT_PURGE, features=CONTRACT_FEATURES):
+    """A registry pricing every source `features` uses at exactly `purge` days.
+
+    A fixture. It is not `metadata/sources.json` and does not describe it: the
+    real registry declares `fred_macro_latest_vintage` on a
+    `snapshot_retrieved_at` basis, which `max_release_lag_days` refuses to price
+    without an `available_at` on every row -- so against the real file no
+    feature set containing `spread_bps` runs at all. That refusal is a correct
+    guard and is pinned in `tests/test_baseline.py` and `tests/test_cli_eval.py`
+    rather than softened here.
+    """
+
+    return {
+        source: {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": purge,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        }
+        for source in sources_for_features(features)
+    }
+
+
+def contract_backtest(rows, **kwargs):
+    """`rolling_persistence_backtest` at `CONTRACT_PURGE`, declared honestly."""
+
+    return rolling_persistence_backtest(
+        rows,
+        features=CONTRACT_FEATURES,
+        registry=contract_registry(),
+        decision_time=CONTRACT_DECISION_TIME,
+        **kwargs,
+    )
+
+
+def contract_folds(rows, minimum_history):
+    """The folds `contract_backtest` runs over, enumerated independently."""
+
+    return list(
+        rolling_origin(
+            [row.date for row in rows], minimum_history, 1, CONTRACT_PURGE
+        )
+    )
 
 
 class ForecastInterfaceConformance:
