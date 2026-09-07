@@ -97,6 +97,11 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence, Tuple
 
+from .contract import (
+    EVENT_WINDOW_KEYS,
+    event_window_digest,
+    validate_event_windows_document,
+)
 from .splits import (
     LookAheadError,
     SplitError,
@@ -118,6 +123,7 @@ __all__ = [
     "config_digest",
     "evaluate_event_window",
     "load_event_windows",
+    "load_events_file",
     "read_journal",
 ]
 
@@ -237,15 +243,26 @@ class EventWindowReport:
 
 
 def load_event_windows(payload: Any) -> Tuple[EventWindow, ...]:
-    """Parse already-loaded event metadata into windows.
+    """Parse already-loaded event metadata into windows, verifying each digest.
 
     Takes the decoded object, not a path. `metadata/events.json` is Track A's
-    file and does not exist yet; baking its location in here would make this
-    module wrong the moment the file moves, and would let a test pass against a
-    fixture that no longer resembles the real thing. The caller reads the file.
+    file, and hard-coding its location here would make this module wrong the
+    moment the file moves, and would let a test pass against a fixture that no
+    longer resembles the real thing. `load_events_file` is the path-taking
+    entry point, and the path is *its* caller's argument for the same reason.
 
-    Every field is required. A window missing its `checksum` cannot be shown to
-    be the window that was declared, which is the whole point of pinning one.
+    Every field is required, and the `checksum` is checked rather than merely
+    demanded. Requiring the key detects an author who forgot it and nothing
+    else: a window whose `start` moved and whose digest did not still loaded
+    and still scored, which is the edit `AGENT_CONTRACT.md`, "Decided: the
+    event-window checksum", says the checksum exists to catch. The digest is
+    `repo_model.contract.event_window_digest`, imported rather than restated --
+    a second correct reading of a shared shape is the collision that decision
+    was written to end, and it agrees until it does not.
+
+    The digest is computed over the ISO strings **as written**, never over the
+    parsed dates: what is hashed has to be what the file carries, without a
+    parse step in between that could normalise one and not the other.
     """
 
     if isinstance(payload, Mapping):
@@ -262,7 +279,7 @@ def load_event_windows(payload: Any) -> Tuple[EventWindow, ...]:
     for position, entry in enumerate(entries):
         if not isinstance(entry, Mapping):
             raise SplitError(f"window {position} is not an object")
-        missing = [key for key in ("name", "start", "end", "checksum") if key not in entry]
+        missing = [key for key in EVENT_WINDOW_KEYS if key not in entry]
         if missing:
             raise SplitError(f"window {position} is missing {', '.join(missing)}")
         try:
@@ -276,8 +293,58 @@ def load_event_windows(payload: Any) -> Tuple[EventWindow, ...]:
         if name in seen:
             raise SplitError(f"duplicate window name {name!r}")
         seen.add(name)
-        windows.append(EventWindow(name, start, end, str(entry["checksum"])))
+
+        checksum = str(entry["checksum"])
+        for key in ("name", "start", "end"):
+            if not isinstance(entry[key], str):
+                raise SplitError(
+                    f"window {name!r} has a non-string {key}: {entry[key]!r}; the "
+                    "digest is taken over the strings the file carries, so a "
+                    "value that was not written as one cannot be verified"
+                )
+        expected = event_window_digest(entry["name"], entry["start"], entry["end"])
+        if checksum != expected:
+            raise SplitError(
+                f"window {name!r} checksum {checksum!r} does not match its "
+                f"boundaries; expected {expected!r}. Either an edge moved "
+                "without the digest being recomputed, or the digest is not "
+                "event_window_digest(name, start, end)"
+            )
+
+        windows.append(EventWindow(name, start, end, checksum))
     return tuple(windows)
+
+
+def load_events_file(path: Path) -> Tuple[EventWindow, ...]:
+    """Read one declared event-window file and return its windows.
+
+    `path` is the caller's argument and has no default. `metadata/events.json`
+    is Track A's file; model-eval naming its location would be model-eval
+    deciding Track A's layout, which is the reason `load_event_windows` takes a
+    payload rather than a path in the first place. That reasoning did not
+    expire when the file became real -- it is exactly then that a hard-coded
+    location starts being obeyed.
+
+    The document is checked against `contract.validate_event_windows_document`,
+    which reports every fault at once rather than raising on the first, so a
+    malformed file is fixed in one pass instead of one key per run. If anything
+    is wrong the raise names all of it; the per-window digest is then verified
+    again by `load_event_windows`, which is not redundant -- the bare-list form
+    reaches that check without passing through this function at all.
+
+    Raises:
+        SplitError: the document does not conform, in any respect.
+    """
+
+    location = Path(path)
+    payload = json.loads(location.read_text(encoding="utf-8"))
+    problems = validate_event_windows_document(payload)
+    if problems:
+        raise SplitError(
+            f"{location} does not conform to the event-window contract:\n  - "
+            + "\n  - ".join(problems)
+        )
+    return load_event_windows(payload)
 
 
 # --------------------------------------------------------------------------

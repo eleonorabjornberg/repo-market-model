@@ -38,9 +38,14 @@ a function of the boundaries themselves. So:
     checksum = sha256(json.dumps({name, start, end},
                                  sort_keys=True, separators=(",", ":")))
 
-over exactly those three fields, dates as their ISO strings. `window_digest`
-below is the normative implementation -- Track A should call an equivalent when
-writing the file, and `ChecksumIntegrityTests` is what checks the two agree.
+over exactly those three fields, dates as their ISO strings.
+`repo_model.contract.event_window_digest` is the normative implementation --
+this file wrote it while `metadata/events.json` was still hypothetical, and it
+moved to `contract.py` unchanged under `AGENT_CONTRACT.md`, "It is a shared
+shape, so it moves": Track A writes the file and Track B reads it, so the rule
+belongs where neither track can edit it and both must import it. What this file
+holds is the assertions *through* that function, not a second reading of it.
+`ChecksumIntegrityTests` is what checks it does what this prose says.
 Moving an edge without recomputing the digest now fails validation; moving an
 edge *and* recomputing it changes a value that is in git and in every journal
 line that ever scored the old window, which is a trace, which is all a checksum
@@ -89,7 +94,6 @@ these tests run unconditionally. The skip is what keeps this branch green in
 isolation, not a way for the file to go missing unnoticed.
 """
 
-import hashlib
 import io
 import json
 import sys
@@ -100,7 +104,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model.event_eval import EventWindow, SplitError, load_event_windows
+from repo_model.contract import (
+    EVENT_WINDOW_KEYS,
+    event_window_digest,
+    validate_event_windows_document,
+)
+from repo_model.event_eval import (
+    EventWindow,
+    SplitError,
+    load_event_windows,
+    load_events_file,
+)
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -109,147 +123,6 @@ EVENTS_PATH = REPO_ROOT / "metadata" / "events.json"
 #: Window names the contract itself names, so requiring them here is not this
 #: file inventing a declaration. The *dates* behind them are not specified.
 REQUIRED_WINDOWS = ("sep-2019", "mar-2020")
-
-#: Keys every window must carry. Extra keys are permitted -- Track A may want a
-#: rationale, a source citation, a revision note -- and model-eval ignores them.
-REQUIRED_WINDOW_KEYS = ("name", "start", "end", "checksum")
-
-
-def window_digest(name, start, end):
-    """The normative per-window checksum. See "What the checksum is *of*".
-
-    Args:
-        name: the window's stable slug.
-        start, end: ISO date strings, `YYYY-MM-DD`. Strings rather than `date`
-            objects on purpose: the digest must be computable from the file's
-            own bytes without a parse step that could normalise something, so
-            what is hashed is what is written.
-
-    Returns:
-        Lowercase hex SHA-256, 64 characters.
-    """
-
-    canonical = json.dumps(
-        {"name": name, "start": start, "end": end},
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
-def validate_events_document(payload):
-    """Every way `payload` fails the spec, as a list of readable problems.
-
-    Returns a list rather than raising so a malformed file reports all of its
-    faults in one run. Track A should not have to fix one key, re-run, and
-    discover the next. An empty list means conforming.
-    """
-
-    problems = []
-
-    if not isinstance(payload, dict):
-        return [
-            "document must be a JSON object with 'version' and 'windows', got "
-            f"{type(payload).__name__}; the bare-list form load_event_windows "
-            "also accepts is for fixtures, not for the declared file, because a "
-            "list has nowhere to carry a version"
-        ]
-
-    if "version" not in payload:
-        problems.append(
-            "document has no 'version'; the contract requires the file be versioned"
-        )
-    elif not isinstance(payload["version"], (int, str)) or not str(
-        payload["version"]
-    ).strip():
-        problems.append(
-            f"'version' must be a non-empty int or string, got {payload['version']!r}"
-        )
-
-    entries = payload.get("windows")
-    if entries is None:
-        problems.append("document has no 'windows'")
-        return problems
-    if not isinstance(entries, list) or not entries:
-        problems.append("'windows' must be a non-empty list")
-        return problems
-
-    seen_names = set()
-    parsed = []
-    for position, entry in enumerate(entries):
-        label = f"window {position}"
-        if not isinstance(entry, dict):
-            problems.append(f"{label} is not an object")
-            continue
-
-        missing = [key for key in REQUIRED_WINDOW_KEYS if key not in entry]
-        if missing:
-            problems.append(f"{label} is missing {', '.join(missing)}")
-            continue
-
-        name = entry["name"]
-        label = f"window {name!r}"
-        if not isinstance(name, str) or not name.strip():
-            problems.append(f"{label} has a non-string or empty name")
-            continue
-        if name in seen_names:
-            problems.append(
-                f"{label} is declared twice; names identify windows in the journal"
-            )
-        seen_names.add(name)
-
-        boundaries = {}
-        for key in ("start", "end"):
-            raw = entry[key]
-            if not isinstance(raw, str):
-                problems.append(f"{label} has a non-string {key}: {raw!r}")
-                continue
-            try:
-                boundaries[key] = date.fromisoformat(raw)
-            except ValueError:
-                problems.append(
-                    f"{label} has a non-ISO {key}: {raw!r}, expected YYYY-MM-DD"
-                )
-        if len(boundaries) != 2:
-            continue
-        if boundaries["end"] < boundaries["start"]:
-            problems.append(
-                f"{label} ends {boundaries['end']} before it starts {boundaries['start']}"
-            )
-            continue
-
-        checksum = entry["checksum"]
-        if not isinstance(checksum, str) or not checksum.strip():
-            problems.append(f"{label} has a non-string or empty checksum")
-        else:
-            expected = window_digest(name, entry["start"], entry["end"])
-            if checksum != expected:
-                problems.append(
-                    f"{label} checksum {checksum!r} does not match its boundaries; "
-                    f"expected {expected!r}. Either an edge moved without the digest "
-                    "being recomputed, or the digest is not "
-                    "window_digest(name, start, end)"
-                )
-
-        parsed.append((name, boundaries["start"], boundaries["end"]))
-
-    ordered = sorted(parsed, key=lambda item: item[1])
-    if parsed != ordered:
-        problems.append(
-            "windows are not in ascending order of start date; the file is read "
-            "by humans checking that a boundary has not moved, and an unsorted "
-            "list makes that diff harder than it needs to be"
-        )
-    for earlier, later in zip(ordered, ordered[1:]):
-        if later[1] <= earlier[2]:
-            problems.append(
-                f"windows {earlier[0]!r} ({earlier[1]}..{earlier[2]}) and "
-                f"{later[0]!r} ({later[1]}..{later[2]}) overlap; a day in two "
-                "knowledge holdouts is scored twice and spends two budgets"
-            )
-
-    return problems
-
 
 # --------------------------------------------------------------------------
 # The reference document
@@ -271,7 +144,7 @@ WELL_FORMED = {
             "name": name,
             "start": start,
             "end": end,
-            "checksum": window_digest(name, start, end),
+            "checksum": event_window_digest(name, start, end),
         }
         for name, start, end in REFERENCE_WINDOWS
     ],
@@ -300,7 +173,7 @@ def resealed(index=0, **changes):
 
     document = variant(index, **changes)
     window = document["windows"][index]
-    window["checksum"] = window_digest(window["name"], window["start"], window["end"])
+    window["checksum"] = event_window_digest(window["name"], window["start"], window["end"])
     return document
 
 
@@ -308,20 +181,20 @@ class ReferenceDocumentTests(unittest.TestCase):
     """The spec accepts the document it holds out as conforming."""
 
     def test_the_reference_document_validates(self):
-        self.assertEqual(validate_events_document(WELL_FORMED), [])
+        self.assertEqual(validate_event_windows_document(WELL_FORMED), [])
 
     def test_the_reference_document_survives_a_json_round_trip(self):
         """It is a file on disk in the end, not a Python literal."""
 
         self.assertEqual(
-            validate_events_document(json.loads(json.dumps(WELL_FORMED))), []
+            validate_event_windows_document(json.loads(json.dumps(WELL_FORMED))), []
         )
 
     def test_extra_keys_on_a_window_are_permitted(self):
         """Track A may want a rationale or a citation; model-eval ignores them."""
 
         self.assertEqual(
-            validate_events_document(variant(0, rationale="repo spike", source="FRBNY")),
+            validate_event_windows_document(variant(0, rationale="repo spike", source="FRBNY")),
             [],
         )
 
@@ -347,7 +220,7 @@ class RejectedDocumentTests(unittest.TestCase):
     """
 
     def assertRejected(self, document, fragment):
-        problems = validate_events_document(document)
+        problems = validate_event_windows_document(document)
         self.assertTrue(
             problems, msg=f"expected a problem mentioning {fragment!r}, got none"
         )
@@ -376,7 +249,7 @@ class RejectedDocumentTests(unittest.TestCase):
         self.assertRejected({"version": 1, "windows": []}, "non-empty list")
 
     def test_a_window_missing_a_required_key_is_rejected(self):
-        for key in REQUIRED_WINDOW_KEYS:
+        for key in EVENT_WINDOW_KEYS:
             with self.subTest(missing=key):
                 document = json.loads(json.dumps(WELL_FORMED))
                 del document["windows"][0][key]
@@ -411,7 +284,7 @@ class RejectedDocumentTests(unittest.TestCase):
 
         document = json.loads(json.dumps(WELL_FORMED))
         window = {"name": "example-beta", "start": "2001-03-07", "end": "2001-03-20"}
-        window["checksum"] = window_digest(
+        window["checksum"] = event_window_digest(
             window["name"], window["start"], window["end"]
         )
         document["windows"][1] = window
@@ -422,7 +295,7 @@ class RejectedDocumentTests(unittest.TestCase):
 
         document = json.loads(json.dumps(WELL_FORMED))
         window = {"name": "example-beta", "start": "2001-03-09", "end": "2001-03-20"}
-        window["checksum"] = window_digest(
+        window["checksum"] = event_window_digest(
             window["name"], window["start"], window["end"]
         )
         document["windows"][1] = window
@@ -435,14 +308,14 @@ class RejectedDocumentTests(unittest.TestCase):
         del document["version"]
         document["windows"][0]["start"] = "not-a-date"
         document["windows"][1]["checksum"] = ""
-        self.assertGreaterEqual(len(validate_events_document(document)), 3)
+        self.assertGreaterEqual(len(validate_event_windows_document(document)), 3)
 
 
 class ChecksumIntegrityTests(unittest.TestCase):
     """The checksum is load-bearing: it is a function of the boundaries."""
 
     def test_the_digest_is_lowercase_hex_sha256(self):
-        digest = window_digest("example-alpha", "2001-03-05", "2001-03-09")
+        digest = event_window_digest("example-alpha", "2001-03-05", "2001-03-09")
         self.assertEqual(len(digest), 64)
         self.assertEqual(digest, digest.lower())
         int(digest, 16)  # raises if it is not hex
@@ -455,7 +328,7 @@ class ChecksumIntegrityTests(unittest.TestCase):
         than as an opaque string.
         """
 
-        problems = validate_events_document(variant(0, start="2001-03-06"))
+        problems = validate_event_windows_document(variant(0, start="2001-03-06"))
         self.assertTrue(
             any("does not match its boundaries" in problem for problem in problems),
             msg=f"an edge moved and nothing objected; got {problems}",
@@ -464,7 +337,7 @@ class ChecksumIntegrityTests(unittest.TestCase):
     def test_every_edge_move_is_caught(self):
         for key, moved in (("start", "2001-03-04"), ("end", "2001-03-10")):
             with self.subTest(field=key):
-                problems = validate_events_document(variant(0, **{key: moved}))
+                problems = validate_event_windows_document(variant(0, **{key: moved}))
                 self.assertTrue(
                     any(
                         "does not match its boundaries" in problem
@@ -473,7 +346,7 @@ class ChecksumIntegrityTests(unittest.TestCase):
                 )
 
     def test_renaming_a_window_without_resealing_fails_validation(self):
-        problems = validate_events_document(variant(0, name="example-gamma"))
+        problems = validate_event_windows_document(variant(0, name="example-gamma"))
         self.assertTrue(
             any("does not match its boundaries" in problem for problem in problems)
         )
@@ -489,17 +362,17 @@ class ChecksumIntegrityTests(unittest.TestCase):
         expects the file alone to catch a resealed edit expects the wrong thing.
         """
 
-        self.assertEqual(validate_events_document(resealed(0, start="2001-03-06")), [])
+        self.assertEqual(validate_event_windows_document(resealed(0, start="2001-03-06")), [])
         self.assertNotEqual(
-            window_digest("example-alpha", "2001-03-05", "2001-03-09"),
-            window_digest("example-alpha", "2001-03-06", "2001-03-09"),
+            event_window_digest("example-alpha", "2001-03-05", "2001-03-09"),
+            event_window_digest("example-alpha", "2001-03-06", "2001-03-09"),
         )
 
     def test_the_digest_ignores_extra_keys(self):
         """A rationale can be reworded without invalidating the boundaries."""
 
         self.assertEqual(
-            validate_events_document(variant(0, rationale="revised wording")), []
+            validate_event_windows_document(variant(0, rationale="revised wording")), []
         )
 
 
@@ -522,7 +395,7 @@ class ConsumerCompatibilityTests(unittest.TestCase):
         for window, (name, start, end) in zip(
             load_event_windows(WELL_FORMED), REFERENCE_WINDOWS
         ):
-            self.assertEqual(window.checksum, window_digest(name, start, end))
+            self.assertEqual(window.checksum, event_window_digest(name, start, end))
 
     def test_loaded_windows_are_the_type_the_evaluator_requires(self):
         """`evaluate_event_window` takes an `EventWindow` and nothing else."""
@@ -549,22 +422,42 @@ class ConsumerCompatibilityTests(unittest.TestCase):
         }
         for description, document in broken.items():
             with self.subTest(document=description):
-                self.assertTrue(validate_events_document(document))
+                self.assertTrue(validate_event_windows_document(document))
                 with self.assertRaises(SplitError):
                     load_event_windows(document)
 
-    def test_the_loader_accepts_an_unchecksummed_edge_move_the_validator_catches(self):
-        """Where the two legitimately differ, stated rather than left implicit.
+    def test_the_loader_catches_the_unchecksummed_edge_move_the_validator_catches(self):
+        """The one place the two used to differ, closed.
 
-        `load_event_windows` does not verify digests -- it cannot, since it
-        takes a decoded object and has no opinion about how the checksum was
-        computed. That is why this validator exists, and why it is the thing
-        `metadata/events.json` is checked against, not the loader.
+        This test used to assert the opposite, and the reasoning behind it was
+        wrong rather than merely outdated: "`load_event_windows` does not verify
+        digests -- it cannot, since it takes a decoded object and has no opinion
+        about how the checksum was computed." Taking a decoded object was never
+        the obstacle. Having no opinion was, and the opinion existed the whole
+        time -- in this file, as the digest Track A's real checksums already
+        satisfied. `AGENT_CONTRACT.md`, "Decided: the event-window checksum",
+        moved it to `repo_model.contract` so the loader could hold it too.
+
+        What remains between them is reporting, not reach: the validator lists
+        every fault, the loader raises on the first. Neither now accepts a
+        window the other rejects.
         """
 
         moved = variant(0, start="2001-03-06")
-        self.assertTrue(validate_events_document(moved))
-        self.assertEqual(load_event_windows(moved)[0].start, date(2001, 3, 6))
+        self.assertTrue(validate_event_windows_document(moved))
+        with self.assertRaisesRegex(SplitError, "does not match its boundaries"):
+            load_event_windows(moved)
+
+    def test_the_two_differ_only_in_how_much_they_report(self):
+        """The honest remaining difference, stated so it is not mistaken for reach."""
+
+        broken = json.loads(json.dumps(WELL_FORMED))
+        del broken["version"]
+        broken["windows"][0]["start"] = "2001-03-06"
+
+        self.assertGreaterEqual(len(validate_event_windows_document(broken)), 2)
+        with self.assertRaises(SplitError):
+            load_event_windows(broken)
 
 
 class DeclaredFileTests(unittest.TestCase):
@@ -579,6 +472,14 @@ class DeclaredFileTests(unittest.TestCase):
     Still skips while the file is absent, so this branch is green in isolation.
     The moment the file appears it is held to the full spec, and a malformed one
     fails here with every fault listed at once.
+
+    The assertions are what they were. What changed is the route: each now goes
+    through `repo_model.event_eval.load_events_file`, the consumer's own
+    path-taking loader, rather than a `json.loads` in `setUp`. A spec that read
+    the file its own way was checking a document nothing in `src/` had agreed to
+    read, which is the narrower version of the mistake this whole block is
+    about. `EVENTS_PATH` is still resolved per call, so `MutationRecordTests`
+    can point it elsewhere.
     """
 
     def setUp(self):
@@ -588,28 +489,23 @@ class DeclaredFileTests(unittest.TestCase):
                 "write, and it is present on feature/data-layer, so this skip "
                 "should not survive the merge"
             )
-        try:
-            self.payload = json.loads(EVENTS_PATH.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            self.fail(f"metadata/events.json is not valid JSON: {exc}")
 
     def test_the_declared_file_conforms_to_this_spec(self):
-        problems = validate_events_document(self.payload)
-        self.assertEqual(
-            problems,
-            [],
-            msg="metadata/events.json does not conform:\n  - "
-            + "\n  - ".join(problems),
-        )
+        try:
+            load_events_file(EVENTS_PATH)
+        except json.JSONDecodeError as exc:
+            self.fail(f"metadata/events.json is not valid JSON: {exc}")
+        except SplitError as exc:
+            self.fail(str(exc))
 
     def test_the_declared_file_loads_into_event_windows(self):
-        windows = load_event_windows(self.payload)
+        windows = load_events_file(EVENTS_PATH)
         self.assertTrue(windows)
         for window in windows:
             self.assertIsInstance(window, EventWindow)
 
     def test_the_declared_file_names_the_windows_the_contract_names(self):
-        declared = {window.name for window in load_event_windows(self.payload)}
+        declared = {window.name for window in load_events_file(EVENTS_PATH)}
         for required in REQUIRED_WINDOWS:
             self.assertIn(
                 required,
@@ -643,7 +539,7 @@ def record_document():
                 "name": name,
                 "start": start,
                 "end": end,
-                "checksum": window_digest(name, start, end),
+                "checksum": event_window_digest(name, start, end),
             }
             for name, start, end in RECORD_WINDOWS
         ],
@@ -678,6 +574,19 @@ class MutationRecordTests(unittest.TestCase):
     half matters as much as the positive: a resealed edit is *not* caught, by
     design, and recording that keeps the checksum from being mistaken for more
     than it is.
+
+    Re-recorded 7 September 2026, after `load_event_windows` began verifying the
+    digest and the three assertions moved onto `load_events_file`. Two entries
+    changed, both widening: an unresealed edge move and a missing `version` are
+    now caught by all three rather than by the conformance test alone. That is
+    the guard doing its job, and it is also a loss of resolution worth stating
+    plainly -- once every assertion runs the whole document through one loader,
+    a document-level fault fails all three, and *which* of them fired stops
+    telling a reader anything about *what* is wrong. The entries that still
+    discriminate are the ones where the document is conforming and the fault is
+    in what it declares: a resealed edge move (caught by nothing) and a renamed
+    or dropped window (caught by the name check alone). Those are the rows this
+    record is now carrying.
     """
 
     def setUp(self):
@@ -752,13 +661,23 @@ class MutationRecordTests(unittest.TestCase):
 
         "What is not visible is March 2020 starting a week later than it used
         to, which quietly moves the worst days out of the scored window and into
-        the training set." Caught by the conformance test alone: the loader has
-        no opinion about checksums, and the name is untouched.
+        the training set."
+
+        Was caught by the conformance test alone, because "the loader has no
+        opinion about checksums, and the name is untouched". The loader has one
+        now -- `repo_model.contract.event_window_digest`, the same rule the
+        conformance test applies -- so all three fire. The extra two catch it as
+        a refusal to load rather than as a report of what is wrong; the
+        conformance test is still the one whose failure names the moved edge.
         """
 
         self.assertMutationCaughtBy(
             self.edited(start="1900-01-02"),
-            {"test_the_declared_file_conforms_to_this_spec"},
+            {
+                "test_the_declared_file_conforms_to_this_spec",
+                "test_the_declared_file_loads_into_event_windows",
+                "test_the_declared_file_names_the_windows_the_contract_names",
+            },
         )
 
     def test_a_resealed_edge_move_is_not_caught_and_that_is_the_honest_limit(self):
@@ -773,7 +692,7 @@ class MutationRecordTests(unittest.TestCase):
 
         payload = self.edited(start="1900-01-02")
         window = payload["windows"][0]
-        window["checksum"] = window_digest(
+        window["checksum"] = event_window_digest(
             window["name"], window["start"], window["end"]
         )
         self.assertMutationCaughtBy(payload, set())
@@ -790,7 +709,7 @@ class MutationRecordTests(unittest.TestCase):
         payload = record_document()
         window = payload["windows"][0]
         window["name"] = "sep-2019-revised"
-        window["checksum"] = window_digest(
+        window["checksum"] = event_window_digest(
             window["name"], window["start"], window["end"]
         )
         self.assertMutationCaughtBy(
@@ -809,12 +728,24 @@ class MutationRecordTests(unittest.TestCase):
         )
 
     def test_a_missing_version_is_caught(self):
-        """The contract requires the file be versioned."""
+        """The contract requires the file be versioned.
+
+        All three now, for the routing reason rather than a checksum one: the
+        version is a property of the document, `load_events_file` validates the
+        document before it parses anything, and every assertion goes through it.
+        A bare list would fail the same way, which is the point -- a list has
+        nowhere to carry a version.
+        """
 
         payload = record_document()
         del payload["version"]
         self.assertMutationCaughtBy(
-            payload, {"test_the_declared_file_conforms_to_this_spec"}
+            payload,
+            {
+                "test_the_declared_file_conforms_to_this_spec",
+                "test_the_declared_file_loads_into_event_windows",
+                "test_the_declared_file_names_the_windows_the_contract_names",
+            },
         )
 
     def test_a_malformed_date_is_caught_by_both_the_validator_and_the_loader(self):
