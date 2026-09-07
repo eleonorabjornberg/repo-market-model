@@ -439,3 +439,66 @@ rule, not a one-off for `release_lag`.
   the duplicated shape rules from its specs, and declare `timezone` in the
   fixture registries that now need one.
 - Neither track edits this file or `src/repo_model/contract.py`.
+
+## Decided: the event-window checksum
+
+`metadata/events.json` landed with a per-window `checksum`, and nothing in `src/`
+checks it. `load_event_windows` requires the key to be present and non-empty, which
+detects an author who forgot it and nothing else: a window whose `start` moved and
+whose digest did not still loads and still scores. A checksum that is only required,
+never verified, is a field that looks like a guard.
+
+### What the checksum is of
+
+    checksum = sha256(json.dumps({name, start, end},
+                                 sort_keys=True, separators=(",", ":")))
+
+Hex, lowercase, 64 characters. `start` and `end` are hashed as the ISO **strings the
+file carries**, not as parsed dates: the digest must be computable from the file's own
+bytes, without a parse step that could normalise something between what was written and
+what was hashed.
+
+This is not a new rule. It is the rule Track B wrote into
+`tests/test_events_metadata_spec.py` while `metadata/events.json` was still
+hypothetical, and Track A's file already satisfies it — both declared checksums verify
+unchanged. The decision here is only about where it lives.
+
+### It is a shared shape, so it moves
+
+Track A writes the file, Track B reads it. Under "The shape is executable, and owned by
+neither track" that makes it a shared shape, and the general rule applies without
+needing a ruling: it goes in `src/repo_model/contract.py`, which is stdlib-only,
+`HUMAN_ONLY` in the ownership gate, imported by both tracks and edited by neither.
+
+`src/repo_model/contract.py` now also holds:
+
+- `EVENT_WINDOW_KEYS` — `name`, `start`, `end`, `checksum`. Extra keys are permitted;
+  Track A may carry a rationale or a citation, and model-eval ignores them.
+- `event_window_digest(name, start, end)` — the digest above.
+- `validate_event_windows_document(payload)` — every way a document fails, as a list of
+  readable problems rather than a raise on the first, so a malformed file reports all of
+  its faults in one run.
+
+Left in `tests/test_events_metadata_spec.py`, it would have been the fourth semantic
+collision this project has paid for, and the first one visible far enough in advance to
+avoid.
+
+### Ownership of the follow-up
+
+- Track B: verify the checksum in `load_event_windows` through
+  `repo_model.contract.event_window_digest`; add a path-taking loader for the declared
+  file; delete the duplicated digest and validator from its spec file and assert through
+  the shared ones; recompute the placeholder checksums in its fixtures rather than
+  loosening the check.
+- Track A: nothing. `metadata/events.json` already conforms. A future edit to a window
+  boundary must recompute that window's digest, and
+  `validate_event_windows_document` will say so if it does not.
+- Neither track edits this file or `src/repo_model/contract.py`.
+
+### Still open, and not either track's to settle
+
+`src/repo_model/cli.py` is owned by neither track and is not in `SHARED`. The gate does
+not fail a branch that edits it and does not surface it for review either, so both tracks
+can edit it and nothing says so until the merge — the same hole as a field named in prose
+with no key name. Nothing needs the CLI yet; the event-holdout subcommand is held out of
+Track B's next block until this is assigned.

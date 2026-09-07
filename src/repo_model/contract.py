@@ -17,7 +17,10 @@ Stdlib only, by contract.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
+from datetime import date
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 __all__ = [
@@ -27,6 +30,9 @@ __all__ = [
     "AVAILABLE_TIME_RE",
     "validate_release_lag",
     "validate_registry_release_lags",
+    "EVENT_WINDOW_KEYS",
+    "event_window_digest",
+    "validate_event_windows_document",
 ]
 
 #: The three publication bases the contract recognises, and the day-count unit
@@ -199,3 +205,153 @@ def validate_registry_release_lags(registry: dict) -> dict[str, list[str]]:
         if problems:
             offenders[source_id] = problems
     return offenders
+
+
+#: Keys every declared window must carry. Extra keys are permitted — Track A
+#: may want a rationale, a source citation, a revision note — and model-eval
+#: ignores them.
+EVENT_WINDOW_KEYS = ("name", "start", "end", "checksum")
+
+
+def event_window_digest(name: str, start: str, end: str) -> str:
+    """The normative per-window checksum for `metadata/events.json`.
+
+    An opaque per-window `checksum` pins nothing: an edit that moves `start`
+    and leaves `checksum` alone yields a document that still validates. For the
+    checksum to detect the edit the contract is worried about, it has to be a
+    digest *of the boundaries*.
+
+    Args:
+        name: the window's stable slug.
+        start, end: ISO date strings, `YYYY-MM-DD`. Strings rather than `date`
+            objects on purpose — the digest must be computable from the file's
+            own bytes without a parse step that could normalise something, so
+            what is hashed is what is written.
+
+    Returns:
+        Lowercase hex SHA-256, 64 characters.
+    """
+
+    canonical = json.dumps(
+        {"name": name, "start": start, "end": end},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def validate_event_windows_document(payload: object) -> list[str]:
+    """Every way `payload` fails the event-window schema, as readable problems.
+
+    Returns a list rather than raising so a malformed file reports all of its
+    faults in one run. Track A should not have to fix one key, re-run, and
+    discover the next. An empty list means conforming.
+
+    The bare-list form that `load_event_windows` also accepts is for fixtures,
+    not for the declared file: a list has nowhere to carry a version.
+    """
+
+    problems: list[str] = []
+
+    if not isinstance(payload, dict):
+        return [
+            "document must be a JSON object with 'version' and 'windows', got "
+            f"{type(payload).__name__}; the bare-list form load_event_windows "
+            "also accepts is for fixtures, not for the declared file, because a "
+            "list has nowhere to carry a version"
+        ]
+
+    if "version" not in payload:
+        problems.append(
+            "document has no 'version'; the contract requires the file be versioned"
+        )
+    elif not isinstance(payload["version"], (int, str)) or not str(
+        payload["version"]
+    ).strip():
+        problems.append(
+            f"'version' must be a non-empty int or string, got {payload['version']!r}"
+        )
+
+    entries = payload.get("windows")
+    if entries is None:
+        problems.append("document has no 'windows'")
+        return problems
+    if not isinstance(entries, list) or not entries:
+        problems.append("'windows' must be a non-empty list")
+        return problems
+
+    seen_names = set()
+    parsed = []
+    for position, entry in enumerate(entries):
+        label = f"window {position}"
+        if not isinstance(entry, dict):
+            problems.append(f"{label} is not an object")
+            continue
+
+        missing = [key for key in EVENT_WINDOW_KEYS if key not in entry]
+        if missing:
+            problems.append(f"{label} is missing {', '.join(missing)}")
+            continue
+
+        name = entry["name"]
+        label = f"window {name!r}"
+        if not isinstance(name, str) or not name.strip():
+            problems.append(f"{label} has a non-string or empty name")
+            continue
+        if name in seen_names:
+            problems.append(
+                f"{label} is declared twice; names identify windows in the journal"
+            )
+        seen_names.add(name)
+
+        boundaries = {}
+        for key in ("start", "end"):
+            raw = entry[key]
+            if not isinstance(raw, str):
+                problems.append(f"{label} has a non-string {key}: {raw!r}")
+                continue
+            try:
+                boundaries[key] = date.fromisoformat(raw)
+            except ValueError:
+                problems.append(
+                    f"{label} has a non-ISO {key}: {raw!r}, expected YYYY-MM-DD"
+                )
+        if len(boundaries) != 2:
+            continue
+        if boundaries["end"] < boundaries["start"]:
+            problems.append(
+                f"{label} ends {boundaries['end']} before it starts {boundaries['start']}"
+            )
+            continue
+
+        checksum = entry["checksum"]
+        if not isinstance(checksum, str) or not checksum.strip():
+            problems.append(f"{label} has a non-string or empty checksum")
+        else:
+            expected = event_window_digest(name, entry["start"], entry["end"])
+            if checksum != expected:
+                problems.append(
+                    f"{label} checksum {checksum!r} does not match its boundaries; "
+                    f"expected {expected!r}. Either an edge moved without the digest "
+                    "being recomputed, or the digest is not "
+                    "event_window_digest(name, start, end)"
+                )
+
+        parsed.append((name, boundaries["start"], boundaries["end"]))
+
+    ordered = sorted(parsed, key=lambda item: item[1])
+    if parsed != ordered:
+        problems.append(
+            "windows are not in ascending order of start date; the file is read "
+            "by humans checking that a boundary has not moved, and an unsorted "
+            "list makes that diff harder than it needs to be"
+        )
+    for earlier, later in zip(ordered, ordered[1:]):
+        if later[1] <= earlier[2]:
+            problems.append(
+                f"windows {earlier[0]!r} ({earlier[1]}..{earlier[2]}) and "
+                f"{later[0]!r} ({later[1]}..{later[2]}) overlap; a day in two "
+                "knowledge holdouts is scored twice and spends two budgets"
+            )
+
+    return problems
