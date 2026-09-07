@@ -1,12 +1,21 @@
 """Shared contract fixtures, owned by neither track.
 
 This module exists because the ownership gate is path-level and cannot see a
-*semantic* collision. Three have now reached a merge on this project: the
-`release_lag` dict-versus-scalar incompatibility, the duplicate spec filename,
-and the `calendar`-versus-`unit` naming collision on the same field. Each time,
-both tracks stayed perfectly in lane and still shipped halves that do not
-compose, because AGENT_CONTRACT.md named a field in prose without giving it a
-key name, and each track picked its own.
+*semantic* collision. Four have been found on this project: the `release_lag`
+dict-versus-scalar incompatibility, the duplicate spec filename, the
+`calendar`-versus-`unit` naming collision on the same field, and the
+event-window digest. The first three reached a merge; the fourth was caught
+before one, by applying the rule below to a shape that had not yet collided.
+Each time, both tracks stayed perfectly in lane and still shipped halves that do
+not compose, because AGENT_CONTRACT.md named a field in prose without giving it
+a key name, and each track picked its own.
+
+What lives here, therefore, is every shape both tracks must agree on:
+the release-lag schema (`validate_release_lag`, `validate_registry_release_lags`
+and the vocabulary they check against) and the event-window schema
+(`EVENT_WINDOW_KEYS`, `event_window_digest`, `validate_event_windows_document`).
+Neither was invented here -- each was lifted from the track that had reasoned it
+through, unchanged except in name.
 
 The fix is to make the shared shape executable and put it where neither track
 owns it. Both tracks import this module; neither edits it. Changing it is a
