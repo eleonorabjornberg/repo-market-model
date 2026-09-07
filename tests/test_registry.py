@@ -6,22 +6,21 @@ from repo_model.registry import RegistryContractError, max_release_lag_days
 
 def source(
     basis,
-    calendar,
-    days,
-    available_time="12:00:00",
+    unit=None,
+    days=None,
+    available_time=None,
     timezone_name="America/New_York",
     **extra,
 ):
-    return {
-        "release_lag": {
-            "basis": basis,
-            "calendar": calendar,
-            "days": days,
-            "available_time": available_time,
-            "timezone": timezone_name,
-            **extra,
-        }
-    }
+    release_lag = {"basis": basis, **extra}
+    if unit is not None:
+        release_lag["unit"] = unit
+    if days is not None:
+        release_lag["days"] = days
+    if available_time is not None:
+        release_lag["available_time"] = available_time
+        release_lag["timezone"] = timezone_name
+    return {"release_lag": release_lag}
 
 
 class MaxReleaseLagDaysTests(unittest.TestCase):
@@ -46,7 +45,7 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 "record_date",
                 "calendar_days",
                 2,
-                available_time="16:00:00",
+                available_time="16:00",
             )
         }
 
@@ -63,15 +62,12 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
         registry = {
             "snapshot": source(
                 "snapshot_retrieved_at",
-                "none",
-                0,
-                available_time="00:00:00",
             ),
             "auction": source(
                 "record_date",
                 "calendar_days",
                 2,
-                available_time="10:00:00",
+                available_time="10:00",
             ),
         }
         selected = {
@@ -88,9 +84,6 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
         registry = {
             "snapshot": source(
                 "snapshot_retrieved_at",
-                "none",
-                0,
-                available_time="00:00:00",
             )
         }
 
@@ -108,9 +101,6 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
         registry = {
             "snapshot": source(
                 "snapshot_retrieved_at",
-                "none",
-                0,
-                available_time="00:00:00",
             )
         }
 
@@ -127,13 +117,49 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 with self.assertRaisesRegex(RegistryContractError, "at least one"):
                     max_release_lag_days({}, selected, decision_time=time(15))
 
+    def test_zero_purge_is_rejected_instead_of_returned(self):
+        registry = {
+            "already_available": source(
+                "record_date",
+                "calendar_days",
+                0,
+                available_time="09:00",
+            )
+        }
+
+        with self.assertRaisesRegex(RegistryContractError, "nonzero purge"):
+            max_release_lag_days(
+                registry,
+                ["already_available"],
+                decision_time=time(15),
+            )
+
+    def test_release_lag_shape_errors_come_from_the_shared_validator(self):
+        registry = {
+            "legacy": {
+                "release_lag": {
+                    "basis": "record_date",
+                    "calendar": "calendar_days",
+                    "days": 1,
+                    "available_time": "12:00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+        }
+
+        with self.assertRaisesRegex(
+            RegistryContractError,
+            "unknown release_lag keys.*unit.*HH:MM",
+        ):
+            max_release_lag_days(registry, ["legacy"], decision_time=time(15))
+
     def test_aware_decision_time_must_match_the_declared_timezone(self):
         registry = {
             "auction": source(
                 "record_date",
                 "calendar_days",
                 0,
-                available_time="16:00:00",
+                available_time="16:00",
             )
         }
 
@@ -150,13 +176,13 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 "record_date",
                 "calendar_days",
                 0,
-                available_time="09:00:00",
+                available_time="09:00",
             ),
             "utc": source(
                 "record_date",
                 "calendar_days",
                 0,
-                available_time="09:00:00",
+                available_time="09:00",
                 timezone_name="UTC",
             ),
         }
@@ -174,7 +200,7 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 "record_date",
                 "calendar_days",
                 2,
-                available_time="16:00:00",
+                available_time="16:00",
                 timezone_name="UTC",
             )
         }
@@ -194,7 +220,7 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 "record_date",
                 "calendar_days",
                 2,
-                available_time="10:00:00",
+                available_time="10:00",
             ),
             "unused": source(
                 "ref_date",

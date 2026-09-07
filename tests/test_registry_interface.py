@@ -448,19 +448,12 @@ class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
 
 
 class MaxReleaseLagDaysSpecTests(unittest.TestCase):
-    """`expectedFailure` specs for what Track A has not built yet.
-
-    Each goes red as an unexpected success on landing, which is the signal to
-    move it into `RegistryModuleTests` and give it a control call. Five tests
-    made that trip after the 7 September trial merge; what is left here is the
-    arithmetic, which the merge showed to be genuinely unbuilt rather than
-    merely unreached.
+    """Arithmetic specs for the completed Track A conversion.
 
     Every expected number is worked out by hand in `EXPECTED_LAG` and its
     comment. Nothing in this file computes one.
     """
 
-    @unittest.expectedFailure
     def test_each_basis_converts_as_the_contract_says(self):
         from repo_model.registry import max_release_lag_days
 
@@ -473,7 +466,6 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
                     expected,
                 )
 
-    @unittest.expectedFailure
     def test_an_available_time_after_the_decision_time_adds_a_day(self):
         """The record_date rule's second clause, isolated.
 
@@ -498,7 +490,6 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
             2,
         )
 
-    @unittest.expectedFailure
     def test_the_result_is_the_maximum_over_the_named_sources(self):
         from repo_model.registry import max_release_lag_days
 
@@ -519,7 +510,6 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
             9,
         )
 
-    @unittest.expectedFailure
     def test_the_maximum_is_over_the_feature_set_not_the_whole_registry(self):
         """"Purge over the feature set, not the registry", as a number.
 
@@ -540,7 +530,6 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
         self.assertEqual(feature_set, 3)
         self.assertLess(feature_set, max(EXPECTED_LAG.values()))
 
-    @unittest.expectedFailure
     def test_the_result_is_an_int_the_splitter_will_accept(self):
         """`require_purge_days` rejects a float and rejects a bool.
 

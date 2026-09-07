@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from datetime import time
-from typing import Any
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from repo_model.contract import validate_release_lag
 
 
 class RegistryContractError(ValueError):
@@ -39,40 +39,6 @@ def _decision_timezone(decision_time: time) -> str | None:
     if not name:
         raise RegistryContractError("decision_time has an unnamed timezone")
     return name
-
-
-def _declared_timezone(source_id: str, release_lag: Mapping[str, Any]) -> str:
-    declared = release_lag.get("timezone")
-    if not isinstance(declared, str) or not declared:
-        raise RegistryContractError(f"{source_id}: release_lag.timezone is required")
-    try:
-        ZoneInfo(declared)
-    except ZoneInfoNotFoundError as exc:
-        raise RegistryContractError(
-            f"{source_id}: unknown release_lag.timezone {declared!r}"
-        ) from exc
-    return declared
-
-
-def _available_time(source_id: str, release_lag: Mapping[str, Any]) -> time:
-    raw = release_lag.get("available_time")
-    try:
-        parsed = time.fromisoformat(raw)
-    except (TypeError, ValueError) as exc:
-        raise RegistryContractError(
-            f"{source_id}: release_lag.available_time must be an ISO time"
-        ) from exc
-    if parsed.tzinfo is not None:
-        raise RegistryContractError(
-            f"{source_id}: release_lag.available_time must be a local wall-clock time"
-        )
-    return parsed
-
-
-def _nonnegative_int(source_id: str, field: str, value: object) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise RegistryContractError(f"{source_id}: release_lag.{field} must be a nonnegative integer")
-    return value
 
 
 def _rows_have_available_at(rows: object | None) -> bool:
@@ -127,26 +93,16 @@ def max_release_lag_days(
             raise RegistryContractError(f"unknown source: {source_id}") from exc
 
         release_lag = source.get("release_lag")
-        if not isinstance(release_lag, Mapping):
-            raise RegistryContractError(f"{source_id}: release_lag must be an object")
+        problems = validate_release_lag(source_id, release_lag)
+        if problems:
+            raise RegistryContractError("; ".join(problems))
 
-        basis = release_lag.get("basis")
-        calendar = release_lag.get("calendar")
-        days = _nonnegative_int(source_id, "days", release_lag.get("days"))
-        declared_timezone = _declared_timezone(source_id, release_lag)
+        basis = release_lag["basis"]
 
-        if basis == "ref_date" and calendar == "business_days":
-            bound = _nonnegative_int(
-                source_id,
-                "worst_case_calendar_days",
-                release_lag.get("worst_case_calendar_days"),
-            )
-            if bound < days + 5:
-                raise RegistryContractError(
-                    f"{source_id}: worst_case_calendar_days must be at least days + 5"
-                )
-            contribution = bound
-        elif basis == "record_date" and calendar == "calendar_days":
+        if basis == "ref_date":
+            contribution = release_lag["worst_case_calendar_days"]
+        elif basis == "record_date":
+            declared_timezone = release_lag["timezone"]
             if cutoff_timezone is not None:
                 if declared_timezone != cutoff_timezone:
                     raise RegistryContractError(
@@ -160,23 +116,17 @@ def max_release_lag_days(
                     "naive decision_time cannot be compared across release timezones "
                     f"{inferred_wall_clock_timezone!r} and {declared_timezone!r}"
                 )
-            contribution = days + int(
-                _available_time(source_id, release_lag) > cutoff_wall_clock
+            contribution = release_lag["days"] + int(
+                time.fromisoformat(release_lag["available_time"]) > cutoff_wall_clock
             )
-        elif basis == "snapshot_retrieved_at":
-            if calendar != "none":
-                raise RegistryContractError(
-                    f"{source_id}: snapshot_retrieved_at requires calendar 'none'"
-                )
+        else:
             if not _rows_have_available_at(rows):
                 raise RegistryContractError(
                     f"{source_id}: every snapshot row must carry available_at"
                 )
             contribution = 0
-        else:
-            raise RegistryContractError(
-                f"{source_id}: unsupported release-lag basis/calendar pair {basis!r}/{calendar!r}"
-            )
 
         maximum = max(maximum, contribution)
+    if maximum == 0:
+        raise RegistryContractError("selected sources must produce a nonzero purge")
     return maximum

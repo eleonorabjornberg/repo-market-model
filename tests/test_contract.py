@@ -143,12 +143,13 @@ import re
 import sys
 import tempfile
 import unittest
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.baseline import _quantile, rolling_persistence_backtest
+from repo_model.contract import validate_release_lag
 from repo_model.data import (
     DailyObservation,
     DataContractError,
@@ -643,35 +644,14 @@ class SourceRegistryTests(unittest.TestCase):
                         ),
                     )
 
-                release_lag = source.get("release_lag")
-                self.assertIsInstance(release_lag, dict)
-                self.assertIn(
-                    release_lag.get("basis"),
-                    {"ref_date", "record_date", "snapshot_retrieved_at"},
-                )
-                self.assertIn(
-                    release_lag.get("calendar"),
-                    {"business_days", "calendar_days", "none"},
-                )
-                self.assertIsInstance(release_lag.get("days"), int)
-                self.assertGreaterEqual(release_lag["days"], 0)
-                self.assertIsInstance(release_lag.get("timezone"), str)
-                self.assertTrue(release_lag["timezone"])
-                try:
-                    time.fromisoformat(release_lag["available_time"])
-                except (KeyError, TypeError, ValueError) as exc:
-                    self.fail(f"{source_id}: invalid release-lag available_time: {exc}")
-
-                if release_lag["basis"] == "snapshot_retrieved_at":
-                    self.assertEqual(release_lag["calendar"], "none")
-                    self.assertEqual(release_lag["days"], 0)
-                if (
-                    release_lag["basis"] == "ref_date"
-                    and release_lag["calendar"] == "business_days"
-                ):
-                    bound = release_lag.get("worst_case_calendar_days")
-                    self.assertIsInstance(bound, int)
-                    self.assertGreaterEqual(bound, release_lag["days"] + 5)
+                # The shape of `release_lag` is the seam both tracks build
+                # against, so it is checked by the shared, human-owned module
+                # rather than restated here. A second copy of these rules is
+                # exactly how one field came to be called `calendar` on one
+                # side and `unit` on the other; see AGENT_CONTRACT.md,
+                # "Decided: the `release_lag` schema".
+                problems = validate_release_lag(source_id, source.get("release_lag"))
+                self.assertEqual(problems, [], msg="; ".join(problems))
 
                 self.assertIsInstance(source.get("coverage"), list)
                 self.assertTrue(source["coverage"])
