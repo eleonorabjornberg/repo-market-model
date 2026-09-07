@@ -197,7 +197,7 @@
         }
       }
     ],
-    "limitation": "As-filed data may contain reporting errors and becomes available after month-end.",
+    "limitation": "As-filed data may contain reporting errors and becomes available after month-end. The adapter refuses an archive when a parser-required column is absent, because a renamed or restructured column would otherwise yield silent empty or partial series. Compatibility with historical Form N-MFP schema versions remains unverified until the backfill diffs their tables and columns; a rejected archive contributes no observations.",
     "provider": "U.S. Securities and Exchange Commission",
     "release_lag": {
       "basis": "snapshot_retrieved_at",
