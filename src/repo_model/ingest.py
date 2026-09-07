@@ -19,6 +19,9 @@ import zipfile
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+# Imported by name, not as a module: `datetime.time` above already holds that
+# name, and `import time` would shadow it.
+from time import sleep as _sleep
 from typing import Callable, Iterable, List, Mapping, Optional, Sequence
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -45,6 +48,16 @@ TREASURY_AUCTIONS_BASE = (
     "v1/accounting/od/auctions_query"
 )
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
+#: The declared set of Form N-MFP archives that constitutes the `sec_nmfp`
+#: source. Committed, because `data/raw/` is not: without it a checkout with an
+#: empty `data/raw/` cannot tell "not downloaded yet" from "never existed", and
+#: cannot tell either from "downloaded, and refused".
+SEC_NMFP_ARCHIVE_MANIFEST = (
+    Path(__file__).parents[2] / "metadata" / "sec_nmfp_archives.json"
+)
+#: Seconds between SEC downloads. The archives are 5-15 MB each and SEC
+#: rate-limits aggressively; a backfill is a hundred of them in a row.
+SEC_REQUEST_PAUSE_SECONDS = 1.0
 
 # Snapshots captured before the registry adopted Python-style source IDs remain
 # immutable evidence. Normalize their manifest IDs at the parser boundary rather
@@ -327,6 +340,245 @@ def fetch_sec_nmfp(
     ]
 
 
+@dataclass(frozen=True)
+class ArchiveRecord:
+    """One immutable Form N-MFP archive, as the committed manifest records it.
+
+    `sha256` and `byte_count` identify the bytes; `url` says where they came
+    from; `first_retrieved_at` says when the digest was first observed here. The
+    bytes themselves stay out of git.
+
+    `refusals` is the parser's own verdict on the archive, computed by running
+    `nmfp_schema_refusals` over the downloaded bytes rather than typed in by
+    hand. An empty tuple means the archive was read faithfully and is part of
+    the source; a non-empty one names every table and column the parser needs
+    and the archive does not have. Recording the verdict is what makes the
+    difference between "never existed", "not downloaded yet" and "downloaded,
+    and refused" visible from a fresh checkout.
+    """
+
+    url: str
+    sha256: str = ""
+    byte_count: int = 0
+    first_retrieved_at: str = ""
+    refusals: tuple = ()
+
+    @property
+    def admitted(self) -> bool:
+        """True only for an archive that was fetched and read faithfully.
+
+        An unfetched record is neither admitted nor refused, and must not be
+        reported as either: `sha256` is empty precisely because nobody has
+        looked yet.
+        """
+
+        return bool(self.sha256) and not self.refusals
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "url": self.url,
+            "sha256": self.sha256,
+            "byte_count": self.byte_count,
+            "first_retrieved_at": self.first_retrieved_at,
+            "refusals": list(self.refusals),
+        }
+
+
+def nmfp_schema_refusals(payload: bytes) -> tuple:
+    """Every reason the parser cannot read this archive faithfully, or none.
+
+    Derived from `NMFP_REQUIRED_COLUMNS`, the same declaration `_nmfp_table`
+    enforces, so the manifest cannot record a verdict the parser disagrees with.
+    The difference is only that `_nmfp_table` raises on the first problem, which
+    is right for a parse and wrong for a report: an archive from a schema the
+    project has never seen should name everything it is missing in one pass.
+
+    A schema check on headers is not a schema check on meaning. It cannot see a
+    column that kept its name and changed its units, or a categorical whose
+    vocabulary was rewritten. See `docs/track-a-decisions-2026-09-07.md` for a
+    dated instance of the second, which this function returns no refusal for.
+    """
+
+    problems = []
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(payload))
+    except zipfile.BadZipFile:
+        return ("not a valid ZIP archive",)
+    with archive:
+        names = frozenset(archive.namelist())
+        for table, required in sorted(NMFP_REQUIRED_COLUMNS.items()):
+            if table not in names:
+                problems.append(f"lacks required table {table}")
+                continue
+            header = archive.open(table).readline().decode("utf-8-sig")
+            reader = csv.reader(io.StringIO(header.rstrip("\r\n")), delimiter="\t")
+            columns = frozenset(next(reader, []))
+            missing = required - columns
+            if missing:
+                problems.append(
+                    f"{table} lacks required columns {', '.join(sorted(missing))}"
+                )
+    return tuple(problems)
+
+
+def load_sec_nmfp_archive_manifest(
+    path: Path = SEC_NMFP_ARCHIVE_MANIFEST,
+) -> tuple:
+    """Read the declared archive set, reporting a bad path or bad JSON alike."""
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot load N-MFP archive manifest: {exc}") from exc
+    archives = payload.get("archives") if isinstance(payload, Mapping) else None
+    if not isinstance(archives, list) or not archives:
+        raise ValueError(
+            f"N-MFP archive manifest {path} declares no archives; an empty "
+            "declared set is indistinguishable from a source nobody has "
+            "described, and must not read as one"
+        )
+    records = []
+    seen = set()
+    for entry in archives:
+        if not isinstance(entry, Mapping) or not str(entry.get("url") or "").strip():
+            raise ValueError(f"N-MFP archive manifest {path} has an entry with no url")
+        url = str(entry["url"]).strip()
+        if url in seen:
+            raise ValueError(f"N-MFP archive manifest {path} declares {url} twice")
+        seen.add(url)
+        records.append(
+            ArchiveRecord(
+                url=url,
+                sha256=str(entry.get("sha256") or ""),
+                byte_count=int(entry.get("byte_count") or 0),
+                first_retrieved_at=str(entry.get("first_retrieved_at") or ""),
+                refusals=tuple(str(item) for item in entry.get("refusals") or ()),
+            )
+        )
+    return tuple(records)
+
+
+def write_sec_nmfp_archive_manifest(
+    records: Iterable[ArchiveRecord],
+    path: Path = SEC_NMFP_ARCHIVE_MANIFEST,
+    *,
+    index_url: str = "",
+) -> None:
+    """Write the declared archive set. Ordered by url, so a re-run is a no-op."""
+
+    payload = {
+        "source_id": "sec_nmfp",
+        "index_url": index_url,
+        "note": (
+            "The Form N-MFP archives that constitute this source. data/raw/ is "
+            "gitignored and these bytes are not committed, so this file is how a "
+            "fresh checkout knows what history is supposed to exist. An entry "
+            "with an empty sha256 has never been fetched here. An entry with a "
+            "non-empty refusals list was fetched and refused: the parser cannot "
+            "read it faithfully, so it contributes no observations and is not "
+            "placed under data/raw/."
+        ),
+        "archives": [
+            record.as_dict()
+            for record in sorted(records, key=lambda record: record.url)
+        ],
+    }
+    _atomic_write(
+        path, json.dumps(payload, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    )
+
+
+def fetch_sec_nmfp_archives(
+    output_root: Path,
+    records: Iterable[ArchiveRecord],
+    *,
+    contact_email: Optional[str] = None,
+    downloader: Optional[Callable[[str], bytes]] = None,
+    recheck: bool = False,
+    pause_seconds: float = SEC_REQUEST_PAUSE_SECONDS,
+    sleep: Callable[[float], None] = _sleep,
+) -> tuple:
+    """Fetch the declared archive set politely, idempotently, and refusing early.
+
+    Idempotent in both directions. An archive whose recorded `sha256` already
+    matches a snapshot on disk is not downloaded again, and neither is one
+    already recorded as refused -- re-downloading a hundred archives to re-derive
+    a verdict that is written down is not politeness. `recheck=True` forces both,
+    for the day the parser's requirements change and the verdicts have to be
+    re-earned.
+
+    An archive is validated before it is placed under `output_root`, so
+    `data/raw/` only ever holds archives the parser can read faithfully. This is
+    the difference between refusing an archive and quarantining it after the
+    fact: everything under `data/raw/` is panel input by construction, and an
+    unreadable archive sitting there is a claim that it is one.
+
+    Returns the updated records, in the order given.
+    """
+
+    if downloader is None and not contact_email:
+        raise ValueError("SEC downloads require contact_email for the User-Agent")
+
+    existing = {}
+    for manifest_path in sorted((output_root / "sec_nmfp").glob("*.manifest.json")):
+        try:
+            existing[load_snapshot_manifest(manifest_path).sha256] = manifest_path
+        except ValueError:
+            # A manifest that no longer describes its bytes is not evidence that
+            # the archive is present. Re-fetch rather than trust it.
+            continue
+
+    updated = []
+    for index, record in enumerate(records):
+        if not record.url.lower().startswith("https://www.sec.gov/"):
+            raise ValueError(
+                f"Form N-MFP URL must be an official https://www.sec.gov/ URL: "
+                f"{record.url}"
+            )
+        if not recheck and record.sha256:
+            if record.refusals or record.sha256 in existing:
+                updated.append(record)
+                continue
+        if index and pause_seconds:
+            sleep(pause_seconds)
+        payload = (
+            downloader(record.url)
+            if downloader is not None
+            else _download_sec(record.url, contact_email)
+        )
+        digest = hashlib.sha256(payload).hexdigest()
+        if record.sha256 and digest != record.sha256:
+            raise ValueError(
+                f"{record.url} no longer matches its recorded digest: manifest "
+                f"declares {record.sha256}, download is {digest}. These archives "
+                "are immutable snapshots; a changed digest is a changed source, "
+                "not a stale cache"
+            )
+        refusals = nmfp_schema_refusals(payload)
+        retrieved_at = record.first_retrieved_at or datetime.now(
+            timezone.utc
+        ).isoformat()
+        if not refusals:
+            artifact = _save_snapshot(
+                source_id="sec_nmfp",
+                url=record.url,
+                payload=payload,
+                output_root=output_root,
+                suffix="zip",
+            )
+            retrieved_at = record.first_retrieved_at or artifact.retrieved_at
+        updated.append(
+            replace(
+                record,
+                sha256=digest,
+                byte_count=len(payload),
+                first_retrieved_at=retrieved_at,
+                refusals=refusals,
+            )
+        )
+    return tuple(updated)
+
+
 def _artifact_payload(artifact: SnapshotArtifact) -> bytes:
     payload = artifact.path.read_bytes()
     digest = hashlib.sha256(payload).hexdigest()
@@ -560,7 +812,21 @@ NMFP_FLOW_FIELDS = {
 #: and can silently erase or misclassify a series.
 NMFP_REQUIRED_COLUMNS = {
     "NMFP_SUBMISSION.tsv": frozenset(
-        {"ACCESSION_NUMBER", "SERIESID", "REPORTDATE"}
+        {
+            "ACCESSION_NUMBER",
+            "SERIESID",
+            "REPORTDATE",
+            # Which of two submissions for one (series, report date) supersedes
+            # the other. Without a filing order the adapter cannot tell an
+            # amendment from a second original and has to sum them, which is
+            # the double count `_resolve_nmfp_submissions` exists to prevent.
+            "FILING_DATE",
+            # Recorded, never filtered on. A cross-section is admitted or
+            # excluded on its reporting-entity count alone; the submission-type
+            # mix is carried alongside that decision so a reader can see whether
+            # an excluded month was a straggler cohort or something else.
+            "SUBMISSIONTYPE",
+        }
     ),
     "NMFP_SERIESLEVELINFO.tsv": (
         frozenset({"ACCESSION_NUMBER"}) | frozenset(NMFP_BALANCE_FIELDS)
@@ -627,15 +893,54 @@ def _nmfp_date(raw: object, field: str) -> date:
 NMFP_ENTITY_UNIT = "series_id"
 
 
+def _resolve_nmfp_submissions(submissions):
+    """Pick the one submission that speaks for each (series, report date).
+
+    Form N-MFP is filed per series per month, so a series that appears twice for
+    one report date has been amended: `N-MFP3/A` is a second accession restating
+    the first, not a second fund. `_sec_nmfp_rows` aggregates by adding every
+    accession's values together, which is right across series and wrong across a
+    series and its own amendment -- it books the restated balance sheet on top of
+    the one it replaces. A quarterly extract and the monthly extract that follows
+    it both carry such pairs, so the backfill turns a case that never arose on one
+    archive into the normal one.
+
+    The winner is the latest `FILING_DATE`, because that is the archive's own
+    statement of filing order and it is what makes an amendment an amendment.
+    `SUBMISSIONTYPE` is deliberately not the rule: it distinguishes one amendment
+    from an original but not the second amendment from the first, and a rule that
+    silently stops discriminating is worse than one that never claimed to.
+    `ACCESSION_NUMBER` breaks a same-day tie so the choice is deterministic rather
+    than dependent on row order in the file.
+
+    Returns `(kept, superseded)`: the accession chosen for each pair, and the
+    accessions it displaced. Displaced accessions are skipped by the value tables,
+    not treated as unknown -- an unknown accession is a corrupt archive and still
+    raises.
+    """
+
+    best = {}
+    for accession, (series_id, report_date, filing_date) in submissions.items():
+        key = (series_id, report_date)
+        rank = (filing_date, accession)
+        if key not in best or rank > best[key][0]:
+            best[key] = (rank, accession)
+    kept = {accession for _rank, accession in best.values()}
+    return kept, frozenset(submissions) - kept
+
+
 def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     """Aggregate one SEC bulk extract without inventing absent holdings.
 
-    Returns `(rows, entity_counts)`. Each element of `rows` pairs an observation
-    with the report date of the submission it came from -- its cross-section --
-    which is not always its own `ref_date`: a daily shareholder-flow row is dated
-    within the reporting month but belongs to that month's cross-section and
-    stands or falls with it. `entity_counts` maps each cross-section to the
-    number of distinct reporting entities that filed for it.
+    Returns `(rows, entity_counts, submission_types)`. Each element of `rows`
+    pairs an observation with the report date of the submission it came from --
+    its cross-section -- which is not always its own `ref_date`: a daily
+    shareholder-flow row is dated within the reporting month but belongs to that
+    month's cross-section and stands or falls with it. `entity_counts` maps each
+    cross-section to the number of distinct reporting entities that filed for it.
+    `submission_types` maps each cross-section to how many submissions of each
+    `SUBMISSIONTYPE` it carries, superseded ones included: it corroborates the
+    coverage decision without participating in it.
     """
 
     from .data import PointInTimeObservation
@@ -648,8 +953,9 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
         totals[key] = totals.get(key, 0.0) + value
 
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
-        reports = {}
+        submissions = {}
         entities = {}
+        submission_types = {}
         for record in _nmfp_table(archive, "NMFP_SUBMISSION.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if not accession:
@@ -661,13 +967,27 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                     "cross-section cannot be counted in reporting entities"
                 )
             report_date = _nmfp_date(record.get("REPORTDATE"), "REPORTDATE")
-            if accession in reports and reports[accession] != report_date:
-                raise ValueError(f"SEC Form N-MFP accession {accession} has two report dates")
-            reports[accession] = report_date
+            filing_date = _nmfp_date(record.get("FILING_DATE"), "FILING_DATE")
+            entry = (entity, report_date, filing_date)
+            if accession in submissions and submissions[accession] != entry:
+                raise ValueError(
+                    f"SEC Form N-MFP accession {accession} describes two submissions"
+                )
+            submissions[accession] = entry
             entities.setdefault(report_date, set()).add(entity)
+            submission_type = (record.get("SUBMISSIONTYPE") or "").strip() or "(blank)"
+            mix = submission_types.setdefault(report_date, {})
+            mix[submission_type] = mix.get(submission_type, 0) + 1
+
+        kept_accessions, superseded = _resolve_nmfp_submissions(submissions)
+        reports = {
+            accession: submissions[accession][1] for accession in kept_accessions
+        }
 
         for record in _nmfp_table(archive, "NMFP_SERIESLEVELINFO.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
+            if accession in superseded:
+                continue
             if accession not in reports:
                 raise ValueError(f"SEC Form N-MFP series row has unknown accession {accession}")
             section = reports[accession]
@@ -678,6 +998,8 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
 
         for record in _nmfp_table(archive, "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
+            if accession in superseded:
+                continue
             if accession not in reports:
                 raise ValueError(
                     f"SEC Form N-MFP flow row has unknown accession {accession}"
@@ -709,6 +1031,8 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
 
         for record in _nmfp_table(archive, "NMFP_SCHPORTFOLIOSECURITIES.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
+            if accession in superseded:
+                continue
             if accession not in reports:
                 raise ValueError(
                     f"SEC Form N-MFP security row has unknown accession {accession}"
@@ -746,7 +1070,11 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
         )
         for (section, series_id, ref_date), value in sorted(totals.items())
     ]
-    return rows, {section: len(members) for section, members in entities.items()}
+    return (
+        rows,
+        {section: len(members) for section, members in entities.items()},
+        submission_types,
+    )
 
 
 def load_source_registry(registry_path: Path = DEFAULT_SOURCE_REGISTRY):
@@ -805,6 +1133,7 @@ def parse_snapshots(
         # the same as "this source published an empty one". An empty extract
         # must not satisfy a coverage floor vacuously.
         entity_counts = None
+        submission_types = {}
         if artifact.source_id.startswith("nyfed_"):
             parsed_rows = [(None, row) for row in _nyfed_rows(artifact, payload)]
         elif artifact.source_id == "fred_macro_latest_vintage":
@@ -812,7 +1141,9 @@ def parse_snapshots(
         elif artifact.source_id == "treasury_auctions":
             parsed_rows = [(None, row) for row in _treasury_rows(artifact, payload)]
         elif artifact.source_id == "sec_nmfp":
-            parsed_rows, entity_counts = _sec_nmfp_rows(artifact, payload)
+            parsed_rows, entity_counts, submission_types = _sec_nmfp_rows(
+                artifact, payload
+            )
             _check_declared_entity_unit(
                 artifact.source_id, registry, NMFP_ENTITY_UNIT
             )
@@ -846,6 +1177,9 @@ def parse_snapshots(
                     declared_floor=floor,
                     admitted=section in admitted,
                     row_count=section_rows.get(section, 0),
+                    submission_types=tuple(
+                        sorted(submission_types.get(section, {}).items())
+                    ),
                 )
                 for section, count in sorted(entity_counts.items())
             )

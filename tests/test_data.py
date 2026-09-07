@@ -495,9 +495,17 @@ class RealSnapshotCoverageTests(unittest.TestCase):
             )
 
         admitted_dates = {item.ref_date for item in admitted}
-        excluded_dates = {
+        # Coverage is a judgement about a cross-section *within one archive*, and
+        # the backfill made that distinction load-bearing. One report month is a
+        # straggler cohort in the archive filed after it and the complete month in
+        # the archive filed for it, so it is legitimately excluded in one and
+        # admitted in another. The panel-level claim is the intersection of those:
+        # a ref_date no archive admitted must contribute nothing. With a single
+        # archive on disk the two readings coincide, which is why this held for as
+        # long as there was one.
+        never_admitted = {
             item.ref_date for item in parsed.coverage if not item.admitted
-        }
+        } - admitted_dates
         monthly = {
             row.ref_date for row in parsed.rows if row.series_id == "mmf_net_assets"
         }
@@ -507,9 +515,9 @@ class RealSnapshotCoverageTests(unittest.TestCase):
             f"{sorted(monthly - admitted_dates)}",
         )
         self.assertEqual(
-            monthly & excluded_dates,
+            monthly & never_admitted,
             set(),
-            msg="an excluded cross-section still contributes monthly rows",
+            msg="a cross-section no archive admitted still contributes monthly rows",
         )
 
     def test_the_current_snapshot_contains_cross_sections_that_must_be_excluded(self):
@@ -541,17 +549,56 @@ class RealSnapshotCoverageTests(unittest.TestCase):
                 msg=f"{item.ref_date} excluded no rows, so nothing was guarded",
             )
 
-        # An excluded cross-section leaves no rows behind, whatever their own
-        # ref_date: a daily shareholder-flow row is dated inside the reporting
-        # month but belongs to the submission's cross-section.
-        excluded_dates = {item.ref_date for item in excluded}
+        # An excluded cross-section leaves no monthly rows behind. Two
+        # qualifications, both of which only became visible once more than one
+        # archive was on disk:
+        #
+        # "Excluded" has to mean excluded by every archive that saw the date.
+        # A report month is a straggler cohort in the archive filed after it and
+        # the complete month in the archive filed for it.
+        #
+        # "Monthly" has to be said, because `ref_date` carries two different
+        # meanings in this panel. A monthly series is dated by its submission's
+        # report date, so it stands or falls with that cross-section. A
+        # business-daily flow series is dated by the flow day, which lies inside
+        # the reporting month -- and the last business day of a month is also the
+        # report date of the minority of funds that report on it rather than on
+        # the calendar month end. Those funds are a cohort of about 70, well under
+        # the declared floor, so their cross-section is correctly excluded; the
+        # flow rows dated that same day belong to the admitted month-end
+        # cross-section and are correctly kept. Asserting over every series
+        # conflates the two and fails on a panel that is right.
+        #
+        # The frequencies come from the registry rather than from a list written
+        # out here, so a series that changes frequency cannot quietly fall out of
+        # the guard.
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        frequencies = registry[self.SOURCE_ID]["field_frequencies"]
+        monthly_series = {
+            field for field, frequency in frequencies.items() if frequency == "monthly"
+        }
+        self.assertGreater(len(monthly_series), 0, "the registry declares no monthly series")
+
+        admitted_dates = {item.ref_date for item in parsed.coverage if item.admitted}
+        never_admitted = {item.ref_date for item in excluded} - admitted_dates
+        self.assertGreater(
+            len(never_admitted),
+            0,
+            "no report date was excluded by every archive that saw it, so this "
+            "assertion is guarding nothing on the snapshots present",
+        )
         surviving = sorted(
-            {row.ref_date for row in parsed.rows} & excluded_dates
+            {
+                (row.series_id, row.ref_date)
+                for row in parsed.rows
+                if row.series_id in monthly_series and row.ref_date in never_admitted
+            }
         )
         self.assertEqual(
             surviving,
             [],
-            msg=f"rows survive on excluded reference dates {surviving}",
+            msg=f"monthly rows survive on reference dates no archive admitted "
+            f"{surviving}",
         )
 
 

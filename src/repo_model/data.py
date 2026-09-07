@@ -105,6 +105,14 @@ class CrossSectionCoverage:
     `entity_count` is a count of distinct reporting entities, never a value
     total: the values are the thing under suspicion, so a value threshold would
     be circular.
+
+    `submission_types` is a corroborating record and never an input to the
+    decision: how many submissions of each declared type the cross-section
+    carries, as `(type, count)` pairs. It is free -- the source states it -- and
+    it lets a reader see at a glance that an excluded month was a handful of
+    amendments rather than a real month the floor got wrong. It must not become
+    a filter: a legitimately amended complete month is entirely amendments and
+    would be discarded by one.
     """
 
     source_id: str
@@ -114,6 +122,7 @@ class CrossSectionCoverage:
     declared_floor: int
     admitted: bool
     row_count: int
+    submission_types: tuple = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -123,6 +132,9 @@ class CrossSectionCoverage:
             "entity_count": self.entity_count,
             "declared_floor": self.declared_floor,
             "rows": self.row_count,
+            "submission_types": {
+                str(name): int(count) for name, count in self.submission_types
+            },
             "reason": (
                 "reporting entities below the coverage floor declared in the "
                 "source registry"

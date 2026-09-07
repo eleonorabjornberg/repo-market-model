@@ -1,0 +1,828 @@
+{
+  "archives": [
+    {
+      "byte_count": 7364913,
+      "first_retrieved_at": "2026-09-07T19:03:59.437528+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "38f11e91431f370b626f1d7e5f6fca33c82c12890669a78846f629a5391b83a9",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2010q4_nmfp.zip"
+    },
+    {
+      "byte_count": 25285068,
+      "first_retrieved_at": "2026-09-07T19:04:01.538182+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "bd207a3ab59258caa813de20412c16d5ee5aab1b17ebb715cdfcd5b79302682b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2011q1_nmfp.zip"
+    },
+    {
+      "byte_count": 19301040,
+      "first_retrieved_at": "2026-09-07T19:04:03.761123+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "93e7977223487fede1bf6a37642ec207d3170e907158b206578a0479179a6466",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2011q2_nmfp.zip"
+    },
+    {
+      "byte_count": 19440982,
+      "first_retrieved_at": "2026-09-07T19:04:05.707574+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "095213c6b8030a348e51217530af5d4c1701fbf17436ec5b46e52943721bbd96",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2011q3_nmfp.zip"
+    },
+    {
+      "byte_count": 17608625,
+      "first_retrieved_at": "2026-09-07T19:04:07.320233+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "e59034368676356c4c94df3e58ab6e8129a822faf1fd0ce6a298098b201ad348",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2011q4_nmfp.zip"
+    },
+    {
+      "byte_count": 17771491,
+      "first_retrieved_at": "2026-09-07T19:04:10.893672+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "42326f852e58b8d266aede3abfe7d5a86665f7ac4deddeaa5755c59b8d71d2c2",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2012q1_nmfp.zip"
+    },
+    {
+      "byte_count": 16696748,
+      "first_retrieved_at": "2026-09-07T19:04:12.760786+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "155932d9fda56632bc1756a1811379d9cb281e906cfa132ab5f75beac66d3bf0",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2012q2_nmfp.zip"
+    },
+    {
+      "byte_count": 17708785,
+      "first_retrieved_at": "2026-09-07T19:04:14.851991+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "218a3c33420122e6453beb462ae883461e703691ec1ef9bd3da2b95a41aa5932",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2012q3_nmfp.zip"
+    },
+    {
+      "byte_count": 17112259,
+      "first_retrieved_at": "2026-09-07T19:04:16.442972+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "0bdb4288cddc0a940003d8895244ca2a827bc0a4d11e865b79261eae438953e0",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2012q4_nmfp.zip"
+    },
+    {
+      "byte_count": 18194800,
+      "first_retrieved_at": "2026-09-07T19:04:18.150289+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "31c2e7619c0dcfc3cdaefebbcce85ed2bc485b6bc9a397c434552dd444f1f998",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2013q1_nmfp.zip"
+    },
+    {
+      "byte_count": 16940276,
+      "first_retrieved_at": "2026-09-07T19:04:20.253580+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "bfec559879b72c01a3c151ae197f6e34e3d4a21f60ef7438eb45ea7be3da0021",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2013q2_nmfp.zip"
+    },
+    {
+      "byte_count": 18410285,
+      "first_retrieved_at": "2026-09-07T19:04:21.868279+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "b90e6917b6839afa8dae0bc101f597125da35ac589669a92f21e46bc3c172ed3",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2013q3_nmfp.zip"
+    },
+    {
+      "byte_count": 18547961,
+      "first_retrieved_at": "2026-09-07T19:04:23.524713+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "e52701b89563c01a04cc3c5d3ba62ce095c9b9fb9f70b7ab382783a93666a4a6",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2013q4_nmfp.zip"
+    },
+    {
+      "byte_count": 23256163,
+      "first_retrieved_at": "2026-09-07T19:04:27.660601+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "f978e7162379e5a233d77114065c0c84f213c39b7a29483440e1bee96b5f9731",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2014q1_nmfp.zip"
+    },
+    {
+      "byte_count": 18107376,
+      "first_retrieved_at": "2026-09-07T19:04:31.341027+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "0ba2a25aba0c6f0a0cb81e4b921b768671331b8f5cebd65960036889b4d24fe3",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2014q2_nmfp.zip"
+    },
+    {
+      "byte_count": 16839627,
+      "first_retrieved_at": "2026-09-07T19:04:36.080695+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "e03f8713476ed93428a228bdad3f6d42dd1a3285ec0baa7c08247bcf9907eb71",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2014q3_nmfp.zip"
+    },
+    {
+      "byte_count": 16985561,
+      "first_retrieved_at": "2026-09-07T19:04:46.326977+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "3dbe524fb1ee9a88472b2889e816a30f514d79140b5aa768637fa576701cfab4",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2014q4_nmfp.zip"
+    },
+    {
+      "byte_count": 17383156,
+      "first_retrieved_at": "2026-09-07T19:04:52.757315+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "b5b2a647b57404cf2f0f3da80c488c66dd36d5d404cdd9a1f5bd7331d4e41bf1",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2015q1_nmfp.zip"
+    },
+    {
+      "byte_count": 17286284,
+      "first_retrieved_at": "2026-09-07T19:04:55.151577+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "ece881682546d4ca41c3d9a5bfe428966b40a9d34447dd1953d1ad67f1156ac7",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2015q2_nmfp.zip"
+    },
+    {
+      "byte_count": 16430329,
+      "first_retrieved_at": "2026-09-07T19:04:57.135082+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "805894dc704fa05586e5a45d2888f4de19140fc21314ac4b0d91fe8f51184c3f",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2015q3_nmfp.zip"
+    },
+    {
+      "byte_count": 16462005,
+      "first_retrieved_at": "2026-09-07T19:04:59.720529+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "3c769901d1aca161dc381978fffab61a4a721eadb24edde5ebf1b4c1288325a0",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2015q4_nmfp.zip"
+    },
+    {
+      "byte_count": 15574464,
+      "first_retrieved_at": "2026-09-07T19:05:01.377617+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "03fdb5182eeecb2098a8cca21679387661d59c3ba7edaf4303d61dc8baaf0107",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2016q1_nmfp.zip"
+    },
+    {
+      "byte_count": 18188050,
+      "first_retrieved_at": "2026-09-07T19:05:03.241287+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "6d315c0bf912248605f9b9940c11517a30d41ac525f6c7c25ce082fb2ca449da",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2016q2_nmfp.zip"
+    },
+    {
+      "byte_count": 19512592,
+      "first_retrieved_at": "2026-09-07T19:05:04.860648+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "37086d2c77af62daaaaa392907bd36594b5c3ba461a26e2c047639ca92455df4",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2016q3_nmfp.zip"
+    },
+    {
+      "byte_count": 16248791,
+      "first_retrieved_at": "2026-09-07T19:05:06.740444+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "040864bb5fb29bddf8bcb62725e883e4df28fca41ddc3d5051285e8a0fca5335",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2016q4_nmfp.zip"
+    },
+    {
+      "byte_count": 14013917,
+      "first_retrieved_at": "2026-09-07T19:05:08.881228+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d5bf09ba96b0874f36ded9f04332444e84100f622f6de14f758c78da73aa506b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2017q1_nmfp.zip"
+    },
+    {
+      "byte_count": 14240826,
+      "first_retrieved_at": "2026-09-07T19:05:11.184593+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d5e6f04261ccf50efc947710bb5956536c677dc10ef98792d95d747647488140",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2017q2_nmfp.zip"
+    },
+    {
+      "byte_count": 13895734,
+      "first_retrieved_at": "2026-09-07T19:05:14.049259+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "26da2eebd2a87c5face56aa09cac53de881aa4f7492428ade2307aabf9c63acc",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2017q3_nmfp.zip"
+    },
+    {
+      "byte_count": 16253743,
+      "first_retrieved_at": "2026-09-07T19:05:16.029370+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "af1533b462488c2d6ec8a92a7ba500c2da685b9b25ef119d22616ba9f56a4977",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2017q4_nmfp.zip"
+    },
+    {
+      "byte_count": 13966920,
+      "first_retrieved_at": "2026-09-07T19:05:21.691359+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "8c1fc5065b472d327d41b36bebf1b8d557824bf50a2e6eb03f10c868244c37ad",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2018q1_nmfp.zip"
+    },
+    {
+      "byte_count": 14229378,
+      "first_retrieved_at": "2026-09-07T19:05:24.613896+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d323b3a2f5c222664bd1e3d47869ba8cbeb36da34f9c4382e7f4a4b723a4b574",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2018q2_nmfp.zip"
+    },
+    {
+      "byte_count": 14658688,
+      "first_retrieved_at": "2026-09-07T19:05:26.684189+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "880c75be35b7a189470b0193ae2d206bb76f9b1548d4788ad4ed4351d3a5341e",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2018q3_nmfp.zip"
+    },
+    {
+      "byte_count": 15115728,
+      "first_retrieved_at": "2026-09-07T19:05:28.239347+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "0413df3c54bf55008ad41143690573d42278e995852ac2fde91b892af69fe55d",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2018q4_nmfp.zip"
+    },
+    {
+      "byte_count": 14832644,
+      "first_retrieved_at": "2026-09-07T19:05:31.046722+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "c8ba3036192fb1e84cd7df2710b730f77ba65687d42a9a2506b3ffcd937775e5",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2019q1_nmfp.zip"
+    },
+    {
+      "byte_count": 14924890,
+      "first_retrieved_at": "2026-09-07T19:05:33.931626+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "547582eeb4bfa12c5a8b817f48ffef1d37d47953847d943ced1a206de7acbf1b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2019q2_nmfp.zip"
+    },
+    {
+      "byte_count": 14893474,
+      "first_retrieved_at": "2026-09-07T19:05:36.126758+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "37062c097eeef5c5d0c53b9ad7178ddd4f3a641eaf0fe909adcd8560ce19193b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2019q3_nmfp.zip"
+    },
+    {
+      "byte_count": 15220019,
+      "first_retrieved_at": "2026-09-07T19:05:37.720537+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "c372803b723359576137fc3486d87525990ce2e4b9809502a82bf6fcfa330c11",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2019q4_nmfp.zip"
+    },
+    {
+      "byte_count": 16099377,
+      "first_retrieved_at": "2026-09-07T19:05:39.560337+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "e960cb36bb70acc403e4aead70e2916a01944262b1934785c143ee3363228cae",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2020q1_nmfp.zip"
+    },
+    {
+      "byte_count": 14987859,
+      "first_retrieved_at": "2026-09-07T19:05:41.215532+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "2c3353361e9a7d8040bb32abed834a36252e707f17d2cf8ad9035ed2b0c25bea",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2020q2_nmfp.zip"
+    },
+    {
+      "byte_count": 14730259,
+      "first_retrieved_at": "2026-09-07T19:05:42.700243+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "4bce5d53bcccec1a733ff2a8ab9b5e538e7c380a8f8342f90cd42d9354190619",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2020q3_nmfp.zip"
+    },
+    {
+      "byte_count": 14578099,
+      "first_retrieved_at": "2026-09-07T19:05:44.376741+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "ecb6f6ec93b6383b8aed2104c7ca310598ebe3b35b928eacffbe5ff2c29217cc",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2020q4_nmfp.zip"
+    },
+    {
+      "byte_count": 14348577,
+      "first_retrieved_at": "2026-09-07T19:05:45.938658+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "4d9800081ed7343d022aed7f951254f282628564c8e1d5c82a152adaedbcccaf",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2021q1_nmfp.zip"
+    },
+    {
+      "byte_count": 13470605,
+      "first_retrieved_at": "2026-09-07T19:05:48.003810+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "7d6fed9c65e99825e1a0b88ad72fa7a913a536e5f9e86c63734cff0a6767a4ab",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2021q2_nmfp.zip"
+    },
+    {
+      "byte_count": 12888322,
+      "first_retrieved_at": "2026-09-07T19:05:49.681071+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "3cba06ad2ab5ddaccc3156aae709651a3ec1f43be18da70dd6b8c3f512987d09",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2021q3_nmfp.zip"
+    },
+    {
+      "byte_count": 12426683,
+      "first_retrieved_at": "2026-09-07T19:05:55.665790+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "54af80d72458075315a3724b249a3e3c6f669df134b36e7c9aab40ad9ed6a386",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2021q4_nmfp.zip"
+    },
+    {
+      "byte_count": 3819208,
+      "first_retrieved_at": "2026-09-07T19:05:57.396704+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d23203770f14c384466bab8d5a0844eb23d3ffbf59fc57d7eaa239857274c19f",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20220701-20220710_nmfp.zip"
+    },
+    {
+      "byte_count": 3965536,
+      "first_retrieved_at": "2026-09-07T19:06:00.767151+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "b41fe6310e22186ce566d843f9f67d3566ea2e3b35edf0b566bd5e6dbda5d5ae",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20220711-20220805_nmfp.zip"
+    },
+    {
+      "byte_count": 4440041,
+      "first_retrieved_at": "2026-09-07T19:06:03.805938+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "0b2e4adb7cd8eb4eab427a957c76d9df578a925e94b901fe7591bb6de84b941d",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20220808-20220908_nmfp.zip"
+    },
+    {
+      "byte_count": 4131756,
+      "first_retrieved_at": "2026-09-07T19:06:05.184127+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "4b3078cfa0c2e2b9e4a00678e85347fc3f59bdfb3adbdd8871db014c08209d2f",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20220909-20221007_nmfp.zip"
+    },
+    {
+      "byte_count": 4403446,
+      "first_retrieved_at": "2026-09-07T19:06:07.613675+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "f0b8dfb448ff0f5f3a50f8dda009d50116a0e6ed228a91db9d2eb2ba573b1ae3",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20221011-20221107_nmfp.zip"
+    },
+    {
+      "byte_count": 4308569,
+      "first_retrieved_at": "2026-09-07T19:06:09.424043+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d56957a7a7a250537ebbf9ee700520b19564af8ddd6d979f01876728fe8df0e9",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20221108-20221207_nmfp.zip"
+    },
+    {
+      "byte_count": 4214347,
+      "first_retrieved_at": "2026-09-07T19:06:10.737282+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "fc6a00b595d26d2d5dba48300bc47d2968dd65046980889dc920d16f2a6ae8f3",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20221208-20230109_nmfp.zip"
+    },
+    {
+      "byte_count": 12596219,
+      "first_retrieved_at": "2026-09-07T19:06:13.496221+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d1923a721ebf64c693b8a45b5e6234ab374b11bd2bfcfc7408ea94439f619c84",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2022q1_nmfp.zip"
+    },
+    {
+      "byte_count": 12518174,
+      "first_retrieved_at": "2026-09-07T19:06:15.354846+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "8c2ce8c8e0f3bc2205537871449d3674f1b1f82d57b87a08d1ab3aeacd9776b9",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2022q2_nmfp.zip"
+    },
+    {
+      "byte_count": 4884319,
+      "first_retrieved_at": "2026-09-07T19:06:16.965037+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "319f011ffdf108f6d38c56fe53d305ed8eeca5e222dfa93b8f5f177869ce4eba",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230110-20230207_nmfp.zip"
+    },
+    {
+      "byte_count": 8030764,
+      "first_retrieved_at": "2026-09-07T19:06:18.432306+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "a552625532cde06df646ddc8a4391e2b6b50f5384d43ec04eab4a762774de01b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230208-20230307_nmfp.zip"
+    },
+    {
+      "byte_count": 5335488,
+      "first_retrieved_at": "2026-09-07T19:06:19.911431+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "c60add430c966a6f9002d6dce3c2f2db494a128c9f9acf4bcbf0683fd59f7952",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230308-20230410_nmfp.zip"
+    },
+    {
+      "byte_count": 5164589,
+      "first_retrieved_at": "2026-09-07T19:06:21.422231+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "099a18ed4b4511c8aaff568b40d058b0cd1a86578f9e2332141fe9b945734ec2",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230411-20230505_nmfp.zip"
+    },
+    {
+      "byte_count": 5539493,
+      "first_retrieved_at": "2026-09-07T19:06:23.067987+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "229cf756c27c4c7d7ef334d0196ad803aabb1f812f5e640607e8677cc7711f4a",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230508-20230607_nmfp.zip"
+    },
+    {
+      "byte_count": 5846672,
+      "first_retrieved_at": "2026-09-07T19:06:25.355085+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "9e999de4613029426821d84ec2c46d5d7a4014d321a7d5ffd178afab0e8cf86e",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230608-20230711_nmfp.zip"
+    },
+    {
+      "byte_count": 6827944,
+      "first_retrieved_at": "2026-09-07T19:06:27.202340+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "0f3c1a5b19c3bc5ea93c334072058e820525faba579ea4fd7780f0fdddd653ea",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230712-20230807_nmfp.zip"
+    },
+    {
+      "byte_count": 6346654,
+      "first_retrieved_at": "2026-09-07T19:06:29.254166+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "a5927dd69d1ae96549d8f8c3ec868cfcffe6dc4772f12858e26bea27c8dd213f",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230808-20230911_nmfp.zip"
+    },
+    {
+      "byte_count": 6156546,
+      "first_retrieved_at": "2026-09-07T19:06:30.535016+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "d9a1f40d9e93bde260a173928ccbd44916dbf4e4d2e5884c27f5b8761ad1b8e0",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20230912-20231006_nmfp.zip"
+    },
+    {
+      "byte_count": 6758786,
+      "first_retrieved_at": "2026-09-07T19:06:31.961416+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "b480e94da0eef04277c981e0bcdb0bd585e171fdeaf4f2a2fac7c5c2fd8060c5",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20231010-20231107_nmfp.zip"
+    },
+    {
+      "byte_count": 6001808,
+      "first_retrieved_at": "2026-09-07T19:06:33.309533+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "b73be72f2822cbedf6772de1d4dec06deb7561099dae1e20356d468889205375",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20231108-20231207_nmfp.zip"
+    },
+    {
+      "byte_count": 7235630,
+      "first_retrieved_at": "2026-09-07T19:06:34.709683+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "05d50e236d33e580e517fbe11ca91f9127725b80fa1630347f948cd468cedd74",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20231208-20240108_nmfp.zip"
+    },
+    {
+      "byte_count": 6405743,
+      "first_retrieved_at": "2026-09-07T19:06:36.251003+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "5c24ed61d5094ea9b75efb81e1fdab99aa1eb0cf05cac2645ab41b8eee21f24d",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240109-20240207_nmfp.zip"
+    },
+    {
+      "byte_count": 6025277,
+      "first_retrieved_at": "2026-09-07T19:06:37.685014+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "cb5cfc7e58fa68d2a966eed37c243cbadb39398adfba2c5f1d096a3888f77b11",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240208-20240307_nmfp.zip"
+    },
+    {
+      "byte_count": 6128493,
+      "first_retrieved_at": "2026-09-07T19:06:39.197076+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "dab8660edf620c1693bc1445e1f2053f28c7be8f0c3b4983e42f41f46b9ebf78",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240308-20240405_nmfp.zip"
+    },
+    {
+      "byte_count": 6550691,
+      "first_retrieved_at": "2026-09-07T19:06:40.879990+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "ce8c8cec356789eb2da3e36af36d68425fe651a8ff1204048780af7552b26534",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240408-20240507_nmfp.zip"
+    },
+    {
+      "byte_count": 6671705,
+      "first_retrieved_at": "2026-09-07T19:06:42.528594+00:00",
+      "refusals": [
+        "lacks required table NMFP_DLYSHAREHOLDERFLOWREPORT.tsv"
+      ],
+      "sha256": "37a7b87378484bf5b7a95a5a49b1ac62af9cb2aa43ed106786b970d109635fcd",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240508-20240607_nmfp.zip"
+    },
+    {
+      "byte_count": 7939035,
+      "first_retrieved_at": "2026-09-07T19:06:44.133641+00:00",
+      "refusals": [],
+      "sha256": "52d7351cc777c1d502875571620c9350580777a1e5a7a369ddb4026f39a45342",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240610-20240709_nmfp.zip"
+    },
+    {
+      "byte_count": 10962428,
+      "first_retrieved_at": "2026-09-07T19:06:45.675596+00:00",
+      "refusals": [],
+      "sha256": "d6015fcb9ecb4a19fe1591b12dc8ea42811a585a0e5da59815c632274a90b885",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240710-20240807_nmfp.zip"
+    },
+    {
+      "byte_count": 9900383,
+      "first_retrieved_at": "2026-09-07T19:06:47.078819+00:00",
+      "refusals": [],
+      "sha256": "dd727948b3c73f5a4a84e2a9b49882191429b81f115d5498505c83113774e1f4",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240808-20240909_nmfp.zip"
+    },
+    {
+      "byte_count": 8790106,
+      "first_retrieved_at": "2026-09-07T19:06:48.440724+00:00",
+      "refusals": [],
+      "sha256": "25c9a87378fd55307384dde2621b3d7f4c94462dc81ddb2ce640146d79dc7b5d",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20240910-20241007_nmfp.zip"
+    },
+    {
+      "byte_count": 16060150,
+      "first_retrieved_at": "2026-09-07T19:06:50.056820+00:00",
+      "refusals": [],
+      "sha256": "578976bd21de3f00456b3408649bcfb2c24f452cbcba67084baa817eccb6550c",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20241008-20241107_nmfp.zip"
+    },
+    {
+      "byte_count": 8539426,
+      "first_retrieved_at": "2026-09-07T19:06:51.574991+00:00",
+      "refusals": [],
+      "sha256": "8f04451d51b0fecbdc173cc33fd95f876072a6a1a843c3d9a8616dacdadeb6c7",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20241108-20241206_nmfp.zip"
+    },
+    {
+      "byte_count": 9264689,
+      "first_retrieved_at": "2026-09-07T19:06:53.002150+00:00",
+      "refusals": [],
+      "sha256": "b642cc3deb8d2d601240bc0638cb47e08cd6035ac4525f6babdde5a7a46331c7",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20241209-20250108_nmfp.zip"
+    },
+    {
+      "byte_count": 8397606,
+      "first_retrieved_at": "2026-09-07T19:06:54.406208+00:00",
+      "refusals": [],
+      "sha256": "63434ab2051d33216564def856fea3e78a7c5b760335538e649d7effe94d8350",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250110-20250207_nmfp.zip"
+    },
+    {
+      "byte_count": 13038614,
+      "first_retrieved_at": "2026-09-07T19:06:55.765539+00:00",
+      "refusals": [],
+      "sha256": "6e1d26d21bfcce88bf6d494b1150dd7868efc858ebcb201b86b5f4c3a2b6e73b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250210-20250307_nmfp.zip"
+    },
+    {
+      "byte_count": 10931362,
+      "first_retrieved_at": "2026-09-07T19:06:57.190490+00:00",
+      "refusals": [],
+      "sha256": "074d656800ef44c2b954e098d1041b8c199e30a9b558cddd9e8952cd1ee3aa32",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250310-20250407_nmfp.zip"
+    },
+    {
+      "byte_count": 8988131,
+      "first_retrieved_at": "2026-09-07T19:06:58.620793+00:00",
+      "refusals": [],
+      "sha256": "571c6ab99110a3b2472984d026f78c300c5538d295dbcda68e9014acccf98cbb",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250408-20250507_nmfp.zip"
+    },
+    {
+      "byte_count": 10393560,
+      "first_retrieved_at": "2026-09-07T19:07:00.050670+00:00",
+      "refusals": [],
+      "sha256": "51f2d0c3f2d760c9e8acff3fcc8aef730293c5583b7e2a0798578b089d69c7f7",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250508-20250606_nmfp.zip"
+    },
+    {
+      "byte_count": 10136354,
+      "first_retrieved_at": "2026-09-07T19:07:01.373475+00:00",
+      "refusals": [],
+      "sha256": "26759b4d3691e06b0930835fa9cbb2197ad29f6f9e5b8fdecc0c03bb3e9f187e",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250609-20250709_nmfp.zip"
+    },
+    {
+      "byte_count": 9836959,
+      "first_retrieved_at": "2026-09-07T19:07:02.919708+00:00",
+      "refusals": [],
+      "sha256": "f14a3b3cd632221b9d4d5f0fbba0e0d39cf879c909743c9da928c10eb5e69573",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250710-20250807_nmfp.zip"
+    },
+    {
+      "byte_count": 9391648,
+      "first_retrieved_at": "2026-09-07T19:07:04.376433+00:00",
+      "refusals": [],
+      "sha256": "959e704dede7064e9141f30cecbb646f6ce2728963e4a4a367eb567041ef7c4d",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250808-20250908_nmfp.zip"
+    },
+    {
+      "byte_count": 9359476,
+      "first_retrieved_at": "2026-09-07T19:07:05.921043+00:00",
+      "refusals": [],
+      "sha256": "09b981980222d4d96969db53dcbd783aaf94ec368621f759285bc8a11de66c4e",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20250909-20251007_nmfp.zip"
+    },
+    {
+      "byte_count": 9677238,
+      "first_retrieved_at": "2026-09-07T19:07:07.310699+00:00",
+      "refusals": [],
+      "sha256": "bde14163bdf3da393c53007f39910a238b776cab287350f942d67f8e2d540bc8",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20251008-20251107_nmfp.zip"
+    },
+    {
+      "byte_count": 9983465,
+      "first_retrieved_at": "2026-09-07T19:07:08.708326+00:00",
+      "refusals": [],
+      "sha256": "a7ec48b9229fe4d59ca6253cfb56fa71df3718625fc37097a5c4cc2b7f67d103",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20251110-20251205_nmfp.zip"
+    },
+    {
+      "byte_count": 10700601,
+      "first_retrieved_at": "2026-09-07T19:07:10.267739+00:00",
+      "refusals": [],
+      "sha256": "e680034ebbb168d1c6d93a3b837076c82298789083b6ca4eefe00a48c92b01ea",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20251208-20260108_nmfp.zip"
+    },
+    {
+      "byte_count": 10164130,
+      "first_retrieved_at": "2026-09-07T19:07:11.817486+00:00",
+      "refusals": [],
+      "sha256": "f7a8bc341b0e90a0dc972816c28c456a209112c89440274df28ef229cda205a3",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260109-20260206_nmfp.zip"
+    },
+    {
+      "byte_count": 11596330,
+      "first_retrieved_at": "2026-09-07T19:07:13.332562+00:00",
+      "refusals": [],
+      "sha256": "095f0d75859059dbd55b6f2f45a9c65cab72a46639e737ecf343e8c3f3e9680b",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260209-20260306_nmfp.zip"
+    },
+    {
+      "byte_count": 10995633,
+      "first_retrieved_at": "2026-09-07T19:07:14.992360+00:00",
+      "refusals": [],
+      "sha256": "e3594a903629c8382e30850068167b7ea5c758a8db8222b02a9b4fdc3a2124b6",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260309-20260407_nmfp.zip"
+    },
+    {
+      "byte_count": 12147672,
+      "first_retrieved_at": "2026-09-07T19:07:16.610943+00:00",
+      "refusals": [],
+      "sha256": "51bfd9262560ca597d287dd22df2e0e26c5b185e0cc427f9e128d9caf24f5177",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260409-20260507_nmfp.zip"
+    },
+    {
+      "byte_count": 10683892,
+      "first_retrieved_at": "2026-09-07T19:07:18.084010+00:00",
+      "refusals": [],
+      "sha256": "457262a60055c2e560b40aaff077f44db98d8e8c326a1584a659ffbadb3892fd",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260508-20260605_nmfp.zip"
+    },
+    {
+      "byte_count": 10492535,
+      "first_retrieved_at": "2026-09-07T19:07:19.445132+00:00",
+      "refusals": [],
+      "sha256": "0a4082c48eb5d1023bdf954e3500beb7c485f122d2303135b7d32b7b9fafd97e",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260608-20260708_nmfp.zip"
+    },
+    {
+      "byte_count": 11918830,
+      "first_retrieved_at": "2026-09-07T16:09:18.913576+00:00",
+      "refusals": [],
+      "sha256": "40e0fd11e2de83342d3a6295068986d2aff9bae7dac983aa7e96af505b22187c",
+      "url": "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/20260709-20260807_nmfp.zip"
+    }
+  ],
+  "index_url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets",
+  "note": "The Form N-MFP archives that constitute this source. data/raw/ is gitignored and these bytes are not committed, so this file is how a fresh checkout knows what history is supposed to exist. An entry with an empty sha256 has never been fetched here. An entry with a non-empty refusals list was fetched and refused: the parser cannot read it faithfully, so it contributes no observations and is not placed under data/raw/.",
+  "source_id": "sec_nmfp"
+}
