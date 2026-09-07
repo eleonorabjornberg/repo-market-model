@@ -1,35 +1,126 @@
 {
   "fred_macro_latest_vintage": {
     "access": "public",
+    "coverage": [
+      "administered reserve rates",
+      "reserve balances",
+      "Treasury General Account",
+      "overnight reverse repurchase agreements",
+      "effective federal funds rate"
+    ],
     "fields": ["IORB", "IOER", "WRESBAL", "WTREGEN", "RRPONTSYD", "DFF"],
     "frequency": "mixed daily and weekly",
+    "identities": [],
     "limitation": "Latest revised vintage; not point-in-time historical data. Weekly series require release-lag treatment.",
     "provider": "Federal Reserve Bank of St. Louis FRED",
+    "release_lag": {
+      "basis": "snapshot_retrieved_at",
+      "note": "Latest-vintage observations inherit the immutable snapshot retrieval timestamp; ref_date plus a nominal publication lag would falsely predate later revisions."
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the FRED series definitions; the empty declaration is not a finding.",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv"
   },
   "nyfed_sofr": {
     "access": "public",
-    "fields": ["rate", "percentiles", "volume", "revision indicator"],
+    "coverage": [
+      "SOFR rate",
+      "distribution percentiles",
+      "transaction volume",
+      "revision status"
+    ],
+    "fields": ["rate", "percentiles", "volume", "revision_indicator"],
     "frequency": "business daily",
+    "identities": [],
     "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
     "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "SOFR is first published at about 08:00 ET on the next business day and may be revised at about 14:30 ET that day; 15:00 ET is the conservative finalized availability time.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
     "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
   },
   "sec_nmfp": {
     "access": "public",
-    "fields": ["fund", "portfolio holdings", "liquid assets", "shareholder flows"],
+    "coverage": [
+      "fund identity",
+      "portfolio holdings",
+      "liquid assets",
+      "shareholder flows",
+      "series balance sheet"
+    ],
+    "fields": [
+      "fund",
+      "cash",
+      "portfolio_securities",
+      "other_assets",
+      "liabilities",
+      "net_assets"
+    ],
     "frequency": "monthly",
+    "identities": [
+      {
+        "left": ["cash", "portfolio_securities", "other_assets"],
+        "name": "series_assets_reconcile_to_liabilities_and_net_assets",
+        "right": ["liabilities", "net_assets"],
+        "tolerance": {
+          "absolute": 0.02,
+          "unit": "USD"
+        }
+      }
+    ],
     "limitation": "As-filed data may contain reporting errors and becomes available after month-end.",
     "provider": "U.S. Securities and Exchange Commission",
+    "release_lag": {
+      "basis": "snapshot_retrieved_at",
+      "note": "The bulk extract is a monthly compilation of as-filed submissions; rows inherit the immutable extract retrieval timestamp rather than the filing deadline or report date."
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed across the Form N-MFP tables and filing variants; the empty declaration is not a finding.",
     "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
   },
   "treasury_auctions": {
     "access": "public",
-    "fields": ["CUSIP", "announcement", "auction", "issue", "maturity", "offering amount"],
+    "coverage": [
+      "security identity",
+      "announcement timing",
+      "auction timing",
+      "issue and maturity timing",
+      "offering amount"
+    ],
+    "fields": [
+      "cusip",
+      "announcement_date",
+      "auction_date",
+      "issue_date",
+      "maturity_date",
+      "offering_amount"
+    ],
     "frequency": "event",
+    "identities": [],
     "limitation": "Announcement and result vintages must be separated to avoid using auction outcomes too early.",
     "provider": "U.S. Department of the Treasury Fiscal Data",
+    "release_lag": {
+      "available_time": "23:59",
+      "basis": "record_date",
+      "days": 0,
+      "note": "Fiscal Data defines record_date as the publication date; end-of-day availability conservatively avoids assuming an intraday publication time.",
+      "timezone": "America/New_York",
+      "unit": "calendar_days"
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
   }
 }
-

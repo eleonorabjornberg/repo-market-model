@@ -1,11 +1,19 @@
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model.data import DataContractError, audit_panel, load_daily_panel
+from repo_model.data import (
+    DataContractError,
+    audit_panel,
+    fixed_bp_stress_label_columns,
+    load_daily_panel,
+    load_point_in_time_panel,
+    stress_label_threshold,
+)
 
 
 class DataContractTests(unittest.TestCase):
@@ -44,6 +52,72 @@ class DataContractTests(unittest.TestCase):
         )
         report = audit_panel(load_daily_panel(path))
         self.assertEqual(len(report.warnings), 1)
+
+
+class PointInTimeDataContractTests(unittest.TestCase):
+    SHA = "a" * 64
+
+    def write_csv(self, contents: str) -> Path:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv"
+        path.write_text(contents, encoding="utf-8")
+        return path
+
+    def test_cutoff_uses_available_at_not_reference_date(self):
+        path = self.write_csv(
+            "series_id,ref_date,available_at,value,vintage_id,source_sha\n"
+            f"IORB,2026-01-01,2026-01-02T12:00:00+00:00,4.30,v1,{self.SHA}\n"
+            f"IORB,2026-01-02,2026-01-05T12:00:00+00:00,4.31,v2,{self.SHA}\n"
+        )
+
+        rows = load_point_in_time_panel(
+            path,
+            cutoff=datetime(2026, 1, 3, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].ref_date.isoformat(), "2026-01-01")
+
+    def test_rejects_available_at_without_timezone(self):
+        path = self.write_csv(
+            "series_id,ref_date,available_at,value,vintage_id,source_sha\n"
+            f"IORB,2026-01-01,2026-01-02T12:00:00,4.30,v1,{self.SHA}\n"
+        )
+
+        with self.assertRaisesRegex(DataContractError, "UTC offset"):
+            load_point_in_time_panel(path)
+
+    def test_rejects_invalid_source_checksum(self):
+        path = self.write_csv(
+            "series_id,ref_date,available_at,value,vintage_id,source_sha\n"
+            "IORB,2026-01-01,2026-01-02T12:00:00Z,4.30,v1,not-a-sha\n"
+        )
+
+        with self.assertRaisesRegex(DataContractError, "SHA-256"):
+            load_point_in_time_panel(path)
+
+
+class StressLabelTests(unittest.TestCase):
+    def test_fixed_bp_labels_use_strict_exceedance(self):
+        declaration = {"primary_rule": "fixed_bp", "taus_bp": [5, 10, 20, 50]}
+
+        rows = fixed_bp_stress_label_columns([5.0, 10.01, 51.0], declaration)
+
+        self.assertEqual(rows[0]["stress_gt_5bp"], 0)
+        self.assertEqual(rows[1]["stress_gt_5bp"], 1)
+        self.assertEqual(rows[1]["stress_gt_10bp"], 1)
+        self.assertEqual(rows[1]["stress_gt_20bp"], 0)
+        self.assertEqual(rows[2]["stress_gt_50bp"], 1)
+
+    def test_trailing_threshold_excludes_the_current_row(self):
+        values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+
+        self.assertEqual(stress_label_threshold(values, 4, 4, 1.0), 4.0)
+
+    def test_trailing_threshold_requires_declared_history(self):
+        with self.assertRaisesRegex(DataContractError, "insufficient"):
+            stress_label_threshold([1.0, 2.0], 1, 2, 0.9)
 
 
 if __name__ == "__main__":

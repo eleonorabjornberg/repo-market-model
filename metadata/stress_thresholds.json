@@ -1,0 +1,17 @@
+{
+  "label_columns": [
+    "stress_gt_5bp",
+    "stress_gt_10bp",
+    "stress_gt_20bp",
+    "stress_gt_50bp"
+  ],
+  "primary_rule": "fixed_bp",
+  "secondary_rule": {
+    "full_sample_allowed": false,
+    "history": "rows_strictly_before_label_row",
+    "type": "trailing_percentile"
+  },
+  "target": "sofr_minus_iorb_spread_t_plus_1_bps",
+  "taus_bp": [5.0, 10.0, 20.0, 50.0],
+  "version": 1
+}

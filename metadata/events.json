@@ -1,0 +1,19 @@
+{
+  "checksum_algorithm": "sha256",
+  "checksum_scope": "canonical JSON of name, start, and end with sorted keys and no whitespace",
+  "version": 1,
+  "windows": [
+    {
+      "name": "sep-2019",
+      "start": "2019-09-16",
+      "end": "2019-09-20",
+      "checksum": "aa70567488843594c74b7fa64936f14930e40c0a66abfb9f49af07dde67bad7b"
+    },
+    {
+      "name": "mar-2020",
+      "start": "2020-03-09",
+      "end": "2020-03-20",
+      "checksum": "3442292f7a256fc17591784e6cf4e65c4daf488eaa92e6084389f906aa0eda5f"
+    }
+  ]
+}

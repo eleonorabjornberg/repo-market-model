@@ -5,25 +5,27 @@ build rather than warning.
 
 The contract describes a long point-in-time panel (`series_id`, `ref_date`,
 `available_at`, `vintage_id`, `source_sha`) and a `fit`/`predict` forecast
-interface. The current module layout implements neither yet: `repo_model.data`
-loads a wide daily frame keyed on `date` alone, and `repo_model.baseline`
-exposes a single streaming backtest instead of a fitted object. Tests 1-3 and 5
-are therefore written against the strongest available stand-ins:
+interface. `repo_model.data` now implements the canonical long-form loader, but
+the legacy baseline still consumes a wide daily frame keyed on `date`, and
+`repo_model.baseline` exposes a streaming backtest instead of a fitted object.
+Tests 1-3 and 5 for that legacy path therefore use the strongest available
+stand-ins:
 
-  * `available_at` is taken to equal `date` (zero release lag). This is the
-    assumption the current loader silently makes, and pinning it here means the
-    day a real `available_at` column arrives, these tests must be revisited
-    rather than quietly weakened.
+  * `available_at` is taken to equal `date` (zero release lag) only in the
+    legacy wide-path tests. Separate conformance tests exercise the real
+    point-in-time fields and cutoff behavior.
   * "refit and re-predict" is the backtest re-run over a perturbed panel.
   * the only learned transform in the codebase today is the residual quantile
     that sets the prediction interval, so that is what test 3 isolates.
-  * the source registry declares no structural zeros yet, so test 5 can only
-    check the half the loader is capable of: that missing is never coerced to
-    0.0 and a real 0.0 survives as one.
+  * structural-zero semantics have not yet been reviewed source by source, so
+    test 5 remains a stand-in for those sources: it checks only the half the
+    loader is capable of, that missing is never coerced to 0.0 and a real 0.0
+    survives as one.
 
-Contract test 4 (identity preservation) is absent: the registry declares no
-accounting identities and no tolerances, so there is nothing to reconcile
-against. It arrives with the registry work in Track A.
+Contract test 4 (identity preservation) cannot reconcile panel snapshots until
+the point-in-time panel lands. The registry half is enforceable now: every
+source must make explicit identity and structural-zero declarations, and every
+declared accounting identity must name its terms and tolerance.
 
 `AGENT_CONTRACT.md`, "Two holdout roles", names two and keeps them distinct.
 `rolling_origin` produces the **scoring holdout**; `repo_model.event_eval`
@@ -137,20 +139,25 @@ forecast or in the loader is not covered by any of the three.
 
 import inspect
 import json
+import re
 import sys
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.baseline import _quantile, rolling_persistence_backtest
+from repo_model.contract import validate_release_lag
 from repo_model.data import (
     DailyObservation,
     DataContractError,
     audit_panel,
     load_daily_panel,
+    load_point_in_time_panel,
+    load_stress_thresholds,
+    stress_label_threshold,
 )
 from repo_model.event_eval import load_event_windows
 from repo_model.splits import rolling_origin
@@ -421,10 +428,10 @@ class TransformIsolationTests(unittest.TestCase):
 class StructuralZeroTests(unittest.TestCase):
     """Contract test 5: a structural zero is never confused with a missing value.
 
-    The registry declares no structural zeros yet, so "declared" is
-    unenforceable here -- that half is in `TargetSchemaTests`. What the current
-    loader can be held to is the coercion rule: an absent observation stays
-    absent, and a genuine 0.0 stays 0.0, at load and through the audit.
+    The registry's current sources have not completed a structural-zero review,
+    so this remains a stand-in for each of them. What the current loader can be
+    held to is the coercion rule: an absent observation stays absent, and a
+    genuine 0.0 stays 0.0, at load and through the audit.
     """
 
     def write_csv(self, contents):
@@ -609,12 +616,182 @@ class SplitterPurgeTests(unittest.TestCase):
             rolling_origin(self.dates, self.MIN_TRAIN, self.STEP)
 
 
-class TargetSchemaTests(unittest.TestCase):
-    """The contract's real requirements, against interfaces that do not exist.
+class SourceRegistryTests(unittest.TestCase):
+    """Conformance tests for the machine-readable source registry."""
 
-    Every test here is expected to fail today. When one starts passing,
-    `unittest` reports an unexpected success and the build goes red -- which is
-    the signal to delete the stand-in above it and write the real test.
+    def test_source_registry_declares_identities_and_structural_zeros(self):
+        """Contract tests 4 and 5 require explicit, machine-readable metadata."""
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        self.assertIsInstance(registry, dict)
+        self.assertTrue(registry)
+
+        declared_identities = 0
+        for source_id, source in registry.items():
+            with self.subTest(source_id=source_id):
+                self.assertIsInstance(source.get("identities"), list)
+                self.assertIsInstance(source.get("structural_zeros"), list)
+                self.assertIsInstance(source.get("structural_zeros_reviewed"), bool)
+                self.assertIsInstance(source.get("reviewed_note"), str)
+                self.assertTrue(source["reviewed_note"])
+                if not source["structural_zeros_reviewed"]:
+                    self.assertEqual(
+                        source["structural_zeros"],
+                        [],
+                        msg=(
+                            f"{source_id}: unreviewed structural-zero declarations "
+                            "must not be recorded as findings"
+                        ),
+                    )
+
+                # The shape of `release_lag` is the seam both tracks build
+                # against, so it is checked by the shared, human-owned module
+                # rather than restated here. A second copy of these rules is
+                # exactly how one field came to be called `calendar` on one
+                # side and `unit` on the other; see AGENT_CONTRACT.md,
+                # "Decided: the `release_lag` schema".
+                problems = validate_release_lag(source_id, source.get("release_lag"))
+                self.assertEqual(problems, [], msg="; ".join(problems))
+
+                self.assertIsInstance(source.get("coverage"), list)
+                self.assertTrue(source["coverage"])
+                self.assertTrue(all(isinstance(item, str) for item in source["coverage"]))
+
+                machine_fields = source.get("fields")
+                self.assertIsInstance(machine_fields, list)
+                self.assertTrue(machine_fields)
+                for field in machine_fields:
+                    self.assertIsInstance(field, str)
+                    self.assertRegex(field, re.compile(r"^[A-Za-z][A-Za-z0-9_]*$"))
+                fields = set(machine_fields)
+                for identity in source["identities"]:
+                    declared_identities += 1
+                    self.assertIsInstance(identity.get("name"), str)
+                    self.assertTrue(identity["name"])
+                    for side in ("left", "right"):
+                        self.assertIsInstance(identity.get(side), list)
+                        self.assertTrue(identity[side])
+                        self.assertTrue(set(identity[side]).issubset(fields))
+                    tolerance = identity.get("tolerance")
+                    self.assertIsInstance(tolerance, dict)
+                    self.assertIsInstance(tolerance.get("absolute"), (int, float))
+                    self.assertGreaterEqual(tolerance["absolute"], 0)
+                    self.assertIsInstance(tolerance.get("unit"), str)
+                    self.assertTrue(tolerance["unit"])
+
+                for declaration in source["structural_zeros"]:
+                    self.assertIsInstance(declaration, dict)
+                    self.assertIn(declaration.get("field"), fields)
+                    self.assertIsInstance(declaration.get("when"), str)
+                    self.assertTrue(declaration["when"])
+
+        self.assertGreater(
+            declared_identities,
+            0,
+            msg="registry must declare at least one testable accounting identity",
+        )
+
+
+class PointInTimePanelTests(unittest.TestCase):
+    """Conformance tests for the canonical long-form point-in-time panel."""
+
+    SHA = "b" * 64
+
+    def write_panel(self, rows):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv"
+        path.write_text(
+            "series_id,ref_date,available_at,value,vintage_id,source_sha\n"
+            + "".join(rows),
+            encoding="utf-8",
+        )
+        return path
+
+    def test_panel_rows_carry_point_in_time_provenance(self):
+        path = self.write_panel(
+            [f"IORB,2026-01-02,2026-01-02T12:00:00Z,4.30,v1,{self.SHA}\n"]
+        )
+        row = load_point_in_time_panel(path)[0]
+
+        self.assertEqual(row.series_id, "IORB")
+        self.assertEqual(row.ref_date, date(2026, 1, 2))
+        self.assertEqual(
+            row.available_at,
+            datetime(2026, 1, 2, 12, tzinfo=timezone.utc),
+        )
+        self.assertEqual(row.value, 4.30)
+        self.assertEqual(row.vintage_id, "v1")
+        self.assertEqual(row.source_sha, self.SHA)
+
+    def test_revisions_are_appended_as_new_vintages(self):
+        path = self.write_panel(
+            [
+                f"IORB,2026-01-02,2026-01-02T12:00:00Z,4.30,v1,{self.SHA}\n",
+                f"IORB,2026-01-02,2026-01-05T12:00:00Z,4.31,v2,{self.SHA}\n",
+            ]
+        )
+
+        rows = load_point_in_time_panel(path)
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual([row.vintage_id for row in rows], ["v1", "v2"])
+        self.assertEqual([row.value for row in rows], [4.30, 4.31])
+        early = load_point_in_time_panel(
+            path,
+            cutoff=datetime(2026, 1, 3, tzinfo=timezone.utc),
+        )
+        self.assertEqual([row.vintage_id for row in early], ["v1"])
+
+
+class StressLabelContractTests(unittest.TestCase):
+    """The fixed primary target and leak-free trailing secondary threshold."""
+
+    def test_the_stress_label_is_point_in_time_and_never_full_sample(self):
+        window, probability = 10, 0.9
+        values = [4.30 + 0.01 * (index % 5) for index in range(40)]
+        event_index = 25
+        shocked = [
+            value + 50.0 if position >= event_index else value
+            for position, value in enumerate(values)
+        ]
+
+        self.assertEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(values, event_index, window, probability),
+            msg="the trailing threshold reached into the event boundary",
+        )
+        self.assertNotEqual(
+            stress_label_threshold(shocked, event_index, window, probability),
+            stress_label_threshold(shocked, len(shocked), len(shocked), probability),
+            msg="the trailing threshold is a prohibited full-sample percentile",
+        )
+        later = event_index + window
+        self.assertNotEqual(
+            stress_label_threshold(shocked, later, window, probability),
+            stress_label_threshold(values, later, window, probability),
+            msg="the future shock is not visible when it enters the trailing window",
+        )
+
+    def test_fixed_bp_thresholds_are_the_primary_label_and_are_declared(self):
+        declared = load_stress_thresholds()
+
+        self.assertIn("version", declared)
+        self.assertEqual(tuple(declared["taus_bp"]), (5.0, 10.0, 20.0, 50.0))
+        self.assertEqual(declared["primary_rule"], "fixed_bp")
+        self.assertEqual(
+            declared["secondary_rule"]["history"],
+            "rows_strictly_before_label_row",
+        )
+        self.assertIs(declared["secondary_rule"]["full_sample_allowed"], False)
+
+
+class TargetSchemaTests(unittest.TestCase):
+    """The contract's expected-to-fail model requirements for absent interfaces.
+
+    Every unimplemented interface here is expected to fail. When one starts
+    passing, `unittest` reports an unexpected success and the build goes red --
+    which is the signal to replace its tripwire with a real assertion.
 
     The two `hasattr` tests below are presence tripwires, not conformance
     checks: they fire on a name existing and say nothing about whether it
@@ -622,25 +799,6 @@ class TargetSchemaTests(unittest.TestCase):
     interface landed, go write the real test", never as "the interface is
     correct".
     """
-
-    @unittest.expectedFailure
-    def test_panel_rows_carry_point_in_time_provenance(self):
-        """Contract test 1, properly: eligibility needs `available_at`."""
-
-        rows = load_daily_panel(SAMPLE_PANEL)
-        for field in ("series_id", "ref_date", "available_at", "vintage_id", "source_sha"):
-            self.assertTrue(
-                hasattr(rows[0], field),
-                msg=f"panel row has no {field!r}; the as-of rule cannot be enforced",
-            )
-
-    @unittest.expectedFailure
-    def test_revisions_are_appended_as_new_vintages(self):
-        """A value revised at T+3 is a second row, not an overwrite."""
-
-        from repo_model.data import load_point_in_time_panel  # noqa: F401
-
-        raise AssertionError("no point-in-time loader to test revision appending against")
 
     @unittest.expectedFailure
     def test_forecast_interface_is_fit_predict_predict_stress(self):
@@ -653,133 +811,6 @@ class TargetSchemaTests(unittest.TestCase):
                 hasattr(baseline, name),
                 msg=f"no {name!r}; quantile levels are not yet comparable across models",
             )
-
-    @unittest.expectedFailure
-    def test_event_metadata_declares_the_single_evaluation_windows(self):
-        """The contract names Sep 2019 and Mar 2020 as single-evaluation windows.
-
-        `repo_model.event_eval` can score one, but it takes the window as an
-        argument: the declarations belong in `metadata/events.json`, which does
-        not exist yet. Until it does, every event holdout runs against a window
-        somebody typed, and nothing checks it is the window that was declared.
-        """
-
-        payload = json.loads(
-            (REPO_ROOT / "metadata" / "events.json").read_text(encoding="utf-8")
-        )
-        windows = load_event_windows(payload)
-        declared = {window.name for window in windows}
-        for event in ("sep-2019", "mar-2020"):
-            self.assertIn(event, declared)
-        for window in windows:
-            self.assertTrue(window.checksum, msg=f"{window.name} has no checksum")
-
-    @unittest.expectedFailure
-    def test_the_stress_label_is_point_in_time_and_never_full_sample(self):
-        """The label rule from "Decided: stress target and event holdouts".
-
-        The contract:
-
-            The label MUST NOT use a full-sample percentile -- same leak class
-            the contract suite already catches. Fixed bp thresholds are
-            primary; trailing-window percentile is secondary; full-sample is
-            prohibited. At an event boundary the trailing window is computed
-            from pre-event rows only.
-
-        Ownership: "Data layer: metadata/events.json, the label column and its
-        point-in-time rule." `CLAUDE.md` puts the stress label column and its
-        point-in-time rule outside Track B entirely, so this is a spec rather
-        than a test of anything model-eval provides. `repo_model.event_eval`
-        briefly carried a `trailing_percentile` that satisfied the property
-        below; it was a second implementation of a Track A rule, which
-        `CLAUDE.md` prohibits even as a stopgap, and it was deleted in favour
-        of this test. The behaviour it demonstrated is preserved here as a
-        requirement on Track A's implementation instead of as code.
-
-        The symbol named below is a proposal. Track A may site or rename it
-        freely -- what is not negotiable is the property, which is contract
-        test 2's shape applied to the label: a threshold in force at row `i`
-        must not move when rows at or after `i` move. If it does, the label on
-        the first day of a knowledge-holdout window is informed by the event
-        itself and every score computed against it is circular.
-
-        Three assertions, and the third is the one that gives the other two
-        teeth: without it, an implementation whose trailing and full-sample
-        thresholds happened to coincide on this series would pass by accident.
-        """
-
-        from repo_model.data import stress_label_threshold
-
-        window, probability = 10, 0.9
-        values = [4.30 + 0.01 * (index % 5) for index in range(40)]
-        event_index = 25
-        shocked = [
-            value + 50.0 if position >= event_index else value
-            for position, value in enumerate(values)
-        ]
-
-        # 1. The threshold at the event edge ignores the event and everything
-        #    after it. This is the leak the rule exists to prevent.
-        self.assertEqual(
-            stress_label_threshold(shocked, event_index, window, probability),
-            stress_label_threshold(values, event_index, window, probability),
-            msg="the label at the event boundary moved when the event was shocked; "
-            "the trailing window is reaching across the boundary",
-        )
-
-        # 2. It is not a full-sample percentile wearing a trailing name.
-        self.assertNotEqual(
-            stress_label_threshold(shocked, event_index, window, probability),
-            stress_label_threshold(shocked, len(shocked), len(shocked), probability),
-            msg="the trailing threshold equals the full-sample one; full-sample "
-            "is prohibited",
-        )
-
-        # 3. The shock is visible somewhere, so 1 and 2 are not vacuous.
-        later = event_index + window
-        self.assertNotEqual(
-            stress_label_threshold(shocked, later, window, probability),
-            stress_label_threshold(values, later, window, probability),
-            msg="the shock changed no threshold at all; assertions 1 and 2 have "
-            "no power against this implementation",
-        )
-
-    @unittest.expectedFailure
-    def test_fixed_bp_thresholds_are_the_primary_label_and_are_declared(self):
-        """"Fixed bp thresholds are primary", and tau is declared, not tuned.
-
-        The contract puts the exceedance family at tau in {5, 10, 20, 50} bp and
-        requires the threshold value be "declared in metadata/, versioned, not
-        tunable after the fact". `repo_model.event_eval` takes `taus` as an
-        argument precisely so that it is not the thing declaring them; this test
-        is where the declaration is required to exist.
-
-        Which file in `metadata/` is Track A's call -- the assertion is that
-        some versioned metadata declares the family, and that the primary label
-        is that fixed-bp rule rather than a percentile.
-        """
-
-        from repo_model.data import load_stress_thresholds
-
-        declared = load_stress_thresholds()
-        self.assertIn("version", declared)
-        self.assertEqual(tuple(declared["taus_bp"]), (5.0, 10.0, 20.0, 50.0))
-        self.assertEqual(
-            declared["primary_rule"],
-            "fixed_bp",
-            msg="fixed bp thresholds are primary; trailing-window percentile is "
-            "secondary and full-sample is prohibited",
-        )
-
-    @unittest.expectedFailure
-    def test_source_registry_declares_identities_and_structural_zeros(self):
-        """Contract tests 4 and 5 both need declarations the registry lacks."""
-
-        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
-        for source in registry.values():
-            self.assertIn("identities", source)
-            self.assertIn("structural_zeros", source)
-            self.assertIn("release_lag", source)
 
 
 if __name__ == "__main__":
