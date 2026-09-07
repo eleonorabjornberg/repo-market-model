@@ -42,7 +42,10 @@ Implemented:
 - frozen, checksummed event windows for separate knowledge holdouts;
 - probabilistic metrics, including pinball loss, threshold-weighted CRPS,
   Brier skill, calibration diagnostics, and stationary-bootstrap intervals; and
-- **361 standard-library tests**, including leakage and mutation-oriented guards.
+- a standard-library test suite of leakage and mutation-oriented guards. Its
+  size is deliberately not quoted here: a count transcribed into prose is stale
+  at the next commit, and a repository about point-in-time honesty should not
+  publish one. The badge above and the CI log are the count.
 
 Still in progress:
 

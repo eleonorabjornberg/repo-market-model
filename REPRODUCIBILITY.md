@@ -33,10 +33,19 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
   python3 -B -m unittest discover -s tests
 ```
 
-At commit `5dea543`, the expected result is 361 tests: 360 passes and one
-intentional expected failure. The expected failure marks the fitted-model
-interface that has not yet been implemented; an unexpected success fails CI until
-it is replaced by a behavioral conformance test.
+The expected result is `OK`. No test count appears here, and none should: a
+number transcribed into prose is stale at the next commit, and a stale count on
+the page that tells you how to reproduce the repository is the same failure this
+project is about. CI runs the suite with `-v` on every push; that log is the
+count.
+
+Two properties of the run are stable and do matter. `unittest` exits non-zero on
+an *unexpected success* as well as on a failure, so an `expectedFailure`
+placeholder standing in for an unbuilt interface turns the build red the moment
+that interface lands, and stays red until the same pull request replaces it with
+behavioral conformance tests. There are no such placeholders at present. Skip
+counts vary with whether `data/raw/` snapshots are present in the checkout and
+carry no information; never write one into an acceptance criterion.
 
 Exercise the public synthetic workflow:
 

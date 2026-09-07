@@ -35,7 +35,7 @@ The current assets-to-liabilities identity uses an absolute tolerance of USD 0.5
 billion. An absolute bound calibrated on a multi-trillion-dollar cross-section can
 be too permissive for a small or partial extract.
 
-**Deliberately deferred, 10 September 2026.** The argument for a relative bound rested
+**Deliberately deferred at `7ea8f08`.** The argument for a relative bound rested
 on the admitted cross-sections spanning roughly 4500x in size, where one absolute number
 is 35 ppm of the largest month and a quarter of the smallest. Excluding under-covered
 cross-sections removes exactly those small months: the residuals that made the case are

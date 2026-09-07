@@ -1,8 +1,13 @@
 # Project Status
 
-**Measured on 11 September 2026 at commit `ada77ac`.** This page is a snapshot,
-not a claim that the repository is complete. It describes `main` only: work sitting
-unmerged on a branch is named as such.
+**Measured at commit `c363850`.** The commit is the timestamp: `git show -s
+--format=%ci c363850` prints when. No date is written onto this page by hand,
+because a hand-written date can run ahead of the work it describes, and dating
+information other than when it was actually available is the failure this
+repository exists to prevent.
+
+This page is a snapshot, not a claim that the repository is complete. It describes
+`main` only: work sitting unmerged on a branch is named as such.
 
 ## Summary
 
@@ -19,9 +24,9 @@ was produced on a 25-row synthetic sample.
 
 ## Evidence available now
 
-- The standard-library suite completes successfully: 409 tests pass, with no
-  expected failures remaining. Both intentional tripwires have been discharged
-  into real assertions.
+- The standard-library suite completes successfully, with no expected failures
+  remaining: both intentional tripwires have been discharged into real
+  assertions. How many tests that is belongs to CI, not to this page.
 - The `fit` / `predict` / `predict_stress` interface has **two** implementers — a
   persistence benchmark and an autoregressive model with exogenous regressors. Its
   conformance tests are parametrized over implementations, so each runs once per
@@ -97,11 +102,13 @@ Stated explicitly, because each is easy to mistake for something stronger.
   yielding nothing when an expected column is renamed — exists on the data branch
   and is **not yet merged into `main`**. Until the backfill supplies more archives,
   nothing has tested the adapter against real schema variation.
-- **Which sources a model's feature set draws on is not yet enforced in code.** The
-  correspondence between registry field names and panel column names has been
-  decided and is to be declared in the contract module; until it is, the evaluation
-  commands take a hand-supplied source list, and a caller can size the purge over a
-  narrower set than the model actually reads. Nothing currently checks that.
+- **Which sources a model's feature set draws on is declared, but not yet enforced
+  on the evaluation path.** The correspondence between registry field names and
+  panel column names is now declared in the contract module as `FEATURE_SOURCES`,
+  resolved by `sources_for_features`. Both `cli_eval` subcommands still accept a
+  hand-supplied `--source` list, so a caller can still size the purge over a
+  narrower set than the model actually reads. Nothing checks that until both
+  evaluation paths call the map and the flag is removed.
 - **The Treasury settlement series aggregates decisions it does not record.**
   Security type, tenor, and Fed SOMA add-ons are summed into one series. That is
   defensible for a first phase, but bill and coupon settlements have different

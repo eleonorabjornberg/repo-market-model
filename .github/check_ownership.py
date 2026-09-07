@@ -41,6 +41,10 @@ HUMAN_ONLY = (
     "pyproject.toml",
     "docs/PROJECT_STATUS.md",
     "docs/DATA_QUALITY_DECISIONS.md",
+    # The guard on the published documents: it refuses a transcribed test count
+    # or a hand-written date in tracked Markdown. It checks human-owned pages,
+    # so it is human-owned too.
+    "tests/test_docs_freshness.py",
     ".github/",
     # Shared contract fixtures. Both tracks import them; neither edits them.
     # A path-level gate cannot see a semantic collision, so the shape both

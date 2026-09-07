@@ -25,6 +25,11 @@ proposed to the human and applied once, by one agent, before either track
 resumes. An agent that believes the contract is wrong stops and says so.
 It does not edit around it.
 
+`tests/test_docs_freshness.py` is the human's, and is listed under `HUMAN_ONLY`
+in `.github/check_ownership.py`. It guards the published documents against
+transcribed test counts and hand-written dates, so it belongs with those
+documents rather than with either track's tests.
+
 ## Why this matters more than usual here
 
 Both tracks can silently introduce look-ahead. Track A leaks by backfilling
