@@ -77,6 +77,55 @@ class AuditReport:
     warnings: Sequence[str]
 
 
+@dataclass(frozen=True)
+class SeriesQuality:
+    series_id: str
+    observation_count: int
+    reference_date_count: int
+    start_date: date
+    end_date: date
+    missing_reference_dates: int
+    missing_rate: float
+    revised_reference_dates: int
+    revision_rows: int
+    largest_absolute_revision: Optional[float]
+
+
+@dataclass(frozen=True)
+class PointInTimeAuditReport:
+    row_count: int
+    reference_date_count: int
+    start_date: date
+    end_date: date
+    series: Mapping[str, SeriesQuality]
+    missing_series: Mapping[str, int]
+    warnings: Sequence[str]
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "rows": self.row_count,
+            "reference_dates": self.reference_date_count,
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat(),
+            "series": {
+                series_id: {
+                    "observations": quality.observation_count,
+                    "reference_dates": quality.reference_date_count,
+                    "start_date": quality.start_date.isoformat(),
+                    "end_date": quality.end_date.isoformat(),
+                    "missing_reference_dates": quality.missing_reference_dates,
+                    "missing_rate": quality.missing_rate,
+                    "revised_reference_dates": quality.revised_reference_dates,
+                    "revision_rows": quality.revision_rows,
+                    "largest_absolute_revision": quality.largest_absolute_revision,
+                }
+                for series_id, quality in sorted(self.series.items())
+            },
+            "missing_series": dict(sorted(self.missing_series.items())),
+            "warnings": list(self.warnings),
+        }
+
+
 def _parse_float(raw: str, field: str, row_number: int) -> Optional[float]:
     value = raw.strip()
     if value == "":
@@ -230,6 +279,282 @@ def load_point_in_time_panel(
     if cutoff is None:
         return observations
     return [row for row in observations if row.available_at <= cutoff]
+
+
+def audit_point_in_time_panel(
+    observations: Iterable[PointInTimeObservation],
+    *,
+    expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
+) -> PointInTimeAuditReport:
+    """Summarize coverage and revisions without treating a revision as coverage.
+
+    By default, missingness is measured against the union of dates represented by
+    the supplied panel. Callers with a source calendar may pass a per-series date
+    grid in ``expected_ref_dates``; this is preferable for low-frequency series.
+    No value is imputed or carried forward by this report.
+    """
+
+    rows = list(observations)
+    if not rows:
+        raise DataContractError("point-in-time panel contains no observations")
+    if [row.available_at for row in rows] != sorted(row.available_at for row in rows):
+        raise DataContractError("point-in-time rows must be appended in availability order")
+
+    panel_dates = sorted({row.ref_date for row in rows})
+    by_series: Dict[str, List[PointInTimeObservation]] = {}
+    for row in rows:
+        by_series.setdefault(row.series_id, []).append(row)
+
+    series_report: Dict[str, SeriesQuality] = {}
+    warnings: List[str] = []
+    for series_id, series_rows in sorted(by_series.items()):
+        by_reference: Dict[date, List[PointInTimeObservation]] = {}
+        for row in series_rows:
+            by_reference.setdefault(row.ref_date, []).append(row)
+        reference_dates = sorted(by_reference)
+        if expected_ref_dates is None:
+            expected = set(panel_dates)
+        else:
+            expected = set(expected_ref_dates.get(series_id, reference_dates))
+        observed = set(reference_dates)
+        missing = len(expected - observed)
+        denominator = len(expected)
+        revised = 0
+        revision_rows = 0
+        largest_revision: Optional[float] = None
+        for ref_date, vintages in by_reference.items():
+            ordered = sorted(vintages, key=lambda row: row.available_at)
+            if len(ordered) <= 1:
+                continue
+            revised += 1
+            revision_rows += len(ordered) - 1
+            for previous, current in zip(ordered, ordered[1:]):
+                magnitude = abs(current.value - previous.value)
+                largest_revision = (
+                    magnitude
+                    if largest_revision is None
+                    else max(largest_revision, magnitude)
+                )
+            if any(
+                current.available_at <= previous.available_at
+                for previous, current in zip(ordered, ordered[1:])
+            ):
+                warnings.append(
+                    f"{series_id} {ref_date}: revisions do not have increasing availability"
+                )
+        series_report[series_id] = SeriesQuality(
+            series_id=series_id,
+            observation_count=len(series_rows),
+            reference_date_count=len(reference_dates),
+            start_date=reference_dates[0],
+            end_date=reference_dates[-1],
+            missing_reference_dates=missing,
+            missing_rate=(missing / denominator if denominator else 0.0),
+            revised_reference_dates=revised,
+            revision_rows=revision_rows,
+            largest_absolute_revision=largest_revision,
+        )
+
+    return PointInTimeAuditReport(
+        row_count=len(rows),
+        reference_date_count=len(panel_dates),
+        start_date=panel_dates[0],
+        end_date=panel_dates[-1],
+        series=series_report,
+        missing_series={
+            series_id: len(set(expected_dates))
+            for series_id, expected_dates in (expected_ref_dates or {}).items()
+            if series_id not in by_series
+        },
+        warnings=warnings,
+    )
+
+
+def expected_ref_dates_from_registry(
+    observations: Iterable[PointInTimeObservation],
+    registry: Mapping[str, Mapping[str, object]],
+) -> Mapping[str, Sequence[date]]:
+    """Build per-series coverage grids from declared native-frequency peers.
+
+    Within each source and cadence, the most complete series is the reference
+    calendar. This avoids comparing a weekly series with a daily series or a
+    2018-start series with a 1954-start series. It also respects actual source
+    holidays without silently inventing a holiday calendar.
+    """
+
+    rows = list(observations)
+    dates_by_series: Dict[str, set[date]] = {}
+    for row in rows:
+        dates_by_series.setdefault(row.series_id, set()).add(row.ref_date)
+
+    expected: Dict[str, Sequence[date]] = {}
+    declared_fields: set[str] = set()
+    for source_id, source in registry.items():
+        raw_frequencies = source.get("field_frequencies")
+        if not isinstance(raw_frequencies, Mapping):
+            continue
+        fields = [str(field) for field in source.get("fields", [])]
+        if set(raw_frequencies) != set(fields):
+            raise DataContractError(
+                f"{source_id}: field_frequencies must declare every source field"
+            )
+        overlap = declared_fields.intersection(fields)
+        if overlap:
+            raise DataContractError(
+                f"series belong to multiple field-frequency declarations: {sorted(overlap)}"
+            )
+        declared_fields.update(fields)
+        by_frequency: Dict[str, List[str]] = {}
+        for field in fields:
+            frequency = raw_frequencies[field]
+            if frequency not in {
+                "calendar_daily", "business_daily", "weekly", "monthly", "event"
+            }:
+                raise DataContractError(
+                    f"{source_id}: unsupported frequency {frequency!r} for {field}"
+                )
+            by_frequency.setdefault(str(frequency), []).append(field)
+        for frequency, peers in by_frequency.items():
+            present = [field for field in peers if dates_by_series.get(field)]
+            if not present:
+                continue
+            anchor = max(present, key=lambda field: len(dates_by_series[field]))
+            anchor_dates = dates_by_series[anchor]
+            absent = [field for field in peers if field not in present]
+            for field in absent:
+                expected[field] = tuple(sorted(anchor_dates))
+            for field in present:
+                own_dates = dates_by_series[field]
+                if frequency == "event":
+                    expected[field] = tuple(sorted(own_dates))
+                    continue
+                start, end = min(own_dates), max(own_dates)
+                expected[field] = tuple(
+                    sorted(value for value in anchor_dates if start <= value <= end)
+                )
+
+    for series_id, observed in dates_by_series.items():
+        expected.setdefault(series_id, tuple(sorted(observed)))
+    return expected
+
+
+def write_point_in_time_audit_report(
+    observations: Iterable[PointInTimeObservation],
+    path: Path,
+    *,
+    expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
+) -> PointInTimeAuditReport:
+    """Write a deterministic JSON missingness/revision report."""
+
+    report = audit_point_in_time_panel(
+        observations, expected_ref_dates=expected_ref_dates
+    )
+    payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(payload, encoding="utf-8")
+    temporary.replace(path)
+    return report
+
+
+def validate_publication_gaps(
+    observations: Iterable[PointInTimeObservation],
+    registry: Mapping[str, Mapping[str, object]],
+) -> Mapping[str, int]:
+    """Fail if observed ref-date publication gaps exceed a declared bound."""
+
+    field_bounds: Dict[str, tuple[str, int]] = {}
+    for source_id, source in registry.items():
+        lag = source.get("release_lag")
+        if not isinstance(lag, Mapping) or lag.get("basis") != "ref_date":
+            continue
+        bound = lag.get("worst_case_calendar_days")
+        if isinstance(bound, bool) or not isinstance(bound, int):
+            raise DataContractError(
+                f"{source_id}: ref_date source lacks a valid publication-gap bound"
+            )
+        for field in source.get("fields", []):
+            if field in field_bounds:
+                raise DataContractError(f"series {field!r} belongs to multiple sources")
+            field_bounds[str(field)] = (source_id, bound)
+
+    worst: Dict[str, int] = {}
+    for row in observations:
+        if row.series_id not in field_bounds:
+            continue
+        source_id, bound = field_bounds[row.series_id]
+        gap = (row.available_at.date() - row.ref_date).days
+        if gap < 0:
+            raise DataContractError(
+                f"{row.series_id} {row.ref_date}: available_at predates ref_date"
+            )
+        worst[row.series_id] = max(worst.get(row.series_id, 0), gap)
+        if gap > bound:
+            raise DataContractError(
+                f"{row.series_id} was published {gap} calendar days after its "
+                f"ref_date, but {source_id} declares {bound}"
+            )
+    return worst
+
+
+def validate_accounting_identities(
+    observations: Iterable[PointInTimeObservation],
+    registry: Mapping[str, Mapping[str, object]],
+) -> Mapping[str, float]:
+    """Validate declared additive identities on the latest supplied vintages."""
+
+    latest = {}
+    for row in observations:
+        key = (row.series_id, row.ref_date)
+        previous = latest.get(key)
+        if previous is None or row.available_at > previous.available_at:
+            latest[key] = row
+
+    maximum_residuals: Dict[str, float] = {}
+    for source_id, source in registry.items():
+        identities = source.get("identities", [])
+        if not isinstance(identities, list):
+            raise DataContractError(f"{source_id}: identities must be a list")
+        for identity in identities:
+            if not isinstance(identity, Mapping):
+                raise DataContractError(f"{source_id}: identity must be an object")
+            name = str(identity.get("name") or "").strip()
+            left = identity.get("left")
+            right = identity.get("right")
+            tolerance = identity.get("tolerance")
+            if (
+                not name
+                or not isinstance(left, list)
+                or not isinstance(right, list)
+                or not isinstance(tolerance, Mapping)
+            ):
+                raise DataContractError(f"{source_id}: malformed accounting identity")
+            absolute = tolerance.get("absolute")
+            if isinstance(absolute, bool) or not isinstance(absolute, (int, float)):
+                raise DataContractError(f"{source_id}: identity {name} has invalid tolerance")
+            fields = [str(field) for field in (*left, *right)]
+            dates_by_field = {
+                field: {ref_date for series_id, ref_date in latest if series_id == field}
+                for field in fields
+            }
+            complete_dates = set.intersection(*dates_by_field.values()) if fields else set()
+            if not complete_dates:
+                raise DataContractError(
+                    f"{source_id}: identity {name} has no complete reference date"
+                )
+            maximum = 0.0
+            for ref_date in complete_dates:
+                left_value = sum(latest[(field, ref_date)].value for field in left)
+                right_value = sum(latest[(field, ref_date)].value for field in right)
+                residual = abs(left_value - right_value)
+                maximum = max(maximum, residual)
+                if residual > float(absolute):
+                    raise DataContractError(
+                        f"{source_id}: identity {name} residual {residual:g} exceeds "
+                        f"tolerance {float(absolute):g} on {ref_date}"
+                    )
+            maximum_residuals[f"{source_id}:{name}"] = maximum
+    return maximum_residuals
 
 
 def load_stress_thresholds(
