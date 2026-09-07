@@ -36,6 +36,11 @@ HUMAN_ONLY = (
     "METHODOLOGY.md",
     "DATA.md",
     "README.md",
+    "LICENSE",
+    "REPRODUCIBILITY.md",
+    "pyproject.toml",
+    "docs/PROJECT_STATUS.md",
+    "docs/DATA_QUALITY_DECISIONS.md",
     ".github/",
     # Shared contract fixtures. Both tracks import them; neither edits them.
     # A path-level gate cannot see a semantic collision, so the shape both

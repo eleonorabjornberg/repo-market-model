@@ -1,104 +1,131 @@
 # Repo Market Model
 
-A probabilistic model of U.S. Treasury repo-market pressure built from public data,
-with explicit extension points for confidential transaction, payment, balance-sheet,
-and collateral-chain data.
+[![tests](https://github.com/eleonorabjornberg/repo-market-model/actions/workflows/tests.yml/badge.svg)](https://github.com/eleonorabjornberg/repo-market-model/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The first target is deliberately narrow:
+A work-in-progress research system for forecasting pressure in the U.S. Treasury
+repurchase-agreement market from public data.
 
-- Forecast the next-day distribution of `SOFR - IORB`.
-- Forecast SOFR rate dispersion and transaction volume.
-- Estimate the probability of entering a stressed funding regime.
-- Explain predictions through reserves, Treasury settlement pressure, money-fund
-  cash capacity, dealer intermediation, calendar effects, and recent market state.
+The first target is deliberately narrow: the next-business-day distribution of
+`SOFR - IORB`, accompanied by SOFR dispersion and volume forecasts and the
+probability that the spread exceeds predeclared stress thresholds.
 
-The project treats internal liquidity buffers and missing network positions as
-latent variables. It does not replace missing observations with a single invented
-value. Later stages will generate an ensemble of market states constrained by
-accounting identities and observable aggregates.
+This is an academic and portfolio project, not a production trading system or a
+source of investment advice. It currently demonstrates the data, validation, and
+evaluation architecture needed for credible forecasting; it does **not** yet claim
+successful predictive performance on historical market data.
+
+## Why this project
+
+Repo-market stress is a useful test of financial modeling discipline. The most
+dangerous failure is often not a visibly broken model but a convincing backtest
+that used information before it was actually available. This repository therefore
+treats point-in-time availability, data provenance, release lags, revisions, and
+holdout design as first-class parts of the model.
+
+The intended research question is:
+
+> Can publicly observable funding, reserve, Treasury-settlement, dealer,
+> money-fund, and calendar variables forecast the next-day distribution of
+> Treasury repo-market pressure, including transitions into the upper tail?
 
 ## Current status
 
-The vertical slice contains:
+Implemented:
 
-- a versioned daily data contract, and a point-in-time panel loader;
-- source and publication-lag metadata, with the release-lag → purge conversion
-  owned by the data layer;
-- validation and accounting checks;
-- a no-dependency persistence baseline with calibrated empirical intervals;
-- a purged rolling-origin splitter (the **scoring** holdout) whose leakage
-  guards raise rather than assert;
-- an event-holdout evaluator over frozen, checksummed stress windows (the
-  **knowledge** holdout, kept deliberately separate from the scoring one);
-- Brier skill against climatology with a Murphy decomposition, so reliability is
-  reported apart from resolution;
-- immutable, checksummed downloads from official public sources; and
-- 335 tests runnable with the Python standard library.
+- a versioned point-in-time data contract and panel builder;
+- immutable, checksummed snapshots from official public sources;
+- source, publication-lag, revision, and availability metadata;
+- validation, missingness, provenance, and accounting checks;
+- a persistence benchmark with empirical prediction intervals;
+- purged rolling-origin evaluation for the main scoring holdout;
+- frozen, checksummed event windows for separate knowledge holdouts;
+- probabilistic metrics, including pinball loss, threshold-weighted CRPS,
+  Brier skill, calibration diagnostics, and stationary-bootstrap intervals; and
+- **361 standard-library tests**, including leakage and mutation-oriented guards.
 
-It intentionally does not yet claim to be an ML model. The persistence baseline
-is the benchmark that every later statistical or ML model must beat out of
-sample.
+Still in progress:
 
-## How the repository is built
+- validating complete SEC Form N-MFP monthly cross-sections;
+- freezing a sufficiently long historical modeling panel;
+- implementing the common fitted-model forecast interface;
+- adding AR/ARX, threshold, and quantile-model challengers; and
+- producing genuine out-of-sample and event-window results.
 
-The repository carries a second artifact alongside the model: a machine-checked
-protocol for two AI coding agents working the same tree in parallel, in separate
-git worktrees on separate branches. `AGENT_CONTRACT.md` is the single source of
-truth for both; `.github/check_ownership.py` enforces the file-ownership split on
-every pull request.
-
-Two ideas from that protocol are worth naming here, because both are general:
-
-1. **Shapes shared by both tracks are executable, and owned by neither.** A
-   path-level ownership gate can enforce who writes a file, but not what a
-   shared key means — a distinction the project paid for four times. Shapes both
-   sides must agree on live in `src/repo_model/contract.py`, which both import
-   and neither edits.
-2. **The ownership list is asserted against the tree.** A list that is not
-   tested silently stops describing the tree; five files had drifted out of it.
-   `tests/test_contract.py` now fails if any module belongs to nobody.
-
-`docs/state-of-main-*.md` is the long-form report on both the model and the
-protocol, including what went wrong and what it cost.
+The only current end-to-end backtest uses a small synthetic fixture. Its output
+tests the harness and must not be interpreted as empirical evidence. See
+[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) for the current boundary between
+implemented infrastructure and open research work.
 
 ## Quick start
 
+Requirements: Python 3.9 or newer. The project intentionally uses only the Python
+standard library, so no package installation is required.
+
 ```bash
+git clone https://github.com/eleonorabjornberg/repo-market-model.git
 cd repo-market-model
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  python3 -B -m unittest discover -s tests
+
 PYTHONPATH=src python3 -m repo_model.cli audit data/sample/daily_market.csv
 PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv
-PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-sofr
-PYTHONPATH=src python3 -m repo_model.cli fetch fred-macro
 ```
 
-No installation is required. Standard library only, by contract — a property that
-is load-bearing for reproducibility rather than an aesthetic preference.
+The sample file is synthetic and exists only to make the workflow executable.
+For data acquisition and exact reproducibility boundaries, see
+[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
 
-Run the full suite with bytecode caching disabled:
+## Research design
 
-```bash
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -B -m unittest discover -s tests
+The project follows six rules:
+
+1. Features must be timestamped by when they became observable, not merely by the
+   date they describe.
+2. Random train/test splits are prohibited; evaluation follows time.
+3. Scoring holdouts and historically important event windows have different roles
+   and are reported separately.
+4. Missing observations, structural zeros, and unavailable cross-sections remain
+   distinguishable.
+5. Stress probabilities come from the same predictive distribution as the
+   quantile forecasts, rather than from unrelated classifiers.
+6. Predictive results are not presented as causal policy estimates.
+
+The planned architecture is:
+
+```text
+public observations -> point-in-time panel -> probabilistic forecast
+                              |                       |
+                              +-> quality controls    +-> stress exceedance curve
+                                                        and holdout evaluation
 ```
 
-The `-B` is not decoration. Mutation testing on this repository once produced a
-false green because CPython validates cached bytecode on modification time and
-source size, and the mutations most worth testing are exactly the ones that
-preserve source length. The report tells that story in full.
+Longer-term latent-liquidity, market-clearing, and network-stress components are
+research directions, not completed features.
 
-## Design principles
+## Repository guide
 
-1. **No look-ahead:** features are timestamped by when they became observable.
-2. **Forecast distributions:** tail probabilities matter more than tiny average
-   rate improvements.
-3. **Preserve identities:** reserves, payments, cash, collateral, and matched-book
-   positions must reconcile.
-4. **Separate structural zeros from missing trades:** a nonexistent relationship is
-   not an unobserved transaction.
-5. **Use ensembles for missing networks:** stress results must survive multiple
-   plausible data completions.
-6. **Keep forecasting separate from policy claims:** predictive ML does not, by
-   itself, identify causal effects of a Fed intervention.
+- [`METHODOLOGY.md`](METHODOLOGY.md) defines the academic claims and evaluation
+  protocol.
+- [`DATA.md`](DATA.md) maps public and restricted data sources.
+- [`PLAN.md`](PLAN.md) records the staged implementation roadmap.
+- [`AGENT_CONTRACT.md`](AGENT_CONTRACT.md) specifies the machine-checked division
+  of work used during development.
+- [`docs/DATA_QUALITY_DECISIONS.md`](docs/DATA_QUALITY_DECISIONS.md) records open
+  modeling decisions that must be resolved before empirical fitting.
 
-See [PLAN.md](PLAN.md) for the implementation roadmap, [DATA.md](DATA.md) for
-the data map, and [METHODOLOGY.md](METHODOLOGY.md) for the academic protocol.
+## Development process and AI disclosure
+
+Parts of the implementation were developed with AI coding agents operating in
+separate Git worktrees. Their allowed files and shared interfaces are defined in a
+human-owned contract and checked in CI. Tests, source provenance, model claims, and
+final academic responsibility remain with the project author. Any academic
+submission based on this repository should also follow the relevant instructor's
+AI-use and citation requirements.
+
+## License
+
+The code and repository documentation are available under the [MIT License](LICENSE).
+Third-party data remain subject to the terms of their original providers and are
+not redistributed in this repository.

@@ -10,13 +10,14 @@ Two tracks run in parallel in separate git worktrees on separate branches.
 **Track A — data (`feature/data-layer`)**
 Owns: source registry, download adapters, provenance and checksums,
 point-in-time panel construction, missingness and revision reporting.
-Maps to PLAN.md immediate tasks 1–3.
+Maps to the data-layer portions of PLAN.md immediate tasks 1–3. Any shared
+schema decision in those tasks is still applied by the human.
 
 **Track B — model (`feature/model-eval`)**
 Owns: benchmarks (persistence, rolling quantiles, AR/ARX, threshold
 regression), rolling-origin backtest harness, scoring, calibration
 diagnostics, event holdouts.
-Maps to PLAN.md immediate tasks 4–5.
+Maps to PLAN.md immediate tasks 4–6.
 
 **Neither track owns** the panel schema, the forecast interface, the
 splitter interface, or `tests/test_contract.py`. Changes to these are

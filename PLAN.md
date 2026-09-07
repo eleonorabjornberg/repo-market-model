@@ -24,7 +24,7 @@ observations -> latent liquidity state -> supply/demand estimates -> market clea
                     +---------- probabilistic ML ----------+
 ```
 
-## Phase 0 — Reproducible foundation (started)
+## Phase 0 — Reproducible foundation (complete)
 
 - Define a point-in-time daily data contract.
 - Record source, native frequency, release lag, revision behavior, and transformations.
@@ -35,7 +35,7 @@ observations -> latent liquidity state -> supply/demand estimates -> market clea
 Exit criterion: one command validates a panel and produces a leakage-safe baseline
 backtest.
 
-## Phase 1 — Public U.S. dataset
+## Phase 1 — Public U.S. dataset (in progress)
 
 Ingest and align:
 
@@ -55,7 +55,7 @@ which they were not yet known.
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
 
-## Phase 2 — Forecasting benchmarks and probabilistic ML
+## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
 
 Benchmarks:
 
@@ -67,7 +67,7 @@ Benchmarks:
 Candidate ML models:
 
 - gradient-boosted trees for conditional mean and quantiles;
-- calibrated classification for stress probability;
+- stress exceedance probabilities derived from the fitted predictive distribution;
 - hidden Markov or mixture-of-experts regimes;
 - state-space model for the latent effective liquidity surplus.
 
@@ -169,9 +169,15 @@ eligibility, CCP/CSD, and cross-border settlement.
 
 ## Immediate next tasks
 
-1. Populate the source registry and implement download adapters.
-2. Build the first point-in-time daily panel.
-3. Produce a missingness/revision report.
-4. Backtest persistence and ARX benchmarks.
-5. Add a gradient-boosted quantile model only after the baseline is frozen.
-
+1. Add an independently anchored coverage floor that excludes incomplete SEC Form
+   N-MFP monthly cross-sections and records the exclusion separately from missingness.
+2. Resolve the N-MFP identity-tolerance and Treasury-settlement aggregation decisions
+   recorded in `docs/DATA_QUALITY_DECISIONS.md`.
+3. Acquire and freeze a sufficiently long historical point-in-time panel, with raw
+   snapshot manifests and a machine-readable data-quality report.
+4. Implement the common fitted-model forecast interface and replace its intentional
+   expected-failure tripwire with behavioral conformance tests.
+5. Backtest persistence, AR/ARX, and threshold-regression benchmarks using the
+   registry-derived purge gap.
+6. Add a quantile model only after the baselines are frozen, then report rolling
+   out-of-sample results and the September 2019 and March 2020 holdouts separately.

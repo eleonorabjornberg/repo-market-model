@@ -14,3 +14,9 @@ data/raw/
 data/processed/
 artifacts/
 
+# Local research logs and agent handoffs. Durable conclusions are rewritten into
+# the public status and decision documents before they are committed.
+docs/block-*/
+docs/merge-*/
+docs/state-of-main-*.md
+docs/track-*-decisions-*.md

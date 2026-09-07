@@ -29,10 +29,10 @@ jobs:
       # check does not notice an edit that preserves byte length.
       #
       # Note: unittest exits non-zero on an *unexpected success* as well as on a
-      # failure. That is intended. The TargetSchemaTests are expectedFailure
-      # placeholders for interfaces Track A has not built; when Track A builds
-      # them they start passing, and this job goes red until the same pull
-      # request converts them into real assertions.
+      # failure. That is intended. TargetSchemaTests contains an expectedFailure
+      # placeholder for the fitted-model interface Track B has not built; when
+      # that interface lands, this job goes red until the same pull request
+      # replaces the placeholder with behavioral conformance tests.
       - name: Run the suite
         env:
           PYTHONDONTWRITEBYTECODE: "1"
