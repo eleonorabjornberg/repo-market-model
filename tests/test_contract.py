@@ -895,6 +895,17 @@ class CommandLineOwnershipTests(unittest.TestCase):
 
         A refactor of a file with no test coverage is exactly where a command
         goes missing quietly.
+
+        Loosened from an exact set to a subset when `event-holdout` was added,
+        and the loosening is narrower than it sounds. The property this test was
+        written for is that the split lost nothing, which a subset states
+        exactly; the equality also froze the command list, so the first block to
+        add a command -- the thing the whole seam exists to make easy -- failed a
+        test named for preservation. What the equality was additionally buying,
+        that no command appears from somewhere unaccounted for, is now asserted
+        directly and over every command rather than by counting: see
+        `test_every_registered_command_comes_from_a_track_module`. That is
+        stronger, because it keeps holding as commands are added.
         """
 
         expected = {
@@ -903,11 +914,37 @@ class CommandLineOwnershipTests(unittest.TestCase):
             "backtest": "repo_model.cli_eval",
         }
         registered = _subparsers(cli.build_parser())
-        self.assertEqual(set(registered), set(expected))
+        self.assertLessEqual(set(expected), set(registered))
         for name, module in expected.items():
             with self.subTest(command=name):
                 self.assertEqual(
                     registered[name]._defaults["handler"].__module__, module
+                )
+
+    def test_every_registered_command_comes_from_a_track_module(self):
+        """No command arrives from the dispatcher or from anywhere unowned.
+
+        The half of the old equality worth keeping, stated as the property
+        instead of as a count. Every subcommand -- the three the split inherited
+        and every one added since -- must carry a handler defined in a
+        track-owned registration module, so that adding one is always a change
+        the ownership gate can see. A command handled from `cli.py` itself, or
+        from a module in neither track's list, is the ownership hole reopening
+        one subcommand at a time.
+        """
+
+        owned = {"repo_model.cli_data", "repo_model.cli_eval"}
+        for name, parser in _subparsers(cli.build_parser()).items():
+            with self.subTest(command=name):
+                handler = parser._defaults.get("handler")
+                self.assertIsNotNone(
+                    handler, msg=f"{name!r} registered no handler"
+                )
+                self.assertIn(
+                    handler.__module__,
+                    owned,
+                    msg=f"{name!r} is handled from {handler.__module__}, which is "
+                    "not a track-owned registration module",
                 )
 
     def test_the_dispatcher_names_neither_track_module_beyond_importing_it(self):
