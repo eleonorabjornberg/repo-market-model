@@ -542,6 +542,53 @@ can edit it and nothing says so until the merge — the same hole as a field nam
 with no key name. Nothing needs the CLI yet; the event-holdout subcommand is held out of
 Track B's next block until this is assigned.
 
+## Decided: building the daily panel
+
+Resolved by the human, against `b0f4b09`. The repository has two halves that have
+never been connected. The data layer produces a **long** canonical panel — source
+field, `ref_date`, value, `available_at`, vintage — with the whole provenance
+apparatus behind it. The model layer consumes a **wide** daily panel — `date`,
+`sofr`, `iorb`, and the optional columns. `DailyObservation` is constructed in
+exactly one place, inside `load_daily_panel`, parsing a CSV; `data/sample/daily_market.csv`
+was written by hand. That is why every number this project has ever reported is
+synthetic. Not because the data is unfetched — it is fetched — but because there is
+no road from it to the models.
+
+The join that closes the gap is one function with four rules, and three of them
+exist to stop it becoming a second, disagreeing implementation of machinery that is
+already here.
+
+**1. The panel is indexed by `ref_date`, and a cell carries the latest vintage
+available at a declared build cutoff.** The cutoff is recorded in the panel
+manifest. It is a property of the build, not of a row, and not of the model.
+
+**2. The join does not subtract the release lag. The purge does.** This is the rule
+most likely to be got wrong, because subtracting the lag *feels* conservative. It is
+not conservative; it is wrong twice. `rolling_origin` and `evaluate_event_window`
+already hold the last training row a full release lag clear of the scored day. A
+join that also shifted values by that lag would apply the gap twice — silently
+destroying training rows and moving every reported number — while looking careful.
+One rule, one place, and the place is the evaluator.
+
+**3. A column may be built only if latest vintage is faithful for it**, and the join
+learns which columns those are by **calling the pricing function**, not by
+re-deriving the test. A field on a `snapshot_retrieved_at` source that declares no
+`revision_policy` is refused by `registry.max_release_lag_days`; those are exactly
+the fields whose latest value may differ from the value that stood on the day, and
+they are exactly the columns a latest-vintage panel must not carry. The refusal
+already exists. Reuse it. A column refused this way is absent from the panel with
+its reason recorded — never present and quietly revised.
+
+**4. No forward fill.** A `ref_date` with no observation for a column is a hole. The
+panel schema and `audit_panel` already distinguish absent from zero, and the join
+introduces no new way to blur that.
+
+Ownership: `data.py`, `cli_data.py` and `registry.py` are Track A's, so the join and
+the subcommand that reaches it are Track A's. Track B does not build panels. The
+consumer-side half of the as-of rule — what a model may read, and the gap that
+protects it — is Track B's and is already built; this section exists so the two
+halves stay one rule.
+
 ## Decided: who owns the CLI
 
 `src/repo_model/cli.py` belonged to nobody. It was in no track's `forbidden`
