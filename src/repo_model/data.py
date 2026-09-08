@@ -223,6 +223,49 @@ class UnevaluatedIdentity:
 
 
 @dataclass(frozen=True)
+class ViolatedIdentity:
+    """One `(source, identity, ref_date)` the identity was checked on and failed.
+
+    The fourth outcome, recorded the way `UnevaluatedIdentity` records the
+    third. Every declared term was observed, so a residual exists -- and unlike
+    an unevaluable date this one has a number. The number is only readable next
+    to the bound it was measured against, which is why both are carried. A bare
+    `violated` would be the defect `absent_fields` was added one class up to
+    fix: a verdict a reader cannot act on, because 0.312 against a bound of 0.5
+    and 0.312 against a bound of 0.0001 are different findings and only the pair
+    says which.
+
+    Recording is not tolerating. `build_daily_panel` raises on a violation in a
+    source it actually built a column from; see rule 5 there, and
+    `docs/DATA_QUALITY_DECISIONS.md`, "Whether a source may abort a build it
+    contributes nothing to". The abort had to move because the hop that
+    evaluates identities runs before any wide panel exists and therefore cannot
+    know which sources a panel depends on. This record is what lets the hop that
+    does know ask.
+    """
+
+    source_id: str
+    identity: str
+    ref_date: date
+    residual: float
+    bound: float
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "source_id": self.source_id,
+            "identity": self.identity,
+            "ref_date": self.ref_date.isoformat(),
+            "verdict": IDENTITY_VIOLATED,
+            "residual": self.residual,
+            "bound": self.bound,
+            "reason": (
+                "every declared term of this identity was observed for this "
+                "reference date and the residual exceeds the declared tolerance"
+            ),
+        }
+
+
+@dataclass(frozen=True)
 class IdentityEvaluation:
     """What one declared identity actually established over a panel.
 
@@ -235,7 +278,19 @@ class IdentityEvaluation:
 
     `verdict` is therefore `held` only when nothing was left unchecked. When
     some reference dates could not be evaluated it is
-    `held_where_evaluable`, which no caller can mistake for the former.
+    `held_where_evaluable`, which no caller can mistake for the former. When any
+    reference date was checked and failed it is `violated`, and that answer
+    outranks the other two: a panel-level `held_where_evaluable` on an identity
+    that failed somewhere would be the same lie by omission, one outcome later.
+
+    `maximum_residual` is the largest residual over every date that produced
+    one, **violating dates included**. That is a deliberate choice and it
+    reverses nothing: until this class carried violations the function raised on
+    the first one, so the field had never seen a violating residual and could
+    not have. Keeping it over the passing dates only would have made it a
+    summary statistic that cannot report the worst thing it summarises -- a
+    number that goes *down* as the data gets worse. It is pinned by
+    `IdentityVerdictTests.test_the_maximum_residual_does_not_exclude_the_violating_dates`.
     """
 
     source_id: str
@@ -243,12 +298,21 @@ class IdentityEvaluation:
     maximum_residual: Optional[float]
     evaluated_ref_dates: int
     unevaluated: tuple = ()
+    violations: tuple = ()
 
     @property
     def verdict(self) -> str:
+        if self.violations:
+            return IDENTITY_VIOLATED
         if self.unevaluated:
             return IDENTITY_HELD_WHERE_EVALUABLE
         return IDENTITY_HELD
+
+    @property
+    def violated_ref_dates(self) -> tuple:
+        """Every reference date this identity was checked on and failed."""
+
+        return tuple(sorted({item.ref_date for item in self.violations}))
 
     @property
     def fully_evaluated(self) -> bool:
@@ -269,6 +333,10 @@ class IdentityEvaluation:
             "maximum_residual": self.maximum_residual,
             "evaluated_ref_dates": self.evaluated_ref_dates,
             "unevaluated_ref_dates": [item.as_dict() for item in self.unevaluated],
+            # The dates, not a count. A count is exactly what let 5.5 years of
+            # an unchecked balance sheet read as one number, and a violation is
+            # not less actionable than an absence.
+            "violated_ref_dates": [item.as_dict() for item in self.violations],
         }
 
 
@@ -283,6 +351,7 @@ class PointInTimeAuditReport:
     warnings: Sequence[str]
     excluded_cross_sections: Sequence[CrossSectionCoverage] = ()
     unevaluated_identities: Sequence[UnevaluatedIdentity] = ()
+    violated_identities: Sequence[ViolatedIdentity] = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -326,6 +395,20 @@ class PointInTimeAuditReport:
                 item.as_dict()
                 for item in sorted(
                     self.unevaluated_identities,
+                    key=lambda item: (item.source_id, item.identity, item.ref_date),
+                )
+            ],
+            # Its own key again, and for the third time the same reason. "Held",
+            # "not checked" and "checked and failed" are three different facts,
+            # and this one used to reach a reader as a traceback and a build
+            # that stopped -- which is a report only for whoever was watching
+            # the build. Every violating reference date is named, with its
+            # residual and its bound, because a count of violations is not
+            # something anyone can act on.
+            "violated_identities": [
+                item.as_dict()
+                for item in sorted(
+                    self.violated_identities,
                     key=lambda item: (item.source_id, item.identity, item.ref_date),
                 )
             ],
@@ -494,6 +577,7 @@ def audit_point_in_time_panel(
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
+    violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
 ) -> PointInTimeAuditReport:
     """Summarize coverage and revisions without treating a revision as coverage.
 
@@ -578,6 +662,7 @@ def audit_point_in_time_panel(
         warnings=warnings,
         excluded_cross_sections=tuple(excluded_cross_sections or ()),
         unevaluated_identities=tuple(unevaluated_identities or ()),
+        violated_identities=tuple(violated_identities or ()),
     )
 
 
@@ -656,6 +741,7 @@ def write_point_in_time_audit_report(
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
+    violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
 ) -> PointInTimeAuditReport:
     """Write a deterministic JSON missingness/revision report."""
 
@@ -664,6 +750,7 @@ def write_point_in_time_audit_report(
         expected_ref_dates=expected_ref_dates,
         excluded_cross_sections=excluded_cross_sections,
         unevaluated_identities=unevaluated_identities,
+        violated_identities=violated_identities,
     )
     payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -818,10 +905,25 @@ def validate_accounting_identities(
     `held` only when every reference date any term was observed on was actually
     checked.
 
-    A violated identity still raises, as it always did. An unevaluable reference
-    date does not raise: it is recorded, named term by named term. Which
-    reference dates belong in the panel is a policy question and it is not this
-    function's to answer -- but it can no longer be answered by accident.
+    Neither a violated nor an unevaluable reference date raises. Both are
+    recorded -- the unevaluable one named term by named term, the violated one
+    with its residual and the bound it was measured against. A *malformed
+    declaration* still raises, and the distinction is the whole of it: a broken
+    registry is a fault in what this repository wrote, and a violated identity
+    is a finding about data a source published. The two do not get the same
+    channel.
+
+    The abort that used to live here has moved to `build_daily_panel`, which is
+    the first hop that knows whether the panel contains a column from the source
+    the violation is in. `sec_nmfp` supplies no column to any build -- the
+    pricing function refuses `mmf_assets` in all of them -- and a violated
+    identity in it was halting builds of the eight columns that have nothing to
+    do with it. See `docs/DATA_QUALITY_DECISIONS.md`, "Whether a source may
+    abort a build it contributes nothing to". This is a scoping of the guard.
+    A violated identity in a source the panel depends on still stops the panel.
+
+    Which reference dates belong in the panel is a policy question and it is not
+    this function's to answer -- but it can no longer be answered by accident.
     """
 
     latest = {}
@@ -874,6 +976,7 @@ def validate_accounting_identities(
             observed_dates = set().union(*dates_by_field.values()) if fields else set()
             maximum = 0.0
             unevaluated: List[UnevaluatedIdentity] = []
+            violations: List[ViolatedIdentity] = []
             for ref_date in sorted(observed_dates):
                 values = {
                     field: (
@@ -897,10 +1000,25 @@ def validate_accounting_identities(
                     )
                     continue
                 if verdict == IDENTITY_VIOLATED:
-                    raise DataContractError(
-                        f"{source_id}: identity {name} residual {residual:g} exceeds "
-                        f"tolerance {bound:g} on {ref_date}"
+                    # Recorded, not raised, and deliberately symmetric with the
+                    # branch above it. This function runs at the first hop,
+                    # before any wide panel exists, so it cannot know whether
+                    # the panel will contain a column from this source -- and
+                    # that is the only fact that makes a violation here a reason
+                    # to stop a build. `build_daily_panel` knows it and raises;
+                    # see rule 5 there.
+                    violations.append(
+                        ViolatedIdentity(
+                            source_id=source_id,
+                            identity=name,
+                            ref_date=ref_date,
+                            residual=residual,
+                            bound=bound,
+                        )
                     )
+                # Not in an `else`. A violating residual is still a residual,
+                # and a maximum computed over the passing dates alone would fall
+                # as the data got worse.
                 maximum = max(maximum, residual)
             evaluations[f"{source_id}:{name}"] = IdentityEvaluation(
                 source_id=source_id,
@@ -908,6 +1026,7 @@ def validate_accounting_identities(
                 maximum_residual=maximum,
                 evaluated_ref_dates=len(observed_dates) - len(unevaluated),
                 unevaluated=tuple(unevaluated),
+                violations=tuple(violations),
             )
     return evaluations
 
@@ -1162,8 +1281,30 @@ def build_daily_panel(
     **4. No forward fill.** A `ref_date` with no observation for a built column
     gets `None`, counted in `holes`. Absent is not zero and is not yesterday.
 
+    **5. A violated identity in a source this panel built a column from stops
+    the build.** This is where that abort belongs and it is why it moved here.
+    `validate_accounting_identities` runs one hop earlier, inside
+    `build_point_in_time_snapshot`, where no wide panel exists yet -- so it
+    could see the violation but not whether anything depended on the source,
+    and it halted every build regardless. `sec_nmfp` supplies no column to any
+    build, because the pricing function refuses `mmf_assets` in all of them
+    under rule 3, so a violated N-MFP identity was stopping builds of the eight
+    columns that have nothing to do with it. The verdict is now always recorded
+    in the quality report and the abort is scoped to a source that actually
+    supplied a column that was built. See `docs/DATA_QUALITY_DECISIONS.md`,
+    "Whether a source may abort a build it contributes nothing to".
+
+    This is a scoping and not a loosening, and the second half is what keeps it
+    honest: a violated identity in a source the panel *does* contain still stops
+    the panel, and never by dropping the offending rows.
+
+    The identities are evaluated over the rows this build can see, for the same
+    reason rule 1 gives -- a vintage that arrives after `build_cutoff` does not
+    exist for this build, and neither does a violation only that vintage
+    reveals.
+
     Raises `DataContractError` if the cutoff is naive, if no declared column
-    survives pricing, or if nothing is left to index.
+    survives pricing, if nothing is left to index, or under rule 5.
     """
 
     from .contract import FEATURE_FIELDS
@@ -1187,12 +1328,12 @@ def build_daily_panel(
         for _source_id, field in FEATURE_FIELDS[column]:
             column_for_series[str(field)] = column
 
+    visible = [row for row in observations if row.available_at <= build_cutoff]
+
     latest: Dict[tuple, PointInTimeObservation] = {}
-    for row in observations:
+    for row in visible:
         column = column_for_series.get(row.series_id)
         if column is None:
-            continue
-        if row.available_at > build_cutoff:
             continue
         key = (column, row.ref_date)
         previous = latest.get(key)
@@ -1206,6 +1347,46 @@ def build_daily_panel(
         raise DataContractError(
             f"no observation for any built column is available at {build_cutoff.isoformat()}"
         )
+
+    # Rule 5. Only the sources behind the columns this build actually made, so
+    # the question asked is "did a source this panel depends on violate an
+    # identity", not "did any source in the registry". Restricting the registry
+    # rather than filtering the answers is deliberate: a source that supplied
+    # nothing should not be able to fail this build through any channel,
+    # including a malformed declaration of its own.
+    built_sources = {
+        str(source_id) for column in built for source_id, _field in FEATURE_FIELDS[column]
+    }
+    depended_on = {
+        source_id: source
+        for source_id, source in registry.items()
+        if source_id in built_sources and source.get("identities")
+    }
+    if depended_on:
+        for evaluation in sorted(
+            validate_accounting_identities(visible, depended_on).values(),
+            key=lambda item: (item.source_id, item.name),
+        ):
+            if not evaluation.violations:
+                continue
+            worst = max(evaluation.violations, key=lambda item: item.residual)
+            supplied = sorted(
+                column
+                for column in built
+                if any(
+                    str(source_id) == evaluation.source_id
+                    for source_id, _field in FEATURE_FIELDS[column]
+                )
+            )
+            raise DataContractError(
+                f"{evaluation.source_id}: identity {evaluation.name} is violated on "
+                f"{len(evaluation.violated_ref_dates)} reference date(s) "
+                f"({', '.join(item.isoformat() for item in evaluation.violated_ref_dates)}); "
+                f"worst residual {worst.residual:g} exceeds tolerance {worst.bound:g} on "
+                f"{worst.ref_date}. This panel builds {', '.join(supplied)} from that "
+                "source, so the build stops here rather than reporting a column whose "
+                "source does not reconcile"
+            )
 
     ref_dates = sorted({ref_date for _column, ref_date in latest})
     rows: List[DailyObservation] = []

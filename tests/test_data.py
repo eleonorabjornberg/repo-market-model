@@ -26,6 +26,16 @@ from repo_model.data import (
     write_point_in_time_audit_report,
 )
 
+# The N-MFP fixture helpers live beside the adapter tests that own them. Imported
+# rather than copied: a second archive builder would be a second thing to keep
+# in step with the SEC layout, and the copy that drifted would be the one still
+# passing. `tests/` is on the path under `unittest discover -s tests`; the insert
+# is what makes `python3 -m unittest tests.test_data` agree with it.
+sys.path.insert(0, str(Path(__file__).parents[0]))
+
+from repo_model.ingest import build_point_in_time_snapshot, fetch_sec_nmfp
+from test_ingest import nmfp_archive, registry_with_nmfp_coverage_floor
+
 
 class DataContractTests(unittest.TestCase):
     def write_csv(self, contents: str) -> Path:
@@ -207,8 +217,14 @@ class PointInTimeDataContractTests(unittest.TestCase):
         bad["source"] = dict(registry["source"])
         bad["source"]["identities"] = [dict(registry["source"]["identities"][0])]
         bad["source"]["identities"][0]["tolerance"] = {"absolute": 0.0, "unit": "USD"}
-        with self.assertRaisesRegex(DataContractError, "residual"):
-            validate_accounting_identities(rows[:-1], bad)
+        # A residual outside the declared tolerance is rejected as a verdict
+        # rather than an exception since the violation-verdict block; the
+        # rejection is the same, the channel is not. See `IdentityVerdictTests`.
+        rejected = validate_accounting_identities(rows[:-1], bad)["source:balance_sheet"]
+        self.assertEqual(rejected.verdict, "violated")
+        self.assertEqual(rejected.violated_ref_dates, (date(2026, 1, 1),))
+        self.assertAlmostEqual(rejected.violations[0].residual, 1.0)
+        self.assertEqual(rejected.violations[0].bound, 0.0)
 
     def test_a_relative_tolerance_is_the_same_rule_at_every_scale(self):
         """The property an absolute bound cannot have.
@@ -267,8 +283,12 @@ class PointInTimeDataContractTests(unittest.TestCase):
             evaluations = validate_accounting_identities(wildly_broken, absolute)
             self.assertEqual(evaluations["source:one_sided"].evaluated_ref_dates, 1)
         with self.subTest(tolerance="relative", scale=2.0):
-            with self.assertRaisesRegex(DataContractError, "residual"):
-                validate_accounting_identities(wildly_broken, relative)
+            rejected = validate_accounting_identities(wildly_broken, relative)[
+                "source:one_sided"
+            ]
+            self.assertEqual(rejected.verdict, "violated")
+            self.assertEqual(rejected.violated_ref_dates, (date(2026, 1, 1),))
+            self.assertAlmostEqual(rejected.violations[0].residual, 0.4)
 
     def test_the_scale_is_the_larger_side_and_not_the_left_one(self):
         """Which side the scale comes from, pinned because nothing else pins it.
@@ -1177,3 +1197,483 @@ class DailyPanelJoinTests(unittest.TestCase):
         self.assertIn("iorb", manifest["refused_columns"])
         self.assertEqual(manifest["row_count"], 2)
         self.assertEqual(manifest["source_shas"], ["c" * 64])
+
+
+class IdentityVerdictTests(unittest.TestCase):
+    """A violated identity is a verdict, and the abort belongs where the dependency is.
+
+    `validate_accounting_identities` used to raise `DataContractError` on the
+    first violating reference date, from inside `build_point_in_time_snapshot`
+    -- the first hop, where no wide panel exists and "which columns this panel
+    built" is therefore unknowable. So a violated `sec_nmfp` identity halted
+    every build, including builds of the eight columns that have nothing to do
+    with it, and `sec_nmfp` supplies a column to none of them: the pricing
+    function refuses `mmf_assets` in every build, because the source is
+    `snapshot_retrieved_at` with no declared revision policy.
+
+    The decision is recorded in `docs/DATA_QUALITY_DECISIONS.md`, "Whether a
+    source may abort a build it contributes nothing to": the verdict is always
+    recorded in the quality report, and the abort is scoped to a source that
+    actually supplied a column that was built. A scoping, not a loosening --
+    which is why the acceptance criterion has two halves and why neither is
+    optional. The first half alone is the behaviour before this block. The
+    second half alone is the loosening the decision explicitly is not.
+
+    `maximum_residual` now includes violating residuals. It could not have
+    before -- the function raised on the first violation, so the field had never
+    seen one -- and recording violations while leaving that line where it was
+    would have produced a maximum computed over exactly the dates that passed:
+    a statistic that falls as the data gets worse. The choice is pinned by
+    `test_the_maximum_residual_does_not_exclude_the_violating_dates` rather than
+    left to whoever reads the field next.
+
+    Mutation record, 8 September 2026. Every mutation applied to a copy under
+    `$HOME` -- never the mount -- carrying `data/`, `.github/`, `metadata/`,
+    `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md`, because
+    `tests/test_docs_freshness.py` reads the last three and their absence is two
+    kills that look real and are not. Run with `PYTHONDONTWRITEBYTECODE=1` and
+    `-B`. Each mutation was reverted before the next was applied. The unmutated
+    control was green in that copy **before** the first mutation and again
+    **after** the last, so no kill below is an artefact of the copy.
+
+    Exception types are recorded because a red run is not evidence the aimed-at
+    test fired: a mutation that breaks an import kills everything and proves
+    nothing. Every kill below is an `AssertionError` from the test's own
+    assertion, except mutation 2, which is a `DataContractError` reaching the
+    test -- and that one is the point of the mutation.
+
+    1. **The acceptance mutation, first half.** Rule 5 removed from
+       `build_daily_panel` entirely -- the violation check deleted, the panel
+       built regardless. Killed by exactly one test:
+
+       * `test_a_violation_stops_a_panel_that_uses_the_source_and_not_one_that_does_not`
+         -- `AssertionError: DataContractError not raised`. By assertion, from
+         the second half of the criterion, and not by a `DataContractError`
+         arriving from somewhere else.
+
+    2. **The acceptance mutation, second half.** The check widened to raise for
+       any source with a violated identity, whether or not it supplied a column
+       the panel built -- which is the behaviour before this block. Killed by
+       exactly one test, the same one:
+
+       * `test_a_violation_stops_a_panel_that_uses_the_source_and_not_one_that_does_not`
+         -- `repo_model.data.DataContractError: sec_nmfp: identity
+         series_assets_reconcile_to_liabilities_and_net_assets is violated on 1
+         reference date(s)`, raised out of the build that must succeed.
+
+       This is the mutation the brief warned might kill nothing, because it
+       restores current behaviour. It killed the criterion's *first* half and
+       nothing else in the suite, which is the finding: before this block no
+       test anywhere could see a build stopped by a source it did not contain.
+
+    3. **The quality report's violation list emptied**, in
+       `PointInTimeAuditReport.as_dict`. Killed by four tests, all in this class:
+
+       * `test_the_quality_report_names_every_violating_reference_date` --
+         `AssertionError: Lists differ: [] != ['2026-02-02', '2026-03-02']`
+       * `test_the_ingest_hop_writes_the_verdict_into_the_quality_report` --
+         `AssertionError: Lists differ: [] != ['2026-02-28']`
+       * `test_audit_panel_surfaces_a_recorded_violation` --
+         `AssertionError: 0 != 1`
+       * `test_a_violation_stops_a_panel_that_uses_the_source_and_not_one_that_does_not`
+         -- `AssertionError: Lists differ: [] != ['2026-02-02']`, from the half
+         that asserts the surviving build still records what it did not stop for.
+
+    3b. **The same list cut one hop earlier**, in `build_point_in_time_snapshot`:
+       the verdicts are still computed and still fit the report, but the ingest
+       hop stops handing them over. Killed by exactly one test:
+
+       * `test_the_ingest_hop_writes_the_verdict_into_the_quality_report` --
+         `AssertionError: Lists differ: [] != ['2026-02-28']`.
+
+       Run because mutation 3 could not distinguish "the report cannot carry a
+       violation" from "nothing ever puts one there", and those fail
+       differently: the second leaves every in-memory assertion green while no
+       reader ever sees a verdict. One test separates them, and it is the only
+       one that runs a real archive through the hop rather than composing the
+       two functions by hand.
+
+    4. **The malformed-tolerance path demoted to a verdict too** -- a tolerance
+       the schema rejects recorded as `violated` instead of raised. Killed by
+       exactly one test, and nothing else fired:
+
+       * `test_a_malformed_tolerance_still_raises_from_the_first_hop` --
+         `AssertionError: DataContractError not raised`.
+
+    5. **The boring one, and it was boring.** An unevaluable reference date
+       stops being recorded: the `IDENTITY_NOT_EVALUABLE` branch keeps its
+       `continue` and drops the `UnevaluatedIdentity`. Killed by exactly one
+       test, and it is not in this class:
+
+       * `PointInTimeDataContractTests.test_an_identity_with_an_unobserved_term_is_recorded_unevaluated_not_satisfied`
+         -- `AssertionError: 'held' == 'held'`, the assertion `1b6d391` added
+         that the withheld and complete panels must not give the same verdict.
+
+       **Zero kills in `IdentityVerdictTests`.** That is the result this
+       mutation was run for: the fourth outcome was added without the tests for
+       it coming to depend on the third, so a future change to either can still
+       be attributed to one of them.
+
+    Deliberately absent: an absolute test count. The kill lists name tests; a
+    total would be a transcribed number with nothing asserting it, which is the
+    drift `tests/test_docs_freshness.py` refuses in Markdown and is no more
+    defensible in a docstring.
+    """
+
+    #: A `ref_date`-basis lag, the shape `metadata/sources.json` declares and
+    #: the shape `registry.validate_release_lag` accepts. Both fixture sources
+    #: use it so that both their columns are priceable and the acceptance test
+    #: turns on the identity rather than on a refusal.
+    LAG = {
+        "basis": "ref_date",
+        "unit": "business_days",
+        "days": 1,
+        "worst_case_calendar_days": 6,
+        "available_time": "15:00",
+        "timezone": "America/New_York",
+        "note": "fixture",
+    }
+
+    #: The declared terms of `sec_nmfp`'s balance-sheet identity, named here
+    #: exactly as `metadata/sources.json` names them. The fixture registry is
+    #: not the real one, but the field names are, so a rename in the source
+    #: registry does not leave this test agreeing with itself.
+    IDENTITY = {
+        "name": "series_assets_reconcile_to_liabilities_and_net_assets",
+        "left": ["mmf_cash", "mmf_portfolio_securities", "mmf_other_assets"],
+        "right": ["mmf_liabilities", "mmf_net_assets"],
+        "tolerance": {"absolute": 0.5, "unit": "USD billions"},
+    }
+
+    CLEAN = date(2026, 1, 5)
+    VIOLATING = date(2026, 2, 2)
+    OTHER_VIOLATING = date(2026, 3, 2)
+
+    def observation(self, series_id, ref_date, value, *, available_offset=1):
+        return PointInTimeObservation(
+            series_id=series_id,
+            ref_date=ref_date,
+            available_at=datetime.combine(
+                ref_date + timedelta(days=available_offset),
+                time(19, 0),
+                tzinfo=timezone.utc,
+            ),
+            value=value,
+            vintage_id=f"{series_id}-{ref_date.isoformat()}",
+            source_sha="a" * 64,
+        )
+
+    def registry(self):
+        """Two sources. One clean, one carrying an identity that violates."""
+
+        return {
+            "nyfed_sofr": {"release_lag": dict(self.LAG)},
+            "sec_nmfp": {
+                "release_lag": dict(self.LAG),
+                "identities": [dict(self.IDENTITY)],
+            },
+        }
+
+    def rows(self, *, residuals=None):
+        """SOFR from the clean source, a balance sheet from the other.
+
+        `residuals` maps a reference date to the amount by which
+        `mmf_other_assets` overstates the left side, in USD billions. A date not
+        named reconciles exactly. Every declared term is observed on every date,
+        so nothing here is unevaluable and the third outcome stays out of the
+        way of the fourth.
+        """
+
+        residuals = residuals or {}
+        rows = []
+        for index, ref_date in enumerate(
+            (self.CLEAN, self.VIOLATING, self.OTHER_VIOLATING)
+        ):
+            rows.append(self.observation("SOFR", ref_date, 4.30 + index / 100))
+            net_assets = 9000.0
+            rows.append(self.observation("mmf_cash", ref_date, 100.0))
+            rows.append(
+                self.observation("mmf_portfolio_securities", ref_date, 8850.0)
+            )
+            rows.append(
+                self.observation(
+                    "mmf_other_assets", ref_date, 100.0 + residuals.get(ref_date, 0.0)
+                )
+            )
+            rows.append(self.observation("mmf_liabilities", ref_date, 50.0))
+            rows.append(self.observation("mmf_net_assets", ref_date, net_assets))
+        return rows
+
+    def build(self, rows, columns):
+        return build_daily_panel(
+            rows,
+            self.registry(),
+            build_cutoff=datetime(2026, 6, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=columns,
+        )
+
+    def evaluation(self, rows):
+        return validate_accounting_identities(rows, self.registry())[
+            f"sec_nmfp:{self.IDENTITY['name']}"
+        ]
+
+    def test_a_violation_stops_a_panel_that_uses_the_source_and_not_one_that_does_not(
+        self,
+    ):
+        """The acceptance criterion. One fixture, two builds, and both halves matter.
+
+        A registry with two sources, one of which files a balance sheet that
+        does not reconcile. A panel whose declared columns draw only on the
+        clean source builds -- and the violation is still recorded, because
+        scoping the abort is not the same as not looking. A panel whose columns
+        draw on the violating source raises, naming the source, the reference
+        date, the residual and the bound.
+
+        Without the first half this is the behaviour before the block: any
+        violation anywhere stops any build. Without the second it is a
+        loosening, which the decision explicitly is not. A test asserting only
+        one of them would pass for the wrong implementation in each direction.
+        """
+
+        rows = self.rows(residuals={self.VIOLATING: 2.0})
+
+        # Half one. `sofr` comes from `nyfed_sofr`; `sec_nmfp` supplies no
+        # column to this build, so its violated identity is a finding about the
+        # source and not a reason to stop eight columns that never touched it.
+        clean = self.build(rows, ("sofr",))
+        self.assertEqual(clean.built_columns, ("sofr",))
+        self.assertEqual(
+            [row.date for row in clean.observations],
+            [self.CLEAN, self.VIOLATING, self.OTHER_VIOLATING],
+        )
+
+        # And the violation is recorded rather than dropped: the build that
+        # succeeded did not succeed by not looking.
+        recorded = self.evaluation(rows)
+        self.assertEqual(recorded.verdict, "violated")
+        self.assertEqual(recorded.violated_ref_dates, (self.VIOLATING,))
+        report = audit_point_in_time_panel(
+            rows, violated_identities=recorded.violations
+        ).as_dict()
+        self.assertEqual(
+            [item["ref_date"] for item in report["violated_identities"]],
+            [self.VIOLATING.isoformat()],
+        )
+
+        # Half two. `mmf_assets` resolves to `sec_nmfp.mmf_net_assets`, so this
+        # panel does contain a column the violating source built, and the build
+        # stops -- naming what a reader has to know to act on it.
+        with self.assertRaises(DataContractError) as caught:
+            self.build(rows, ("sofr", "mmf_assets"))
+        message = str(caught.exception)
+        self.assertIn("sec_nmfp", message)
+        self.assertIn(self.IDENTITY["name"], message)
+        self.assertIn(self.VIOLATING.isoformat(), message)
+        self.assertIn("2", message)  # the residual, 2 USD billions
+        self.assertIn("0.5", message)  # against the declared bound
+        self.assertIn("mmf_assets", message)
+
+    def test_the_quality_report_names_every_violating_reference_date(self):
+        """The dates, not a count -- and every one of them, not the first.
+
+        A count is what let 5.5 years of an unchecked balance sheet read as a
+        single number, and the same shape would hide the second violating month
+        behind the first. The old code could not have reported more than one
+        anyway: it raised on the first, so a second was unreachable by
+        construction. This asserts both dates, with the residual and the bound
+        each was measured against, through the file a reader actually opens.
+        """
+
+        rows = self.rows(residuals={self.VIOLATING: 2.0, self.OTHER_VIOLATING: 3.0})
+        evaluation = self.evaluation(rows)
+
+        self.assertEqual(
+            evaluation.violated_ref_dates, (self.VIOLATING, self.OTHER_VIOLATING)
+        )
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv.quality.json"
+        write_point_in_time_audit_report(
+            rows, path, violated_identities=evaluation.violations
+        )
+        written = json.loads(path.read_text(encoding="utf-8"))["violated_identities"]
+
+        self.assertEqual(
+            [item["ref_date"] for item in written],
+            [self.VIOLATING.isoformat(), self.OTHER_VIOLATING.isoformat()],
+        )
+        for item, expected in zip(written, (2.0, 3.0)):
+            self.assertEqual(item["verdict"], "violated")
+            self.assertEqual(item["source_id"], "sec_nmfp")
+            self.assertEqual(item["identity"], self.IDENTITY["name"])
+            self.assertAlmostEqual(item["residual"], expected)
+            self.assertAlmostEqual(item["bound"], 0.5)
+
+        # The bound travels with the residual because neither is readable
+        # alone: 2.0 against 0.5 and 2.0 against 10.0 are different findings.
+        self.assertTrue(all("bound" in item for item in written))
+
+    def test_a_malformed_tolerance_still_raises_from_the_first_hop(self):
+        """A broken declaration is not data, and must not be demoted to a verdict.
+
+        The block converts one raise into a record. It converts exactly one. A
+        tolerance the schema does not accept is a fault in what this repository
+        wrote, not a finding about what a source published, and a registry that
+        cannot be read has no verdict to give -- reporting `violated` for it
+        would claim a residual was computed and compared when nothing was.
+        """
+
+        registry = self.registry()
+        registry["sec_nmfp"]["identities"][0] = dict(self.IDENTITY)
+        registry["sec_nmfp"]["identities"][0]["tolerance"] = {
+            "absolute": -1.0,
+            "unit": "USD billions",
+        }
+        rows = self.rows(residuals={self.VIOLATING: 2.0})
+
+        with self.assertRaises(DataContractError):
+            validate_accounting_identities(rows, registry)
+
+        # Same for a declaration that is not an identity at all. Both are
+        # `DataContractError` from the first hop, where they always were.
+        registry["sec_nmfp"]["identities"][0] = {"name": "nameless"}
+        with self.assertRaises(DataContractError):
+            validate_accounting_identities(rows, registry)
+
+    def test_audit_panel_surfaces_a_recorded_violation(self):
+        """If nothing surfaces the record, "recorded" means "discarded slowly".
+
+        The verdict now leaves `validate_accounting_identities` as data instead
+        of an exception, and data that no reader reaches is worse than the
+        traceback it replaced: the traceback at least stopped somebody. So the
+        audit report carries it, under its own key, beside the coverage decision
+        and the unevaluable dates rather than folded into either -- for the same
+        reason those two are separate from each other. "Held", "not checked" and
+        "checked and failed" are three facts, and a reader who cannot tell them
+        apart will read the third as the first.
+        """
+
+        rows = self.rows(residuals={self.VIOLATING: 2.0})
+        evaluation = self.evaluation(rows)
+        report = audit_point_in_time_panel(
+            rows, violated_identities=evaluation.violations
+        )
+
+        self.assertEqual(len(report.violated_identities), 1)
+        payload = report.as_dict()
+        self.assertIn("violated_identities", payload)
+        self.assertEqual(len(payload["violated_identities"]), 1)
+        record = payload["violated_identities"][0]
+        self.assertEqual(record["ref_date"], self.VIOLATING.isoformat())
+        self.assertAlmostEqual(record["residual"], 2.0)
+        self.assertAlmostEqual(record["bound"], 0.5)
+        self.assertIn("exceeds the declared tolerance", record["reason"])
+
+        # Its own key, and not confused with the other two verdicts.
+        self.assertEqual(payload["unevaluated_identities"], [])
+        self.assertEqual(payload["excluded_cross_sections"], [])
+
+    def test_the_maximum_residual_does_not_exclude_the_violating_dates(self):
+        """The summary statistic reports the worst thing it summarises.
+
+        `maximum = max(maximum, residual)` sat after the branch that raised, so
+        it had never seen a violating residual and could not have. Recording
+        violations without moving that line would have left a maximum computed
+        over exactly the dates that passed -- a number that goes *down* as the
+        data gets worse, which is the anchoring failure this repository keeps
+        naming, in a float.
+
+        So this pins the direction that was chosen, and it is asserted as a
+        comparison between two panels rather than against a constant: the same
+        fixture with a violation must report a larger maximum than without it.
+        """
+
+        clean = self.evaluation(self.rows())
+        violating = self.evaluation(self.rows(residuals={self.VIOLATING: 2.0}))
+
+        self.assertEqual(clean.verdict, "held")
+        self.assertAlmostEqual(clean.maximum_residual, 0.0)
+
+        self.assertEqual(violating.verdict, "violated")
+        self.assertAlmostEqual(violating.maximum_residual, 2.0)
+        self.assertGreater(violating.maximum_residual, clean.maximum_residual)
+
+        # Both dates still counted as evaluated: they were checked. Only an
+        # absent term makes a date unevaluated, and nothing here is absent.
+        self.assertEqual(violating.evaluated_ref_dates, 3)
+        self.assertEqual(violating.unevaluated, ())
+
+    def test_the_ingest_hop_writes_the_verdict_into_the_quality_report(self):
+        """End to end, through the hop that used to raise instead of report.
+
+        The four tests above compose `validate_accounting_identities` with the
+        report writer by hand. This one does not: it runs a real N-MFP archive
+        through `build_point_in_time_snapshot` and opens the quality report on
+        disk. That matters because the composition is the thing this block
+        moved. Before it, this call raised and no quality report was written at
+        all -- so a violation reached a reader only as a traceback, and only if
+        somebody was watching the build. A test that asserts the record exists
+        in memory cannot tell that apart from a record nothing ever writes down.
+
+        The fixture files one cross-section whose `TOTALVALUEOTHERASSETS`
+        overstates the left side by 2 USD billions against a declared bound of
+        0.5, and a second that reconciles, so the report has to distinguish them
+        rather than flag the source wholesale.
+        """
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+
+        submissions = [
+            {
+                "accession": f"{report}-{index}",
+                "series": f"S{index:06d}",
+                "report": report,
+                "net_assets": 9_000_000_000,
+                # `sec_nmfp` declares a second identity over daily shareholder
+                # flows. It has to be evaluable or it raises "no complete
+                # reference date" before the balance sheet is ever reached, and
+                # a fixture that only files half a source is not exercising the
+                # source. These reconcile, so the report has one violated
+                # identity and one held -- which is also the pair a reader needs
+                # to see kept apart.
+                "flows": ((flow_date, 500_000_000, 400_000_000),),
+                **({"other_assets": 2_000_000_000} if breaks else {}),
+            }
+            for report, flow_date, breaks in (
+                ("28-FEB-2026", "27-FEB-2026", True),
+                ("31-MAR-2026", "31-MAR-2026", False),
+            )
+            for index in range(3)
+        ]
+        artifact = fetch_sec_nmfp(
+            root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/fixture.zip",
+            lambda url: nmfp_archive(submissions),
+        )[0]
+        registry_path = registry_with_nmfp_coverage_floor(root, 3)
+
+        panel_path = root / "panel.csv"
+        build_point_in_time_snapshot(
+            [artifact], panel_path, registry_path=registry_path
+        )
+        report = json.loads(
+            panel_path.with_suffix(panel_path.suffix + ".quality.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        violated = report["violated_identities"]
+        self.assertEqual([item["ref_date"] for item in violated], ["2026-02-28"])
+        self.assertEqual(violated[0]["source_id"], "sec_nmfp")
+        self.assertEqual(violated[0]["verdict"], "violated")
+        self.assertAlmostEqual(violated[0]["residual"], 6.0)
+        self.assertAlmostEqual(violated[0]["bound"], 0.5)
+
+        # The build completed. Before this block it raised on the first
+        # violating reference date and wrote nothing, which is why the second
+        # cross-section could not have been reported either way.
+        self.assertTrue(panel_path.exists())

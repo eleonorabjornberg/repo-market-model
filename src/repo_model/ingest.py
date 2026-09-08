@@ -1808,6 +1808,18 @@ def build_point_in_time_snapshot(
         for evaluation in accounting_identities.values()
         for item in evaluation.unevaluated
     ]
+    # A violated identity no longer raises out of `validate_accounting_identities`
+    # -- it is a verdict now, and this is where it is written down. The abort
+    # lives in `build_daily_panel`, the first hop that knows whether the panel
+    # contains a column from the source; see rule 5 there and
+    # `docs/DATA_QUALITY_DECISIONS.md`. Carrying the verdicts no further than
+    # the manifest would be the loosening the decision is not, so they go into
+    # the quality report where findings go.
+    violated_identities = [
+        item
+        for evaluation in accounting_identities.values()
+        for item in evaluation.violations
+    ]
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(("series_id", "ref_date", "available_at", "value", "vintage_id", "source_sha"))
@@ -1837,6 +1849,7 @@ def build_point_in_time_snapshot(
             item for item in parsed.coverage if not item.admitted
         ],
         unevaluated_identities=unevaluated_identities,
+        violated_identities=violated_identities,
     )
     quality_report_sha256 = hashlib.sha256(quality_report_path.read_bytes()).hexdigest()
     artifact = PanelArtifact(
