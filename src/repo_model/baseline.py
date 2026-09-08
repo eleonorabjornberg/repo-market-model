@@ -6,7 +6,8 @@ The forecast interface `AGENT_CONTRACT.md` declares --
     predict(feature_row)        -> quantile vector at contract.QUANTILE_LEVELS
     predict_stress(feature_row) -> exceedance vector aligned to the declared taus_bp
 
--- has two implementers here, which is the point of the second one.
+-- has three implementers here, which is the point of the second one and, in a
+different way, of the third.
 
 `FittedPersistence` is the persistence-plus-empirical-residual baseline. It
 reads exactly one thing from a feature row, `spread_bps`, and fits nothing but a
@@ -23,7 +24,21 @@ rather than from persistence's in particular; and that a fitted transform with
 real parameters -- here the imputation means -- is confined to `fit`, which
 contract test 3 had nothing to bite on while persistence was the only model.
 
-`FittedForecastModel` is the shape both satisfy. It stays in this module rather
+`FittedThreshold` is the two-regime ARX, and the fourth benchmark `PLAN.md`
+Phase 2 names. It is not a third variation on "read some columns, compute a
+number": every model above reads a covariate to *compute* a value, and this one
+reads a covariate to *choose a model*. That is a new way for a variable to enter
+a forecast, and it is the first thing to test whether the machinery built around
+`features_read` was a rule or a habit. The purge is sized over a declared
+feature set before anything is fitted and the fitted model is checked against
+that declaration afterwards; a threshold model that consulted `on_rrp` to pick
+its regime and did not report reading it would have had its gap computed
+correctly over the wrong sources, in the flattering direction. So the threshold
+variable goes through the same lock as any other read, and `features_read`
+carries it. Nothing in the lock needed changing to accommodate it, which is the
+result worth having.
+
+`FittedForecastModel` is the shape all three satisfy. It stays in this module rather
 than moving to `contract.py`: the rule at AGENT_CONTRACT.md's "The shape is
 executable, and owned by neither track" is for shapes shared *by both tracks*,
 and Track A fits no models. If Track A ever needs to import it, that is a
@@ -254,6 +269,54 @@ class SingularDesignError(ValueError):
     number returned would be one arbitrary point on a solution line. Reporting a
     coefficient nobody can reproduce is worse than refusing to fit.
     """
+
+
+class DegenerateRegimeError(ValueError):
+    """A threshold leaves one regime with too few rows to fit.
+
+    Raised rather than collapsed to a single-regime fit. A threshold model that
+    quietly becomes an ARX still calls itself a threshold model, still reports a
+    `threshold` and a `regime`, and its numbers get attributed to a regime
+    structure that was never estimated -- which is the worst of the available
+    outcomes, because the failure is invisible in the output. Refusing puts the
+    frame in front of the caller, who can widen the window, declare a different
+    threshold, or conclude that this window has no second regime in it.
+
+    The minimum is not a taste: it is `len(design_names) + 2` rows in each
+    regime, the same count `fit_arx` demands of a whole window, and it comes
+    from the leave-one-out law. A regime with `columns + 2` design rows has
+    `columns + 1` left when one is held out, which is one degree of freedom; at
+    `columns` the held-out fit interpolates its rows exactly and every residual
+    in that regime is zero, so the pooled law is quietly diluted by a block of
+    zeros. Below that the regime's design is not even identified.
+
+    A `ValueError` subclass so the CLI dispatcher's `(OSError, ValueError)`
+    already covers it without naming a new type.
+    """
+
+
+class UnobservedThresholdError(ValueError):
+    """The threshold variable is present on a row but carries no observation.
+
+    Distinct from the column being absent, which is `MissingRegressorError`, and
+    distinct in the way AGENT_CONTRACT.md test 5 requires an absent key and a
+    `None` to stay distinct: two different facts, two different types.
+
+    Unlike a regressor, an unobserved threshold variable is **not imputed**. A
+    regressor's fitted mean enters a sum and moves the forecast by a coefficient
+    times a number; a threshold variable's imputed mean would choose a *model*.
+    Every gap row would be assigned to whichever regime the training mean falls
+    in, uniformly and silently, and the regime counts a reader checks would
+    include rows whose regime was never observed. Refusing is the only reading
+    that does not invent an assignment.
+    """
+
+
+#: The two regimes, in the order every report and every coefficient mapping
+#: lists them. Named once and iterated rather than written out at each use, so
+#: that "there are exactly two" is a single statement a reader can check and not
+#: a pattern spread across a fit, a split and a repr.
+REGIMES = ("low", "high")
 
 
 @dataclass(frozen=True)
@@ -1012,6 +1075,660 @@ def fit_arx(
     coefficients = _least_squares(design, targets)
     residuals = _leave_one_out_residuals(design, targets)
     return FittedArx(coefficients, names, imputations, residuals, declared, levels)
+
+
+class FittedThreshold:
+    """A two-regime ARX, fitted: one coefficient vector per regime, one law.
+
+    The fourth benchmark `PLAN.md` Phase 2 names, and the first model here in
+    which a covariate does something other than contribute a term. The point
+    forecast for the day after a feature row is
+
+        b0[r] + b1[r] * spread_bps(row) + sum_j c_j[r] * x_j(row)
+
+    where `r` is `"low"` if the threshold variable on that row is at or below
+    the fitted threshold and `"high"` if it is above. Both regimes are fitted by
+    least squares on the training frame's own one-step-ahead pairs, restricted
+    to the origin rows that fall in that regime.
+
+    **The threshold variable is read, so it is reported.** `features_read`
+    carries it alongside the autoregressive term and the regressors, and there
+    is no exemption for "it only picks the regime". The purge is sized over the
+    sources of the declared feature set before anything is fitted, and
+    `rolling_persistence_backtest` checks the first fitted model against that
+    declaration; a threshold model that consulted `on_rrp` to choose a regime
+    and did not report `on_rrp` would have had its gap computed over the wrong
+    sources -- correctly, and in the flattering direction, which is the shape
+    this repository keeps finding one level at a time.
+
+    **One residual law, pooled across regimes.** `FittedForecastModel.residuals`
+    is the single sample "both outputs read", and `predict` and `predict_stress`
+    are two views of it; a per-regime law would make `residuals` a claim
+    `predict` does not honour and would break the agreement between the quantiles
+    and the exceedance that the contract's Target requires. So the regimes
+    differ in the conditional mean and share the dispersion around it. That is a
+    real limitation -- a stressed regime plausibly has wider residuals than a
+    calm one, and this model cannot say so -- and it is stated here rather than
+    discovered from the intervals. Widening the interface to a per-regime law is
+    a contract question, not a refactor.
+
+    Fitted state, all of it set in `fit_threshold` and nowhere else:
+
+    * `threshold_variable` -- the panel column the regime is read off.
+    * `threshold` -- the value separating the regimes.
+    * `threshold_estimated` -- whether that value was searched for on the
+      training frame (`True`) or handed over by the caller (`False`). Carried
+      because "fitted on the training rows" and "declared by the caller" are
+      different provenances for the same number and a reader of a report cannot
+      otherwise tell which one produced it.
+    * `regressors` -- the ordered exogenous names, as `FittedArx` carries them.
+    * `imputations` -- the training-window mean of each regressor's observed
+      values, over the origin rows of the **whole** window rather than per
+      regime. Per-regime means would be a second fitted transform whose own
+      inputs depend on the threshold, and the regime with fewer rows would get
+      the noisier imputation exactly where it can least afford one.
+    * `coefficients` -- `{"low": (...), "high": (...)}`, each ordered to match
+      `design_names`.
+    * `regime_rows` -- how many design rows each regime was fitted on. Reported
+      so "two regimes" is checkable rather than asserted.
+    * `_residuals` -- the sorted pooled leave-one-out residual vector.
+    * `cutoff` -- the last date the training frame was allowed to contain, with
+      the same meaning and the same `trained_beyond` question as the others.
+
+    A feature row missing a declared regressor raises `MissingRegressorError`; a
+    feature row carrying one as `None` gets the fitted mean. A feature row
+    missing the threshold variable raises `MissingRegressorError` too, and one
+    carrying it as `None` raises `UnobservedThresholdError` rather than being
+    imputed -- see that class for why the two cases part company here.
+    """
+
+    __slots__ = (
+        "_residuals",
+        "coefficients",
+        "cutoff",
+        "imputations",
+        "levels",
+        "regime_rows",
+        "regressors",
+        "threshold",
+        "threshold_estimated",
+        "threshold_variable",
+    )
+
+    def __init__(
+        self,
+        coefficients: Mapping[str, Sequence[float]],
+        regressors: Sequence[str],
+        threshold_variable: str,
+        threshold: float,
+        threshold_estimated: bool,
+        imputations: Mapping[str, float],
+        residuals: Sequence[float],
+        regime_rows: Mapping[str, int],
+        cutoff: date,
+        levels: Sequence[float] = QUANTILE_LEVELS,
+    ) -> None:
+        self.regressors: Tuple[str, ...] = tuple(regressors)
+        self.threshold_variable: str = str(threshold_variable)
+        self.threshold: float = float(threshold)
+        self.threshold_estimated: bool = bool(threshold_estimated)
+        self.coefficients: Mapping[str, Tuple[float, ...]] = MappingProxyType(
+            {
+                regime: tuple(float(c) for c in coefficients[regime])
+                for regime in REGIMES
+            }
+        )
+        #: Read-only for the reason `FittedArx.imputations` is: a fitted
+        #: transform retuned after the fact puts the reported coefficients and
+        #: the imputation that produced them out of step with no diff to show.
+        self.imputations: Mapping[str, float] = MappingProxyType(
+            {name: float(imputations[name]) for name in self.regressors}
+        )
+        self.regime_rows: Mapping[str, int] = MappingProxyType(
+            {regime: int(regime_rows[regime]) for regime in REGIMES}
+        )
+        self._residuals: Tuple[float, ...] = tuple(sorted(float(r) for r in residuals))
+        self.cutoff: date = cutoff
+        self.levels: Tuple[float, ...] = _validate_levels(levels)
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostic only
+        return (
+            f"FittedThreshold(cutoff={self.cutoff.isoformat()}, "
+            f"threshold={self.threshold_variable}<={self.threshold!r}, "
+            f"regime_rows={dict(self.regime_rows)}, "
+            f"residuals={len(self._residuals)})"
+        )
+
+    @property
+    def design_names(self) -> Tuple[str, ...]:
+        """The coefficient order, named. `coefficients[r][i]` multiplies `[i]`.
+
+        The same order in both regimes, so the two vectors are comparable term
+        by term. A regime with its own design would be two models sharing a
+        name.
+        """
+
+        return ("intercept", "spread_bps") + self.regressors
+
+    @property
+    def residuals(self) -> Tuple[float, ...]:
+        """The pooled leave-one-out residual sample, ascending."""
+
+        return self._residuals
+
+    @property
+    def features_read(self) -> Tuple[str, ...]:
+        """`spread_bps`, the declared regressors, and the threshold variable.
+
+        Derived from `design_names` exactly as `FittedArx.features_read` is,
+        with the threshold variable appended when the design does not already
+        carry it -- a column may legitimately be both a regressor and the
+        regime selector, and reporting it twice would be a claim about
+        multiplicity that `_check_fitter_stayed_inside` does not read and a
+        reader would.
+
+        The threshold variable is in this tuple because the model reads it off
+        the feature row. That it is read to choose a model rather than to
+        compute a term makes no difference to the purge: the value still has to
+        have been published by the time the forecast was made, and its source's
+        release lag still has to be in the gap. This is the one line in the
+        class that the whole block is about.
+
+        The intercept is dropped for the reason `FittedArx` drops it: it is the
+        constant 1.0 and not read off the row at all.
+        """
+
+        read = tuple(name for name in self.design_names if name != "intercept")
+        if self.threshold_variable in read:
+            return read
+        return read + (self.threshold_variable,)
+
+    def trained_beyond(self, feature_row: DailyObservation) -> bool:
+        """Was this model fitted on rows dated after `feature_row`?
+
+        Same question, same answer, same reason as the other two.
+        """
+
+        return feature_row.date < self.cutoff
+
+    def regime_for(self, feature_row: DailyObservation) -> str:
+        """`"low"` or `"high"`: which model this row selects, and why.
+
+        Public because it is half of the auditable account of a threshold
+        forecast -- `design_row` says which numbers went in, this says which
+        coefficient vector they were multiplied by, and a forecast is not
+        reproducible from the first alone.
+
+        The comparison is `<=` for `"low"` and `>` for `"high"`, matching the
+        split the fit used, so a row sitting exactly on the threshold is scored
+        by the regime it was fitted into rather than by the other one.
+
+        Raises:
+            MissingRegressorError: if the row does not carry the column.
+            UnobservedThresholdError: if it carries it as `None`.
+        """
+
+        observed = _raw_regressor(feature_row, self.threshold_variable, "feature row")
+        if observed is None:
+            raise UnobservedThresholdError(
+                f"feature row for {feature_row.date} carries "
+                f"{self.threshold_variable!r} as None; the regime is a choice "
+                f"between two fitted models and an imputed mean would make it "
+                f"silently, putting every unobserved row in whichever regime the "
+                f"training mean falls in. A regressor is imputed because it "
+                f"enters a sum; a threshold variable selects the sum"
+            )
+        return "low" if observed <= self.threshold else "high"
+
+    def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        """The feature row as this model reads it, in `design_names` order.
+
+        Identical to `FittedArx.design_row`, and deliberately so: the regimes
+        differ in their coefficients, not in what they read. Raises
+        `MissingRegressorError` if the row does not carry a declared regressor.
+        """
+
+        values = [1.0, feature_row.spread_bps]
+        for name in self.regressors:
+            observed = _raw_regressor(feature_row, name, "feature row")
+            values.append(self.imputations[name] if observed is None else observed)
+        return tuple(values)
+
+    def point_forecast(self, feature_row: DailyObservation) -> float:
+        """The conditional mean of the regime this row falls in."""
+
+        return _dot(self.coefficients[self.regime_for(feature_row)], self.design_row(feature_row))
+
+    def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        """One predicted spread quantile per declared level, in declared order.
+
+        The regime's point forecast shifted by the pooled residual quantile at
+        each level. Ascending, because `levels` is ascending and `_quantile` is
+        non-decreasing in its probability.
+        """
+
+        anchor = self.point_forecast(feature_row)
+        return tuple(anchor + _quantile(self._residuals, level) for level in self.levels)
+
+    def predict_stress(
+        self,
+        feature_row: DailyObservation,
+        taus: Optional[Sequence[float]] = None,
+    ) -> Tuple[float, ...]:
+        """`P(spread > tau)` per tau, derived from the law `predict` reports.
+
+        The third model to reach this derivation unchanged, over its own
+        residual vector. `_exceedance_from_residuals` inverts `_quantile`, so
+        `predict_stress` evaluated at `predict`'s `Q(q)` returns `1 - q` here
+        for the same reason it does for the other two -- and that a regime
+        model needed no new code for it is further evidence the derivation
+        belongs to the interface rather than to any implementation.
+
+        Not a classifier fitted on the `stress_gt_*` label columns. Nothing in
+        this object was fitted to a label, the threshold included: the grid
+        search below minimises squared error on the spread, never a label.
+        """
+
+        family = _validate_taus_bp(
+            load_stress_thresholds()["taus_bp"] if taus is None else taus
+        )
+        anchor = self.point_forecast(feature_row)
+        return tuple(
+            _exceedance_from_residuals(self._residuals, tau - anchor) for tau in family
+        )
+
+
+def _threshold_value(row: DailyObservation, name: str, where: str) -> float:
+    """The threshold variable on `row`, refusing an unobserved one.
+
+    `_raw_regressor` for the absent-key and non-finite halves, so those two
+    paths raise exactly what every other read of a panel column raises, and
+    then a refusal rather than an imputation for `None`. See
+    `UnobservedThresholdError` for why this is the one column that is not
+    imputed.
+    """
+
+    observed = _raw_regressor(row, name, where)
+    if observed is None:
+        raise UnobservedThresholdError(
+            f"{where} for {row.date} carries {name!r} as None; a regime is a "
+            f"choice between two fitted models and cannot be made from an "
+            f"unobserved value. Fit on a window that observes the threshold "
+            f"variable, or declare one this window observes"
+        )
+    return observed
+
+
+def _regime_split(
+    design: Sequence[Sequence[float]],
+    targets: Sequence[float],
+    selectors: Sequence[float],
+    threshold: float,
+) -> Mapping[str, Tuple[List[Sequence[float]], List[float]]]:
+    """The design rows and targets of each regime at `threshold`, in row order.
+
+    `"low"` is `selector <= threshold`, `"high"` is `selector > threshold`. The
+    boundary is closed on the low side, and `FittedThreshold.regime_for` makes
+    the same comparison, so a row sitting exactly on the threshold is scored by
+    the regime it was fitted into rather than by the other one.
+    """
+
+    parts: Mapping[str, Tuple[List[Sequence[float]], List[float]]] = {
+        regime: ([], []) for regime in REGIMES
+    }
+    for row, target, selector in zip(design, targets, selectors):
+        regime = "low" if selector <= threshold else "high"
+        parts[regime][0].append(row)
+        parts[regime][1].append(target)
+    return parts
+
+
+def _fit_regimes(
+    design: Sequence[Sequence[float]],
+    targets: Sequence[float],
+    selectors: Sequence[float],
+    threshold: float,
+    minimum_rows: int,
+) -> Tuple[Mapping[str, Tuple[float, ...]], Mapping[str, int], float]:
+    """Both regimes at `threshold`: coefficients, row counts, in-sample SSE.
+
+    The one place a threshold becomes a pair of fitted regimes. The grid search
+    calls it once per candidate and `fit_threshold` calls it once more on the
+    value it chose, so the fit the search scored and the fit the model carries
+    are the same computation rather than two that agree today.
+
+    Raises:
+        DegenerateRegimeError: if either regime holds fewer than
+            `minimum_rows` design rows.
+        SingularDesignError: if either regime's design does not identify its
+            coefficients on its own rows.
+    """
+
+    parts = _regime_split(design, targets, selectors, threshold)
+    counts = {regime: len(parts[regime][1]) for regime in REGIMES}
+    thin = sorted(regime for regime in REGIMES if counts[regime] < minimum_rows)
+    if thin:
+        raise DegenerateRegimeError(
+            f"threshold {threshold!r} on the declared variable splits the window "
+            f"into low={counts['low']} and high={counts['high']} design rows, and "
+            f"regime(s) {thin} hold fewer than the {minimum_rows} a regime needs. "
+            f"A threshold model that fell back to a single regime here would "
+            f"still report itself as a threshold model, and its numbers would be "
+            f"attributed to a regime structure that was never estimated"
+        )
+
+    coefficients = {}
+    total = 0.0
+    for regime in REGIMES:
+        regime_design, regime_targets = parts[regime]
+        fitted = _least_squares(regime_design, regime_targets)
+        coefficients[regime] = fitted
+        total += sum(
+            (target - _dot(fitted, row)) ** 2
+            for row, target in zip(regime_design, regime_targets)
+        )
+    return coefficients, counts, total
+
+
+def _choose_threshold(
+    design: Sequence[Sequence[float]],
+    targets: Sequence[float],
+    selectors: Sequence[float],
+    minimum_rows: int,
+) -> float:
+    """The candidate threshold minimising in-sample squared error, or a refusal.
+
+    **The candidates are the training frame's own observed values** of the
+    threshold variable, at the origin rows the design was built from -- the
+    largest excluded, since nothing is above it and the high regime would be
+    empty. Nothing outside the frame the caller handed over is consulted, which
+    is the whole discipline of this function: a threshold chosen by looking at
+    the series the model will later be scored on is the leak this repository
+    exists to detect, wearing the hat of a hyperparameter.
+
+    **Why a grid search over observed values.** The sum of squares as a function
+    of the threshold is a step function -- it changes only when a row crosses
+    from one regime to the other -- so it has no derivative to follow and the
+    observed values are not a sample of the candidates but *all* of them. Every
+    distinct split of these rows is reachable from some value in this list, and
+    the search is therefore exhaustive rather than approximate. That is the
+    standard construction for a threshold regression (Hansen's conditional
+    least squares), and the alternatives are worse here: a fixed grid of round
+    numbers would miss splits the data actually admits and would import a scale
+    nobody declared, and an optimiser would spend iterations on a function whose
+    every level set is already enumerated.
+
+    **Ties break to the smallest candidate.** Two thresholds producing exactly
+    the same partition produce exactly the same error, and the run has to be
+    reproducible; the smallest is chosen because `min` over an ascending list
+    with a strict comparison is the rule a reader can check.
+
+    **A candidate that cannot be fitted is not a candidate.** Degenerate splits
+    and rank-deficient regimes are skipped during the search. That is not the
+    fallback item 4 of this block's brief prohibits: the result is still two
+    fitted regimes, and if *no* candidate admits two the search raises rather
+    than returning one.
+
+    Raises:
+        DegenerateRegimeError: if no candidate value splits the window into two
+            fittable regimes. The window has no second regime in it at this
+            variable, and saying so is the only honest answer.
+    """
+
+    candidates = sorted({float(value) for value in selectors})[:-1]
+    best_threshold = None
+    best_error = math.inf
+    for candidate in candidates:
+        try:
+            _, _, error = _fit_regimes(
+                design, targets, selectors, candidate, minimum_rows
+            )
+        except (DegenerateRegimeError, SingularDesignError):
+            continue
+        if error < best_error:
+            best_error = error
+            best_threshold = candidate
+    if best_threshold is None:
+        raise DegenerateRegimeError(
+            f"no value among the {len(candidates)} candidate thresholds this "
+            f"window offers splits it into two regimes of at least "
+            f"{minimum_rows} fittable design rows each. There is no two-regime "
+            f"model to estimate here: fit on more history, declare a different "
+            f"threshold variable, or use the ARX, which is what a single regime "
+            f"is"
+        )
+    return best_threshold
+
+
+def fit_threshold(
+    train_frame: Sequence[DailyObservation],
+    regressors: Sequence[str],
+    threshold_variable: str,
+    threshold: Optional[float] = None,
+    cutoff: Optional[date] = None,
+    minimum_history: int = 20,
+    levels: Sequence[float] = QUANTILE_LEVELS,
+) -> FittedThreshold:
+    """Fit the two-regime ARX on `train_frame` and return the fitted model.
+
+    The design is the frame's own one-step-ahead pairs, exactly as `fit_arx`
+    builds them, and then split in two: origin row `i` goes to the regime its
+    `threshold_variable` value selects, and each regime gets its own least
+    squares over its own rows.
+
+    **Everything is fitted on `train_frame` and nothing else** -- the
+    imputations, the threshold, the regime assignment and the residual law. The
+    threshold in particular: `_choose_threshold` searches the candidate values
+    these origin rows carry, and is handed nothing wider. A caller that wants a
+    threshold from elsewhere passes it explicitly, and the fitted model records
+    that it was declared rather than estimated.
+
+    **The residual law is leave-one-out within regime, pooled.** For each
+    regime, `_leave_one_out_residuals` refits on that regime's other rows and
+    scores the held-out one, so no residual was minimised by the coefficients
+    that produced it -- the same reason `fit_arx` gives, and the more pressing
+    here because two regimes over one window means twice the coefficients and
+    twice the in-sample narrowing.
+
+    The threshold is **held fixed across the leave-one-out folds**; only the
+    regime coefficients are refit. That is the same treatment `fit_arx` gives
+    its imputation means, which are also fitted on the whole window and held
+    while the coefficients move, and it is a stated approximation rather than a
+    silent one: a residual scored under a threshold that saw its own row is
+    optimistic by however much that one row moved the search. Re-estimating the
+    threshold inside every fold is the exact construction, and it costs a full
+    grid search per row per origin -- on a rolling backtest that is the square
+    of the panel length in solves, which is why it is not the default. If a
+    reported interval ever turns on this, the exact version is the drop-in and
+    the difference is the thing to report.
+
+    Args:
+        train_frame: the training rows, strictly ascending by date.
+        regressors: the ordered exogenous regressor names. **Required, with no
+            default**, for the reason `fit_arx` refuses one.
+        threshold_variable: the panel column the regime is read off. Required
+            and undefaulted for the same reason and more sharply: this column
+            does not merely contribute a term, it chooses the model, and a
+            default would be a silent claim about which column a regime is
+            allowed to be a function of. It may also appear in `regressors` --
+            a variable can both shift the level and switch the relationship --
+            and `features_read` reports it once either way.
+        threshold: the value separating the regimes. `None`, the default,
+            estimates it from `train_frame` by `_choose_threshold`. A number is
+            honoured as declared and recorded as declared; it is not checked
+            against the frame's own optimum, because a caller who declares a
+            threshold is stating a prior and not asking for one.
+        cutoff: the last date the model was allowed to see. Defaults to the
+            frame's own last date.
+        minimum_history: the shortest frame that may produce a fitted law.
+        levels: the quantile grid, defaulting to the declared one.
+
+    Returns:
+        A `FittedThreshold` carrying both coefficient vectors, its threshold and
+        how that threshold was arrived at, its regime row counts, its fitted
+        imputation means, its pooled leave-one-out residuals and its cutoff.
+
+    Raises:
+        LookAheadError: if any training row is dated after `cutoff`.
+        SplitError: if the frame is not strictly ascending by date.
+        MissingRegressorError: if a training row does not carry a declared
+            regressor or the threshold variable.
+        UnobservedThresholdError: if a training origin row carries the threshold
+            variable as `None`. Not imputed; see the class.
+        DegenerateRegimeError: if the declared threshold, or every candidate
+            when one is estimated, leaves a regime too thin to fit. A refusal,
+            never a fallback to a single regime.
+        SingularDesignError: if a regime's declared regressors do not identify
+            separate coefficients on that regime's rows. A real property of the
+            split -- a column can move over a window and be constant inside one
+            regime of it -- and refusing names the regime.
+        ValueError: for the shapes `fit_arx` refuses -- no regressors, a
+            duplicate, too short a frame, a regressor unobserved throughout --
+            and if `threshold` is declared non-finite.
+    """
+
+    names = tuple(str(name) for name in regressors)
+    if not names:
+        raise ValueError(
+            "no regressors declared; a two-regime model with no exogenous term "
+            "is a threshold AR, and an empty list is how a caller omits the "
+            "decision rather than makes it. Name the regressors"
+        )
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        raise ValueError(
+            f"regressors declared more than once: {duplicates}; a duplicated "
+            f"column makes a regime's design rank deficient and its two "
+            f"coefficients meaningless individually"
+        )
+    selector_name = str(threshold_variable)
+    if not selector_name:
+        raise ValueError(
+            "no threshold variable declared; a regime read off nothing is not a "
+            "regime, and this model's whole claim is that a covariate chooses "
+            "the relationship"
+        )
+    if threshold is not None:
+        threshold = float(threshold)
+        if not math.isfinite(threshold):
+            raise ValueError(
+                f"declared threshold is not finite: {threshold!r}; every row "
+                f"would fall on one side of it and the split would be degenerate "
+                f"by construction"
+            )
+
+    rows = list(train_frame)
+    if len(rows) < minimum_history:
+        raise ValueError(
+            f"threshold arx needs at least {minimum_history} training rows, got "
+            f"{len(rows)}; two coefficient vectors and a residual law from fewer "
+            f"is not a fitted model"
+        )
+
+    dates = [row.date for row in rows]
+    ensure_strictly_ascending(dates, label="training frame dates")
+
+    declared_cutoff = dates[-1] if cutoff is None else cutoff
+    if dates[-1] > declared_cutoff:
+        raise LookAheadError(
+            f"training frame reaches {dates[-1]}, past its cutoff "
+            f"{declared_cutoff}; a fitted model may not contain a row it was not "
+            f"allowed to see"
+        )
+
+    # The origins: every row with a successor in the frame. The imputations, the
+    # threshold and the regime assignment are all fitted on these and nothing
+    # else, which is what contract test 3 means by "recomputed on a training
+    # window alone" -- and here it covers a parameter that selects a model
+    # rather than merely scaling a column.
+    origins = rows[:-1]
+    observed: Mapping[str, List[float]] = {name: [] for name in names}
+    for row in origins:
+        for name in names:
+            value = _raw_regressor(row, name, "training row")
+            if value is not None:
+                observed[name].append(value)
+
+    imputations = {}
+    for name in names:
+        seen = observed[name]
+        if not seen:
+            raise ValueError(
+                f"regressor {name!r} is unobserved on every row of the training "
+                f"window ({origins[0].date}..{origins[-1].date}); there is "
+                f"nothing to fit an imputation from, and filling it with 0.0 "
+                f"would be the coercion contract test 5 prohibits"
+            )
+        imputations[name] = sum(seen) / len(seen)
+
+    design: List[Sequence[float]] = []
+    targets: List[float] = []
+    selectors: List[float] = []
+    for index in range(1, len(rows)):
+        origin = rows[index - 1]
+        row = [1.0, origin.spread_bps]
+        for name in names:
+            value = _raw_regressor(origin, name, "training row")
+            row.append(imputations[name] if value is None else value)
+        design.append(tuple(row))
+        targets.append(rows[index].spread_bps)
+        selectors.append(_threshold_value(origin, selector_name, "training row"))
+
+    # The minimum per regime, derived rather than chosen. `fit_arx` demands
+    # `columns + 2` design rows of a whole window so that a leave-one-out fold
+    # keeps a degree of freedom; a regime is fitted by the same least squares
+    # and scored by the same leave-one-out law, so it needs the same count of
+    # its own rows. At `columns + 1` a held-out fold has exactly as many rows as
+    # coefficients and interpolates them, which would fill the pooled law with a
+    # block of zeros and narrow every reported interval.
+    columns = len(names) + 2
+    minimum_rows = columns + 2
+    if len(design) < 2 * minimum_rows:
+        raise ValueError(
+            f"{len(design)} design rows against {columns} coefficients in each of "
+            f"two regimes; a two-regime leave-one-out fit needs at least "
+            f"{2 * minimum_rows}. Declare fewer regressors or fit on more history"
+        )
+
+    estimated = threshold is None
+    chosen = (
+        _choose_threshold(design, targets, selectors, minimum_rows)
+        if estimated
+        else threshold
+    )
+    coefficients, counts, _ = _fit_regimes(
+        design, targets, selectors, chosen, minimum_rows
+    )
+
+    parts = _regime_split(design, targets, selectors, chosen)
+    residuals: List[float] = []
+    for regime in REGIMES:
+        regime_design, regime_targets = parts[regime]
+        try:
+            residuals.extend(
+                _leave_one_out_residuals(regime_design, regime_targets)
+            )
+        except SingularDesignError as error:
+            raise SingularDesignError(
+                f"the {regime!r} regime's design is rank deficient with one of "
+                f"its {len(regime_targets)} rows held out, though it is "
+                f"identified on all of them; one row is carrying a coefficient "
+                f"inside that regime. Declare fewer regressors or fit on more "
+                f"history"
+            ) from error
+
+    return FittedThreshold(
+        coefficients,
+        names,
+        selector_name,
+        chosen,
+        estimated,
+        imputations,
+        residuals,
+        counts,
+        declared_cutoff,
+        levels,
+    )
 
 
 def predict(

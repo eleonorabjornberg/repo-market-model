@@ -212,9 +212,11 @@ from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     FittedArx,
     FittedPersistence,
+    FittedThreshold,
     _quantile,
     fit,
     fit_arx,
+    fit_threshold,
     predict,
     predict_stress,
     rolling_persistence_backtest,
@@ -1530,6 +1532,51 @@ class ArxForecastInterfaceTests(ForecastInterfaceConformance, unittest.TestCase)
         return fit_arx(
             train_frame,
             CONFORMANCE_REGRESSORS,
+            cutoff=cutoff,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+
+class ThresholdForecastInterfaceTests(ForecastInterfaceConformance, unittest.TestCase):
+    """The conformance suite against `FittedThreshold`, on the same rows.
+
+    The third implementer, and the first whose covariate does something other
+    than contribute a term: `on_rrp` selects which of two fitted regimes
+    produces the point forecast. Every assertion in the mixin was written when
+    a fitted model was one coefficient vector over one window, so what this case
+    establishes is that they were assertions about the *interface* -- that
+    `predict` returns the declared grid and `predict_stress` inverts it over one
+    law, whichever model the row selected.
+
+    Two of them can only be exercised by a model shaped like this.
+    `test_predict_stress_never_rises_with_tau` walks a dense grid around the
+    model's own centre, and this is the first centre that is a step function of
+    the feature row rather than a continuous function of it; and
+    `test_predict_stress_agrees_with_the_quantiles_predict_reports` is the
+    reason `FittedThreshold` pools its residual law across regimes rather than
+    fitting one per regime, since a per-regime law would make `residuals` a
+    sample that `predict` does not read.
+
+    `on_rrp` is the threshold variable and is already in
+    `CONFORMANCE_REGRESSORS`, so this model reads exactly what the ARX case
+    reads and `CONTRACT_FEATURES` is untouched. That a column may be both a
+    regressor and the regime selector is deliberate -- a variable can shift the
+    level and switch the relationship -- and `features_read` reports it once.
+    The case where the threshold variable is *outside* the declared set is the
+    acceptance criterion of this block and lives in `tests/test_baseline.py`,
+    where the backtest that would be purged over the wrong sources is.
+
+    The threshold is estimated on the training frame rather than declared here,
+    so the fixture exercises the search rather than routing around it.
+    """
+
+    MODEL_CLASS = FittedThreshold
+
+    def fit_model(self, train_frame, cutoff=None):
+        return fit_threshold(
+            train_frame,
+            CONFORMANCE_REGRESSORS,
+            "on_rrp",
             cutoff=cutoff,
             minimum_history=self.MINIMUM_HISTORY,
         )
