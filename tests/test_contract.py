@@ -231,8 +231,11 @@ from repo_model.contract import (
     UNSOURCED_FEATURES,
     UndeclaredFeatureError,
     field_sources_for_features,
+    resolve_identity_tolerance,
     sources_for_features,
     validate_field_release_lag,
+    validate_identity_tolerance,
+    validate_registry_identity_tolerances,
     validate_release_lag,
 )
 from repo_model.data import (
@@ -889,12 +892,16 @@ class SourceRegistryTests(unittest.TestCase):
                         self.assertIsInstance(identity.get(side), list)
                         self.assertTrue(identity[side])
                         self.assertTrue(set(identity[side]).issubset(fields))
-                    tolerance = identity.get("tolerance")
-                    self.assertIsInstance(tolerance, dict)
-                    self.assertIsInstance(tolerance.get("absolute"), (int, float))
-                    self.assertGreaterEqual(tolerance["absolute"], 0)
-                    self.assertIsInstance(tolerance.get("unit"), str)
-                    self.assertTrue(tolerance["unit"])
+                    # Same reasoning as `release_lag` above: the shape is a
+                    # seam both tracks build against, so it is checked by the
+                    # shared, human-owned module rather than restated here.
+                    # The restatement this replaces also required `absolute`,
+                    # which is what made an absolute-only bound the only
+                    # expressible kind.
+                    problems = validate_identity_tolerance(
+                        source_id, identity["name"], identity.get("tolerance")
+                    )
+                    self.assertEqual(problems, [], msg="; ".join(problems))
 
                 for declaration in source["structural_zeros"]:
                     self.assertIsInstance(declaration, dict)
@@ -2357,6 +2364,165 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
                 with self.assertRaises(UndeclaredFeatureError) as caught:
                     sources_for_features([feature])
                 self.assertIn(reason, str(caught.exception))
+
+
+class IdentityToleranceTests(unittest.TestCase):
+    """A tolerance on a quantity whose scale moves must move with it.
+
+    `sec_nmfp` declared one absolute bound -- 0.5 USD billions -- across
+    monthly cross-sections spanning three orders of magnitude. It is 35 parts
+    per million of the largest month observed and 25% of the smallest. One
+    number cannot be a bound at both ends: calibrated on the largest it is
+    unfalsifiable on the smallest, and calibrated on the smallest it fails the
+    largest. The residuals themselves are well behaved in relative terms --
+    13 to 175 ppm across the same six months -- because they are rounding in
+    as-filed data. **The identity is scale-free, so the tolerance should be.**
+
+    The schema half lives in `contract.py` for the same reason the
+    `release_lag` schema does: it is a shape both tracks build against, and a
+    second copy of the rules is how one field came to be called `calendar` on
+    one side and `unit` on the other.
+
+    Mutation record, the human-side patch that introduced this class. Run in a
+    copy under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the
+    root Markdown and `docs/PROJECT_STATUS.md` present. `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, unmutated control green before and after.
+
+      * `resolve_identity_tolerance` returns `absolute` and ignores
+        `relative_ppm`. Kills four:
+        `test_the_resolved_bound_moves_with_the_scale` and
+        `test_the_absolute_part_is_a_floor_and_not_a_ceiling` by assertion, and
+        `test_data.PointInTimeDataContractTests`
+        `::test_a_relative_tolerance_is_the_same_rule_at_every_scale` twice, at
+        both scales, as `DataContractError` refusals rather than assertions --
+        the whole point being that the bound collapses to a millionth of a
+        billion and the identity then fails everywhere.
+
+      * The same resolver with `min` for `max`. Kills those four and one more
+        subtest of the same test, for the same reason at the other end.
+
+      * The registry declaration reverted to absolute-only `0.5`. Kills
+        exactly one, `test_the_nmfp_balance_sheet_tolerance_is_not_absolute_only`,
+        by assertion. That test is named rather than derived precisely so that
+        this mutation cannot pass.
+
+      * `validate_identity_tolerance` stops requiring that a tolerance declare
+        either part. Kills exactly one, its own test.
+
+      * One expected to be boring, which was: the scale in
+        `data._identity_verdict` taken from the left side alone instead of the
+        larger side. It killed nothing, because every fixture in the suite had
+        two sides of nearly equal magnitude and the choice was free.
+        `test_the_scale_is_the_larger_side_and_not_the_left_one` was written in
+        response and the mutation now kills it, and only it. A mutation that
+        fires nothing is a finding about the tests.
+    """
+
+    def _tolerance(self, **overrides):
+        block = {"relative_ppm": 500, "absolute": 0.001, "unit": "USD billions"}
+        block.update(overrides)
+        return block
+
+    def test_a_conforming_tolerance_has_no_problems(self):
+        self.assertEqual(validate_identity_tolerance("src", "id", self._tolerance()), [])
+
+    def test_an_absolute_only_tolerance_stays_legal(self):
+        """Some identities are exact, and a tight absolute bound says so.
+
+        Gross subscriptions less gross redemptions is net flow by definition,
+        not by approximation. Forcing a relative bound onto it would be the
+        schema having an opinion about the data rather than about the
+        declaration.
+        """
+
+        self.assertEqual(
+            validate_identity_tolerance(
+                "src", "id", {"absolute": 1e-06, "unit": "USD billions"}
+            ),
+            [],
+        )
+
+    def test_a_tolerance_that_bounds_nothing_is_refused(self):
+        problems = validate_identity_tolerance("src", "id", {"unit": "USD billions"})
+        self.assertTrue(problems)
+        self.assertIn("relative_ppm", " ".join(problems))
+
+    def test_a_tolerance_must_carry_its_unit(self):
+        for tolerance in ({"absolute": 0.5}, {"absolute": 0.5, "unit": "  "}):
+            with self.subTest(tolerance=tolerance):
+                problems = validate_identity_tolerance("src", "id", tolerance)
+                self.assertTrue(problems)
+                self.assertIn("unit", " ".join(problems))
+
+    def test_unknown_keys_and_wrong_types_are_refused(self):
+        cases = {
+            "relative_pct": self._tolerance(relative_pct=0.05),
+            "negative absolute": self._tolerance(absolute=-1.0),
+            "zero relative": self._tolerance(relative_ppm=0),
+            "boolean absolute": self._tolerance(absolute=True),
+            "string relative": self._tolerance(relative_ppm="500"),
+            "not an object": [500],
+        }
+        for label, tolerance in cases.items():
+            with self.subTest(case=label):
+                self.assertTrue(
+                    validate_identity_tolerance("src", "id", tolerance),
+                    msg=f"{label} was accepted",
+                )
+
+    def test_the_resolved_bound_moves_with_the_scale(self):
+        """Longhand, not recomputed from the formula it is checking.
+
+        A test that multiplies the same three numbers the implementation does
+        agrees with it whatever either says. These four expectations are typed
+        out, so the only way they pass is if the resolver returns them.
+        """
+
+        tolerance = self._tolerance()
+        self.assertAlmostEqual(resolve_identity_tolerance(tolerance, 9000.0), 4.5)
+        self.assertAlmostEqual(resolve_identity_tolerance(tolerance, 2000.0), 1.0)
+        self.assertAlmostEqual(resolve_identity_tolerance(tolerance, 2.0), 0.001)
+        self.assertAlmostEqual(resolve_identity_tolerance(tolerance, -9000.0), 4.5)
+
+    def test_the_absolute_part_is_a_floor_and_not_a_ceiling(self):
+        """At 2 USD billions the floor binds; at 9000 the relative part does.
+
+        Which is the whole reason both are declared: parts per million of a
+        two-billion cross-section is 1000 USD, and a rounding residual is
+        larger than that without anything being wrong.
+        """
+
+        tolerance = self._tolerance()
+        self.assertGreater(
+            resolve_identity_tolerance(tolerance, 9000.0), tolerance["absolute"]
+        )
+        self.assertEqual(
+            resolve_identity_tolerance(tolerance, 0.5), tolerance["absolute"]
+        )
+
+    def test_the_declared_registry_tolerances_conform(self):
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        self.assertEqual(validate_registry_identity_tolerances(registry), {})
+
+    def test_the_nmfp_balance_sheet_tolerance_is_not_absolute_only(self):
+        """The declaration this class exists for, pinned by name.
+
+        Named rather than derived: a test that walked every identity and
+        asserted whatever it found would pass the day someone put the absolute
+        bound back. The `shareholder_flows_reconcile` identity is deliberately
+        not covered by this -- it is exact, and it is absolute-only on purpose.
+        """
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        identities = {
+            identity["name"]: identity
+            for identity in registry["sec_nmfp"]["identities"]
+        }
+        tolerance = identities[
+            "series_assets_reconcile_to_liabilities_and_net_assets"
+        ]["tolerance"]
+        self.assertIsInstance(tolerance.get("relative_ppm"), (int, float))
+        self.assertGreater(tolerance["relative_ppm"], 0)
 
 
 if __name__ == "__main__":

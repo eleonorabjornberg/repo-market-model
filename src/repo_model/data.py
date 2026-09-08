@@ -11,6 +11,11 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence
 
+from repo_model.contract import (
+    resolve_identity_tolerance,
+    validate_identity_tolerance,
+)
+
 
 REQUIRED_FIELDS = ("date", "sofr", "iorb")
 OPTIONAL_NUMERIC_FIELDS = (
@@ -761,11 +766,11 @@ def _identity_verdict(
     left_fields: Sequence[str],
     right_fields: Sequence[str],
     values: Mapping[str, Optional[float]],
-    tolerance: float,
+    tolerance: Mapping[str, object],
 ) -> tuple:
     """Answer one declared identity on one reference date.
 
-    Returns `(verdict, residual, absent_fields)`. The verdict is one of
+    Returns `(verdict, residual, absent_fields, bound)`. The verdict is one of
     `IDENTITY_HELD`, `IDENTITY_VIOLATED` or `IDENTITY_NOT_EVALUABLE`; the
     residual is `None` for the last, because on that reference date there is no
     residual -- not a large one, not a zero one, none.
@@ -785,12 +790,17 @@ def _identity_verdict(
         if values.get(field) is None
     )
     if absent:
-        return IDENTITY_NOT_EVALUABLE, None, absent
+        return IDENTITY_NOT_EVALUABLE, None, absent, None
     left_value = sum(float(values[field]) for field in left_fields)
     right_value = sum(float(values[field]) for field in right_fields)
     residual = abs(left_value - right_value)
-    verdict = IDENTITY_HELD if residual <= tolerance else IDENTITY_VIOLATED
-    return verdict, residual, ()
+    # The scale is the magnitude of the quantity the identity is about, and it
+    # is taken from the larger side rather than from a named term, so that the
+    # rule reads the same for an identity that has no term called "net assets".
+    scale = max(abs(left_value), abs(right_value))
+    bound = resolve_identity_tolerance(dict(tolerance), scale)
+    verdict = IDENTITY_HELD if residual <= bound else IDENTITY_VIOLATED
+    return verdict, residual, (), bound
 
 
 def validate_accounting_identities(
@@ -840,9 +850,9 @@ def validate_accounting_identities(
                 or not isinstance(tolerance, Mapping)
             ):
                 raise DataContractError(f"{source_id}: malformed accounting identity")
-            absolute = tolerance.get("absolute")
-            if isinstance(absolute, bool) or not isinstance(absolute, (int, float)):
-                raise DataContractError(f"{source_id}: identity {name} has invalid tolerance")
+            tolerance_problems = validate_identity_tolerance(source_id, name, tolerance)
+            if tolerance_problems:
+                raise DataContractError("; ".join(tolerance_problems))
             left_fields = [str(field) for field in left]
             right_fields = [str(field) for field in right]
             fields = [*left_fields, *right_fields]
@@ -873,8 +883,8 @@ def validate_accounting_identities(
                     )
                     for field in fields
                 }
-                verdict, residual, absent = _identity_verdict(
-                    left_fields, right_fields, values, float(absolute)
+                verdict, residual, absent, bound = _identity_verdict(
+                    left_fields, right_fields, values, tolerance
                 )
                 if verdict == IDENTITY_NOT_EVALUABLE:
                     unevaluated.append(
@@ -889,7 +899,7 @@ def validate_accounting_identities(
                 if verdict == IDENTITY_VIOLATED:
                     raise DataContractError(
                         f"{source_id}: identity {name} residual {residual:g} exceeds "
-                        f"tolerance {float(absolute):g} on {ref_date}"
+                        f"tolerance {bound:g} on {ref_date}"
                     )
                 maximum = max(maximum, residual)
             evaluations[f"{source_id}:{name}"] = IdentityEvaluation(

@@ -204,9 +204,106 @@ class PointInTimeDataContractTests(unittest.TestCase):
         bad = dict(registry)
         bad["source"] = dict(registry["source"])
         bad["source"]["identities"] = [dict(registry["source"]["identities"][0])]
-        bad["source"]["identities"][0]["tolerance"] = {"absolute": 0.0}
+        bad["source"]["identities"][0]["tolerance"] = {"absolute": 0.0, "unit": "USD"}
         with self.assertRaisesRegex(DataContractError, "residual"):
             validate_accounting_identities(rows[:-1], bad)
+
+    def test_a_relative_tolerance_is_the_same_rule_at_every_scale(self):
+        """The property an absolute bound cannot have.
+
+        One absolute number on a quantity that moves by orders of magnitude is
+        not a tolerance: calibrated on the largest cross-section it is
+        unfalsifiable on the smallest, and calibrated on the smallest it fails
+        the largest. So this fixture holds the residual at a fixed *fraction*
+        of the identity's own magnitude and moves the magnitude, which is
+        exactly the move a per-month panel makes on its own. A relative bound
+        must give the same verdict at both scales; an absolute one cannot.
+
+        Both halves are asserted. Only checking that the big scale holds would
+        pass for a bound of infinity, and only checking that the small scale
+        fails would pass for a bound of zero.
+        """
+
+        def rows_at(scale, residual_fraction):
+            left = scale
+            right = scale * (1.0 - residual_fraction)
+            return [
+                self.observation("assets", "2026-01-01", "2026-01-02T12:00:00+00:00", left, "v1"),
+                self.observation("liabilities", "2026-01-01", "2026-01-02T12:01:00+00:00", right, "v1"),
+            ]
+
+        def registry_with(tolerance):
+            return {
+                "source": {
+                    "identities": [{
+                        "name": "one_sided",
+                        "left": ["assets"],
+                        "right": ["liabilities"],
+                        "tolerance": tolerance,
+                    }]
+                }
+            }
+
+        relative = registry_with({"relative_ppm": 500, "absolute": 1e-9, "unit": "USD billions"})
+        # 100 ppm of the identity's own magnitude, five times inside the bound,
+        # at two scales four orders of magnitude apart.
+        for scale in (2.0, 9000.0):
+            with self.subTest(scale=scale, tolerance="relative"):
+                evaluations = validate_accounting_identities(
+                    rows_at(scale, 100e-6), relative
+                )
+                self.assertEqual(evaluations["source:one_sided"].evaluated_ref_dates, 1)
+
+        # And the absolute bound that would be calibrated from the large scale,
+        # against a small cross-section that is 20% wrong. It passes, because
+        # 0.5 is a quarter of the whole cross-section: at that scale there is
+        # no residual the bound could reject, so its verdict carries no
+        # information. The relative bound rejects the same rows.
+        absolute = registry_with({"absolute": 0.5, "unit": "USD billions"})
+        wildly_broken = rows_at(2.0, 0.2)
+        with self.subTest(tolerance="absolute", scale=2.0):
+            evaluations = validate_accounting_identities(wildly_broken, absolute)
+            self.assertEqual(evaluations["source:one_sided"].evaluated_ref_dates, 1)
+        with self.subTest(tolerance="relative", scale=2.0):
+            with self.assertRaisesRegex(DataContractError, "residual"):
+                validate_accounting_identities(wildly_broken, relative)
+
+    def test_the_scale_is_the_larger_side_and_not_the_left_one(self):
+        """Which side the scale comes from, pinned because nothing else pins it.
+
+        Written after a mutation that was expected to be boring and was:
+        taking the scale from `left` alone instead of from the larger side
+        killed nothing in the suite. That is a finding about the tests, not a
+        mutation to discard -- every other fixture here has two sides of nearly
+        equal magnitude, so the choice was free.
+
+        It stops being free when the sides differ, which is exactly when an
+        identity is close to failing. So this fixture makes them differ by a
+        factor of two and puts the bound between the two candidate scales: the
+        larger side admits the residual, the left side alone rejects it. The
+        percentages are artificial because the rule is, and a rule tested only
+        at values where it does not matter is not tested.
+        """
+
+        rows = [
+            self.observation("assets", "2026-01-01", "2026-01-02T12:00:00+00:00", 1.0, "v1"),
+            self.observation("liabilities", "2026-01-01", "2026-01-02T12:01:00+00:00", 2.0, "v1"),
+        ]
+        registry = {
+            "source": {
+                "identities": [{
+                    "name": "lopsided",
+                    "left": ["assets"],
+                    "right": ["liabilities"],
+                    # 60% of the larger side is 1.2 and admits the residual of
+                    # 1.0; 60% of the left side is 0.6 and does not.
+                    "tolerance": {"relative_ppm": 600000, "unit": "USD billions"},
+                }]
+            }
+        }
+        evaluations = validate_accounting_identities(rows, registry)
+        self.assertEqual(evaluations["source:lopsided"].evaluated_ref_dates, 1)
+        self.assertAlmostEqual(evaluations["source:lopsided"].maximum_residual, 1.0)
 
     def test_an_identity_with_an_unobserved_term_is_recorded_unevaluated_not_satisfied(
         self,

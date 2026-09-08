@@ -194,10 +194,11 @@
         "name": "series_assets_reconcile_to_liabilities_and_net_assets",
         "right": ["mmf_liabilities", "mmf_net_assets"],
         "tolerance": {
-          "absolute": 0.5,
+          "relative_ppm": 500,
+          "absolute": 0.001,
           "unit": "USD billions"
         },
-        "tolerance_note": "Aggregate as-filed N-MFP balances contain small reconciliation differences; USD 0.5 billion is about 0.006% of July 2026 aggregate net assets and bounds the observed USD 0.312 billion residual, which remains recorded in every panel manifest."
+        "tolerance_note": "Aggregate as-filed N-MFP balances contain small reconciliation differences, and they are rounding rather than error: across the six report dates in the 2026-07 extract the residuals run 13 to 175 parts per million of the cross-section, a range of about 13x, while the cross-sections themselves span three orders of magnitude. The bound is therefore relative. 500 ppm is about 3x the worst relative residual observed. The absolute part is a floor, not the bound: at a cross-section of roughly 2 USD billions the two meet, so a rounding residual on a very small month is not measured against parts per million of almost nothing. The absolute-only 0.5 USD billions this replaces was about 35 ppm of the largest of those months and 25 percent of the smallest, which is not a tolerance but a number larger than the worst thing seen so far. Calibration is from the Track A decision memo of 7 September 2026, recomputed there from the local sec_nmfp snapshot; that snapshot is not present in the integration checkout, so the figures here were not independently recomputed when the schema changed. Note also that the cross-section coverage floor now excludes five of those six report dates from the panel, so one of the six months this was calibrated from currently reaches the identity at all."
       },
       {
         "left": ["mmf_gross_subscriptions"],

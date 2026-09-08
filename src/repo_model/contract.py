@@ -42,15 +42,23 @@ __all__ = [
     "QUANTILE_LEVELS",
     "validate_release_lag",
     "validate_registry_release_lags",
+    "REVISION_POLICIES",
+    "validate_field_release_lag",
+    "IDENTITY_TOLERANCE_KEYS",
+    "validate_identity_tolerance",
+    "resolve_identity_tolerance",
+    "validate_registry_identity_tolerances",
     "EVENT_WINDOW_KEYS",
     "event_window_digest",
     "validate_event_windows_document",
     "UndeclaredFeatureError",
+    "FEATURE_FIELDS",
     "FEATURE_SOURCES",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "sources_for_features",
+    "field_sources_for_features",
 ]
 
 #: Fixed across every model so pinball loss, interval coverage, and predictive
@@ -505,6 +513,129 @@ def validate_registry_release_lags(registry: dict) -> dict[str, list[str]]:
                         source_id, field, field_lags[field], basis
                     )
                 )
+        if problems:
+            offenders[source_id] = problems
+    return offenders
+
+
+#: Keys an identity `tolerance` object may carry.
+IDENTITY_TOLERANCE_KEYS = frozenset({"absolute", "relative_ppm", "unit"})
+
+
+def validate_identity_tolerance(source_id: str, name: str, tolerance: object) -> list[str]:
+    """Problems with one declared identity's `tolerance`. Never raises.
+
+    Same contract as `validate_release_lag`: returns a list, empty means the
+    object conforms.
+
+    A tolerance may declare `relative_ppm`, `absolute`, or both. Both is the
+    intended form for a quantity whose scale moves: the relative part is the
+    bound, and the absolute part is a floor under it so that a rounding
+    residual on a small cross-section is not measured against parts per
+    million of almost nothing.
+
+    An absolute-only tolerance stays legal, because some identities really are
+    exact -- gross subscriptions minus gross redemptions is net flow by
+    definition, and a bound of a millionth of a billion is the right statement
+    about it. What the schema stops is an absolute-only bound on a quantity
+    that moves by orders of magnitude, which is not a tolerance but a number
+    that happens to be larger than the worst thing seen so far. The schema
+    cannot tell those two apart; a reader can, and now has somewhere to say
+    which one this is.
+    """
+
+    label = f"{source_id}: identity {name}"
+    problems: list[str] = []
+
+    if not isinstance(tolerance, dict):
+        return [
+            f"{label}: tolerance must be an object, got "
+            f"{type(tolerance).__name__}"
+        ]
+
+    unknown = sorted(set(tolerance) - IDENTITY_TOLERANCE_KEYS)
+    if unknown:
+        problems.append(f"{label}: unknown tolerance keys {unknown}")
+
+    unit = tolerance.get("unit")
+    if not isinstance(unit, str) or not unit.strip():
+        problems.append(f"{label}: tolerance must declare a non-empty unit")
+
+    absolute = tolerance.get("absolute")
+    relative = tolerance.get("relative_ppm")
+
+    if absolute is None and relative is None:
+        problems.append(
+            f"{label}: tolerance must declare absolute, relative_ppm, or both; "
+            f"a tolerance that bounds nothing admits everything"
+        )
+
+    if absolute is not None:
+        if isinstance(absolute, bool) or not isinstance(absolute, (int, float)):
+            problems.append(f"{label}: tolerance absolute must be a number")
+        elif absolute < 0:
+            problems.append(f"{label}: tolerance absolute must not be negative")
+
+    if relative is not None:
+        if isinstance(relative, bool) or not isinstance(relative, (int, float)):
+            problems.append(f"{label}: tolerance relative_ppm must be a number")
+        elif relative <= 0:
+            problems.append(
+                f"{label}: tolerance relative_ppm must be positive; declare "
+                f"absolute alone rather than a relative bound of zero"
+            )
+
+    return problems
+
+
+def resolve_identity_tolerance(tolerance: dict, scale: float) -> float:
+    """The bound one identity is held to at one scale.
+
+    `max(absolute, relative_ppm * 1e-6 * abs(scale))`, with a missing part
+    contributing nothing. The caller supplies `scale`: the magnitude of the
+    quantity the identity is about, not of the residual.
+
+    Scaling a residual by the size of the thing it is a residual *of* is what
+    makes it a tolerance rather than a number, and it is not the anchoring
+    failure this repository keeps finding: the residual is a difference of the
+    two sides and the scale is their magnitude, so a scale computed from the
+    same observations cannot move to accommodate the residual. Anchoring would
+    be deriving the bound from the residual itself -- which is what calibrating
+    an absolute bound against the worst month observed so far quietly does.
+
+    Assumes `validate_identity_tolerance` has already passed.
+    """
+
+    absolute = float(tolerance.get("absolute") or 0.0)
+    relative = float(tolerance.get("relative_ppm") or 0.0)
+    return max(absolute, relative * 1e-6 * abs(float(scale)))
+
+
+def validate_registry_identity_tolerances(registry: dict) -> dict[str, list[str]]:
+    """Validate every declared identity's tolerance. Returns {source_id: problems}.
+
+    A source declaring no identities is not an offender; a source declaring one
+    without a conforming tolerance is.
+    """
+
+    offenders: dict[str, list[str]] = {}
+    for source_id, source in registry.items():
+        if not isinstance(source, dict):
+            offenders[source_id] = [f"{source_id}: source must be an object"]
+            continue
+        identities = source.get("identities", [])
+        if not isinstance(identities, list):
+            offenders[source_id] = [f"{source_id}: identities must be a list"]
+            continue
+        problems: list[str] = []
+        for identity in identities:
+            if not isinstance(identity, dict):
+                problems.append(f"{source_id}: identity must be an object")
+                continue
+            name = str(identity.get("name") or "").strip() or "<unnamed>"
+            problems.extend(
+                validate_identity_tolerance(source_id, name, identity.get("tolerance"))
+            )
         if problems:
             offenders[source_id] = problems
     return offenders
