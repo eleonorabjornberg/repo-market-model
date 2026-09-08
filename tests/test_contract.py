@@ -2367,21 +2367,32 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
 
 
 class IdentityToleranceTests(unittest.TestCase):
-    """A tolerance on a quantity whose scale moves must move with it.
+    """A tolerance may move with the scale of what it bounds. None does yet.
 
-    `sec_nmfp` declared one absolute bound -- 0.5 USD billions -- across
-    monthly cross-sections spanning three orders of magnitude. It is 35 parts
-    per million of the largest month observed and 25% of the smallest. One
-    number cannot be a bound at both ends: calibrated on the largest it is
-    unfalsifiable on the smallest, and calibrated on the smallest it fails the
-    largest. The residuals themselves are well behaved in relative terms --
-    13 to 175 ppm across the same six months -- because they are rounding in
-    as-filed data. **The identity is scale-free, so the tolerance should be.**
+    This is the schema only. `sec_nmfp` bounds a scale-free identity with one
+    absolute number, and that number cannot be a bound at both ends of a panel
+    spanning three orders of magnitude -- it is about 35 parts per million of
+    the largest cross-section observed and a quarter of the smallest. But the
+    coverage floor rejects exactly the small months that make that argument,
+    so post-floor one cross-section is admitted, and recalibrating a shared
+    shape against a single observation is the failure the change was meant to
+    prevent. `docs/DATA_QUALITY_DECISIONS.md` defers the number until at least
+    three are admitted, and this class does not lift that deferral.
 
-    The schema half lives in `contract.py` for the same reason the
-    `release_lag` schema does: it is a shape both tracks build against, and a
-    second copy of the rules is how one field came to be called `calendar` on
-    one side and `unit` on the other.
+    What lands here is the ability to express the change when it is time:
+    `relative_ppm` alongside `absolute`, with `absolute` acting as a floor
+    under it, validated in `contract.py` for the same reason the `release_lag`
+    schema is -- it is a shape both tracks build against, and a second copy of
+    the rules is how one field came to be called `calendar` on one side and
+    `unit` on the other. The restatement of these rules that used to sit in
+    `test_the_declared_registry_is_well_formed` required `absolute`, which is
+    what made an absolute-only bound the only expressible kind. Lifting the
+    deferral is now a one-line edit to a declaration rather than a change to
+    the contract, and that is the whole of what this buys.
+
+    No test here asserts that any declared tolerance *is* relative, because
+    none is, and a test asserting the absence would have to be deleted on the
+    day the deferral lifts rather than passing through it.
 
     Mutation record, the human-side patch that introduced this class. Run in a
     copy under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the
@@ -2401,11 +2412,6 @@ class IdentityToleranceTests(unittest.TestCase):
       * The same resolver with `min` for `max`. Kills those four and one more
         subtest of the same test, for the same reason at the other end.
 
-      * The registry declaration reverted to absolute-only `0.5`. Kills
-        exactly one, `test_the_nmfp_balance_sheet_tolerance_is_not_absolute_only`,
-        by assertion. That test is named rather than derived precisely so that
-        this mutation cannot pass.
-
       * `validate_identity_tolerance` stops requiring that a tolerance declare
         either part. Kills exactly one, its own test.
 
@@ -2416,6 +2422,11 @@ class IdentityToleranceTests(unittest.TestCase):
         `test_the_scale_is_the_larger_side_and_not_the_left_one` was written in
         response and the mutation now kills it, and only it. A mutation that
         fires nothing is a finding about the tests.
+
+    No mutation was run against a *declared* relative tolerance, because none
+    is declared. The rules are exercised against fixtures here so that they
+    are not vacuous today, and the day a declaration arrives is the day this
+    record needs a fourth entry.
     """
 
     def _tolerance(self, **overrides):
@@ -2504,25 +2515,6 @@ class IdentityToleranceTests(unittest.TestCase):
         registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
         self.assertEqual(validate_registry_identity_tolerances(registry), {})
 
-    def test_the_nmfp_balance_sheet_tolerance_is_not_absolute_only(self):
-        """The declaration this class exists for, pinned by name.
-
-        Named rather than derived: a test that walked every identity and
-        asserted whatever it found would pass the day someone put the absolute
-        bound back. The `shareholder_flows_reconcile` identity is deliberately
-        not covered by this -- it is exact, and it is absolute-only on purpose.
-        """
-
-        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
-        identities = {
-            identity["name"]: identity
-            for identity in registry["sec_nmfp"]["identities"]
-        }
-        tolerance = identities[
-            "series_assets_reconcile_to_liabilities_and_net_assets"
-        ]["tolerance"]
-        self.assertIsInstance(tolerance.get("relative_ppm"), (int, float))
-        self.assertGreater(tolerance["relative_ppm"], 0)
 
 
 if __name__ == "__main__":

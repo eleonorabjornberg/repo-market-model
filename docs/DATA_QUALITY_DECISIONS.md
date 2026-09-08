@@ -49,7 +49,26 @@ a backfilled history with at least three admitted months.
 **Interim position:** the absolute bound of USD 0.5 billion is retained, and its
 `tolerance_note` must state that it is calibrated against one admitted cross-section and
 has not been tested against a second. It remains a provisional ingestion check, not
-evidence that a cross-section represents the market.
+evidence that a cross-section represents the market. **The note now says this**; before,
+it read as though USD 0.5 billion had been calibrated against the market rather than
+against one extract.
+
+**The schema half has landed and the number has not.** `contract.py` now accepts
+`relative_ppm` alongside `absolute` on any identity tolerance, with `absolute` acting as
+a floor under the relative part, and `data.py` resolves the bound at the magnitude of
+the quantity the identity is about. Nothing declares a relative bound. This was
+separated out deliberately: the deferral is about calibrating a number against one
+observation, and a schema calibrates against nothing. The consequence is that lifting
+this deferral is a one-line edit to a declaration in `metadata/sources.json` rather than
+a change to a shared contract with two tracks' tests attached to it.
+
+The restatement of the tolerance rules that used to sit in the registry conformance test
+required `absolute` to be present, so an absolute-only bound was the only kind the
+repository could express. That was not a decision anyone made; it was a check written
+before the question came up. A first attempt at this section's decision changed the
+number as well, on the strength of the Track A memo and a stale open-item list, and had
+to be split back apart — this file is the record that was overridden, and it is tracked
+precisely so that cannot happen quietly.
 
 ## Treasury-settlement aggregation
 
@@ -61,6 +80,23 @@ separate SOMA-related amounts from the private-sector cash drain.
 model fitting. If a single aggregate is retained for the first empirical version,
 the source limitation must explicitly state what was combined and the model report
 must test whether the simplification affects conclusions.
+
+**Half done.** The `limitation` now states what was combined: all security types
+aggregated, SOMA add-ons included, tenor and the private-versus-Fed split not
+represented, and `security_type`, `security_term` and `soma_accepted` present in the
+snapshot and unread, so the split needs no new download. It also retires the note it
+replaced, which said announcement and result vintages must be separated to avoid using
+auction outcomes too early. That risk is avoided by construction — `record_date` drives
+`available_at` and the adapter reads `offering_amt` alone, never `total_accepted`,
+`high_yield` or `bid_to_cover` — so the note described a hazard the adapter cannot have
+while saying nothing about the one it creates, which reads as vigilance.
+
+Still open: the split itself, and the model report's test of whether the simplification
+affects conclusions. Both matter to this project specifically. Bill and coupon
+settlements have different collateral and reserve-drain profiles and bill supply is
+close to the centre of the 2018–19 episode; SOMA add-ons do not drain private cash, so
+the aggregate overstates the private-sector drain exactly when the Fed is rolling over
+most heavily.
 
 ## N-MFP series length: one archive yields one usable month
 
