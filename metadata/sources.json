@@ -19,6 +19,18 @@
       "WRESBAL": "weekly",
       "WTREGEN": "weekly"
     },
+    "field_release_lags": {
+      "IORB": {
+        "basis": "record_date",
+        "unit": "calendar_days",
+        "days": 1,
+        "available_time": "16:15",
+        "timezone": "America/New_York",
+        "revision_policy": "never_revised",
+        "revision_evidence": "Three ALFRED vintages of IORB -- 2024-09-01, 2026-09-03 and 2026-09-04 -- agree on every overlapping observation: 1130 identical values from 2021-07-29 to 2024-08-31 across a two-year vintage gap, and 1864 identical values from 2021-07-29 to 2026-09-04. No observation has been restated. The rate is administered by the Board of Governors and announced in advance of its effective date, which the vintages themselves show: the 2026-09-03 vintage already carries observations dated 2026-09-04, and the 2026-09-04 vintage carries through 2026-09-08. Latest vintage is therefore point-in-time for this field and for no other field of this source.",
+        "note": "Deliberately conservative. IORB for a date is knowable before that date; a one-day record-date lag against the H.15 publication time purges more than the evidence requires, which splits.py establishes as the safe direction. The number is the human's decision of 8 September 2026, not a derivation."
+      }
+    },
     "frequency": "mixed daily and weekly",
     "identities": [],
     "limitation": "Latest revised vintage; not point-in-time historical data. Weekly series require release-lag treatment.",

@@ -1924,11 +1924,32 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         `validate_field_release_lag` made a no-op. Kills exactly one, its own
         test, and no other.
 
-    No mutation was run against a *declared* `field_release_lags` block,
-    because none is declared yet.
-    `test_every_field_release_lag_names_a_declared_field` is vacuous until one
-    is, and its docstring says so. The rule it will enforce is exercised
-    against fixtures here so that the rule itself is not vacuous today.
+    Mutation record, patch 3 -- the first declared `field_release_lags` block
+    (`fred_macro_latest_vintage.IORB`). The three mutations below were not
+    runnable before it, and each kills exactly one test, by assertion:
+
+      * The `field_release_lags` key `IORB` renamed `IORBB`. Kills
+        `test_every_field_release_lag_names_a_declared_field` at subtest
+        `(source='fred_macro_latest_vintage', field='IORBB')` -- the test that
+        was vacuous until this block existed, firing for the first time.
+
+      * `revision_policy` removed from the declared block. Kills
+        `test_registry_interface.RegistryModuleTests`
+        `::test_the_declared_registry_is_well_formed`.
+
+      * `revision_evidence` emptied. Kills the same single test, the same way.
+
+    Read the last two together, because the finding is in what did *not* fire.
+    `test_a_snapshot_field_is_priceable_only_with_a_declared_revision_policy`
+    and `test_a_never_revised_claim_carries_its_evidence` are the assertions
+    written for exactly these two mutations, and neither one moves: they hold
+    the *rule* in `validate_field_release_lag` against fixtures, and cannot see
+    the real file. Only `test_the_declared_registry_is_well_formed` holds the
+    declared registry to that rule, so at suite level the two mutations are
+    indistinguishable. That is not a gap -- the real registry is held, once --
+    but a reader who assumes the named tests are what guard the declaration
+    would be wrong, and would be wrong in the direction this repository keeps
+    finding.
     """
 
     def _registry(self):
@@ -1986,10 +2007,10 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
     def test_every_field_release_lag_names_a_declared_field(self):
         """A lag declared for a field the source does not carry prices nothing.
 
-        Vacuous while no source declares one, which is why the rule it enforces
-        is also tested against a fixture below. It becomes load-bearing the day
-        a field lag is declared, and it is cheaper to add it now than to
-        remember to.
+        No longer vacuous: `fred_macro_latest_vintage` declares one, and
+        renaming its key kills this test and nothing else. The fixture-level
+        rule test below stays, because it is what keeps this one honest on the
+        day the declaration is removed again.
         """
 
         registry = self._registry()
