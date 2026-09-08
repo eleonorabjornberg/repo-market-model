@@ -872,11 +872,19 @@ class OverlappingArchiveTests(unittest.TestCase):
     the monthly sets after it carry the same report month, and stragglers and
     amendments arrive in adjacent archives.
 
-    The composition of the two mechanisms is what is under test here. Within an
-    archive, `_resolve_nmfp_submissions` keeps the latest filing per (series,
-    report date). Across archives, the revision logic in `parse_snapshots`
-    appends a changed value as a new vintage rather than adding it. Neither half
-    is sufficient alone and neither had ever been exercised.
+    The composition of the two mechanisms is what is under test here.
+    `_resolve_nmfp_submissions` keeps the latest filing per (series, report
+    date); the revision logic in `parse_snapshots` appends a changed value as a
+    new vintage rather than adding it. Neither half is sufficient alone and
+    neither had ever been exercised.
+
+    The resolution is no longer scoped to one archive -- see
+    `CrossArchiveSupersessionTests` -- and this class does not move, because
+    the amendment here arrives in the later-retrieved archive and per-archive
+    and assembled resolution agree on that case. What it pins is the half that
+    assembly must not disturb: two archives filing into one report date still
+    reach the panel as two vintages of one cross-section, so a correction stays
+    attributable rather than being collapsed into a single final value.
 
     Mutation record
     ---------------
@@ -1003,6 +1011,440 @@ class OverlappingArchiveTests(unittest.TestCase):
             [{"N-MFP3": 4}, {"N-MFP3": 4, "N-MFP3/A": 1}],
         )
 
+
+class CrossArchiveSupersessionTests(unittest.TestCase):
+    """A cross-section is a report date, not an archive.
+
+    `_resolve_nmfp_submissions` used to run inside `_sec_nmfp_rows`, over one
+    archive's submissions, and the coverage floor used to be applied to one
+    archive's cross-section. Both were right while the repository held one
+    extract. The backfill made them wrong and nothing noticed, because each
+    archive on its own still looks exactly as it did.
+
+    Two questions were being decided on that one wrong unit, and they are not
+    the same question. Supersession is per `(SERIESID, REPORTDATE)` across every
+    archive: an amendment routinely lands in a different archive from the filing
+    it restates, and per-archive resolution cannot see the pair, so the panel
+    carried the superseded original. Coverage is per `REPORTDATE` across every
+    archive: the straggler cohorts an archive carries for adjacent months are
+    each far below the floor, and excluding each separately discards the
+    amendments along with the cohort -- which is the right verdict about a
+    cross-section and the wrong one about an amendment, and is why the
+    originals survived unreplaced.
+
+    Measured on `2016-04-30` across the archives on disk: 506 submissions in 5
+    archives, 413 distinct `SERIESID`, and of the 93 submissions global
+    resolution supersedes, 47 are superseded by a filing in a *different*
+    archive. Over the whole 97-archive set, per-archive resolution supersedes
+    2192 submissions and global resolution supersedes 5095; the 2903 it cannot
+    see are all cross-archive.
+
+    These fixtures are built from in-memory archives rather than from
+    `data/raw/`, so they state the structural case rather than depending on it
+    still being present in a backfill. `test_global_resolution_supersedes_more_than_per_archive_resolution`
+    is the one conditional test, holding the fixtures to the real archives
+    where those are on disk.
+
+    What this class deliberately does not assert: that the `2016-04-30` identity
+    violation goes away. It does not. The residual is ~680 ppm before this
+    change and ~680 ppm after, because the corrections fall on both sides of the
+    balance-sheet identity and cancel. That is recorded in the packet as a
+    hypothesis already killed, and a version of this change that *did* move the
+    residual would have changed more than supersession.
+
+    Mutation record
+    ---------------
+    Run in a copy under `$HOME` -- never in the mount -- with `data/`,
+    `.github/`, `metadata/`, `.gitignore`, the root Markdown and
+    `docs/PROJECT_STATUS.md` alongside, `__pycache__` cleared before each run,
+    `-B` and PYTHONDONTWRITEBYTECODE=1. Unmutated control run twice, green both
+    times, before and after: 578 tests, OK, zero expected failures. That count
+    is the suite as of `d997fe7`, the tip the mutation copy was taken from;
+    `feature/data-layer` was fast-forwarded onto Track B's `bb2407a` while these
+    ran, which adds 31 tests in `test_baseline`, `test_cli_eval` and
+    `test_metrics` and touches nothing this block does. A red run is not
+    evidence the aimed-at test fired, so every kill is recorded with the
+    exception it raised.
+
+    | Mutation                                                 | Result      |
+    |----------------------------------------------------------|-------------|
+    | 1. Resolution moved back inside the per-archive loop:      | 4 failures  |
+    |    each archive resolved alone and the kept sets unioned.  |             |
+    | 2. The tie-break on equal `FILING_DATE` reversed, so the   | 2 failures  |
+    |    lowest accession wins a same-day tie.                   |             |
+    | 3. Assembly keyed on `(SERIESID, REPORTDATE, archive)`     | 3 failures  |
+    |    instead of `(SERIESID, REPORTDATE)`.                    |             |
+    | 4. The coverage floor left exactly as it is: the admission | no change   |
+    |    comparison rewritten to an equivalent, the declared      |             |
+    |    number and unit untouched.                              |             |
+
+    Which tests fired, and with what:
+
+    1. `AssertionError` on three tests here --
+       `test_an_amendment_in_another_archive_supersedes_the_original` and
+       `test_an_amendment_cohort_below_the_coverage_floor_still_supersedes`
+       (both `26.0 != 24.0`: the superseding amendment is kept *and* the
+       original it replaces, so the cross-section is booked twice for that
+       series) and `test_the_tie_break_on_equal_filing_dates_is_the_accession`
+       (`36.0 != 6.0`) -- plus `AssertionError` (`53.0 != 51.0`) on
+       `OverlappingArchiveTests::test_overlapping_archives_do_not_double_count_a_report_date`.
+       This is the mutation the block exists for and the acceptance test sees it.
+    2. `AssertionError` on
+       `test_the_tie_break_on_equal_filing_dates_is_the_accession`
+       (`33.0 != 6.0`) and on
+       `OverlappingArchiveTests::test_overlapping_archives_do_not_double_count_a_report_date`
+       (`24.0 != 51.0`). The tie-break is held by two tests, in two classes, on
+       two different fixtures -- so it is not untested, which was the finding
+       this mutation was run to rule out.
+    3. `AssertionError` on the same three tests in this class as mutation 1, with
+       the same values. It does *not* kill `OverlappingArchiveTests`, and the
+       reason is worth stating rather than filing as noise: that fixture is the
+       only place where one accession number appears in two archives, and the
+       archive map this mutation builds is last-wins, so both copies key to the
+       same archive and the mutation degenerates into the correct behaviour
+       there. On `data/raw/` no accession appears in more than one archive
+       (checked: 0 of 93942), so the mutation is faithful where it matters. The
+       acceptance test fires either way, which is what this mutation was for:
+       the defect restated must not pass.
+    4. Nothing changed, which is the point. This block moves supersession and
+       the unit coverage is judged on; it does not move the floor. The declared
+       `minimum_reporting_entities` is still 200 and `entity_unit` is still
+       `series_id` in `metadata/sources.json`, which this block does not touch.
+    """
+
+    #: A report date filed into by more than one archive. Every fixture here
+    #: uses one report date, because the unit under test is the report date.
+    REPORT = "31-JAN-2023"
+    REF_DATE = date(2023, 1, 31)
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    @staticmethod
+    def _submission(accession, series, filing, billions, submission_type="N-MFP3"):
+        return {
+            "accession": accession,
+            "series": series,
+            "report": CrossArchiveSupersessionTests.REPORT,
+            "filing": filing,
+            "submission_type": submission_type,
+            "net_assets": billions * 1_000_000_000,
+        }
+
+    def _archive(self, name, submissions, retrieved_at):
+        artifact = fetch_sec_nmfp(
+            self.output_root / name,
+            f"https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/{name}.zip",
+            lambda url: nmfp_archive(submissions),
+        )[0]
+        # Retrieval order is what orders vintages, and two fetches in one test
+        # run are microseconds apart. Declaring the timestamps keeps the
+        # assertion about the adapter rather than about clock resolution.
+        return replace(artifact, retrieved_at=retrieved_at)
+
+    def _net_assets(self, parsed):
+        """The latest vintage of `mmf_net_assets` on the fixture's report date."""
+
+        rows = [
+            row
+            for row in parsed.rows
+            if row.series_id == "mmf_net_assets" and row.ref_date == self.REF_DATE
+        ]
+        self.assertTrue(rows, "no mmf_net_assets row was emitted at all")
+        return max(rows, key=lambda row: row.available_at).value
+
+    def test_an_amendment_in_another_archive_supersedes_the_original(self):
+        """The acceptance criterion. Fails against per-archive resolution.
+
+        `S000000002` files an original in the archive retrieved second and an
+        amendment, filed a month later, in the archive retrieved first. The
+        filing dates say which is which; the archives do not. Per-archive
+        resolution sees one submission in each archive, supersedes nothing, and
+        the later-retrieved archive's cross-section -- carrying the *original* --
+        becomes the latest vintage.
+        """
+
+        amending = self._archive(
+            "amending",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission(
+                    "0000000000-23-000099", "S000000002", "15-MAR-2023", 20,
+                    submission_type="N-MFP3/A",
+                ),
+                self._submission("0000000000-23-000003", "S000000003", "10-FEB-2023", 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+        original = self._archive(
+            "original",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission("0000000000-23-000002", "S000000002", "10-FEB-2023", 2),
+                self._submission("0000000000-23-000003", "S000000003", "10-FEB-2023", 3),
+            ],
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [amending, original],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        # 1 + 20 + 3. Per-archive resolution gives 6.0: the second archive holds
+        # only the original, resolves nothing, and replaces the assembled value
+        # with its own. 26.0 would mean both accessions for S000000002 were
+        # added rather than resolved.
+        self.assertEqual(
+            self._net_assets(parsed),
+            24.0,
+            msg="the panel carries a submission that a filing in another "
+            "archive superseded",
+        )
+
+    def test_an_amendment_cohort_below_the_coverage_floor_still_supersedes(self):
+        """A straggler cohort is not a cross-section, and its amendment still wins.
+
+        The amending archive carries one submission against a floor of three. It
+        is not a cross-section and must not be admitted as one -- but the
+        cross-section it amends is assembled from every archive, so its
+        amendment is part of that assembly and the floor never sees the cohort
+        as a thing to judge.
+        """
+
+        bulk = self._archive(
+            "bulk",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission("0000000000-23-000002", "S000000002", "10-FEB-2023", 2),
+                self._submission("0000000000-23-000003", "S000000003", "10-FEB-2023", 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+        straggler = self._archive(
+            "straggler",
+            [
+                self._submission(
+                    "0000000000-23-000099", "S000000002", "15-MAR-2023", 20,
+                    submission_type="N-MFP3/A",
+                )
+            ],
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [bulk, straggler],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        # 1 + 20 + 3. Per-archive: the straggler archive is a 1-series
+        # cross-section, is excluded by the floor, and takes the amendment with
+        # it, leaving 6.0 -- the originals standing unreplaced.
+        self.assertEqual(
+            self._net_assets(parsed),
+            24.0,
+            msg="an amendment was discarded with the straggler cohort it "
+            "arrived in",
+        )
+
+        # The assembled cross-section is admitted, and it is admitted once per
+        # archive that files into it rather than once per archive that happens
+        # to clear the floor alone.
+        coverage = [item for item in parsed.coverage if item.ref_date == self.REF_DATE]
+        self.assertEqual([item.entity_count for item in coverage], [3, 3])
+        self.assertTrue(all(item.admitted for item in coverage))
+
+    def test_a_series_present_only_in_a_small_archive_joins_the_assembled_cross_section(self):
+        """The series that per-archive coverage drops from the panel entirely.
+
+        `S000000004` files in no archive but the straggler one. Judged as its own
+        cross-section that archive is a 1-series cohort and is excluded, so the
+        series never reaches the panel -- not as a missing value, as nothing at
+        all. Judged as part of the report date it was filed under, it is one more
+        series in a cross-section of four.
+        """
+
+        bulk = self._archive(
+            "bulk",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission("0000000000-23-000002", "S000000002", "10-FEB-2023", 2),
+                self._submission("0000000000-23-000003", "S000000003", "10-FEB-2023", 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+        straggler = self._archive(
+            "straggler",
+            [self._submission("0000000000-23-000004", "S000000004", "20-FEB-2023", 7)],
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [bulk, straggler],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        # 1 + 2 + 3 + 7. Per-archive gives 6.0 and the fourth series is absent
+        # from the panel with nothing recording that it filed.
+        self.assertEqual(
+            self._net_assets(parsed),
+            13.0,
+            msg="a series that filed only in a small archive is missing from "
+            "the assembled cross-section",
+        )
+        coverage = [item for item in parsed.coverage if item.ref_date == self.REF_DATE]
+        self.assertEqual([item.entity_count for item in coverage], [3, 4])
+
+    def test_the_tie_break_on_equal_filing_dates_is_the_accession(self):
+        """Two filings, one day, two archives: the rule must still be total.
+
+        `FILING_DATE` is the archive's own statement of filing order and it is
+        what makes an amendment an amendment, but it does not separate two
+        submissions filed the same day. Across archives the fallback cannot be
+        row order in a file, because there is no one file. It is the accession.
+        """
+
+        first = self._archive(
+            "first",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission("0000000000-23-000002", "S000000002", "10-FEB-2023", 2),
+                self._submission("0000000000-23-000050", "S000000003", "10-FEB-2023", 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+        second = self._archive(
+            "second",
+            [
+                self._submission("0000000000-23-000040", "S000000003", "10-FEB-2023", 30)
+            ],
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [first, second],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        # 1 + 2 + 3. `...050` outranks `...040` on the same filing date, so the
+        # later-retrieved archive does not win by arriving later. Reversing the
+        # tie-break gives 33.0; dropping it makes the answer depend on which
+        # archive was read first.
+        self.assertEqual(
+            self._net_assets(parsed),
+            6.0,
+            msg="the same-day tie-break did not decide between two archives",
+        )
+
+    def test_the_coverage_floor_still_excludes_an_assembled_straggler_month(self):
+        """Assembly must not admit what the floor exists to reject.
+
+        Making coverage a question about a report date rather than an archive is
+        not the same as relaxing it. A report date that is a straggler cohort in
+        every archive that carries it is still a straggler cohort assembled, and
+        is still excluded.
+        """
+
+        bulk = self._archive(
+            "bulk",
+            [
+                self._submission("0000000000-23-000001", "S000000001", "10-FEB-2023", 1),
+                self._submission("0000000000-23-000002", "S000000002", "10-FEB-2023", 2),
+                self._submission("0000000000-23-000003", "S000000003", "10-FEB-2023", 3),
+                {
+                    "accession": "0000000000-23-000004",
+                    "series": "S000000004",
+                    "report": "31-DEC-2022",
+                    "filing": "10-FEB-2023",
+                    "net_assets": 9_000_000_000,
+                },
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+        straggler = self._archive(
+            "straggler",
+            [
+                {
+                    "accession": "0000000000-23-000005",
+                    "series": "S000000005",
+                    "report": "31-DEC-2022",
+                    "filing": "20-FEB-2023",
+                    "net_assets": 8_000_000_000,
+                }
+            ],
+            "2026-04-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [bulk, straggler],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        december = [
+            item for item in parsed.coverage if item.ref_date == date(2022, 12, 31)
+        ]
+        self.assertTrue(december, "the excluded cross-section was not recorded")
+        self.assertEqual([item.entity_count for item in december], [1, 2])
+        self.assertFalse(
+            any(item.admitted for item in december),
+            msg="assembling across archives admitted a cross-section that is "
+            "still below the floor",
+        )
+        self.assertEqual(
+            [row.ref_date for row in parsed.rows if row.ref_date == date(2022, 12, 31)],
+            [],
+            msg="an excluded cross-section reached the panel",
+        )
+
+    def test_global_resolution_supersedes_more_than_per_archive_resolution(self):
+        """The one conditional test: hold the fixtures to the real archives.
+
+        Skips where `data/raw/sec_nmfp/` is not populated -- it is gitignored, so
+        this runs only where the adapters have been run. Not `expectedFailure`:
+        that marker claims the assertion is right and the code is wrong, and it
+        hid a TypeError in this repo for the whole life of the class it was on.
+        """
+
+        raw = Path(__file__).parents[1] / "data" / "raw" / "sec_nmfp"
+        manifests = sorted(raw.glob("*.manifest.json"))
+        if not manifests:
+            self.skipTest(
+                f"no sec_nmfp snapshots under {raw}; data/raw/ is gitignored, so "
+                "this check runs only where the adapters have been run. It is "
+                "not waiting on an unwritten implementation."
+            )
+
+        from repo_model.ingest import _nmfp_archive_scan, _resolve_nmfp_submissions
+
+        per_archive = 0
+        everything = {}
+        for manifest_path in manifests:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifact = SnapshotArtifact(
+                source_id=manifest["source_id"],
+                path=manifest_path.parent / Path(manifest["path"]).name,
+                retrieved_at=manifest["retrieved_at"],
+                sha256=manifest["sha256"],
+                url=manifest["url"],
+                byte_count=int(manifest["byte_count"]),
+            )
+            submissions, _types, _cells, _absent = _nmfp_archive_scan(
+                artifact.path.read_bytes()
+            )
+            _kept, superseded = _resolve_nmfp_submissions(submissions)
+            per_archive += len(superseded)
+            everything.update(submissions)
+
+        _kept, globally = _resolve_nmfp_submissions(everything)
+        self.assertGreater(
+            len(globally),
+            per_archive,
+            msg="global resolution found no amendment that per-archive "
+            "resolution missed; either the archives no longer overlap or the "
+            "resolution is not global",
+        )
 
 class PerTableRefusalTests(unittest.TestCase):
     """Refusal is per table, and the INVESTMENTCATEGORY vocabulary is declared.

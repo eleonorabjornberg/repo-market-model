@@ -1352,41 +1352,47 @@ def _resolve_nmfp_submissions(submissions):
     return kept, frozenset(submissions) - kept
 
 
-def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
-    """Aggregate one SEC bulk extract without inventing absent holdings.
+def _nmfp_archive_scan(payload: bytes):
+    """Read one archive into per-accession contributions, resolving nothing.
 
-    Returns `(rows, entity_counts, submission_types, absent_fields)`. Each
-    element of `rows` pairs an observation with the report date of the
-    submission it came from -- its cross-section -- which is not always its own
-    `ref_date`: a daily shareholder-flow row is dated within the reporting month
-    but belongs to that month's cross-section and stands or falls with it.
-    `entity_counts` maps each cross-section to the number of distinct reporting
-    entities that filed for it. `submission_types` maps each cross-section to
-    how many submissions of each `SUBMISSIONTYPE` it carries, superseded ones
-    included: it corroborates the coverage decision without participating in it.
-    `absent_fields` maps each cross-section to the panel series this archive
-    could supply no observation of, because the table that carries them is not
-    in the archive or because the report month has no declared
-    `INVESTMENTCATEGORY` vocabulary. Absent, never zero.
+    Returns `(submissions, submission_types, contributions, absent)`.
+    `submissions` maps accession to `(series_id, report_date, filing_date)`;
+    `submission_types` maps accession to its `SUBMISSIONTYPE`; `contributions`
+    maps accession to the `(series_id, ref_date)` cells it supplies and the
+    value it supplies to each; `absent` maps each report date this archive
+    carries to the panel series this archive could supply no observation of,
+    because the table that carries them is not in the archive or because the
+    report month has no declared `INVESTMENTCATEGORY` vocabulary. Absent, never
+    zero.
+
+    Supersession is deliberately *not* applied here, and that is the whole point
+    of the split. An amendment is resolved per `(SERIESID, REPORTDATE)` across
+    every archive -- see `parse_snapshots` -- and an archive read on its own
+    cannot know that one of its filings was restated in another one. Reading and
+    resolving were a single step for as long as the repository held a single
+    extract; separating them is what lets the resolution see the whole archive
+    set instead of one window of it.
+
+    Contributions are kept per accession rather than summed per cross-section
+    for the same reason: a submission that a later archive amends has to be
+    removable after the fact, and a running total it has already been added to
+    cannot give it back.
 
     An archive missing a whole table is read for everything its other tables
     supply. Only `NMFP_SUBMISSION.tsv` is indispensable, because without it no
     row can be attributed to a series or a report date.
     """
 
-    from .data import PointInTimeObservation
+    submissions = {}
+    submission_types = {}
+    contributions = {}
 
-    available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
-    totals = {}
-
-    def add(section: date, series_id: str, ref_date: date, value: float) -> None:
-        key = (section, series_id, ref_date)
-        totals[key] = totals.get(key, 0.0) + value
+    def add(accession: str, series_id: str, ref_date: date, value: float) -> None:
+        cells = contributions.setdefault(accession, {})
+        key = (series_id, ref_date)
+        cells[key] = cells.get(key, 0.0) + value
 
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
-        submissions = {}
-        entities = {}
-        submission_types = {}
         for record in _nmfp_table(archive, "NMFP_SUBMISSION.tsv"):
             accession = (record.get("ACCESSION_NUMBER") or "").strip()
             if not accession:
@@ -1405,21 +1411,12 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                     f"SEC Form N-MFP accession {accession} describes two submissions"
                 )
             submissions[accession] = entry
-            entities.setdefault(report_date, set()).add(entity)
-            submission_type = (record.get("SUBMISSIONTYPE") or "").strip() or "(blank)"
-            mix = submission_types.setdefault(report_date, {})
-            mix[submission_type] = mix.get(submission_type, 0) + 1
+            submission_types[accession] = (
+                (record.get("SUBMISSIONTYPE") or "").strip() or "(blank)"
+            )
 
-        kept_accessions, superseded = _resolve_nmfp_submissions(submissions)
-        reports = {
-            accession: submissions[accession][1] for accession in kept_accessions
-        }
-
-        # An absent table costs the fields it supplies, for every cross-section
-        # in this archive, and costs nothing else. `absent` records that per
-        # cross-section so an unobserved field is legible next to the coverage
-        # decision rather than inferred from a row that is not there.
-        absent = {section: set() for section in set(reports.values())}
+        sections = {report_date for _e, report_date, _f in submissions.values()}
+        absent = {section: set() for section in sections}
 
         series_table = _nmfp_table_if_present(archive, "NMFP_SERIESLEVELINFO.tsv")
         if series_table is None:
@@ -1428,17 +1425,15 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
         else:
             for record in series_table:
                 accession = (record.get("ACCESSION_NUMBER") or "").strip()
-                if accession in superseded:
-                    continue
-                if accession not in reports:
+                if accession not in submissions:
                     raise ValueError(
                         f"SEC Form N-MFP series row has unknown accession {accession}"
                     )
-                section = reports[accession]
+                section = submissions[accession][1]
                 for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
                     value = _nmfp_number(record.get(raw_field), raw_field)
                     if value is not None:
-                        add(section, series_id, section, value / 1_000_000_000)
+                        add(accession, series_id, section, value / 1_000_000_000)
 
         # Every archive filed before 2024-06-10 predates this table: daily
         # shareholder flows were not collected, so there is nothing to read and
@@ -1455,9 +1450,7 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
         else:
             for record in flow_table:
                 accession = (record.get("ACCESSION_NUMBER") or "").strip()
-                if accession in superseded:
-                    continue
-                if accession not in reports:
+                if accession not in submissions:
                     raise ValueError(
                         f"SEC Form N-MFP flow row has unknown accession {accession}"
                     )
@@ -1466,7 +1459,6 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                 # cross-section from the flow date instead would be a guess that
                 # happens to be right on this extract, and wrong the first time a
                 # filing reports a day outside its own reporting month.
-                section = reports[accession]
                 ref_date = _nmfp_date(
                     record.get("DAILYSHAREHOLDERFLOWDATE"),
                     "DAILYSHAREHOLDERFLOWDATE",
@@ -1476,10 +1468,10 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                     value = _nmfp_number(record.get(raw_field), raw_field)
                     if value is not None:
                         values[series_id] = value / 1_000_000_000
-                        add(section, series_id, ref_date, values[series_id])
+                        add(accession, series_id, ref_date, values[series_id])
                 if len(values) == 2:
                     add(
-                        section,
+                        accession,
                         "mmf_net_flow",
                         ref_date,
                         values["mmf_gross_subscriptions"]
@@ -1502,13 +1494,11 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
             undeclared = set()
             for record in holdings_table:
                 accession = (record.get("ACCESSION_NUMBER") or "").strip()
-                if accession in superseded:
-                    continue
-                if accession not in reports:
+                if accession not in submissions:
                     raise ValueError(
                         f"SEC Form N-MFP security row has unknown accession {accession}"
                     )
-                section = reports[accession]
+                section = submissions[accession][1]
                 era = nmfp_investment_category_era(section)
                 if era is None:
                     undeclared.add(section)
@@ -1527,7 +1517,7 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                 )
                 if value is None:
                     continue
-                add(section, field, section, value / 1_000_000_000)
+                add(accession, field, section, value / 1_000_000_000)
                 if field == "mmf_repo_holdings":
                     counterparty = " ".join(
                         str(record.get(name) or "")
@@ -1536,9 +1526,61 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
                         )
                     ).upper()
                     if "FEDERAL RESERVE" in counterparty:
-                        add(section, "mmf_on_rrp", section, value / 1_000_000_000)
+                        add(accession, "mmf_on_rrp", section, value / 1_000_000_000)
             for section in undeclared:
                 absent.setdefault(section, set()).update(NMFP_CATEGORY_FIELDS)
+
+    return submissions, submission_types, contributions, absent
+
+
+def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
+    """Aggregate one SEC bulk extract read in isolation, without inventing rows.
+
+    Returns `(rows, entity_counts, submission_types, absent_fields)` -- the shape
+    this adapter has always returned, for the one caller that legitimately holds
+    a single archive and no others: a schema check on a rewritten payload.
+
+    `parse_snapshots` no longer goes through here, and the reason is the whole of
+    block 2. Resolving supersession inside this function resolves it inside one
+    archive, which was correct when the repository held one extract and became
+    wrong the moment the backfill put a filing and its amendment in different
+    ones. The panel is assembled by `_assemble_sec_nmfp` instead, which resolves
+    per `(SERIESID, REPORTDATE)` across every archive. On a single archive the
+    two agree by construction, which is why this function is still a faithful
+    description of what one archive says.
+
+    Each element of `rows` pairs an observation with the report date of the
+    submission it came from -- its cross-section -- which is not always its own
+    `ref_date`: a daily shareholder-flow row is dated within the reporting month
+    but belongs to that month's cross-section and stands or falls with it.
+    `entity_counts` maps each cross-section to the number of distinct reporting
+    entities that filed for it. `submission_types` maps each cross-section to
+    how many submissions of each `SUBMISSIONTYPE` it carries, superseded ones
+    included: it corroborates the coverage decision without participating in it.
+    `absent_fields` maps each cross-section to the panel series this archive
+    could supply no observation of. Absent, never zero.
+    """
+
+    from .data import PointInTimeObservation
+
+    available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    submissions, submission_types, contributions, absent = _nmfp_archive_scan(payload)
+    kept_accessions, _superseded = _resolve_nmfp_submissions(submissions)
+
+    totals = {}
+    for accession in sorted(kept_accessions):
+        section = submissions[accession][1]
+        for (series_id, ref_date), value in contributions.get(accession, {}).items():
+            key = (section, series_id, ref_date)
+            totals[key] = totals.get(key, 0.0) + value
+
+    entities = {}
+    types = {}
+    for accession, (entity, section, _filing) in submissions.items():
+        entities.setdefault(section, set()).add(entity)
+        mix = types.setdefault(section, {})
+        kind = submission_types[accession]
+        mix[kind] = mix.get(kind, 0) + 1
 
     rows = [
         (
@@ -1557,7 +1599,7 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     return (
         rows,
         {section: len(members) for section, members in entities.items()},
-        submission_types,
+        types,
         {section: tuple(sorted(fields)) for section, fields in absent.items() if fields},
     )
 
@@ -1585,6 +1627,203 @@ class ParsedSnapshots:
     coverage: tuple
 
 
+def _assemble_sec_nmfp(
+    artifacts: Sequence[SnapshotArtifact],
+    registry: Mapping[str, Mapping[str, object]],
+):
+    """Assemble every `sec_nmfp` archive into cross-sections, then admit them.
+
+    Returns `(candidates, coverage)`: `(retrieved_at, observation)` pairs for the
+    revision logic, and one `CrossSectionCoverage` per archive that carries a
+    report date, recording the *assembled* state of that cross-section as of
+    that archive.
+
+    A cross-section is a report date, not an archive. That was the same
+    statement while the repository held one extract, and the backfill separated
+    the two without anything noticing, because each archive on its own still
+    looks exactly as it did. Two consequences, and they are different questions
+    decided on the same wrong unit:
+
+    - **Supersession is per `(SERIESID, REPORTDATE)` across every archive.**
+      `N-MFP3/A` is a second accession restating the first, and the backfill
+      routinely puts the restatement in a different archive from the original --
+      a quarterly extract carries the original and the monthly extract that
+      follows carries the amendment. Resolving inside one archive cannot see
+      that pair, so the panel carried the superseded original.
+    - **Coverage is per `REPORTDATE` across every archive.** The straggler
+      cohorts an archive carries for adjacent months are individually far below
+      the floor, and excluding each one separately is the right verdict about a
+      cross-section and the wrong one about an amendment: it throws the
+      amendments away with the cohort, leaving the originals they were filed to
+      replace standing unreplaced, and drops a series that filed only there.
+
+    Assembly is progressive, in retrieval order, and that is what keeps this a
+    change to *what* a cross-section is rather than to when the panel could have
+    known it. At each archive the cross-sections that archive touches are
+    reassembled from every archive retrieved up to and including it, and emitted
+    with that archive's retrieval time. A later archive that changes a cell
+    reaches the revision logic as a later vintage of it, exactly as before; a
+    later archive that changes nothing is not a revision and the revision logic
+    already drops it. Assembling only the final state instead would collapse the
+    correction history into one row and claim the whole panel was knowable at
+    the last retrieval, which is a look-ahead in everything but name.
+
+    The floor's value is untouched, and so is the unit it counts -- distinct
+    `SERIESID`. Only the population it counts over changed, from one archive's
+    filings for a report date to every archive's.
+    """
+
+    from .data import CrossSectionCoverage, PointInTimeObservation, declared_coverage_floor
+
+    ordered = sorted(artifacts, key=lambda item: item.retrieved_at)
+    if not ordered:
+        return [], []
+
+    source_id = ordered[0].source_id
+    try:
+        source = registry[source_id]
+    except KeyError as exc:
+        raise ValueError(
+            f"snapshots have no source-registry entry: [{source_id!r}]"
+        ) from exc
+    entity_unit, floor = declared_coverage_floor(source_id, source)
+
+    submissions = {}          # accession -> (series_id, report_date, filing_date)
+    submission_types = {}     # accession -> SUBMISSIONTYPE
+    contributions = {}        # accession -> {(series_id, ref_date): value}
+    cell_accessions = {}      # (series_id, ref_date) -> {accession}
+    section_accessions = {}   # report_date -> {accession}
+    absent = {}               # report_date -> set of unobservable fields
+
+    scanned_sections = []     # per archive, the report dates it carries
+    scanned_accessions = []   # per archive, the accessions it carries
+
+    for artifact in ordered:
+        payload = _artifact_payload(artifact)
+        scanned, types, cells, missing = _nmfp_archive_scan(payload)
+        for accession, entry in scanned.items():
+            if accession in submissions and submissions[accession] != entry:
+                # Accessions are unique across the whole of EDGAR, so one that
+                # describes two different submissions is a corrupt archive
+                # whichever archive it turned up in. Checking it across the set
+                # is strictly more of the same check, not a new rule.
+                raise ValueError(
+                    f"SEC Form N-MFP accession {accession} describes two submissions"
+                )
+            submissions[accession] = entry
+            submission_types[accession] = types[accession]
+            section_accessions.setdefault(entry[1], set()).add(accession)
+        for accession, supplied in cells.items():
+            contributions[accession] = supplied
+            for cell in supplied:
+                cell_accessions.setdefault(cell, set()).add(accession)
+        for section, fields in missing.items():
+            # A field is absent from an assembled cross-section only when no
+            # archive carrying that report date could supply it. One archive
+            # predating the daily-flow table does not make the month's flows
+            # unobservable if another archive carries them.
+            if section in absent:
+                absent[section] &= set(fields)
+            else:
+                absent[section] = set(fields)
+        # `missing` is seeded with exactly the report dates the archive carries,
+        # populated or not, so its keys are the archive's cross-sections.
+        scanned_sections.append(sorted(missing))
+        scanned_accessions.append(frozenset(scanned))
+
+    active = set()
+    assembled = {}
+    candidates = []
+    coverage = []
+    known = set()
+    admitted = set()
+
+    for index, artifact in enumerate(ordered):
+        retrieved_at = datetime.fromisoformat(
+            artifact.retrieved_at.replace("Z", "+00:00")
+        )
+        sections = scanned_sections[index]
+        known |= scanned_accessions[index]
+        kept, _superseded = _resolve_nmfp_submissions(
+            {accession: submissions[accession] for accession in known}
+        )
+        # Counted over the archives retrieved so far, not over all of them. The
+        # floor is a statement about what had been assembled by this retrieval,
+        # and reading a later archive's filers into an earlier vintage's count
+        # would admit a cross-section before its filers were observable.
+        members = {
+            section: {
+                accession
+                for accession in section_accessions[section]
+                if accession in known
+            }
+            for section in sections
+        }
+        counts = {
+            section: len({submissions[accession][0] for accession in found})
+            for section, found in members.items()
+        }
+        for section in sections:
+            if counts[section] >= floor:
+                admitted.add(section)
+        wanted = {
+            accession
+            for accession in kept
+            if submissions[accession][1] in admitted
+        }
+        changed = (wanted - active) | (active - wanted)
+        active = wanted
+        dirty = set()
+        for accession in changed:
+            dirty |= set(contributions.get(accession, ()))
+        for cell in dirty:
+            total = 0.0
+            for accession in sorted(cell_accessions[cell]):
+                if accession in active:
+                    total += contributions[accession][cell]
+            assembled[cell] = total
+        for series_id, ref_date in sorted(dirty):
+            candidates.append(
+                (
+                    retrieved_at,
+                    PointInTimeObservation(
+                        series_id=series_id,
+                        ref_date=ref_date,
+                        available_at=retrieved_at,
+                        value=assembled[(series_id, ref_date)],
+                        vintage_id=artifact.retrieved_at,
+                        source_sha=artifact.sha256,
+                    ),
+                )
+            )
+        for section in sections:
+            mix = {}
+            for accession in members[section]:
+                kind = submission_types[accession]
+                mix[kind] = mix.get(kind, 0) + 1
+            # `row_count` counts what this cross-section would put in the panel,
+            # so an excluded one still reports the rows it was declined for.
+            surviving = {
+                cell
+                for accession in members[section] & kept
+                for cell in contributions.get(accession, ())
+            }
+            coverage.append(
+                CrossSectionCoverage(
+                    source_id=source_id,
+                    ref_date=section,
+                    entity_unit=entity_unit,
+                    entity_count=counts[section],
+                    declared_floor=floor,
+                    admitted=section in admitted,
+                    row_count=len(surviving),
+                    submission_types=tuple(sorted(mix.items())),
+                    absent_fields=tuple(sorted(absent.get(section, ()))),
+                )
+            )
+    return candidates, coverage
+
+
 def parse_snapshots(
     artifacts: Iterable[SnapshotArtifact],
     *,
@@ -1599,103 +1838,48 @@ def parse_snapshots(
     the case that motivated this. Such a cross-section is excluded from the
     panel and recorded in `coverage`. It is not raised on: a partial month is
     the expected shape of the source, not a fault.
+
+    `sec_nmfp` is assembled across archives rather than parsed one at a time --
+    see `_assemble_sec_nmfp`. A report date it carries is one cross-section
+    however many archives filed into it, and both supersession and the coverage
+    floor are decided on that assembled unit.
     """
 
-    from .data import CrossSectionCoverage, declared_coverage_floor
+    from .data import declared_coverage_floor
 
     if registry is None:
         registry = load_source_registry(registry_path)
 
     candidates = []
     coverage = []
+    nmfp = []
     for artifact in artifacts:
-        payload = _artifact_payload(artifact)
         artifact = replace(
             artifact,
             source_id=LEGACY_SOURCE_IDS.get(artifact.source_id, artifact.source_id),
         )
-        # `None` means "this source publishes no cross-section", which is not
-        # the same as "this source published an empty one". An empty extract
-        # must not satisfy a coverage floor vacuously.
-        entity_counts = None
-        submission_types = {}
-        absent_fields = {}
+        if artifact.source_id == "sec_nmfp":
+            nmfp.append(artifact)
+            continue
+        payload = _artifact_payload(artifact)
         if artifact.source_id.startswith("nyfed_"):
-            parsed_rows = [(None, row) for row in _nyfed_rows(artifact, payload)]
+            parsed_rows = _nyfed_rows(artifact, payload)
         elif artifact.source_id == "fred_macro_latest_vintage":
-            parsed_rows = [(None, row) for row in _fred_rows(artifact, payload)]
+            parsed_rows = _fred_rows(artifact, payload)
         elif artifact.source_id == "treasury_auctions":
-            parsed_rows = [(None, row) for row in _treasury_rows(artifact, payload)]
-        elif artifact.source_id == "sec_nmfp":
-            parsed_rows, entity_counts, submission_types, absent_fields = (
-                _sec_nmfp_rows(artifact, payload)
-            )
-            _check_declared_entity_unit(
-                artifact.source_id, registry, NMFP_ENTITY_UNIT
-            )
+            parsed_rows = _treasury_rows(artifact, payload)
         else:
             raise ValueError(f"no point-in-time parser for {artifact.source_id}")
         retrieved_at = datetime.fromisoformat(
             artifact.retrieved_at.replace("Z", "+00:00")
         )
+        candidates.extend((retrieved_at, row) for row in parsed_rows)
 
-        admitted = None
-        if entity_counts is not None:
-            try:
-                source = registry[artifact.source_id]
-            except KeyError as exc:
-                raise ValueError(
-                    f"snapshots have no source-registry entry: [{artifact.source_id!r}]"
-                ) from exc
-            entity_unit, floor = declared_coverage_floor(artifact.source_id, source)
-            admitted = {
-                section for section, count in entity_counts.items() if count >= floor
-            }
-            section_rows = {}
-            for section, _row in parsed_rows:
-                section_rows[section] = section_rows.get(section, 0) + 1
-            coverage.extend(
-                CrossSectionCoverage(
-                    source_id=artifact.source_id,
-                    ref_date=section,
-                    entity_unit=entity_unit,
-                    entity_count=count,
-                    declared_floor=floor,
-                    admitted=section in admitted,
-                    row_count=section_rows.get(section, 0),
-                    submission_types=tuple(
-                        sorted(submission_types.get(section, {}).items())
-                    ),
-                    absent_fields=absent_fields.get(section, ()),
-                )
-                for section, count in sorted(entity_counts.items())
-            )
-
-        kept = [
-            row
-            for section, row in parsed_rows
-            if admitted is None or section in admitted
-        ]
-        if admitted is not None:
-            # Contributions to one cell are aggregated across every admitted
-            # cross-section, which is what this adapter did before the floor
-            # existed. Splitting the aggregation by cross-section is how the
-            # floor decides what to admit; it is not a change to what an
-            # admitted cell means. Left unmerged, two admitted cross-sections
-            # that both report a shareholder-flow date would reach the revision
-            # logic as two vintages of the same cell with one availability
-            # timestamp, and be rejected as unorderable.
-            merged = {}
-            for row in kept:
-                key = (row.series_id, row.ref_date)
-                previous = merged.get(key)
-                merged[key] = (
-                    row if previous is None
-                    else replace(row, value=previous.value + row.value)
-                )
-            kept = [merged[key] for key in sorted(merged)]
-
-        candidates.extend((retrieved_at, row) for row in kept)
+    if nmfp:
+        _check_declared_entity_unit("sec_nmfp", registry, NMFP_ENTITY_UNIT)
+        nmfp_candidates, nmfp_coverage = _assemble_sec_nmfp(nmfp, registry)
+        candidates.extend(nmfp_candidates)
+        coverage.extend(nmfp_coverage)
 
     # A later snapshot containing the same value is not a revision. If its value
     # changed but the source exposes no historical revision timestamp, retrieval
