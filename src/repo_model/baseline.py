@@ -100,6 +100,44 @@ check, the second and last path on which it had never been checked.
 That alias was declared twice before this block, here and as
 `event_eval.FitPredict`. It is declared once now, here, and the evaluator
 imports it -- so `baseline` still does not depend on the evaluator it feeds.
+
+Two evaluators, two holdouts
+----------------------------
+
+`rolling_exceedance_backtest` is the second consumer of `ExceedancePredictor`
+and the first place the contract's headline metric can be computed. Until it
+landed, `metrics.brier_skill_score`, `corp_decomposition`,
+`corp_reliability_curve`, `log_score` and `threshold_weighted_crps` were
+implemented, unit-tested, and called by nothing in `src/repo_model/` outside
+`metrics.py` -- not because anyone forgot, but because the only evaluator that
+consumed an exceedance curve was `event_eval`, where `AGENT_CONTRACT.md`
+forbids an aggregate. The headline number was not merely unpublished; it had
+nowhere to be computed.
+
+The two paths are the contract's two holdout roles and they are not variants of
+each other. `event_eval` produces the knowledge holdout: crises stripped from
+training entirely, scored once per window, reported as a curve and a realized
+path and never averaged into the main table. `rolling_exceedance_backtest`
+produces the scoring holdout: an expanding rolling origin over the whole panel,
+where a crisis date is available for training once it is in the past. The
+aggregate belongs on the second and nowhere else, and
+`ExceedanceBacktestReport.holdout_role` puts that on the artifact so the
+distinction survives into the file rather than living only in these paragraphs.
+
+What the two exceedance evaluators share, they share by import, which is the
+only form of sharing that cannot drift: `_derive_purge`, `_feature_index`,
+`_check_fitter_stayed_inside`, `_validate_taus` and `_validate_prediction`. The
+last two moved here from `event_eval` when the second consumer arrived, for the
+reason `ExceedancePredictor` itself lives here -- what a predictor may return
+is a property of the interface, and the interface is declared in this module.
+
+`rolling_persistence_backtest` is deliberately *not* generalised to cover it.
+The two score different interfaces returning different things -- a quantile
+vector at `QUANTILE_LEVELS` against a realized value, versus an exceedance
+curve over the declared tau family against a realized 0/1 at each tau -- and a
+parameter that switched between two return types would be two functions wearing
+one name. They share the splitter, the gap, the feature-row rule and the fold
+record, and those are exactly the parts that must not disagree.
 """
 
 from __future__ import annotations
@@ -112,6 +150,7 @@ from datetime import date, time, timedelta
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
+    Any,
     Callable,
     Iterable,
     List,
@@ -125,14 +164,24 @@ from typing import (
 from .contract import QUANTILE_LEVELS, field_sources_for_features
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import (
+    CorpDecomposition,
+    MetricError,
+    ReliabilityCurve,
     _validate_levels,
+    brier_score,
+    brier_skill_score,
+    corp_decomposition,
+    corp_reliability_curve,
     crps_from_quantiles,
+    log_score,
     pinball_loss,
     stationary_bootstrap_interval,
+    threshold_weighted_crps,
 )
 from .registry import RegistryContractError, max_release_lag_days
 from .splits import (
     LookAheadError,
+    SplitError,
     clears_purge,
     ensure_strictly_ascending,
     rolling_origin,
@@ -191,6 +240,104 @@ ExceedancePredictor = Callable[
     [Sequence[DailyObservation], Sequence[DailyObservation], Sequence[float]],
     ExceedanceCurves,
 ]
+
+
+#: The two holdout roles from `AGENT_CONTRACT.md`, "Two holdout roles". They
+#: are constants rather than bare strings at the call site so that no artifact
+#: can record a role nobody declared, and so that a grep for either name finds
+#: every place the distinction is made.
+#:
+#: They live here rather than in `event_eval` because there are now two
+#: evaluation paths and they produce different roles: `event_eval` produces the
+#: knowledge holdout, `rolling_exceedance_backtest` below produces the scoring
+#: one. A two-valued distinction spelled in the module that produces one of the
+#: values is a distinction whose halves can drift, and `event_eval` already
+#: imports from here -- the same reasoning, and the same direction, as
+#: `ExceedancePredictor` itself. `event_eval` re-exports both, so every
+#: existing importer is unaffected.
+#:
+#: The contract's rule that separates them is not a naming convention: the
+#: knowledge holdout is "reported separately and never averaged into the main
+#: table", so an artifact that carries an aggregate has to be able to say which
+#: table it is.
+SCORING_HOLDOUT = "scoring"
+KNOWLEDGE_HOLDOUT = "knowledge"
+
+
+def _validate_taus(taus: Sequence[float]) -> Tuple[float, ...]:
+    """The declared exceedance family, checked: non-empty, strictly ascending, finite.
+
+    Moved here from `event_eval` when the rolling exceedance path arrived and
+    needed the same check. Both paths consume the same declared tau family from
+    `data.load_stress_thresholds`, and the brief for that block names the
+    failure directly: a path that reads the family once and indexes it twice
+    can disagree with itself. Two validators would be two readings of one
+    declaration, which is the same failure one level up.
+    """
+
+    family = tuple(float(tau) for tau in taus)
+    if not family:
+        raise SplitError("taus must declare at least one threshold")
+    for index in range(1, len(family)):
+        if family[index] <= family[index - 1]:
+            raise SplitError("taus must be strictly ascending")
+    if not all(math.isfinite(tau) for tau in family):
+        raise SplitError("taus must be finite")
+    return family
+
+
+def _validate_prediction(
+    prediction: Any,
+    scored_rows: int,
+    taus: Tuple[float, ...],
+) -> Tuple[Tuple[float, ...], ...]:
+    """The curves, checked; the `features_read` claim is checked by its guard.
+
+    Takes an `ExceedanceCurves` rather than a bare sequence, and says so: a
+    predictor that returned only curves would be one that made no claim about
+    what it read, and the declaration check downstream would then have nothing
+    to compare against and would pass by default.
+
+    Moved here from `event_eval` alongside `_validate_taus`, and for the same
+    reason: what an `ExceedancePredictor` may return is a property of the
+    interface, which is declared in this module, and both evaluators now hold
+    predictions to it. The knowledge holdout checks a window's worth of days at
+    once and the rolling path checks one day per fold; that is the only
+    difference, and it is the argument.
+    """
+
+    if not isinstance(prediction, ExceedanceCurves):
+        raise SplitError(
+            f"fit_predict must return an ExceedanceCurves, got "
+            f"{type(prediction).__name__}; the curves alone carry no account of "
+            f"what the model read, and the declared feature set is checked "
+            f"against that account"
+        )
+    rows = list(prediction.curves)
+    if len(rows) != scored_rows:
+        raise SplitError(f"fit_predict returned {len(rows)} rows for {scored_rows} days")
+    checked = []
+    for day, row in enumerate(rows):
+        curve = tuple(float(p) for p in row)
+        if len(curve) != len(taus):
+            raise SplitError(
+                f"day {day}: {len(curve)} probabilities for {len(taus)} taus"
+            )
+        for position, probability in enumerate(curve):
+            if not math.isfinite(probability) or not 0.0 <= probability <= 1.0:
+                raise SplitError(
+                    f"day {day}, tau {taus[position]}: {probability} is not a probability"
+                )
+        # P(Y > tau) cannot rise as tau rises. A model that says otherwise is
+        # broken, and averaging over it would hide that.
+        for position in range(1, len(curve)):
+            if curve[position] > curve[position - 1]:
+                raise SplitError(
+                    f"day {day}: exceedance rises from tau {taus[position - 1]} "
+                    f"to {taus[position]} ({curve[position - 1]} -> {curve[position]})"
+                )
+        checked.append(curve)
+    return tuple(checked)
 
 
 class FittedForecastModel(Protocol):
@@ -2392,7 +2539,7 @@ def _report_seed(report: BacktestReport, panel_sha256: str) -> int:
     that differ in any of those respects are not silently sharing a stream.
     """
 
-    material = "\x00".join(
+    return _seed_from(
         (
             panel_sha256,
             ",".join(sorted(report.features)),
@@ -2400,6 +2547,21 @@ def _report_seed(report: BacktestReport, panel_sha256: str) -> int:
             "" if report.decision_time is None else report.decision_time.isoformat(),
         )
     )
+
+
+def _seed_from(parts: Sequence[str]) -> int:
+    """A non-negative 31-bit seed from a run's identity, as `\x00`-joined text.
+
+    Extracted from `_report_seed` when the exceedance artifact arrived and
+    needed a seed of its own. The *material* differs between the two artifacts
+    and should -- they identify different runs -- but the digest that turns
+    material into a seed must not, or two artifacts that agree about what they
+    scored could still disagree about how a seed is derived from it. The
+    continuous path's material is unchanged, so every interval it has ever
+    reported is unchanged with it.
+    """
+
+    material = "\x00".join(parts)
     return int.from_bytes(
         hashlib.sha256(material.encode("utf-8")).digest()[:8], "big", signed=False
     ) & 0x7FFFFFFF
@@ -2885,3 +3047,800 @@ def threshold_exceedance(
         )
 
     return fit_predict
+
+
+# --------------------------------------------------------------------------
+# The probabilistic target: pooled rolling-origin exceedance evaluation
+# --------------------------------------------------------------------------
+#
+# `AGENT_CONTRACT.md`, "Metrics", names the headline: "Brier skill score
+# against climatology, plus Murphy decomposition, so reliability is reported
+# separately from resolution. Raw Brier is retained only to satisfy the stated
+# commitment; it is not the headline."
+#
+# Every one of those metrics was implemented in `metrics.py` and called by
+# nothing outside `tests/`. The reason was structural rather than an oversight:
+# `rolling_persistence_backtest` scores a `FittedForecastModel` and reports MAE,
+# interval coverage, pinball loss and CRPS -- continuous-target numbers -- while
+# exceedance probabilities come only from an `ExceedancePredictor`, and the only
+# evaluator consuming one was `event_eval`, where the contract forbids an
+# aggregate. So the headline number was not merely unpublished. There was
+# nowhere to compute it.
+#
+# **Which holdout this is, and why it matters here more than usual.** The
+# contract's "Two holdout roles" separates the scoring holdout -- crisis dates
+# excluded from the headline metric but available for training once past,
+# produced by `rolling_origin` -- from the knowledge holdout, produced by
+# `event_eval` and "reported separately and never averaged into the main
+# table". This path is the first, and it is the only one an aggregate belongs
+# on. The same Metrics section: "Event windows get the exceedance curve and
+# realized path. No aggregate Brier or reliability number on a single event
+# window." Nothing here reaches into `event_eval`, and `event_eval` gained no
+# aggregate for this block. `ExceedanceBacktestReport.holdout_role` is on the
+# artifact so a reader of the file, and not only a reader of this comment, can
+# tell which table it belongs to.
+#
+# **Why this is not a flag on `rolling_persistence_backtest`.** The two score
+# different interfaces returning different things: one asks a fitted model for
+# a quantile vector at `QUANTILE_LEVELS` and scores it against a realized
+# value, the other asks a predictor for an exceedance curve over the declared
+# tau family and scores it against a realized 0/1 at each tau. They share the
+# splitter, the gap derivation, the feature-row rule, the fitter-declaration
+# check and the fold record -- and all five are shared by import, which is the
+# form of sharing that cannot drift. What they do not share is a return type,
+# and a parameter that switched between two return types would be two functions
+# wearing one name.
+
+
+def twcrps_weights(taus: Sequence[float]) -> Tuple[float, ...]:
+    """The threshold weighting, derived from the declared family rather than typed.
+
+    `metrics.threshold_weighted_crps` requires weights and refuses to default
+    them, because an unweighted score is `crps_on_grid` and has its own name.
+    So this path has to declare a weighting, and a declaration is a choice --
+    which makes *where the numbers come from* the question, not what they are.
+
+    `w(tau) = tau / max(tau)`: linear in the threshold, normalised at the top of
+    the declared grid. It is derived from the family the run was handed, so a
+    change to `metadata/stress_thresholds.json` moves it and there is no
+    constant here to go stale against that file. Four numbers typed beside the
+    four declared taus would be the same weighting today and a silent
+    disagreement the day the family changed.
+
+    It weights toward the upper tau, which is what the contract asks for in
+    naming twCRPS at all: the interesting failure is a model comfortable
+    everywhere and wrong at 50bp. The normalisation does not affect a
+    comparison between models on one grid -- it is a common factor -- and it is
+    applied so the published number is on a stated scale rather than on the
+    scale of whatever units the thresholds happen to be in.
+
+    Raises:
+        SplitError: if the top of the grid is not strictly positive. The
+            declared family is `{5, 10, 20, 50}` bp and a family that reached
+            zero or below would make this weighting meaningless rather than
+            merely different, and silently substituting another one is how a
+            score gets published under a heading it does not belong to.
+    """
+
+    family = _validate_taus(taus)
+    top = family[-1]
+    if top <= 0.0:
+        raise SplitError(
+            f"the declared tau family tops out at {top}, so a weighting linear "
+            "in tau cannot be normalised; twCRPS weights are derived from the "
+            "family and there is no fallback to substitute"
+        )
+    return tuple(tau / top for tau in family)
+
+
+@dataclass(frozen=True)
+class TauMetrics:
+    """The contract's metric set at one threshold, over the pooled scored days.
+
+    One of these per declared tau. Everything is `Optional` that can genuinely
+    fail to exist on real data, and each absence is paired with an entry in
+    `unavailable` saying why -- the artifact then omits the field and carries
+    the reason, so a reader asks rather than believes. `backtest_document`
+    already established "a field it cannot compute is absent rather than
+    defaulted"; the reason is the half that document could not supply, because
+    a missing MAE means the run failed while a missing skill score at 50bp
+    means the reference was right about every scored day, which is a result.
+
+    `reference_brier` is the denominator of the skill score, published beside
+    it. A skill score is a ratio and a ratio whose denominator is not reported
+    cannot be checked -- and on this path the denominator is the whole subject
+    of the block, since it is refitted fold by fold.
+    """
+
+    tau_bp: float
+    scored_days: int
+    positives: int
+    base_rate: float
+    #: Retained because the contract commits to retaining it, and reported as
+    #: such. Not the headline: at these base rates it is dominated by the base
+    #: rate and two models with very different discrimination look alike.
+    brier: float
+    reference_brier: float
+    brier_skill_score: Optional[float] = None
+    #: Murphy/CORP: reliability and resolution reported separately, bin-free.
+    #: Fixed-bin ECE is prohibited at these base rates and none is computed.
+    decomposition: Optional[CorpDecomposition] = None
+    log_score: Optional[float] = None
+    unavailable: Mapping[str, str] = MappingProxyType({})
+
+
+@dataclass(frozen=True)
+class ExceedanceBacktestReport:
+    """A pooled rolling-origin exceedance evaluation, and what produced it.
+
+    The three aligned tables -- `forecast`, `reference`, `outcomes` -- are
+    day-major and tau-minor, one row per scored day in fold order, and they are
+    aligned by construction rather than by convention: each row of `forecast`
+    and `reference` came back from `_validate_prediction` against `taus`, and
+    each row of `outcomes` was built from `taus` in the same pass. `_at_tau`
+    projects a column out of all three at once, which is the one place a tau
+    position is read and therefore the one place it could be read wrongly.
+
+    `reference` is the climatology's own curve, per fold. It is carried rather
+    than collapsed to a number because it is not a number: refitted at every
+    origin, it is a series, and a report holding one value would have thrown
+    away the fact the block is about.
+    """
+
+    #: Which of the contract's two holdouts produced these numbers. Always
+    #: `SCORING_HOLDOUT` here, and recorded rather than assumed: the knowledge
+    #: holdout is "reported separately and never averaged into the main table",
+    #: and a table that cannot say which one it is invites exactly that average.
+    holdout_role: str
+    #: The `--model` name the caller selected, carried through rather than
+    #: reconstructed from the predictor. The same reasoning `_event_holdout`
+    #: gives for `model_config["model"]`: this is the request, and a name
+    #: recovered from a callable would agree with the request only for as long
+    #: as the mapping stayed a bijection.
+    model_name: str
+    features: Tuple[str, ...]
+    sources: Tuple[str, ...]
+    field_sources: Tuple[Tuple[str, str], ...]
+    purge_days: int
+    decision_time: Optional[time]
+    minimum_history: Optional[int]
+    panel_rows: Optional[int]
+    panel_first_date: Optional[date]
+    panel_last_date: Optional[date]
+    folds: Tuple[ScoredFold, ...]
+    taus: Tuple[float, ...]
+    scored_dates: Tuple[date, ...]
+    realized_bps: Tuple[float, ...]
+    forecast: Tuple[Tuple[float, ...], ...]
+    reference: Tuple[Tuple[float, ...], ...]
+    outcomes: Tuple[Tuple[int, ...], ...]
+    metrics: Tuple[TauMetrics, ...]
+    twcrps_weights: Tuple[float, ...]
+    twcrps: Optional[float] = None
+    twcrps_unavailable: Optional[str] = None
+
+    def at_tau(self, position: int):
+        """The three aligned columns at one tau position, projected together."""
+
+        return _at_tau(self.forecast, self.reference, self.outcomes, position)
+
+
+def _at_tau(forecast, reference, outcomes, position: int):
+    """The three aligned tables' columns at one tau position, read together.
+
+    **The single place a tau index is applied.** The tables are day-major and
+    tau-minor and all three were built against one validated family, so the
+    only remaining way to score a curve against the wrong threshold is to
+    project one of them at a different position from the others -- and that is
+    now one expression rather than a possibility spread over the file. A path
+    that reads the declared family once and indexes it twice can disagree with
+    itself, and the disagreement is invisible: every number stays in range and
+    the artifact still writes.
+    """
+
+    return (
+        tuple(day[position] for day in forecast),
+        tuple(day[position] for day in reference),
+        tuple(day[position] for day in outcomes),
+    )
+
+
+def _tau_metrics(tau: float, columns) -> TauMetrics:
+    """The contract's metric set at one threshold, with its absences named."""
+
+    predicted, referenced, realized = columns
+    unavailable: dict = {}
+
+    skill: Optional[float]
+    try:
+        # The reference is the per-fold climatology, passed as the series it
+        # is. Collapsing it to its mean here would be the single-reference
+        # construction wearing the per-fold one's name.
+        skill = brier_skill_score(predicted, realized, climatology=referenced)
+    except MetricError as exc:
+        skill = None
+        unavailable["brier_skill_score"] = str(exc)
+
+    decomposition: Optional[CorpDecomposition]
+    try:
+        decomposition = corp_decomposition(predicted, realized)
+    except MetricError as exc:
+        decomposition = None
+        unavailable["decomposition"] = str(exc)
+
+    # `log_score` returns `inf` when the forecast put probability 0 on
+    # something that happened, deliberately and without clipping. That is a
+    # result, and it is the one this evaluator most wants to be able to state
+    # -- but `json.dumps` writes it as `Infinity`, which no strict JSON reader
+    # accepts, so the artifact would be unparseable rather than informative.
+    # Reported as an absence with the reason spelled out: the number is
+    # unrepresentable, not uncomputed, and the distinction survives into the
+    # file.
+    score = log_score(predicted, realized)
+    if math.isinf(score):
+        unavailable["log_score"] = (
+            "the forecast assigned probability 0 to an event that occurred, so "
+            "the mean negative log likelihood is infinite. It is not clipped: "
+            "a clip replaces an infinite loss with a finite one chosen by "
+            "whoever picked the clip, and hides the failure worth seeing"
+        )
+        reported_score = None
+    else:
+        reported_score = score
+
+    return TauMetrics(
+        tau_bp=float(tau),
+        scored_days=len(realized),
+        positives=sum(realized),
+        base_rate=sum(realized) / len(realized),
+        brier=brier_score(predicted, realized),
+        reference_brier=brier_score(referenced, realized),
+        brier_skill_score=skill,
+        decomposition=decomposition,
+        log_score=reported_score,
+        unavailable=MappingProxyType(dict(unavailable)),
+    )
+
+
+def rolling_exceedance_backtest(
+    observations: Iterable[DailyObservation],
+    *,
+    predictor: ExceedancePredictor,
+    model_name: str,
+    features: Sequence[str],
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    taus: Sequence[float],
+    minimum_history: int = 20,
+) -> ExceedanceBacktestReport:
+    """Refit at every purged rolling origin, score the next day, pool, then score.
+
+    The scoring holdout for the probabilistic target. Folds come from
+    `repo_model.splits.rolling_origin` at `step=1` behind a gap derived from the
+    declared feature set through `_derive_purge` -- the same splitter, the same
+    derivation and the same feature row as `rolling_persistence_backtest`, all
+    by import. At each origin the predictor is fitted on the training rows that
+    cleared the gap and asked for one exceedance curve on the last row it was
+    allowed to have seen. The curves are pooled across origins and the contract's
+    metric set is computed once, over the pool.
+
+    **The climatology is refitted on every fold, on that fold's training rows.**
+    This is the whole block, so it is stated rather than left to the loop below
+    to imply. A skill score is a ratio against a reference, and the reference is
+    a fitted object with a training set. Fit it once over all rows and it has
+    seen the scored days: the reference is better than it could have been in
+    production, the ratio is *understated*, and the error is in the
+    conservative direction, which is why nobody catches it. Fit it once over
+    the first fold's training rows and reuse it and the reference decays as the
+    window advances while the scored model is refitted, so the skill score
+    climbs for no reason but the asymmetry. Either way the arithmetic is right
+    and the comparison is not between two things measured the same way. So the
+    reference is constructed once and *called* inside the loop, exactly as the
+    scored model is, on exactly the rows the scored model got.
+
+    **The reference is the climatology and is not a parameter.** The contract
+    says "Brier skill score against climatology"; a reference argument would
+    let a run publish a ratio against something else under a heading that says
+    climatology, which is the same failure `--model` having no default was
+    written to prevent, one level in. `climatology_exceedance` is constructed
+    here, at the caller's `minimum_history`, so the reference and the scored
+    model are refused on the same short frames rather than one surviving the
+    other.
+
+    **What is pooled, and what is not.** Every fold `rolling_origin` yields
+    over the panel it was handed. Event windows are not excluded and not
+    included: this function knows nothing about them, because the scoring
+    holdout is defined by crisis dates being *available for training once they
+    are in the past*, which is what an expanding rolling origin does by
+    construction. The knowledge holdout is `event_eval`'s, is scored once per
+    window, and is never averaged into this table. Nothing here reads
+    `metadata/events.json` and nothing here should.
+
+    Args:
+        observations: the panel, ascending by date.
+        predictor: the `ExceedancePredictor` being scored. Called once per
+            fold with that fold's training rows, one feature row, and the
+            declared tau family.
+        model_name: what to record as having produced these numbers. Required
+            and undefaulted: an artifact that named no model, or named one it
+            reconstructed, is an artifact a reader cannot compare to another.
+        features: the panel columns the predictor is declared to read.
+            **Required, keyword-only, with no default**, exactly as on the
+            other two paths. The sources follow from it and the gap from the
+            sources; nothing about the gap is set by hand.
+        registry: the parsed source registry, for `max_release_lag_days`.
+        decision_time: when the forecast is made. Required and undefaulted
+            there, so required and undefaulted here.
+        taus: the declared exceedance family, from
+            `data.load_stress_thresholds`. Not defaulted and not spelled in
+            this module: the family is `AGENT_CONTRACT.md`'s and Track A's file
+            carries it.
+        minimum_history: the first origin scored and the shortest training
+            frame any fit is allowed, for the scored model and the reference
+            alike.
+
+    Raises:
+        ValueError: if the panel is too short for `minimum_history`, or
+            `model_name` is empty.
+        SplitError: on a malformed panel, tau family or prediction, or when the
+            gap leaves no origin with `minimum_history` training rows behind
+            it.
+        LookAheadError: if a fold's feature row does not clear the gap, or if
+            the predictor -- or the reference -- reports reading a column
+            outside `features`. Both are checked, because both are fitted on
+            the training rows and both reads had to be covered by the gap.
+        UndeclaredFeatureError: if `features` names a column
+            `contract.field_sources_for_features` cannot classify.
+        RegistryContractError: if the derived fields cannot support a safe
+            bound. Track A's refusal, with Track A's message.
+    """
+
+    # Before anything else, and before a single fold: an unresolvable feature
+    # set has no gap, so it has no backtest.
+    declared: Tuple[str, ...] = tuple(features)
+    field_sources, sources, purge = _derive_purge(
+        registry, declared, decision_time=decision_time
+    )
+
+    if not isinstance(model_name, str) or not model_name:
+        raise ValueError(
+            f"model_name must be a non-empty string, got {model_name!r}; an "
+            "artifact that cannot say which model produced it cannot be "
+            "compared to one that can"
+        )
+
+    rows = list(observations)
+    if len(rows) <= minimum_history:
+        raise ValueError("not enough observations for requested minimum history")
+    tau_family = _validate_taus(taus)
+    weights = twcrps_weights(tau_family)
+
+    # Constructed once, called per fold. Constructing it inside the loop would
+    # be identical in effect -- these factories close over nothing but their
+    # arguments -- and would read as though the *factory* were the thing being
+    # refitted, which is not where the fitting happens.
+    reference_predictor = climatology_exceedance(minimum_history=minimum_history)
+
+    dates = [row.date for row in rows]
+    folds: List[ScoredFold] = []
+    scored_dates: List[date] = []
+    realized_bps: List[float] = []
+    forecast: List[Tuple[float, ...]] = []
+    reference: List[Tuple[float, ...]] = []
+    checked = False
+
+    for train_indices, test_indices in rolling_origin(
+        dates, minimum_history, 1, purge
+    ):
+        index = test_indices[0]
+        train_rows = tuple(rows[i] for i in train_indices)
+        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        conditioning = (feature_row,)
+
+        predicted = predictor(train_rows, conditioning, tau_family)
+        # Refitted here, on this fold's training rows, from the same call the
+        # scored model got. Hoisting this one line out of the loop is the
+        # mutation `tests/test_baseline.py::RollingExceedanceTests` is planted
+        # against, and it is the only line whose position is the subject of a
+        # test rather than its behaviour.
+        referenced = reference_predictor(train_rows, conditioning, tau_family)
+
+        if not checked:
+            # After the first fit, and only the first: the predictor is the
+            # same callable at every origin, so a model that stayed inside the
+            # declaration here stays inside it at every later one. The
+            # reference is checked too -- it is fitted on the same rows and its
+            # read had to be covered by the same gap, and a reference nobody
+            # checked is a second way for the declaration to be wrong.
+            _check_fitter_stayed_inside(
+                predicted.features_read, declared, sources, purge
+            )
+            _check_fitter_stayed_inside(
+                referenced.features_read, declared, sources, purge
+            )
+            checked = True
+
+        forecast.append(_validate_prediction(predicted, 1, tau_family)[0])
+        reference.append(_validate_prediction(referenced, 1, tau_family)[0])
+        folds.append(
+            ScoredFold(
+                train_start=rows[train_indices[0]].date,
+                train_end=rows[train_indices[-1]].date,
+                train_rows=len(train_indices),
+                feature_date=feature_row.date,
+                scored_date=rows[index].date,
+            )
+        )
+        scored_dates.append(rows[index].date)
+        realized_bps.append(rows[index].spread_bps)
+
+    # Strictly greater, matching the contract's `P(spread > tau)`, the
+    # `stress_gt_*` label columns and `climatology_exceedance`'s own count.
+    # Built from `tau_family` in the same order the curves were produced at, so
+    # a curve and the outcome it is scored against cannot come from two
+    # different readings of the declaration.
+    outcomes = tuple(
+        tuple(1 if value > tau else 0 for tau in tau_family)
+        for value in realized_bps
+    )
+
+    metrics = tuple(
+        _tau_metrics(tau, _at_tau(forecast, reference, outcomes, position))
+        for position, tau in enumerate(tau_family)
+    )
+
+    # twCRPS is over the whole grid on each scored day, not per tau, so it is
+    # one number for the run rather than a column of the table above. It needs
+    # at least two thresholds to integrate between; a one-tau family is a legal
+    # declaration and produces no integral, which is an absence with a reason
+    # rather than a refusal of the whole run.
+    twcrps: Optional[float] = None
+    twcrps_unavailable: Optional[str] = None
+    try:
+        twcrps = sum(
+            threshold_weighted_crps(tau_family, curve, value, weights)
+            for curve, value in zip(forecast, realized_bps)
+        ) / len(forecast)
+    except MetricError as exc:
+        twcrps_unavailable = str(exc)
+
+    return ExceedanceBacktestReport(
+        holdout_role=SCORING_HOLDOUT,
+        model_name=model_name,
+        features=declared,
+        sources=sources,
+        field_sources=field_sources,
+        purge_days=purge,
+        decision_time=decision_time,
+        minimum_history=minimum_history,
+        panel_rows=len(rows),
+        panel_first_date=rows[0].date,
+        panel_last_date=rows[-1].date,
+        folds=tuple(folds),
+        taus=tau_family,
+        scored_dates=tuple(scored_dates),
+        realized_bps=tuple(realized_bps),
+        forecast=tuple(forecast),
+        reference=tuple(reference),
+        outcomes=outcomes,
+        metrics=metrics,
+        twcrps_weights=weights,
+        twcrps=twcrps,
+        twcrps_unavailable=twcrps_unavailable,
+    )
+
+
+def _exceedance_seed(
+    report: ExceedanceBacktestReport, panel_sha256: str, tau: Optional[float] = None
+) -> int:
+    """A reproducible bootstrap seed, derived from what the run was.
+
+    `_report_seed`'s reasoning, one artifact over, and it shares that
+    function's digest rather than restating it: a literal would satisfy the
+    signature while making every run in the project draw the same resample
+    sequence regardless of what it scored, and nothing in either artifact is
+    typed.
+
+    Two things are in the material that are not in `_report_seed`'s. The model
+    name, because this path scores a model the caller chose and two models on
+    one panel are not one run. And `tau` when a per-threshold interval is being
+    drawn, so the four bands in an artifact are four resample streams rather
+    than one stream reported four times -- a band that shared a stream with the
+    band above it would understate how much the two differ, and it would do so
+    invisibly.
+    """
+
+    return _seed_from(
+        (
+            panel_sha256,
+            report.model_name,
+            ",".join(sorted(report.features)),
+            str(report.purge_days),
+            "" if report.decision_time is None else report.decision_time.isoformat(),
+            ",".join(f"{value:g}" for value in report.taus),
+            "" if tau is None else f"{tau:g}",
+        )
+    )
+
+
+def _decomposition_document(decomposition: CorpDecomposition) -> dict:
+    """CORP's MCB and DSC, with the identity a reader can check it against.
+
+    `identity_residual` is published rather than asserted here for the reason
+    `CorpDecomposition` exposes it at all: `score = reliability - resolution +
+    uncertainty` is the property the decomposition is *for*, and a file that
+    claimed it without carrying the residual would be asking to be believed.
+    """
+
+    return {
+        "score": decomposition.score,
+        "reliability": decomposition.reliability,
+        "resolution": decomposition.resolution,
+        "uncertainty": decomposition.uncertainty,
+        "base_rate": decomposition.base_rate,
+        "n": decomposition.n,
+        "identity_residual": decomposition.identity_residual(),
+    }
+
+
+def _reliability_document(curve: ReliabilityCurve, *, seed: int, block: int) -> dict:
+    """The CORP reliability curve as its step function, with the band.
+
+    **Deduplicated to distinct forecast values, which is lossless.** The curve
+    comes back with one entry per scored row, and rows carrying the same
+    forecast are pooled before the isotonic fit -- so they share a recalibrated
+    value by construction, and the band at them is read off the replicate
+    curves by a step lookup at the same `x` and is therefore identical too.
+    Writing each repeated value once is the same step function in fewer bytes,
+    not a summary of it.
+
+    It still grows with the number of *distinct* forecasts, and that is a
+    property of the model rather than of the panel: a climatology contributes
+    one point however long the run, a conditional model roughly one per scored
+    day. `backtest_document` refuses a per-forecast dump for a reason that does
+    not apply here -- the reliability curve is the diagnostic the contract
+    asks for, and there is no scalar it can be reduced to. A fixed-bin ECE is
+    exactly that scalar and it is prohibited at these base rates.
+    """
+
+    points = []
+    for position in range(curve.n):
+        x = curve.forecast[position]
+        if points and points[-1]["forecast"] == x:
+            continue
+        point = {"forecast": x, "recalibrated": curve.recalibrated[position]}
+        if curve.lower:
+            point["lower"] = curve.lower[position]
+            point["upper"] = curve.upper[position]
+        points.append(point)
+    return {
+        "method": "corp_isotonic",
+        "n": curve.n,
+        "band": {
+            "level": BOOTSTRAP_LEVEL,
+            "method": "stationary_bootstrap",
+            "block_length": block,
+            "replications": BOOTSTRAP_REPLICATIONS,
+            "seed": seed,
+        },
+        "points": points,
+    }
+
+
+def _tau_document(
+    report: ExceedanceBacktestReport,
+    position: int,
+    metrics: TauMetrics,
+    *,
+    panel_sha256: str,
+    block: int,
+) -> dict:
+    """One threshold's row of the published table, absences and all."""
+
+    predicted, referenced, realized = report.at_tau(position)
+    seed = _exceedance_seed(report, panel_sha256, metrics.tau_bp)
+    unavailable = dict(metrics.unavailable)
+
+    document: dict = {
+        "tau_bp": metrics.tau_bp,
+        "scored_days": metrics.scored_days,
+        "positives": metrics.positives,
+        "base_rate": metrics.base_rate,
+        "brier": metrics.brier,
+        "reference_brier": metrics.reference_brier,
+    }
+
+    if metrics.brier_skill_score is not None:
+        document["brier_skill_score"] = metrics.brier_skill_score
+        # The interval resamples the day indices, so the forecast, the
+        # per-fold reference and the outcome for a day move together. Resampled
+        # apart they would break the pairing every score here is computed from.
+        def skill(indices: Sequence[int]) -> float:
+            return brier_skill_score(
+                [predicted[i] for i in indices],
+                [realized[i] for i in indices],
+                climatology=[referenced[i] for i in indices],
+            )
+
+        try:
+            lower, upper = stationary_bootstrap_interval(
+                skill,
+                len(realized),
+                block_length=block,
+                seed=seed,
+                replications=BOOTSTRAP_REPLICATIONS,
+                level=BOOTSTRAP_LEVEL,
+            )
+        except MetricError as exc:
+            unavailable["brier_skill_score_interval"] = str(exc)
+        else:
+            document["brier_skill_score_interval"] = {
+                "lower": lower,
+                "upper": upper,
+                "level": BOOTSTRAP_LEVEL,
+                "method": "stationary_bootstrap",
+                "block_length": block,
+                "replications": BOOTSTRAP_REPLICATIONS,
+                "seed": seed,
+            }
+
+    if metrics.decomposition is not None:
+        document["decomposition"] = _decomposition_document(metrics.decomposition)
+
+    if metrics.log_score is not None:
+        document["log_score"] = metrics.log_score
+
+    try:
+        curve = corp_reliability_curve(
+            predicted,
+            realized,
+            block_length=block,
+            replications=BOOTSTRAP_REPLICATIONS,
+            level=BOOTSTRAP_LEVEL,
+            seed=seed,
+        )
+    except MetricError as exc:
+        unavailable["reliability_curve"] = str(exc)
+    else:
+        document["reliability_curve"] = _reliability_document(
+            curve, seed=seed, block=block
+        )
+
+    if unavailable:
+        # Absent *and* accounted for. `backtest_document` omits what it cannot
+        # compute so a reader asks rather than believes; on this path the
+        # question has a standing answer worth carrying, because the common
+        # case is not a broken run but a threshold no scored day crossed.
+        document["unavailable"] = dict(sorted(unavailable.items()))
+    return document
+
+
+def exceedance_backtest_document(
+    report: ExceedanceBacktestReport, *, panel_path: Path
+) -> dict:
+    """The pooled exceedance evaluation as a publishable record.
+
+    `backtest_document` is the model and the four sections are its:
+    `declaration` is what the caller chose, `derived` is what that produced,
+    `panel` and `folds` are what was scored, `metrics` is what came out. Every
+    value is computed in the run that emits it, nothing is rounded, and a field
+    that cannot be computed is absent rather than defaulted -- with, on this
+    path, the reason recorded beside it under `unavailable`.
+
+    **What this one carries that the continuous artifact does not.**
+
+    * `holdout_role`. The contract keeps two holdouts apart and says the
+      knowledge holdout is "never averaged into the main table". This file is
+      the main table, and a file that cannot say so is one somebody will
+      eventually average an event window into.
+    * `declaration.model`. The continuous path names its model by the fitter
+      the caller passed and reports none; this one is selected by name from the
+      command line and the name is the thing a reader compares two artifacts
+      by.
+    * `declaration.taus_bp` and `declaration.twcrps_weights`. The tau family is
+      Track A's declaration and this run consumed a particular version of it;
+      the weights are derived from that family by `twcrps_weights` and are
+      published because a weighted score whose weights are unstated cannot be
+      compared to another one.
+    * `metrics.by_tau`. One row per threshold, keyed by the tau. The contract's
+      metric set is per-threshold except twCRPS, which integrates across the
+      grid and is therefore one number for the run.
+
+    **What is deliberately not here.** No aggregate over any event window: those
+    are `event_eval`'s, are scored once per window, and the contract forbids an
+    aggregate on one. No precision-recall curve either, and that omission is
+    worth naming rather than leaving to be noticed -- the contract's Metrics
+    section calls for "Precision-recall, not ROC", `metrics.py` implements both
+    `precision_recall_curve` and `average_precision`, and neither is called
+    here. They are a discrimination diagnostic rather than part of the skill
+    decomposition this block was for, and adding them would be a second block's
+    worth of decisions about how to publish a curve.
+
+    Args:
+        report: a report from `rolling_exceedance_backtest`.
+        panel_path: the panel file as the caller named it. Read here, once, for
+            its bytes -- the digest and the path come from the same read, so
+            the artifact cannot name one file and hash another.
+
+    Returns:
+        A JSON-serialisable dict. The caller writes it; this shapes it.
+    """
+
+    digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
+    # Measured off this run's own fold horizons, by the same function the
+    # continuous artifact uses. A wider gap widens the blocks, which is the
+    # dependence the gap creates being carried by the resample that reports it.
+    block = _maximum_horizon_overlap(report.folds)
+
+    declaration: dict = {
+        "model": report.model_name,
+        "features": sorted(report.features),
+        "taus_bp": list(report.taus),
+        "twcrps_weights": list(report.twcrps_weights),
+    }
+    if report.decision_time is not None:
+        declaration["decision_time"] = report.decision_time.isoformat(
+            timespec="minutes"
+        )
+    if report.minimum_history is not None:
+        declaration["minimum_history"] = report.minimum_history
+
+    panel: dict = {"path": str(panel_path), "sha256": digest}
+    if report.panel_rows is not None:
+        panel["row_count"] = report.panel_rows
+    if report.panel_first_date is not None:
+        panel["first_date"] = report.panel_first_date.isoformat()
+    if report.panel_last_date is not None:
+        panel["last_date"] = report.panel_last_date.isoformat()
+
+    folds: dict = {"count": len(report.folds)}
+    if report.folds:
+        folds["first"] = _fold_document(report.folds[0])
+        folds["last"] = _fold_document(report.folds[-1])
+
+    metrics: dict = {
+        "scored_days": len(report.scored_dates),
+        "reference": "climatology_exceedance, refitted on each fold's training rows",
+        "by_tau": {
+            _tau_key(metric.tau_bp): _tau_document(
+                report, position, metric, panel_sha256=digest, block=block
+            )
+            for position, metric in enumerate(report.metrics)
+        },
+    }
+    if report.twcrps is not None:
+        metrics["threshold_weighted_crps"] = report.twcrps
+    if report.twcrps_unavailable is not None:
+        metrics["unavailable"] = {
+            "threshold_weighted_crps": report.twcrps_unavailable
+        }
+
+    return {
+        "holdout_role": report.holdout_role,
+        "declaration": declaration,
+        "derived": {
+            "sources": sorted(report.sources),
+            "fields": [
+                f"{source}.{field}" for source, field in sorted(report.field_sources)
+            ],
+            "purge_days": report.purge_days,
+        },
+        "panel": panel,
+        "folds": folds,
+        "metrics": metrics,
+    }
+
+
+def _tau_key(tau: float) -> str:
+    """A JSON object key for a threshold, stable across runs.
+
+    `_level_key`'s reasoning for a different grid: `repr` of a float is stable
+    in Python but is not a promise about a file format, and `5` and `5.0` would
+    be two keys for one threshold. `%g` gives the declared family the reading
+    `5 10 20 50` that `metadata/stress_thresholds.json` uses, so a reader
+    diffing two artifacts is diffing values. Fixed width is wrong here -- the
+    family spans an order of magnitude and `50.00` reads as a precision the
+    declaration does not claim.
+    """
+
+    return f"{float(tau):g}"

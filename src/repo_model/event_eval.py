@@ -134,11 +134,14 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence, Tuple
 
 from .baseline import (
-    ExceedanceCurves,
+    KNOWLEDGE_HOLDOUT,
+    SCORING_HOLDOUT,
     ExceedancePredictor,
     _check_fitter_stayed_inside,
     _derive_purge,
     _feature_index,
+    _validate_prediction,
+    _validate_taus,
 )
 from .contract import (
     EVENT_WINDOW_KEYS,
@@ -172,15 +175,15 @@ __all__ = [
 ]
 
 
-#: The two holdout roles from `AGENT_CONTRACT.md`, "Two holdout roles". They
-#: are constants rather than bare strings at the call site so that the journal
-#: cannot record a role nobody declared, and so that a grep for either name
-#: finds every place the distinction is made. `SCORING_HOLDOUT` is defined here
-#: and used nowhere in this module: this module only ever produces the other
-#: one, and a role field that could only ever hold one value would not be
-#: recording anything.
-SCORING_HOLDOUT = "scoring"
-KNOWLEDGE_HOLDOUT = "knowledge"
+# The two holdout roles are `baseline.SCORING_HOLDOUT` and
+# `baseline.KNOWLEDGE_HOLDOUT`, imported above and re-exported in `__all__` so
+# that every existing importer of this module is unaffected. They moved when
+# the rolling exceedance path arrived and became the first producer of the
+# other role: two modules each spelling one half of a two-valued distinction is
+# how the halves come to disagree, and `baseline` is the module this one
+# already imports from rather than the reverse. `SCORING_HOLDOUT` is still
+# unused *here*, and now for a stated reason rather than for want of a second
+# path: this module produces knowledge holdouts and only those.
 
 
 
@@ -685,65 +688,6 @@ def _assert_feature_rows_clear_the_gap(
                 f"{dates[feature]}, which does not clear the {purge}-day purge "
                 f"gap before it"
             )
-
-
-def _validate_taus(taus: Sequence[float]) -> Tuple[float, ...]:
-    family = tuple(float(tau) for tau in taus)
-    if not family:
-        raise SplitError("taus must declare at least one threshold")
-    for index in range(1, len(family)):
-        if family[index] <= family[index - 1]:
-            raise SplitError("taus must be strictly ascending")
-    if not all(math.isfinite(tau) for tau in family):
-        raise SplitError("taus must be finite")
-    return family
-
-
-def _validate_prediction(
-    prediction: Any,
-    scored_rows: int,
-    taus: Tuple[float, ...],
-) -> Tuple[Tuple[float, ...], ...]:
-    """The curves, checked; the `features_read` claim is checked by its guard.
-
-    Takes an `ExceedanceCurves` rather than a bare sequence, and says so: a
-    predictor that returned only curves would be one that made no claim about
-    what it read, and the declaration check downstream would then have nothing
-    to compare against and would pass by default.
-    """
-
-    if not isinstance(prediction, ExceedanceCurves):
-        raise SplitError(
-            f"fit_predict must return an ExceedanceCurves, got "
-            f"{type(prediction).__name__}; the curves alone carry no account of "
-            f"what the model read, and the declared feature set is checked "
-            f"against that account"
-        )
-    rows = list(prediction.curves)
-    if len(rows) != scored_rows:
-        raise SplitError(f"fit_predict returned {len(rows)} rows for {scored_rows} days")
-    checked = []
-    for day, row in enumerate(rows):
-        curve = tuple(float(p) for p in row)
-        if len(curve) != len(taus):
-            raise SplitError(
-                f"day {day}: {len(curve)} probabilities for {len(taus)} taus"
-            )
-        for position, probability in enumerate(curve):
-            if not math.isfinite(probability) or not 0.0 <= probability <= 1.0:
-                raise SplitError(
-                    f"day {day}, tau {taus[position]}: {probability} is not a probability"
-                )
-        # P(Y > tau) cannot rise as tau rises. A model that says otherwise is
-        # broken, and averaging over it would hide that.
-        for position in range(1, len(curve)):
-            if curve[position] > curve[position - 1]:
-                raise SplitError(
-                    f"day {day}: exceedance rises from tau {taus[position - 1]} "
-                    f"to {taus[position]} ({curve[position - 1]} -> {curve[position]})"
-                )
-        checked.append(curve)
-    return tuple(checked)
 
 
 def _assert_window_is_clean(
