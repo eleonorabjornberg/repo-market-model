@@ -22,6 +22,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 from .data import (
+    REQUIRED_FIELDS,
     audit_panel,
     build_daily_panel,
     load_daily_panel,
@@ -185,6 +186,14 @@ def _build(args: argparse.Namespace) -> int:
                 "built_columns": list(build.built_columns),
                 "refused_columns": dict(build.refusals),
                 "holes": dict(build.holes),
+                # The dates the sources reported that are not rows, because a
+                # required column had no observation on them. Printed beside
+                # `rows` so a narrowed grid is visible in the summary a builder
+                # actually reads, not only in the manifest.
+                "incomplete_dates": build.incomplete_dates,
+                "required_columns": [
+                    column for column in build.built_columns if column in REQUIRED_FIELDS
+                ],
             },
             indent=2,
             sort_keys=True,

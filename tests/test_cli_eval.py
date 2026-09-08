@@ -2089,7 +2089,13 @@ class RealRegistryTests(unittest.TestCase):
         self.assertIsNotNone(written, msg="a run that returned 0 published nothing")
         self.assertEqual(
             written["derived"]["fields"],
-            ["fred_macro_latest_vintage.IORB", "nyfed_sofr.SOFR"],
+            [
+                # `iorb` is spliced from IOER and IORB; the record names every
+                # field the purge was sized over, not just the current one.
+                "fred_macro_latest_vintage.IOER",
+                "fred_macro_latest_vintage.IORB",
+                "nyfed_sofr.SOFR",
+            ],
         )
         self.assertEqual(written["derived"]["sources"], sorted(written["derived"]["sources"]))
         self.assertGreater(written["derived"]["purge_days"], 0)

@@ -932,6 +932,54 @@ class DailyPanelJoinTests(unittest.TestCase):
     kill lists name tests; a total would be a transcribed number with nothing
     asserting it, which is the drift `tests/test_docs_freshness.py` exists to
     refuse in Markdown and no more defensible in a docstring.
+
+    Addendum, 8 September 2026 -- rules 6 and 7, and what they did to the
+    record above
+    ----------------------------------------------------------------------
+    Rule 6 (a date missing a required column is not a row) and rule 7 (a
+    spliced column's fields must partition the dates) were added the same day
+    Milestone A was run, because `build` was writing a panel `backtest` could
+    not open: the grid was the union of every source's reference dates, so a
+    calendar-daily administered rate and a business-daily market rate produced
+    rows on which `sofr - iorb` does not exist, and `REQUIRED_FIELDS` then
+    refused the file at row 2.
+
+    New mutations, same conditions -- disposable copy under `$HOME`, `-B`,
+    `PYTHONDONTWRITEBYTECODE=1`, control green before and after, each reverted
+    before the next.
+
+    A. **Rule 6 removed**: retain every reported date. Killed four tests, all
+       in this class -- `test_a_date_missing_a_required_column_is_not_a_row`
+       (the acceptance criterion), `test_a_panel_no_date_completes_is_refused_rather_than_written_empty`,
+       `test_a_hole_is_not_the_previous_value` and
+       `test_holes_are_counted_not_filled`. `AssertionError` throughout.
+    B. **Rule 7 resolved instead of refused**: skip the overlap check and let
+       rule 1's tie-break pick a winner. Killed exactly one,
+       `test_two_fields_of_one_spliced_column_may_not_report_the_same_date`,
+       which is this rule's acceptance criterion.
+
+    Two of the kill lists above were re-run today, because rule 6 changed the
+    fixture they were measured on, and one of them had gone quiet:
+
+    * **Mutation 3 (a hole forward-filled) fired nothing on the first re-run.**
+      The old fixture observed `tgcr` only on the date rule 6 drops, so no
+      retained row had a value for the fill to carry: rule 6 had blunted rule
+      4's guard, and the suite stayed green over it. The fixture now observes
+      `tgcr` on a retained row as well, and the mutation kills
+      `test_a_hole_is_not_the_previous_value`. It no longer reaches
+      `test_holes_are_counted_not_filled`, which the old record named -- the
+      count is taken before the fill, so filling does not move it. A mutation
+      that fires nothing is a finding about the tests, and this one was.
+    * **Mutation 1 (the join shifted by the declared lag)**, re-run in its
+      shift-by-one-day form, kills seven: the acceptance criterion
+      `test_the_join_does_not_apply_the_purge_gap_a_second_time`,
+      `test_a_cell_carries_the_latest_vintage_available_at_the_cutoff`,
+      `test_a_hole_is_not_the_previous_value`,
+      `test_the_written_panel_records_its_cutoff_and_its_refusals`, the two new
+      rule 6 tests, and `IdentityVerdictTests.test_a_violation_stops_a_panel_that_uses_the_source_and_not_one_that_does_not`.
+      All `AssertionError`. The original record named four; the three additions
+      are tests that did not exist when it was written, and no test it named
+      has stopped being killed.
     """
 
     #: A `ref_date` source with a nonzero declared lag, copied from
@@ -1065,44 +1113,103 @@ class DailyPanelJoinTests(unittest.TestCase):
         self.assertIn("sofr", mixed.refusals)
         self.assertNotIn("sofr", mixed.observations[0].values)
 
-    def test_a_hole_is_not_the_previous_value(self):
-        """A `ref_date` with no observation for a column stays empty.
-
-        The gap is a real one: 6 January carries an observation for `tgcr` and
-        none for `sofr`, so the `sofr` cell is `None` -- not 4.30 carried
-        forward, not 0.0, and not the row's absence from the panel.
-        """
-
+    #: The fixture the hole and grid tests share. `sofr` is observed on 5 and
+    #: 7 January; `tgcr` on 5 and 6 January. Under rule 6 the 6 January date is
+    #: not a row, because `sofr` -- a `REQUIRED_FIELDS` column -- is missing
+    #: there. Two rows survive: 5 January complete, 7 January with `tgcr`
+    #: empty.
+    #:
+    #: The `tgcr` value on 5 January is the part that has to be there. An
+    #: earlier version of this fixture observed `tgcr` only on the date rule 6
+    #: drops, and a forward-fill mutation then killed nothing at all: with no
+    #: value on any retained row there was nothing for the fill to carry. Rule
+    #: 6 had quietly blunted rule 4's guard, and the fixture is what noticed.
+    #: A hole is only observable when the cell above it is not one.
+    def hole_fixture(self):
         rows = [
             self.observation(date(2026, 1, 5), 4.30),
             self.observation(date(2026, 1, 7), 4.32),
+        ] + [
             PointInTimeObservation(
                 series_id="TGCR",
-                ref_date=date(2026, 1, 6),
+                ref_date=ref_date,
                 available_at=datetime(2026, 1, 7, 19, tzinfo=timezone.utc),
-                value=4.29,
-                vintage_id="t1",
+                value=value,
+                vintage_id=f"t{ref_date.isoformat()}",
                 source_sha="b" * 64,
-            ),
+            )
+            for ref_date, value in (
+                (date(2026, 1, 5), 4.29),
+                (date(2026, 1, 6), 4.28),
+            )
         ]
         registry = {
             "nyfed_sofr": self.registry_at_lag(6)["nyfed_sofr"],
             "nyfed_tgcr": self.registry_at_lag(6)["nyfed_sofr"],
         }
+        return registry, rows
+
+    def test_a_hole_is_not_the_previous_value(self):
+        """A `ref_date` with no observation for a column stays empty.
+
+        The gap is a real one. `tgcr` is 4.29 on 5 January and 4.28 on 6
+        January, and 6 January is not a row because `sofr` is missing there.
+        So 7 January's `tgcr` cell is `None`: not 4.29 carried down from the
+        row above it, and not 4.28 carried out of a date the panel does not
+        contain. Absent is not zero and is not yesterday -- and it is not
+        yesterday whether or not yesterday survived rule 6.
+        """
+
+        registry, rows = self.hole_fixture()
+
         build = self.build(registry, rows, columns=("sofr", "tgcr"))
 
         by_date = {row.date: row.values for row in build.observations}
-        self.assertEqual(sorted(by_date), [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)])
-        self.assertIsNone(by_date[date(2026, 1, 6)]["sofr"])
+        self.assertEqual(sorted(by_date), [date(2026, 1, 5), date(2026, 1, 7)])
+        self.assertAlmostEqual(by_date[date(2026, 1, 5)]["tgcr"], 4.29)
+        self.assertIsNone(by_date[date(2026, 1, 7)]["tgcr"])
         self.assertAlmostEqual(by_date[date(2026, 1, 5)]["sofr"], 4.30)
         self.assertAlmostEqual(by_date[date(2026, 1, 7)]["sofr"], 4.32)
 
     def test_holes_are_counted_not_filled(self):
-        """`holes` counts the empty cells the panel kept, per built column."""
+        """`holes` counts the empty cells the panel kept, per built column.
+
+        Kept is the operative word, and it is why the count is taken after
+        rule 6 rather than before: a hole count over dates the panel does not
+        carry describes a file nobody has.
+        """
+
+        registry, rows = self.hole_fixture()
+
+        build = self.build(registry, rows, columns=("sofr", "tgcr"))
+
+        self.assertEqual(len(build.observations), 2)
+        self.assertEqual(build.holes, {"sofr": 0, "tgcr": 1})
+
+    def test_a_date_missing_a_required_column_is_not_a_row(self):
+        """Rule 6, and the acceptance criterion for the panel grid.
+
+        6 January has `tgcr` and no `sofr`. `sofr` is a `REQUIRED_FIELDS`
+        column, so `sofr - iorb` does not exist on that date and neither does
+        the row. The count of dropped dates is recorded rather than inferred:
+        a build that silently narrowed its own grid would be indistinguishable
+        from a build whose sources happened to agree.
+        """
+
+        registry, rows = self.hole_fixture()
+
+        build = self.build(registry, rows, columns=("sofr", "tgcr"))
+
+        self.assertEqual(
+            [row.date for row in build.observations],
+            [date(2026, 1, 5), date(2026, 1, 7)],
+        )
+        self.assertEqual(build.incomplete_dates, 1)
+
+    def test_a_panel_no_date_completes_is_refused_rather_than_written_empty(self):
+        """The degenerate end of rule 6. An empty panel is not a panel."""
 
         rows = [
-            self.observation(date(2026, 1, 5), 4.30),
-            self.observation(date(2026, 1, 7), 4.32),
             PointInTimeObservation(
                 series_id="TGCR",
                 ref_date=date(2026, 1, 6),
@@ -1116,9 +1223,50 @@ class DailyPanelJoinTests(unittest.TestCase):
             "nyfed_sofr": self.registry_at_lag(6)["nyfed_sofr"],
             "nyfed_tgcr": self.registry_at_lag(6)["nyfed_sofr"],
         }
-        build = self.build(registry, rows, columns=("sofr", "tgcr"))
-        self.assertEqual(len(build.observations), 3)
-        self.assertEqual(build.holes, {"sofr": 1, "tgcr": 2})
+
+        with self.assertRaisesRegex(DataContractError, "no reference date carries"):
+            self.build(registry, rows, columns=("sofr", "tgcr"))
+
+    def test_two_fields_of_one_spliced_column_may_not_report_the_same_date(self):
+        """Rule 7, and the acceptance criterion for the splice.
+
+        `iorb` is declared from IORB and IOER. In the real data they abut --
+        IOER ends 2021-07-28, IORB begins 2021-07-29 -- and this asserts what
+        happens if that ever stops being true. The tie-break in rule 1 orders
+        by `(available_at, vintage_id)`, and two fields read out of one
+        latest-vintage FRED snapshot share both exactly, so the winner on an
+        overlapping date would be whichever the iteration reached last. That
+        is a decision about what the administered leg *is*, taken by dict
+        ordering, and it raises instead.
+        """
+
+        available_at = datetime(2021, 7, 29, 19, tzinfo=timezone.utc)
+        rows = [
+            PointInTimeObservation(
+                series_id=series_id,
+                ref_date=date(2021, 7, 28),
+                available_at=available_at,
+                value=value,
+                vintage_id="one-snapshot",
+                source_sha="c" * 64,
+            )
+            for series_id, value in (("IORB", 0.15), ("IOER", 0.10))
+        ]
+        registry = {
+            "fred_macro_latest_vintage": {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 1,
+                    "available_time": "16:15",
+                    "timezone": "America/New_York",
+                    "note": "fixture",
+                }
+            }
+        }
+
+        with self.assertRaisesRegex(DataContractError, "IOER and IORB both report 2021-07-28"):
+            self.build(registry, rows, columns=("iorb",))
 
     def test_a_cell_carries_the_latest_vintage_available_at_the_cutoff(self):
         """The cutoff selects the vintage; it never selects the `ref_date`.

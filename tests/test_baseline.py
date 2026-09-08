@@ -1341,6 +1341,11 @@ class PurgedBacktestTests(unittest.TestCase):
         self.assertEqual(
             priced.field_sources,
             (
+                # `iorb` is spliced: IOER before 2021-07-29, IORB after. The
+                # purge is sized over every field the column reads, so both
+                # appear here. They declare the same lag, so the gap is
+                # unchanged -- but the field list is the thing under test.
+                ("fred_macro_latest_vintage", "IOER"),
                 ("fred_macro_latest_vintage", "IORB"),
                 ("nyfed_sofr", "SOFR"),
             ),

@@ -20,6 +20,16 @@
       "WTREGEN": "weekly"
     },
     "field_release_lags": {
+      "IOER": {
+        "basis": "record_date",
+        "unit": "calendar_days",
+        "days": 1,
+        "available_time": "16:15",
+        "timezone": "America/New_York",
+        "revision_policy": "never_revised",
+        "revision_evidence": "IOER is a discontinued administered rate. Its final observation is 2021-07-28, the day before the Board of Governors consolidated interest on excess reserves and interest on required reserves into a single rate on reserve balances; IORB begins 2021-07-29, so the two abut with no overlap and no gap. Like IORB it was set by the Board and announced in advance of its effective date rather than measured from a reporting population, so there is no filer whose restatement could revise it, and the series has been closed for over five years. This claim is weaker than the IORB declaration beside it and the difference is deliberate: no ALFRED vintage comparison was run for IOER. Neither the device nor the cloud session that added this field had a network route to ALFRED on 8 September 2026, so the never-revised claim rests on the administrative argument and on the series being closed, not on observed vintages. IORB's rests on 1864 identical values across three vintages.",
+        "note": "Added 8 September 2026 so the administered leg of SOFR - IORB can be priced before 2021-07-29. Without it the funding panel begins in July 2021 and contains neither September 2019 nor March 2020. The splice is declared in contract.FEATURE_FIELDS and guarded by build_daily_panel rule 7, which raises if IOER and IORB ever report the same reference date. OUTSTANDING: verify against two IOER vintages spanning 2021-07-28 and replace revision_evidence when a route to ALFRED is available."
+      },
       "IORB": {
         "basis": "record_date",
         "unit": "calendar_days",

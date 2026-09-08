@@ -1194,7 +1194,14 @@ class DailyPanelBuild:
 
     `holes` counts, per built column, the `ref_date`s in the panel that carry
     no observation for it. A hole is not a zero and is not the previous day's
-    value; it is recorded and left empty.
+    value; it is recorded and left empty. It is counted over the grid the panel
+    actually carries -- see `incomplete_dates`.
+
+    `incomplete_dates` counts the `ref_date`s that the union of the sources
+    reported but that this panel does not carry, because a `REQUIRED_FIELDS`
+    column had no observation on them. It is never a default: a build that
+    dropped nothing records zero, and a reader can tell that apart from a build
+    that was never asked.
     """
 
     observations: Sequence[DailyObservation]
@@ -1203,6 +1210,7 @@ class DailyPanelBuild:
     holes: Mapping[str, int]
     build_cutoff: datetime
     decision_time: object
+    incomplete_dates: int
 
 
 def _priceable_columns(
@@ -1281,6 +1289,29 @@ def build_daily_panel(
     **4. No forward fill.** A `ref_date` with no observation for a built column
     gets `None`, counted in `holes`. Absent is not zero and is not yesterday.
 
+    **6. The grid is the dates the panel is readable on.** The union of every
+    source's `ref_date`s is not a panel: an administered rate that prints every
+    calendar day and a market rate that prints on business days produce rows
+    where the target is undefined, and `REQUIRED_FIELDS` then makes the file
+    unreadable by `load_daily_panel` -- so `build` wrote something `backtest`
+    could not open, and that gap sat on Milestone A's critical path. A
+    `ref_date` missing any built `REQUIRED_FIELDS` column is therefore not a
+    row. This is not rule 4 in reverse: an *optional* column with no
+    observation is still a hole and still recorded. A weekend is not a hole in
+    SOFR, it is a day `sofr - iorb` does not exist, and the count of dropped
+    dates goes in the manifest so the distinction is auditable rather than
+    asserted. `holes` is counted over the retained grid, because a hole count
+    over a grid the panel does not carry describes nothing.
+
+    **7. A column declared from more than one field is a splice, and the fields
+    must partition the dates.** `iorb` is drawn from IORB and, before
+    2021-07-29, from IOER. Where two fields both report the same `ref_date` the
+    tie-break in rule 1 would pick one of them by `available_at` -- and two
+    fields read out of a single latest-vintage snapshot share an `available_at`
+    and a `vintage_id` exactly, so the winner would be whichever the iteration
+    reached last. That is a silent choice about what a series means, so it
+    raises instead.
+
     **5. A violated identity in a source this panel built a column from stops
     the build.** This is where that abort belongs and it is why it moved here.
     `validate_accounting_identities` runs one hop earlier, inside
@@ -1331,11 +1362,13 @@ def build_daily_panel(
     visible = [row for row in observations if row.available_at <= build_cutoff]
 
     latest: Dict[tuple, PointInTimeObservation] = {}
+    contributors: Dict[tuple, set] = {}
     for row in visible:
         column = column_for_series.get(row.series_id)
         if column is None:
             continue
         key = (column, row.ref_date)
+        contributors.setdefault(key, set()).add(str(row.series_id))
         previous = latest.get(key)
         if previous is None or (row.available_at, row.vintage_id) > (
             previous.available_at,
@@ -1388,10 +1421,44 @@ def build_daily_panel(
                 "source does not reconcile"
             )
 
+    # Rule 7. Checked before any row is assembled, so an overlapping splice is
+    # reported as the ambiguity it is rather than resolved by iteration order.
+    overlaps = sorted(
+        (column, ref_date, sorted(series))
+        for (column, ref_date), series in contributors.items()
+        if len(series) > 1
+    )
+    if overlaps:
+        column, ref_date, series = overlaps[0]
+        raise DataContractError(
+            f"column {column!r} is declared from more than one field and they "
+            f"overlap: {' and '.join(series)} both report {ref_date.isoformat()}"
+            f"{f' (and {len(overlaps) - 1} further date(s))' if len(overlaps) > 1 else ''}. "
+            "A spliced column's fields must partition the reference dates; "
+            "which field wins on a shared date is a decision about what the "
+            "series means and this build will not make it silently"
+        )
+
     ref_dates = sorted({ref_date for _column, ref_date in latest})
+
+    # Rule 6. `date` is in REQUIRED_FIELDS but is the index, not a column.
+    required = [column for column in built if column in REQUIRED_FIELDS]
+    retained = [
+        ref_date
+        for ref_date in ref_dates
+        if all(latest.get((column, ref_date)) is not None for column in required)
+    ]
+    incomplete_dates = len(ref_dates) - len(retained)
+    if not retained:
+        raise DataContractError(
+            "no reference date carries every required column ("
+            + ", ".join(required)
+            + f"); {incomplete_dates} date(s) were reported and none is a row"
+        )
+
     rows: List[DailyObservation] = []
     holes: Dict[str, int] = {column: 0 for column in built}
-    for ref_date in ref_dates:
+    for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
             row = latest.get((column, ref_date))
@@ -1409,6 +1476,7 @@ def build_daily_panel(
         holes=holes,
         build_cutoff=build_cutoff,
         decision_time=decision_time,
+        incomplete_dates=incomplete_dates,
     )
 
 
@@ -1451,6 +1519,10 @@ def write_daily_panel(
         "built_columns": list(build.built_columns),
         "refused_columns": dict(build.refusals),
         "holes": dict(build.holes),
+        "incomplete_dates": build.incomplete_dates,
+        "required_columns": [
+            column for column in build.built_columns if column in REQUIRED_FIELDS
+        ],
         "source_shas": list(source_shas),
     }
     manifest_path.write_text(

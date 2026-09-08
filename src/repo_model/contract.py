@@ -267,7 +267,18 @@ FEATURE_FIELDS = MappingProxyType(
         "sofr_volume": (("nyfed_sofr", "SOFR_volume"),),
         "sofr_p25": (("nyfed_sofr", "SOFR_p25"),),
         "sofr_p75": (("nyfed_sofr", "SOFR_p75"),),
-        "iorb": (("fred_macro_latest_vintage", "IORB"),),
+        # The administered leg is spliced. IORB begins 2021-07-29, the day the
+        # Board consolidated IOER and IORR into a single rate on reserve
+        # balances; IOER ends 2021-07-28. They abut exactly -- no overlap, no
+        # gap -- and `build_daily_panel` rule 7 raises if that ever stops being
+        # true rather than picking a winner. Without the splice the panel
+        # begins in July 2021 and contains no stress episode at all: not
+        # September 2019, not March 2020, which is to say none of the events
+        # this repository exists to model.
+        "iorb": (
+            ("fred_macro_latest_vintage", "IORB"),
+            ("fred_macro_latest_vintage", "IOER"),
+        ),
         "tgcr": (("nyfed_tgcr", "TGCR"),),
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
