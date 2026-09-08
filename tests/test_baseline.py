@@ -12,12 +12,15 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model import baseline
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
+    DegenerateRegimeError,
     ExceedanceCurves,
     FittedArx,
     FittedPersistence,
+    FittedThreshold,
     Forecast,
     MissingRegressorError,
     SingularDesignError,
+    UnobservedThresholdError,
     _dot,
     _feature_index,
     _least_squares,
@@ -26,6 +29,7 @@ from repo_model.baseline import (
     climatology_exceedance,
     fit,
     fit_arx,
+    fit_threshold,
     rolling_persistence_backtest,
 )
 from repo_model.contract import (
@@ -1256,6 +1260,841 @@ class PurgedBacktestTests(unittest.TestCase):
         self.assertAlmostEqual(before.interval_coverage, 8.0 / 14.0, places=12)
         self.assertAlmostEqual(after.interval_coverage, 0.5, places=12)
         self.assertGreater(after.mae_bps, before.mae_bps)
+
+
+#: The exogenous regressor a threshold model in this module is fitted on, and
+#: the column its regime is read off. **Deliberately disjoint.** `tgcr` is not a
+#: regressor, so the only reason it is read at all is to choose a regime -- which
+#: is the read this block exists to put through the purge, and it would be
+#: invisible if the regime variable were also a term in the design.
+THRESHOLD_REGRESSORS = ("sofr_volume",)
+THRESHOLD_VARIABLE = "tgcr"
+
+#: What a threshold model on the pair above declares, and the same set with the
+#: regime variable left out. `UNDECLARED_THRESHOLD_FEATURES` is a *wrong*
+#: declaration and is named so the acceptance test can show the two runs side by
+#: side rather than inlining a tuple that looks like a typo.
+THRESHOLD_FEATURES = FEATURES + THRESHOLD_REGRESSORS + (THRESHOLD_VARIABLE,)
+UNDECLARED_THRESHOLD_FEATURES = FEATURES + THRESHOLD_REGRESSORS
+
+
+def regime_frame(count=40, seed=20260909):
+    """`regressor_frame` plus a `tgcr` column, for the two-regime model.
+
+    `tgcr` is added rather than reused from `regressor_frame` because the regime
+    variable has to resolve to a source **neither** `spread_bps` nor
+    `sofr_volume` draws on: `on_rrp` and `iorb` share
+    `fred_macro_latest_vintage`, so a regime read off `on_rrp` would widen the
+    declared feature set without widening the source set, and the acceptance
+    test's second half -- that the derived purge reflects the regime variable's
+    source -- would assert nothing. `tgcr` resolves to `nyfed_tgcr`, which
+    appears in the sources only when the regime variable is declared.
+
+    The values move over a range wide enough that a split exists and narrow
+    enough that both regimes stay populated on every fold of a rolling backtest.
+    """
+
+    rows = []
+    state = seed
+    for base in regressor_frame(count, seed):
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        values = dict(base.values)
+        values[THRESHOLD_VARIABLE] = 4.28 + (state % 97) / 1000.0
+        rows.append(DailyObservation(base.date, values))
+    return rows
+
+
+def mixed_registry(base_purge, regime_purge):
+    """A registry pricing the regime variable's source apart from the others.
+
+    Two numbers rather than `declared_registry`'s one, because the acceptance
+    test's claim is that declaring the regime variable *changes the gap*. Under
+    a uniform registry it could not: every source would cost the same and the
+    derived purge would be the same number whether `tgcr` was declared or not,
+    so the test would pass while demonstrating nothing.
+    """
+
+    registry = declared_registry(base_purge, UNDECLARED_THRESHOLD_FEATURES)
+    registry.update(declared_registry(regime_purge, (THRESHOLD_VARIABLE,)))
+    return registry
+
+
+def _at_or_below(values, threshold):
+    """How many of `values` the low regime takes at `threshold`.
+
+    The same `<=` the fit and the forecast both use. Written here so the two
+    tests that need a threshold with a known regime size can find one by
+    counting; indexing into the sorted values would assume they are distinct,
+    and `regime_frame`'s are not.
+    """
+
+    return sum(1 for value in values if value <= threshold)
+
+
+
+class FittedThresholdTests(unittest.TestCase):
+    """The two-regime ARX: `PLAN.md` Phase 2's fourth benchmark.
+
+    Three of the four benchmarks that document names existed -- last
+    observation, rolling mean/quantiles, AR/ARX -- and this is the fourth. It is
+    also the only one that can express the claim the whole project rests on:
+    that the repo market has regimes, and that behaviour inside a stressed one
+    is not the calm relationship extrapolated.
+
+    What makes it worth a block of its own is not the arithmetic. Every model in
+    `baseline` before it reads a covariate to **compute a value**; this one
+    reads a covariate to **choose a model**, and that is a way for a variable to
+    enter a forecast that none of the machinery built around `features_read` had
+    ever seen. The purge is sized over a declared feature set before anything is
+    fitted, and the first fitted model is checked against that declaration; a
+    threshold model that consulted `tgcr` to pick its regime and did not report
+    reading it would have had its gap computed correctly, over the wrong
+    sources, in the flattering direction. The lock already existed. What this
+    block establishes is that the threshold variable goes through it.
+
+    ------------------------------------------------------------------
+    How the threshold is chosen, and why that construction
+    ------------------------------------------------------------------
+
+    `fit_threshold` estimates the threshold by conditional least squares: the
+    candidates are the distinct values the **training frame's own origin rows**
+    carry for the threshold variable, the largest dropped because nothing lies
+    above it, and the one minimising the pooled in-sample squared error of the
+    two regimes wins. Ties break to the smallest candidate, so the run is
+    reproducible.
+
+    The alternatives were considered and are worse here:
+
+    * **A fixed grid of round numbers** would import a scale nobody declared and
+      would miss splits the data admits. The sum of squares changes only when a
+      row crosses the boundary, so the observed values are not a sample of the
+      candidate set -- they *are* the candidate set, and searching them is
+      exhaustive rather than approximate.
+    * **A numerical optimiser** would spend iterations on a step function whose
+      every level set is already enumerated.
+    * **A threshold read off the whole panel** -- the tempting one, and the leak
+      this repository exists to detect wearing a different hat. A threshold is a
+      fitted parameter, and a fitted parameter chosen by looking at rows the
+      model will later be scored on is look-ahead however defensible the
+      arithmetic around it is.
+    * **A threshold declared by the caller** is supported and recorded as
+      declared (`threshold_estimated is False`), because a caller stating a
+      prior is a different act from a caller asking for one and a report that
+      could not tell them apart would be reporting two things under one name.
+
+    ------------------------------------------------------------------
+    The minimum rows per regime, and where the number comes from
+    ------------------------------------------------------------------
+
+    `len(design_names) + 2` design rows in **each** regime: with `k` regressors
+    that is `k + 4`. It is not chosen, it is inherited. `fit_arx` demands
+    `columns + 2` rows of a whole window so that a leave-one-out fold keeps one
+    degree of freedom; a regime is fitted by the same least squares and scored
+    by the same leave-one-out law over its own rows, so it needs the same count
+    of them. At `columns + 1` a held-out fold has exactly as many rows as
+    coefficients, interpolates them exactly, and contributes a block of zeros to
+    the pooled residual law -- which would narrow every reported interval for a
+    reason that has nothing to do with forecasting. Below that the regime's
+    design is not identified at all.
+
+    A split that cannot meet it is refused, never collapsed to one regime. See
+    `test_a_degenerate_split_is_refused_rather_than_collapsed_to_one_regime`.
+
+    ------------------------------------------------------------------
+    Mutation record
+    ------------------------------------------------------------------
+
+    Five leaks planted -- the four this block's brief names, and one extra
+    because the second of them turned out to be inert and the reason is worth
+    the extra run. Every run stdlib only, on a copy of the tree under `$HOME`
+    rather than on the mount, with `data/`, `.github/`, `metadata/`,
+    `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md` copied too
+    (`tests/test_docs_freshness.py` reads those, and their absence is two kills
+    that look real and are not), `__pycache__` cleared, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`. An unmutated control ran first and the suite
+    was green again after every revert. The kills below are **every** test each
+    mutation killed, not a selection.
+
+    1. **The acceptance mutation.** `FittedThreshold.features_read` returns the
+       design columns alone, dropping the threshold variable -- the model still
+       fits, still forecasts, still reports a regime and a threshold, and the
+       only thing that changes is what it says it read.
+
+       Kills 2 tests, both here:
+
+       * `test_the_threshold_variable_is_purged_like_any_other_read`, on
+         `LookAheadError not raised`. That is this block's acceptance criterion
+         and its mutation target, and they are deliberately the same test: the
+         criterion *is* that dropping the declaration stops the raise. They have
+         not come apart.
+       * `test_the_threshold_variable_is_reported_even_though_it_is_no_regressor`,
+         on `('spread_bps', 'sofr_volume') != ('spread_bps', 'sofr_volume',
+         'tgcr')`. The shape check, one level below the consequence.
+
+       Nothing else in the suite notices, and that is the fact worth recording.
+       A model that reads a column to choose its own structure and does not
+       report the read is invisible to every other guard in this repository --
+       the fit succeeds, the forecasts are finite, the intervals cover, and the
+       reported `purge_days` is a number computed correctly over a source set
+       missing `nyfed_tgcr`. Two tests stand between that and a published
+       benchmark, and only the first of them is about a number.
+
+    2. **The threshold estimated over every row supplied to the module** rather
+       than the training frame's origins alone: one line appending the final
+       row's threshold value to `selectors`. The final row is a target and never
+       a feature, so no design row reads it; `zip` in `_regime_split` truncates,
+       so the split is unaffected and the *only* effect is that the row's value
+       joins the candidate set.
+
+       **Kills nothing. The mutation is inert, and provably so.** A candidate
+       threshold matters only through the partition it induces. A value strictly
+       inside the origins' range induces a partition already reachable from some
+       origin value, scores exactly the same error, and loses the tie to the
+       smaller candidate; a value below the smallest or above the largest
+       induces an empty regime and is skipped as degenerate. So the final row's
+       value cannot change the answer whatever it is -- checked directly, with
+       the fixture's last row moved to 99.0, far outside the 4.28..4.376 the
+       origins occupy: the fitted threshold, the regime counts and both
+       coefficient vectors came back identical.
+
+       Recorded as a surviving mutation rather than quietly replaced. It says
+       something real: the `[:-1]` in `_choose_threshold` and the tie-break to
+       the smallest candidate together make the search insensitive to a row
+       outside the design, which is a property worth knowing and not one the
+       code claims anywhere else.
+       `test_the_threshold_is_estimated_from_the_origin_rows_alone` is green
+       under it, and is honest about that -- what it pins is invariance to the
+       excluded row, which mutation 2b below does break.
+
+    2b. **The same leak in the direction that bites**: the regime of design row
+       `i` chosen by `rows[index]`, the row being predicted, rather than by
+       `origin`. One token. This is the one-step look-ahead the purge machinery
+       exists for, arriving one level in -- the regime assignment of a training
+       row made from a value that row's forecaster had not seen.
+
+       Kills 2 tests, both here:
+       `test_the_threshold_is_estimated_from_the_origin_rows_alone`, on the
+       regime counts moving (`{'low': 34, 'high': 5}` against `{'low': 33,
+       'high': 6}`) when the excluded final row is perturbed -- under the
+       mutation that row *is* read, so the perturbation lands; and
+       `test_the_residual_law_is_leave_one_out_within_each_regime`, which
+       rebuilds the split longhand from the origin rows and gets a different
+       residual vector. The second is the stronger of the two: it fails on the
+       law the intervals are read off, not on a count.
+
+    3. **A degenerate split allowed to fall back to a single regime.** Two edits,
+       because half a fallback is only a crash: the `thin` check in
+       `_fit_regimes` returns the populated regime's coefficients for both
+       regimes instead of raising, and the residual loop in `fit_threshold`
+       skips a regime too thin to leave one out. Together they produce the
+       dangerous shape -- a working model that reports itself as a
+       `FittedThreshold`, carries a threshold and a `regime_rows` of
+       `{'low': 0, 'high': 39}`, and is an ARX.
+
+       Kills 8, across 5 test methods, all here:
+
+       * `test_a_degenerate_split_is_refused_rather_than_collapsed_to_one_regime`
+         -- all three subtests, `DegenerateRegimeError not raised` for a
+         threshold below every observed value, above every observed value, and
+         inside the range but too thin.
+       * `test_a_regime_thin_enough_to_break_the_leave_one_out_law_is_refused`,
+         same message at the boundary.
+       * `test_an_estimated_threshold_produces_two_populated_regimes`, on
+         `3 not greater than or equal to 5 : high regime is thin` -- the search
+         now prefers a candidate that leaves three rows on one side, because an
+         effectively unconstrained fit has no more error than the best genuine
+         two-regime split.
+       * `test_one_pooled_law_because_the_interface_declares_one`, on
+         `36 != 39`: three residuals silently absent from the law the intervals
+         are read off.
+       * `test_the_point_forecast_is_a_step_function_of_the_regime_variable`, on
+         the two regimes returning `37.618084442911695` from the same design
+         row.
+       * `test_the_residual_law_is_leave_one_out_within_each_regime`, as an
+         error rather than a failure.
+
+       The last two are the ones worth having. The three direct refusals fail on
+       a missing exception; those fail on **a fitted model whose numbers would
+       have been published** -- a threshold model whose regimes agree everywhere
+       and whose residual law is three rows short of the window it claims.
+
+       `test_a_window_with_no_two_regime_split_refuses_rather_than_returning_one`
+       stays green, and that is correct rather than a gap: when the threshold
+       variable never moves, *both* regimes are thin at every candidate, the
+       fallback has no populated regime to fall back to, and the refusal stands.
+       The fallback is dangerous exactly when one side survives.
+
+    4. **The boring one.** `FittedThreshold.regime_for` flipped from `<=` to
+       `<`, the smallest change the regime boundary admits, moving rows sitting
+       exactly on the threshold out of the regime they were fitted into.
+
+       Kills 2 tests, both here:
+       `test_a_row_exactly_on_the_threshold_is_scored_by_the_regime_it_was_fitted_into`
+       and `test_the_point_forecast_is_a_step_function_of_the_regime_variable`,
+       both on `'high' != 'low'`.
+
+       **Persistence's and the ARX's numbers do not move**, which is what this
+       mutation was planted to establish. Every pinned figure stays green:
+       `RollingBacktestTests.test_persistence_remains_the_default_with_unchanged_numbers`,
+       `PurgedBacktestTests.test_the_purge_changes_the_reported_numbers_and_the_change_is_reported`,
+       and `test_the_arx_reports_the_numbers_it_reported_before_a_third_model_existed`
+       below. So does the whole of `tests/test_contract.py`, the threshold
+       conformance case included. That is not luck and not a gap there: the fit
+       splits through `_regime_split`, which this mutation does not touch, so
+       the fitted model is identical either way, and the conformance case
+       predicts on one feature row whose `on_rrp` is 93.8 against a fitted
+       threshold of 95.4. Only a row *on* the boundary can see the change, which
+       is why the boundary test lives here, with a fixture that is checked for
+       having such a row rather than assumed to. This block added a model. It
+       moved nothing.
+    """
+
+    MINIMUM_HISTORY = 20
+
+    #: The gap the sources of `spread_bps` and `sofr_volume` produce, and the
+    #: larger one `nyfed_tgcr` produces. Two different numbers so that declaring
+    #: the regime variable visibly changes the derived purge.
+    BASE_PURGE = 1
+    REGIME_PURGE = 4
+
+    def frame(self):
+        return regime_frame()
+
+    def fit(self, rows=None, **kwargs):
+        """`fit_threshold` on the regime frame, with this module's declarations."""
+
+        return fit_threshold(
+            self.frame() if rows is None else rows,
+            THRESHOLD_REGRESSORS,
+            THRESHOLD_VARIABLE,
+            minimum_history=self.MINIMUM_HISTORY,
+            **kwargs,
+        )
+
+    def fitter(self):
+        """The fitting call `rolling_persistence_backtest` takes."""
+
+        return partial(
+            fit_threshold,
+            regressors=THRESHOLD_REGRESSORS,
+            threshold_variable=THRESHOLD_VARIABLE,
+        )
+
+    # ------------------------------------------------------------------
+    # The acceptance criterion
+    # ------------------------------------------------------------------
+
+    def test_the_threshold_variable_is_purged_like_any_other_read(self):
+        """A regime is a read. It goes through the lock, or the gap is wrong.
+
+        This block's acceptance criterion and its acceptance mutation, and they
+        are the same test on purpose: the criterion is that dropping the
+        threshold variable from `features_read` stops the raise, and the
+        mutation is dropping it. A second test asserting the same thing from the
+        other side would be the same assertion twice.
+
+        Three claims, in the order the failure would happen in:
+
+        1. A threshold model whose regime variable is outside the declared
+           feature set is refused by the backtest, with `LookAheadError` naming
+           the column. `tgcr` is read on every fold to choose which of two
+           fitted regimes produces the point forecast, and it is not a regressor
+           -- the *only* reason it is read is the regime, which is exactly the
+           read a model could plausibly argue its way out of declaring.
+        2. Declaring it makes the identical run succeed.
+        3. The derived purge then reflects that column's source. This is the
+           damage the raise prevents: `nyfed_tgcr` is absent from the source set
+           of the undeclared run, so its release lag was never in the maximum,
+           and the numbers would have been produced under a four-day gap's worth
+           of information at a one-day gap's cost. In the flattering direction,
+           as always.
+
+        The registry prices `nyfed_tgcr` apart from the rest for claim 3 to be
+        able to fail; under a uniform registry the two runs would report the
+        same `purge_days` and the assertion would hold for the wrong reason.
+        """
+
+        rows = self.frame()
+        registry = mixed_registry(self.BASE_PURGE, self.REGIME_PURGE)
+
+        with self.assertRaises(LookAheadError) as caught:
+            rolling_persistence_backtest(
+                rows,
+                features=UNDECLARED_THRESHOLD_FEATURES,
+                registry=registry,
+                decision_time=DECISION_TIME,
+                minimum_history=self.MINIMUM_HISTORY,
+                fit_model=self.fitter(),
+            )
+        self.assertIn(THRESHOLD_VARIABLE, str(caught.exception))
+
+        report = rolling_persistence_backtest(
+            rows,
+            features=THRESHOLD_FEATURES,
+            registry=registry,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=self.fitter(),
+        )
+        self.assertIsInstance(report.model, FittedThreshold)
+        self.assertIn(THRESHOLD_VARIABLE, report.model.features_read)
+
+        # The source the regime variable brought in, and the gap it produced.
+        # Both read off the report rather than recomputed here: a second
+        # derivation in a test is the thing this repository keeps deleting.
+        regime_source, = sources_for_features((THRESHOLD_VARIABLE,))
+        self.assertIn(regime_source, report.sources)
+        self.assertNotIn(
+            regime_source, sources_for_features(UNDECLARED_THRESHOLD_FEATURES)
+        )
+        self.assertEqual(report.purge_days, self.REGIME_PURGE)
+        self.assertGreater(self.REGIME_PURGE, self.BASE_PURGE)
+
+    # ------------------------------------------------------------------
+    # What the model reads, and what it says it reads
+    # ------------------------------------------------------------------
+
+    def test_the_threshold_variable_is_reported_even_though_it_is_no_regressor(self):
+        """`features_read` is what the model read, not what it was handed.
+
+        `tgcr` appears in no design column and multiplies no coefficient. It is
+        read once per row, to pick a coefficient vector. The tuple says so.
+        """
+
+        model = self.fit()
+        self.assertEqual(
+            model.features_read,
+            FEATURES + THRESHOLD_REGRESSORS + (THRESHOLD_VARIABLE,),
+        )
+        self.assertNotIn(THRESHOLD_VARIABLE, model.design_names)
+        # And in panel vocabulary, so the gap can be sized from it.
+        sources_for_features(model.features_read)
+
+    def test_a_regime_variable_that_is_also_a_regressor_is_reported_once(self):
+        """A column may shift the level and switch the relationship.
+
+        Reporting it twice would be a claim about multiplicity that
+        `_check_fitter_stayed_inside` does not read -- it compares sets -- and
+        that a human reader of a report would.
+        """
+
+        model = fit_threshold(
+            self.frame(),
+            ("sofr_volume", "on_rrp"),
+            "on_rrp",
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        read = model.features_read
+        self.assertEqual(read.count("on_rrp"), 1)
+        self.assertEqual(sorted(read), sorted(set(read)))
+        self.assertEqual(read, ("spread_bps", "sofr_volume", "on_rrp"))
+
+    # ------------------------------------------------------------------
+    # Where the threshold comes from
+    # ------------------------------------------------------------------
+
+    def test_the_threshold_is_estimated_from_the_origin_rows_alone(self):
+        """Nothing outside the design's own rows may reach the search.
+
+        The last row of a training frame is a **target** and never a feature: no
+        design row reads it, so nothing fitted here may depend on it. The test
+        moves that row's threshold value far outside the range the rest of the
+        window occupies and asserts the fitted threshold, the regime counts,
+        both coefficient vectors and the residual law come back bit-identical.
+
+        What this does and does not catch, because the mutation record turns on
+        it. It is **green** under a search whose candidate set is widened to
+        include the final row's value: a candidate matters only through the
+        partition it induces, and a value inside the origins' range induces a
+        partition already reachable from an origin value and loses the tie,
+        while one outside it makes a regime empty and is skipped. So that
+        mutation is inert rather than undetected. It **fails** under the leak
+        that direction actually admits -- the regime of design row `i` read off
+        `rows[i]` rather than off the origin -- because then the final row is
+        genuinely read and the perturbation lands on the split. Mutations 2 and
+        2b in the class docstring are those two runs.
+        """
+
+        rows = self.frame()
+        perturbed = list(rows)
+        tail = dict(perturbed[-1].values)
+        tail[THRESHOLD_VARIABLE] = 99.0
+        perturbed[-1] = DailyObservation(perturbed[-1].date, tail)
+
+        base = self.fit(rows)
+        after = self.fit(perturbed)
+
+        self.assertTrue(base.threshold_estimated)
+        self.assertEqual(base.threshold, after.threshold)
+        self.assertEqual(dict(base.regime_rows), dict(after.regime_rows))
+        for regime in ("low", "high"):
+            self.assertEqual(base.coefficients[regime], after.coefficients[regime])
+        self.assertEqual(base.residuals, after.residuals)
+
+        # And the chosen value is one the origin rows actually carry.
+        candidates = {row.values[THRESHOLD_VARIABLE] for row in rows[:-1]}
+        self.assertIn(base.threshold, candidates)
+
+    def test_a_declared_threshold_is_honoured_and_recorded_as_declared(self):
+        """A caller stating a prior and a caller asking for one are different acts.
+
+        A report that could not tell them apart would present a number the
+        caller supplied and a number the frame produced under one name, and the
+        first is not evidence about the frame at all.
+        """
+
+        rows = self.frame()
+        estimated = self.fit(rows)
+        declared = self.fit(rows, threshold=4.33)
+
+        self.assertTrue(estimated.threshold_estimated)
+        self.assertFalse(declared.threshold_estimated)
+        self.assertEqual(declared.threshold, 4.33)
+
+        # Declared, not checked against the frame's own optimum: a caller who
+        # declares a threshold is not asking whether it was the best one.
+        self.assertNotEqual(declared.threshold, estimated.threshold)
+
+    def test_an_estimated_threshold_produces_two_populated_regimes(self):
+        """Two regimes, both fitted, both above the minimum. Not asserted -- counted.
+
+        `regime_rows` is on the fitted model so that "there are two regimes" is
+        checkable from the outside rather than being a property of the name.
+        """
+
+        model = self.fit()
+        minimum = len(model.design_names) + 2
+        self.assertEqual(sorted(model.regime_rows), ["high", "low"])
+        for regime, count in model.regime_rows.items():
+            self.assertGreaterEqual(count, minimum, msg=f"{regime} regime is thin")
+        self.assertEqual(
+            sum(model.regime_rows.values()), len(self.frame()) - 1
+        )
+        # Two vectors, and they are not the same vector: a regime structure that
+        # fitted the same coefficients twice would be an ARX with extra steps.
+        self.assertNotEqual(model.coefficients["low"], model.coefficients["high"])
+
+    # ------------------------------------------------------------------
+    # A degenerate split is a refusal
+    # ------------------------------------------------------------------
+
+    def test_a_degenerate_split_is_refused_rather_than_collapsed_to_one_regime(self):
+        """A one-regime fit wearing a threshold model's name is the worst outcome.
+
+        Worse than a crash, because it is invisible: the numbers come out, the
+        report says `FittedThreshold`, and a reader attributes them to a regime
+        structure that was never estimated. So it raises, and the message says
+        how many rows each side got and how many a regime needs.
+
+        Three thresholds, covering the shapes a degenerate split takes: below
+        everything, above everything, and inside the range but leaving one side
+        under the minimum.
+        """
+
+        rows = self.frame()
+        observed = sorted(row.values[THRESHOLD_VARIABLE] for row in rows[:-1])
+        minimum = len(THRESHOLD_REGRESSORS) + 4
+
+        cases = {
+            "below every observed value": observed[0] - 1.0,
+            "above every observed value": observed[-1] + 1.0,
+            # The largest value that still leaves the low regime short of the
+            # minimum, so the split exists and is merely too thin. Derived by
+            # counting rather than by indexing into `observed`: the fixture's
+            # values repeat, so the k-th distinct value does not put k + 1 rows
+            # below it and an index would silently name a legal threshold.
+            "inside the range but too thin": max(
+                value
+                for value in set(observed)
+                if 0 < _at_or_below(observed, value) < minimum
+            ),
+        }
+        for label, threshold in cases.items():
+            with self.subTest(threshold=label):
+                with self.assertRaises(DegenerateRegimeError) as caught:
+                    self.fit(rows, threshold=threshold)
+                message = str(caught.exception)
+                self.assertIn(str(minimum), message)
+                self.assertIn("regime", message)
+
+        # A `ValueError`, so the CLI dispatcher's `(OSError, ValueError)` covers
+        # it without naming a new type.
+        self.assertTrue(issubclass(DegenerateRegimeError, ValueError))
+
+    def test_a_window_with_no_two_regime_split_refuses_rather_than_returning_one(self):
+        """When the search finds nothing, it says so instead of fitting an ARX.
+
+        A window whose threshold variable never moves has no split in it at all:
+        every candidate puts every row on one side. The honest answer is that
+        there is no two-regime model to estimate here, and the message says what
+        to do instead.
+        """
+
+        rows = []
+        for row in self.frame():
+            values = dict(row.values)
+            values[THRESHOLD_VARIABLE] = 4.30
+            rows.append(DailyObservation(row.date, values))
+
+        with self.assertRaises(DegenerateRegimeError) as caught:
+            self.fit(rows)
+        self.assertIn("two regimes", str(caught.exception))
+
+    def test_a_regime_thin_enough_to_break_the_leave_one_out_law_is_refused(self):
+        """The minimum is the leave-one-out minimum, not a round number.
+
+        `len(design_names) + 2` in each regime: at one fewer, a held-out fold
+        has exactly as many rows as coefficients, interpolates them, and
+        contributes an exact zero to the pooled residual law. A model that
+        accepted it would report intervals narrowed by a block of zeros that
+        describe nothing.
+
+        Asserted at the boundary rather than in the abstract: the minimum passes
+        and one row fewer raises.
+        """
+
+        rows = self.frame()
+        observed = sorted(row.values[THRESHOLD_VARIABLE] for row in rows[:-1])
+        minimum = len(THRESHOLD_REGRESSORS) + 4
+
+        # The boundary, both sides of it, found by counting rows rather than by
+        # indexing: the fixture's values repeat, so the k-th distinct value does
+        # not put k + 1 rows at or below it.
+        passes = min(
+            value
+            for value in set(observed)
+            if _at_or_below(observed, value) >= minimum
+        )
+        raises = max(
+            value
+            for value in set(observed)
+            if 0 < _at_or_below(observed, value) < minimum
+        )
+        self.assertLess(raises, passes)
+
+        model = self.fit(rows, threshold=passes)
+        self.assertGreaterEqual(model.regime_rows["low"], minimum)
+        self.assertEqual(len(model.residuals), len(rows) - 1)
+
+        with self.assertRaises(DegenerateRegimeError):
+            self.fit(rows, threshold=raises)
+
+    # ------------------------------------------------------------------
+    # Reading the regime off a row
+    # ------------------------------------------------------------------
+
+    def test_a_row_exactly_on_the_threshold_is_scored_by_the_regime_it_was_fitted_into(self):
+        """The boundary is closed on the low side, in the fit and in the forecast.
+
+        One comparison, stated twice and required to agree: `_regime_split` puts
+        `selector <= threshold` in `"low"`, and `regime_for` must do the same.
+        If they disagreed, a row on the boundary would be fitted into one regime
+        and scored by the other's coefficients -- a forecast produced by a model
+        that was never fitted on rows like it, and nothing else in the suite
+        would notice.
+        """
+
+        rows = self.frame()
+        model = self.fit(rows)
+        on_boundary = [
+            row
+            for row in rows[:-1]
+            if row.values[THRESHOLD_VARIABLE] == model.threshold
+        ]
+        self.assertTrue(on_boundary, msg="the fixture offers no boundary row")
+
+        for row in on_boundary:
+            self.assertEqual(model.regime_for(row), "low")
+            self.assertEqual(
+                model.point_forecast(row),
+                _dot(model.coefficients["low"], model.design_row(row)),
+            )
+
+        # And a row just above it is the other regime, so the comparison is a
+        # boundary rather than a constant.
+        above = min(
+            (
+                row
+                for row in rows[:-1]
+                if row.values[THRESHOLD_VARIABLE] > model.threshold
+            ),
+            key=lambda row: row.values[THRESHOLD_VARIABLE],
+        )
+        self.assertEqual(model.regime_for(above), "high")
+
+    def test_the_point_forecast_is_a_step_function_of_the_regime_variable(self):
+        """Two regimes means two relationships, and the model has to show it.
+
+        The same design row scored under each regime gives two different
+        numbers, which is the entire content of "a regime is a read that chooses
+        a model". A threshold model whose regimes agreed everywhere would be an
+        ARX reporting a threshold.
+        """
+
+        rows = self.frame()
+        model = self.fit(rows)
+        row = rows[-2]
+
+        low = dict(row.values)
+        low[THRESHOLD_VARIABLE] = model.threshold
+        high = dict(row.values)
+        high[THRESHOLD_VARIABLE] = model.threshold + 1.0
+
+        low_row = DailyObservation(row.date, low)
+        high_row = DailyObservation(row.date, high)
+
+        self.assertEqual(model.regime_for(low_row), "low")
+        self.assertEqual(model.regime_for(high_row), "high")
+        self.assertEqual(model.design_row(low_row), model.design_row(high_row))
+        self.assertNotAlmostEqual(
+            model.point_forecast(low_row),
+            model.point_forecast(high_row),
+            places=9,
+            msg=(
+                "the two regimes produce the same forecast from the same design "
+                "row; nothing was switched"
+            ),
+        )
+
+    def test_an_unobserved_threshold_variable_is_refused_not_imputed(self):
+        """A regressor's gap is imputed; a regime's gap cannot be.
+
+        An imputed mean enters a regressor's sum and moves the forecast by a
+        coefficient times a number. An imputed mean on the threshold variable
+        would choose a *model*, putting every unobserved row in whichever regime
+        the training mean falls in, silently and uniformly -- and the regime
+        counts a reader checks would include rows whose regime was never
+        observed.
+
+        Absent and unobserved stay distinguishable, as contract test 5 requires:
+        different types, `MissingRegressorError` and `UnobservedThresholdError`.
+        """
+
+        rows = self.frame()
+        model = self.fit(rows)
+
+        unobserved = dict(rows[-2].values)
+        unobserved[THRESHOLD_VARIABLE] = None
+        with self.assertRaises(UnobservedThresholdError):
+            model.regime_for(DailyObservation(rows[-2].date, unobserved))
+
+        absent = {
+            name: value
+            for name, value in rows[-2].values.items()
+            if name != THRESHOLD_VARIABLE
+        }
+        with self.assertRaises(MissingRegressorError):
+            model.regime_for(DailyObservation(rows[-2].date, absent))
+
+        self.assertFalse(
+            issubclass(UnobservedThresholdError, MissingRegressorError)
+        )
+        self.assertFalse(
+            issubclass(MissingRegressorError, UnobservedThresholdError)
+        )
+
+        # At fit time too: an origin row with no observation is not imputed into
+        # a regime either.
+        broken = list(rows)
+        gap = dict(broken[3].values)
+        gap[THRESHOLD_VARIABLE] = None
+        broken[3] = DailyObservation(broken[3].date, gap)
+        with self.assertRaises(UnobservedThresholdError):
+            self.fit(broken)
+
+    # ------------------------------------------------------------------
+    # The residual law
+    # ------------------------------------------------------------------
+
+    def test_the_residual_law_is_leave_one_out_within_each_regime(self):
+        """No residual was minimised by the coefficients that produced it.
+
+        The concern `fit_arx` documents, doubled: two regimes over one window
+        means twice the coefficients and twice the in-sample narrowing, so an
+        in-sample law here would be more flattering than it was there.
+
+        Rebuilt longhand from the split rather than compared against the
+        module's own helper, so the test checks the definition rather than the
+        implementation agreeing with itself.
+        """
+
+        rows = self.frame()
+        model = self.fit(rows)
+
+        imputations = window_means(rows, THRESHOLD_REGRESSORS)
+        design, targets = design_and_targets(rows, THRESHOLD_REGRESSORS, imputations)
+        selectors = [row.values[THRESHOLD_VARIABLE] for row in rows[:-1]]
+
+        expected = []
+        for regime, keep in (("low", True), ("high", False)):
+            block = [
+                (row, target)
+                for row, target, selector in zip(design, targets, selectors)
+                if (selector <= model.threshold) is keep
+            ]
+            for index in range(len(block)):
+                reduced = block[:index] + block[index + 1 :]
+                coefficients = _least_squares(
+                    [row for row, _ in reduced], [target for _, target in reduced]
+                )
+                expected.append(block[index][1] - _dot(coefficients, block[index][0]))
+
+        self.assertEqual(model.residuals, tuple(sorted(expected)))
+
+    def test_one_pooled_law_because_the_interface_declares_one(self):
+        """`residuals` is the sample both outputs read, so there is one of it.
+
+        A per-regime law would make `residuals` a claim `predict` does not
+        honour, and the agreement between the quantiles and the exceedance --
+        the assertion that separates a derived stress number from a separately
+        fitted one -- would have nothing to stand on. The regimes differ in the
+        conditional mean and share the dispersion, and that limitation is real
+        and stated rather than discovered from the intervals.
+        """
+
+        model = self.fit()
+        anchor = model.point_forecast(self.frame()[-2])
+        quantiles = model.predict(self.frame()[-2])
+
+        self.assertEqual(len(model.residuals), sum(model.regime_rows.values()))
+        self.assertEqual(list(model.residuals), sorted(model.residuals))
+        for level, quantile in zip(QUANTILE_LEVELS, quantiles):
+            self.assertAlmostEqual(
+                quantile, anchor + _quantile(model.residuals, level), places=12
+            )
+
+    # ------------------------------------------------------------------
+    # Nothing else moved
+    # ------------------------------------------------------------------
+
+    def test_the_arx_reports_the_numbers_it_reported_before_a_third_model_existed(self):
+        """This block adds a model. It does not touch the others.
+
+        Persistence's numbers are already pinned, in
+        `RollingBacktestTests.test_persistence_remains_the_default_with_unchanged_numbers`
+        and `PurgedBacktestTests.test_the_purge_changes_the_reported_numbers_and_the_change_is_reported`.
+        The ARX's were only ever pinned relative to persistence's, which a change
+        that moved both would satisfy. They are absolute here, at the two gaps
+        the rest of this file uses, so that "the numbers did not move" is a
+        claim a run can refute rather than a sentence in a commit message.
+        """
+
+        rows = load_daily_panel(SAMPLE_PANEL)
+        arx = partial(fit_arx, regressors=REGRESSORS)
+
+        near = at_gap(
+            rows, purge=1, features=ARX_FEATURES, minimum_history=10, fit_model=arx
+        )
+        self.assertEqual(len(near.forecasts), 14)
+        self.assertAlmostEqual(near.mae_bps, 1.9142198265530637, places=12)
+        self.assertAlmostEqual(near.interval_coverage, 4.0 / 7.0, places=12)
+
+        far = at_gap(
+            rows, purge=6, features=ARX_FEATURES, minimum_history=10, fit_model=arx
+        )
+        self.assertEqual(len(far.forecasts), 12)
+        self.assertAlmostEqual(far.mae_bps, 2.086429950395829, places=12)
+        self.assertAlmostEqual(far.interval_coverage, 0.5, places=12)
 
 
 # --------------------------------------------------------------------------
