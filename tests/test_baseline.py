@@ -155,7 +155,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model import baseline
+from repo_model import baseline, cli_eval
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     DegenerateRegimeError,
@@ -2773,6 +2773,17 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
     **Count the tests, not the file diff.** Nothing here asserts how many
     implementers there are; what is asserted is that the set of them and the set
     of covered ones are the same set.
+
+    Since the holdout-model-selector block it asserts a second sameness over the
+    same discovered set: every implementer is reachable **by name from the
+    command line**. Conformance says a predictor obeys the interface; this says
+    somebody outside the test suite can run it. Before that block only
+    `climatology_exceedance` was reachable -- `_event_holdout` constructed it
+    unconditionally -- so `arx_exceedance` and `threshold_exceedance` existed
+    only where a test built them, and `PLAN.md`'s Phase 2 exit criterion, a
+    conditional model scored against climatology, had no path. A fourth
+    implementer the CLI cannot run now fails this existing guard rather than
+    going unnoticed, which is the whole reason this class exists.
     """
 
     def test_every_exceedance_predictor_in_baseline_runs_the_conformance_suite(self):
@@ -2824,6 +2835,59 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
                         f"run every conformance test"
                     ),
                 )
+
+    def test_every_exceedance_predictor_is_reachable_by_name_from_the_cli(self):
+        """One assertion further over the same discovered set: the CLI can run it.
+
+        `cli_eval.MODEL_FACTORIES` is the single name-to-factory mapping the
+        `event-holdout` command selects through. This asserts the set of
+        factories it can reach equals the set discovered in `baseline` -- both
+        directions, because both failures are real. An implementer missing from
+        the mapping is a model nobody outside this suite can run, which is the
+        state the whole exceedance interface was in until the selector landed.
+        A name in the mapping that no longer names a discovered implementer is a
+        `--model` value that resolves to something the conformance suite never
+        ran against.
+
+        Identity, not name: the mapping records the factory object it
+        constructs through, so a `--model arx` wired to the climatology fails
+        here rather than looking correct because a key was spelled right.
+        """
+
+        implementations = _exceedance_implementations()
+        reachable = {choice.factory for choice in cli_eval.MODEL_FACTORIES.values()}
+
+        unreachable = sorted(
+            name
+            for name, factory in implementations.items()
+            if factory not in reachable
+        )
+        self.assertEqual(
+            unreachable,
+            [],
+            msg=(
+                f"{unreachable} return an ExceedancePredictor from "
+                f"repo_model.baseline and no --model name reaches them. A "
+                f"predictor the command line cannot construct is one only this "
+                f"suite can run, and the conditional models sat in exactly "
+                f"that state while the evaluator ran the null model"
+            ),
+        )
+
+        discovered = set(implementations.values())
+        dangling = sorted(
+            name
+            for name, choice in cli_eval.MODEL_FACTORIES.items()
+            if choice.factory not in discovered
+        )
+        self.assertEqual(
+            dangling,
+            [],
+            msg=(
+                f"--model {dangling} names something that is not a discovered "
+                f"ExceedancePredictor in repo_model.baseline"
+            ),
+        )
 
 
 if __name__ == "__main__":
