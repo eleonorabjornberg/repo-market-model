@@ -143,7 +143,9 @@ record, and those are exactly the parts that must not disagree.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
+import subprocess
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date, time, timedelta
@@ -479,6 +481,27 @@ class UnobservedThresholdError(ValueError):
     in, uniformly and silently, and the regime counts a reader checks would
     include rows whose regime was never observed. Refusing is the only reading
     that does not invent an assignment.
+    """
+
+
+class ProvenanceMismatchError(ValueError):
+    """A build manifest beside the panel does not describe the panel scored.
+
+    `REPRODUCIBILITY.md`'s "Requirements for a reportable experiment" asks a
+    run record to identify "the point-in-time panel build". The build manifest
+    `data.write_daily_panel` leaves beside a panel is that identification, and
+    a record that embeds one has told its reader the numbers above it were
+    computed on the build the manifest describes.
+
+    Raised rather than warned about, and rather than resolved by omitting the
+    section. Publishing a manifest beside a panel it does not describe is worse
+    than publishing no provenance at all: no provenance makes a reader ask, and
+    wrong provenance makes a reader believe. The refusal leaves no artifact on
+    disk, because both commands write only after the document is built.
+
+    A `ValueError` subclass so the CLI dispatcher's `(OSError, ValueError)`
+    already covers it without naming a new type -- exit 2, message, no file --
+    which is the same shape every other refusal on this path has.
     """
 
 
@@ -2621,7 +2644,257 @@ def mae_bootstrap_interval(
     return lower, upper, block
 
 
-def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
+#: The repository whose commit a record names. Resolved from this module's own
+#: location rather than from the process's working directory: the commit a
+#: record must identify is the one the *code that ran* was read from, and a
+#: caller may invoke the CLI from anywhere.
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+#: The suffix `data.write_daily_panel` appends to a panel path when it writes
+#: the build manifest beside it. Named once, here, rather than spelled at the
+#: one place that looks for the file, so that the reader and the writer can be
+#: checked against each other by eye. It is a string and not an import:
+#: `data.py` is Track A's, this module reads one JSON file, and that is the
+#: whole dependency.
+_BUILD_MANIFEST_SUFFIX = ".manifest.json"
+
+#: The manifest fields a record can check against the panel it actually scored,
+#: as `(manifest key, record key)`. Three, because `write_daily_panel` records
+#: no digest of the panel it describes, so extent is the whole of the available
+#: evidence -- see `_bind_build_manifest`. Both keys of each pair are already
+#: computed: the manifest claims one side and the emitted `panel` object
+#: carries the other, so the comparison derives nothing new.
+_MANIFEST_EXTENT = (
+    ("row_count", "row_count"),
+    ("start_date", "first_date"),
+    ("end_date", "last_date"),
+)
+
+#: What `panel.build_manifest_binding` says the binding was, and what it was
+#: not. Stated in the artifact rather than left to a reader who finds a
+#: manifest embedded beside a digest and assumes the two were checked against
+#: each other.
+_EXTENT_BINDING_NOTE = (
+    "the build manifest carries no digest of the panel it describes, so this "
+    "binds it to the panel by extent and not by bytes: a manifest is a claim "
+    "about a path, and the bytes under that path may have changed since it was "
+    "written"
+)
+
+
+def _file_identity(path: Path) -> dict:
+    """A file this run read, as path and digest -- the shape `panel` uses.
+
+    `REPRODUCIBILITY.md` asks a reportable record to identify "the
+    source-registry and stress-threshold versions". Neither file carries a
+    version field, and a digest is the version of a file that carries none: it
+    changes exactly when the bytes change and it cannot be typed wrong. Path
+    and digest come from one read, so the record cannot name one file and hash
+    another -- the same reason the panel's own digest is taken here rather than
+    handed in.
+    """
+
+    return {
+        "path": str(path),
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
+def _git_output(*arguments: str) -> str:
+    """One `git` invocation at the repository root, as text."""
+
+    completed = subprocess.run(
+        ("git", *arguments),
+        cwd=_REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return completed.stdout
+
+
+def _code_provenance() -> Optional[dict]:
+    """The commit the code was read from, and whether that tree was modified.
+
+    `REPRODUCIBILITY.md` asks first for "the Git commit". A commit id alone is
+    not that answer: read from a modified working tree it names code that did
+    not run, and it names it in the most convincing possible form. So the tree
+    is checked in the same breath and the answer is carried whichever way it
+    came out -- `tree_modified` is present and `False` on a clean tree, because
+    a reader must be able to tell "checked, and clean" from "not checked", and
+    an omitted field cannot say the first.
+
+    Returns `None` when git is absent or the command fails, and the section is
+    then absent from the record entirely, by the rule the rest of this document
+    follows: a field this cannot compute is omitted rather than filled with a
+    stand-in.
+    """
+
+    try:
+        commit = _git_output("rev-parse", "HEAD").strip()
+        status = _git_output("status", "--porcelain")
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if not commit:
+        return None
+    return {"commit": commit, "tree_modified": bool(status.strip())}
+
+
+def _bind_build_manifest(panel: dict, manifest: dict) -> dict:
+    """Check a build manifest against the panel that was scored, or refuse.
+
+    The manifest records `"path": str(path)` and **no digest of the panel it
+    describes**, so a manifest found beside a panel is a claim about a *name*,
+    and the bytes under that name may have changed since. Binding on the path
+    alone is therefore no check at all: it is green on every well-formed input,
+    including a manifest carried over from an entirely different build.
+
+    What can be checked is what the manifest does carry and the record already
+    knows -- `row_count`, `start_date` and `end_date`, against the emitted
+    panel's `row_count`, `first_date` and `last_date`. Neither side is a new
+    derivation: the manifest claims one and the run that produced the record
+    computed the other.
+
+    That is evidence of extent, not of identity, and the returned binding says
+    so in the artifact. The digest gap is `write_daily_panel`'s and is Track
+    A's to close; this function is written so that closing it is an addition
+    here rather than a correction.
+
+    Raises:
+        ProvenanceMismatchError: if any of the three disagrees, or if either
+            side does not carry one of them. A record that cannot bind a
+            manifest it found must not publish it, and must not quietly drop
+            it either.
+    """
+
+    compared = []
+    for manifest_key, record_key in _MANIFEST_EXTENT:
+        if manifest_key not in manifest:
+            raise ProvenanceMismatchError(
+                f"the build manifest beside {panel['path']} carries no "
+                f"{manifest_key!r}, so the record cannot bind it to the panel "
+                "it scored; a manifest that cannot be checked must not be "
+                "published as provenance"
+            )
+        if record_key not in panel:
+            raise ProvenanceMismatchError(
+                f"a build manifest was found beside {panel['path']} but this "
+                f"report does not carry the panel's {record_key!r}, so the "
+                "manifest cannot be bound to what was scored; a manifest that "
+                "cannot be checked must not be published as provenance"
+            )
+        claimed = manifest[manifest_key]
+        scored = panel[record_key]
+        if claimed != scored:
+            raise ProvenanceMismatchError(
+                f"the build manifest beside {panel['path']} describes a panel "
+                f"with {manifest_key}={claimed!r}, but the panel this run "
+                f"scored has {record_key}={scored!r}; the manifest does not "
+                "describe the scored panel and publishing it would attribute "
+                "these numbers to a build that did not produce them"
+            )
+        compared.append(record_key)
+
+    return {"kind": "extent", "compared": compared, "note": _EXTENT_BINDING_NOTE}
+
+
+def _run_provenance(
+    panel: dict,
+    panel_path: Path,
+    *,
+    registry_path: Path,
+    thresholds_path: Optional[Path],
+) -> dict:
+    """What produced the inputs, for both records, from one place.
+
+    `REPRODUCIBILITY.md`'s "Requirements for a reportable experiment" lists
+    eight things a run record must identify. `backtest_document` and
+    `exceedance_backtest_document` between them already satisfy the feature set
+    and decision cutoff, the model configuration and seed, and the
+    rolling-origin split and registry-derived purge gap. Of the rest they
+    carried the panel file's path and digest and nothing else: not the raw
+    snapshots it was built from, not when those were retrieved, not which
+    registry priced the gap, not which threshold file defined the exceedance,
+    not the commit whose code produced any of it.
+
+    None of that was unrecorded. `data.write_daily_panel` writes every built
+    panel with a `<panel>.manifest.json` beside it, carrying the build cutoff,
+    the decision time, the extent, the built and refused columns, the holes and
+    `source_shas` -- the raw snapshot digests. Nothing read it. A manifest
+    nobody reads is a file, not a record, and this function is the line that
+    crosses the gap.
+
+    **One builder, two documents.** Both records grow the same section from
+    here rather than each spelling it. Two evaluators now publish records, and
+    a shape written out in each is a shape whose halves drift the first time
+    one of them gains a field -- the reason `_validate_taus` and `_seed_from`
+    were factored rather than copied.
+
+    **The manifest is carried whole.** Parsed and embedded under
+    `panel.build_manifest` exactly as it is: no field selected, none renamed,
+    none re-derived. The manifest's schema is Track A's, and a record that
+    re-typed it would be a second copy of a schema that is not this module's --
+    the two agreeing today and drifting the moment a field is added there.
+    Carrying it whole is also how this record gains every future field for
+    free.
+
+    **When there is no manifest the section is absent** -- not `null`, not an
+    empty object, not a `"none"` string. A fixture panel has no build behind it
+    and a record that says so by omission is honest; one that says so with a
+    stand-in invites a reader to think the field was computed. That is the rule
+    `backtest_document` already follows for `decision_time` and
+    `minimum_history` and it does not change here.
+
+    Args:
+        panel: the record's `panel` object, already carrying path, digest and
+            -- when the report knows them -- the extent. **Grown in place**
+            with `build_manifest` and `build_manifest_binding` when a manifest
+            is found, because a manifest describes the panel and belongs under
+            it, while the code and the input digests describe the run.
+        panel_path: the panel file as the caller named it. The manifest's name
+            is derived from it rather than typed, so it follows the panel.
+        registry_path: the source registry this run actually read.
+        thresholds_path: the stress-threshold declaration this run actually
+            read, or `None` on a path that reads none. The continuous benchmark
+            takes no `--thresholds` and passing a stand-in for one it never
+            opened would be exactly the invented field this record refuses
+            elsewhere.
+
+    Returns:
+        The `provenance` section: the code the run was read from, and the
+        digests of the declaration files it read.
+
+    Raises:
+        ProvenanceMismatchError: via `_bind_build_manifest`, when a manifest
+            beside the panel does not describe the panel that was scored.
+    """
+
+    manifest_path = Path(str(panel_path) + _BUILD_MANIFEST_SUFFIX)
+    if manifest_path.exists():
+        # Parse and bind before either lands in the record. A malformed
+        # manifest raises out of `json.loads` rather than being skipped: it is
+        # a manifest that exists and cannot be read, which is a different fact
+        # from there being none, and the CLI dispatcher already turns a
+        # `ValueError` into a refusal with no artifact written.
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        binding = _bind_build_manifest(panel, manifest)
+        panel["build_manifest"] = manifest
+        panel["build_manifest_binding"] = binding
+
+    inputs = {"source_registry": _file_identity(registry_path)}
+    if thresholds_path is not None:
+        inputs["stress_thresholds"] = _file_identity(thresholds_path)
+
+    provenance: dict = {"inputs": inputs}
+    code = _code_provenance()
+    if code is not None:
+        provenance["code"] = code
+    return provenance
+
+
+def backtest_document(
+    report: BacktestReport, *, panel_path: Path, registry_path: Path
+) -> dict:
     """The report as a publishable record: every number, and what produced it.
 
     `PLAN.md` Milestone A ends with a published pinball loss and interval
@@ -2659,7 +2932,12 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
       name; a report carrying only the path is a claim about a file that may
       since have changed, which is the same decay as a typed number. The extent
       says what was actually scored, since a digest identifies a file and not a
-      run.
+      run. `build_manifest` is the build behind those bytes when there is one:
+      see `_run_provenance`, which is where both records grow it.
+    * `provenance` -- the commit the code was read from and whether that tree
+      was modified, and the digest of every declaration file the run opened.
+      `REPRODUCIBILITY.md` requires both of a reportable result and this
+      document carried neither.
     * `folds` -- the count, and the first and last origin in full. Enough for a
       reader to check the gap against a calendar on the two folds where an
       off-by-one would show, without the artifact growing with the panel.
@@ -2679,9 +2957,18 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
         panel_path: the panel file as the caller named it. Read here, once, for
             its bytes -- the digest and the path come from the same read, so
             the artifact cannot name one file and hash another.
+        registry_path: the source registry the run actually read. Required and
+            undefaulted, for the reason `--model` has no default: a default
+            here is a run that meant to publish a reportable record and
+            published one missing its provenance, with every other field
+            correct.
 
     Returns:
         A JSON-serialisable dict. The caller writes it; this shapes it.
+
+    Raises:
+        ProvenanceMismatchError: when a build manifest beside the panel does
+            not describe the panel that was scored.
     """
 
     digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
@@ -2703,6 +2990,13 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
         panel["first_date"] = report.panel_first_date.isoformat()
     if report.panel_last_date is not None:
         panel["last_date"] = report.panel_last_date.isoformat()
+
+    # After the extent, because the binding compares against it, and before
+    # anything is returned, because a manifest that does not describe this
+    # panel must leave no document behind to be written.
+    provenance = _run_provenance(
+        panel, panel_path, registry_path=registry_path, thresholds_path=None
+    )
 
     folds: dict = {"count": len(report.folds)}
     if report.folds:
@@ -2754,6 +3048,7 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
             "purge_days": report.purge_days,
         },
         "panel": panel,
+        "provenance": provenance,
         "folds": folds,
         "metrics": metrics,
     }
@@ -3716,7 +4011,11 @@ def _tau_document(
 
 
 def exceedance_backtest_document(
-    report: ExceedanceBacktestReport, *, panel_path: Path
+    report: ExceedanceBacktestReport,
+    *,
+    panel_path: Path,
+    registry_path: Path,
+    thresholds_path: Path,
 ) -> dict:
     """The pooled exceedance evaluation as a publishable record.
 
@@ -3741,7 +4040,9 @@ def exceedance_backtest_document(
       Track A's declaration and this run consumed a particular version of it;
       the weights are derived from that family by `twcrps_weights` and are
       published because a weighted score whose weights are unstated cannot be
-      compared to another one.
+      compared to another one. `provenance.inputs.stress_thresholds` is the
+      digest of the file that family was read from, which is the version of a
+      declaration that carries no version field.
     * `metrics.by_tau`. One row per threshold, keyed by the tau. The contract's
       metric set is per-threshold except twCRPS, which integrates across the
       grid and is therefore one number for the run.
@@ -3761,9 +4062,19 @@ def exceedance_backtest_document(
         panel_path: the panel file as the caller named it. Read here, once, for
             its bytes -- the digest and the path come from the same read, so
             the artifact cannot name one file and hash another.
+        registry_path: the source registry the run actually read.
+        thresholds_path: the stress-threshold declaration the run actually
+            read. Both are required and undefaulted, for the reason `--model`
+            has no default: a default here is a run that meant to publish a
+            reportable record and published one missing its provenance, with
+            every other field correct.
 
     Returns:
         A JSON-serialisable dict. The caller writes it; this shapes it.
+
+    Raises:
+        ProvenanceMismatchError: when a build manifest beside the panel does
+            not describe the panel that was scored.
     """
 
     digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
@@ -3792,6 +4103,16 @@ def exceedance_backtest_document(
         panel["first_date"] = report.panel_first_date.isoformat()
     if report.panel_last_date is not None:
         panel["last_date"] = report.panel_last_date.isoformat()
+
+    # The same section the continuous record grows, from the same builder and
+    # at the same point in the shaping: after the extent the binding compares
+    # against, before anything a caller could write.
+    provenance = _run_provenance(
+        panel,
+        panel_path,
+        registry_path=registry_path,
+        thresholds_path=thresholds_path,
+    )
 
     folds: dict = {"count": len(report.folds)}
     if report.folds:
@@ -3826,6 +4147,7 @@ def exceedance_backtest_document(
             "purge_days": report.purge_days,
         },
         "panel": panel,
+        "provenance": provenance,
         "folds": folds,
         "metrics": metrics,
     }
