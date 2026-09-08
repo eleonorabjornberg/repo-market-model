@@ -1,32 +1,33 @@
 # Project Status
 
-**Measured at commit `c363850`.** The commit is the timestamp: `git show -s
---format=%ci c363850` prints when. No date is written onto this page by hand,
-because a hand-written date can run ahead of the work it describes, and dating
-information other than when it was actually available is the failure this
-repository exists to prevent.
+**Measured at the commit that carries this revision of the page.** `git log -1
+--format='%h %ci' -- docs/PROJECT_STATUS.md` names it and prints when. The
+commit is the timestamp; no date is written onto this page by hand, because a
+hand-written date can run ahead of the work it describes, and dating information
+other than when it was actually available is the failure this repository exists
+to prevent.
 
 This page is a snapshot, not a claim that the repository is complete. It describes
 `main` only: work sitting unmerged on a branch is named as such.
 
 ## Summary
 
-Repo Market Model is currently a tested research and evaluation foundation for a
+Repo Market Model is a tested research and evaluation foundation for a
 probabilistic repo-market forecast. It is not yet a validated forecasting model.
 
 The strongest completed work is the part that prevents misleading empirical
-results: point-in-time provenance, release-lag handling, immutable acquisition,
-purged time-series evaluation, event-window separation, and probabilistic scoring.
-The shared fitted-model interface now has two implementers, and the benchmark
-backtest runs on a registry-derived purge rather than beside one. The principal
-missing work is a complete historical panel: every number this repository reports
-was produced on a 25-row synthetic sample.
+results: point-in-time provenance, release-lag handling at field granularity,
+immutable acquisition, purged time-series evaluation, event-window separation,
+and probabilistic scoring. The benchmark now writes its numbers to a file
+instead of to a terminal. The principal missing work is unchanged and is the
+whole of what stands between this page and a real claim: **every number this
+repository reports was produced on a synthetic sample.** The join that would
+change that now exists and has not been run.
 
 ## Evidence available now
 
-- The standard-library suite completes successfully, with no expected failures
-  remaining: both intentional tripwires have been discharged into real
-  assertions. How many tests that is belongs to CI, not to this page.
+- The standard-library suite completes successfully, with no expected failures.
+  How many tests that is belongs to CI, not to this page.
 - The `fit` / `predict` / `predict_stress` interface has **two** implementers — a
   persistence benchmark and an autoregressive model with exogenous regressors. Its
   conformance tests are parametrized over implementations, so each runs once per
@@ -37,7 +38,7 @@ was produced on a 25-row synthetic sample.
   reported at that quantile is `1 - q`. A separately fitted classifier fails that
   test even when it is well calibrated on its own terms.
 - Fitted transform parameters are checked to come from the training window alone.
-  The check is no longer vacuous: the ARX imputes absent regressors from a training
+  The check is not vacuous: the ARX imputes absent regressors from a training
   window mean, and a mutation that widens that window to the whole frame is caught
   by a named test.
 - Regressor names are fitted state on the fitted object, not a global. An absent
@@ -46,13 +47,36 @@ was produced on a 25-row synthetic sample.
 - Prediction intervals use a leave-one-out residual law. The in-sample alternative
   was measured rather than assumed, and is about 11% too narrow at the 90% level on
   the checked-in sample.
-- The rolling benchmark backtest takes its folds from the purged rolling-origin
-  splitter. `purge` is a required argument with no default, the feature row is the
-  last training row that cleared the gap rather than the previous calendar row, and
-  a zero gap reproduces every previously reported number exactly.
-- Source metadata drive the purge interval: the splitter takes it as a required
-  argument with no default, and both evaluation commands derive it from the
-  registry over the sources their feature set names.
+- **The purge is derived, never supplied.** `--source` is gone from both evaluation
+  commands. The gap comes from the declared feature set, through the registry, and
+  what the fitted model actually read is checked against that declaration after the
+  fit. A derived purge cannot be zero, so the unpurged backtest is no longer
+  expressible.
+- **The release lag is a property of a field, not only of a source.** A
+  latest-vintage source may back a point-in-time feature for a field declared never
+  revised, and only with evidence attached; a field-level record-date block without
+  a declared revision policy is refused. One field is declared under this rule and
+  every other field of that source stays refused.
+- **The backtest publishes rather than prints.** `backtest` requires a report path
+  and writes the run's own record: the declared feature set, the sources and purge
+  it derived, the decision time, the panel's path, digest and extent, the folds
+  with their first and last origins, and the metrics unrounded — mean absolute
+  error with a stationary-bootstrap interval, interval coverage, pinball loss at
+  each declared level, and CRPS. A value that cannot be computed is absent rather
+  than defaulted, and nothing is rounded, because a rounded figure is one nobody
+  computed.
+- **The join from observations to a daily panel exists.** A cell carries the
+  latest vintage available at the build's declared cutoff; a column is built only
+  if the registry will price it, and the refusal is called rather than restated, so
+  a refused column is absent and never quietly revised. The join does **not**
+  subtract the release lag — the purge does, and a join that shifted values too
+  would apply the gap twice while looking careful. There is no forward fill: a
+  reference date with no observation is a hole, counted and left empty.
+- **An identity that could not be evaluated no longer reads as one that held.**
+  Absent terms are never imputed to zero, unevaluable reference dates are recorded
+  term by term, and the check walks every date any term was observed on rather than
+  the intersection of them all. The intersection is what made years of an unchecked
+  balance sheet invisible.
 - Under-covered SEC Form N-MFP cross-sections are excluded from the modeling panel
   by an entity-count floor declared in the source registry, and the exclusion is
   recorded separately from ordinary missingness. The floor is a **declared absolute
@@ -60,11 +84,21 @@ was produced on a 25-row synthetic sample.
   median was considered and rejected: the trailing window is itself computed from
   straggler months, which would set the floor low enough to admit the
   cross-sections it exists to reject.
+- **N-MFP refusal is per table, and the value vocabulary is declared.** An absent
+  non-spine table costs the fields it would have fed rather than the whole archive;
+  a renamed column still refuses the archive, because a renamed column looks
+  exactly like an absent value and can silently erase a series. Investment-category
+  eras are declared, closing the door that header compatibility left open: every
+  column present under the same name for over a decade, and a value vocabulary that
+  changed underneath. The declared archive set is recorded with digests and per-table
+  refusal verdicts.
+- Duplicate and amended N-MFP submissions are resolved before aggregation: the
+  latest filing wins per series and report date, with the accession number breaking
+  a same-day tie.
 - September 2019 and March 2020 event windows are frozen and checksummed, and the
   scoring and knowledge holdouts are kept distinct in code and in reporting.
 - Public-source downloads are stored immutably with retrieval timestamps, request
   URLs, byte counts and SHA-256 digests.
-- Panel rows can carry `ref_date`, `available_at`, vintage, and source provenance.
 - Forecast-distribution, exceedance, calibration, and dependence-aware uncertainty
   metrics are implemented and tested.
 
@@ -77,18 +111,35 @@ Stated explicitly, because each is easy to mistake for something stronger.
 
 - **No result rests on real data.** The persistence benchmark beats the ARX on mean
   absolute error at every regressor set tried, and that comparison is reported
-  rather than tuned away. On 25 synthetic rows with one constant regressor and five
-  distinct rate values it is evidence about the harness, not about either model.
+  rather than tuned away. On a two-dozen-row synthetic sample with one constant
+  regressor and a handful of distinct rate values it is evidence about the harness,
+  not about either model. The published report makes the numbers durable; it does
+  not make them meaningful.
+- **The daily panel has been built and not run.** The join from point-in-time
+  observations to wide daily rows exists and is reachable from the command line;
+  no panel has been produced from it. `data/processed/` is empty, and every number
+  this repository reports still comes from a hand-written sample file. This is now
+  one command away rather than one block away, which is a different kind of gap and
+  not a smaller claim.
 - **The monthly N-MFP panel is a single observation.** One quarterly archive yields
   one complete monthly cross-section, and one archive has been acquired. After the
   coverage floor is applied, the monthly `mmf_*` series have one reference date. No
   monthly N-MFP field can serve as a regressor until the archive history is
-  backfilled. The daily shareholder-flow series are not affected.
+  backfilled. The daily shareholder-flow series are not affected. The archive set is
+  declared and its members are readable subject to the era boundary; declared is not
+  fetched, and fetched is not parsed.
+- **The pre-2016 N-MFP balance sheet is missing two of three left-hand terms.**
+  `CASH` and `TOTALVALUEPORTFOLIOSECURITIES` are present as columns and entirely
+  empty before the 2016 boundary. Those months are now reported as unevaluable
+  rather than counted as holding, which is the honest treatment of the symptom; the
+  field mapping that would let the identity actually evaluate over that period does
+  not exist.
 - **The coverage floor is declared for one era.** A single absolute count
   calibrated on a recent month is weak in eras when the filer universe was
-  substantially larger. The registry schema is intended to accept a per-era
-  declaration, each entry calibrated from an observed complete month; the evidence
-  for those entries does not exist until the backfill runs.
+  substantially larger — it is roughly a quarter of the early universe and around
+  two thirds of the current one. The registry schema is intended to accept a per-era
+  declaration, each entry calibrated from an observed complete month; the observed
+  counts exist, and the implementation does not.
 - **A declared field has never produced data.** `mmf_on_rrp` is declared in the
   source registry and has emitted no row against any real archive. Its derivation
   searches security-description text for a counterparty name. For the period held
@@ -96,62 +147,63 @@ Stated explicitly, because each is easy to mistake for something stronger.
   distinguish a working derivation from a broken one. `mmf_repo_holdings` is
   affected wherever this is, since private-sector repo is the difference between
   the two series.
-- **The adapter has parsed exactly one archive.** Form N-MFP has been through
-  several schema versions, and the version boundaries have not been established
-  empirically. A column-level refusal guard — which raises rather than silently
-  yielding nothing when an expected column is renamed — exists on the data branch
-  and is **not yet merged into `main`**. Until the backfill supplies more archives,
-  nothing has tested the adapter against real schema variation.
-- **Which sources a model's feature set draws on is declared, but not yet enforced
-  on the evaluation path.** The correspondence between registry field names and
-  panel column names is now declared in the contract module as `FEATURE_SOURCES`,
-  resolved by `sources_for_features`. Both `cli_eval` subcommands still accept a
-  hand-supplied `--source` list, so a caller can still size the purge over a
-  narrower set than the model actually reads. Nothing checks that until both
-  evaluation paths call the map and the flag is removed.
-- **The Treasury settlement series aggregates decisions it does not record.**
-  Security type, tenor, and Fed SOMA add-ons are summed into one series. That is
-  defensible for a first phase, but bill and coupon settlements have different
-  collateral and reserve-drain profiles, and SOMA add-ons do not drain private cash.
-  The source limitation does not yet say so.
 - **The N-MFP identity tolerance is a single absolute bound** across cross-sections
   spanning three orders of magnitude, so it is loose on the smallest and tight on
-  the largest. It cannot honestly be recalibrated against one admitted month.
+  the largest. The schema now accepts a relative bound with an absolute floor, so
+  the change is a one-line edit to a declaration rather than a change to a shared
+  contract — but it is **deliberately not made**, because the coverage floor rejects
+  exactly the small cross-sections that make the case for it, and recalibrating
+  against the one admitted cross-section is the failure the change was meant to
+  prevent. See `DATA_QUALITY_DECISIONS.md`.
+- **The Treasury settlement series aggregates decisions it does not implement.**
+  Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
+  limitation now says so, and names the fields that are present in the snapshot and
+  unread, so the split needs no new download. The split itself is not done, and
+  nothing yet tests whether the simplification affects conclusions.
+- **The never-revised claim is prose.** The field-level release lag is licensed by
+  a `revision_evidence` string. The comparison behind it was done outside the
+  repository, so if a future vintage restated an observation, nothing here would go
+  red. Committing the vintages and recomputing the comparison in a test is briefed
+  and not built.
 
 ## Work required before empirical claims
 
-1. Backfill and freeze the SEC Form N-MFP archive history, applying the coverage
+1. Run the panel build against the fetched snapshots and freeze the result. The
+   join exists; nothing has been produced with it. This is what ends the synthetic
+   era, and everything below reads differently once a panel is on disk.
+2. Backfill and freeze the SEC Form N-MFP archive history, applying the coverage
    floor to every reference date found rather than trusting an archive's contents,
    refusing any archive whose schema the adapter cannot read faithfully, and proving
    that overlapping archives, amendments and straggler filings do not double count.
-   This gates most of what follows.
-2. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
+3. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
    money funds held Fed reverse repo at scale, and make an absent declared field
    distinguishable from a parsing failure.
-3. Declare the feature-to-source correspondence in the contract module and derive
-   the purge from it on every evaluation path, removing the hand-supplied source
-   list.
 4. Resolve the N-MFP identity-tolerance and Treasury-settlement aggregation
    decisions recorded in `DATA_QUALITY_DECISIONS.md`. The tolerance decision waits
-   on item 1: it cannot honestly be calibrated against one cross-section.
-5. Extend the same freeze to the remaining sources, with a machine-readable quality
+   on item 2: it cannot honestly be calibrated against one cross-section.
+5. Replace the never-revised prose with committed vintages and a test that
+   recomputes the comparison offline.
+6. Extend the same freeze to the remaining sources, with a machine-readable quality
    report.
-6. Add a threshold benchmark against the shared interface, and re-run the
-   persistence-versus-ARX comparison on the backfilled panel, where the result
-   carries evidence.
-7. Report the frozen event windows separately from rolling-origin evaluation.
-8. Add a quantile machine-learning model only after the baselines are frozen.
+7. Add a threshold benchmark against the shared interface, and re-run the
+   persistence-versus-ARX comparison on the built panel, where the result carries
+   evidence.
+8. Report the frozen event windows separately from rolling-origin evaluation.
+9. Add a quantile machine-learning model only after the baselines are frozen.
 
 ## Portfolio interpretation
 
 The repository may accurately be described as a leakage-safe, point-in-time
 financial research pipeline with a tested probabilistic evaluation harness, a
-model interface with two implementers, and purged rolling-origin evaluation of
-both. It should not yet be described as a successful machine-learning forecast of
-repo stress: no result rests on real data, and the monthly money-fund panel is one
-cross-section rather than a series.
+model interface with two implementers, purged rolling-origin evaluation of both,
+and a benchmark that publishes a reproducible record of its own run. It should
+not yet be described as a successful machine-learning forecast of repo stress: no
+result rests on real data, no panel has been produced from the join that would
+supply it, and the monthly money-fund panel is one cross-section rather than a
+series.
 
 The next portfolio milestone is a compact results package containing a frozen data
 snapshot, a persistence-versus-challenger comparison under purged evaluation,
 tail-calibration evidence, event-window plots, limitations, and exact reproduction
-instructions.
+instructions. The reporting half of that package now exists; the data half does
+not.
