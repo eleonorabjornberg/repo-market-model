@@ -1,0 +1,136 @@
+{
+  "declaration": {
+    "decision_time": "16:00",
+    "features": [
+      "spread_bps"
+    ],
+    "minimum_history": 20
+  },
+  "derived": {
+    "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+    ],
+    "purge_days": 6,
+    "sources": [
+      "fred_macro_latest_vintage",
+      "nyfed_sofr"
+    ]
+  },
+  "folds": {
+    "count": 2080,
+    "first": {
+      "feature_date": "2018-04-30",
+      "scored_date": "2018-05-07",
+      "train_end": "2018-04-30",
+      "train_rows": 20,
+      "train_start": "2018-04-03"
+    },
+    "last": {
+      "feature_date": "2026-08-27",
+      "scored_date": "2026-09-03",
+      "train_end": "2026-08-27",
+      "train_rows": 2099,
+      "train_start": "2018-04-03"
+    }
+  },
+  "metrics": {
+    "crps_bps": 2.5573817307692317,
+    "forecast_count": 2080,
+    "interval_coverage": 0.8100961538461539,
+    "interval_probability": 0.8999999999999999,
+    "mae_bps": 3.1427884615384616,
+    "mae_bps_interval": {
+      "block_length": 5,
+      "level": 0.9,
+      "lower": 2.5956250000000005,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1755593764,
+      "upper": 3.7901442307692315
+    },
+    "pinball_loss": {
+      "0.05": 0.9470528846153936,
+      "0.25": 1.4637920673076923,
+      "0.50": 1.575841346153846,
+      "0.75": 1.5103365384615384,
+      "0.95": 0.8964314903846197
+    }
+  },
+  "panel": {
+    "build_manifest": {
+      "build_cutoff": "2026-09-08T21:31:42+00:00",
+      "built_columns": [
+        "sofr",
+        "iorb",
+        "sofr_volume",
+        "sofr_p25",
+        "sofr_p75",
+        "tgcr",
+        "bgcr",
+        "treasury_settlement"
+      ],
+      "decision_time": "16:00:00",
+      "end_date": "2026-09-03",
+      "holes": {
+        "bgcr": 2104,
+        "iorb": 0,
+        "sofr": 0,
+        "sofr_p25": 2,
+        "sofr_p75": 2,
+        "sofr_volume": 0,
+        "tgcr": 2104,
+        "treasury_settlement": 2104
+      },
+      "incomplete_dates": 4440,
+      "path": "data/processed/funding_panel.csv",
+      "refused_columns": {
+        "dealer_treasury_position": "feature 'dealer_treasury_position' has no source: no ingesting source is declared in metadata/sources.json; the column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of the sample panel. Sizing a purge over it would purge zero days for a weekly FR 2004 series.",
+        "mmf_assets": "sec_nmfp: every snapshot row must carry available_at",
+        "on_rrp": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "quarter_end": "sources must select at least one feature source",
+        "reserve_balances": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "tax_date": "sources must select at least one feature source",
+        "tga": "fred_macro_latest_vintage: every snapshot row must carry available_at"
+      },
+      "required_columns": [
+        "sofr",
+        "iorb"
+      ],
+      "row_count": 2104,
+      "source_shas": [
+        "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
+        "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
+        "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1"
+      ],
+      "start_date": "2018-04-03"
+    },
+    "build_manifest_binding": {
+      "compared": [
+        "row_count",
+        "first_date",
+        "last_date"
+      ],
+      "kind": "extent",
+      "note": "the build manifest carries no digest of the panel it describes, so this binds it to the panel by extent and not by bytes: a manifest is a claim about a path, and the bytes under that path may have changed since it was written"
+    },
+    "first_date": "2018-04-03",
+    "last_date": "2026-09-03",
+    "path": "data/processed/funding_panel.csv",
+    "row_count": 2104,
+    "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec"
+  },
+  "provenance": {
+    "code": {
+      "commit": "568c9baa4727e7ba27a249cca9f4927a384e4af0",
+      "tree_modified": false
+    },
+    "inputs": {
+      "source_registry": {
+        "path": "metadata/sources.json",
+        "sha256": "c3caec95e28ccbd29e3d2730c6c80295e50d41cd1ddc3fa8b850e1d281a7d7bf"
+      }
+    }
+  }
+}
