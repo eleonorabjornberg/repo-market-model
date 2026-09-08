@@ -441,6 +441,26 @@ class FuturePerturbationTests(unittest.TestCase):
                     ),
                 )
 
+            # The other side of the same bound, and the anchor that makes the
+            # oracle discriminate here. "These must not move" is a one-sided
+            # claim: an implementation that trained on *fewer* rows than the
+            # folds say would satisfy it for free, because fewer reads mean
+            # fewer forecasts move. The bound is tight -- `unaffected` is
+            # exactly the boundary, not merely a safe lower bound -- so the
+            # first forecast past it must move, and saying so is what stops a
+            # wrong training frame from passing as a right one.
+            if unaffected < len(baseline):
+                self.assertNotEqual(
+                    shocked[unaffected].predicted_bps,
+                    baseline[unaffected].predicted_bps,
+                    msg=(
+                        f"forecast {unaffected} reads a row after "
+                        f"{rows[cutoff_index].date} according to its fold, but "
+                        f"perturbing that row did not move it; the folds and "
+                        f"the implementation disagree about what was trained on"
+                    ),
+                )
+
     def test_the_perturbation_is_actually_visible_to_the_model(self):
         """Guards the two tests above from passing because nothing changed."""
 
@@ -1080,14 +1100,171 @@ def contract_backtest(rows, **kwargs):
     )
 
 
-def contract_folds(rows, minimum_history):
-    """The folds `contract_backtest` runs over, enumerated independently."""
+def contract_folds(rows, minimum_history, purge=CONTRACT_PURGE):
+    """The folds `contract_backtest` runs over, built without the splitter.
 
-    return list(
-        rolling_origin(
-            [row.date for row in rows], minimum_history, 1, CONTRACT_PURGE
+    An oracle. Every assertion below that needs to know which rows a forecast
+    was entitled to read comes through here, and none of it may pass through
+    `rolling_origin`, `_folds_unchecked`, `_train_end` or `clears_purge`. The
+    first version of this helper called `rolling_origin`, and the cost was
+    measured rather than argued: under a mutation that shortened every training
+    frame by one row, this file lost six of the seven tests that used to catch
+    it. An expectation that moves with the implementation it checks cannot fail.
+
+    So this is a brute-force walk that shares nothing with `repo_model.splits`.
+    No `bisect` -- a plain scan over every earlier row. No `timedelta`; the gap
+    is read as a difference in days, which is a third arithmetic form. The
+    module subtracts the lag from the block's date, its docstring states the
+    rule as adding the lag to the row's date, and this asks how many days apart
+    the two are. All three agree only if the boundary is right.
+
+    `purge` is a parameter so that
+    `ContractFoldOracleTests.test_the_oracle_disagrees_with_a_deliberately_wrong_gap`
+    can check that this construction can tell gaps apart at all. It is not an
+    escape hatch: `contract_backtest` still reaches its gap through
+    `contract_registry` and `max_release_lag_days`, which refuse to price zero,
+    and nothing here is passed to the backtest.
+
+    `step` is 1 because that is what `contract_backtest` runs at -- one scored
+    observation per fold.
+
+    Raises rather than returning `[]` when no fold exists. A caller that zips
+    forecasts against an empty fold list would assert nothing and say so
+    loudly; `tests/test_splits.py:reference_folds` can return `[]` because its
+    callers assert on the emptiness, and these do not.
+    """
+
+    dates = [row.date for row in rows]
+
+    def survivors(test_start):
+        """Rows before `test_start` that are far enough back to be trainable."""
+
+        return [
+            index
+            for index in range(test_start)
+            if (dates[test_start] - dates[index]).days > purge
+        ]
+
+    folds = []
+    started = False
+    for start in range(len(dates)):
+        eligible = survivors(start)
+        if not started:
+            if len(eligible) < minimum_history:
+                continue
+            started = True
+        folds.append((tuple(eligible), (start,)))
+
+    if not folds:
+        raise ValueError(
+            f"{len(dates)} observations yield no fold with {minimum_history} "
+            f"training rows behind a {purge}-day gap; every assertion taken "
+            f"from these folds would be vacuous"
         )
-    )
+    return folds
+
+
+class ContractFoldOracleTests(unittest.TestCase):
+    """Guards `contract_folds`. An oracle nobody checks is the failure one level out.
+
+    Five assertions in this file take the rows a forecast was entitled to read
+    from `contract_folds` rather than from index arithmetic. That is only worth
+    anything while the oracle can still tell a right fold from a wrong one, and
+    while it is still built independently of the thing it checks. Both halves
+    are checked here, because the block that produced this file exists because
+    the previous version of the oracle had neither.
+    """
+
+    def test_the_oracle_disagrees_with_a_deliberately_wrong_gap(self):
+        """It must be able to tell gaps apart at all.
+
+        If `contract_folds` ignored the gap, every assertion drawn from it would
+        pass just as happily against a backtest that ignored the gap too --
+        which is precisely the leak the purge exists to prevent.
+        """
+
+        rows = load_sample()
+        declared = contract_folds(rows, MINIMUM_HISTORY)
+
+        self.assertNotEqual(
+            declared,
+            contract_folds(rows, MINIMUM_HISTORY, purge=CONTRACT_PURGE + 1),
+            msg="oracle cannot see a one-day error in the gap",
+        )
+        self.assertNotEqual(
+            declared,
+            contract_folds(rows, MINIMUM_HISTORY, purge=0),
+            msg="oracle cannot tell a purged backtest from an unpurged one",
+        )
+
+    def test_the_oracle_is_not_vacuous_and_covers_every_scored_forecast(self):
+        """A silently empty or short fold list would make five tests pass blind.
+
+        Three of the five zip forecasts against folds, and `zip` stops at the
+        shorter argument, so an oracle that produced no folds -- or one fold
+        fewer -- would not fail. It would assert nothing. Pin the count against
+        the report the backtest actually produces.
+        """
+
+        rows = load_sample()
+        folds = contract_folds(rows, MINIMUM_HISTORY)
+        self.assertTrue(folds, msg="no folds; every assertion taken from them is vacuous")
+
+        report = contract_backtest(
+            rows,
+            minimum_history=MINIMUM_HISTORY,
+            interval_probability=INTERVAL_PROBABILITY,
+        )
+        self.assertEqual(
+            len(folds),
+            len(report.forecasts),
+            msg=(
+                "the oracle and the backtest disagree about how many days are "
+                "scored; a zip over the two would silently drop the difference"
+            ),
+        )
+
+        for train, test in folds:
+            self.assertEqual(train, tuple(range(len(train))))
+            self.assertEqual(len(test), 1)
+            self.assertGreaterEqual(len(train), MINIMUM_HISTORY)
+
+    def test_the_oracle_reaches_nothing_in_the_splitter(self):
+        """The independence itself, checked statically rather than asserted.
+
+        Every other guard here would pass just as well against an oracle that
+        delegated to `rolling_origin` -- correct folds are correct folds, and
+        the delegation only shows up under a mutation of the splitter, which the
+        ordinary suite never runs. That is exactly how the previous version of
+        this helper stayed green while six contract tests quietly stopped being
+        able to fail. So this reads the oracle's own source and refuses the
+        names that would put it back on the implementation's arithmetic.
+        """
+
+        forbidden = {
+            "rolling_origin",
+            "_folds_unchecked",
+            "_train_end",
+            "clears_purge",
+            "bisect",
+            "bisect_left",
+            "timedelta",
+        }
+        tree = ast.parse(textwrap.dedent(inspect.getsource(contract_folds)))
+        used = {
+            node.id for node in ast.walk(tree) if isinstance(node, ast.Name)
+        } | {
+            node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)
+        }
+        self.assertEqual(
+            used & forbidden,
+            set(),
+            msg=(
+                "contract_folds reached back into the splitter; the expectation "
+                "now moves with the implementation it is checking and this "
+                "file has stopped being the line of defence"
+            ),
+        )
 
 
 class ForecastInterfaceConformance:
