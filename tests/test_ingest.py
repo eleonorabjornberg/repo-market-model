@@ -2013,5 +2013,111 @@ class AvailableAtDerivationTests(unittest.TestCase):
             rows[0].available_at, self.declared_available_at(drifted, ref_date)
         )
 
+
+class LegacySourceIdBuildTests(unittest.TestCase):
+    """A snapshot that parses must also build.
+
+    `IngestTests.test_legacy_snapshot_source_ids_remain_parseable` proves that
+    `observations_from_snapshots` reads a snapshot captured before the registry
+    adopted Python-style source IDs. It proves nothing about the builder, and
+    the builder was where the archive went to die: `parse_snapshots` normalized
+    the IDs through `LEGACY_SOURCE_IDS`, and `build_point_in_time_snapshot`
+    then compared the *un-normalized* artifacts against the registry three
+    lines later and raised. Every snapshot the repository had archived to that
+    point was refused by a check that had never learned the mapping the parser
+    beside it applies -- which is the reason Milestone A could not be run at
+    all, against snapshots that were sitting on disk and were perfectly good.
+
+    A function with a unit test and no exercised caller is not a working path.
+
+    Mutation record
+    ---------------
+    Run in a disposable copy under `$HOME` with the full suite, `-B` and
+    `PYTHONDONTWRITEBYTECODE=1`. Control was OK (617 tests) before and after.
+
+    | Mutation                                                  | Result     |
+    |-----------------------------------------------------------|------------|
+    | Exempt legacy IDs from the raise only, leaving `resolved`  | `KeyError` |
+    | out of `selected_registry` (the guard-the-raise fix).      |            |
+    | Revert the resolution entirely (restore the un-normalized  | ValueError |
+    | registry check).                                           |            |
+
+    Each killed both tests in this class and nothing else in the suite; the
+    two are one defect seen twice, which is why the exception type is recorded
+    rather than the count. The first mutation is the one the block exists for:
+    silencing the raise is what a reasonable person writes first, it looks
+    like a fix, and it moves the failure one hop down into `selected_registry`
+    as a `KeyError` on the legacy ID.
+    """
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    def legacy_artifacts(self):
+        nyfed = fetch_nyfed_reference_rate(
+            self.output_root,
+            "sofr",
+            "2026-01-01",
+            "2026-01-03",
+            lambda url: (
+                b'{"refRates":[{"effectiveDate":"2026-01-02",'
+                b'"volumeInBillions":2000}]}'
+                if "type=volume" in url
+                else b'{"refRates":[{"effectiveDate":"2026-01-02",'
+                b'"percentRate":4.31}]}'
+            ),
+        )
+        fred = fetch_fred_macro(
+            self.output_root,
+            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+        )
+        return [
+            replace(
+                artifact,
+                source_id=(
+                    "nyfed-sofr-volume"
+                    if "type=volume" in artifact.url
+                    else "nyfed-sofr-rate"
+                ),
+            )
+            for artifact in nyfed
+        ] + [replace(fred[0], source_id="fred-macro-latest-vintage")]
+
+    def test_a_snapshot_with_a_legacy_source_id_builds_rather_than_being_refused(self):
+        panel_path = self.output_root / "processed" / "panel.csv"
+
+        panel = build_point_in_time_snapshot(
+            self.legacy_artifacts(),
+            panel_path,
+            created_at=datetime(2026, 1, 6, tzinfo=timezone.utc),
+        )
+
+        rows = load_point_in_time_panel(panel_path)
+        self.assertEqual(
+            {row.series_id for row in rows},
+            {"SOFR", "SOFR_volume", "IORB"},
+        )
+        self.assertEqual(panel.row_count, 3)
+
+    def test_the_manifest_records_the_source_ids_as_they_were_filed(self):
+        panel_path = self.output_root / "processed" / "panel.csv"
+
+        build_point_in_time_snapshot(
+            self.legacy_artifacts(),
+            panel_path,
+            created_at=datetime(2026, 1, 6, tzinfo=timezone.utc),
+        )
+
+        manifest = json.loads(
+            panel_path.with_suffix(".csv.manifest.json").read_text()
+        )
+        self.assertEqual(
+            {item["source_id"] for item in manifest["raw_snapshots"]},
+            {"nyfed-sofr-rate", "nyfed-sofr-volume", "fred-macro-latest-vintage"},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

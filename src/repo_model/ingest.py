@@ -1965,18 +1965,33 @@ def build_point_in_time_snapshot(
     if not materialized:
         raise ValueError("at least one raw snapshot is required")
     registry = load_source_registry(registry_path)
-    parsed = parse_snapshots(materialized, registry=registry)
+    # `parse_snapshots` normalizes legacy manifest IDs through
+    # `LEGACY_SOURCE_IDS`; the registry check below read the un-normalized
+    # artifacts and so refused every snapshot captured before the registry
+    # adopted Python-style IDs -- the parse succeeded and the builder then
+    # rejected it by a check that had never learned the mapping. Resolve once,
+    # here, so the parse, the registry check and `selected_registry` agree.
+    # `materialized` is kept as filed: the manifest's `raw_snapshots` records
+    # the evidence as it sits on disk, not as this builder reads it.
+    resolved = [
+        replace(
+            item,
+            source_id=LEGACY_SOURCE_IDS.get(item.source_id, item.source_id),
+        )
+        for item in materialized
+    ]
+    parsed = parse_snapshots(resolved, registry=registry)
     rows = list(parsed.rows)
     if not rows:
         raise ValueError("raw snapshots produced no point-in-time observations")
     unknown_sources = sorted(
-        {item.source_id for item in materialized if item.source_id not in registry}
+        {item.source_id for item in resolved if item.source_id not in registry}
     )
     if unknown_sources:
         raise ValueError(f"snapshots have no source-registry entry: {unknown_sources}")
     selected_registry = {
         source_id: registry[source_id]
-        for source_id in sorted({item.source_id for item in materialized})
+        for source_id in sorted({item.source_id for item in resolved})
     }
     from .data import (
         expected_ref_dates_from_registry,
