@@ -23,18 +23,206 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import dataclass
 from datetime import time
 from pathlib import Path
+from types import MappingProxyType
+from typing import Callable, Optional, Tuple
 
 from .baseline import (
+    ExceedancePredictor,
+    arx_exceedance,
     backtest_document,
     climatology_exceedance,
     rolling_persistence_backtest,
+    threshold_exceedance,
 )
 from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .event_eval import evaluate_event_window, load_events_file
 from .splits import SplitError
+
+#: The autoregressive term every conditional model here carries, and the one
+#: column a caller declares that is **not** an exogenous regressor.
+#:
+#: `fit_arx` and `fit_threshold` build their design as
+#: `("intercept", "spread_bps") + regressors`, so the fitter supplies this
+#: column itself. It is still declared through `--feature` -- the model reads
+#: it, the purge must cover its sources, and `climatology_exceedance` reads
+#: nothing else -- but handing it back as a regressor would put the same column
+#: in the design twice and the fit would be refused as singular.
+#:
+#: Named here rather than spelled at the call site, and pinned against
+#: `FittedArx.design_names` by
+#: `tests/test_cli_eval.py::ModelSelectorTests::test_the_autoregressive_term_is_the_one_the_fitter_supplies`,
+#: so a rename in `baseline` fails a test rather than quietly making every
+#: conditional run singular.
+_AUTOREGRESSIVE_TERM = "spread_bps"
+
+
+@dataclass(frozen=True)
+class _ModelChoice:
+    """One `--model` name, and how the predictor behind it is constructed.
+
+    The three factories have different signatures --
+    `climatology_exceedance(minimum_history)`,
+    `arx_exceedance(regressors, minimum_history)`,
+    `threshold_exceedance(regressors, threshold_variable, minimum_history)` --
+    so the mapping has to carry construction and cannot be a name-to-callable
+    table.
+
+    `factory` is the `baseline` factory itself, and `build` is handed that same
+    object rather than closing over one of its own. The two therefore cannot
+    name different models: `tests/test_baseline.py`'s
+    `ExceedancePredictorCoverageTests` reads `factory` to assert every
+    discovered implementer is reachable from here, and a `build` free to call
+    something else would make that assertion a statement about a field nobody
+    runs.
+    """
+
+    factory: Callable[..., ExceedancePredictor]
+    build: Callable[..., ExceedancePredictor]
+    needs_regime_variable: bool
+
+    def construct(
+        self,
+        *,
+        regressors: Tuple[str, ...],
+        regime_variable: Optional[str],
+        minimum_history: int,
+    ) -> ExceedancePredictor:
+        return self.build(self.factory, regressors, regime_variable, minimum_history)
+
+
+#: `--model NAME` -> the predictor it names. **One mapping, in one place.**
+#:
+#: Every `ExceedancePredictor` in `baseline` is required to appear here, and
+#: that requirement is enforced by extending the guard that already discovers
+#: them -- `tests/test_baseline.py::ExceedancePredictorCoverageTests` -- rather
+#: than by a second guard beside it. A fourth implementer the command line
+#: cannot run then fails an existing test instead of going unnoticed.
+MODEL_FACTORIES = MappingProxyType(
+    {
+        "climatology": _ModelChoice(
+            factory=climatology_exceedance,
+            build=lambda factory, regressors, regime, minimum_history: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
+        "arx": _ModelChoice(
+            factory=arx_exceedance,
+            build=lambda factory, regressors, regime, minimum_history: factory(
+                regressors, minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
+        "threshold": _ModelChoice(
+            factory=threshold_exceedance,
+            build=lambda factory, regressors, regime, minimum_history: factory(
+                regressors, regime, minimum_history=minimum_history
+            ),
+            needs_regime_variable=True,
+        ),
+    }
+)
+
+
+def _model_names() -> str:
+    """The selectable names, for a help string and for a refusal message."""
+
+    return ", ".join(sorted(MODEL_FACTORIES))
+
+
+def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
+    """Resolve `--model` to a constructed predictor, or refuse before anything runs.
+
+    **A selector that falls back instead of refusing is the failure this
+    function exists to prevent.** `--model arx` misspelled, or a name the
+    mapping does not know, resolving to the climatology and running to
+    completion produces real curves, a real journal record and a real hash with
+    the word `climatology` in it -- and a reader comparing that record to the
+    ARX's is comparing the baseline to itself. Every number is correct; the only
+    thing wrong is which model produced them, and nothing in the artifact
+    disagrees. So an unknown name raises here, naming the value and the names
+    that exist, and it raises before the panel is read so that no journal record
+    can be written for a run that was refused.
+
+    **The regressors are the declaration, minus what the fitter supplies
+    itself.** `sorted(args.feature)` is what sizes the purge and what
+    `evaluate_event_window` checks `ExceedanceCurves.features_read` against, so
+    the regressors are taken *from* it rather than declared beside it: what the
+    predictor is handed and what the run declared are then the same set by
+    construction, and there is no second list that could disagree with the
+    first. `_AUTOREGRESSIVE_TERM` comes out because the fitter puts it in the
+    design itself, and the regime variable comes out because it is not a term.
+
+    **The regime variable must be one of `--feature`, and this refuses it here
+    rather than leaving it to the guard downstream.** `event_eval` would catch
+    it -- `_check_fitter_stayed_inside` raises `LookAheadError` when
+    `features_read` exceeds the declaration, and a threshold model reports its
+    regime variable -- and that guard is correct and stays. But a CLI that
+    relies on a downstream guard to validate its own arguments is a CLI that
+    will stop doing so the moment the call site moves, and the message a caller
+    gets should name the column and the flag they typed rather than describe a
+    fitted model.
+
+    Returns:
+        `(name, fit_predict)`, where `name` is the string the caller passed.
+        It is not re-derived from the factory: the journal records what was
+        asked for, and a name reconstructed from the object would agree with
+        the request only for as long as the mapping is a bijection.
+    """
+
+    name = args.model
+    choice = MODEL_FACTORIES.get(name)
+    if choice is None:
+        raise SplitError(
+            f"unknown --model {name!r}; this command can run {_model_names()}. "
+            "There is no default: the default would be the climatology, which "
+            "is the reference a skill score is measured against, so a run "
+            "meaning to score a conditional model would publish the baseline's "
+            "numbers under that model's name"
+        )
+
+    declared = tuple(sorted(args.feature))
+    regime_variable = args.regime_variable
+
+    if choice.needs_regime_variable:
+        if regime_variable is None:
+            raise SplitError(
+                f"--model {name} reads a regime variable off each row to choose "
+                "which of two fitted relationships produces the centre, and "
+                "--regime-variable names no column. It is required and "
+                "undefaulted for the reason the column is: it does not merely "
+                "contribute a term, it chooses the model"
+            )
+        if regime_variable not in declared:
+            raise SplitError(
+                f"--regime-variable {regime_variable} is not one of the declared "
+                f"features {list(declared)}. The purge is sized over the "
+                "declaration before anything is fitted, so a regime variable "
+                "outside it would have its release lag missing from the gap -- "
+                f"declare it with --feature {regime_variable} rather than "
+                "reading a column the run did not declare"
+            )
+    elif regime_variable is not None:
+        raise SplitError(
+            f"--regime-variable {regime_variable} was given, but --model {name} "
+            "reads no regime variable. A flag that is accepted and ignored is "
+            "read by the next person as a setting that took effect"
+        )
+
+    regressors = tuple(
+        column
+        for column in declared
+        if column != _AUTOREGRESSIVE_TERM and column != regime_variable
+    )
+    return name, choice.construct(
+        regressors=regressors,
+        regime_variable=regime_variable,
+        minimum_history=args.minimum_history,
+    )
 
 
 def _registry(args: argparse.Namespace) -> dict:
@@ -208,11 +396,28 @@ def _event_holdout(args: argparse.Namespace) -> int:
     trace: the arithmetic is right, the reported number looks right, and the
     only thing wrong is the set it ranged over.
 
+    * **The model** comes from `--model`, which is required and has no default.
+      That is a fourth instance of the same rule and the sharpest one, because
+      the default a convenience would pick is the climatology --
+      `AGENT_CONTRACT.md`, "Metrics": "Brier skill score **against
+      climatology**". A default that is the comparison baseline is precisely
+      how a run meaning to score a conditional model publishes the baseline's
+      numbers under that model's name, in a journal record whose every other
+      field is correct. `--events` and `--thresholds` are already required with
+      the reasoning "no default, it is not ours to name"; this is the same
+      argument about a different kind of choice.
+
+    **The selection happens before the panel is read.** A refused `--model`
+    must leave no journal record behind, for the reason a refused backtest
+    leaves no report: a record on disk is a claim that a scoring happened.
+
     Reruns are visible, not blocked. `event_eval` appends a record per scoring
     and refuses to deduplicate; whether a second run was authorised is a
     question for the human reading the journal, and this command does not
     invent an answer it was not given either.
     """
+
+    model_name, fit_predict = _select_model(args)
 
     rows = load_daily_panel(args.panel)
 
@@ -241,14 +446,30 @@ def _event_holdout(args: argparse.Namespace) -> int:
     # reason that has nothing to do with what was scored. The pairs the gap was
     # actually sized over are reported from `report.field_sources` below.
     sources = _derived_sources(args)
-    fit_predict = climatology_exceedance(minimum_history=args.minimum_history)
     model_config = {
-        "model": "climatology",
+        # The selected name, and the one the caller passed. Not re-derived from
+        # the constructed predictor: `model_config` is hashed into the
+        # append-only journal, and the journal's own help string says a scoring
+        # that is not recorded did not happen. A scoring recorded as a
+        # different model is worse than one not recorded, because it is
+        # recorded -- so this field is the request, not a reconstruction of it.
+        "model": model_name,
         "minimum_history": args.minimum_history,
         "taus_bp": list(taus),
         "features": sorted(args.feature),
         "sources": sorted(sources),
     }
+    if args.regime_variable is not None:
+        # Only when one was declared, so a climatology run hashes to exactly
+        # what it hashed to before this command could select anything -- every
+        # existing journal record has to stay readable as a comparison.
+        #
+        # It is carried because it is the one thing a reader cannot recover
+        # from the fields above: the regressors follow from `features` by the
+        # rule in `_select_model`, but which declared column chooses the regime
+        # does not, so two threshold runs over one feature set would otherwise
+        # hash identically while fitting different models.
+        model_config["regime_variable"] = args.regime_variable
 
     reported = []
     for window in windows:
@@ -272,6 +493,12 @@ def _event_holdout(args: argparse.Namespace) -> int:
                     "checksum": report.window.checksum,
                 },
                 "holdout_role": report.record.holdout_role,
+                # Which model produced the curves below. Reported for the
+                # reason `features` and `sources` are: a reader of stdout
+                # should not have to open the journal -- and here they could
+                # not, because the journal carries the hash of `model_config`
+                # rather than `model_config` itself.
+                "model": model_name,
                 "purge_days": report.purge_days,
                 # The declaration and what it resolved to, beside the gap they
                 # produced. The journal carries them inside the hashed
@@ -377,11 +604,31 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     holdout.add_argument("--decision-time", required=True, metavar="HH:MM")
     holdout.add_argument(
+        "--model",
+        required=True,
+        metavar="NAME",
+        help="which exceedance predictor to run, one of "
+        + _model_names()
+        + "; required with no default, because the default would be the "
+        "climatology and the climatology is the reference a skill score is "
+        "measured against",
+    )
+    holdout.add_argument(
+        "--regime-variable",
+        metavar="COLUMN",
+        default=None,
+        help="the panel column a two-regime model reads to choose a regime; "
+        "required for --model threshold, refused for the others, and it must "
+        "be one of --feature so that what the predictor is handed and what the "
+        "run declared are the same set",
+    )
+    holdout.add_argument(
         "--window",
         action="append",
         metavar="NAME",
         help="score only this declared window, repeatable; default is all of them",
     )
     holdout.add_argument("--minimum-history", type=int, default=20)
-    # No --purge and no --source. See _event_holdout.
+    # No --purge and no --source. See _event_holdout. `--model` carries no
+    # default either, and for a reason of the same kind: see _select_model.
     holdout.set_defaults(handler=_event_holdout)

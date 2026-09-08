@@ -877,7 +877,7 @@ class RegimeDeclarationTests(EvaluatorHarness):
     ===============
 
     Unmutated control first: the suite green before and after every run below --
-    557 tests, 4 skips, zero `expectedFailure` -- stdlib only, run from a copy
+    OK, zero `expectedFailure` -- stdlib only, run from a copy
     under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the root
     Markdown and `docs/PROJECT_STATUS.md` carried across, because
     `tests/test_docs_freshness.py` reads those and their absence is two kills

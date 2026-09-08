@@ -13,9 +13,14 @@ failure the contract names, relocated from an evaluator into a CLI.
 So the guards here are mostly about absences, and absences need mutations to
 mean anything. See the mutation record below.
 
-The model is `baseline.climatology_exceedance`, and it is the honest one for a
-knowledge holdout: the question the window asks is what a model that saw only
-calm history says about a crisis it was never shown. On the fixture panel --
+The model these fixtures run is `baseline.climatology_exceedance`, and it is the
+honest one for a knowledge holdout: the question the window asks is what a model
+that saw only calm history says about a crisis it was never shown. Since the
+holdout-model-selector block it is *chosen* rather than assumed -- `--model` is
+required and has no default, because a default would be this model and this
+model is the reference a skill score is measured against. `ModelSelectorTests`
+carries that reasoning and its mutation record; the fixtures here pass
+`--model climatology` explicitly and the numbers they pin are unchanged. On the fixture panel --
 fifty flat days, then a spike inside the window -- the answer is a curve of
 zeros beside a realized path in the tens of basis points. That is not a bug in
 the fixture. It is the extrapolation check producing its most informative
@@ -95,10 +100,12 @@ import hashlib
 import inspect
 import io
 import json
+import math
 import re
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from datetime import date, time, timedelta
 from pathlib import Path
 
@@ -123,7 +130,7 @@ from repo_model.metrics import (
     stationary_bootstrap_interval,
 )
 from repo_model.registry import max_release_lag_days
-from repo_model.event_eval import read_journal
+from repo_model.event_eval import config_digest, read_journal
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -249,7 +256,20 @@ class EventHoldoutHarness(unittest.TestCase):
         path.write_text(json.dumps(document, indent=2), encoding="utf-8")
         return path
 
-    def run_command(self, *extra, events=None, thresholds=None, journal=None):
+    #: What this harness runs when a test does not say. The climatology is the
+    #: honest model for a knowledge holdout -- the question the window asks is
+    #: what a model that saw only calm history says about a crisis it was never
+    #: shown -- and it is what every test here scored before `--model` existed,
+    #: so the numbers they pin are unchanged.
+    #:
+    #: **It is passed explicitly, not defaulted by the command.** That is the
+    #: whole point of the flag: a default that is the comparison baseline is
+    #: how a run meaning to score a conditional model publishes the baseline's
+    #: numbers under that model's name. The fixture chooses; the CLI does not.
+    MODEL = "climatology"
+
+    def run_command(self, *extra, events=None, thresholds=None, journal=None,
+                    model=None, features=None):
         """Invoke the real dispatcher. Returns `(exit_code, stdout, stderr)`."""
 
         argv = [
@@ -259,10 +279,13 @@ class EventHoldoutHarness(unittest.TestCase):
             "--thresholds", str(thresholds or THRESHOLDS),
             "--registry", str(self.registry),
             "--journal", str(journal or self.journal),
-            "--feature", FEATURE,
             "--decision-time", DECISION_TIME,
-            *extra,
         ]
+        for feature in (features if features is not None else (FEATURE,)):
+            argv += ["--feature", feature]
+        if model is not False:
+            argv += ["--model", model or self.MODEL]
+        argv += [*extra]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = cli.main(argv)
@@ -501,6 +524,533 @@ class JournalTests(EventHoldoutHarness):
             read_journal(self.journal)[0]["window_checksum"],
             declared["windows"][0]["checksum"],
         )
+
+
+class ConditionalModelHarness(EventHoldoutHarness):
+    """A panel a conditional model can actually be fitted on.
+
+    `EventHoldoutHarness`' panel is fifty flat days and then a spike, which is
+    the right fixture for the climatology and an impossible one for an ARX: a
+    constant spread makes the lagged target collinear with the intercept and
+    `fit_arx` refuses the design as singular. So this widens the fixture rather
+    than the models -- the spread and the covariate both move, on different
+    frequencies, and a third column carries a regime.
+
+    The declaration is `spread_bps` and `on_rrp`, plus `tgcr` where a regime is
+    read. All three are declared through `--feature`, which is what sizes the
+    purge and what `evaluate_event_window` checks the predictor's
+    `features_read` against; the regressors are what the selector takes out of
+    that set, never a second list beside it.
+    """
+
+    #: Declared for every run here, so two runs differ only in `--model`.
+    #: `on_rrp` is the exogenous regressor; `spread_bps` is declared because
+    #: every model reads it and is *not* a regressor, because the fitter
+    #: supplies it as the autoregressive term.
+    FEATURES = (FEATURE, "on_rrp")
+
+    #: `tgcr` resolves to `nyfed_tgcr`, a source neither `spread_bps` nor
+    #: `on_rrp` draws on, so declaring it widens the source set rather than
+    #: only the feature list -- the same reason `tests/test_event_eval.py`
+    #: reads its regime off that column.
+    REGIME_VARIABLE = "tgcr"
+    REGIME_FEATURES = FEATURES + (REGIME_VARIABLE,)
+
+    #: Passed explicitly on every invocation rather than left to the parser's
+    #: default, so the expected `model_config` this file rebuilds carries a
+    #: number the test supplied instead of one it transcribed from argparse.
+    MINIMUM_HISTORY = 25
+
+    def setUp(self):
+        super().setUp()
+        # Wide enough to price every source the three declarations resolve to.
+        # The panel is this class's; the registry is the base fixture's shape.
+        self.registry = declared_registry_file(
+            self.tmp, features=self.REGIME_FEATURES
+        )
+
+    def write_panel(self, path=None):
+        """The base panel with a moving spread, covariate and regime column.
+
+        Nothing is random. The spread carries a trend and a cycle so the lagged
+        target identifies a coefficient; `on_rrp` cycles at a different rate so
+        it is not collinear with it; `tgcr` moves through a band wide enough
+        that the training rows fall on both sides of a fitted cutoff. Inside the
+        window the spread is the base fixture's event level, so the realized
+        path is still a crisis the training set never saw.
+        """
+
+        path = path or self.tmp / "panel.csv"
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(PANEL_COLUMNS)
+            state = 20260908
+            for index, when in enumerate(self.days):
+                state = (1103515245 * state + 12345) % (2 ** 31)
+                stressed = self.window_start <= when <= self.window_end
+                spread = (
+                    self.EVENT_BPS
+                    if stressed
+                    else 8.0 + 4.0 * math.sin(index * 0.9) + 0.1 * index
+                )
+                on_rrp = 300.0 + 50.0 * math.cos(index * 0.41)
+                tgcr = 4.28 + (state % 97) / 1000.0
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     2100, 4.30, 4.32, round(tgcr, 6),
+                     4.31, 3200, 720, round(on_rrp, 6), "", "", "", 0, 0]
+                )
+        return path
+
+    def run_command(self, *extra, features=None, **kwargs):
+        return super().run_command(
+            "--minimum-history", str(self.MINIMUM_HISTORY),
+            *extra,
+            features=self.FEATURES if features is None else features,
+            **kwargs,
+        )
+
+    def expected_config(self, model, features, regime_variable=None):
+        """The `model_config` a run under this declaration must hash.
+
+        Rebuilt from the declarations rather than copied from a run: the taus
+        come out of the thresholds file, the sources out of
+        `contract.sources_for_features`, and the model name is the string this
+        test passed on the command line. Nothing here is read back from the
+        command under test, which is what makes the digest comparison a claim
+        about what the command recorded.
+        """
+
+        config = {
+            "model": model,
+            "minimum_history": self.MINIMUM_HISTORY,
+            "taus_bp": list(
+                json.loads(THRESHOLDS.read_text(encoding="utf-8"))["taus_bp"]
+            ),
+            "features": sorted(features),
+            "sources": sorted(sources_for_features(features)),
+        }
+        if regime_variable is not None:
+            config["regime_variable"] = regime_variable
+        return config
+
+
+class ModelSelectorTests(ConditionalModelHarness):
+    """Which exceedance predictor ran, and whether the record says so.
+
+    `baseline` has three implementers of `ExceedancePredictor`. Until this block
+    `_event_holdout` constructed one of them unconditionally --
+    `climatology_exceedance`, the **unconditional** predictor, which is the
+    reference a skill score is measured *against*. So the only exceedance
+    predictor reachable from outside the test suite was the null model;
+    `arx_exceedance` and `threshold_exceedance` existed only where a test built
+    them, and `PLAN.md`'s Phase 2 exit criterion -- a conditional model scored
+    against climatology -- had no path at all.
+
+    Why `--model` is required rather than defaulted
+    ===============================================
+
+    Because the default a convenience would pick is the climatology, and the
+    climatology is the baseline the comparison is against. `AGENT_CONTRACT.md`,
+    "Metrics": "Brier skill score against climatology". A run meaning to score
+    the ARX, launched with the flag forgotten or misspelled, would then fit the
+    climatology, produce real curves, append a real journal record, and hash a
+    `model_config` with the word `climatology` in it -- and a reader comparing
+    that record to the ARX's would be comparing the baseline to itself. Every
+    number in it is correct. The only thing wrong is which model produced them,
+    and nothing in the artifact disagrees.
+
+    `--events` and `--thresholds` are already required with the reasoning "no
+    default, it is not ours to name". This is the same argument about a
+    different kind of choice, and it is why the selector **refuses** an unknown
+    name rather than falling back: a fallback is a default that arrives at the
+    moment a caller has most reason to believe they chose something else.
+
+    **No aggregate is computed here**, and none may be. The contract gives event
+    windows the exceedance curve and the realized path and forbids an aggregate
+    Brier or reliability number on a single window. This block makes conditional
+    models runnable and their runs correctly recorded, and stops there.
+
+    Mutation record
+    ===============
+
+    Unmutated control first, green before and after every run below -- OK, zero
+    `expectedFailure`. Stdlib only, run from a copy under `$HOME` rather than
+    the mount, carrying `data/`, `.github/`, `metadata/`, `.gitignore`, the root
+    Markdown and `docs/PROJECT_STATUS.md`, because `tests/test_docs_freshness.py`
+    reads those and their absence is kills that look real and are not. `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` cleared before each run.
+
+    1. **`model_config["model"]` restored to the literal `"climatology"`** while
+       the selector stays wired to the factory. The command still runs, still
+       selects the ARX, still produces ARX curves, still writes a journal
+       record; only the record's name for what ran is the old constant.
+       **2 tests fail, both `AssertionError`:**
+
+       * `test_the_journal_names_the_model_that_produced_the_curves` -- the
+         acceptance criterion, on the rebuilt digest: the ARX run's
+         `config_sha256` is the climatology's. **Criterion and mutation target,
+         and they did not come apart.**
+       * `test_a_threshold_run_declares_its_regime_variable_and_is_recorded` --
+         the same failure on the third model, which is worth having because it
+         says the mutation is about the field and not about one name.
+
+       Nothing else in the suite sees it. That is the finding, not a weakness:
+       the curves, the gap, the train rows, the realized path and the digest's
+       every other component are all still right, so no assertion about *what
+       was scored* can tell. Only an assertion about what the record *claims*
+       can, and it has to know what an honest record would hash to -- which is
+       why `expected_config` rebuilds it from the declarations rather than
+       reading it back off the command.
+
+    2. **An unknown `--model` resolving to the climatology instead of raising.**
+       `MODEL_FACTORIES.get(name)` became
+       `MODEL_FACTORIES.get(name, MODEL_FACTORIES["climatology"])` with the
+       refusal branch made unreachable. **1 test fails:**
+
+       * `test_the_journal_names_the_model_that_produced_the_curves` --
+         `AssertionError: 0 != 2`. `--model arxx` runs to completion and is
+         journalled. The refusal half of the criterion is exercised, which is
+         what this mutation was run to find out.
+
+    3. **The regime variable admitted when it is not in `--feature`.** The
+       membership check made unreachable, so `--model threshold
+       --regime-variable tgcr` with `tgcr` undeclared reaches the fitter.
+       **1 test fails:**
+
+       * `test_the_regime_variable_must_be_one_of_the_declared_features` --
+         `AssertionError: '--regime-variable' not found in ...`, the message
+         being `9484e99`'s `LookAheadError` from
+         `baseline._check_fitter_stayed_inside`: "the fitted model reads
+         ['tgcr'], which the declared feature set ['spread_bps', 'on_rrp'] does
+         not contain."
+
+       **The two guards fire on this, and the interesting half is how nearly
+       indistinguishable they are.** The downstream one gives the same exit
+       code, the same empty stdout and the same empty journal as the argument
+       check. Run with the message assertions stripped out, this mutation
+       **killed nothing at all** -- verified, not assumed. So the test was
+       strengthened rather than left resting on wording: it now also runs the
+       same refusal with `--panel` pointing at a file that does not exist. An
+       argument-level refusal does not need a panel; a guard inside the
+       evaluator cannot be reached without reading one. With that assertion in
+       place the mutation fails on
+       `AssertionError: 'no-such-panel.csv' unexpectedly found in ...` even with
+       every message check removed, which is the structural distinction the
+       wording was standing in for.
+
+    4. **The boring one, and it was boring.** No mutation: the claim is that
+       `--model climatology` reproduces the command as it stood with no flag at
+       all. The same fixture -- fifty calm days, a spike in the window, a
+       six-day registry, the declared thresholds file -- was run against a
+       pristine `git archive HEAD` checkout without the flag and against the
+       working tree with `--model climatology`. The exceedance curves, the
+       realized path, the feature dates, the journal record (every field but
+       `evaluated_at` and `git_rev`, which are a timestamp and a checkout) and
+       `config_sha256` are **byte-identical**: `ec0a01a3...f608f` both times.
+       **0 tests fail.** Every existing journal record stays readable as a
+       comparison.
+
+       The one difference, and it is in the console report rather than in any
+       of the four: the per-window entry gains a `"model"` key. Diffed in full,
+       that is the whole change -- one added line. It is added for the reason
+       `features` and `sources` are reported there: a reader of stdout should
+       not have to open the journal to see which model produced the curves, and
+       here they could not, because the journal carries the *hash* of
+       `model_config` and not `model_config` itself.
+
+    The discovery guard was extended, not duplicated
+    ================================================
+
+    `tests/test_baseline.py::ExceedancePredictorCoverageTests` already discovers
+    every `ExceedancePredictor` in `baseline` by its return annotation and
+    asserts the covered set equals the discovered set. It gained one assertion
+    over that same set -- every implementer is reachable by name from
+    `cli_eval.MODEL_FACTORIES`, by factory identity rather than by key
+    spelling -- so a fourth implementer the command line cannot run fails an
+    existing guard. No second guard was added beside it; the cover sheet for
+    this block is explicit that the discovery-guard gap is closed and that the
+    one that exists is the one to extend.
+    """
+
+    def test_the_journal_names_the_model_that_produced_the_curves(self):
+        """The acceptance criterion, and the mutation target.
+
+        Two runs of one window under one declaration, differing only in
+        `--model`. The curves must differ, because the models differ -- and the
+        journal must be able to tell which run was which, which it can only do
+        through `config_sha256`, since the record carries the hash of
+        `model_config` and not `model_config` itself.
+
+        That is why the digest is rebuilt here from the declarations rather than
+        read back off the command. A run that selected the ARX and recorded
+        `"model": "climatology"` still fits, still produces ARX curves, still
+        appends a record, still hashes to something -- and every field in that
+        record is correct except the one naming what ran. Nothing in the
+        artifact disagrees with itself, so the only assertion that can see it is
+        one that knows what the digest of an honest record would be.
+
+        The refusal is the other half, and it is here rather than in its own
+        test because it is the same claim: a `--model` the mapping does not know
+        must not resolve to anything. A fallback to the climatology would run to
+        completion and write a record whose every number is right, which is the
+        same failure arriving by a different route.
+        """
+
+        arx = self.scored(model="arx")[0]
+        climatology = self.scored(model="climatology")[0]
+
+        # Both scored the same window, over the same declaration and the same
+        # gap, so nothing but the model can account for a difference.
+        self.assertEqual(arx["window"], climatology["window"])
+        self.assertEqual(arx["features"], climatology["features"])
+        self.assertEqual(arx["purge_days"], climatology["purge_days"])
+        self.assertEqual(arx["train_rows"], climatology["train_rows"])
+        self.assertEqual(arx["model"], "arx")
+        self.assertEqual(climatology["model"], "climatology")
+
+        arx_curves = [day["exceedance"] for day in arx["days"]]
+        flat_curves = [day["exceedance"] for day in climatology["days"]]
+        self.assertNotEqual(
+            arx_curves,
+            flat_curves,
+            msg="the two models produced identical curves; the selector is "
+            "constructing one predictor under both names",
+        )
+        # And the ARX conditioned on something: its curve moves across scored
+        # days, which the climatology's cannot. Without this the assertion
+        # above would also hold for a second unconditional predictor.
+        self.assertGreater(len(set(map(tuple, arx_curves))), 1)
+        self.assertEqual(len(set(map(tuple, flat_curves))), 1)
+
+        first, second = read_journal(self.journal)
+        self.assertEqual(
+            first["config_sha256"],
+            config_digest(self.expected_config("arx", self.FEATURES)),
+            msg="the record for the ARX run does not hash the config an ARX "
+            "run produces; the name in model_config is not the selected one",
+        )
+        self.assertEqual(
+            second["config_sha256"],
+            config_digest(self.expected_config("climatology", self.FEATURES)),
+        )
+        # The two runs are distinguishable in the journal at all. A literal
+        # model name makes these equal, and then a reader comparing the two
+        # records is comparing the baseline to itself.
+        self.assertNotEqual(first["config_sha256"], second["config_sha256"])
+
+        # An unrecognised name is refused, naming the value and the names that
+        # exist, and nothing is appended for the refused run.
+        code, out, err = self.run_command(model="arxx")
+        self.assertEqual(code, 2)
+        self.assertIn("arxx", err)
+        for known in ("climatology", "arx", "threshold"):
+            self.assertIn(known, err)
+        self.assertEqual(out, "", msg="the refused run scored something first")
+        self.assertEqual(len(read_journal(self.journal)), 2)
+
+    def test_the_model_flag_is_required_and_carries_no_default(self):
+        """A default here is the null model, so there is no default.
+
+        `climatology_exceedance` is the reference a skill score is measured
+        against. A `--model` that defaulted to it would let a run meaning to
+        score a conditional model publish the baseline's numbers under that
+        model's name, in a journal record whose every other field is correct --
+        which is worse than an unrecorded scoring, because it is recorded.
+
+        The absence is the guard, so the test reads the parser: no invocation
+        exercises a default nobody passes.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        holdout = command.choices["event-holdout"]
+        model = next(a for a in holdout._actions if a.dest == "model")
+        self.assertTrue(model.required)
+        self.assertIsNone(model.default)
+
+        # And omitting it is argparse's refusal, which exits rather than
+        # returning: the command cannot be reached without naming a model.
+        with self.assertRaises(SystemExit) as raised:
+            self.run_command(model=False)
+        self.assertEqual(raised.exception.code, 2)
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_the_regime_variable_must_be_one_of_the_declared_features(self):
+        """Refused by argument handling, naming the column, before any fold.
+
+        `event_eval` would also catch this: a threshold model reports its regime
+        variable in `features_read`, and `_check_fitter_stayed_inside` raises
+        `LookAheadError` when that exceeds the declaration. That guard is
+        correct and stays. But a CLI that leans on a downstream guard to
+        validate its own arguments stops validating them the moment the call
+        site moves, and the message a caller should get names the flag they
+        typed rather than a fitted model they never held.
+
+        So the refusal arrives before the panel is read, and the two are
+        distinguishable. **Both halves of that are asserted, and the second one
+        is here because the first is not enough.** Removing this guard leaves
+        the downstream one firing with the same exit code, the same empty
+        stdout and the same empty journal -- verified, and recorded in the
+        mutation record on this class -- so the only thing separating them by
+        behaviour is that an argument-level refusal does not need a panel. This
+        run points `--panel` at a file that does not exist: the argument check
+        still refuses and still names the flag, while a guard that fires inside
+        the evaluator could not have been reached without reading the panel
+        first.
+        """
+
+        code, out, err = self.run_command(
+            "--regime-variable", self.REGIME_VARIABLE,
+            model="threshold",
+            features=self.FEATURES,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn(self.REGIME_VARIABLE, err)
+        self.assertIn("--regime-variable", err)
+        self.assertIn("--feature", err)
+        self.assertEqual(out, "")
+        self.assertEqual(read_journal(self.journal), ())
+
+        absent = self.tmp / "no-such-panel.csv"
+        self.assertFalse(absent.exists())
+        code, out, err = self.run_command(
+            "--regime-variable", self.REGIME_VARIABLE,
+            "--panel", str(absent),
+            model="threshold",
+            features=self.FEATURES,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertNotIn(
+            absent.name,
+            err,
+            msg="the command read the panel before validating its own "
+            "arguments; the refusal is coming from somewhere downstream",
+        )
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_a_threshold_run_declares_its_regime_variable_and_is_recorded(self):
+        """The declared case, so the refusal above is not the only path tested.
+
+        The regime variable is one of `--feature`, so what the predictor is
+        handed and what the run declared are the same set by construction. The
+        run completes, and its record hashes a `model_config` that names both
+        the model and the column the regime was read off -- which is the one
+        thing about a threshold run that the feature set alone cannot recover.
+        """
+
+        report = self.scored(
+            "--regime-variable", self.REGIME_VARIABLE,
+            model="threshold",
+            features=self.REGIME_FEATURES,
+        )[0]
+        self.assertEqual(report["model"], "threshold")
+        self.assertEqual(report["features"], sorted(self.REGIME_FEATURES))
+
+        record, = read_journal(self.journal)
+        self.assertEqual(
+            record["config_sha256"],
+            config_digest(
+                self.expected_config(
+                    "threshold",
+                    self.REGIME_FEATURES,
+                    regime_variable=self.REGIME_VARIABLE,
+                )
+            ),
+        )
+        # Two threshold runs over one feature set reading different regime
+        # columns must not hash alike, which is the reason the column is in
+        # `model_config` rather than left implied by `features`.
+        self.assertNotEqual(
+            record["config_sha256"],
+            config_digest(
+                self.expected_config(
+                    "threshold", self.REGIME_FEATURES, regime_variable="on_rrp"
+                )
+            ),
+        )
+
+    def test_a_regime_variable_is_refused_for_a_model_that_reads_none(self):
+        """A flag accepted and ignored is read as a setting that took effect."""
+
+        code, out, err = self.run_command(
+            "--regime-variable", self.REGIME_VARIABLE,
+            model="arx",
+            features=self.REGIME_FEATURES,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertIn("arx", err)
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_a_threshold_model_without_a_regime_variable_is_refused(self):
+        code, _, err = self.run_command(model="threshold")
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_the_regressors_are_the_declaration_minus_what_the_fitter_supplies(self):
+        """One declaration, and the regressors taken out of it.
+
+        A second list beside `--feature` could disagree with it, and the purge
+        is sized over `--feature` alone -- so a regressor outside the
+        declaration would be read under a gap that never priced its source. The
+        selector therefore derives the regressors rather than accepting them,
+        and this pins what it derives: the declaration, less the autoregressive
+        term the fitter supplies itself, less the regime variable, which is not
+        a term at all.
+        """
+
+        parser = cli.build_parser()
+        args = parser.parse_args(
+            ["event-holdout", "--panel", "p", "--events", "e", "--thresholds", "t",
+             "--registry", "r", "--journal", "j", "--decision-time", DECISION_TIME,
+             "--model", "threshold", "--regime-variable", self.REGIME_VARIABLE]
+            + [flag for name in self.REGIME_FEATURES for flag in ("--feature", name)]
+        )
+
+        seen = {}
+
+        def spy(regressors, threshold_variable, minimum_history=20):
+            seen["regressors"] = tuple(regressors)
+            seen["threshold_variable"] = threshold_variable
+            return baseline.threshold_exceedance(
+                regressors, threshold_variable, minimum_history=minimum_history
+            )
+
+        choice = cli_eval.MODEL_FACTORIES["threshold"]
+        patched = type(choice)(
+            factory=spy, build=choice.build, needs_regime_variable=True
+        )
+        original = dict(cli_eval.MODEL_FACTORIES)
+        original["threshold"] = patched
+        with unittest.mock.patch.object(
+            cli_eval, "MODEL_FACTORIES", original
+        ):
+            name, _ = cli_eval._select_model(args)
+
+        self.assertEqual(name, "threshold")
+        self.assertEqual(seen["threshold_variable"], self.REGIME_VARIABLE)
+        self.assertEqual(seen["regressors"], ("on_rrp",))
+
+    def test_the_autoregressive_term_is_the_one_the_fitter_supplies(self):
+        """`_AUTOREGRESSIVE_TERM` is pinned against the design it names.
+
+        The selector takes that column out of the regressors because `fit_arx`
+        puts it into the design itself. If the two ever disagreed, every
+        conditional run would carry the same column twice and be refused as
+        singular -- a total failure, but one that would arrive at the far end of
+        a fit rather than here. A rename in `baseline` fails this instead.
+        """
+
+        rows = load_daily_panel(self.panel)
+        model = baseline.fit_arx(
+            rows[: self.MINIMUM_HISTORY + 5], ("on_rrp",),
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertIn(cli_eval._AUTOREGRESSIVE_TERM, model.design_names)
+        self.assertNotIn(cli_eval._AUTOREGRESSIVE_TERM, model.regressors)
 
 
 class RollingBacktestHarness(unittest.TestCase):
@@ -1493,7 +2043,7 @@ class SeamTests(unittest.TestCase):
         args = cli.build_parser().parse_args(
             ["event-holdout", "--panel", "p", "--events", "e", "--thresholds", "t",
              "--registry", "r", "--journal", "j", "--feature", "spread_bps",
-             "--decision-time", "16:30"]
+             "--decision-time", "16:30", "--model", "climatology"]
         )
         self.assertIs(args.handler, cli_eval._event_holdout)
 
