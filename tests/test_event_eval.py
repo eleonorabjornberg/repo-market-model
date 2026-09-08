@@ -108,10 +108,62 @@ to a scratch copy outside the worktree and never to the file itself:
 
 The runs say nothing about the exceedance report or the journal's append-only
 behaviour; no mutation was planted in either.
+
+Mutation record, the conditional exceedance block (8 September 2026). The
+evaluator's gap is derived now, so the `purge=0` subtests above are gone --
+`max_release_lag_days` refuses a zero maximum and an unpurged knowledge holdout
+is no longer expressible through the declared path. Two of the ten kills the
+`clears_purge` mutation produced were those subtests, so that mutation would now
+kill eight rather than ten; the eight are the assertion failures, and the
+boundary is still what they are about. `WindowGuardTests` drives
+`_assert_window_is_clean` with a bare integer and is untouched by the
+derivation, which is where the `purge=0` shape still gets exercised.
+
+Four mutations, each against a copy of the tree under `$HOME` carrying `data/`,
+`.github/` and `metadata/`, `-B` with `PYTHONDONTWRITEBYTECODE=1` and
+`__pycache__` cleared, control green before each:
+
+  * **The covariate never reaches the design.** `FittedArx.design_row` reads the
+    declared regressor off the feature row and then discards it for the fitted
+    imputation, so the covariate arrives through the signature and not at the
+    model. Kills 2: `test_the_arx_is_scored_on_the_knowledge_holdout_window`
+    here, and `FittedArxTests::test_an_unobserved_regressor_is_never_coerced_to_zero`
+    in `tests/test_baseline.py`. The acceptance test dies on the clause that is
+    the criterion -- the curve goes flat -- which is what
+    `FEATURE_ROW_PLATEAU` exists to make possible. Two variants of the same
+    idea were run and both kill it too: the predictor reading `feature_rows[0]`
+    for every day (3 kills), and the evaluator handing every day the first
+    day's feature row (8 kills, six of them in `FeatureRowTests`).
+
+  * **The declaration check downgraded to a no-op.** Kills exactly 1:
+    `test_a_predictor_that_reads_outside_the_declaration_is_refused`. One kill
+    is the honest number -- the check has one job and nothing else observes it
+    -- and the test asserts on the journal as well as the exception, so a guard
+    that stopped raising would still fail on a line claiming a window was scored
+    under a gap sized over the wrong sources.
+
+  * **The gap taken from a constant instead of derived.** Kills 10, across
+    `DerivedGapTests`, `PurgeBoundaryTests` and
+    `tests/test_cli_eval.py::test_both_commands_report_the_features_and_the_sources_they_derived`.
+    The last is the one worth having: it fails on the CLI reporting a gap that
+    does not follow from what it was asked for, which is the damage, rather than
+    on the derivation being absent.
+
+  * **The boring one.** The climatology's curve, checked for having not moved.
+    Run two ways. As a code mutation -- the denominator changed to `n + 2`, the
+    Laplace correction `climatology_exceedance` refuses at length -- it kills 2:
+    `ClimatologyExceedanceTests::test_the_curve_is_the_fraction_of_training_spreads_strictly_above_tau`
+    and `test_the_climatology_curve_is_flat_across_the_same_window`. As the
+    check the widening actually needed, the pre-block `climatology_exceedance`
+    was loaded from the previous commit and called with the old four-argument
+    convention on the same training rows: the curves are equal, element for
+    element, on every scored day. The widening is additive for the implementer
+    that already existed.
 """
 
 import inspect
 import json
+import math
 import sys
 import tempfile
 import unittest
@@ -120,9 +172,16 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).parent))
 
 from repo_model import contract, event_eval
-from repo_model.contract import event_window_digest
+from repo_model.baseline import (
+    ExceedanceCurves,
+    arx_exceedance,
+    climatology_exceedance,
+)
+from repo_model.contract import UndeclaredFeatureError, event_window_digest
+from repo_model.data import DailyObservation
 from repo_model.event_eval import (
     KNOWLEDGE_HOLDOUT,
     SCORING_HOLDOUT,
@@ -138,6 +197,15 @@ from repo_model.event_eval import (
     load_events_file,
     read_journal,
 )
+from repo_model.registry import RegistryContractError
+
+# The registry fixture, imported rather than copied. `tests/test_baseline.py`
+# already declares "a registry that prices the sources this feature set uses at
+# exactly `purge` days", and the gap is now derived on this path too, so this
+# file needs the same fixture for the same reason. A third copy would be a third
+# thing to keep in step with `max_release_lag_days`, and the copies would agree
+# until one of them did not.
+from test_baseline import DECISION_TIME, declared_registry
 
 
 # The exceedance family declared in AGENT_CONTRACT.md, "Decided: stress target
@@ -145,6 +213,13 @@ from repo_model.event_eval import (
 # it, for the same reason it takes the windows as an argument; this is the
 # fixture, not the declaration.
 TAUS = (5.0, 10.0, 20.0, 50.0)
+
+#: The covariate the widened interface exists to carry, and the feature set that
+#: declares it. `spread_bps` is in the declaration because every model here reads
+#: its own autoregressive term; a declaration that omitted it would be refused,
+#: which is the check working rather than a fixture bug.
+COVARIATE = "on_rrp"
+FEATURES = ("spread_bps", COVARIATE)
 
 
 def business_days(start, count):
@@ -161,16 +236,67 @@ def business_days(start, count):
 # three calendar days before it, which is the row a `<` boundary excludes at
 # purge=3 and a `<=` boundary would let through.
 PANEL_DATES = business_days(date(2026, 1, 5), 30)
-PANEL_VALUES = [10.0 + index for index in range(len(PANEL_DATES))]
 EVENT_START = date(2026, 2, 2)
 EVENT_END = date(2026, 2, 6)
 
+#: The three rows that are ever read as a feature row for a day in the window at
+#: `purge=3`: the last training row (2026-01-29), the row inside the gap ahead
+#: of the window (2026-01-30), and the window's own first day (2026-02-02).
+#:
+#: **Their spreads are equal and their covariate is not**, and that is the whole
+#: construction. On this panel a model that reads only `spread_bps` produces the
+#: same curve on every scored day, and a model that reads `on_rrp` does not. So
+#: "the curve moves across scored days" is a statement about the covariate
+#: reaching the model, rather than about conditioning in general -- and the
+#: acceptance test can be the mutation target it is supposed to be instead of
+#: passing on an ARX whose covariate was dropped.
+FEATURE_ROW_PLATEAU = (18, 19, 20)
+PLATEAU_SPREAD_BPS = 21.0
 
-def flat_predictor(probabilities=(0.9, 0.7, 0.4, 0.1)):
+
+def _spread_bps(index):
+    if index in FEATURE_ROW_PLATEAU:
+        return PLATEAU_SPREAD_BPS
+    return 18.0 + 5.0 * math.sin(index * 0.9) + 0.25 * index
+
+
+def _covariate(index):
+    """Deliberately not collinear with the spread: a singular design is refused."""
+
+    return 300.0 + 50.0 * math.cos(index * 0.41)
+
+
+def panel_row(index, when, **overrides):
+    """One `DailyObservation` whose `spread_bps` is `_spread_bps(index)`.
+
+    `iorb` is pinned at zero and `sofr` carries the whole spread, so the target
+    is exactly the number this fixture names rather than the number a rounding
+    of `100 * (sofr - iorb)` happens to produce.
+    """
+
+    values = {
+        "sofr": _spread_bps(index) / 100.0,
+        "iorb": 0.0,
+        COVARIATE: _covariate(index),
+    }
+    values.update(overrides)
+    return DailyObservation(when, values)
+
+
+PANEL_ROWS = [panel_row(index, when) for index, when in enumerate(PANEL_DATES)]
+
+#: Read off the rows rather than declared beside them. A parallel list would be
+#: a second statement of the target, and `100 * (sofr - iorb)` is not exact.
+PANEL_VALUES = [row.spread_bps for row in PANEL_ROWS]
+
+
+def flat_predictor(probabilities=(0.9, 0.7, 0.4, 0.1), features_read=("spread_bps",)):
     """A `fit_predict` that ignores its inputs and returns a fixed curve."""
 
-    def fit_predict(train_dates, train_values, test_dates, taus):
-        return [tuple(probabilities) for _ in test_dates]
+    def fit_predict(train_rows, feature_rows, taus):
+        return ExceedanceCurves(
+            tuple(tuple(probabilities) for _ in feature_rows), tuple(features_read)
+        )
 
     return fit_predict
 
@@ -189,18 +315,28 @@ class EvaluatorHarness(unittest.TestCase):
         The evaluator takes an `EventWindow`; this helper assembles one so that
         a test which only cares about the boundary does not have to. Tests that
         care about the window *type* pass `window=` directly.
+
+        `purge=` is likewise a convenience and no longer an argument of the
+        function: the gap is derived from the declared feature set, so a test
+        that wants a known gap declares a registry that produces it. Same move
+        `tests/test_baseline.py` made when the rolling path's gap became
+        derived, and `declared_registry` is that file's fixture, imported.
+        Tests that are *about* the derivation pass `registry=` themselves.
         """
 
         kwargs = dict(
-            dates=PANEL_DATES,
-            y=PANEL_VALUES,
+            observations=PANEL_ROWS,
             fit_predict=flat_predictor(),
             purge=3,
+            features=FEATURES,
+            decision_time=DECISION_TIME,
             taus=TAUS,
             model_config={"model": "persistence", "seed": 0},
             journal_path=self.journal,
         )
         kwargs.update(overrides)
+        purge = kwargs.pop("purge")
+        kwargs.setdefault("registry", declared_registry(purge, kwargs["features"]))
         if "window" not in kwargs:
             # The checksum defaults to the digest of the boundaries actually
             # used, not to a placeholder. `"abc123"` was a window that could
@@ -222,11 +358,9 @@ class EvaluatorHarness(unittest.TestCase):
         for consumed in ("event_start", "event_end", "window_name", "window_checksum"):
             kwargs.pop(consumed, None)
         positional = (
-            kwargs.pop("dates"),
-            kwargs.pop("y"),
+            kwargs.pop("observations"),
             kwargs.pop("fit_predict"),
             kwargs.pop("window"),
-            kwargs.pop("purge"),
         )
         return evaluate_event_window(*positional, **kwargs)
 
@@ -247,12 +381,22 @@ class PurgeBoundaryTests(EvaluatorHarness):
         self.assertEqual(report.last_train_date, date(2026, 1, 29))
 
     def test_the_boundary_moves_with_the_gap(self):
+        """Gap 0 is absent because it is no longer expressible; see below.
+
+        `max_release_lag_days` refuses to return zero, so a declared registry
+        cannot produce an unpurged run. The two rows the old `0` and `1` cases
+        pinned were the same row, so nothing this test could distinguish was
+        lost with it -- but the `purge=0` subtests were two of the ten failures
+        the `clears_purge` mutation produced, and that is recorded below rather
+        than left to be noticed.
+        """
+
         expected = {
-            0: date(2026, 1, 30),
             1: date(2026, 1, 30),
             2: date(2026, 1, 30),
             3: date(2026, 1, 29),
             4: date(2026, 1, 28),
+            5: date(2026, 1, 27),
         }
         for purge, last_train in expected.items():
             with self.subTest(purge=purge):
@@ -261,7 +405,7 @@ class PurgeBoundaryTests(EvaluatorHarness):
     def test_every_training_row_clears_the_gap_independently(self):
         """Recomputed here with a day count, not the module's comparison."""
 
-        for purge in (0, 2, 3, 5):
+        for purge in (1, 2, 3, 5):
             with self.subTest(purge=purge):
                 report = self.evaluate(purge=purge)
                 self.assertGreater((EVENT_START - report.last_train_date).days, purge)
@@ -277,21 +421,54 @@ class PurgeBoundaryTests(EvaluatorHarness):
     def test_the_model_never_sees_a_row_from_inside_the_gap(self):
         seen = {}
 
-        def spy(train_dates, train_values, test_dates, taus):
-            seen["train"] = tuple(train_dates)
-            seen["test"] = tuple(test_dates)
-            return [(0.9, 0.7, 0.4, 0.1) for _ in test_dates]
+        def spy(train_rows, feature_rows, taus):
+            seen["train"] = tuple(row.date for row in train_rows)
+            seen["feature"] = tuple(row.date for row in feature_rows)
+            return ExceedanceCurves(
+                tuple((0.9, 0.7, 0.4, 0.1) for _ in feature_rows), ("spread_bps",)
+            )
 
-        self.evaluate(fit_predict=spy, purge=3)
+        report = self.evaluate(fit_predict=spy, purge=3)
         self.assertGreater((EVENT_START - max(seen["train"])).days, 3)
         self.assertTrue(all(when < EVENT_START for when in seen["train"]))
-        self.assertFalse(set(seen["train"]) & set(seen["test"]))
+        self.assertFalse(set(seen["train"]) & set(report.scored_dates))
+        # The feature rows are a different question and get a different answer:
+        # 2026-01-30 sits inside the gap ahead of the window and never trains,
+        # and it is still the last row publishable before 2026-02-03.
+        self.assertIn(date(2026, 1, 30), seen["feature"])
+        self.assertNotIn(date(2026, 1, 30), seen["train"])
 
-    def test_purge_is_required_and_validated(self):
-        for bad in (None, 2.0, True, -1):
-            with self.subTest(purge=bad):
-                with self.assertRaises(SplitError):
-                    self.evaluate(purge=bad)
+    def test_the_gap_is_derived_and_cannot_be_supplied(self):
+        """There is no `purge` argument, and zero is not expressible.
+
+        The flag would be reached for at exactly the moment it must not be --
+        when the training set that cleared the gap turned out to be short -- and
+        the row it would admit is a row published after the window opened. The
+        second half is `max_release_lag_days` refusing a zero maximum, which
+        this path now inherits along with the derivation.
+        """
+
+        self.assertNotIn("purge", inspect.signature(evaluate_event_window).parameters)
+
+        unpurged = {
+            source: {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 0,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+            for source in contract.sources_for_features(FEATURES)
+        }
+        with self.assertRaisesRegex(RegistryContractError, "nonzero purge"):
+            self.evaluate(registry=unpurged)
+
+    def test_an_unclassifiable_feature_is_refused_before_any_row_is_selected(self):
+        with self.assertRaises(UndeclaredFeatureError):
+            self.evaluate(features=("spread_bps", "not_a_column"))
+        self.assertEqual(read_journal(self.journal), ())
 
     def test_a_gap_that_leaves_no_training_row_raises(self):
         with self.assertRaisesRegex(SplitError, "no training row clears"):
@@ -408,6 +585,8 @@ class ExceedanceReportTests(EvaluatorHarness):
             set(EventWindowReport.__dataclass_fields__),
             {
                 "window",
+                "features",
+                "sources",
                 "purge_days",
                 "train_rows",
                 "last_train_date",
@@ -415,6 +594,7 @@ class ExceedanceReportTests(EvaluatorHarness):
                 "scored_dates",
                 "realized",
                 "exceedance",
+                "feature_dates",
                 "record",
             },
         )
@@ -433,17 +613,365 @@ class ExceedanceReportTests(EvaluatorHarness):
         with self.assertRaisesRegex(SplitError, "probabilities for 4 taus"):
             self.evaluate(fit_predict=flat_predictor((0.9, 0.1)))
 
-        def short(train_dates, train_values, test_dates, taus):
-            return [(0.9, 0.7, 0.4, 0.1)]
+        def short(train_rows, feature_rows, taus):
+            return ExceedanceCurves(((0.9, 0.7, 0.4, 0.1),), ("spread_bps",))
 
         with self.assertRaisesRegex(SplitError, "returned 1 rows"):
             self.evaluate(fit_predict=short)
+
+    def test_a_predictor_that_returns_bare_curves_is_refused(self):
+        """The account of what was read is part of the return, not optional.
+
+        A predictor that returned only curves would make no claim about the
+        columns it read, and the declaration check would then have nothing to
+        compare against and would pass by default -- the gap sized over a
+        feature set nobody verified, which is the hazard the widening opened.
+        """
+
+        def bare(train_rows, feature_rows, taus):
+            return [(0.9, 0.7, 0.4, 0.1) for _ in feature_rows]
+
+        with self.assertRaisesRegex(SplitError, "must return an ExceedanceCurves"):
+            self.evaluate(fit_predict=bare)
 
     def test_taus_must_be_a_strictly_ascending_non_empty_family(self):
         with self.assertRaisesRegex(SplitError, "at least one threshold"):
             self.evaluate(taus=())
         with self.assertRaisesRegex(SplitError, "strictly ascending"):
             self.evaluate(taus=(10.0, 5.0))
+
+
+class ConditionalExceedanceTests(EvaluatorHarness):
+    """A declared covariate reaching a model on the knowledge holdout.
+
+    Before this block `FitPredict` passed one series of values, so nothing
+    conditional could be scored here at all. The only expressible predictor was
+    one conditioning on nothing -- the climatology -- and a climatology is what
+    a Brier skill score is measured *against*, so the one evaluation this
+    repository was designed around had nothing on the other side of the
+    comparison.
+
+    The fixture is built so that the two facts below are about the covariate and
+    not about conditioning in general: at `purge=3` exactly three rows are ever
+    read as a feature row for a day in this window, and `FEATURE_ROW_PLATEAU`
+    gives all three the same `spread_bps` and different `on_rrp`. A model that
+    reads only the spread produces one curve on every scored day here. A model
+    that reads the covariate does not.
+    """
+
+    ARX_MINIMUM_HISTORY = 10
+
+    def arx_report(self, **overrides):
+        kwargs = dict(
+            fit_predict=arx_exceedance(
+                (COVARIATE,), minimum_history=self.ARX_MINIMUM_HISTORY
+            ),
+            features=FEATURES,
+            model_config={"model": "arx", "regressors": [COVARIATE]},
+        )
+        kwargs.update(overrides)
+        return self.evaluate(**kwargs)
+
+    def test_the_arx_is_scored_on_the_knowledge_holdout_window(self):
+        """The block's acceptance criterion, and its own mutation target.
+
+        An ARX declaring a covariate, fitted on rows that all cleared the purge
+        gap ahead of a declared `EventWindow`, producing an exceedance curve per
+        scored day -- **and the curve moves across scored days**. That last
+        clause is the criterion. A widening that plumbed the covariate through
+        the signature without the model ever reading it would produce a flat
+        curve, pass every weaker assertion here, and be indistinguishable from
+        the climatology.
+
+        The premise that makes this the mutation target is asserted first rather
+        than left in a comment: the distinct feature rows carry equal spreads.
+        Without it "the curve moves" would also be satisfied by an autoregressive
+        model with no covariate at all, and the test would not detect the one
+        change it exists to detect.
+        """
+
+        report = self.arx_report()
+
+        # The premise. The rows the curves are conditioned on differ only in the
+        # covariate, so movement can come from nowhere else.
+        feature_rows = {when: PANEL_ROWS[PANEL_DATES.index(when)]
+                        for when in report.feature_dates}
+        self.assertGreater(len(feature_rows), 1, msg="one feature row cannot move")
+        self.assertEqual(
+            {row.spread_bps for row in feature_rows.values()},
+            {PLATEAU_SPREAD_BPS},
+        )
+        self.assertEqual(
+            len({row.values[COVARIATE] for row in feature_rows.values()}),
+            len(feature_rows),
+        )
+
+        # Scored: one curve per day in the declared window, over the declared
+        # taus, and every day of the window is there.
+        self.assertEqual(
+            list(report.scored_dates),
+            [when for when in PANEL_DATES if EVENT_START <= when <= EVENT_END],
+        )
+        self.assertEqual(len(report.exceedance), len(report.scored_dates))
+        for curve in report.exceedance:
+            self.assertEqual(len(curve), len(TAUS))
+
+        # Knowledge holdout: nothing in or near the window trained.
+        self.assertGreater((EVENT_START - report.last_train_date).days, report.purge_days)
+        self.assertEqual(report.record.holdout_role, KNOWLEDGE_HOLDOUT)
+
+        # The criterion.
+        self.assertGreater(
+            len(set(report.exceedance)),
+            1,
+            msg="the ARX's curve is the same on every scored day; the covariate "
+            "reached the signature and not the model, which is the climatology "
+            "wearing a second name",
+        )
+
+    def test_the_climatology_curve_is_flat_across_the_same_window(self):
+        """The other half of the pair, and mutation 4's target.
+
+        Both facts together are what say the widening carries information rather
+        than shape: the conditional model's curve moves and the unconditional
+        one's does not, on one window, at one gap. The numbers are pinned
+        against an independent count so that "unchanged by the widening" is
+        checkable rather than asserted.
+        """
+
+        report = self.evaluate(
+            fit_predict=climatology_exceedance(
+                minimum_history=self.ARX_MINIMUM_HISTORY
+            ),
+            model_config={"model": "climatology"},
+        )
+        self.assertEqual(len(set(report.exceedance)), 1)
+
+        history = [
+            row.spread_bps
+            for row in PANEL_ROWS
+            if row.date <= report.last_train_date
+        ]
+        self.assertEqual(len(history), report.train_rows)
+        self.assertEqual(
+            report.exceedance[0],
+            tuple(
+                sum(1 for value in history if value > tau) / len(history)
+                for tau in TAUS
+            ),
+        )
+
+    def test_a_predictor_that_reads_outside_the_declaration_is_refused(self):
+        """The lock on the door the widening opened.
+
+        A covariate that reaches a model without being declared means the gap
+        was sized over the wrong sources -- computed correctly, in the
+        flattering direction, because the undeclared column's release lag was
+        never in the maximum. The check is `baseline._check_fitter_stayed_inside`
+        and it is the rolling path's, imported rather than restated.
+
+        Nothing is journalled: the refusal comes before the record, so a run
+        that was purged against the wrong sources leaves no line claiming a
+        single-evaluation budget was spent on it.
+        """
+
+        with self.assertRaises(LookAheadError) as caught:
+            self.arx_report(features=("spread_bps",))
+        self.assertIn(COVARIATE, str(caught.exception))
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_declaring_more_than_the_predictor_reads_is_allowed(self):
+        """Conservative and legible, so it is not refused.
+
+        Declaring a column the model never reads purges more than the evidence
+        requires; it costs training rows and it is visible in the report. The
+        containment is one-directional on purpose.
+        """
+
+        report = self.evaluate(
+            fit_predict=climatology_exceedance(
+                minimum_history=self.ARX_MINIMUM_HISTORY
+            ),
+            features=FEATURES,
+        )
+        self.assertEqual(report.features, FEATURES)
+
+
+class FeatureRowTests(EvaluatorHarness):
+    """Which row each scored day is forecast from, and who decides.
+
+    The training boundary is sized against `window.start`; the conditioning
+    boundary is sized against each scored day. They are different questions and
+    they get different answers, and the difference is what lets a curve move at
+    all. A row inside the purge gap ahead of the window never trains and can
+    still be the last row publishable before a day further into the window.
+    """
+
+    def test_each_scored_day_is_forecast_from_the_last_row_that_cleared_the_gap(self):
+        """Recomputed here from a day count, not from the module's comparison."""
+
+        report = self.evaluate(purge=3)
+        for scored, feature in zip(report.scored_dates, report.feature_dates):
+            with self.subTest(scored=scored):
+                self.assertGreater((scored - feature).days, 3)
+                later = [
+                    when
+                    for when in PANEL_DATES
+                    if when > feature and (scored - when).days > 3
+                ]
+                self.assertEqual(later, [], msg="a later eligible row was passed over")
+
+    def test_a_row_inside_the_gap_never_trains_and_may_still_be_read(self):
+        """2026-01-30, at `purge=3`, for a window opening 2026-02-02.
+
+        Three calendar days before the window opens, so it does not train. Three
+        calendar days before 2026-02-03 is 2026-01-31, so by 2026-02-03 it has
+        been published and reading it is not look-ahead. Both facts at once, on
+        one row, because a test that stated only the first would read as a
+        prohibition on ever touching it.
+        """
+
+        report = self.evaluate(purge=3)
+        inside_the_gap = date(2026, 1, 30)
+        self.assertLess(report.last_train_date, inside_the_gap)
+        self.assertIn(inside_the_gap, report.feature_dates)
+
+    def test_a_day_late_in_the_window_may_read_an_earlier_window_day(self):
+        report = self.evaluate(purge=3)
+        pairs = dict(zip(report.scored_dates, report.feature_dates))
+        self.assertEqual(pairs[date(2026, 2, 6)], date(2026, 2, 2))
+        self.assertIn(date(2026, 2, 2), report.scored_dates)
+
+    def test_no_scored_day_is_ever_forecast_from_itself_or_later(self):
+        for purge in (1, 3, 5):
+            with self.subTest(purge=purge):
+                report = self.evaluate(purge=purge)
+                for scored, feature in zip(report.scored_dates, report.feature_dates):
+                    self.assertLess(feature, scored)
+
+    def test_the_predictor_is_handed_the_feature_rows_and_never_the_panel(self):
+        """It cannot choose its own conditioning set, so it cannot read the day.
+
+        The rows the predictor receives are exactly the ones the report names,
+        in order, and there are as many as there are scored days.
+        """
+
+        seen = {}
+
+        def spy(train_rows, feature_rows, taus):
+            seen["feature"] = tuple(row.date for row in feature_rows)
+            seen["train"] = tuple(row.date for row in train_rows)
+            return ExceedanceCurves(
+                tuple((0.9, 0.7, 0.4, 0.1) for _ in feature_rows), ("spread_bps",)
+            )
+
+        report = self.evaluate(fit_predict=spy, purge=3)
+        self.assertEqual(seen["feature"], report.feature_dates)
+        self.assertEqual(len(seen["feature"]), len(report.scored_dates))
+        self.assertNotIn(EVENT_END, seen["feature"])
+
+    def test_a_feature_row_that_does_not_clear_the_gap_raises(self):
+        """The guard, driven directly: `_feature_index` cannot produce this.
+
+        It is here because a rule only one function can reach is a rule that
+        stops being checked the moment a second caller appears.
+        """
+
+        scored = [i for i, w in enumerate(PANEL_DATES) if EVENT_START <= w <= EVENT_END]
+        feature = [index - 1 for index in scored]
+        with self.assertRaisesRegex(LookAheadError, "does not clear the 3-day"):
+            event_eval._assert_feature_rows_clear_the_gap(
+                PANEL_DATES, feature, scored, 3
+            )
+
+    def test_a_feature_row_at_or_after_its_scored_day_raises(self):
+        scored = [i for i, w in enumerate(PANEL_DATES) if EVENT_START <= w <= EVENT_END]
+        with self.assertRaisesRegex(LookAheadError, "is not before it"):
+            event_eval._assert_feature_rows_clear_the_gap(
+                PANEL_DATES, list(scored), scored, 3
+            )
+
+
+class DerivedGapTests(EvaluatorHarness):
+    """The gap follows from the declared feature set, and from nothing else."""
+
+    def test_the_gap_follows_the_declaration_and_reaches_the_boundary(self):
+        """Asserted as a relation between two feature sets, not against a literal.
+
+        One registry, pricing two sources differently. Declaring the feature
+        whose source costs more moves the gap, and moving the gap moves where
+        training stops -- so the derivation reaches the numbers rather than only
+        the report's own `purge_days` field.
+        """
+
+        registry = {
+            "nyfed_sofr": self._priced(2),
+            "fred_macro_latest_vintage": self._priced(2),
+            "sec_nmfp": self._priced(9),
+        }
+        narrow = self.evaluate(features=("spread_bps",), registry=registry)
+        wide = self.evaluate(
+            features=("spread_bps", "mmf_assets"), registry=registry
+        )
+
+        self.assertEqual(narrow.purge_days, 2)
+        self.assertEqual(wide.purge_days, 9)
+        self.assertLess(wide.last_train_date, narrow.last_train_date)
+        self.assertLess(wide.train_rows, narrow.train_rows)
+
+    def test_the_report_carries_the_declaration_it_was_scored_under(self):
+        report = self.evaluate(features=("spread_bps",), purge=4)
+        self.assertEqual(report.features, ("spread_bps",))
+        self.assertEqual(report.sources, contract.sources_for_features(("spread_bps",)))
+        self.assertEqual(report.purge_days, 4)
+        self.assertEqual(report.record.purge_days, 4)
+
+    def test_the_real_registry_refuses_this_path_too_and_that_is_correct(self):
+        """The same `snapshot_retrieved_at` wall the rolling path hits.
+
+        `iorb` is required, `spread_bps` is computed from it, and every model
+        here reads `spread_bps` -- so every feature set resolves to
+        `fred_macro_latest_vintage`, whose basis is `snapshot_retrieved_at`. The
+        contract says such a source contributes no purge and MUST NOT be mapped
+        to zero, and `max_release_lag_days` raises unless every row carries
+        `available_at`. `DailyObservation` carries none, so it raises.
+
+        **A correct guard firing, not a bug**, and pinned here rather than
+        worked around. Before this block the event path took the gap as an int
+        and never touched a registry, so this refusal lived only in `cli_eval`,
+        which derived the number; deriving it inside the evaluator moved the
+        refusal to where the two paths already agreed it belonged. The
+        resolution is a Track A question about `available_at` on the daily
+        panel, and this test is what goes red on the day it is answered --
+        which is the right alarm, because every number in the project changes
+        that day.
+
+        `tests/test_baseline.py::test_the_real_registry_refuses_every_feature_set_that_reads_iorb`
+        is the rolling path's half of the same fact.
+        """
+
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(RegistryContractError) as caught:
+            self.evaluate(registry=real)
+        self.assertIn("fred_macro_latest_vintage", str(caught.exception))
+        self.assertIn("available_at", str(caught.exception))
+        self.assertEqual(read_journal(self.journal), ())
+
+    @staticmethod
+    def _priced(days):
+        return {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": days,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        }
 
 
 class RunOnceJournalTests(EvaluatorHarness):
@@ -634,11 +1162,12 @@ class EventWindowMetadataTests(unittest.TestCase):
             ]
         )[0]
         report = evaluate_event_window(
-            PANEL_DATES,
-            PANEL_VALUES,
+            PANEL_ROWS,
             flat_predictor(),
             window,
-            3,
+            features=FEATURES,
+            registry=declared_registry(3, FEATURES),
+            decision_time=DECISION_TIME,
             taus=TAUS,
             model_config={"model": "persistence"},
             journal_path=Path(directory.name) / "events.jsonl",
@@ -963,9 +1492,11 @@ class UnpinnedWindowTests(EvaluatorHarness):
     def test_omitting_the_window_is_a_type_error(self):
         with self.assertRaises(TypeError):
             evaluate_event_window(
-                PANEL_DATES,
-                PANEL_VALUES,
+                PANEL_ROWS,
                 flat_predictor(),
+                features=FEATURES,
+                registry=declared_registry(3, FEATURES),
+                decision_time=DECISION_TIME,
                 taus=TAUS,
                 model_config={},
                 journal_path=self.journal,
@@ -1010,28 +1541,64 @@ class UnpinnedWindowTests(EvaluatorHarness):
 
 
 class PanelValidationTests(EvaluatorHarness):
-    def test_unsorted_dates_are_rejected(self):
-        dates = list(PANEL_DATES)
-        dates[4], dates[5] = dates[5], dates[4]
-        with self.assertRaisesRegex(SplitError, "strictly ascending"):
-            self.evaluate(dates=dates)
+    """The panel is one sequence of rows, and its target is read off them.
 
-    def test_mismatched_lengths_are_rejected(self):
-        with self.assertRaisesRegex(SplitError, "dates against"):
-            self.evaluate(y=PANEL_VALUES[:-1])
+    `evaluate_event_window` used to take `dates` and a parallel `y`, and one of
+    the faults it checked for was the two disagreeing about their length. A
+    panel of rows cannot disagree with itself, so that check is gone rather than
+    relaxed: the fault is unrepresentable, which is a better answer than a
+    guard. What replaces it is the fault a row can still have -- a spread that
+    cannot be read, because `spread_bps` is computed from `sofr` and `iorb`.
+    """
+
+    def test_unsorted_dates_are_rejected(self):
+        rows = list(PANEL_ROWS)
+        rows[4], rows[5] = rows[5], rows[4]
+        with self.assertRaisesRegex(SplitError, "strictly ascending"):
+            self.evaluate(observations=rows)
 
     def test_an_empty_panel_is_rejected(self):
         with self.assertRaisesRegex(SplitError, "empty panel"):
-            self.evaluate(dates=[], y=[])
+            self.evaluate(observations=[])
 
-    def test_non_finite_and_non_numeric_values_are_rejected(self):
-        values = list(PANEL_VALUES)
-        values[3] = float("nan")
-        with self.assertRaisesRegex(SplitError, "not finite"):
-            self.evaluate(y=values)
-        values[3] = "4.30"
-        with self.assertRaisesRegex(SplitError, "not numeric"):
-            self.evaluate(y=values)
+    def test_a_row_with_no_readable_spread_is_rejected(self):
+        """Unobserved, unreadable, and absent. All three, and all by date.
+
+        `"4.30"` is deliberately *not* here: `DailyObservation.spread_bps` calls
+        `float()`, which accepts a numeric string, so a spread arriving as text
+        is not a fault this layer sees and asserting that it were would be this
+        file describing a rule Track A does not have.
+        """
+
+        broken_rows = [
+            panel_row(3, PANEL_DATES[3], sofr=None),
+            panel_row(3, PANEL_DATES[3], iorb=None),
+            panel_row(3, PANEL_DATES[3], sofr="not-a-number"),
+            DailyObservation(PANEL_DATES[3], {COVARIATE: _covariate(3)}),
+        ]
+        for broken in broken_rows:
+            with self.subTest(values=sorted(broken.values)):
+                rows = list(PANEL_ROWS)
+                rows[3] = broken
+                with self.assertRaisesRegex(SplitError, "no readable spread"):
+                    self.evaluate(observations=rows)
+
+    def test_a_row_whose_spread_is_not_finite_is_rejected(self):
+        rows = list(PANEL_ROWS)
+        rows[3] = panel_row(3, PANEL_DATES[3], sofr=float("nan"))
+        with self.assertRaisesRegex(SplitError, "non-finite spread"):
+            self.evaluate(observations=rows)
+
+    def test_the_evaluator_takes_no_parallel_target_sequence(self):
+        """The mismatched-length fault, retired as unrepresentable.
+
+        Stated rather than dropped silently: if a `y` argument ever comes back,
+        so does the fault, and this is where that gets argued with.
+        """
+
+        parameters = inspect.signature(evaluate_event_window).parameters
+        for gone in ("y", "dates", "values"):
+            self.assertNotIn(gone, parameters)
 
 
 if __name__ == "__main__":

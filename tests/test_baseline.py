@@ -1,5 +1,6 @@
 import inspect
 import json
+import math
 import sys
 import unittest
 from datetime import date, time, timedelta
@@ -8,8 +9,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from repo_model import baseline
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
+    ExceedanceCurves,
     FittedArx,
     FittedPersistence,
     Forecast,
@@ -19,6 +22,8 @@ from repo_model.baseline import (
     _feature_index,
     _least_squares,
     _quantile,
+    arx_exceedance,
+    climatology_exceedance,
     fit,
     fit_arx,
     rolling_persistence_backtest,
@@ -1251,6 +1256,334 @@ class PurgedBacktestTests(unittest.TestCase):
         self.assertAlmostEqual(before.interval_coverage, 8.0 / 14.0, places=12)
         self.assertAlmostEqual(after.interval_coverage, 0.5, places=12)
         self.assertGreater(after.mae_bps, before.mae_bps)
+
+
+# --------------------------------------------------------------------------
+# The exceedance-predictor interface
+# --------------------------------------------------------------------------
+
+
+#: The declared family, as a fixture. The declaration is Track A's file; this is
+#: four ascending numbers in the range the generated frame produces.
+EXCEEDANCE_TAUS = (5.0, 10.0, 20.0, 50.0)
+
+
+class ExceedancePredictorConformance:
+    """What every `ExceedancePredictor` must satisfy, whatever it is.
+
+    A mixin, subclassed once per implementer, for the reason
+    `ForecastInterfaceConformance` is: an interface with one implementer is a
+    description, and the check that it stays an interface is that each
+    assertion runs once per implementer rather than once per file. Until
+    `arx_exceedance` existed every assertion below was a statement about
+    `climatology_exceedance` wearing an interface's name.
+
+    Subclasses supply `make_predictor`. Everything else is shared, and
+    `ExceedancePredictorCoverageTests` fails if an implementer arrives in
+    `repo_model.baseline` without a case here.
+    """
+
+    MINIMUM_HISTORY = 20
+
+    def frame(self):
+        return regressor_frame()
+
+    def split(self):
+        """Training rows and feature rows, the shape the evaluator hands over."""
+
+        rows = self.frame()
+        return rows[:-4], rows[-4:]
+
+    def make_predictor(self):  # pragma: no cover - overridden
+        raise NotImplementedError
+
+    def curves(self, taus=EXCEEDANCE_TAUS):
+        train, feature_rows = self.split()
+        return self.make_predictor()(train, feature_rows, taus)
+
+    def test_the_return_is_curves_plus_an_account_of_what_was_read(self):
+        """Both halves, because the evaluator checks both.
+
+        A predictor that returned bare curves would make no claim about the
+        columns it read, and `event_eval` sizes its purge from a declaration it
+        verifies against exactly that claim.
+        """
+
+        result = self.curves()
+        self.assertIsInstance(result, ExceedanceCurves)
+        self.assertIsInstance(result.features_read, tuple)
+        self.assertTrue(result.features_read, msg="claimed to read nothing")
+        # In panel vocabulary, and classifiable: the gap is sized over the
+        # sources these resolve to, so a name `contract` cannot classify is a
+        # name that contributes nothing to the purge.
+        sources_for_features(result.features_read)
+
+    def test_one_curve_per_feature_row_aligned_to_the_declared_taus(self):
+        train, feature_rows = self.split()
+        result = self.make_predictor()(train, feature_rows, EXCEEDANCE_TAUS)
+        self.assertEqual(len(result.curves), len(feature_rows))
+        for curve in result.curves:
+            self.assertEqual(len(curve), len(EXCEEDANCE_TAUS))
+
+    def test_every_value_is_a_probability(self):
+        for curve in self.curves().curves:
+            for position, probability in enumerate(curve):
+                with self.subTest(tau=EXCEEDANCE_TAUS[position]):
+                    self.assertTrue(math.isfinite(probability))
+                    self.assertGreaterEqual(probability, 0.0)
+                    self.assertLessEqual(probability, 1.0)
+
+    def test_the_curve_never_rises_with_tau(self):
+        """`P(Y > tau)` cannot increase as `tau` does.
+
+        On a dense grid rather than the four declared taus: four points can be
+        non-increasing while the curve between them is not. The grid spans the
+        training spreads, so it covers where each implementer's mass actually
+        sits.
+        """
+
+        train, feature_rows = self.split()
+        spreads = [row.spread_bps for row in train]
+        low, high = min(spreads) - 20.0, max(spreads) + 20.0
+        grid = [low + (high - low) * step / 120.0 for step in range(121)]
+        for day, curve in enumerate(
+            self.make_predictor()(train, feature_rows, grid).curves
+        ):
+            for position in range(1, len(curve)):
+                self.assertLessEqual(
+                    curve[position],
+                    curve[position - 1],
+                    msg=f"day {day}: exceedance rises from {grid[position - 1]} "
+                    f"to {grid[position]}",
+                )
+
+    def test_a_threshold_above_everything_fitted_gets_a_hard_zero(self):
+        """No smoothing and no prior, on either implementer.
+
+        `climatology_exceedance` argues this at length and the reasoning is not
+        about climatologies: a model that put *no* weight where the event went
+        is the most informative result the knowledge holdout can produce, and a
+        Laplace correction would turn it into a small number that merely looks
+        like a poor forecast. `1/(n+2)` for any plausible `n` here is far above
+        zero, so a smoothed implementation cannot pass this by rounding.
+        """
+
+        train, feature_rows = self.split()
+        beyond = max(row.spread_bps for row in train) + 10_000.0
+        for curve in self.make_predictor()(train, feature_rows, [beyond]).curves:
+            self.assertEqual(curve[0], 0.0)
+
+    def test_a_training_frame_below_the_minimum_is_refused(self):
+        """A curve from a handful of rows is not a fitted law.
+
+        At an event boundary the training set is whatever cleared the purge gap,
+        which can be very short without anything else objecting -- so the
+        refusal belongs to the predictor and not to the caller who did not
+        notice.
+        """
+
+        train, feature_rows = self.split()
+        with self.assertRaises(ValueError):
+            self.make_predictor()(
+                train[: self.MINIMUM_HISTORY - 1], feature_rows, EXCEEDANCE_TAUS
+            )
+
+
+class ClimatologyExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `climatology_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(climatology_exceedance)
+
+    def make_predictor(self):
+        return climatology_exceedance(minimum_history=self.MINIMUM_HISTORY)
+
+    def test_the_curve_is_the_same_on_every_scored_day(self):
+        """Unconditional by definition, and the baseline a skill score needs.
+
+        A climatology whose curve moved with the day would be conditioning on
+        something, and then it would not be the thing the other side of the
+        comparison is measured against. It reads the feature rows for their
+        count and nothing else.
+        """
+
+        self.assertEqual(len(set(self.curves().curves)), 1)
+
+    def test_it_reads_the_training_target_and_no_covariate(self):
+        self.assertEqual(self.curves().features_read, ("spread_bps",))
+
+    def test_the_curve_is_the_fraction_of_training_spreads_strictly_above_tau(self):
+        """The arithmetic, restated independently of the implementation."""
+
+        train, feature_rows = self.split()
+        history = [row.spread_bps for row in train]
+        expected = tuple(
+            sum(1 for value in history if value > tau) / len(history)
+            for tau in EXCEEDANCE_TAUS
+        )
+        self.assertEqual(self.curves().curves[0], expected)
+
+
+class ArxExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `arx_exceedance`, on the same rows.
+
+    The second implementer is what turns each assertion in the mixin from a
+    description of the climatology into a constraint on the interface. Three of
+    them had nothing to bite on before: the non-increasing check was a statement
+    about counting values above a threshold, the hard zero was a statement about
+    a training set with nothing above `tau`, and the whole suite was silent on a
+    predictor that reads anything off a feature row at all.
+    """
+
+    IMPLEMENTATION = staticmethod(arx_exceedance)
+
+    def make_predictor(self):
+        return arx_exceedance(REGRESSORS, minimum_history=self.MINIMUM_HISTORY)
+
+    def test_it_reports_the_autoregressive_term_as_well_as_its_regressors(self):
+        """The half a predictor reporting only what it was handed would omit.
+
+        `event_eval` checks this claim against the declared feature set, so a
+        predictor that named only its exogenous columns would let the purge be
+        sized without `spread_bps`'s sources in the maximum.
+        """
+
+        self.assertEqual(self.curves().features_read, ("spread_bps",) + REGRESSORS)
+
+    def test_the_curve_moves_across_feature_rows(self):
+        """The property the climatology cannot have, on the same fixture.
+
+        Not an assertion about *this* model being good -- it is the assertion
+        that the interface carries information rather than shape. A widening
+        that plumbed a covariate through without the model reading it would
+        produce a flat curve here and be indistinguishable from the baseline.
+        """
+
+        self.assertGreater(len(set(self.curves().curves)), 1)
+
+    def test_the_law_is_the_one_the_fitted_model_already_reports(self):
+        """Not a second reading of the residuals. The model's own.
+
+        Character for character `FittedArx.predict_stress`, which is why no
+        distribution is fabricated here: if this ever stops agreeing, something
+        in `arx_exceedance` has started deriving a curve of its own.
+        """
+
+        train, feature_rows = self.split()
+        model = fit_arx(train, REGRESSORS, minimum_history=self.MINIMUM_HISTORY)
+        self.assertEqual(
+            self.curves().curves,
+            tuple(model.predict_stress(row, EXCEEDANCE_TAUS) for row in feature_rows),
+        )
+
+    def test_an_empty_regressor_set_is_refused(self):
+        """`fit_arx` refuses one, and this does not paper over the refusal."""
+
+        train, feature_rows = self.split()
+        with self.assertRaises(ValueError):
+            arx_exceedance((), minimum_history=self.MINIMUM_HISTORY)(
+                train, feature_rows, EXCEEDANCE_TAUS
+            )
+
+
+def _exceedance_implementations():
+    """Exceedance-predictor factories in `repo_model.baseline`, by name.
+
+    Discovered, not listed, for the reason `_forecast_implementations` in
+    `tests/test_contract.py` is: a list that has to be kept up to date would be
+    updated in the same commit that added the implementer it was meant to catch.
+
+    The marker is the declared return annotation. `baseline` has
+    `from __future__ import annotations`, so annotations are strings and the
+    comparison is against the name as written -- which is also the thing an
+    author writes deliberately. A factory that returns an `ExceedancePredictor`
+    and says so is in; a helper that happens to return a callable is not.
+    """
+
+    found = {}
+    for name, obj in vars(baseline).items():
+        if not inspect.isfunction(obj) or obj.__module__ != baseline.__name__:
+            continue
+        if getattr(obj, "__annotations__", {}).get("return") == "ExceedancePredictor":
+            found[name] = obj
+    return found
+
+
+def _exceedance_cases():
+    """`{factory: [test case, ...]}` over every subclass of the mixin."""
+
+    cases = {}
+    pending = list(ExceedancePredictorConformance.__subclasses__())
+    while pending:
+        case = pending.pop()
+        pending.extend(case.__subclasses__())
+        if issubclass(case, unittest.TestCase):
+            cases.setdefault(case.IMPLEMENTATION, []).append(case)
+    return cases
+
+
+class ExceedancePredictorCoverageTests(unittest.TestCase):
+    """The guard that keeps the exceedance suite a conformance suite.
+
+    The same guard `ForecastInterfaceCoverageTests` is, one interface over, and
+    for the same reason: two implementers is what makes an interface a
+    constraint, and three is where it quietly stops being one -- implementer
+    three arrives with a bespoke test class, every test passes, and nothing says
+    the shared assertions were never run against it.
+
+    **Count the tests, not the file diff.** Nothing here asserts how many
+    implementers there are; what is asserted is that the set of them and the set
+    of covered ones are the same set.
+    """
+
+    def test_every_exceedance_predictor_in_baseline_runs_the_conformance_suite(self):
+        implementations = _exceedance_implementations()
+        self.assertIn(
+            "climatology_exceedance",
+            implementations,
+            msg="discovery found no climatology; the discovery is broken, not "
+            "the module",
+        )
+        self.assertIn("arx_exceedance", implementations)
+
+        cases = _exceedance_cases()
+        uncovered = sorted(
+            name
+            for name, factory in implementations.items()
+            if factory not in cases
+        )
+        self.assertEqual(
+            uncovered,
+            [],
+            msg=(
+                f"{uncovered} return an ExceedancePredictor from "
+                f"repo_model.baseline and no conformance case runs the "
+                f"interface's assertions against them. Add an "
+                f"ExceedancePredictorConformance subclass rather than a bespoke "
+                f"test class: a predictor with its own tests and no conformance "
+                f"case is how the suite stops being one"
+            ),
+        )
+
+        # And each case really runs the suite: a subclass that shadowed the
+        # inherited tests away would satisfy the check above while asserting
+        # nothing the interface asked for.
+        declared = sorted(
+            name
+            for name in vars(ExceedancePredictorConformance)
+            if name.startswith("test_")
+        )
+        self.assertGreaterEqual(len(declared), 5)
+        loader = unittest.TestLoader()
+        for factory, owners in cases.items():
+            for case in owners:
+                self.assertLessEqual(
+                    set(declared),
+                    set(loader.getTestCaseNames(case)),
+                    msg=(
+                        f"{case.__name__} covers {factory.__name__} but does not "
+                        f"run every conformance test"
+                    ),
+                )
 
 
 if __name__ == "__main__":

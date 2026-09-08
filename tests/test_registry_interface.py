@@ -343,19 +343,6 @@ def _non_docstring_strings(path):
     ]
 
 
-def _imported_names(path):
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    names = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            names.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                names.add(node.module)
-            names.update(alias.name for alias in node.names)
-    return names
-
-
 class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
     """The prohibition, enforced rather than promised.
 
@@ -391,22 +378,67 @@ class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
                         "structured object and reading it is Track A's job",
                     )
 
-    def test_no_owned_module_imports_registry_yet(self):
-        """Not even conditionally.
+    #: The one name an owned module may take from `repo_model.registry`. The
+    #: conversion is Track A's; calling it is how Track B is supposed to reach
+    #: it, and importing anything else -- the module object, a helper, a
+    #: validator -- is how a caller starts assembling a second conversion out of
+    #: Track A's parts.
+    PERMITTED_REGISTRY_IMPORTS = frozenset({"max_release_lag_days"})
 
-        A try/except ImportError around it would create a second code path, and
-        the branch that runs when the import fails is the one nobody tests.
+    def test_an_owned_module_imports_the_conversion_and_nothing_else_from_it(self):
+        """Track B calls the conversion. It never takes the pieces of one.
+
+        This test used to read "must not import `repo_model.registry` until it
+        exists". It exists, `baseline.py` has called `max_release_lag_days`
+        since the purge block, and on 8 September `event_eval.py` began deriving
+        its own gap the same way -- so the old form was a guard whose premise
+        had expired, and a guard with an expired premise fails on the first
+        correct change rather than on a wrong one.
+
+        What survives is the prohibition that was always the point: **call the
+        conversion, never reassemble it.** `from .registry import
+        max_release_lag_days` is the supported reach. `import registry` and
+        `from .registry import _rows_have_available_at` are not: the first hands
+        an owned module the whole namespace to pick from, and the second is the
+        four-line helper `CLAUDE.md` names, arriving one part at a time.
+
+        Not conditional, either. A try/except ImportError around the import
+        would create a second code path, and the branch that runs when the
+        import fails is the one nobody tests -- so the whole tree is walked for
+        an import node rather than the module header read, and one hidden inside
+        a function is found the same way.
         """
 
         for name, path in self.owned_modules().items():
-            with self.subTest(module=name):
-                for imported in _imported_names(path):
-                    self.assertNotIn(
-                        "registry",
-                        imported,
-                        msg=f"{name} imports {imported!r}; repo_model.registry does "
-                        "not exist yet and must not be imported until it does",
-                    )
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        with self.subTest(module=name, imported=alias.name):
+                            self.assertNotIn(
+                                "registry",
+                                alias.name,
+                                msg=f"{name} imports the module {alias.name!r} "
+                                "rather than the one call; the whole namespace "
+                                "is then in reach and a second conversion can "
+                                "be assembled from its parts",
+                            )
+                elif isinstance(node, ast.ImportFrom) and "registry" in (
+                    node.module or ""
+                ):
+                    taken = {alias.name for alias in node.names}
+                    with self.subTest(module=name):
+                        self.assertLessEqual(
+                            taken,
+                            self.PERMITTED_REGISTRY_IMPORTS,
+                            msg=f"{name} takes "
+                            f"{sorted(taken - self.PERMITTED_REGISTRY_IMPORTS)} "
+                            f"from repo_model.registry; only "
+                            f"{sorted(self.PERMITTED_REGISTRY_IMPORTS)} is the "
+                            "supported reach, and the rest is how a second "
+                            "implementation of the conversion gets built out of "
+                            "Track A's own pieces",
+                        )
 
     def test_no_owned_module_defines_a_lag_conversion(self):
         for name, path in self.owned_modules().items():

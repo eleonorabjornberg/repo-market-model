@@ -25,6 +25,42 @@ So this is an evaluator, not a splitter mode. It trains strictly on rows that
 precede the event by more than the purge gap, scores the knowledge-holdout
 window once, and records that it did.
 
+What this module scores, and what it is conditioned on
+-----------------------------------------------------
+
+`ExceedancePredictor` is `repo_model.baseline`'s, imported. It used to be
+declared here as well, as `FitPredict` -- two identical `Callable` aliases in
+two modules, which is two vocabularies for one thing. It is declared once now,
+beside the models that implement it, and this module imports the alias, the
+`ExceedanceCurves` it returns, and the two guards both evaluation paths share.
+That is the only thing this module knows about `baseline`: the predictor is
+still a parameter, and no model is named here.
+
+The old shape passed one series of values, so **no covariate could reach a
+model through it**. The only predictor expressible was one conditioning on
+nothing, which is the climatology -- and a climatology is the baseline a Brier
+skill score is measured *against*, so the one evaluation this repository was
+designed around had nothing on the other side of the comparison. The shape now
+carries `DailyObservation` rows, which is what a covariate travels in.
+
+Widening it opens a door for covariates, which is the door the purged backtest
+built a lock for one level up: a covariate that reaches a model without being
+declared means the gap was sized over the wrong sources, computed correctly and
+in the flattering direction. So this module derives its gap from a declared
+feature set exactly as `rolling_persistence_backtest` does, and checks the
+predictor's `features_read` against that declaration after the fit, through
+`baseline._check_fitter_stayed_inside` -- the same guard, imported, not a second
+one.
+
+The evaluator also chooses the feature rows, one per scored day, with
+`baseline._feature_index`: the last panel row that clears the purge gap before
+that day. A predictor handed the panel could read the scored day itself; a
+predictor handed only the last training row could not produce a curve that
+moves, and a curve that cannot move is indistinguishable from the climatology's.
+The training boundary and the conditioning boundary are different questions --
+the first is sized against `window.start` and the second against each scored day
+-- and they are asked separately here.
+
 Relationship to `repo_model.splits`
 -----------------------------------
 
@@ -93,15 +129,24 @@ import json
 import math
 import subprocess
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence, Tuple
+from typing import Any, Mapping, Sequence, Tuple
 
+from .baseline import (
+    ExceedanceCurves,
+    ExceedancePredictor,
+    _check_fitter_stayed_inside,
+    _feature_index,
+)
 from .contract import (
     EVENT_WINDOW_KEYS,
     event_window_digest,
+    sources_for_features,
     validate_event_windows_document,
 )
+from .data import DailyObservation
+from .registry import max_release_lag_days
 from .splits import (
     LookAheadError,
     SplitError,
@@ -139,12 +184,6 @@ SCORING_HOLDOUT = "scoring"
 KNOWLEDGE_HOLDOUT = "knowledge"
 
 
-#: `fit_predict(train_dates, train_values, test_dates, taus)` returns one row
-#: per test date, each row `P(value > tau)` aligned to `taus`.
-FitPredict = Callable[
-    [Sequence[date], Sequence[float], Sequence[date], Sequence[float]],
-    Sequence[Sequence[float]],
-]
 
 
 @dataclass(frozen=True)
@@ -226,6 +265,13 @@ class EventWindowReport:
     """
 
     window: EventWindow
+    #: The feature set the caller declared, and the two facts derived from it:
+    #: the sources those features draw on and the gap those sources produced.
+    #: Carried for the reason `BacktestReport` carries the same three -- a
+    #: reporter that re-derived them would be a second derivation of the number
+    #: that shaped the run, and the two could agree today and drift later.
+    features: Tuple[str, ...]
+    sources: Tuple[str, ...]
     purge_days: int
     train_rows: int
     last_train_date: date
@@ -234,6 +280,12 @@ class EventWindowReport:
     realized: Tuple[float, ...]
     #: `exceedance[day][tau]` is the predicted `P(value > taus[tau])`.
     exceedance: Tuple[Tuple[float, ...], ...]
+    #: `feature_dates[day]` is the row the predictor read to produce
+    #: `exceedance[day]`: the last panel row that cleared the purge gap before
+    #: that scored day. Reported because it is the other half of what makes a
+    #: curve auditable -- a reader who can see the curve but not what it was
+    #: conditioned on cannot tell a forecast from a hindsight.
+    feature_dates: Tuple[date, ...]
     record: EvaluationRecord
 
 
@@ -353,12 +405,13 @@ def load_events_file(path: Path) -> Tuple[EventWindow, ...]:
 
 
 def evaluate_event_window(
-    dates: Sequence[date],
-    y: Sequence[float],
-    fit_predict: FitPredict,
+    observations: Sequence[DailyObservation],
+    fit_predict: ExceedancePredictor,
     window: EventWindow,
-    purge: int,
     *,
+    features: Sequence[str],
+    registry: Mapping[str, Mapping[str, Any]],
+    decision_time: time,
     taus: Sequence[float],
     model_config: Mapping[str, Any],
     journal_path: Path,
@@ -366,15 +419,58 @@ def evaluate_event_window(
     """Score one knowledge-holdout window: train strictly before it, once.
 
     The training set is every row that clears the purge gap ahead of
-    `event_start`, and nothing else -- the event is stripped from training
+    `window.start`, and nothing else -- the event is stripped from training
     rather than merely withheld from the headline metric, which is what makes
     this the knowledge holdout and not the scoring one.
 
+    **The gap is derived, never supplied.** The caller declares a feature set;
+    this resolves `contract.sources_for_features(features)`, sizes the gap with
+    `registry.max_release_lag_days` over exactly those sources, and then builds
+    the window. There is no `purge` argument, for the reason
+    `rolling_persistence_backtest` has none: a caller who could type the gap
+    could declare an ARX on `on_rrp` and size the gap over `nyfed_sofr` alone,
+    and the arithmetic would be right over the wrong evidence -- the one failure
+    shape that leaves no trace, because the reported number looks reasonable.
+    The two evaluation paths now take the gap from the same place *by the same
+    derivation*, which was written down in `cli_eval` before it was true here.
+
+    One consequence is intended and worth stating: `max_release_lag_days`
+    refuses to return zero, so an unpurged knowledge holdout is no longer
+    expressible through the declared path at all. That is the same consequence
+    the rolling path accepted when its gap became derived.
+
+    **Declaration, then verification.** The gap is sized before anything is
+    fitted, so this cannot ask an unfitted predictor what it reads. The
+    predictor reports `ExceedanceCurves.features_read` after the fit and it is
+    checked against the declaration by `baseline._check_fitter_stayed_inside` --
+    the same guard the rolling path uses, imported rather than restated, because
+    two implementations of the rule that sizes the gap agree until they do not.
+    A predictor that exceeded the declaration raises `LookAheadError`.
+
+    **What the predictor is conditioned on.** For each scored day the evaluator
+    picks the feature row itself, with `baseline._feature_index`: the last panel
+    row that clears the purge gap before *that day*. It is not
+    `train_index[-1]` for every day, and the difference is the point. The
+    training boundary is sized against `window.start`, so a row inside the gap
+    ahead of the window never trains; the same row can be a legitimate feature
+    row for a day further into the window, because by then it had been
+    published. Rows from inside the window are likewise readable as features for
+    later days in it and never as training rows. That is what an extrapolation
+    check is: a model that never saw a crisis, forecasting through one on the
+    information a forecaster would actually have held.
+
+    Passing the feature rows rather than letting the predictor choose is the
+    guard: a predictor handed the panel could read the scored day itself.
+
     Args:
-        dates: panel dates, strictly ascending and unique.
-        y: the target, aligned to `dates`.
-        fit_predict: called once, with the training rows, the scored dates and
-            `taus`. Returns `P(value > tau)` per scored day per tau.
+        observations: the panel, strictly ascending and unique by date. Rows,
+            not a date-and-value pair, because a covariate travels in
+            `DailyObservation.values` and could not reach a model otherwise. The
+            target is `row.spread_bps`, the same target
+            `rolling_persistence_backtest` scores; a second target argument
+            could disagree with the panel it was aligned to, and now cannot.
+        fit_predict: an `ExceedancePredictor`, called once with the training
+            rows, the feature rows and `taus`. Returns `ExceedanceCurves`.
         window: the declared knowledge-holdout window, inclusive at both ends.
             An `EventWindow`, not loose dates, and the reason is the checksum.
             `load_event_windows` refuses a declaration without one; taking the
@@ -384,12 +480,14 @@ def evaluate_event_window(
             There is now no argument list that scores an unpinned window: the
             only way to obtain an `EventWindow` is to have supplied a checksum,
             and the ordinary way is `load_event_windows(metadata)`.
-        purge: calendar days between the last training row and `window.start`.
-            Sized by `repo_model.registry.max_release_lag_days` over the feature
-            set's sources, exactly as for `rolling_origin` -- the two evaluation
-            paths mean the same thing by a gap and take the number from the same
-            place.
-            Required, for the reasons in `splits.require_purge_days`.
+        features: the panel columns the predictor is declared to read.
+            **Required, keyword-only, with no default**, exactly as on the
+            rolling path. Everything about the gap follows from this.
+        registry: the parsed source registry, for `max_release_lag_days`. This
+            module never reads a `release_lag` itself -- a wrong conversion is a
+            provenance error and belongs with Track A.
+        decision_time: when the forecast is made, for `max_release_lag_days`.
+            Required and undefaulted there, so required and undefaulted here.
         taus: the exceedance family, strictly ascending.
         model_config: hashed into the evaluation record, so a rerun with
             different settings is distinguishable from a repeat of the same one.
@@ -398,12 +496,27 @@ def evaluate_event_window(
     Raises:
         SplitError: malformed panel, window, taus or predictions.
         LookAheadError: the training set reaches into the purge gap or the
-            window, or the scored rows are not exactly the declared window.
+            window, the scored rows are not exactly the declared window, a
+            feature row does not clear the gap before the day it is read for,
+            or the predictor read a column outside `features`.
+        UndeclaredFeatureError: `features` names a column
+            `contract.sources_for_features` cannot classify, or one declared to
+            have no ingesting source. Raised before any row is selected.
+        RegistryContractError: the derived sources cannot support a safe bound.
+            Track A's refusal, passed through unchanged -- this module has no
+            standing to soften it.
     """
 
-    ordered_dates = list(dates)
-    values = list(y)
-    _validate_panel(ordered_dates, values)
+    # Before any row is selected: an unresolvable feature set has no gap, so it
+    # has no evaluation. Resolving first also means a caller who misspells a
+    # column is told which column, rather than getting a window-shaped complaint
+    # further in.
+    declared: Tuple[str, ...] = tuple(features)
+    sources = sources_for_features(declared)
+    purge = max_release_lag_days(registry, sources, decision_time=decision_time)
+
+    rows = list(observations)
+    ordered_dates, values = _validate_panel(rows)
     require_purge_days(purge)
     tau_family = _validate_taus(taus)
     if not isinstance(window, EventWindow):
@@ -430,13 +543,26 @@ def evaluate_event_window(
         ordered_dates, train_index, scored_index, event_start, event_end, purge
     )
 
-    predictions = fit_predict(
-        tuple(ordered_dates[i] for i in train_index),
-        tuple(values[i] for i in train_index),
-        tuple(ordered_dates[i] for i in scored_index),
+    # One feature row per scored day, chosen here and not by the predictor. The
+    # candidate set is every panel row before the scored day -- a prefix, which
+    # is the shape `_feature_index` scans -- so a day late in the window may
+    # read a row from earlier in the window, and never one that has not cleared
+    # the gap before it.
+    feature_index = [
+        _feature_index(ordered_dates, range(index), index, purge)
+        for index in scored_index
+    ]
+    _assert_feature_rows_clear_the_gap(ordered_dates, feature_index, scored_index, purge)
+
+    prediction = fit_predict(
+        tuple(rows[i] for i in train_index),
+        tuple(rows[i] for i in feature_index),
         tau_family,
     )
-    exceedance = _validate_predictions(predictions, len(scored_index), tau_family)
+    exceedance = _validate_prediction(prediction, len(scored_index), tau_family)
+    _check_fitter_stayed_inside(
+        prediction.features_read, declared, sources, purge
+    )
 
     record = EvaluationRecord(
         evaluated_at=datetime.now(timezone.utc).isoformat(),
@@ -455,6 +581,8 @@ def evaluate_event_window(
 
     return EventWindowReport(
         window=window,
+        features=declared,
+        sources=sources,
         purge_days=purge,
         train_rows=len(train_index),
         last_train_date=ordered_dates[train_index[-1]],
@@ -462,21 +590,84 @@ def evaluate_event_window(
         scored_dates=tuple(ordered_dates[i] for i in scored_index),
         realized=tuple(values[i] for i in scored_index),
         exceedance=exceedance,
+        feature_dates=tuple(ordered_dates[i] for i in feature_index),
         record=record,
     )
 
 
-def _validate_panel(dates: Sequence[date], values: Sequence[float]) -> None:
-    if not dates:
+def _validate_panel(
+    rows: Sequence[DailyObservation],
+) -> Tuple[Tuple[date, ...], Tuple[float, ...]]:
+    """The panel's dates and its target, or a `SplitError` naming the fault.
+
+    Returns both rather than checking in place, so the target is read once. It
+    is `row.spread_bps`, the same target the rolling path scores; the evaluator
+    used to take a parallel `y` sequence, and "the dates and the values disagree
+    about their length" was a fault it had to check for. One panel cannot
+    disagree with itself, so that check is gone rather than relaxed.
+
+    `spread_bps` is computed from `sofr` and `iorb`, so a row missing either
+    raises where a row carrying a string used to. Both are refused, and the
+    message names the row's date rather than its position: a panel is read by
+    date and a position is a number the reader has to count to.
+    """
+
+    ordered = list(rows)
+    if not ordered:
         raise SplitError("cannot evaluate an empty panel")
-    if len(dates) != len(values):
-        raise SplitError(f"{len(dates)} dates against {len(values)} values")
-    ensure_strictly_ascending(dates)
-    for position, value in enumerate(values):
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise SplitError(f"value {position} is not numeric: {value!r}")
+    dates = []
+    values = []
+    for position, row in enumerate(ordered):
+        when = getattr(row, "date", None)
+        if not isinstance(when, date) or isinstance(when, datetime):
+            raise SplitError(f"row {position} carries no date: {row!r}")
+        try:
+            value = float(row.spread_bps)
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise SplitError(f"row {when} has no readable spread: {exc}") from exc
         if not math.isfinite(value):
-            raise SplitError(f"value {position} is not finite")
+            raise SplitError(f"row {when} has a non-finite spread")
+        dates.append(when)
+        values.append(value)
+    ensure_strictly_ascending(dates)
+    return tuple(dates), tuple(values)
+
+
+def _assert_feature_rows_clear_the_gap(
+    dates: Sequence[date],
+    feature_index: Sequence[int],
+    scored_index: Sequence[int],
+    purge: int,
+) -> None:
+    """Every feature row was publishable before the day it is read for.
+
+    `_feature_index` already states the boundary through `clears_purge`, so this
+    cannot disagree with it on a run that went through that function. It is here
+    because the conditioning set is the door the widened interface opened: a
+    covariate reaching a model is also a covariate reaching it from the wrong
+    day, and the check that it did not is worth being able to point at.
+
+    Stated as a fact about the *pairing*, which is what `_feature_index` cannot
+    say: the row is checked against the scored day it was chosen for, not
+    against the window opening. A feature row may sit inside the purge gap ahead
+    of `window.start`, or inside the window itself, and still be legitimate for a
+    later day -- what it may never be is unpublished on the day it is read.
+
+    `LookAheadError`, never an `assert`: `python -O` strips asserts.
+    """
+
+    for position, (feature, scored) in enumerate(zip(feature_index, scored_index)):
+        if feature >= scored:
+            raise LookAheadError(
+                f"the feature row for {dates[scored]} is {dates[feature]}, which "
+                f"is not before it"
+            )
+        if not clears_purge(dates[feature], dates[scored], purge):
+            raise LookAheadError(
+                f"scored day {position} ({dates[scored]}) is forecast from "
+                f"{dates[feature]}, which does not clear the {purge}-day purge "
+                f"gap before it"
+            )
 
 
 def _validate_taus(taus: Sequence[float]) -> Tuple[float, ...]:
@@ -491,12 +682,27 @@ def _validate_taus(taus: Sequence[float]) -> Tuple[float, ...]:
     return family
 
 
-def _validate_predictions(
-    predictions: Any,
+def _validate_prediction(
+    prediction: Any,
     scored_rows: int,
     taus: Tuple[float, ...],
 ) -> Tuple[Tuple[float, ...], ...]:
-    rows = list(predictions)
+    """The curves, checked; the `features_read` claim is checked by its guard.
+
+    Takes an `ExceedanceCurves` rather than a bare sequence, and says so: a
+    predictor that returned only curves would be one that made no claim about
+    what it read, and the declaration check downstream would then have nothing
+    to compare against and would pass by default.
+    """
+
+    if not isinstance(prediction, ExceedanceCurves):
+        raise SplitError(
+            f"fit_predict must return an ExceedanceCurves, got "
+            f"{type(prediction).__name__}; the curves alone carry no account of "
+            f"what the model read, and the declared feature set is checked "
+            f"against that account"
+        )
+    rows = list(prediction.curves)
     if len(rows) != scored_rows:
         raise SplitError(f"fit_predict returned {len(rows)} rows for {scored_rows} days")
     checked = []
