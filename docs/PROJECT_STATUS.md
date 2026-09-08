@@ -19,10 +19,36 @@ The strongest completed work is the part that prevents misleading empirical
 results: point-in-time provenance, release-lag handling at field granularity,
 immutable acquisition, purged time-series evaluation, event-window separation,
 and probabilistic scoring. The benchmark now writes its numbers to a file
-instead of to a terminal. The principal missing work is unchanged and is the
-whole of what stands between this page and a real claim: **every number this
-repository reports was produced on a synthetic sample.** The join that would
-change that now exists and has not been run.
+instead of to a terminal.
+
+**The sentence that stood here through every previous revision of this page --
+that every number this repository reports was produced on a synthetic sample --
+is no longer true.** Milestone A steps 3 and 4 ran: a funding-only daily panel
+was frozen from the 6 September 2026 NY Fed and FRED snapshots, and the
+persistence benchmark was measured on it. 2104 rows, 2018-04-03 to 2026-09-03,
+no holes in either leg of the spread. The panel is gitignored; its build
+manifest and the run records are in `docs/runs/`, and no figure from them is
+transcribed onto this page or any other.
+
+What that does *not* establish is forecast skill. The persistence benchmark is
+a benchmark, and reading its record will show it under-covering its own nominal
+interval. That is the benchmark being honest rather than the pipeline being
+broken, and it is the number a challenger model now has to beat.
+
+Three things about the frozen panel belong on a status page rather than only in
+a commit message:
+
+- **The administered leg is spliced.** IORB begins 2021-07-29; IOER, which it
+  replaced, supplies everything before. Without the splice the panel begins in
+  July 2021 and contains no stress episode at all.
+- **IOER's never-revised declaration is not vintage-verified.** No route to
+  ALFRED was available from either machine on the day. The claim rests on the
+  administrative argument and on the series being closed, and it is weaker than
+  the IORB declaration beside it. Every run record built on this panel inherits
+  that, and `metadata/sources.json` says so in the entry itself.
+- **The panel is funding-only by construction, not by choice.** `tgcr`, `bgcr`
+  and `treasury_settlement` are built columns with no observations, because
+  their sources were not part of this freeze.
 
 ## Evidence available now
 
@@ -109,18 +135,27 @@ forecast skill, because the checked-in sample is synthetic.
 
 Stated explicitly, because each is easy to mistake for something stronger.
 
-- **No result rests on real data.** The persistence benchmark beats the ARX on mean
-  absolute error at every regressor set tried, and that comparison is reported
-  rather than tuned away. On a two-dozen-row synthetic sample with one constant
-  regressor and a handful of distinct rate values it is evidence about the harness,
-  not about either model. The published report makes the numbers durable; it does
-  not make them meaningful.
-- **The daily panel has been built and not run.** The join from point-in-time
-  observations to wide daily rows exists and is reachable from the command line;
-  no panel has been produced from it. `data/processed/` is empty, and every number
-  this repository reports still comes from a hand-written sample file. This is now
-  one command away rather than one block away, which is a different kind of gap and
-  not a smaller claim.
+- **No *model comparison* rests on real data.** This gap has narrowed and not
+  closed. The persistence benchmark has now been measured on a fetched panel of
+  2104 rows, so its numbers are about the market rather than about the harness.
+  The ARX comparison has not: the head-to-head that persistence wins is still the
+  two-dozen-row synthetic sample with one constant regressor, and it remains
+  evidence about the harness. A challenger measured on the frozen panel is Phase
+  2's first job.
+- **The daily panel has been built and run.** `data/processed/` is no longer
+  empty. What the run exposed is that `build` had been writing a panel `backtest`
+  could not open -- the row grid was the union of every source's reference dates,
+  so a calendar-daily administered rate beside a business-daily market rate
+  produced rows on which the target does not exist. That is fixed and the fix is
+  a contract decision, not a repair: see "The frozen funding panel" in the
+  Summary.
+- **The headline exceedance metric does not yet scale to the panel.**
+  `exceedance-backtest` refits at every rolling origin, which is the whole point
+  of it, and the cost is roughly quadratic in panel length: seconds on the
+  twenty-five-row fixture, minutes on 2104 rows. Nothing about the number is
+  wrong; the command simply outgrew the fixture it was developed against, and no
+  run record for it exists yet on the frozen panel. This is a real gap between
+  "the metric has a path" and "the metric has been taken".
 - **The monthly N-MFP panel is a single observation.** One quarterly archive yields
   one complete monthly cross-section, and one archive has been acquired. After the
   coverage floor is applied, the monthly `mmf_*` series have one reference date. No
@@ -213,10 +248,13 @@ The repository may accurately be described as a leakage-safe, point-in-time
 financial research pipeline with a tested probabilistic evaluation harness, a
 model interface with two implementers, purged rolling-origin evaluation of both,
 and a benchmark that publishes a reproducible record of its own run. It should
-not yet be described as a successful machine-learning forecast of repo stress: no
-result rests on real data, no panel has been produced from the join that would
-supply it, and the monthly money-fund panel is one cross-section rather than a
-series.
+not yet be described as a successful machine-learning forecast of repo stress. A
+frozen funding panel now exists and the persistence benchmark has been measured
+on it, so the phrase that stood here -- that no result rests on real data -- has
+stopped being true. What has not happened is the part that would make it a
+forecast: no challenger has been scored against that benchmark on real data, the
+headline exceedance metric has not been taken on the panel at all, and the
+monthly money-fund panel is still one cross-section rather than a series.
 
 As an academic exercise, its current contribution is methodological: the repository
 shows what it takes to keep a funding-market forecast honest before any forecast is
@@ -226,5 +264,22 @@ keep the two from being confused.
 The next portfolio milestone is a compact results package containing a frozen data
 snapshot, a persistence-versus-challenger comparison under purged evaluation,
 tail-calibration evidence, event-window plots, limitations, and exact reproduction
-instructions. The reporting half of that package now exists; the data half does
-not.
+instructions. The reporting half of that package existed before Milestone A; the
+frozen snapshot and the persistence half of the comparison exist now. What is
+still missing from it is the challenger comparison and the tail-calibration
+evidence, which is Phase 2.
+
+## Where the run records live, and why there
+
+`docs/runs/` holds the frozen panel's build manifest and the records measured on
+it. The panel itself stays gitignored under `data/processed/`; the manifest is
+the committable half, and it reached nobody while it sat beside the panel.
+
+`docs/runs/` was chosen over `metadata/panels/` -- which would have followed the
+N-MFP archive-manifest precedent -- because `metadata/` is Track A's and a human
+commit there while Track A's N-MFP packet is in flight is a conflict waiting to
+happen. It is also outside `tests/test_docs_freshness.py`'s Markdown scope, and
+it is where the records that cite the manifest land, so the panel and the numbers
+measured on it sit together. It can move to `metadata/` once that packet is done.
+Recorded here because a path chosen and unrecorded is the next session's
+archaeology.

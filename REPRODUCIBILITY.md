@@ -51,12 +51,32 @@ Exercise the public synthetic workflow:
 
 ```bash
 PYTHONPATH=src python3 -m repo_model.cli audit data/sample/daily_market.csv
-PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv
+PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv \
+  --registry metadata/sources.json \
+  --feature spread_bps \
+  --decision-time 16:00 \
+  --report /tmp/persistence_sample.json
 ```
 
 The sample panel contains 25 synthetic rows. These commands verify parsing,
 validation, chronological forecasting, and reporting only. Their numerical output
 is not a research result.
+
+`backtest` requires all four arguments and has no defaults for them. That is
+deliberate: the registry and the feature set decide the purge, the decision time
+decides what a builder could have known, and the report path is where the numbers
+go — a default for any of them would be an unstated experimental choice. For real
+numbers on a fetched panel rather than on this fixture, see "The published runs"
+below.
+
+> This block was wrong from `1cd7a9f` until 8 September 2026: it published a
+> command that had not run for four commits, and a reader following this page hit
+> an argument error on the second line they were told to type.
+> `tests/test_docs_freshness.py` catches a transcribed count or a stale date and
+> cannot catch this, because the rot was in a command's arguments rather than in a
+> digit. **A published command is a claim, and it decays exactly like a published
+> number.** A guard that executes the commands the published documents publish is
+> worth a block of its own and does not exist yet.
 
 ## Acquire public source snapshots
 
@@ -89,6 +109,21 @@ A result is reportable only when its run record identifies:
 - the model configuration and random seed, where applicable;
 - the rolling-origin split and registry-derived purge gap; and
 - any event-window checksum and append-only evaluation-journal entry.
+
+## The published runs
+
+`docs/runs/` holds the frozen funding panel's build manifest and the run records
+measured on it. The panel itself is derived from gitignored raw snapshots and is
+not tracked; the manifest is, so a cloner receives the digests of the snapshots it
+was built from, the build cutoff, the columns built and refused, the holes and the
+count of reported dates that are not rows.
+
+**No figure from those runs is transcribed here, or into any Markdown page in this
+repository.** The record files are the publication. A number typed into a document
+is the same drift as a hand-written date, and `tests/test_docs_freshness.py`
+refuses both. To see the numbers, read the JSON. To reproduce them, rebuild the
+panel from the snapshot digests the manifest names and re-run the command each
+record's `declaration` block states.
 
 Generated panels, journals, and model artifacts belong under `data/processed/` or
 `artifacts/`; both paths are ignored by Git. Publish compact derived tables and
