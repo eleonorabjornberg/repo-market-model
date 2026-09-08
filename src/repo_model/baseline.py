@@ -50,6 +50,26 @@ nothing checked that whoever produced it covered what the model reads -- and it
 is the first time this seam has been answered rather than routed around. The
 declaration is verified against the first fitted model, because a declaration
 nothing checks is a comment.
+
+The exceedance interface
+------------------------
+
+`ExceedancePredictor` is the second interface this module declares, and it is
+the knowledge holdout's: `event_eval.evaluate_event_window` calls one of these
+and scores what comes back. It has two implementers here, for the same reason
+the forecast interface needed a second one.
+
+`climatology_exceedance` is the unconditional baseline a Brier skill score is
+measured against. `arx_exceedance` is the conditional side of that comparison,
+and its curve is `FittedArx.predict_stress` -- the empirical residual law the
+ARX already fits, read once per feature row. Until the interface carried rows
+rather than one series of values no covariate could reach a model through it,
+so the climatology was the only thing the knowledge holdout could score and the
+skill score had nothing to be measured against.
+
+That alias was declared twice before this block, here and as
+`event_eval.FitPredict`. It is declared once now, here, and the evaluator
+imports it -- so `baseline` still does not depend on the evaluator it feeds.
 """
 
 from __future__ import annotations
@@ -82,12 +102,57 @@ from .splits import (
 )
 
 
-#: `event_eval.FitPredict`, restated as a type alias rather than imported, so
-#: `baseline` does not depend on the evaluator it feeds. The evaluator validates
-#: the shape at the boundary; this is documentation with a name.
+@dataclass(frozen=True)
+class ExceedanceCurves:
+    """What an exceedance predictor returns: the curves, and what it read.
+
+    `curves[day][tau]` is `P(value > taus[tau])` on the scored day at `day`,
+    aligned to the feature rows the evaluator handed over and to the tau family
+    it declared.
+
+    `features_read` is the same question `FittedForecastModel.features_read`
+    answers on the rolling path, in the same panel vocabulary, and it is here
+    for the same reason. `event_eval` sizes its purge from a declared feature
+    set before anything is fitted; a predictor whose model read a column outside
+    that set was purged over the wrong sources, and the error is in the
+    flattering direction. A declaration nothing checks is a comment, so the
+    interface carries the answer rather than leaving the evaluator to infer it
+    from the shape of a callable it cannot see inside.
+
+    It is the predictor's own account of itself, exactly as on the rolling path:
+    a predictor that under-reported what it read would defeat the check. That is
+    the same trust `_check_fitter_stayed_inside` already places in
+    `features_read`, and it is why `FittedArx` derives that tuple from
+    `design_names` rather than assembling a second one by hand.
+    """
+
+    curves: Tuple[Tuple[float, ...], ...]
+    features_read: Tuple[str, ...]
+
+
+#: The exceedance-predictor interface, declared once and in one place.
+#:
+#: `event_eval.FitPredict` was an identical `Callable` alias in the evaluator
+#: and this was a restatement of it -- two vocabularies for one thing, and a
+#: seam nobody declared. The alias lives here, with the models whose shape it
+#: describes, and `event_eval` imports it: `baseline` still does not depend on
+#: the evaluator it feeds, and there is no longer a second copy to drift.
+#:
+#: `fit_predict(train_rows, feature_rows, taus) -> ExceedanceCurves`. One curve
+#: per feature row. The feature rows are chosen by the evaluator -- the last row
+#: that cleared the purge gap before each scored day, by `_feature_index`, the
+#: same rule the rolling path uses -- so a predictor cannot pick its own
+#: conditioning set and cannot reach a row it was not allowed to see.
+#:
+#: The rows are `DailyObservation`, not a date-and-value pair, because that is
+#: what carries a covariate. The narrower shape this replaces passed one series
+#: of values, so the only thing expressible through it was a predictor
+#: conditioning on nothing -- which is the climatology, which is the baseline a
+#: skill score is measured against. There was nothing on the other side of the
+#: comparison.
 ExceedancePredictor = Callable[
-    [Sequence[date], Sequence[float], Sequence[date], Sequence[float]],
-    Sequence[Sequence[float]],
+    [Sequence[DailyObservation], Sequence[DailyObservation], Sequence[float]],
+    ExceedanceCurves,
 ]
 
 
@@ -1029,7 +1094,7 @@ def _feature_index(
 
 
 def _check_fitter_stayed_inside(
-    model: FittedForecastModel,
+    features_read: Sequence[str],
     features: Tuple[str, ...],
     sources: Tuple[str, ...],
     purge: int,
@@ -1037,10 +1102,10 @@ def _check_fitter_stayed_inside(
     """Raise unless the fitted model read only what the caller declared.
 
     The purge was sized from `features`, before this model existed. If the
-    fitter read a column outside that set, the gap protecting this backtest was
-    computed over the wrong sources -- and the error is in the flattering
-    direction, because the undeclared column is the one whose release lag was
-    never taken into the maximum.
+    fitter read a column outside that set, the gap protecting the reported
+    numbers was computed over the wrong sources -- and the error is in the
+    flattering direction, because the undeclared column is the one whose release
+    lag was never taken into the maximum.
 
     `LookAheadError`, not `ValueError`: this is a leakage condition, and it is
     the same condition `_feature_index` raises for one level down. Not an
@@ -1051,10 +1116,19 @@ def _check_fitter_stayed_inside(
     than were declared. Declaring more than the fitter uses purges more than the
     evidence requires, which costs training rows and is visible in the report --
     conservative and legible, so it is not refused here.
+
+    Takes the tuple rather than the fitted model, so that **both** evaluation
+    paths reach this one guard. `rolling_persistence_backtest` passes
+    `fitted.features_read`; `event_eval.evaluate_event_window` passes
+    `ExceedanceCurves.features_read`, which is the same claim made by a
+    predictor whose fitted model the evaluator never holds. A second copy of
+    this comparison in the evaluator would be a second implementation of the
+    rule that sizes the gap, and two implementations of that agree until they
+    do not.
     """
 
     exceeded = tuple(
-        name for name in model.features_read if name not in frozenset(features)
+        name for name in features_read if name not in frozenset(features)
     )
     if exceeded:
         raise LookAheadError(
@@ -1243,7 +1317,9 @@ def rolling_persistence_backtest(
             # once keeps this off the hot path without weakening it, and
             # checking *after* the fit is the only order available -- the
             # regressors do not exist before it.
-            _check_fitter_stayed_inside(fitted, declared, sources, purge)
+            _check_fitter_stayed_inside(
+                fitted.features_read, declared, sources, purge
+            )
         model = fitted
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
@@ -1283,11 +1359,18 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
     holdout, where the whole question is what a model that has seen only calm
     history says about a crisis it was never shown.
 
-    Shape is `event_eval.FitPredict`: called once with the training rows, the
-    scored dates and the tau family, returning `P(value > tau)` per scored day
-    per tau. `P(Y > tau)` is the fraction of training values strictly above
+    Shape is `ExceedancePredictor`: called once with the training rows, the
+    feature rows and the tau family, returning `P(value > tau)` per scored day
+    per tau. `P(Y > tau)` is the fraction of training spreads strictly above
     `tau` -- strictly, matching the contract's `P(spread > tau)` and the label
     columns' `stress_gt_*`.
+
+    **The feature rows are read for their count and nothing else**, which is the
+    same statement as "the curve is the same on every scored day" written in the
+    place a reader of the code will look. When the interface widened to carry
+    covariates this predictor did not change what it reads: it reads
+    `spread_bps` off the training rows, and the numbers it reported before the
+    widening it reports after it, unchanged.
 
     Two properties worth stating, because both are deliberate:
 
@@ -1331,12 +1414,11 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
 
     def fit_predict(
-        train_dates: Sequence[date],
-        train_values: Sequence[float],
-        test_dates: Sequence[date],
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
         taus: Sequence[float],
-    ) -> List[Tuple[float, ...]]:
-        history = [float(value) for value in train_values]
+    ) -> ExceedanceCurves:
+        history = [float(row.spread_bps) for row in train_rows]
         if len(history) < minimum_history:
             raise ValueError(
                 f"climatology needs at least {minimum_history} training rows, got "
@@ -1349,6 +1431,86 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
             sum(1 for value in history if value > float(tau)) / denominator
             for tau in taus
         )
-        return [curve for _ in test_dates]
+        # `("spread_bps",)` for the same reason `FittedPersistence` reports it:
+        # the target is the one column this reads, and it reads it off the
+        # training rows rather than off a feature row. The purge must still
+        # cover its sources, so it is declared rather than reported as empty --
+        # an empty claim would pass any declaration, which is the check
+        # inverted.
+        return ExceedanceCurves(
+            tuple(curve for _ in feature_rows), ("spread_bps",)
+        )
+
+    return fit_predict
+
+
+def arx_exceedance(
+    regressors: Sequence[str], minimum_history: int = 20
+) -> ExceedancePredictor:
+    """Conditional exceedance from the ARX's own fitted residual law.
+
+    The second implementer of `ExceedancePredictor`, and what makes it an
+    interface. With only `climatology_exceedance` the knowledge holdout could
+    score nothing but the unconditional baseline a skill score is measured
+    against -- there was nothing on the other side of the comparison -- and this
+    repository has already settled that an interface with one implementer is a
+    description rather than an interface.
+
+    `fit_arx` is fitted on the training rows the evaluator hands over, which is
+    everything that cleared the purge gap ahead of the window and nothing from
+    inside it, and the fitted model is then read once per feature row. **The
+    curve moves across scored days**, because the design row moves; that it
+    moves is the entire difference between this and the climatology, whose curve
+    is flat by construction.
+
+    **The distribution is the one the ARX already fits.** `predict_stress`
+    inverts `_quantile` over the leave-one-out residuals through
+    `_exceedance_from_residuals` -- no Gaussian, no fitted parametric family, no
+    smoothing and no Laplace correction. Above the fitted support a zero stays a
+    zero, for the reason `climatology_exceedance` gives at length: a model that
+    put no weight where the event actually went is the most informative result
+    this evaluator can produce, and a prior nobody declared would turn it into a
+    small number that merely looks like a poor forecast.
+
+    Nothing is re-derived here. The construction is `FittedArx.predict_stress`,
+    which is the same `_exceedance_from_residuals` persistence uses; reading the
+    residual law a second time in this function would be a second opinion about
+    one distribution.
+
+    `features_read` comes off the fitted model, so it is `spread_bps` plus the
+    declared regressors -- the autoregressive term included, which is the half a
+    predictor reporting only what it was handed would leave out.
+
+    Args:
+        regressors: the ordered exogenous regressor names, as `fit_arx` takes
+            them. **Required, with no default**, for the reason `fit_arx`
+            refuses one: a default would be a silent assumption about which
+            columns a model is entitled to read.
+        minimum_history: the shortest training frame that may produce a fitted
+            law. Passed to `fit_arx`, which raises below it.
+
+    Returns:
+        A `fit_predict` callable suitable for `event_eval.evaluate_event_window`.
+
+    Raises:
+        ValueError, MissingRegressorError, SingularDesignError, LookAheadError:
+            at call time, whatever `fit_arx` raises on the training frame it is
+            given. They are not caught and re-wrapped here: a refusal to fit is
+            the fitter's statement about the frame, and a wrapper would put a
+            second vocabulary between it and the caller.
+    """
+
+    declared = tuple(str(name) for name in regressors)
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+    ) -> ExceedanceCurves:
+        model = fit_arx(train_rows, declared, minimum_history=minimum_history)
+        return ExceedanceCurves(
+            tuple(model.predict_stress(row, taus) for row in feature_rows),
+            model.features_read,
+        )
 
     return fit_predict

@@ -30,7 +30,6 @@ from .baseline import climatology_exceedance, rolling_persistence_backtest
 from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .event_eval import evaluate_event_window, load_events_file
-from .registry import max_release_lag_days
 from .splits import SplitError
 
 
@@ -55,19 +54,12 @@ def _derived_sources(args: argparse.Namespace) -> tuple[str, ...]:
     return sources_for_features(args.feature)
 
 
-def _purge_days(args: argparse.Namespace) -> int:
-    """The gap, from `registry.max_release_lag_days` over the derived sources.
-
-    Both evaluation paths reach it through this one function, and now through
-    the same derivation as well. `--decision-time` is required because a default
-    would be a silent assumption about when the forecast is made.
-    """
-
-    return max_release_lag_days(
-        _registry(args),
-        _derived_sources(args),
-        decision_time=time.fromisoformat(args.decision_time),
-    )
+# There is no `_purge_days` here any more. Both evaluation paths derive the gap
+# inside the function that uses it, from the feature set the caller declared, so
+# this module hands over `--feature`, `--registry` and `--decision-time` and
+# never holds the number. A gap computed here and passed in would be a second
+# place the number could come from, and the CLI is the one place a caller would
+# reach to change it.
 
 
 def _backtest(args: argparse.Namespace) -> int:
@@ -138,7 +130,9 @@ def _event_holdout(args: argparse.Namespace) -> int:
     * **The purge gap** comes from `registry.max_release_lag_days` over the
       sources `contract.sources_for_features` derives from `--feature`, exactly
       as the rolling path sizes it. The two evaluation paths mean the same thing
-      by a gap and take the number from the same place, by the same derivation.
+      by a gap and take the number from the same place, by the same derivation
+      -- and, since this block, in the same place: `evaluate_event_window`
+      derives it, and this command passes the declaration rather than the gap.
 
     **There is no `--purge`.** A flag that set it by hand would be a way to
     shrink the gap at the one moment shrinking it is tempting -- when the
@@ -160,14 +154,9 @@ def _event_holdout(args: argparse.Namespace) -> int:
     """
 
     rows = load_daily_panel(args.panel)
-    dates = [row.date for row in rows]
-    spreads = [row.spread_bps for row in rows]
 
     declaration = load_stress_thresholds(args.thresholds)
     taus = tuple(float(tau) for tau in declaration["taus_bp"])
-
-    sources = _derived_sources(args)
-    purge = _purge_days(args)
 
     windows = load_events_file(args.events)
     if args.window:
@@ -180,12 +169,18 @@ def _event_holdout(args: argparse.Namespace) -> int:
             )
         windows = tuple(declared[name] for name in args.window)
 
+    # The gap is no longer computed here. `evaluate_event_window` derives it
+    # from the declared feature set, by the same call this module used to make
+    # -- so the number in `model_config` and the number the run was purged at
+    # cannot be two numbers. The sources are still derived here, and only for
+    # the hash: `_derived_sources` and the evaluator both reach
+    # `contract.sources_for_features`, which is the one mapping.
+    sources = _derived_sources(args)
     fit_predict = climatology_exceedance(minimum_history=args.minimum_history)
     model_config = {
         "model": "climatology",
         "minimum_history": args.minimum_history,
         "taus_bp": list(taus),
-        "purge_days": purge,
         "features": sorted(args.feature),
         "sources": sorted(sources),
     }
@@ -193,11 +188,12 @@ def _event_holdout(args: argparse.Namespace) -> int:
     reported = []
     for window in windows:
         report = evaluate_event_window(
-            dates,
-            spreads,
+            rows,
             fit_predict,
             window,
-            purge,
+            features=args.feature,
+            registry=_registry(args),
+            decision_time=time.fromisoformat(args.decision_time),
             taus=taus,
             model_config=model_config,
             journal_path=args.journal,
@@ -216,8 +212,10 @@ def _event_holdout(args: argparse.Namespace) -> int:
                 # produced. The journal carries them inside the hashed
                 # `model_config`; a reader of stdout should not have to open the
                 # journal to see which feature set this window was scored under.
-                "features": sorted(args.feature),
-                "sources": sorted(sources),
+                # Read off the report, as on the rolling path, so what is
+                # printed is what shaped the run.
+                "features": sorted(report.features),
+                "sources": sorted(report.sources),
                 "train_rows": report.train_rows,
                 "last_train_date": report.last_train_date.isoformat(),
                 "taus_bp": list(report.taus),
@@ -233,9 +231,15 @@ def _event_holdout(args: argparse.Namespace) -> int:
                         "date": when.isoformat(),
                         "realized_bps": realized,
                         "exceedance": list(curve),
+                        # The row the curve was conditioned on. A curve without
+                        # it cannot be told from a hindsight by a reader.
+                        "feature_date": feature.isoformat(),
                     }
-                    for when, realized, curve in zip(
-                        report.scored_dates, report.realized, report.exceedance
+                    for when, realized, curve, feature in zip(
+                        report.scored_dates,
+                        report.realized,
+                        report.exceedance,
+                        report.feature_dates,
                     )
                 ],
             }
