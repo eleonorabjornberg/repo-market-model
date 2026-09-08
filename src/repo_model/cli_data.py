@@ -18,16 +18,26 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import date
+from datetime import date, datetime, time
 from pathlib import Path
 
-from .data import audit_panel, load_daily_panel
+from .data import (
+    audit_panel,
+    build_daily_panel,
+    load_daily_panel,
+    load_point_in_time_panel,
+    write_daily_panel,
+)
 from .ingest import (
+    DEFAULT_SOURCE_REGISTRY,
     SEC_NMFP_ARCHIVE_MANIFEST,
+    build_point_in_time_snapshot,
     fetch_fred_macro,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
+    load_snapshot_manifest,
     load_sec_nmfp_archive_manifest,
+    load_source_registry,
     write_sec_nmfp_archive_manifest,
 )
 
@@ -119,6 +129,70 @@ def _backfill_nmfp(args: argparse.Namespace) -> int:
     return 0
 
 
+def _build(args: argparse.Namespace) -> int:
+    """Build the wide daily panel from the raw snapshots on disk.
+
+    Two hops, in one command, because until now neither end was reachable:
+    `build_point_in_time_snapshot` was called only from tests, and nothing at
+    all turned its long output into `DailyObservation`.
+
+    The build cutoff is an argument and is recorded in the manifest. It is a
+    property of the build -- "what a builder standing here could have known" --
+    not of a row and not of the model, so it is declared once, out loud, rather
+    than defaulting to the wall clock and making two runs of the same command
+    incomparable.
+
+    `--decision-time` is passed straight through to the pricing function, which
+    is the only thing that reads it. It does not move a value: the join does
+    not subtract the release lag, the purge does.
+    """
+
+    manifests = sorted(args.raw_root.glob("*/*.manifest.json"))
+    if args.source:
+        wanted = set(args.source)
+        manifests = [item for item in manifests if item.parent.name in wanted]
+    if not manifests:
+        raise ValueError(f"no raw snapshot manifests under {args.raw_root}")
+    artifacts = [load_snapshot_manifest(item) for item in manifests]
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    long_path = args.output.with_name(args.output.stem + "_point_in_time.csv")
+    snapshot = build_point_in_time_snapshot(
+        artifacts, long_path, registry_path=args.registry
+    )
+    rows = load_point_in_time_panel(long_path)
+
+    build = build_daily_panel(
+        rows,
+        load_source_registry(args.registry),
+        build_cutoff=datetime.fromisoformat(args.build_cutoff.replace("Z", "+00:00")),
+        decision_time=time.fromisoformat(args.decision_time),
+    )
+    manifest_path = write_daily_panel(
+        build, args.output, source_shas=snapshot.source_shas
+    )
+    dates = [observation.date for observation in build.observations]
+    print(
+        json.dumps(
+            {
+                "panel": str(args.output),
+                "manifest": str(manifest_path),
+                "point_in_time_rows": snapshot.row_count,
+                "rows": len(build.observations),
+                "start_date": dates[0].isoformat(),
+                "end_date": dates[-1].isoformat(),
+                "build_cutoff": build.build_cutoff.isoformat(),
+                "built_columns": list(build.built_columns),
+                "refused_columns": dict(build.refusals),
+                "holes": dict(build.holes),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the data layer's subcommands to the shared parser."""
 
@@ -136,6 +210,39 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     fetch.add_argument("--output-root", type=Path, default=Path("data/raw"))
     fetch.set_defaults(handler=_fetch)
+
+    build = subparsers.add_parser(
+        "build",
+        help="join the raw snapshots into the wide daily panel and its manifest",
+    )
+    build.add_argument("--raw-root", type=Path, default=Path("data/raw"))
+    build.add_argument("--output", type=Path, default=Path("data/processed/daily_panel.csv"))
+    build.add_argument(
+        "--registry", type=Path, default=DEFAULT_SOURCE_REGISTRY
+    )
+    build.add_argument(
+        "--source",
+        action="append",
+        metavar="SOURCE_ID",
+        help="build from this raw source only, repeatable; default is every "
+        "source with a snapshot on disk",
+    )
+    build.add_argument(
+        "--build-cutoff",
+        required=True,
+        metavar="ISO8601",
+        help="a cell carries the latest vintage available at this instant; "
+        "must carry a UTC offset, and is recorded in the manifest",
+    )
+    build.add_argument(
+        "--decision-time",
+        required=True,
+        metavar="HH:MM",
+        help="passed through to registry.max_release_lag_days, which decides "
+        "which columns latest vintage may carry; it never moves a value",
+    )
+    build.set_defaults(handler=_build)
+
 
     backfill = subparsers.add_parser(
         "backfill-nmfp",

@@ -1051,3 +1051,228 @@ def audit_panel(observations: Iterable[DailyObservation]) -> AuditReport:
         missing_counts=missing_counts,
         warnings=warnings,
     )
+
+
+#: Every declared panel column except the `date` index, in the order the
+#: model layer declares them. The join attempts each one and refuses the ones
+#: latest vintage cannot carry faithfully; it is not a shorter list of the
+#: columns someone expects to succeed, because a column that quietly stopped
+#: being attempted would be indistinguishable from one that has no data.
+PANEL_COLUMNS = tuple(
+    field for field in REQUIRED_FIELDS if field != "date"
+) + OPTIONAL_NUMERIC_FIELDS
+
+
+@dataclass(frozen=True)
+class DailyPanelBuild:
+    """A wide daily panel and the record of how it was built.
+
+    `refusals` maps a column that was *not* built to the reason the pricing
+    function gave for refusing it, verbatim. A refused column is absent from
+    every row's `values` -- never present and quietly carrying a revised
+    number -- and the reason travels with the panel so a reader of the manifest
+    does not have to re-derive it.
+
+    `holes` counts, per built column, the `ref_date`s in the panel that carry
+    no observation for it. A hole is not a zero and is not the previous day's
+    value; it is recorded and left empty.
+    """
+
+    observations: Sequence[DailyObservation]
+    built_columns: Sequence[str]
+    refusals: Mapping[str, str]
+    holes: Mapping[str, int]
+    build_cutoff: datetime
+    decision_time: object
+
+
+def _priceable_columns(
+    columns: Iterable[str],
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time,
+) -> tuple[List[str], Dict[str, str]]:
+    """Split declared columns into the ones latest vintage may carry, and why not.
+
+    The test is `registry.max_release_lag_days`, called -- not restated. A
+    column is built exactly when the pricing function returns a purge for the
+    `(source, field)` pairs behind it, and refused exactly when it raises. That
+    delegation is the whole point: a field on a `snapshot_retrieved_at` source
+    with no `revision_policy` is refused there because its latest value may
+    differ from the value that stood on the day, and a second copy of that rule
+    here would be free to drift from the registry it is supposed to describe.
+
+    Both refusal channels are named rather than caught as bare `ValueError`.
+    `RegistryContractError` is the pricing function declining to price;
+    `UndeclaredFeatureError` is `contract` declining to resolve a column to
+    sources at all -- an unsourced or calendar-only column. Anything else
+    raised from here is a fault, not a refusal, and is left to propagate.
+    """
+
+    from .contract import UndeclaredFeatureError, field_sources_for_features
+    from .registry import RegistryContractError, max_release_lag_days
+
+    built: List[str] = []
+    refusals: Dict[str, str] = {}
+    for column in columns:
+        try:
+            pairs = field_sources_for_features([column])
+            max_release_lag_days(registry, pairs, decision_time=decision_time)
+        except (RegistryContractError, UndeclaredFeatureError) as exc:
+            refusals[column] = str(exc)
+            continue
+        built.append(column)
+    return built, refusals
+
+
+def build_daily_panel(
+    observations: Iterable[PointInTimeObservation],
+    registry: Mapping[str, Mapping[str, object]],
+    *,
+    build_cutoff: datetime,
+    decision_time,
+    columns: Sequence[str] = PANEL_COLUMNS,
+) -> DailyPanelBuild:
+    """Join long point-in-time observations into the wide daily panel.
+
+    This is the hop that was missing: `DailyObservation` was constructed in
+    exactly one place, inside `load_daily_panel`, parsing a hand-written CSV.
+
+    Four rules, and three of them are about not re-deciding something this
+    repository has already decided once.
+
+    **1. Indexed by `ref_date`; a cell carries the latest vintage available at
+    `build_cutoff`.** Rows whose `available_at` is after the cutoff do not
+    exist for this build. Among the rest, the cell for `(column, ref_date)` is
+    the row with the greatest `available_at`. The cutoff is a property of the
+    build and is returned so the manifest can record it.
+
+    **2. The join does not subtract the release lag. The purge does.** The
+    value at `ref_date` d is the value whose `ref_date` is d -- not the value
+    from d minus the source's lag. `splits.rolling_origin` and
+    `event_eval.evaluate_event_window` already hold the last training row a
+    full release lag clear of the scored day. A join that shifted values by
+    that lag as well would apply the gap twice: it would silently destroy
+    training rows and move every reported number, while looking careful.
+    `decision_time` is passed *through* to the pricing function and is never
+    used to move a value.
+
+    **3. A column is built only if the pricing function will price it.** See
+    `_priceable_columns`. Refused columns are absent, with the reason recorded.
+
+    **4. No forward fill.** A `ref_date` with no observation for a built column
+    gets `None`, counted in `holes`. Absent is not zero and is not yesterday.
+
+    Raises `DataContractError` if the cutoff is naive, if no declared column
+    survives pricing, or if nothing is left to index.
+    """
+
+    from .contract import FEATURE_FIELDS
+
+    if build_cutoff.tzinfo is None or build_cutoff.utcoffset() is None:
+        raise DataContractError("build_cutoff must include a UTC offset")
+
+    declared = list(columns)
+    built, refusals = _priceable_columns(declared, registry, decision_time)
+    if not built:
+        raise DataContractError(
+            "no declared column survived pricing: "
+            + "; ".join(f"{name}: {reason}" for name, reason in sorted(refusals.items()))
+        )
+
+    # Source field -> panel column, for the built columns only. `FEATURE_FIELDS`
+    # is the one place the rename is written down; deriving it by string
+    # matching on `series_id` is the thing that block was written to avoid.
+    column_for_series: Dict[str, str] = {}
+    for column in built:
+        for _source_id, field in FEATURE_FIELDS[column]:
+            column_for_series[str(field)] = column
+
+    latest: Dict[tuple, PointInTimeObservation] = {}
+    for row in observations:
+        column = column_for_series.get(row.series_id)
+        if column is None:
+            continue
+        if row.available_at > build_cutoff:
+            continue
+        key = (column, row.ref_date)
+        previous = latest.get(key)
+        if previous is None or (row.available_at, row.vintage_id) > (
+            previous.available_at,
+            previous.vintage_id,
+        ):
+            latest[key] = row
+
+    if not latest:
+        raise DataContractError(
+            f"no observation for any built column is available at {build_cutoff.isoformat()}"
+        )
+
+    ref_dates = sorted({ref_date for _column, ref_date in latest})
+    rows: List[DailyObservation] = []
+    holes: Dict[str, int] = {column: 0 for column in built}
+    for ref_date in ref_dates:
+        values: Dict[str, Optional[float]] = {}
+        for column in built:
+            row = latest.get((column, ref_date))
+            if row is None:
+                holes[column] += 1
+                values[column] = None
+            else:
+                values[column] = row.value
+        rows.append(DailyObservation(ref_date, values))
+
+    return DailyPanelBuild(
+        observations=tuple(rows),
+        built_columns=tuple(built),
+        refusals=dict(sorted(refusals.items())),
+        holes=holes,
+        build_cutoff=build_cutoff,
+        decision_time=decision_time,
+    )
+
+
+def write_daily_panel(
+    build: DailyPanelBuild, path: Path, *, source_shas: Sequence[str] = ()
+) -> Path:
+    """Write a built panel as CSV and its build manifest beside it.
+
+    The CSV carries the built columns and nothing else, and an empty cell for a
+    hole -- the encoding `load_daily_panel` already reads as absent. Note that
+    a panel missing a `REQUIRED_FIELDS` column will not load back through
+    `load_daily_panel`; that is a true report of what the sources support at
+    latest vintage, not a defect in the writer, and inventing the column to
+    make the round trip succeed is exactly what rule 3 forbids.
+
+    The manifest is the committable half, as with the N-MFP archive set: the
+    panel bytes are derived from gitignored raw snapshots and are not tracked.
+    Returns the manifest path.
+    """
+
+    header = ["date", *build.built_columns]
+    lines = [",".join(header)]
+    for observation in build.observations:
+        cells = [observation.date.isoformat()]
+        for column in build.built_columns:
+            value = observation.values.get(column)
+            cells.append("" if value is None else format(value, ".15g"))
+        lines.append(",".join(cells))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    dates = [observation.date for observation in build.observations]
+    manifest_path = path.with_suffix(path.suffix + ".manifest.json")
+    manifest = {
+        "path": str(path),
+        "build_cutoff": build.build_cutoff.isoformat(),
+        "decision_time": str(build.decision_time),
+        "row_count": len(build.observations),
+        "start_date": dates[0].isoformat(),
+        "end_date": dates[-1].isoformat(),
+        "built_columns": list(build.built_columns),
+        "refused_columns": dict(build.refusals),
+        "holes": dict(build.holes),
+        "source_shas": list(source_shas),
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return manifest_path
