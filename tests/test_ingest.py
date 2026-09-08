@@ -82,9 +82,11 @@ def nmfp_archive(
     """Build a minimal but structurally faithful Form N-MFP flat-file ZIP.
 
     `submissions` is a sequence of dicts with `accession`, `series`, `report`
-    and optional `net_assets` (USD, not billions), `filing` (the DD-MON-YYYY
-    filing date, defaulting to the report date), `submission_type` (defaulting
-    to `N-MFP3`) and `flows`, a sequence of
+    and optional `net_assets` (USD, not billions), `other_assets` (USD, default
+    0 -- a nonzero value breaks the declared balance-sheet identity by exactly
+    that amount, which is how a fixture files a cross-section that violates),
+    `filing` (the DD-MON-YYYY filing date, defaulting to the report date),
+    `submission_type` (defaulting to `N-MFP3`) and `flows`, a sequence of
     `(flow_date, subscriptions, redemptions)`. The tables carry the same column
     names, the same DD-MON-YYYY dates and the same INVESTMENTCATEGORY strings as
     the SEC extract, so a fixture cannot pass by agreeing with the parser about
@@ -120,8 +122,16 @@ def nmfp_archive(
             f"{entry['series']}\t{entry['report']}"
         )
         net = entry.get("net_assets", 1_000_000_000)
-        # cash + portfolio + other == liabilities + net assets, to the dollar.
-        series_rows.append(f"{entry['accession']}\t0\t{net}\t0\t0\t{net}")
+        # cash + portfolio + other == liabilities + net assets, to the dollar,
+        # unless the entry deliberately breaks it. `other_assets` is the one
+        # term a submission may override, because a fixture that can only file
+        # a reconciling balance sheet cannot exercise the violation verdict at
+        # all -- and until `IdentityVerdictTests` there was no way to observe a
+        # violated identity except by the exception it used to raise. Absent the
+        # key the row is byte-for-byte what it always was, so no existing
+        # fixture moves.
+        other = entry.get("other_assets", 0)
+        series_rows.append(f"{entry['accession']}\t0\t{net}\t{other}\t0\t{net}")
         for flow_date, subscriptions, redemptions in entry.get("flows", ()):
             flow_rows.append(
                 f"{entry['accession']}\t{subscriptions}\t{redemptions}\t{flow_date}"
