@@ -137,16 +137,15 @@ from .baseline import (
     ExceedanceCurves,
     ExceedancePredictor,
     _check_fitter_stayed_inside,
+    _derive_purge,
     _feature_index,
 )
 from .contract import (
     EVENT_WINDOW_KEYS,
     event_window_digest,
-    sources_for_features,
     validate_event_windows_document,
 )
 from .data import DailyObservation
-from .registry import max_release_lag_days
 from .splits import (
     LookAheadError,
     SplitError,
@@ -272,6 +271,12 @@ class EventWindowReport:
     #: that shaped the run, and the two could agree today and drift later.
     features: Tuple[str, ...]
     sources: Tuple[str, ...]
+    #: The `(source_id, field)` pairs the gap was sized over. The rolling
+    #: path's report carries the same, from the same `_derive_purge` call, and
+    #: for the same reason: one source can supply a field that prices beside a
+    #: field that is refused, so the source IDs alone no longer say what the
+    #: number came from.
+    field_sources: Tuple[Tuple[str, str], ...]
     purge_days: int
     train_rows: int
     last_train_date: date
@@ -424,9 +429,14 @@ def evaluate_event_window(
     this the knowledge holdout and not the scoring one.
 
     **The gap is derived, never supplied.** The caller declares a feature set;
-    this resolves `contract.sources_for_features(features)`, sizes the gap with
-    `registry.max_release_lag_days` over exactly those sources, and then builds
-    the window. There is no `purge` argument, for the reason
+    this calls `baseline._derive_purge`, which resolves
+    `contract.field_sources_for_features(features)` to `(source, field)` pairs
+    and sizes the gap with `registry.max_release_lag_days` over exactly those
+    fields, and then builds the window. The rolling path calls the same
+    function -- imported, not restated, for the reason
+    `_check_fitter_stayed_inside` is: two derivations of the gap agree until
+    they do not, and this is the one place either path can learn what a source
+    or a field is. There is no `purge` argument, for the reason
     `rolling_persistence_backtest` has none: a caller who could type the gap
     could declare an ARX on `on_rrp` and size the gap over `nyfed_sofr` alone,
     and the arithmetic would be right over the wrong evidence -- the one failure
@@ -500,11 +510,16 @@ def evaluate_event_window(
             feature row does not clear the gap before the day it is read for,
             or the predictor read a column outside `features`.
         UndeclaredFeatureError: `features` names a column
-            `contract.sources_for_features` cannot classify, or one declared to
-            have no ingesting source. Raised before any row is selected.
-        RegistryContractError: the derived sources cannot support a safe bound.
-            Track A's refusal, passed through unchanged -- this module has no
-            standing to soften it.
+            `contract.field_sources_for_features` cannot classify, or one
+            declared to have no ingesting source. Raised before any row is
+            selected.
+        RegistryContractError: the derived fields cannot support a safe bound.
+            Track A's refusal with Track A's message, which `_derive_purge`
+            widens only by naming the fields the gap was being sized over.
+            There is no exemption here that the rolling path does not have: a
+            field with no declared revision policy on a `snapshot_retrieved_at`
+            source is refused on this path too, and a derived purge still
+            cannot be zero.
     """
 
     # Before any row is selected: an unresolvable feature set has no gap, so it
@@ -512,8 +527,9 @@ def evaluate_event_window(
     # column is told which column, rather than getting a window-shaped complaint
     # further in.
     declared: Tuple[str, ...] = tuple(features)
-    sources = sources_for_features(declared)
-    purge = max_release_lag_days(registry, sources, decision_time=decision_time)
+    field_sources, sources, purge = _derive_purge(
+        registry, declared, decision_time=decision_time
+    )
 
     rows = list(observations)
     ordered_dates, values = _validate_panel(rows)
@@ -583,6 +599,7 @@ def evaluate_event_window(
         window=window,
         features=declared,
         sources=sources,
+        field_sources=field_sources,
         purge_days=purge,
         train_rows=len(train_index),
         last_train_date=ordered_dates[train_index[-1]],

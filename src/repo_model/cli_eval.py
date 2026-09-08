@@ -44,7 +44,7 @@ def _registry(args: argparse.Namespace) -> dict:
 
 
 def _derived_sources(args: argparse.Namespace) -> tuple[str, ...]:
-    """The sources the declared feature set draws on.
+    """The sources the declared feature set draws on, for the journal hash alone.
 
     `contract.sources_for_features` is the only supported way from a feature set
     to source IDs, and this module makes no second attempt at the mapping. There
@@ -53,6 +53,15 @@ def _derived_sources(args: argparse.Namespace) -> tuple[str, ...]:
     reads, and the gap computed from it would be correct arithmetic over the
     wrong evidence -- which is the failure that survives every check the purge
     block installed, because the number itself looks fine.
+
+    **This no longer sizes anything.** Since the field-priced-purge block the
+    gap comes from `baseline._derive_purge` over `(source, field)` pairs, and
+    the only remaining consumer of this is `model_config`, which is hashed into
+    the event journal. It is deliberately left on the source-level resolver:
+    the hash identifies a scoring run, and moving it would make every existing
+    journal record look like a different run for a reason that has nothing to
+    do with what was scored. `contract.sources_for_features` is the human's to
+    retire once nothing calls it; this is what still calls it.
     """
 
     return sources_for_features(args.feature)
@@ -84,11 +93,15 @@ def _backtest(args: argparse.Namespace) -> int:
     and nothing downstream could tell. `--feature` is the one declaration, and
     everything else follows from it.
 
-    `features`, `sources` and `purge_days` are reported beside the metrics for
-    the reason `model_config` carries them on the event path: a benchmark whose
-    gap came from somewhere an auditor cannot follow is not a benchmark. All
-    three are read off the report rather than recomputed here, so what is
-    printed is what shaped the run.
+    `features`, `sources`, `fields` and `purge_days` are reported beside the
+    metrics for the reason `model_config` carries them on the event path: a
+    benchmark whose gap came from somewhere an auditor cannot follow is not a
+    benchmark. All four are read off the report rather than recomputed here, so
+    what is printed is what shaped the run. `fields` is the one the gap is
+    actually sized over since the field-priced-purge block, and `sources` is
+    the projection of it: on `fred_macro_latest_vintage` the source name alone
+    cannot say whether the number came from a field that prices or a field
+    that would have been refused.
 
     **`--report` is required, and that is the point of this block.** Until now
     every number this command produced existed only in a terminal: the pinball
@@ -142,6 +155,15 @@ def _backtest(args: argparse.Namespace) -> int:
                 "features": sorted(report.features),
                 "purge_days": report.purge_days,
                 "sources": sorted(report.sources),
+                # The pairs the gap was actually sized over, in the same
+                # `source.field` form and from the same report field the
+                # artifact's `derived.fields` is built from. The console and
+                # the file must agree about what was priced, and the only way
+                # they can is to read the one report rather than each deriving
+                # the list.
+                "fields": [
+                    f"{source}.{field}" for source, field in sorted(report.field_sources)
+                ],
                 "minimum_history": args.minimum_history,
                 "report": str(args.report),
             },
@@ -166,8 +188,9 @@ def _event_holdout(args: argparse.Namespace) -> int:
       `--thresholds`. `AGENT_CONTRACT.md` declares `{5, 10, 20, 50}` bp and
       Track A's file carries it; this module contains no tau.
     * **The purge gap** comes from `registry.max_release_lag_days` over the
-      sources `contract.sources_for_features` derives from `--feature`, exactly
-      as the rolling path sizes it. The two evaluation paths mean the same thing
+      `(source, field)` pairs `contract.field_sources_for_features` derives
+      from `--feature`, exactly as the rolling path sizes it -- literally the
+      same `baseline._derive_purge` call. The two evaluation paths mean the same thing
       by a gap and take the number from the same place, by the same derivation
       -- and, since this block, in the same place: `evaluate_event_window`
       derives it, and this command passes the declaration rather than the gap.
@@ -208,11 +231,15 @@ def _event_holdout(args: argparse.Namespace) -> int:
         windows = tuple(declared[name] for name in args.window)
 
     # The gap is no longer computed here. `evaluate_event_window` derives it
-    # from the declared feature set, by the same call this module used to make
-    # -- so the number in `model_config` and the number the run was purged at
-    # cannot be two numbers. The sources are still derived here, and only for
-    # the hash: `_derived_sources` and the evaluator both reach
-    # `contract.sources_for_features`, which is the one mapping.
+    # from the declared feature set -- over `(source, field)` pairs, through
+    # `baseline._derive_purge`, which the rolling path calls too -- so the
+    # number in `model_config` and the number the run was purged at cannot be
+    # two numbers. The sources are still derived here, and now *only* for the
+    # hash: `_derived_sources` stays on `contract.sources_for_features`
+    # deliberately, because the hash identifies a scoring run and moving it
+    # would make every existing journal record look like a different run for a
+    # reason that has nothing to do with what was scored. The pairs the gap was
+    # actually sized over are reported from `report.field_sources` below.
     sources = _derived_sources(args)
     fit_predict = climatology_exceedance(minimum_history=args.minimum_history)
     model_config = {
@@ -254,6 +281,10 @@ def _event_holdout(args: argparse.Namespace) -> int:
                 # printed is what shaped the run.
                 "features": sorted(report.features),
                 "sources": sorted(report.sources),
+                "fields": [
+                    f"{source}.{field}"
+                    for source, field in sorted(report.field_sources)
+                ],
                 "train_rows": report.train_rows,
                 "last_train_date": report.last_train_date.isoformat(),
                 "taus_bp": list(report.taus),
