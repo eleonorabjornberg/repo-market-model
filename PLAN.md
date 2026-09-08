@@ -24,6 +24,21 @@ observations -> latent liquidity state -> supply/demand estimates -> market clea
                     +---------- probabilistic ML ----------+
 ```
 
+## What is committed, and what is not
+
+**Phases 0 through 4 are the committed scope.** They are what this repository sets out
+to deliver and what a reader should expect to find evidence for.
+
+**Phases 5 through 7 are retained but aspirational.** They are kept in this document
+because they explain why the data contract is shaped the way it is — point-in-time
+provenance, declared identities, and per-source release lags are only worth their cost
+if the eventual consumer is a network reconstruction and a stress engine. They are not
+a commitment, and the decision on whether to attempt them is taken after Phase 4's exit
+criterion is met, not before.
+
+A plan whose later phases nobody expects to reach stops describing the work. Saying so
+here is cheaper than discovering it later.
+
 ## Phase 0 — Reproducible foundation (complete)
 
 - Define a point-in-time daily data contract.
@@ -33,7 +48,7 @@ observations -> latent liquidity state -> supply/demand estimates -> market clea
 - Use rolling-origin evaluation; never use random train/test splits.
 
 Exit criterion: one command validates a panel and produces a leakage-safe baseline
-backtest.
+backtest. **Met.**
 
 ## Phase 1 — Public U.S. dataset (in progress)
 
@@ -52,8 +67,53 @@ Every observation must carry an `available_at` timestamp or conservative release
 rule. Low-frequency series are joined as-of; values are not backfilled into dates on
 which they were not yet known.
 
+Ingested so far: the SOFR, TGCR and BGCR families; the FRED macro block; Treasury
+settlement; and SEC Form N-MFP, whose declared archive set, per-table refusal rule and
+per-era category vocabulary are recorded in `metadata/sec_nmfp_archives.json` and
+`metadata/sources.json`. Not yet ingested: primary-dealer positions — declared in
+`contract.UNSOURCED_FEATURES` precisely so that using one raises rather than resolving
+to an empty source set — bill yields, basis proxies, and the volatility, depth and
+bid-ask proxies.
+
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
+
+## Milestone A — the first observable result (critical path)
+
+**This sits ahead of the remainder of Phase 1 and is the single highest-value thing
+outstanding.**
+
+Nothing in this repository has yet been measured on data it fetched. Every backtest,
+every purge gap, every leakage guard and every mutation record is anchored to a
+twenty-five-row synthetic fixture. That is the repository's own recurring finding
+turned on itself: *a check anchored to nothing cannot fail.* The guards are real, the
+discipline is real, and so far they protect no observable quantity.
+
+The cheapest real number does not wait on any of the remaining breadth. `SOFR - IORB`
+is the declared primary target and both legs are already fetchable.
+
+Steps, in order:
+
+1. **Declare release lags at field granularity.** `fred_macro_latest_vintage` carries
+   one `release_lag` for a set of series whose revision behaviour is not one thing:
+   administered rates that are never revised sit beside H.4.1 weeklies that are. One
+   basis for all of them is a declaration that was never asserted against what it
+   describes, and it is why the target variable cannot currently be priced at all. A
+   latest-vintage source may back a point-in-time feature only for a field declared
+   never-revised, with its evidence recorded.
+2. **Consume the field-level declaration in the evaluation path**, so the purge is
+   sized over the fields a feature set actually reads. The refusal narrows; it does not
+   disappear. Fields with no declared revision policy stay refused.
+3. **Fetch and freeze a funding-only daily panel** — the two legs of the spread and
+   nothing else — with its snapshot manifest and data-quality report.
+4. **Publish the persistence benchmark on it:** pinball loss, interval coverage and MAE
+   under the registry-derived purge, beside the fold count and the training window.
+
+Exit criterion: a reader who clones the repository and runs one command reproduces a
+published quantile loss and interval coverage for the persistence benchmark on a
+fetched panel rather than a fixture — and the published figures are generated output,
+not prose. A number typed into a document is the same drift as a hand-written date, and
+the rule against one is the rule against the other.
 
 ## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
 
@@ -82,6 +142,12 @@ Evaluation:
 - MAE by regime and calendar event;
 - event holdouts including September 2019, March 2020, tax dates, Treasury
   settlements, and reporting dates.
+
+The evaluation machinery exists: rolling-origin folds behind a purge derived from the
+declared feature set, a common fitted-model forecast interface with more than one
+implementer, an event-holdout path, and the metric implementations. What it does not
+yet have is a result on fetched data — see Milestone A — or a conditional predictor to
+score against climatology on a knowledge-holdout window.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
@@ -127,7 +193,10 @@ Impose:
 Exit criterion: coherent rate and volume predictions plus transparent
 counterfactual scenarios.
 
-## Phase 5 — Missing-data and network ensemble
+**Decision point.** Whether to attempt Phases 5 through 7 is decided here, against what
+Phases 0 through 4 actually produced, and not before.
+
+## Phase 5 — Missing-data and network ensemble (aspirational)
 
 - Infer relationship existence with a hurdle model.
 - Infer edge sizes using entropy-regularized matrix completion under row/column totals.
@@ -140,7 +209,7 @@ counterfactual scenarios.
 Exit criterion: mask-and-reconstruct tests recover held-out observed edges and
 aggregate identities within declared tolerances.
 
-## Phase 6 — Stress engine
+## Phase 6 — Stress engine (aspirational)
 
 Iterate:
 
@@ -154,7 +223,7 @@ Iterate:
 Exit criterion: historical replay and sensitivity reports, with no claim that a
 single reconstructed network is the true network.
 
-## Phase 7 — European extension
+## Phase 7 — European extension (aspirational)
 
 Add adapters for:
 
@@ -167,17 +236,39 @@ Add adapters for:
 The European model must explicitly represent currency, sovereign issuer, collateral
 eligibility, CCP/CSD, and cross-border settlement.
 
-## Immediate next tasks
+## The critical path
 
-1. Add an independently anchored coverage floor that excludes incomplete SEC Form
-   N-MFP monthly cross-sections and records the exclusion separately from missingness.
-2. Resolve the N-MFP identity-tolerance and Treasury-settlement aggregation decisions
-   recorded in `docs/DATA_QUALITY_DECISIONS.md`.
-3. Acquire and freeze a sufficiently long historical point-in-time panel, with raw
-   snapshot manifests and a machine-readable data-quality report.
-4. Implement the common fitted-model forecast interface and replace its intentional
-   expected-failure tripwire with behavioral conformance tests.
-5. Backtest persistence, AR/ARX, and threshold-regression benchmarks using the
-   registry-derived purge gap.
-6. Add a quantile model only after the baselines are frozen, then report rolling
-   out-of-sample results and the September 2019 and March 2020 holdouts separately.
+This section names phases and milestones. It deliberately does **not** track individual
+work blocks: a plan's "next steps" section is the part that goes stale first, and
+listing blocks here guarantees it. Block-level sequencing lives in the session handoff
+and in the block briefs; what belongs here is the order of the milestones and why.
+
+1. **Milestone A — the first observable result.** Ahead of everything else, including
+   the remainder of Phase 1's ingest list. Until it is met, every guard in the
+   repository protects a fixture.
+2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
+   Two open questions predate the breadth: the shape of the N-MFP identity tolerance,
+   which is currently one absolute bound across cross-sections spanning three orders of
+   magnitude; and the Treasury-settlement aggregation, which collapsed several fields
+   to one and describes a risk it avoids while saying nothing about the one it creates.
+   Both are recorded in `docs/DATA_QUALITY_DECISIONS.md`.
+3. **Then widen Phase 1**: primary-dealer positions first, since a declared-but-unsourced
+   column is the one gap the contract already raises on, then bill yields and the
+   liquidity proxies.
+4. **Phase 2 to its exit criterion**: a conditional model scored against climatology on
+   the declared knowledge holdouts, and a benchmark that beats persistence out of sample
+   while staying calibrated in the tails.
+5. **Phases 3 and 4.**
+6. **Decision point**, then Phases 5 through 7 or a stop.
+
+## How this document stays true
+
+- **No test counts and no hand-written dates in prose.** The suite's size is whatever CI
+  last printed; "when" is a commit sha, which is a timestamp nobody types. Dates that are
+  *data* — September 2019, March 2020, a report month — are unaffected.
+- **Published results are generated output, not prose.** A figure retyped into a document
+  is right when it is typed and silently wrong afterwards, which is the same failure one
+  level up from a stale date.
+- **Status claims name the artifact that proves them.** "Met", "in progress" and
+  "aspirational" are claims about the tree, and a claim about the tree that is not
+  asserted against it stops describing it.
