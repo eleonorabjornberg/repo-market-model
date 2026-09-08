@@ -222,11 +222,15 @@ from repo_model.baseline import (
 from repo_model.contract import (
     CALENDAR_FEATURES,
     DERIVED_FEATURES,
+    FEATURE_FIELDS,
     FEATURE_SOURCES,
     QUANTILE_LEVELS,
+    REVISION_POLICIES,
     UNSOURCED_FEATURES,
     UndeclaredFeatureError,
+    field_sources_for_features,
     sources_for_features,
+    validate_field_release_lag,
     validate_release_lag,
 )
 from repo_model.data import (
@@ -1834,6 +1838,208 @@ class CommandLineOwnershipTests(unittest.TestCase):
         self.assertEqual(
             contested, [], f"{contested} are claimed by more than one party."
         )
+
+
+class FieldReleaseLagCoverageTests(unittest.TestCase):
+    """The field half of the map, and the rule that lets a snapshot be priced.
+
+    `FEATURE_FIELDS` states the source *field* each panel column draws on, so a
+    release lag can be declared per field. That matters because one source can
+    carry an administered rate that is never revised beside a statistical
+    estimate that is revised for months: a lag declared once for the source is
+    then wrong for both, and `fred_macro_latest_vintage` is exactly that source.
+
+    The rule these tests hold in place: a field of a `snapshot_retrieved_at`
+    source may be priced only if it declares `revision_policy: "never_revised"`
+    with non-empty `revision_evidence`. Latest vintage stands in for a
+    point-in-time record exactly when the value never moves after publication,
+    and that is a claim about the world that has to be made explicitly and
+    carry what establishes it -- not inferred because a number would be
+    convenient.
+
+    Mutation record, the human-side patch that introduced this class. Run in a
+    copy under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the
+    root Markdown and `docs/PROJECT_STATUS.md` present -- the freshness guard
+    reads the last three, and their absence is two false kills. `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, unmutated control green before and after.
+
+      * `FEATURE_FIELDS["iorb"]` field renamed `IORB` -> `IORBB`. Kills two:
+        `test_every_declared_feature_field_exists_in_its_source` at subtest
+        `feature='iorb'`, and
+        `test_the_resolved_source_ids_are_unchanged_by_the_field_map`.
+
+      * `FEATURE_FIELDS["iorb"]` repointed at `("nyfed_sofr", "SOFR")`. Kills
+        five, and the extra three are the point rather than noise: both
+        real-registry refusal tests fail, because `iorb` no longer resolves to
+        the snapshot source. That is the map holding the tree.
+
+      * The snapshot revision-policy requirement in
+        `validate_field_release_lag` made a no-op. Kills exactly one, its own
+        test, and no other.
+
+    No mutation was run against a *declared* `field_release_lags` block,
+    because none is declared yet.
+    `test_every_field_release_lag_names_a_declared_field` is vacuous until one
+    is, and its docstring says so. The rule it will enforce is exercised
+    against fixtures here so that the rule itself is not vacuous today.
+    """
+
+    def _registry(self):
+        return json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+
+    def _snapshot_source(self, **field_block):
+        """A minimal snapshot-basis source carrying one field-level block."""
+
+        return {
+            "fields": ["THING"],
+            "release_lag": {
+                "basis": "snapshot_retrieved_at",
+                "note": "latest vintage",
+            },
+            "field_release_lags": {"THING": dict(field_block)},
+        }
+
+    def _priced_block(self, **overrides):
+        block = {
+            "basis": "record_date",
+            "unit": "calendar_days",
+            "days": 1,
+            "available_time": "16:15",
+            "timezone": "America/New_York",
+            "revision_policy": "never_revised",
+            "revision_evidence": "vintage comparison; see the decision record",
+        }
+        block.update(overrides)
+        return block
+
+    def test_every_declared_feature_field_exists_in_its_source(self):
+        """The field-level version of `dealer_treasury_position`.
+
+        A column can be declared in four places and ingested by none;
+        declaration is not provenance. A field named here that the source does
+        not carry would resolve to a lag nobody can look up, and would read as
+        though it had one.
+        """
+
+        registry = self._registry()
+        for feature, pairs in FEATURE_FIELDS.items():
+            with self.subTest(feature=feature):
+                self.assertTrue(pairs, msg=f"{feature!r} maps to no (source, field) pair")
+                for source_id, field in pairs:
+                    self.assertIn(source_id, registry)
+                    self.assertIn(
+                        field,
+                        registry[source_id].get("fields", ()),
+                        msg=(
+                            f"{feature!r} maps to {source_id}.{field}, which is "
+                            f"not in that source's declared fields"
+                        ),
+                    )
+
+    def test_every_field_release_lag_names_a_declared_field(self):
+        """A lag declared for a field the source does not carry prices nothing.
+
+        Vacuous while no source declares one, which is why the rule it enforces
+        is also tested against a fixture below. It becomes load-bearing the day
+        a field lag is declared, and it is cheaper to add it now than to
+        remember to.
+        """
+
+        registry = self._registry()
+        for source_id, source in registry.items():
+            for field in sorted(source.get("field_release_lags", {})):
+                with self.subTest(source=source_id, field=field):
+                    self.assertIn(field, source.get("fields", ()))
+
+    def test_a_snapshot_field_is_priceable_only_with_a_declared_revision_policy(self):
+        """The rule itself, against a fixture, so it has teeth today."""
+
+        source = self._snapshot_source(**self._priced_block())
+        self.assertEqual(
+            validate_field_release_lag(
+                "src", "THING", source["field_release_lags"]["THING"],
+                source["release_lag"]["basis"],
+            ),
+            [],
+        )
+
+        without = self._priced_block()
+        del without["revision_policy"]
+        problems = validate_field_release_lag(
+            "src", "THING", without, "snapshot_retrieved_at"
+        )
+        self.assertTrue(problems)
+        self.assertIn("revision_policy", " ".join(problems))
+
+        wrong = self._priced_block(revision_policy="revised_sometimes")
+        self.assertTrue(
+            validate_field_release_lag("src", "THING", wrong, "snapshot_retrieved_at")
+        )
+        self.assertNotIn("revised_sometimes", REVISION_POLICIES)
+
+    def test_a_never_revised_claim_carries_its_evidence(self):
+        """A claim with no evidence attached is indistinguishable from a guess."""
+
+        for evidence in ("", "   "):
+            with self.subTest(evidence=evidence):
+                problems = validate_field_release_lag(
+                    "src",
+                    "THING",
+                    self._priced_block(revision_evidence=evidence),
+                    "snapshot_retrieved_at",
+                )
+                self.assertTrue(problems)
+                self.assertIn("revision_evidence", " ".join(problems))
+
+    def test_a_revision_policy_on_a_real_basis_source_is_refused(self):
+        """It licenses nothing there, and a key nobody reads is how one got missed."""
+
+        problems = validate_field_release_lag(
+            "src", "THING", self._priced_block(), "record_date"
+        )
+        self.assertTrue(problems)
+        self.assertIn("revision_policy", " ".join(problems))
+
+    def test_the_resolved_source_ids_are_unchanged_by_the_field_map(self):
+        """`FEATURE_SOURCES` is now a projection. Pin it to longhand tuples.
+
+        Comparing the projection against `field_sources_for_features` would
+        agree by construction whatever either says -- with one derived from the
+        other, there is no state of the world in which they differ. That is the
+        check-anchored-to-itself shape, in the file where it has already been
+        found once. So the expectation is typed out here, and it is the only
+        form of this test that can fail.
+        """
+
+        self.assertEqual(
+            sources_for_features(("spread_bps",)),
+            ("fred_macro_latest_vintage", "nyfed_sofr"),
+        )
+        self.assertEqual(
+            sources_for_features(("sofr_volume", "on_rrp", "quarter_end")),
+            ("fred_macro_latest_vintage", "nyfed_sofr"),
+        )
+        self.assertEqual(
+            field_sources_for_features(("spread_bps",)),
+            (
+                ("fred_macro_latest_vintage", "IORB"),
+                ("nyfed_sofr", "SOFR"),
+            ),
+        )
+        self.assertEqual(
+            field_sources_for_features(("tga",)),
+            (("fred_macro_latest_vintage", "WTREGEN"),),
+        )
+
+    def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):
+        """Two walks, one classification. They must refuse the same names."""
+
+        for names in (("no_such_column",), ("dealer_treasury_position",)):
+            with self.subTest(names=names):
+                with self.assertRaises(UndeclaredFeatureError):
+                    sources_for_features(names)
+                with self.assertRaises(UndeclaredFeatureError):
+                    field_sources_for_features(names)
 
 
 class FeatureSourceMapCoverageTests(unittest.TestCase):

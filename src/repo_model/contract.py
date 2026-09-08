@@ -90,6 +90,16 @@ _ALLOWED_KEYS = {
     "note",
 }
 
+#: Keys a *field-level* release lag may add on top of `_ALLOWED_KEYS`. They
+#: exist only at field level: a revision policy declared for a whole source
+#: would be the claim this split was made to stop anyone making.
+_FIELD_ALLOWED_KEYS = _ALLOWED_KEYS | {"revision_policy", "revision_evidence"}
+
+#: The revision policies a field may declare. One, deliberately: the only
+#: property that lets a latest-vintage snapshot stand in for a point-in-time
+#: record is that the value never moves after publication.
+REVISION_POLICIES = ("never_revised",)
+
 
 def _is_int(value: object) -> bool:
     # bool is a subclass of int and must not pass as a day count.
@@ -234,20 +244,42 @@ class UndeclaredFeatureError(ValueError):
     """
 
 
+#: Panel column -> the (source ID, source field) pairs it draws on.
+#:
+#: Both halves are stated because neither is derivable from the other: the
+#: registry declares fields in source vocabulary and the panel uses model
+#: vocabulary, and `SOFR`->`sofr`, `WTREGEN`->`tga`, `RRPONTSYD`->`on_rrp`,
+#: `mmf_net_assets`->`mmf_assets` are renames with no rule behind them. The
+#: field is what makes a field-level release lag addressable: one source can
+#: carry an administered rate that is never revised beside a statistical
+#: estimate that is, and a lag declared for the source is then wrong for both.
+FEATURE_FIELDS = MappingProxyType(
+    {
+        "sofr": (("nyfed_sofr", "SOFR"),),
+        "sofr_volume": (("nyfed_sofr", "SOFR_volume"),),
+        "sofr_p25": (("nyfed_sofr", "SOFR_p25"),),
+        "sofr_p75": (("nyfed_sofr", "SOFR_p75"),),
+        "iorb": (("fred_macro_latest_vintage", "IORB"),),
+        "tgcr": (("nyfed_tgcr", "TGCR"),),
+        "bgcr": (("nyfed_bgcr", "BGCR"),),
+        "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
+        "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
+        "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
+        "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
+        "mmf_assets": (("sec_nmfp", "mmf_net_assets"),),
+    }
+)
+
+#: The source IDs alone, projected from `FEATURE_FIELDS`. Derived rather than
+#: declared: a second literal would be a second thing to keep current, and a
+#: list that is not asserted against the thing it describes stops describing
+#: it. `tests/test_contract.py` pins the projection against tuples written out
+#: longhand, because a projection compared to its own source agrees by
+#: construction whatever either says.
 FEATURE_SOURCES = MappingProxyType(
     {
-        "sofr": ("nyfed_sofr",),
-        "sofr_volume": ("nyfed_sofr",),
-        "sofr_p25": ("nyfed_sofr",),
-        "sofr_p75": ("nyfed_sofr",),
-        "iorb": ("fred_macro_latest_vintage",),
-        "tgcr": ("nyfed_tgcr",),
-        "bgcr": ("nyfed_bgcr",),
-        "reserve_balances": ("fred_macro_latest_vintage",),
-        "tga": ("fred_macro_latest_vintage",),
-        "on_rrp": ("fred_macro_latest_vintage",),
-        "treasury_settlement": ("treasury_auctions",),
-        "mmf_assets": ("sec_nmfp",),
+        feature: tuple(sorted({source for source, _field in pairs}))
+        for feature, pairs in FEATURE_FIELDS.items()
     }
 )
 
@@ -325,6 +357,127 @@ def sources_for_features(names):
     return tuple(sorted(resolved))
 
 
+def field_sources_for_features(names):
+    """The (source ID, source field) pairs a feature set draws on.
+
+    The field-level counterpart of `sources_for_features`, resolving derived
+    and calendar features by the same rules and raising the same
+    `UndeclaredFeatureError` for the same reasons. Returns a sorted,
+    deduplicated tuple of pairs, for `registry.max_release_lag_days`.
+
+    Deliberately not implemented in terms of `sources_for_features`, nor it in
+    terms of this: the two walks are written out separately so that
+    `tests/test_contract.py` can compare each against longhand expectations
+    that neither produced. Two functions that delegate to one another agree by
+    construction, which is the shape this file has already been caught in once.
+
+    `sources_for_features` is left in place and unchanged. Callers move here
+    when they are ready to be priced per field; until then nothing about the
+    existing path moves.
+    """
+
+    resolved = set()
+    pending = list(names)
+    seen = set()
+    while pending:
+        name = str(pending.pop())
+        if name in seen:
+            continue
+        seen.add(name)
+        if name in DERIVED_FEATURES:
+            pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in CALENDAR_FEATURES:
+            continue
+        if name in UNSOURCED_FEATURES:
+            raise UndeclaredFeatureError(
+                f"feature {name!r} has no source: {UNSOURCED_FEATURES[name]}"
+            )
+        try:
+            pairs = FEATURE_FIELDS[name]
+        except KeyError as exc:
+            raise UndeclaredFeatureError(
+                f"feature {name!r} is not in contract.FEATURE_FIELDS, "
+                f"contract.DERIVED_FEATURES, contract.CALENDAR_FEATURES or "
+                f"contract.UNSOURCED_FEATURES. Every panel column must be "
+                f"classified in exactly one of them; add it there rather "
+                f"than at the call site"
+            ) from exc
+        resolved.update((str(source), str(field)) for source, field in pairs)
+    return tuple(sorted(resolved))
+
+
+def validate_field_release_lag(source_id, field, block, source_basis):
+    """Problems with one entry of a source's `field_release_lags`.
+
+    Same contract as `validate_release_lag`: never raises, returns a list, an
+    empty list means the object conforms. Adds the two rules that exist only at
+    field level.
+
+    A field on a `snapshot_retrieved_at` source may be priced only if it
+    declares `revision_policy: "never_revised"` with a non-empty
+    `revision_evidence`. Without that, a field-level `record_date` block is the
+    snapshot refusal being talked out of a correct answer -- and that refusal is
+    the only thing standing between this project and a benchmark computed on
+    values that were revised after the day they are attributed to.
+
+    A field on a source that already has a real basis must NOT claim a revision
+    policy. There is nothing for it to license, and a declared-and-never-read
+    key is how a timezone got compared across zones once already.
+    """
+
+    label = f"{source_id}.{field}"
+    problems: list[str] = []
+
+    if not isinstance(block, dict):
+        return [
+            f"{label}: field_release_lags entry must be an object, got "
+            f"{type(block).__name__}"
+        ]
+
+    unknown = sorted(set(block) - _FIELD_ALLOWED_KEYS)
+    if unknown:
+        problems.append(f"{label}: unknown release_lag keys {unknown}")
+
+    policy = block.get("revision_policy")
+    evidence = block.get("revision_evidence")
+    core = {key: value for key, value in block.items() if key in _ALLOWED_KEYS}
+
+    if block.get("basis") == "snapshot_retrieved_at":
+        problems.append(
+            f"{label}: a field-level snapshot_retrieved_at block says nothing "
+            f"the source did not already say; remove it rather than restating "
+            f"the source's basis at field level"
+        )
+        return problems
+
+    problems.extend(validate_release_lag(label, core))
+
+    if source_basis == "snapshot_retrieved_at":
+        if policy not in REVISION_POLICIES:
+            problems.append(
+                f"{label}: a field of a snapshot_retrieved_at source may be "
+                f"priced only with revision_policy in {list(REVISION_POLICIES)}, "
+                f"got {policy!r}. Latest vintage stands in for a point-in-time "
+                f"record exactly when the value never moves after publication"
+            )
+        if not isinstance(evidence, str) or not evidence.strip():
+            problems.append(
+                f"{label}: revision_policy must carry a non-empty "
+                f"revision_evidence naming what establishes it. A claim with no "
+                f"evidence attached is indistinguishable from an assumption"
+            )
+    else:
+        for key, value in (("revision_policy", policy), ("revision_evidence", evidence)):
+            if value is not None:
+                problems.append(
+                    f"{label}: {key} is declared on a {source_basis} source, "
+                    f"where it licenses nothing and will never be read"
+                )
+
+    return problems
+
+
 def validate_registry_release_lags(registry: dict) -> dict[str, list[str]]:
     """Validate every source's `release_lag`. Returns {source_id: problems}.
 
@@ -338,6 +491,20 @@ def validate_registry_release_lags(registry: dict) -> dict[str, list[str]]:
             offenders[source_id] = [f"{source_id}: no release_lag declared"]
             continue
         problems = validate_release_lag(source_id, source["release_lag"])
+        basis = None
+        release_lag = source["release_lag"]
+        if isinstance(release_lag, dict):
+            basis = release_lag.get("basis")
+        field_lags = source.get("field_release_lags", {})
+        if not isinstance(field_lags, dict):
+            problems.append(f"{source_id}: field_release_lags must be an object")
+        else:
+            for field in sorted(field_lags):
+                problems.extend(
+                    validate_field_release_lag(
+                        source_id, field, field_lags[field], basis
+                    )
+                )
         if problems:
             offenders[source_id] = problems
     return offenders

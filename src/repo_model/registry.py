@@ -10,19 +10,36 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import time
 
-from repo_model.contract import validate_release_lag
+from repo_model.contract import validate_field_release_lag, validate_release_lag
 
 
 class RegistryContractError(ValueError):
     """Raised when registry metadata cannot support a safe purge bound."""
 
 
-def _selected_sources(sources: object) -> list[tuple[str, object | None]]:
+def _selected_sources(sources: object) -> list[tuple[str, str | None, object | None]]:
+    """Normalise the three accepted selections to (source_id, field, rows).
+
+    A `field` of `None` means "price this source by its own `release_lag`",
+    which is every caller that existed before field-level lags. A selection of
+    `(source_id, field)` pairs -- `contract.field_sources_for_features` --
+    prices each field by its own declaration where the source carries one, and
+    falls back to the source's otherwise. The fallback is what makes this
+    additive: a source with no `field_release_lags` behaves exactly as before.
+    """
+
     if isinstance(sources, Mapping):
-        return [(str(source_id), rows) for source_id, rows in sources.items()]
+        return [(str(source_id), None, rows) for source_id, rows in sources.items()]
     if isinstance(sources, (str, bytes)) or not isinstance(sources, Iterable):
         raise TypeError("sources must be an iterable of source IDs or a source-to-rows mapping")
-    return [(str(source_id), None) for source_id in sources]
+    selected: list[tuple[str, str | None, object | None]] = []
+    for entry in sources:
+        if isinstance(entry, tuple) and len(entry) == 2:
+            source_id, field = entry
+            selected.append((str(source_id), str(field), None))
+        else:
+            selected.append((str(entry), None, None))
+    return selected
 
 
 def _parse_decision_time(decision_time: object) -> time:
@@ -86,7 +103,7 @@ def max_release_lag_days(
 
     maximum = 0
     inferred_wall_clock_timezone = None
-    for source_id, rows in selected:
+    for source_id, field, rows in selected:
         try:
             source = registry[source_id]
         except KeyError as exc:
@@ -96,6 +113,18 @@ def max_release_lag_days(
         problems = validate_release_lag(source_id, release_lag)
         if problems:
             raise RegistryContractError("; ".join(problems))
+
+        source_basis = release_lag["basis"]
+        field_lags = source.get("field_release_lags") or {}
+        if field is not None and field in field_lags:
+            declared = field_lags[field]
+            field_problems = validate_field_release_lag(
+                source_id, field, declared, source_basis
+            )
+            if field_problems:
+                raise RegistryContractError("; ".join(field_problems))
+            release_lag = declared
+            source_id = f"{source_id}.{field}"
 
         basis = release_lag["basis"]
 
