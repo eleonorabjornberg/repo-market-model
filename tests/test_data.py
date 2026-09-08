@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
+    build_daily_panel,
+    write_daily_panel,
     DataContractError,
     PointInTimeObservation,
     audit_point_in_time_panel,
@@ -716,3 +718,365 @@ class RealSnapshotCoverageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DailyPanelJoinTests(unittest.TestCase):
+    """The join from long point-in-time observations to the wide daily panel.
+
+    This class covers `data.build_daily_panel`, the hop that did not exist
+    until 8 September 2026. `DailyObservation` was constructed in exactly one
+    place -- inside `load_daily_panel`, parsing `data/sample/daily_market.csv`,
+    a file written by hand -- so every number this project had reported came
+    from twenty-five hand-written rows. The guards were real and protected
+    nothing observable.
+
+    The acceptance criterion is
+    `test_the_join_does_not_apply_the_purge_gap_a_second_time`, and it is also
+    the mutation target. Subtracting the release lag in the join *feels*
+    conservative. It is not: `splits.rolling_origin` and
+    `event_eval.evaluate_event_window` already hold the last training row a
+    full release lag clear of the scored day, so a join that shifted values as
+    well would apply the gap twice -- destroying training rows and moving every
+    reported figure -- while looking careful. The test states the rule twice
+    over: the cell for `ref_date` d carries the value whose `ref_date` is d,
+    and the *same* fixture at a different declared lag produces the *same*
+    panel, because the lag is not the join's business.
+
+    Mutation record, 8 September 2026. Unmutated control first, green on the
+    branch and green again in the copy the mutations were applied to. Each
+    mutation was applied to a copy under `$HOME` -- never the mount -- carrying
+    `data/`, `.github/`, `metadata/`, `.gitignore`, the root Markdown and
+    `docs/PROJECT_STATUS.md`, because `tests/test_docs_freshness.py` reads
+    those and their absence is two kills that look real and are not. Run with
+    `PYTHONDONTWRITEBYTECODE=1` and `-B`. Every mutation was reverted before
+    the next was applied, and the branch carries none of them.
+
+    1. **The acceptance mutation.** In `build_daily_panel`, shift the join by
+       the source's release lag: price the column with
+       `registry.max_release_lag_days`, then file each observation under
+       `ref_date - timedelta(days=purge)` instead of `ref_date`. The panel
+       still builds, still validates, and still looks careful. Killed by four
+       tests, all in this class:
+
+       * `test_the_join_does_not_apply_the_purge_gap_a_second_time` -- the
+         acceptance criterion, on both of its halves independently. The value
+         assertion fails because the cell for d carries the number from
+         d-plus-the-lag, and the invariance assertion fails because the two
+         declared lags now produce two different panels.
+       * `test_a_cell_carries_the_latest_vintage_available_at_the_cutoff`
+       * `test_a_hole_is_not_the_previous_value`
+       * `test_the_written_panel_records_its_cutoff_and_its_refusals`
+
+       Nothing outside this class noticed. The criterion and the mutation
+       target did not come apart.
+
+    2. **The refusal reimplemented instead of delegated.** Replace the
+       `_priceable_columns` call to `registry.max_release_lag_days` with a
+       hard-coded refused set -- `iorb`, `reserve_balances`, `tga`, `on_rrp`,
+       `mmf_assets`, `treasury_settlement`, `dealer_treasury_position`,
+       `quarter_end`, `tax_date`, which is exactly what the pricing function
+       refuses against `metadata/sources.json` today, so the panel is
+       unchanged and every other test stays green. Then change a field's
+       declaration in a fixture registry so the registry and the list
+       disagree. Killed by exactly one test:
+       `test_a_column_is_refused_by_the_registry_not_by_a_list`, which moves
+       `sofr` onto a `snapshot_retrieved_at` source in a fixture registry and
+       asserts the column stops being built. The hard-coded copy keeps
+       building it, because a list cannot read a registry.
+
+       The finding the brief asked for: **something noticed, and it was only
+       the test written for it.** No pre-existing test in the suite can see a
+       panel that has stopped tracking the registry, because until this block
+       no code path built a panel from one. That is why the test varies the
+       registry rather than the panel -- a fixture that varies only the data
+       would have gone green under the hard-coded set.
+
+    3. **A hole forward-filled from the previous `ref_date`.** Killed by two
+       tests, both in this class: `test_a_hole_is_not_the_previous_value`
+       (the 6 January `sofr` cell comes back 4.30 instead of `None`) and
+       `test_holes_are_counted_not_filled` (the hole counts fall to
+       `{"sofr": 0, "tgcr": 1}` while the row count is unchanged, which is the
+       shape a filled panel has: the rows are all still there and the
+       emptiness has gone).
+
+    4. **The boring one, and it was boring.** `data/sample/daily_market.csv`,
+       row one, `sofr` 4.31 -> 4.41. Killed only in `tests/test_baseline.py`:
+       `FittedThresholdTests.test_the_arx_reports_the_numbers_it_reported_before_a_third_model_existed`,
+       `PurgedBacktestTests.test_the_backtest_derives_its_purge_from_the_declared_feature_set`,
+       `PurgedBacktestTests.test_the_purge_moves_the_reported_numbers_and_the_move_is_kept`
+       and `RollingBacktestTests.test_persistence_remains_the_default_with_unchanged_numbers`.
+       **Zero kills in this class and zero elsewhere in `tests/test_data.py`.**
+       That is the intended result twice over: nothing in this block reaches an
+       existing figure, and the join's tests are fixture-based precisely so
+       they cannot start depending on the hand-written file this block exists
+       to make unnecessary.
+
+    Deliberately absent from all of the above: an absolute test count. The
+    kill lists name tests; a total would be a transcribed number with nothing
+    asserting it, which is the drift `tests/test_docs_freshness.py` exists to
+    refuse in Markdown and no more defensible in a docstring.
+    """
+
+    #: A `ref_date` source with a nonzero declared lag, copied from
+    #: `metadata/sources.json` so the fixture and the tree agree on shape.
+    #: `worst_case_calendar_days` is what the tests vary.
+    def registry_at_lag(self, worst_case_calendar_days: int):
+        return {
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 1,
+                    "worst_case_calendar_days": worst_case_calendar_days,
+                    "available_time": "15:00",
+                    "timezone": "America/New_York",
+                    "note": "fixture",
+                }
+            }
+        }
+
+    def observation(self, ref_date: date, value: float, *, available_offset: int = 1):
+        """One SOFR observation, available `available_offset` days after its ref_date."""
+
+        return PointInTimeObservation(
+            series_id="SOFR",
+            ref_date=ref_date,
+            available_at=datetime.combine(
+                ref_date + timedelta(days=available_offset),
+                time(19, 0),
+                tzinfo=timezone.utc,
+            ),
+            value=value,
+            vintage_id=f"v{ref_date.isoformat()}",
+            source_sha="a" * 64,
+        )
+
+    def build(self, registry, rows, *, cutoff=None, columns=("sofr",)):
+        return build_daily_panel(
+            rows,
+            registry,
+            build_cutoff=cutoff or datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=columns,
+        )
+
+    def test_the_join_does_not_apply_the_purge_gap_a_second_time(self):
+        """The acceptance criterion, and the mutation target. See the class docstring.
+
+        Two assertions, and both must hold. The cell for `ref_date` d carries
+        the value whose `ref_date` is d -- not the value from d minus the
+        declared lag, and not a hole where d has an observation. And the same
+        observations, joined against a registry declaring a different lag,
+        produce the same panel, because the lag is the evaluator's business and
+        never the join's.
+        """
+
+        days = [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7), date(2026, 1, 8)]
+        values = {day: 4.30 + index / 100 for index, day in enumerate(days)}
+        rows = [self.observation(day, values[day]) for day in days]
+
+        at_six = self.build(self.registry_at_lag(6), rows)
+
+        self.assertEqual(at_six.built_columns, ("sofr",))
+        self.assertEqual([row.date for row in at_six.observations], days)
+        for row in at_six.observations:
+            self.assertIsNotNone(
+                row.values["sofr"],
+                f"{row.date} has an observation and must not be a hole",
+            )
+            self.assertAlmostEqual(row.values["sofr"], values[row.date])
+
+        # 20, not 1: `validate_release_lag` floors `worst_case_calendar_days`
+        # at `days + 5`, so the other declared lag has to move upward to be a
+        # legal declaration at all. Either direction proves the same thing.
+        at_twenty = self.build(self.registry_at_lag(20), rows)
+        self.assertEqual(
+            [(row.date, row.values["sofr"]) for row in at_twenty.observations],
+            [(row.date, row.values["sofr"]) for row in at_six.observations],
+            "the declared release lag must not change the panel the join builds",
+        )
+
+    def test_a_column_is_refused_by_the_registry_not_by_a_list(self):
+        """The refusal tracks the registry because it is delegated, not copied.
+
+        Same column, same observations, two registries. On a `ref_date` basis
+        `sofr` is built; moved to a `snapshot_retrieved_at` source with no
+        `revision_policy` -- exactly the shape whose latest value may differ
+        from the value that stood on the day -- `registry.max_release_lag_days`
+        refuses it, and so does the join. A hard-coded refused set in `data.py`
+        cannot follow that, which is what makes this the test for mutation 2.
+        """
+
+        rows = [self.observation(date(2026, 1, 5), 4.30)]
+        built = self.build(self.registry_at_lag(6), rows)
+        self.assertEqual(built.built_columns, ("sofr",))
+        self.assertEqual(built.refusals, {})
+
+        snapshot_registry = {
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "snapshot_retrieved_at",
+                    "note": "fixture: latest vintage only",
+                }
+            }
+        }
+        with self.assertRaises(DataContractError):
+            # Every declared column refused leaves nothing to index, and the
+            # refusal reasons travel with the error rather than an empty panel.
+            self.build(snapshot_registry, rows)
+
+        mixed = build_daily_panel(
+            rows + [
+                PointInTimeObservation(
+                    series_id="TGCR",
+                    ref_date=date(2026, 1, 5),
+                    available_at=datetime(2026, 1, 6, 19, tzinfo=timezone.utc),
+                    value=4.29,
+                    vintage_id="t1",
+                    source_sha="b" * 64,
+                )
+            ],
+            {
+                **snapshot_registry,
+                "nyfed_tgcr": self.registry_at_lag(6)["nyfed_sofr"],
+            },
+            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=("sofr", "tgcr"),
+        )
+        self.assertEqual(mixed.built_columns, ("tgcr",))
+        self.assertIn("sofr", mixed.refusals)
+        self.assertNotIn("sofr", mixed.observations[0].values)
+
+    def test_a_hole_is_not_the_previous_value(self):
+        """A `ref_date` with no observation for a column stays empty.
+
+        The gap is a real one: 6 January carries an observation for `tgcr` and
+        none for `sofr`, so the `sofr` cell is `None` -- not 4.30 carried
+        forward, not 0.0, and not the row's absence from the panel.
+        """
+
+        rows = [
+            self.observation(date(2026, 1, 5), 4.30),
+            self.observation(date(2026, 1, 7), 4.32),
+            PointInTimeObservation(
+                series_id="TGCR",
+                ref_date=date(2026, 1, 6),
+                available_at=datetime(2026, 1, 7, 19, tzinfo=timezone.utc),
+                value=4.29,
+                vintage_id="t1",
+                source_sha="b" * 64,
+            ),
+        ]
+        registry = {
+            "nyfed_sofr": self.registry_at_lag(6)["nyfed_sofr"],
+            "nyfed_tgcr": self.registry_at_lag(6)["nyfed_sofr"],
+        }
+        build = self.build(registry, rows, columns=("sofr", "tgcr"))
+
+        by_date = {row.date: row.values for row in build.observations}
+        self.assertEqual(sorted(by_date), [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)])
+        self.assertIsNone(by_date[date(2026, 1, 6)]["sofr"])
+        self.assertAlmostEqual(by_date[date(2026, 1, 5)]["sofr"], 4.30)
+        self.assertAlmostEqual(by_date[date(2026, 1, 7)]["sofr"], 4.32)
+
+    def test_holes_are_counted_not_filled(self):
+        """`holes` counts the empty cells the panel kept, per built column."""
+
+        rows = [
+            self.observation(date(2026, 1, 5), 4.30),
+            self.observation(date(2026, 1, 7), 4.32),
+            PointInTimeObservation(
+                series_id="TGCR",
+                ref_date=date(2026, 1, 6),
+                available_at=datetime(2026, 1, 7, 19, tzinfo=timezone.utc),
+                value=4.29,
+                vintage_id="t1",
+                source_sha="b" * 64,
+            ),
+        ]
+        registry = {
+            "nyfed_sofr": self.registry_at_lag(6)["nyfed_sofr"],
+            "nyfed_tgcr": self.registry_at_lag(6)["nyfed_sofr"],
+        }
+        build = self.build(registry, rows, columns=("sofr", "tgcr"))
+        self.assertEqual(len(build.observations), 3)
+        self.assertEqual(build.holes, {"sofr": 1, "tgcr": 2})
+
+    def test_a_cell_carries_the_latest_vintage_available_at_the_cutoff(self):
+        """The cutoff selects the vintage; it never selects the `ref_date`.
+
+        Two vintages of one cell. A build cutoff before the revision lands
+        carries the first value; a later cutoff carries the revision. Both
+        carry it at the same `ref_date`, which is the half rule 1 shares with
+        rule 2.
+        """
+
+        ref_date = date(2026, 1, 5)
+        first = PointInTimeObservation(
+            series_id="SOFR",
+            ref_date=ref_date,
+            available_at=datetime(2026, 1, 6, 19, tzinfo=timezone.utc),
+            value=4.30,
+            vintage_id="v1",
+            source_sha="a" * 64,
+        )
+        revised = PointInTimeObservation(
+            series_id="SOFR",
+            ref_date=ref_date,
+            available_at=datetime(2026, 1, 20, 19, tzinfo=timezone.utc),
+            value=4.35,
+            vintage_id="v2",
+            source_sha="a" * 64,
+        )
+        registry = self.registry_at_lag(6)
+
+        early = self.build(
+            registry, [first, revised], cutoff=datetime(2026, 1, 10, tzinfo=timezone.utc)
+        )
+        self.assertEqual([row.date for row in early.observations], [ref_date])
+        self.assertAlmostEqual(early.observations[0].values["sofr"], 4.30)
+
+        late = self.build(
+            registry, [first, revised], cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc)
+        )
+        self.assertEqual([row.date for row in late.observations], [ref_date])
+        self.assertAlmostEqual(late.observations[0].values["sofr"], 4.35)
+
+    def test_a_naive_build_cutoff_is_refused(self):
+        rows = [self.observation(date(2026, 1, 5), 4.30)]
+        with self.assertRaisesRegex(DataContractError, "UTC offset"):
+            build_daily_panel(
+                rows,
+                self.registry_at_lag(6),
+                build_cutoff=datetime(2026, 3, 1),
+                decision_time=time.fromisoformat("15:00"),
+                columns=("sofr",),
+            )
+
+    def test_the_written_panel_records_its_cutoff_and_its_refusals(self):
+        """The manifest is the committable half; the panel bytes are derived."""
+
+        rows = [
+            self.observation(date(2026, 1, 5), 4.30),
+            self.observation(date(2026, 1, 7), 4.32),
+        ]
+        build = self.build(self.registry_at_lag(6), rows, columns=("sofr", "iorb"))
+        self.assertEqual(build.built_columns, ("sofr",))
+        self.assertIn("iorb", build.refusals)
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv"
+        manifest_path = write_daily_panel(build, path, source_shas=("c" * 64,))
+
+        self.assertEqual(
+            path.read_text(encoding="utf-8"),
+            "date,sofr\n2026-01-05,4.3\n2026-01-07,4.32\n",
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["build_cutoff"], "2026-03-01T00:00:00+00:00")
+        self.assertEqual(manifest["built_columns"], ["sofr"])
+        self.assertIn("iorb", manifest["refused_columns"])
+        self.assertEqual(manifest["row_count"], 2)
+        self.assertEqual(manifest["source_shas"], ["c" * 64])
