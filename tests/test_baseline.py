@@ -1,3 +1,149 @@
+"""Tests for `repo_model.baseline`.
+
+The purged rolling-origin benchmark, the models it scores, and the artifact it
+publishes. The splitter itself is `tests/test_splits.py`; the knowledge-holdout
+evaluator that shares this module's gap derivation is `tests/test_event_eval.py`.
+
+The field-priced purge (8 September 2026)
+-----------------------------------------
+
+`test_two_features_on_one_source_price_differently` is this block's whole
+claim and its only acceptance criterion. Before it, both evaluation paths
+resolved a feature set to **source IDs** and priced the gap over those. A
+source is too coarse a thing to price: `fred_macro_latest_vintage` carries
+`IORB`, an administered rate that is never revised, beside H.4.1 weeklies that
+are, under one source-level `release_lag` of basis `snapshot_retrieved_at`.
+Priced by the source, every field of it was unpriceable -- and since
+`spread_bps` is computed from `iorb`, so was the target. That is why nothing in
+this repository had ever been measured on data it fetched.
+
+Both paths now resolve through `contract.field_sources_for_features` and hand
+`registry.max_release_lag_days` the `(source_id, field)` pairs, through one
+function -- `baseline._derive_purge` -- which `event_eval` imports rather than
+restates, as it already does for `_check_fitter_stayed_inside`.
+
+**The real-registry purge.** The first figure in this project's life that did
+not come from a fixture, quoted from the artifact rather than the console:
+
+    backtest data/sample/daily_market.csv --minimum-history 10
+      --registry metadata/sources.json --feature spread_bps
+      --decision-time 16:30 --report <under $HOME>
+
+  * `derived.purge_days`: **6**
+  * `derived.fields`: `fred_macro_latest_vintage.IORB`, `nyfed_sofr.SOFR`
+  * `derived.sources`: `fred_macro_latest_vintage`, `nyfed_sofr`
+  * `folds.count`: **12**; first origin scored `2026-01-22` from a feature row
+    of `2026-01-15`, last origin scored `2026-02-06` from `2026-01-30`
+  * `metrics.mae_bps` 2.083333333333348, `metrics.interval_coverage` 0.5
+
+The six days come from `nyfed_sofr.SOFR`, not from `IORB`, which prices at two:
+the gap is a maximum and SOFR's `worst_case_calendar_days` is the larger. The
+console summary and the artifact agree on every one of these; they are checked
+against each other by
+`tests/test_cli_eval.py::RealRegistryTests::test_the_backtest_runs_on_the_real_registry_over_declared_fields`.
+
+**The panel is still the synthetic one.** Twenty-five hand-written rows. The
+gap is now derived from the shipped registry; the numbers it produces are not
+yet a measurement of anything. Two things surfaced by the published-benchmark
+block are visible in the figures above and neither is this block's: the
+interval is badly calibrated (coverage 0.5 against a declared 0.9) and
+`contract.INTERVAL_PROBABILITY` is a binary-float artefact reading
+`0.8999999999999999`. Nothing here was moved in either direction.
+
+Mutation record, the field-priced purge
+---------------------------------------
+
+Run against a copy of the tree under `$HOME` -- never the mount -- carrying
+`data/`, `metadata/`, `.github/` and the top-level documents, with
+`__pycache__` cleared, stdlib only, under `-B` with `PYTHONDONTWRITEBYTECODE=1`.
+Unmutated control first: 528 tests, OK, 4 skipped, zero `expectedFailure`. The
+same control after each mutation was reverted.
+
+  1. **The acceptance mutation.** `_derive_purge` passes `sources` to
+     `max_release_lag_days` instead of `field_sources` -- the source-level
+     fallback for every field, which is what both paths did before this block.
+     Kills 3:
+
+       * `test_two_features_on_one_source_price_differently` (this file) --
+         errors on the priced half, before the refused half is reached:
+         `spread_bps` no longer resolves, because its `IORB` is priced by
+         `fred_macro_latest_vintage`'s snapshot basis again. Both feature sets
+         refuse, the "opposite verdicts" the test is named for collapse into
+         one verdict, and the test dies. **The criterion and the mutation do
+         not come apart:** the test the brief names is the test the mutation
+         kills, and it dies for the reason the mutation was planted.
+       * `tests/test_event_eval.py::DerivedGapTests::test_the_real_registry_refuses_this_path_too_for_the_same_field`
+         -- the event path's half of the same fact, killed the same way.
+       * `tests/test_cli_eval.py::RealRegistryTests::test_the_backtest_runs_on_the_real_registry_over_declared_fields`
+         -- exit 2 where 0 was expected. The command-level statement that the
+         shipped registry now runs.
+
+     Nothing else in 528 tests notices, which is correct: every other registry
+     in the suite is a fixture that declares no fields, and on such a registry
+     the two derivations agree by construction.
+
+  2. **The two derivations drifting apart.** `evaluate_event_window` left on
+     `contract.sources_for_features` and `max_release_lag_days` over source IDs
+     while `rolling_persistence_backtest` moves to fields. Kills 1:
+     `tests/test_event_eval.py::DerivedGapTests::test_the_real_registry_refuses_this_path_too_for_the_same_field`,
+     on its second half -- the event path refuses a `spread_bps` the rolling
+     path prices, against the same registry, in the same run.
+
+     One kill is thin for the failure this block is one step away from, and it
+     is thin for a structural reason worth stating: the two paths call one
+     function, so the drift cannot be expressed without first duplicating the
+     call, and the mutation had to write that duplicate before it could plant
+     the divergence. The single test that catches it is the only one in the
+     suite that asserts a *priced* result on the event path against the real
+     registry; every other event-path test uses a fixture registry, where the
+     two derivations agree.
+
+  3. **An undeclared field silently priced at zero.** `_derive_purge` catches
+     `RegistryContractError`, keeps only the pairs the registry declares a
+     `field_release_lags` entry for, and prices those -- falling to `0` when
+     none survive. The shape the brief forbids: the refusal softened into a
+     smaller gap. Kills 5:
+
+       * `test_two_features_on_one_source_price_differently` and
+         `test_the_real_registry_still_refuses_a_field_with_no_revision_policy`
+         (this file) -- `WRESBAL` and `WTREGEN` priced instead of refused.
+       * `tests/test_cli_eval.py::RealRegistryTests::test_the_backtest_refuses_a_real_field_with_no_revision_policy`
+         -- exit 0, and a report file published for a run whose gap was sized
+         over a field nobody declared.
+       * `tests/test_event_eval.py::DerivedGapTests::test_the_real_registry_refuses_this_path_too_for_the_same_field`.
+       * `tests/test_event_eval.py::PurgeBoundaryTests::test_the_gap_is_derived_and_cannot_be_supplied`
+         -- the one worth having, and the only kill here that is not about the
+         real registry. It fails on a *fixture* registry, on the "a derived
+         purge cannot be zero" invariant, which is the general statement this
+         mutation violates and the reason the narrowing is safe.
+
+  4. **The boring one: the fixture-registry numbers.** Not a mutation of the
+     code but of the tree -- `git archive HEAD` (`8a18155`, before this block)
+     against the working tree, both running `backtest` on
+     `data/sample/daily_market.csv` at `--minimum-history 10` against a
+     hand-written registry declaring six `record_date` days for
+     `fred_macro_latest_vintage` and `nyfed_sofr` and **no**
+     `field_release_lags`.
+
+     Every number is bit-identical. `metrics` compares equal as a whole, and so
+     do `folds`, `panel` and `declaration`: `mae_bps` 2.083333333333348,
+     `interval_coverage` 0.5, `crps_bps` 1.8028333333333422, the pinball losses
+     at all five declared levels, `block_length` 5, `seed` 2071980500,
+     `purge_days` 6, twelve folds. The only difference anywhere in the artifact
+     is the additive `derived.fields` key, and in the console summary the
+     matching `fields` key. That is the whole intended effect of this block on
+     a registry that declares no fields: the gap comes from somewhere else and
+     arrives at the same value, and nothing downstream of it moves.
+
+     The conformance suites still run once per implementer on both interfaces,
+     counted rather than diffed: `tests/test_registry_interface.py` 37 tests,
+     `tests/test_events_metadata_spec.py` 42, `tests/test_contract.py` 69 --
+     the same three counts before and after.
+
+No mutation was planted in the ARX, the threshold model, the bootstrap or the
+quantile machinery; the runs say nothing about them.
+"""
+
 import inspect
 import json
 import math
@@ -794,9 +940,11 @@ class PurgedBacktestTests(unittest.TestCase):
         the benchmark could not be told apart from that change.
 
         The registry here declares six days for the sources `spread_bps`
-        resolves to. That the *real* registry refuses to price those sources at
-        all is a separate fact, pinned by
-        `test_the_real_registry_refuses_every_feature_set_that_reads_iorb`.
+        resolves to, and declares no fields -- so this number is exactly as
+        blind to the field-priced-purge block as it was to the source-priced
+        one, which is what makes it the control. What the *real* registry does
+        with those fields is a separate fact, pinned by
+        `test_two_features_on_one_source_price_differently`.
         """
 
         rows = self.sample()
@@ -1128,22 +1276,110 @@ class PurgedBacktestTests(unittest.TestCase):
         self.assertEqual(report.purge_days, self.PURGE)
         self.assertNotIn("nyfed_tgcr", report.sources)
 
-    def test_the_real_registry_refuses_every_feature_set_that_reads_iorb(self):
-        """The `snapshot_retrieved_at` guard, firing for the first time.
+    def test_two_features_on_one_source_price_differently(self):
+        """The acceptance criterion of the field-priced-purge block.
 
-        `iorb` is required, `spread_bps` is computed from it, and every model
-        here reads `spread_bps` -- so every feature set resolves to
-        `fred_macro_latest_vintage`, whose basis is `snapshot_retrieved_at`. The
-        contract says such a source contributes no purge and MUST NOT be mapped
-        to zero, and `max_release_lag_days` raises unless every row carries
-        `available_at`. `DailyObservation` carries no `available_at`, so it
-        raises.
+        Against the **real** `metadata/sources.json`, and only against it: the
+        fixture registries in this file declare no fields, so nothing in them
+        can tell a field-priced gap from a source-priced one.
 
-        **This is a correct guard firing, not a bug**, and it is pinned here
-        rather than worked around: the resolution is a Track A question about
-        `available_at` on the daily panel, and this test is what will go red on
-        the day that question is answered -- which is the right alarm, because
-        every benchmark number in the project changes that day.
+        `spread_bps` reads `fred_macro_latest_vintage.IORB`, which declares its
+        own `record_date` lag with a `revision_policy` and three ALFRED
+        vintages behind it, and it prices. Add `reserve_balances`, which reads
+        `fred_macro_latest_vintage.WRESBAL` -- an H.4.1 weekly on the *same
+        source*, declaring no revision policy -- and the run is refused, by
+        name. The declaration is what changed; the source is not.
+
+        Both feature sets read `iorb`, because `spread_bps` is computed from
+        it and the persistence model reads `spread_bps`: a declaration of
+        `("iorb",)` alone is refused by `_check_fitter_stayed_inside` before it
+        reaches a fold. So the pair below differs in exactly one field.
+
+        **Same source, opposite verdicts.** That is the entire content of "the
+        release lag is a property of a field", and no source-level
+        implementation can produce it: priced by the source, both feature sets
+        inherit that source's `snapshot_retrieved_at` basis and both refuse.
+        Before this block that is exactly what happened, and it is why nothing
+        in this repository had ever been measured on data it fetched -- the
+        target reads `iorb`, so the target was unpriceable because a weekly
+        that shares its source is.
+
+        The refusal narrows here; it does not disappear. `WRESBAL` stays
+        refused, and it stays refused for the right reason: the resolution is a
+        declaration about the world, which is the human's to make in a file
+        neither track may edit. What this test forbids is the shortcut -- a
+        snapshot basis mapped to zero, an exemption, or a `revision_policy`
+        invented on this side to unblock a number.
+        """
+
+        rows = self.sample()
+        real = json.loads(REAL_REGISTRY.read_text(encoding="utf-8"))
+
+        priced = rolling_persistence_backtest(
+            rows,
+            features=("spread_bps",),
+            registry=real,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(
+            priced.field_sources,
+            (
+                ("fred_macro_latest_vintage", "IORB"),
+                ("nyfed_sofr", "SOFR"),
+            ),
+        )
+        self.assertGreater(priced.purge_days, 0)
+
+        with self.assertRaises(RegistryContractError) as caught:
+            rolling_persistence_backtest(
+                rows,
+                features=("spread_bps", "reserve_balances"),
+                registry=real,
+                decision_time=DECISION_TIME,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        message = str(caught.exception)
+        # Named to the field, not to the source and not to the registry. A
+        # reader told only `fred_macro_latest_vintage` cannot tell a refused
+        # `WRESBAL` from a refused `IORB`, and on this source those are
+        # different answers.
+        self.assertIn("fred_macro_latest_vintage", message)
+        self.assertIn("WRESBAL", message)
+        self.assertIn("available_at", message)
+        # And the source it refused is a source it just priced. Without this
+        # the test would also pass against two unrelated sources, which is the
+        # fact that was already true and is not what this block established.
+        self.assertIn(
+            "fred_macro_latest_vintage",
+            {source for source, _field in priced.field_sources},
+        )
+
+    def test_the_real_registry_still_refuses_a_field_with_no_revision_policy(self):
+        """The narrowed `snapshot_retrieved_at` guard.
+
+        **What this test asserted before this block.** That *every* feature set
+        reading `iorb` was refused against the real registry -- which was every
+        honest feature set, since `spread_bps` is computed from `iorb` and every
+        model here reads `spread_bps`. The source's basis is
+        `snapshot_retrieved_at`, the contract forbids mapping that to zero, and
+        `max_release_lag_days` raises unless every row carries `available_at`;
+        `DailyObservation` carries none.
+
+        **What it asserts now.** That the refusal survives for a field with no
+        declared revision policy. `spread_bps` no longer refuses -- `IORB` and
+        `SOFR` both declare, so it prices at six days, which
+        `test_two_features_on_one_source_price_differently` and the
+        real-registry purge in this module's docstring record. `tga` reads
+        `fred_macro_latest_vintage.WTREGEN`, an H.4.1 weekly that declares
+        nothing, and it still raises. The claim narrowed from "the source" to
+        "a field of it", and the guard is the same guard.
+
+        **Still a correct guard firing, not a bug.** The resolution is still a
+        Track A and human question -- either `available_at` on the daily panel
+        or a declared `field_release_lags` entry for the weeklies -- and this
+        test still goes red on the day it is answered, which is still the right
+        alarm.
         """
 
         rows = self.sample()
@@ -1151,13 +1387,15 @@ class PurgedBacktestTests(unittest.TestCase):
         with self.assertRaises(RegistryContractError) as caught:
             rolling_persistence_backtest(
                 rows,
-                features=FEATURES,
+                features=("spread_bps", "tga"),
                 registry=real,
                 decision_time=DECISION_TIME,
                 minimum_history=self.MINIMUM_HISTORY,
             )
-        self.assertIn("fred_macro_latest_vintage", str(caught.exception))
-        self.assertIn("available_at", str(caught.exception))
+        message = str(caught.exception)
+        self.assertIn("fred_macro_latest_vintage", message)
+        self.assertIn("WTREGEN", message)
+        self.assertIn("available_at", message)
 
     def test_a_purge_that_leaves_too_little_history_raises_rather_than_shrinking_min_train(self):
         """The refusal is the feature. Recovering a fold by relaxing is not.

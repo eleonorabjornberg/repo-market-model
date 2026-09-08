@@ -150,17 +150,21 @@ DECISION_TIME = "16:30"
 def declared_registry_file(directory, purge=6, features=(FEATURE,)):
     """Write a registry that prices the sources `features` uses at `purge` days.
 
-    A fixture, and the commands need one now. Against the real
-    `metadata/sources.json` **no feature set runs at all**: every model here
-    reads `spread_bps`, `spread_bps` is computed from `iorb`, `iorb` comes from
-    `fred_macro_latest_vintage`, and that source's basis is
-    `snapshot_retrieved_at` -- which `max_release_lag_days` refuses to price
-    unless every row carries `available_at`, and the daily panel carries none.
+    A fixture, and the commands need one because these tests pin *numbers*.
+    The real `metadata/sources.json` now prices `spread_bps` -- since the gap
+    is sized per field and `fred_macro_latest_vintage.IORB` declares its own
+    lag -- so a run against it is no longer refused; `RealRegistryTests` covers
+    that run and the field that is still refused beside it. What the real file
+    cannot give these tests is a gap they chose, and a test about ordering or
+    interval width needs one. So the other tests declare their own registry,
+    exactly as they already declare their own panel, events file and
+    thresholds.
 
-    That refusal is a correct guard, pinned at the command level by
-    `RealRegistryTests`. It is not worked around here; it is why the other tests
-    declare their own registry, exactly as they already declare their own panel,
-    events file and thresholds.
+    It declares **no** `field_release_lags`, deliberately. Every number pinned
+    against it is therefore blind to whether the gap was sized over sources or
+    over fields, which is what makes those numbers the control: the
+    field-priced-purge block changes where the gap comes from, and on this
+    registry nothing downstream of the gap may move.
     """
 
     from repo_model.contract import sources_for_features
@@ -1334,62 +1338,119 @@ class PublishedReportTests(RollingBacktestHarness):
 class RealRegistryTests(unittest.TestCase):
     """What the commands do against `metadata/sources.json` as it stands today.
 
-    They refuse to run, and the refusal is correct.
-
-    `iorb` is a required panel column, `spread_bps` is computed from it, and
-    every model in this repository reads `spread_bps`. So every honest feature
-    set resolves to `fred_macro_latest_vintage`, whose declared basis is
+    **What this class claimed before the field-priced-purge block.** That the
+    commands refuse to run at all, and that the refusal is correct. `iorb` is a
+    required panel column, `spread_bps` is computed from it, and every model in
+    this repository reads `spread_bps` -- so every honest feature set resolved
+    to `fred_macro_latest_vintage`, whose declared basis is
     `snapshot_retrieved_at`. `AGENT_CONTRACT.md` is explicit that such a source
-    contributes no purge and MUST NOT be mapped to zero -- those rows are valid
-    only from their snapshot timestamp, which is an `available_at` fact about a
-    row rather than a lag on a source -- and `max_release_lag_days` raises
-    unless every row carries one. `DailyObservation` carries no `available_at`.
+    contributes no purge and MUST NOT be mapped to zero, and
+    `max_release_lag_days` raises unless every row carries `available_at`,
+    which `DailyObservation` does not.
 
-    The target variable draws on a snapshot-basis source. That is a Track A
-    question about `available_at` on the daily panel, deliberately left open,
-    and it is not this test's job to answer it. What this test does is stop the
-    fact from being quietly worked around: an exemption, a fabricated
-    `available_at`, or a basis mapped to zero would all make this test go green
-    while making every benchmark number in the project meaningless.
+    **What it claims now.** That the refusal is a fact about a *field*. The gap
+    is priced over `(source, field)` pairs, `fred_macro_latest_vintage.IORB`
+    declares a `record_date` lag with a revision policy, and `spread_bps`
+    therefore runs against the real file -- which is the first benchmark in
+    this project's life sized from the registry it ships. The H.4.1 weeklies on
+    that same source declare nothing and are still refused, by name.
 
-    It is pinned rather than skipped because it will go red the day Track A
-    answers the question, which is the right alarm.
+    The basis-level fact is unchanged and so is the guard: an exemption, a
+    fabricated `available_at`, or a basis mapped to zero would still make these
+    tests go green while making every number meaningless. What narrowed is the
+    scope of the refusal, not its strength -- and the remaining refusal is
+    still pinned rather than skipped, because it goes red the day the weeklies
+    are declared or the panel carries `available_at`, which is the right alarm.
     """
 
     PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
 
-    def test_the_backtest_refuses_the_real_registry_for_want_of_available_at(self):
+    def _run(self, *features):
+        """`backtest` against the real registry, with a report path under a temp dir."""
+
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "report.json"
             argv = [
                 "backtest", str(self.PANEL),
                 "--minimum-history", "10",
                 "--registry", str(REGISTRY),
-                "--feature", FEATURE,
                 "--decision-time", DECISION_TIME,
                 "--report", str(report),
             ]
+            for feature in features:
+                argv += ["--feature", feature]
             out, err = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 code = cli.main(argv)
+            written = (
+                json.loads(report.read_text(encoding="utf-8"))
+                if report.exists()
+                else None
+            )
+            return code, out.getvalue(), err.getvalue(), written
 
-            self.assertEqual(code, 2)
-            self.assertIn("fred_macro_latest_vintage", err.getvalue())
-            self.assertIn("available_at", err.getvalue())
-            self.assertEqual(
-                out.getvalue(),
-                "",
-                msg="the command printed a benchmark and then refused; the gap it "
-                "could not size had already reached the folds",
-            )
-            # And left nothing on disk. A report file is a claim that a
-            # benchmark ran; a refused run must not leave one, or the artifact
-            # outlives the console message that explained it and the next
-            # reader finds a published figure with no run behind it.
-            self.assertFalse(
-                report.exists(),
-                msg="a refused run published a report",
-            )
+    def test_the_backtest_refuses_a_real_field_with_no_revision_policy(self):
+        """**Before:** any feature set was refused, and the message named the
+        source. **Now:** a feature set reading an H.4.1 weekly is refused, and
+        the message names the source *and the field* -- `WRESBAL`, which
+        declares no revision policy on a `snapshot_retrieved_at` source.
+
+        Everything else this test asserted is unchanged and still load-bearing:
+        exit 2, nothing on stdout, and no report file. A report on disk is a
+        claim that a benchmark ran, and a refused run that left one would
+        outlive the console message that explained it.
+
+        The invocation gained `--report` in the published-benchmark block. That
+        is the second thing that changed about this test in one edit and it is
+        a separate claim: the flag is required now, so a refusal has an
+        artifact path it must decline to write rather than no artifact to speak
+        of.
+        """
+
+        code, out, err, written = self._run(FEATURE, "reserve_balances")
+
+        self.assertEqual(code, 2)
+        self.assertIn("fred_macro_latest_vintage", err)
+        self.assertIn("WRESBAL", err)
+        self.assertIn("available_at", err)
+        self.assertEqual(
+            out,
+            "",
+            msg="the command printed a benchmark and then refused; the gap it "
+            "could not size had already reached the folds",
+        )
+        self.assertIsNone(written, msg="a refused run published a report")
+
+    def test_the_backtest_runs_on_the_real_registry_over_declared_fields(self):
+        """The other half, and the reason this block exists.
+
+        `spread_bps` reads `fred_macro_latest_vintage.IORB` and
+        `nyfed_sofr.SOFR`, both of which declare a release lag, so the command
+        runs against the file this repository ships rather than against a
+        fixture. Same source as the test above, opposite verdict.
+
+        Asserted on the artifact, not on the console: `--report` is required
+        now, and the artifact is what a later reader has. The console summary
+        is checked against it, because a benchmark whose file and whose
+        scrollback disagree about what sized the gap is worse than one that
+        refused.
+        """
+
+        code, out, err, written = self._run(FEATURE)
+
+        self.assertEqual(code, 0, msg=err)
+        self.assertIsNotNone(written, msg="a run that returned 0 published nothing")
+        self.assertEqual(
+            written["derived"]["fields"],
+            ["fred_macro_latest_vintage.IORB", "nyfed_sofr.SOFR"],
+        )
+        self.assertEqual(written["derived"]["sources"], sorted(written["derived"]["sources"]))
+        self.assertGreater(written["derived"]["purge_days"], 0)
+
+        summary = json.loads(out)
+        self.assertEqual(summary["fields"], written["derived"]["fields"])
+        self.assertEqual(summary["purge_days"], written["derived"]["purge_days"])
+        self.assertEqual(summary["sources"], written["derived"]["sources"])
 
     def test_the_refusal_is_the_snapshot_source_and_not_the_whole_registry(self):
         """A feature set clear of the snapshot sources runs against the real file.

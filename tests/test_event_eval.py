@@ -587,6 +587,7 @@ class ExceedanceReportTests(EvaluatorHarness):
                 "window",
                 "features",
                 "sources",
+                "field_sources",
                 "purge_days",
                 "train_rows",
                 "last_train_date",
@@ -926,27 +927,38 @@ class DerivedGapTests(EvaluatorHarness):
         self.assertEqual(report.purge_days, 4)
         self.assertEqual(report.record.purge_days, 4)
 
-    def test_the_real_registry_refuses_this_path_too_and_that_is_correct(self):
-        """The same `snapshot_retrieved_at` wall the rolling path hits.
+    def test_the_real_registry_refuses_this_path_too_for_the_same_field(self):
+        """The narrowed guard, and that the two paths narrowed together.
 
-        `iorb` is required, `spread_bps` is computed from it, and every model
-        here reads `spread_bps` -- so every feature set resolves to
-        `fred_macro_latest_vintage`, whose basis is `snapshot_retrieved_at`. The
-        contract says such a source contributes no purge and MUST NOT be mapped
-        to zero, and `max_release_lag_days` raises unless every row carries
-        `available_at`. `DailyObservation` carries none, so it raises.
+        **What this test asserted before this block.** That the real registry
+        refused *any* feature set on this path, because `spread_bps` resolved
+        to `fred_macro_latest_vintage` and that source's basis is
+        `snapshot_retrieved_at` -- a basis the contract forbids mapping to
+        zero, and one `max_release_lag_days` raises on unless every row carries
+        `available_at`. `DailyObservation` carries none.
 
-        **A correct guard firing, not a bug**, and pinned here rather than
-        worked around. Before this block the event path took the gap as an int
-        and never touched a registry, so this refusal lived only in `cli_eval`,
-        which derived the number; deriving it inside the evaluator moved the
-        refusal to where the two paths already agreed it belonged. The
-        resolution is a Track A question about `available_at` on the daily
-        panel, and this test is what goes red on the day it is answered --
-        which is the right alarm, because every number in the project changes
-        that day.
+        **What it asserts now.** That the refusal is a fact about a field, and
+        that this path refuses the same field the rolling path does. The
+        harness declares `("spread_bps", "on_rrp")`, and `on_rrp` reads
+        `fred_macro_latest_vintage.RRPONTSYD`, which declares no revision
+        policy -- so this still raises, and now names `RRPONTSYD`. Drop
+        `on_rrp` and the same registry prices the same source's `IORB`, which
+        is what the rolling path's acceptance test pins; both halves are
+        checked here, because the failure this block is one step away from is
+        the two derivations drifting apart, and a test that only saw the
+        refusal could not see the drift.
 
-        `tests/test_baseline.py::test_the_real_registry_refuses_every_feature_set_that_reads_iorb`
+        **Still a correct guard firing, not a bug.** Before the gap became
+        derived, the event path took it as an int and never touched a registry,
+        so this refusal lived only in `cli_eval`; deriving it inside the
+        evaluator moved it to where the two paths already agreed it belonged.
+        Deriving it over fields narrows what it catches without moving where it
+        lives. The resolution is still Track A's and the human's -- an
+        `available_at` on the daily panel, or a declared `field_release_lags`
+        entry for the H.4.1 weeklies -- and this test still goes red the day it
+        is answered.
+
+        `tests/test_baseline.py::test_two_features_on_one_source_price_differently`
         is the rolling path's half of the same fact.
         """
 
@@ -957,9 +969,26 @@ class DerivedGapTests(EvaluatorHarness):
         )
         with self.assertRaises(RegistryContractError) as caught:
             self.evaluate(registry=real)
-        self.assertIn("fred_macro_latest_vintage", str(caught.exception))
-        self.assertIn("available_at", str(caught.exception))
+        message = str(caught.exception)
+        self.assertIn("fred_macro_latest_vintage", message)
+        self.assertIn("RRPONTSYD", message)
+        self.assertIn("available_at", message)
         self.assertEqual(read_journal(self.journal), ())
+
+        # The same source, the same registry, one field fewer: it prices. This
+        # is the rolling path's acceptance criterion asserted on the event
+        # path, and it is here rather than in a file of its own because the two
+        # derivations are now one function and a divergence would show as this
+        # assertion failing while the rolling one passes.
+        report = self.evaluate(features=("spread_bps",), registry=real)
+        self.assertEqual(
+            report.field_sources,
+            (
+                ("fred_macro_latest_vintage", "IORB"),
+                ("nyfed_sofr", "SOFR"),
+            ),
+        )
+        self.assertGreater(report.purge_days, 0)
 
     @staticmethod
     def _priced(days):

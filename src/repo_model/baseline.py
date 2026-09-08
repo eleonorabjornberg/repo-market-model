@@ -58,8 +58,12 @@ path called it, so its guards had never guarded a reported number. The feature
 row follows from the fold rather than from the calendar: see `_feature_index`.
 
 The gap itself is no longer anybody's to type. The backtest takes a declared
-`features` set, resolves it through `contract.sources_for_features`, and sizes
-the gap with `registry.max_release_lag_days` over exactly those sources. That
+`features` set, resolves it through `contract.field_sources_for_features` to
+`(source, field)` pairs, and sizes the gap with `registry.max_release_lag_days`
+over exactly those fields -- `_derive_purge`, which the event path calls too.
+Over fields rather than sources because a source is too coarse a thing to
+price: one source carries an administered rate that is never revised beside
+weeklies that are, and priced as a source neither of them can be priced. That
 closes the question the purge block left open -- the number was required, and
 nothing checked that whoever produced it covered what the model reads -- and it
 is the first time this seam has been answered rather than routed around. The
@@ -107,7 +111,7 @@ from typing import (
     Tuple,
 )
 
-from .contract import QUANTILE_LEVELS, sources_for_features
+from .contract import QUANTILE_LEVELS, field_sources_for_features
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import (
     _validate_levels,
@@ -115,7 +119,7 @@ from .metrics import (
     pinball_loss,
     stationary_bootstrap_interval,
 )
-from .registry import max_release_lag_days
+from .registry import RegistryContractError, max_release_lag_days
 from .splits import (
     LookAheadError,
     clears_purge,
@@ -216,9 +220,10 @@ class FittedForecastModel(Protocol):
         feature-to-source map was declared to avoid.
 
         In model vocabulary, not source vocabulary: a fitted model does not know
-        that `iorb` arrives from `fred_macro_latest_vintage`, and it must not
-        have to. `contract.sources_for_features` is the only thing that makes
-        that step, and it makes it once, before the first fold.
+        that `iorb` arrives from `fred_macro_latest_vintage`'s `IORB` field,
+        and it must not have to. `contract.field_sources_for_features` is the
+        only thing that makes that step, and it makes it once, before the first
+        fold.
 
         Every column the model reads, not only the ones it was told about.
         Persistence was never *given* a feature set and still reads
@@ -389,6 +394,14 @@ class BacktestReport:
     #: `cli_eval` prints these three straight off the report for that reason.
     features: Tuple[str, ...] = ()
     sources: Tuple[str, ...] = ()
+    #: The `(source_id, field)` pairs the gap was actually sized over, beside
+    #: the source IDs projected from them. Both are carried, and the pairs are
+    #: the finer fact: one source can supply a field that prices and a field
+    #: that is refused, so `sources` alone no longer says what was priced.
+    #: Sized over fields since the field-priced-purge block; before it, a
+    #: source-level `release_lag` stood in for every field of a source and the
+    #: target variable was unpriceable because one of them was.
+    field_sources: Tuple[Tuple[str, str], ...] = ()
     purge_days: int = 0
     #: The remaining conditions the numbers were produced under. `decision_time`
     #: is half of what sized the gap -- `max_release_lag_days` takes it and a
@@ -1888,6 +1901,84 @@ def _feature_index(
     )
 
 
+def _derive_purge(
+    registry: Mapping[str, Mapping[str, object]],
+    features: Tuple[str, ...],
+    *,
+    decision_time: time,
+) -> Tuple[Tuple[Tuple[str, str], ...], Tuple[str, ...], int]:
+    """Resolve a declared feature set to fields, and price the gap over those.
+
+    The one derivation both evaluation paths use. `rolling_persistence_backtest`
+    and `event_eval.evaluate_event_window` call this and nothing else; a second
+    copy of these three lines is a second answer to "what sized the gap", and
+    two answers agree until they do not. `_check_fitter_stayed_inside` already
+    lives here for that reason and is imported by the event path rather than
+    restated.
+
+    **Fields, not sources.** `contract.field_sources_for_features` resolves the
+    declaration to `(source_id, field)` pairs and `registry.max_release_lag_days`
+    prices each pair by the field's own declared lag where the source carries
+    one. A source is too coarse a thing to price: `fred_macro_latest_vintage`
+    carries an administered rate that is never revised beside H.4.1 weeklies
+    that are, under one source-level `release_lag` of basis
+    `snapshot_retrieved_at`. Priced by the source, every field of it is
+    unpriceable and `iorb` -- and therefore `spread_bps`, and therefore the
+    target -- goes with them. Priced by the field, `IORB` resolves on its
+    declared record-date lag and the weeklies stay refused, which is the
+    correct pair of answers rather than one answer applied twice.
+
+    The source IDs are still returned, projected from the pairs rather than
+    resolved a second time through `contract.sources_for_features`. They are
+    what `BacktestReport.sources`, `EventWindowReport.sources` and
+    `_check_fitter_stayed_inside` have always carried, and a second resolution
+    is the drift this function exists to prevent. `sources_for_features` is
+    left in place and still called by `cli_eval` for the event journal's hash,
+    which must not move on a registry that declares no fields.
+
+    **The refusal narrows; it does not disappear.** A field with no declared
+    revision policy on a `snapshot_retrieved_at` source is still refused, and
+    the refusal is Track A's -- `RegistryContractError` with Track A's message,
+    which names the source. This adds the fields the gap was being sized over
+    and nothing else: the registry's message cannot name the field, because a
+    field it has no declaration for never reaches the branch that appends one,
+    and a reader told only "fred_macro_latest_vintage" cannot tell a refused
+    `WRESBAL` from a refused `IORB`. Softening it -- an exemption for the event
+    path, a snapshot basis mapped to zero, a `revision_policy` invented here --
+    is not available: a derived purge still cannot be zero, and the field
+    declaration is a decision about the world and the human's to make.
+
+    Args:
+        registry: the parsed source registry.
+        features: the declared feature set, already a tuple.
+        decision_time: when the forecast is made.
+
+    Returns:
+        `(field_sources, sources, purge)` -- the `(source_id, field)` pairs the
+        gap was sized over, the source IDs projected from them, and the gap.
+
+    Raises:
+        UndeclaredFeatureError: `features` names a column
+            `contract.field_sources_for_features` cannot classify, or one
+            declared to have no ingesting source.
+        RegistryContractError: the derived fields cannot support a safe bound.
+    """
+
+    field_sources = field_sources_for_features(features)
+    sources = tuple(sorted({source for source, _field in field_sources}))
+    try:
+        purge = max_release_lag_days(
+            registry, field_sources, decision_time=decision_time
+        )
+    except RegistryContractError as exc:
+        raise RegistryContractError(
+            f"{exc} -- sizing the gap over "
+            f"{', '.join(f'{s}.{f}' for s, f in field_sources)}, the fields the "
+            f"declared feature set {list(features)} reads"
+        ) from exc
+    return field_sources, sources, purge
+
+
 def _check_fitter_stayed_inside(
     features_read: Sequence[str],
     features: Tuple[str, ...],
@@ -1967,10 +2058,12 @@ def rolling_persistence_backtest(
     change, because every model reads its feature row from the same place.
 
     **Where the gap comes from.** The caller declares a feature set; this
-    derives `contract.sources_for_features(features)`, then
-    `registry.max_release_lag_days(...)` over those sources, then builds folds
-    -- the order `cli_eval` already used on the event path. There is no `purge`
-    argument. Who computed the number was the open question the purge left
+    calls `_derive_purge`, which resolves
+    `contract.field_sources_for_features(features)` to `(source, field)` pairs
+    and takes `registry.max_release_lag_days(...)` over those fields, then
+    builds folds -- the order `cli_eval` already used on the event path. The
+    event path calls the same `_derive_purge`, so the two cannot drift. There
+    is no `purge` argument. Who computed the number was the open question the purge left
     behind: a caller could declare an ARX on `on_rrp` and size the gap over
     `nyfed_sofr` alone, and nothing checked it, so every number that came out
     looked reasonable. That is the same silent-leak shape as `rows[index - 1]`
@@ -2052,15 +2145,18 @@ def rolling_persistence_backtest(
             being wrong about the model, which means the gap was sized over the
             wrong sources; see `_check_fitter_stayed_inside`.
         UndeclaredFeatureError: if `features` names a column that
-            `contract.sources_for_features` cannot classify, or one it declares
-            to have no ingesting source. Raised before any fold is built, since
-            a feature set that cannot be resolved has no gap and therefore no
-            backtest.
-        RegistryContractError: if the derived sources cannot support a safe
-            bound -- an unknown source, an unusable `release_lag`, or a
-            `snapshot_retrieved_at` source without `available_at` on every row.
-            Passed through unchanged. It is Track A's refusal and this function
-            has no standing to soften it.
+            `contract.field_sources_for_features` cannot classify, or one it
+            declares to have no ingesting source. Raised before any fold is
+            built, since a feature set that cannot be resolved has no gap and
+            therefore no backtest.
+        RegistryContractError: if the derived fields cannot support a safe
+            bound -- an unknown source, an unusable `release_lag`, or a field
+            of a `snapshot_retrieved_at` source that declares no revision
+            policy and whose rows carry no `available_at`. Track A's refusal,
+            with Track A's message; `_derive_purge` adds the fields the gap was
+            being sized over and softens nothing. A field of a snapshot source
+            that declares its own lag prices on it, and one that does not stays
+            refused -- the same source, both answers.
     """
 
     if interval_probability is not None and not math.isclose(
@@ -2078,8 +2174,9 @@ def rolling_persistence_backtest(
     # caller who misspells a column gets `UndeclaredFeatureError` naming the
     # column rather than a fold-shaped complaint further in.
     declared: Tuple[str, ...] = tuple(features)
-    sources = sources_for_features(declared)
-    purge = max_release_lag_days(registry, sources, decision_time=decision_time)
+    field_sources, sources, purge = _derive_purge(
+        registry, declared, decision_time=decision_time
+    )
 
     rows = list(observations)
     if len(rows) <= minimum_history:
@@ -2186,6 +2283,7 @@ def rolling_persistence_backtest(
         model,
         declared,
         sources,
+        field_sources,
         purge,
         decision_time=decision_time,
         minimum_history=minimum_history,
@@ -2375,11 +2473,14 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
     * `declaration` -- the feature set, the decision time, the minimum history.
       The one thing the caller chose, plus the two settings that shape what
       follows from it. Everything else in the run is a consequence of these.
-    * `derived` -- the sources the features resolved to and the gap those
-      sources produced. Never supplied and never re-derived here: read off the
-      report, because a document that recomputed them would be a second
-      derivation of the number that shaped the run, and the two can agree today
-      and drift later.
+    * `derived` -- the `(source, field)` pairs the features resolved to, the
+      sources projected from them, and the gap those fields produced. Never
+      supplied and never re-derived here: read off the report, because a
+      document that recomputed them would be a second derivation of the number
+      that shaped the run, and the two can agree today and drift later. The
+      fields are here because the gap is priced per field: a reader given only
+      `fred_macro_latest_vintage` cannot tell which of its eight fields the
+      number came from, and on that source the answer differs by field.
     * `panel` -- path, `sha256`, row count, first and last date. The path says
       which file was named and the digest says which bytes answered to that
       name; a report carrying only the path is a claim about a file that may
@@ -2470,6 +2571,13 @@ def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
         "declaration": declaration,
         "derived": {
             "sources": sorted(report.sources),
+            # The pairs the gap was sized over, as `source.field` strings. A
+            # report that named only the sources would be a report an auditor
+            # cannot check: two fields of one source can carry different lags,
+            # and one of them can be refused while the other prices. JSON has
+            # no tuple, and a two-element array per pair reads worse in a diff
+            # than the dotted form the registry's own refusal already uses.
+            "fields": [f"{source}.{field}" for source, field in sorted(report.field_sources)],
             "purge_days": report.purge_days,
         },
         "panel": panel,
