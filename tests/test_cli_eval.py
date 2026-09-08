@@ -91,6 +91,7 @@ No mutation was planted in the report shaping or the journal path; those are
 
 import contextlib
 import csv
+import hashlib
 import inspect
 import io
 import json
@@ -103,8 +104,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model import cli, cli_eval
-from repo_model.contract import event_window_digest, sources_for_features
+from repo_model import baseline, cli, cli_eval
+from repo_model.baseline import (
+    BacktestReport,
+    Forecast,
+    backtest_document,
+    rolling_persistence_backtest,
+)
+from repo_model.contract import (
+    QUANTILE_LEVELS,
+    event_window_digest,
+    sources_for_features,
+)
+from repo_model.data import load_daily_panel
+from repo_model.metrics import (
+    crps_from_quantiles,
+    pinball_loss,
+    stationary_bootstrap_interval,
+)
 from repo_model.registry import max_release_lag_days
 from repo_model.event_eval import read_journal
 
@@ -482,19 +499,14 @@ class JournalTests(EventHoldoutHarness):
         )
 
 
-class RollingBacktestCommandTests(unittest.TestCase):
-    """The rolling path, sized the way the event path has always been sized.
+class RollingBacktestHarness(unittest.TestCase):
+    """The sample panel, one registry pricing two feature sets differently.
 
-    `_event_holdout`'s docstring already claimed the property: "The two
-    evaluation paths mean the same thing by a gap and take the number from the
-    same place." Until this block that was true of one path. The `backtest`
-    command ran an unpurged walk and had no `--source` to size a gap with, so
-    every benchmark number the project published came out of a backtest with no
-    gap at all while the sentence describing the design sat one function away.
-
-    The two tests here are the pair that keeps it true: one that the number
-    reaches the run and follows from the named sources, one that the absence of
-    a way to set it by hand is still an absence.
+    Split out of `RollingBacktestCommandTests` when `PublishedReportTests`
+    arrived and needed the same fixture. Inheriting the *tests* to get the
+    fixture would have run them twice under a second name, which inflates a
+    suite without strengthening it -- and this file already keeps a fixture in
+    its own class, `EventHoldoutHarness`, for exactly this reason.
     """
 
     PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
@@ -539,12 +551,27 @@ class RollingBacktestCommandTests(unittest.TestCase):
             }
         }
 
-    def run_backtest(self, *features, decision_time=DECISION_TIME, registry=None):
+    def run_backtest(
+        self, *features, decision_time=DECISION_TIME, registry=None, report=None
+    ):
+        """Run the command. `report` names the artifact; one is always written.
+
+        `--report` is required now, so every caller supplies one. The default
+        is a fresh path per call, named after the declaration so a test that
+        runs two feature sets does not have the second overwrite the first --
+        which would make the acceptance test below compare a report against
+        itself and pass on any mutation at all.
+        """
+
+        self.last_report = Path(
+            report or self.tmp / f"report-{'-'.join(features) or 'none'}.json"
+        )
         argv = [
             "backtest", str(self.PANEL),
             "--minimum-history", self.MINIMUM_HISTORY,
             "--registry", str(registry or self.registry),
             "--decision-time", decision_time,
+            "--report", str(self.last_report),
         ]
         for feature in features:
             argv += ["--feature", feature]
@@ -557,6 +584,31 @@ class RollingBacktestCommandTests(unittest.TestCase):
         code, out, err = self.run_backtest(*features, **kwargs)
         self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
         return json.loads(out)
+
+    def published(self, *features, **kwargs):
+        """The artifact the run wrote, parsed. The run must have succeeded."""
+
+        self.scored(*features, **kwargs)
+        return json.loads(self.last_report.read_text(encoding="utf-8"))
+
+
+class RollingBacktestCommandTests(RollingBacktestHarness):
+    """The rolling path, sized the way the event path has always been sized.
+
+    `_event_holdout`'s docstring already claimed the property: "The two
+    evaluation paths mean the same thing by a gap and take the number from the
+    same place." Until this block that was true of one path. The `backtest`
+    command ran an unpurged walk and had no `--source` to size a gap with, so
+    every benchmark number the project published came out of a backtest with no
+    gap at all while the sentence describing the design sat one function away.
+
+    The two tests here are the pair that keeps it true: one that the number
+    reaches the run and follows from the named sources, one that the absence of
+    a way to set it by hand is still an absence.
+
+    The fixture is `RollingBacktestHarness`'s; `PublishedReportTests` uses the
+    same one.
+    """
 
     def test_the_rolling_command_takes_its_purge_from_the_declared_features(self):
         """The gap follows from `--feature`, and it reaches the reported numbers.
@@ -709,6 +761,576 @@ class RollingBacktestCommandTests(unittest.TestCase):
                 )
 
 
+class PublishedReportTests(RollingBacktestHarness):
+    """The benchmark as a file, and the conditions travelling with the numbers.
+
+    `PLAN.md` Milestone A ends in a *published* pinball loss and interval
+    coverage, and its exit criterion says the published figures are generated
+    output rather than prose. Before this block nothing wrote any of it:
+    `metrics.pinball_loss` and `metrics.crps_from_quantiles` had been
+    implemented, tested and called by nothing on this path, and `BacktestReport`
+    carried an MAE and a coverage and no quantile loss at all. The numbers
+    existed for the length of a terminal session.
+
+    Shares `RollingBacktestHarness` with the command tests above: the same
+    panel, the same registry, and the same two declarations, one of which
+    resolves to a source the registry prices further out. What is added is that
+    the run now leaves something behind, and that what it left behind is about
+    the run that left it.
+
+    The schema
+    ----------
+
+    `baseline.backtest_document` holds the field-by-field reasoning; the shape
+    is four questions and their answers. **`declaration`** -- the feature set,
+    the decision time, the minimum history -- is the only thing the caller
+    chose. **`derived`** -- the sources and the purge gap -- is what that
+    choice produced, read off the report rather than recomputed, so the
+    artifact cannot publish a gap the run did not use. **`panel`** is path,
+    `sha256`, row count and date range: the path says which file was asked for
+    and the digest says which bytes answered, and without the second a report
+    is a claim about a file that may since have changed. **`folds`** is the
+    count plus the first and last origin in full, which is where an
+    off-by-one in the gap would show, and which does not grow with the panel.
+    **`metrics`** is every number, unrounded.
+
+    Two omissions are deliberate. There is **no per-forecast dump**, so the
+    losses cannot be recomputed from this file alone -- they can be recomputed
+    from the panel, which the file identifies by digest, and that is what makes
+    the digest load-bearing rather than decorative. And there is **no event
+    aggregate**: `AGENT_CONTRACT.md` forbids an aggregate Brier or reliability
+    number on a single event window, and a benchmark artifact that carried one
+    would be the place somebody averaged it into the main table.
+
+    The bootstrap block size
+    ------------------------
+
+    The interval around the headline MAE comes through
+    `metrics.stationary_bootstrap_interval`, as every interval in this project
+    does. Its mean block length is **measured, not declared**: it is the
+    largest number of scored days whose forecast horizons overlap at any one
+    point, swept off this run's own folds by `baseline._maximum_horizon_over-
+    lap`. The reasoning is the standard one -- overlapping h-step forecast
+    errors are MA(h-1), so blocks must be long enough to carry that dependence
+    -- and the measurement matters because the alternative arithmetic is in the
+    wrong units. The gap is in calendar days and the panel is in rows; a
+    weekend inside a six-day gap makes the horizon span seven calendar days and
+    five panel rows, so `purge + 1` would be a number that looks about right
+    and is not. On the sample panel the two declarations give block lengths of
+    2 and 5, and the wider gap gets the longer blocks, which is the dependence
+    the gap creates being carried by the resample that reports it. With no
+    purge no two horizons overlap, the sweep returns 1, and the resample is the
+    iid bootstrap -- which is the correct answer for one-step errors over
+    disjoint days, arrived at rather than special-cased.
+
+    The seed is derived from the run's identity -- panel digest, feature set,
+    gap, decision time -- and recorded. A literal would have satisfied the
+    signature and broken this block's one rule, and would also have made every
+    run in the project share a resample stream.
+
+    Mutation record
+    ---------------
+
+    Unmutated control first, green before and after. Copied under `$HOME`,
+    never the mount, with `data/`, `.github/`, `metadata/` and also
+    `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md` -- the
+    freshness guard reads those and their absence is two kills that look real.
+    Run with `-B` and `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` cleared
+    between mutations.
+
+      * **The purge emitted as a constant** rather than read off the report the
+        run returned -- `"purge_days": 1` in `backtest_document`, the fast
+        run's own value, so the fast report still reads correctly and only the
+        slow one is silently wrong. Fails 1:
+        `test_the_report_carries_the_gap_the_numbers_were_produced_under`, on
+        "both reports published the same gap". **This is the acceptance
+        criterion and the mutation target, and they did not come apart.** That
+        exactly one test dies is the intended result and not a weak spot: the
+        criterion is a property of two runs compared to each other, and no
+        single-run assertion can express it.
+
+      * **The pinball losses zipped against a reversed loss vector**, so the
+        0.05 loss is published under `0.95`. Fails 1:
+        `test_the_pinball_losses_are_the_ones_the_run_computed_at_each_level`.
+        Worth noting what did *not* die: the acceptance test compares the two
+        runs' loss mappings and they still differ, because both runs are
+        reversed consistently. Five levels and five plausible numbers look
+        entirely well behaved, so nothing but recomputing a loss at a named
+        level from the run's own quantile vectors can tell. The keys are not
+        decoration, and it takes a test that recomputes only the labelling to
+        say so.
+
+      * **The bootstrap replaced by a fixed width** around the point estimate.
+        **The first attempt found a real gap and the test was strengthened
+        because of it.** As first written, this killed only
+        `test_the_report_carries_no_number_the_document_did_not_compute`, the
+        source-level guard -- the behavioural interval test passed, because a
+        fixed width still brackets the MAE, is still ordered, still reproduces
+        across runs (a constant always does), and leaves the recorded block
+        length still moving with the gap. Every structural property held while
+        the number meant nothing. A source guard catching what a behavioural
+        test misses is the wrong way round: it fails on how the code is spelled
+        rather than on what it published, and it would go quiet the moment
+        somebody wrote the same mutation without a float literal. So
+        `test_the_headline_carries_an_interval_and_it_is_bootstrapped` now
+        re-drives `stationary_bootstrap_interval` from the seed, block length,
+        replication count and level the *artifact* records, and holds the
+        published bounds to it -- which is also the check a reader of the file
+        can run, and the reason those four fields are in the file at all. With
+        that assertion in place the mutation fails 2, the behavioural test
+        included, and so does a literal-free variant that scales the width by
+        the point estimate.
+
+      * **The boring one, and it was boring.** `mae_bps` and
+        `interval_coverage` on the sample panel, measured on `HEAD` before this
+        block and on the working tree after, at full `repr` precision under
+        both declarations: bit-identical, fold counts included. This block
+        publishes existing numbers and does not change them.
+
+        The half worth recording is that the numbers are *pinned*, not merely
+        unchanged. Dividing the MAE by `n - 1` fails 5 -- four in
+        `test_baseline` (`test_persistence_remains_the_default_with_unchanged_-
+        numbers`, `test_rolling_backtest_is_time_ordered`, `test_the_arx_-
+        reports_the_numbers_it_reported_before_a_third_model_existed`,
+        `test_the_backtest_derives_its_purge_from_the_declared_feature_set`)
+        plus `test_the_purge_moves_the_reported_numbers_and_the_move_is_kept`
+        -- all of them pre-existing. A silent change to the headline during
+        this block would not have been silent.
+
+    What publishing surfaced
+    ------------------------
+
+    Two things the console output had hidden, both of them the block working.
+
+    **`INTERVAL_PROBABILITY` is not 0.90.** It is `0.95 - 0.05` in binary
+    floating point, which is `0.8999999999999999`, and the artifact publishes
+    that because the artifact does not round. The console never showed it at
+    all -- it printed a coverage and no target -- and any place it *had* shown
+    it would have applied `round(..., 4)` and displayed `0.9`. The value is
+    correct and the derivation is right; what was hidden is that the number is
+    a computed float and not the decimal a reader would assume. It is left
+    unrounded on purpose: rounding it here would publish a figure nobody
+    computed, which is the failure this whole artifact exists to prevent, and
+    the repair -- if one is wanted -- belongs in `contract.py`, which is
+    human-owned.
+
+    **The interval is badly calibrated on the sample panel, and the artifact is
+    the first place that is legible.** Coverage comes out near 0.57 against a
+    declared 0.90 predictive interval. Both numbers existed before; they never
+    appeared together, because the console printed `interval_coverage` with
+    nothing beside it to compare against. Putting the target next to the
+    realization is a one-field change and it turns a number that read as
+    unremarkable into an obvious miscalibration. It is a short sample fixture
+    scored over a handful of origins, so it is not yet evidence about the model
+    -- but it is the shape of finding this block was built to make possible,
+    and it arrived on the first run.
+    """
+
+    def test_the_report_carries_the_gap_the_numbers_were_produced_under(self):
+        """The acceptance criterion, and the mutation target.
+
+        Two runs on one panel, differing only in the declared feature set, and
+        therefore in the gap that set derives. Both publish. The reports must
+        carry **different** gaps and **different** metrics, and each report's
+        metrics must be the ones *that* run produced.
+
+        The last clause is what the test is for, and it is what a weaker
+        version would leave out. A reporter that emitted the purge as a
+        constant, or that shaped the document from a run other than the one it
+        just executed, still writes two files with plausible contents -- and a
+        test that only checked "the two files differ" or "the gap is an int"
+        would pass on it. So the gaps are cross-checked against the console
+        summary of the same invocation, which is read off the returned report
+        object, and the metrics are cross-checked against the numbers that
+        invocation printed. A figure detached from the conditions that produced
+        it is exactly the object this block exists to prevent, and it is
+        detached silently: every field still looks like a number.
+
+        Direction, not magnitude. The wider declaration purges further, which
+        costs origins; a shorter benchmark on this panel scores harder days.
+        Asserting *that the gap moved and the numbers moved with it* is a
+        property of the derivation, while asserting either value is a fixture
+        transcription that would have to be rewritten the next time the sample
+        panel does.
+        """
+
+        # Each run is a full invocation: the console summary and the artifact
+        # come out of the same command, so a report that carried another run's
+        # numbers disagrees with the summary printed beside it.
+        slow_summary = self.scored(*self.SLOW_FEATURES)
+        slow = json.loads(self.last_report.read_text(encoding="utf-8"))
+        fast_summary = self.scored(*self.FAST_FEATURES)
+        fast = json.loads(self.last_report.read_text(encoding="utf-8"))
+
+        self.assertNotEqual(
+            slow["derived"]["purge_days"],
+            fast["derived"]["purge_days"],
+            msg="both reports published the same gap; a constant would do this",
+        )
+        self.assertGreater(
+            slow["derived"]["purge_days"], fast["derived"]["purge_days"]
+        )
+        self.assertGreater(fast["derived"]["purge_days"], 0)
+
+        # Each report's gap is its own run's, not the other's and not a fixed
+        # one: it agrees with what that invocation reported to the console.
+        self.assertEqual(slow["derived"]["purge_days"], slow_summary["purge_days"])
+        self.assertEqual(fast["derived"]["purge_days"], fast_summary["purge_days"])
+
+        # The gap reached the run rather than only the record. A wider gap
+        # leaves fewer origins, so a report whose gap was stamped on afterwards
+        # would hold the assertions above and fail here.
+        self.assertLess(slow["folds"]["count"], fast["folds"]["count"])
+        # One fold per scored forecast, in each report. A fold count that had
+        # been stamped on rather than counted could disagree with the metrics
+        # computed beside it.
+        self.assertEqual(slow["folds"]["count"], slow["metrics"]["forecast_count"])
+        self.assertEqual(fast["folds"]["count"], fast["metrics"]["forecast_count"])
+
+        # And the metrics moved with it -- every one of them, not only the
+        # headline. A report that carried one run's metrics under another run's
+        # gap is the failure this test is named for.
+        for metric in ("mae_bps", "interval_coverage", "crps_bps"):
+            with self.subTest(metric=metric):
+                self.assertNotEqual(
+                    slow["metrics"][metric],
+                    fast["metrics"][metric],
+                    msg=f"{metric} did not move with the gap",
+                )
+        self.assertNotEqual(
+            slow["metrics"]["pinball_loss"], fast["metrics"]["pinball_loss"]
+        )
+
+        # Each set of metrics belongs to the run that emitted it. The console
+        # summary rounds and the artifact does not, so this is the comparison
+        # the two can be held to.
+        for report, summary in ((slow, slow_summary), (fast, fast_summary)):
+            with self.subTest(purge=report["derived"]["purge_days"]):
+                self.assertEqual(
+                    round(report["metrics"]["mae_bps"], 4), summary["mae_bps"]
+                )
+                self.assertEqual(
+                    round(report["metrics"]["interval_coverage"], 4),
+                    summary["interval_coverage"],
+                )
+                self.assertEqual(
+                    report["metrics"]["forecast_count"], summary["forecast_count"]
+                )
+                self.assertEqual(report["derived"]["sources"], summary["sources"])
+                self.assertEqual(
+                    report["declaration"]["features"], summary["features"]
+                )
+
+        # The gap is visible on the calendar, on the fold where it applies.
+        # This is the gap as a fact about dates rather than as a field: a
+        # report that named a wider purge while scoring the day after its
+        # feature row would pass every assertion above.
+        for report in (slow, fast):
+            purge = report["derived"]["purge_days"]
+            with self.subTest(purge=purge):
+                for position in ("first", "last"):
+                    fold = report["folds"][position]
+                    span = (
+                        date.fromisoformat(fold["scored_date"])
+                        - date.fromisoformat(fold["feature_date"])
+                    ).days
+                    self.assertGreater(
+                        span,
+                        purge,
+                        msg=f"the {position} fold scored a day only {span} "
+                        f"days after the row it was conditioned on, under a "
+                        f"declared gap of {purge}",
+                    )
+                    self.assertEqual(fold["train_end"], fold["feature_date"])
+
+    def test_the_pinball_losses_are_the_ones_the_run_computed_at_each_level(self):
+        """Keys are not decoration: each loss is the loss at the level naming it.
+
+        The report keys a loss by its quantile level, and a mapping built by
+        zipping two tuples can be built backwards. Nothing about the resulting
+        file looks wrong -- five levels, five plausible numbers, monotone in
+        neither direction by nature -- so the only thing that can catch it is
+        recomputing a loss from the forecasts the run produced.
+
+        So this runs the backtest in process, computes the mean pinball loss at
+        each level straight from `metrics.pinball_loss` over the returned
+        forecasts' own quantile vectors, and holds the published file to it. It
+        does not recompute the *forecasts*: those come from the run, which is
+        the thing under test. It recomputes only the labelling.
+        """
+
+        published = self.published(*self.FAST_FEATURES)
+        report = rolling_persistence_backtest(
+            load_daily_panel(self.PANEL),
+            features=self.FAST_FEATURES,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=int(self.MINIMUM_HISTORY),
+        )
+
+        self.assertEqual(report.quantile_levels, QUANTILE_LEVELS)
+        expected = {
+            f"{level:.2f}": sum(
+                pinball_loss(level, item.quantiles_bps[position], item.actual_bps)
+                for item in report.forecasts
+            )
+            / len(report.forecasts)
+            for position, level in enumerate(QUANTILE_LEVELS)
+        }
+        self.assertEqual(published["metrics"]["pinball_loss"], expected)
+
+        # The losses at the outer levels are not equal on this panel, which is
+        # what makes the assertion above able to fail: a swap between two equal
+        # numbers is invisible, and a test that could not tell them apart would
+        # be checking nothing.
+        self.assertNotEqual(
+            published["metrics"]["pinball_loss"]["0.05"],
+            published["metrics"]["pinball_loss"]["0.95"],
+        )
+
+        # And CRPS is the pinball identity over the same grid, computed by
+        # calling the metric rather than by doubling the average here.
+        self.assertAlmostEqual(
+            published["metrics"]["crps_bps"],
+            sum(
+                crps_from_quantiles(
+                    QUANTILE_LEVELS, item.quantiles_bps, item.actual_bps
+                )
+                for item in report.forecasts
+            )
+            / len(report.forecasts),
+        )
+
+    def test_the_headline_carries_an_interval_and_it_is_bootstrapped(self):
+        """The MAE is reported with a sampling interval, not alone.
+
+        A benchmark that fits in a sample panel has few enough origins that a
+        difference between two models is as likely to be resampling noise as
+        signal, and a bare point estimate invites a reader to believe
+        otherwise. The interval brackets the point
+        estimate, its resample structure is recorded, and the block length is
+        measured off this run's fold horizons rather than declared -- so a run
+        with a wider gap, whose errors overlap over more days, resamples in
+        longer blocks.
+
+        The interval is not asserted to any width. What is asserted is that it
+        is an interval around this run's number, that it is reproducible, and
+        that its structure moved with the gap.
+        """
+
+        fast = self.published(*self.FAST_FEATURES)
+        slow = self.published(*self.SLOW_FEATURES)
+
+        for report in (fast, slow):
+            interval = report["metrics"]["mae_bps_interval"]
+            with self.subTest(purge=report["derived"]["purge_days"]):
+                self.assertLessEqual(interval["lower"], report["metrics"]["mae_bps"])
+                self.assertLessEqual(report["metrics"]["mae_bps"], interval["upper"])
+                self.assertLess(interval["lower"], interval["upper"])
+                self.assertEqual(interval["method"], "stationary_bootstrap")
+                self.assertGreaterEqual(interval["block_length"], 1)
+                self.assertIsInstance(interval["seed"], int)
+                self.assertGreaterEqual(interval["replications"], 2)
+
+        # Longer horizons, longer blocks. The gap creates the dependence, so
+        # the resample that reports the uncertainty has to carry it.
+        self.assertGreater(
+            slow["metrics"]["mae_bps_interval"]["block_length"],
+            fast["metrics"]["mae_bps_interval"]["block_length"],
+        )
+
+        # Reproducible: the seed is derived from the run's own identity, so the
+        # same declaration against the same panel bytes gives the same interval
+        # to the last digit. An interval that cannot be reproduced cannot be
+        # checked, which is why `stationary_bootstrap_interval` demands a seed.
+        again = self.published(*self.FAST_FEATURES, report=self.tmp / "again.json")
+        self.assertEqual(
+            again["metrics"]["mae_bps_interval"],
+            fast["metrics"]["mae_bps_interval"],
+        )
+
+        # And the recorded parameters reproduce the recorded interval, driving
+        # `metrics.stationary_bootstrap_interval` from the artifact alone.
+        #
+        # **This is the assertion that makes the block above mean something,
+        # and it was added because a mutation got past the block above.**
+        # Replacing the bootstrap with a fixed half-basis-point width around
+        # the point estimate satisfies every structural check here -- it
+        # brackets the MAE, it is ordered, its recorded block length still
+        # moves with the gap, and it reproduces across runs because a constant
+        # always does. The only thing that can tell a bootstrap from a made-up
+        # width is redoing the bootstrap, so this redoes it: the forecasts come
+        # from the run, and the resample is driven by the seed, block length,
+        # replication count and level the artifact published.
+        interval = fast["metrics"]["mae_bps_interval"]
+        report = rolling_persistence_backtest(
+            load_daily_panel(self.PANEL),
+            features=self.FAST_FEATURES,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=int(self.MINIMUM_HISTORY),
+        )
+        errors = [
+            abs(item.actual_bps - item.predicted_bps) for item in report.forecasts
+        ]
+        lower, upper = stationary_bootstrap_interval(
+            lambda indices: sum(errors[i] for i in indices) / len(indices),
+            len(errors),
+            block_length=interval["block_length"],
+            seed=interval["seed"],
+            replications=interval["replications"],
+            level=interval["level"],
+        )
+        self.assertEqual((lower, upper), (interval["lower"], interval["upper"]))
+
+        # A percentile interval from a real resample is not centred on the
+        # point estimate. Stated so that a symmetric width -- the shape a
+        # made-up interval takes -- is a failure rather than a curiosity.
+        self.assertNotAlmostEqual(
+            fast["metrics"]["mae_bps"] - interval["lower"],
+            interval["upper"] - fast["metrics"]["mae_bps"],
+        )
+
+    def test_the_report_identifies_the_bytes_it_was_computed_from(self):
+        """Path and digest, from one read. A path alone is a decaying claim.
+
+        A report naming `data/sample/daily_market.csv` says which file was
+        asked for. It does not say which bytes answered, and the bytes are what
+        the numbers came from -- so a panel edited after publication leaves a
+        figure that reads as current and is not, which is the decay this
+        project's freshness guard forbids in prose and would otherwise permit
+        in its own output.
+
+        The extent is here for a second reason: a digest identifies a file, and
+        the row count and date range identify what was actually scored out of
+        it.
+        """
+
+        published = self.published(*self.FAST_FEATURES)
+        panel = published["panel"]
+
+        self.assertEqual(panel["path"], str(self.PANEL))
+        self.assertEqual(
+            panel["sha256"],
+            hashlib.sha256(self.PANEL.read_bytes()).hexdigest(),
+        )
+        rows = load_daily_panel(self.PANEL)
+        self.assertEqual(panel["row_count"], len(rows))
+        self.assertEqual(panel["first_date"], rows[0].date.isoformat())
+        self.assertEqual(panel["last_date"], rows[-1].date.isoformat())
+
+    def test_no_field_in_the_report_is_defaulted_into_existence(self):
+        """A field that cannot be computed is absent, not filled in.
+
+        The rule the whole artifact rests on. A defaulted field is read as a
+        measurement, and a zero that means "not computed" is the same failure
+        as a typed number: right-looking, and detached from any run.
+
+        `BacktestReport` is constructible without the conditions -- the
+        longhand reproduction in `tests/test_baseline.py` does exactly that,
+        deliberately, so it keeps reproducing the walk as it stood. A document
+        built from such a report must omit what it does not know rather than
+        publish `null`, `0`, or a plausible default.
+        """
+
+        bare = BacktestReport(
+            forecasts=[Forecast(1.0, 0.5, 0.0, 2.0, (0.0, 0.25, 0.5, 1.0, 2.0))],
+            mae_bps=0.5,
+            interval_coverage=1.0,
+        )
+        document = backtest_document(bare, panel_path=self.PANEL)
+
+        self.assertNotIn("decision_time", document["declaration"])
+        self.assertNotIn("minimum_history", document["declaration"])
+        for absent in ("row_count", "first_date", "last_date"):
+            self.assertNotIn(absent, document["panel"])
+        self.assertNotIn("first", document["folds"])
+        self.assertNotIn("last", document["folds"])
+        self.assertNotIn("pinball_loss", document["metrics"])
+        self.assertNotIn("crps_bps", document["metrics"])
+
+        # Nothing anywhere in the document is null. An omitted field makes a
+        # reader ask; a null one makes them believe a run answered.
+        self.assertNotIn("null", json.dumps(document))
+
+        # A full report omits none of them.
+        full = self.published(*self.FAST_FEATURES)
+        self.assertIn("decision_time", full["declaration"])
+        self.assertIn("minimum_history", full["declaration"])
+        self.assertIn("pinball_loss", full["metrics"])
+        self.assertIn("first", full["folds"])
+
+    def test_the_artifact_is_not_optional_and_the_numbers_are_not_rounded(self):
+        """`--report` is required, and the file publishes what was computed.
+
+        Two halves of one decision. A benchmark whose artifact is optional is a
+        benchmark that mostly does not produce one, and the figures go back to
+        living in scrollback -- which is the state this block was written to
+        end. And an artifact that rounded would publish a number nobody
+        computed, and would make two runs that genuinely differ read as
+        identical.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        backtest = command.choices["backtest"]
+        required = {
+            action.dest
+            for action in backtest._actions
+            if getattr(action, "required", False)
+        }
+        self.assertIn("report", required)
+
+        summary = self.scored(*self.FAST_FEATURES)
+        published = json.loads(self.last_report.read_text(encoding="utf-8"))
+
+        # The same number, at two precisions: the console rounds for a human,
+        # the artifact does not. Asserting the file carries *more* digits than
+        # the console is what makes this a claim about the artifact rather than
+        # a restatement of the summary.
+        self.assertEqual(round(published["metrics"]["mae_bps"], 4), summary["mae_bps"])
+        self.assertNotEqual(
+            published["metrics"]["mae_bps"],
+            summary["mae_bps"],
+            msg="the published MAE is already rounded to the console's precision",
+        )
+        # And the console says where the artifact went, so a reader of the
+        # terminal can find the record the run published.
+        self.assertEqual(summary["report"], str(self.last_report))
+
+    def test_the_report_carries_no_number_the_document_did_not_compute(self):
+        """No metric literal in the reporting code. Read as source, not output.
+
+        The behavioural tests above all compare the artifact to another
+        computation, so a reporter that hard-coded a value equal to today's
+        would pass them until the panel changed. This reads
+        `baseline.backtest_document` and its helpers and asserts that the only
+        numbers in them are the declared bootstrap parameters and the format
+        widths -- not a basis point anywhere.
+        """
+
+        source = "".join(
+            inspect.getsource(function)
+            for function in (
+                baseline.backtest_document,
+                baseline._fold_document,
+                baseline._level_key,
+                baseline.mae_bootstrap_interval,
+                baseline._report_seed,
+            )
+        )
+        # Strip docstrings: they discuss the design in prose and a prose
+        # numeral is not a published figure.
+        stripped = re.sub(r'"""(?:.|\n)*?"""', "", source)
+        literals = set(re.findall(r"(?<![\w.])\d+\.\d+", stripped))
+        self.assertEqual(
+            literals,
+            set(),
+            msg=f"{sorted(literals)} appear as float literals in the reporter; "
+            "every value it publishes must come from the run",
+        )
+
+
 class RealRegistryTests(unittest.TestCase):
     """What the commands do against `metadata/sources.json` as it stands today.
 
@@ -737,26 +1359,37 @@ class RealRegistryTests(unittest.TestCase):
     PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
 
     def test_the_backtest_refuses_the_real_registry_for_want_of_available_at(self):
-        argv = [
-            "backtest", str(self.PANEL),
-            "--minimum-history", "10",
-            "--registry", str(REGISTRY),
-            "--feature", FEATURE,
-            "--decision-time", DECISION_TIME,
-        ]
-        out, err = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = cli.main(argv)
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "report.json"
+            argv = [
+                "backtest", str(self.PANEL),
+                "--minimum-history", "10",
+                "--registry", str(REGISTRY),
+                "--feature", FEATURE,
+                "--decision-time", DECISION_TIME,
+                "--report", str(report),
+            ]
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = cli.main(argv)
 
-        self.assertEqual(code, 2)
-        self.assertIn("fred_macro_latest_vintage", err.getvalue())
-        self.assertIn("available_at", err.getvalue())
-        self.assertEqual(
-            out.getvalue(),
-            "",
-            msg="the command printed a benchmark and then refused; the gap it "
-            "could not size had already reached the folds",
-        )
+            self.assertEqual(code, 2)
+            self.assertIn("fred_macro_latest_vintage", err.getvalue())
+            self.assertIn("available_at", err.getvalue())
+            self.assertEqual(
+                out.getvalue(),
+                "",
+                msg="the command printed a benchmark and then refused; the gap it "
+                "could not size had already reached the folds",
+            )
+            # And left nothing on disk. A report file is a claim that a
+            # benchmark ran; a refused run must not leave one, or the artifact
+            # outlives the console message that explained it and the next
+            # reader finds a published figure with no run behind it.
+            self.assertFalse(
+                report.exists(),
+                msg="a refused run published a report",
+            )
 
     def test_the_refusal_is_the_snapshot_source_and_not_the_whole_registry(self):
         """A feature set clear of the snapshot sources runs against the real file.

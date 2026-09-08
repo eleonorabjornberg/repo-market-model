@@ -26,7 +26,11 @@ import json
 from datetime import time
 from pathlib import Path
 
-from .baseline import climatology_exceedance, rolling_persistence_backtest
+from .baseline import (
+    backtest_document,
+    climatology_exceedance,
+    rolling_persistence_backtest,
+)
 from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .event_eval import evaluate_event_window, load_events_file
@@ -85,6 +89,28 @@ def _backtest(args: argparse.Namespace) -> int:
     gap came from somewhere an auditor cannot follow is not a benchmark. All
     three are read off the report rather than recomputed here, so what is
     printed is what shaped the run.
+
+    **`--report` is required, and that is the point of this block.** Until now
+    every number this command produced existed only in a terminal: the pinball
+    losses the metrics module has implemented all along were never computed by
+    anything, and `PLAN.md`'s Milestone A -- which ends in a *published*
+    quantile loss -- had nothing to publish into. A run that emits no artifact
+    leaves a figure whose conditions are gone the moment the scrollback is, and
+    the next place that figure appears is prose, which is the failure
+    `tests/test_docs_freshness.py` exists to stop one level down. So the
+    artifact is not an option on the benchmark; it is what running the
+    benchmark means.
+
+    The document is `baseline.backtest_document`'s, not this module's. Shaping
+    it here would put the report's schema in the caller and leave the run
+    unable to say what it produced -- and it is `baseline` that holds the
+    folds, the levels and the losses. This function reads the panel, runs the
+    backtest, writes the bytes, and prints the same summary it always printed.
+
+    The file is written only after the run returns. A refusal -- an unpriced
+    source, an undeclared feature, a starved gap -- must leave no artifact
+    behind, for the same reason the existing tests assert that a refusal prints
+    no benchmark: a report on disk is a claim that a benchmark ran.
     """
 
     rows = load_daily_panel(args.path)
@@ -96,6 +122,17 @@ def _backtest(args: argparse.Namespace) -> int:
         decision_time=time.fromisoformat(args.decision_time),
         minimum_history=args.minimum_history,
     )
+
+    document = backtest_document(report, panel_path=args.path)
+    args.report.write_text(
+        json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    # Unrounded in the file, rounded on the console. The two are not in tension:
+    # the artifact is the record and must not publish a figure nobody computed,
+    # while the console is a human reading a terminal. Both take their values
+    # off the same report -- the summary below is not a second computation of
+    # anything in the document.
     print(
         json.dumps(
             {
@@ -106,6 +143,7 @@ def _backtest(args: argparse.Namespace) -> int:
                 "purge_days": report.purge_days,
                 "sources": sorted(report.sources),
                 "minimum_history": args.minimum_history,
+                "report": str(args.report),
             },
             indent=2,
             sort_keys=True,
@@ -267,6 +305,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "sources, which size the purge gap",
     )
     backtest.add_argument("--decision-time", required=True, metavar="HH:MM")
+    backtest.add_argument(
+        "--report",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="where to write the JSON benchmark record; required, because a "
+        "run whose figures exist only in a terminal is what this command was "
+        "changed to stop",
+    )
     # No --purge and no --source. See _backtest.
     backtest.set_defaults(handler=_backtest)
 

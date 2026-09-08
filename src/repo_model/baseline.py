@@ -89,10 +89,12 @@ imports it -- so `baseline` still does not depend on the evaluator it feeds.
 
 from __future__ import annotations
 
+import hashlib
 import math
 from bisect import bisect_right
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import date, time, timedelta
+from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Callable,
@@ -107,7 +109,12 @@ from typing import (
 
 from .contract import QUANTILE_LEVELS, sources_for_features
 from .data import DailyObservation, load_stress_thresholds
-from .metrics import _validate_levels
+from .metrics import (
+    _validate_levels,
+    crps_from_quantiles,
+    pinball_loss,
+    stationary_bootstrap_interval,
+)
 from .registry import max_release_lag_days
 from .splits import (
     LookAheadError,
@@ -325,6 +332,40 @@ class Forecast:
     predicted_bps: float
     lower_bps: float
     upper_bps: float
+    #: The full predictive quantile vector the model returned, at
+    #: `BacktestReport.quantile_levels`. `lower_bps` and `upper_bps` are its
+    #: outermost pair and are kept because every existing consumer reads them
+    #: by name; the vector is carried because a quantile loss cannot be
+    #: computed from an interval. Defaulted empty so the longhand
+    #: reconstruction in `tests/test_baseline.py` -- which reproduces the
+    #: unpurged walk as it stood, and must not be edited to track this file --
+    #: still constructs.
+    quantiles_bps: Tuple[float, ...] = ()
+
+
+@dataclass(frozen=True)
+class ScoredFold:
+    """One origin of the rolling backtest, as dates rather than as indices.
+
+    The indices `rolling_origin` yields are positions in a list that only the
+    run holds. A published report has to say *when* the training frame ended
+    and *which* day was scored, in the panel's own vocabulary, or a reader
+    cannot check the gap against the calendar.
+
+    `feature_date` is the row the forecast was conditioned on -- the last day
+    the forecaster was allowed to have seen. It is carried beside `train_end`
+    because under a purge they are the same date and under a bug they are not,
+    and beside `scored_date` because `scored_date - feature_date` is the gap
+    made visible on a single row. The event path already reports a feature date
+    per scored day for exactly this reason; the rolling path did not, and its
+    report is the one this project publishes.
+    """
+
+    train_start: date
+    train_end: date
+    train_rows: int
+    feature_date: date
+    scored_date: date
 
 
 @dataclass(frozen=True)
@@ -349,6 +390,43 @@ class BacktestReport:
     features: Tuple[str, ...] = ()
     sources: Tuple[str, ...] = ()
     purge_days: int = 0
+    #: The remaining conditions the numbers were produced under. `decision_time`
+    #: is half of what sized the gap -- `max_release_lag_days` takes it and a
+    #: registry, and the same registry at a different decision time gives a
+    #: different number -- so a report carrying the gap without it carries half
+    #: the derivation. `minimum_history` set the first origin and the shortest
+    #: frame any fit was allowed.
+    #:
+    #: Both are `None` on a report that was not built by
+    #: `rolling_persistence_backtest`, because a report that cannot say what it
+    #: ran under must not claim a default. See `backtest_document`: a field it
+    #: cannot compute is absent from the artifact, never defaulted into it.
+    decision_time: Optional[time] = None
+    minimum_history: Optional[int] = None
+    #: The panel this run consumed, as the run measured it. The bytes and the
+    #: path are the caller's to supply -- this function is handed rows, not a
+    #: file -- but the extent is a fact about what was actually scored, and a
+    #: digest without it identifies a file rather than a run.
+    panel_rows: Optional[int] = None
+    panel_first_date: Optional[date] = None
+    panel_last_date: Optional[date] = None
+    #: The scored origins, earliest first, one per entry of `forecasts`.
+    folds: Tuple[ScoredFold, ...] = ()
+    #: The quantile grid the fitted models reported, and the mean pinball loss
+    #: at each level of it, positionally aligned. Two parallel tuples rather
+    #: than a mapping because the alignment is the thing a reader must be able
+    #: to check, and a mapping built at this depth would hide a mislabelling
+    #: one call earlier than the place it can still be caught.
+    #:
+    #: `crps_bps` is the mean of `metrics.crps_from_quantiles` over the scored
+    #: days. It is a function of the same pinball losses -- twice their mean --
+    #: and is reported anyway because it is the number the contract's Metrics
+    #: section names, and computing it by calling the metric rather than by
+    #: doubling an average here is what keeps that identity checkable rather
+    #: than assumed.
+    quantile_levels: Tuple[float, ...] = ()
+    pinball_loss: Tuple[float, ...] = ()
+    crps_bps: Optional[float] = None
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -2010,6 +2088,7 @@ def rolling_persistence_backtest(
     fitter: ModelFitter = fit if fit_model is None else fit_model
 
     forecasts: List[Forecast] = []
+    folds: List[ScoredFold] = []
     model: Optional[FittedForecastModel] = None
     dates = [row.date for row in rows]
 
@@ -2040,6 +2119,15 @@ def rolling_persistence_backtest(
         model = fitted
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
+        folds.append(
+            ScoredFold(
+                train_start=rows[train_indices[0]].date,
+                train_end=rows[train_indices[-1]].date,
+                train_rows=len(train_indices),
+                feature_date=feature_row.date,
+                scored_date=rows[index].date,
+            )
+        )
         forecasts.append(
             Forecast(
                 actual_bps=rows[index].spread_bps,
@@ -2053,6 +2141,7 @@ def rolling_persistence_backtest(
                 predicted_bps=model.point_forecast(feature_row),
                 lower_bps=quantiles[0],
                 upper_bps=quantiles[-1],
+                quantiles_bps=tuple(quantiles),
             )
         )
 
@@ -2060,9 +2149,355 @@ def rolling_persistence_backtest(
     coverage = sum(
         item.lower_bps <= item.actual_bps <= item.upper_bps for item in forecasts
     ) / len(forecasts)
-    return BacktestReport(
-        forecasts, mae, coverage, model, declared, sources, purge
+
+    # The grid the losses are labelled with is read off the model that produced
+    # the vectors, not restated from the contract -- a label taken from
+    # anywhere but the thing it labels can be wrong while looking right, which
+    # is the whole subject of this function. The equality is then *checked*
+    # against the declaration, because the point of a fixed grid is that a
+    # pinball loss from one model is comparable to a pinball loss from another,
+    # and a model quantiling at levels of its own would publish a number under
+    # a heading it does not belong to.
+    levels = tuple(model.levels)
+    if levels != tuple(QUANTILE_LEVELS):
+        raise ValueError(
+            f"the fitted model reports quantile levels {levels}, but the "
+            f"contract fixes them at {tuple(QUANTILE_LEVELS)}; losses at a "
+            "private grid are not comparable across models and would be "
+            "published under headings they do not belong to"
+        )
+    losses = tuple(
+        sum(
+            pinball_loss(level, item.quantiles_bps[position], item.actual_bps)
+            for item in forecasts
+        )
+        / len(forecasts)
+        for position, level in enumerate(levels)
     )
+    crps = sum(
+        crps_from_quantiles(levels, item.quantiles_bps, item.actual_bps)
+        for item in forecasts
+    ) / len(forecasts)
+
+    return BacktestReport(
+        forecasts,
+        mae,
+        coverage,
+        model,
+        declared,
+        sources,
+        purge,
+        decision_time=decision_time,
+        minimum_history=minimum_history,
+        panel_rows=len(rows),
+        panel_first_date=rows[0].date,
+        panel_last_date=rows[-1].date,
+        folds=tuple(folds),
+        quantile_levels=levels,
+        pinball_loss=losses,
+        crps_bps=crps,
+    )
+
+
+# --------------------------------------------------------------------------
+# Publication: the backtest as a machine-readable artifact
+# --------------------------------------------------------------------------
+
+#: Coverage of the sampling interval reported beside the headline MAE.
+#:
+#: **Not read from `QUANTILE_LEVELS`,** although the span of the declared grid
+#: happens to be this same 0.90. The two numbers mean different things: the
+#: declared grid spans a *predictive* interval, a claim about where tomorrow's
+#: spread falls, while this is a *sampling* interval, a claim about how far the
+#: MAE would move if the same procedure were run on another draw of the same
+#: process. Deriving one from the other would tie two unrelated quantities
+#: together, and the day somebody widened the predictive grid to 0.99 the
+#: bootstrap would silently follow it.
+BOOTSTRAP_LEVEL = 0.90
+
+#: Replications behind the interval. Enough that the 5th and 95th percentiles
+#: of the resample distribution are not themselves noisy at the fold counts
+#: this backtest produces, and cheap enough at those counts that the report is
+#: not something a reader waits for. Recorded in the artifact rather than left
+#: implicit: an interval whose replication count is unknown cannot be compared
+#: to another one.
+BOOTSTRAP_REPLICATIONS = 2000
+
+
+def _maximum_horizon_overlap(folds: Sequence[ScoredFold]) -> int:
+    """How many scored days share a forecast horizon at the busiest point.
+
+    Each fold's forecast reaches from the day after its feature row to the day
+    it scores. Two folds whose horizons overlap share innovations, so their
+    errors are dependent, and the bootstrap has to resample them in blocks long
+    enough to carry that dependence -- the standard result that overlapping
+    h-step forecast errors are MA(h-1).
+
+    **Measured off the folds, not computed from the purge.** The gap is in
+    calendar days and the panel is in rows; a weekend inside a six-day gap
+    means the horizon spans seven calendar days but only five panel rows, and
+    a block length of `purge + 1` would be a number from the wrong vocabulary
+    that looks about right. Sweeping the fold horizons answers the question
+    that was actually being asked, in the units the resample runs in, and it
+    answers it from this run rather than from a rule of thumb.
+
+    Returns at least 1: a block length below 1 is undefined, and 1 is the iid
+    bootstrap, which is the correct resample when no two horizons overlap --
+    the unpurged case, where each error is one step over disjoint days.
+    """
+
+    if not folds:
+        return 1
+    events: List[Tuple[date, int]] = []
+    for fold in folds:
+        # Covered days are (feature_date, scored_date]: the horizon opens the
+        # day after the last row the forecaster could see and closes on the day
+        # it is scored on.
+        events.append((fold.feature_date + timedelta(days=1), 1))
+        events.append((fold.scored_date + timedelta(days=1), -1))
+    # `-1` sorts before `+1` at a shared date, which is what closes a horizon
+    # on the first day it no longer covers before opening one that starts there.
+    events.sort()
+    live = 0
+    busiest = 0
+    for _, delta in events:
+        live += delta
+        busiest = max(busiest, live)
+    return max(1, busiest)
+
+
+def _report_seed(report: BacktestReport, panel_sha256: str) -> int:
+    """A reproducible bootstrap seed, derived from what the run was.
+
+    `stationary_bootstrap_interval` requires a seed and says why: an interval
+    that cannot be reproduced cannot be checked. A literal here would satisfy
+    the signature and violate this block's one rule -- nothing in the report is
+    typed -- and it would also be the wrong shape, because a single constant
+    makes every run in the project draw the same resample sequence regardless
+    of what it scored.
+
+    So the seed is a digest of the run's own identity: the panel bytes, the
+    declared feature set, the derived gap, and the decision time. The same run
+    on the same panel reproduces the same interval exactly, a reader can
+    recompute the seed from fields the artifact already carries, and two runs
+    that differ in any of those respects are not silently sharing a stream.
+    """
+
+    material = "\x00".join(
+        (
+            panel_sha256,
+            ",".join(sorted(report.features)),
+            str(report.purge_days),
+            "" if report.decision_time is None else report.decision_time.isoformat(),
+        )
+    )
+    return int.from_bytes(
+        hashlib.sha256(material.encode("utf-8")).digest()[:8], "big", signed=False
+    ) & 0x7FFFFFFF
+
+
+def mae_bootstrap_interval(
+    report: BacktestReport, *, seed: int, block_length: Optional[int] = None
+) -> Tuple[float, float, int]:
+    """The stationary-bootstrap interval around `report.mae_bps`.
+
+    A single MAE from a handful of folds invites a reader to believe that a
+    difference between two models is real. It may not be: at fourteen origins
+    the sampling error on the mean absolute error is the same order as the
+    differences a benchmark is used to argue about. Reporting the interval
+    beside the point estimate is the smallest honest fix, and this project
+    already decided which interval: every one comes through
+    `metrics.stationary_bootstrap_interval`.
+
+    The forecasts are resampled by index, which is what keeps each scored day's
+    prediction with its own outcome -- resampling the two apart would destroy
+    the pairing the error is computed from and produce a narrower interval
+    around a statistic nobody computed.
+
+    Args:
+        report: a report from `rolling_persistence_backtest`.
+        seed: required, as the metric requires it. See `_report_seed`.
+        block_length: mean block length. `None`, the default, measures it off
+            the report's own folds via `_maximum_horizon_overlap`.
+
+    Returns:
+        `(lower, upper, block_length)` -- the block length included because an
+        interval whose resample structure is unstated cannot be reproduced from
+        the artifact, and this one is derived rather than declared.
+    """
+
+    forecasts = list(report.forecasts)
+    if not forecasts:
+        raise ValueError("a report with no forecasts has no interval")
+    block = (
+        _maximum_horizon_overlap(report.folds)
+        if block_length is None
+        else int(block_length)
+    )
+    errors = [abs(item.actual_bps - item.predicted_bps) for item in forecasts]
+
+    def mae(indices: Sequence[int]) -> float:
+        return sum(errors[i] for i in indices) / len(indices)
+
+    lower, upper = stationary_bootstrap_interval(
+        mae,
+        len(errors),
+        block_length=block,
+        seed=seed,
+        replications=BOOTSTRAP_REPLICATIONS,
+        level=BOOTSTRAP_LEVEL,
+    )
+    return lower, upper, block
+
+
+def backtest_document(report: BacktestReport, *, panel_path: Path) -> dict:
+    """The report as a publishable record: every number, and what produced it.
+
+    `PLAN.md` Milestone A ends with a published pinball loss and interval
+    coverage, and its exit criterion says the published figures are generated
+    output rather than prose. A number typed into a document is right when it
+    is typed and silently wrong afterwards -- which is the failure
+    `tests/test_docs_freshness.py` forbids one level down, on counts and dates,
+    with nothing to point at instead. This is the instead.
+
+    **Every value here is computed in the run that emits it.** Nothing is
+    defaulted: a field this cannot compute is absent from the document rather
+    than present with a stand-in, because an absent field makes a reader ask
+    and a defaulted one makes them believe. `decision_time`, `minimum_history`
+    and the panel extent are `Optional` on `BacktestReport` for that reason,
+    and each is omitted here when it is `None`.
+
+    **Why these fields.** A figure without the conditions it was computed under
+    is not a result, and for this benchmark the conditions are exactly four
+    things: what was declared, what that derived, what was scored, and what
+    came out.
+
+    * `declaration` -- the feature set, the decision time, the minimum history.
+      The one thing the caller chose, plus the two settings that shape what
+      follows from it. Everything else in the run is a consequence of these.
+    * `derived` -- the sources the features resolved to and the gap those
+      sources produced. Never supplied and never re-derived here: read off the
+      report, because a document that recomputed them would be a second
+      derivation of the number that shaped the run, and the two can agree today
+      and drift later.
+    * `panel` -- path, `sha256`, row count, first and last date. The path says
+      which file was named and the digest says which bytes answered to that
+      name; a report carrying only the path is a claim about a file that may
+      since have changed, which is the same decay as a typed number. The extent
+      says what was actually scored, since a digest identifies a file and not a
+      run.
+    * `folds` -- the count, and the first and last origin in full. Enough for a
+      reader to check the gap against a calendar on the two folds where an
+      off-by-one would show, without the artifact growing with the panel.
+    * `metrics` -- the numbers, unrounded. Rounding belongs to whoever displays
+      them; an artifact that rounded would publish a figure nobody computed and
+      would make two runs that genuinely differ look identical.
+
+    What is deliberately *not* here: any aggregate over event windows (those
+    are the event path's and the contract forbids aggregating a single window),
+    and any per-forecast dump. The second is a real omission and worth the
+    note: the pinball losses cannot be recomputed from this file alone. They
+    can be recomputed from the panel, which the file identifies by digest,
+    which is what makes the digest load-bearing rather than decorative.
+
+    Args:
+        report: a report from `rolling_persistence_backtest`.
+        panel_path: the panel file as the caller named it. Read here, once, for
+            its bytes -- the digest and the path come from the same read, so
+            the artifact cannot name one file and hash another.
+
+    Returns:
+        A JSON-serialisable dict. The caller writes it; this shapes it.
+    """
+
+    digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
+    seed = _report_seed(report, digest)
+    lower, upper, block = mae_bootstrap_interval(report, seed=seed)
+
+    declaration: dict = {"features": sorted(report.features)}
+    if report.decision_time is not None:
+        declaration["decision_time"] = report.decision_time.isoformat(
+            timespec="minutes"
+        )
+    if report.minimum_history is not None:
+        declaration["minimum_history"] = report.minimum_history
+
+    panel: dict = {"path": str(panel_path), "sha256": digest}
+    if report.panel_rows is not None:
+        panel["row_count"] = report.panel_rows
+    if report.panel_first_date is not None:
+        panel["first_date"] = report.panel_first_date.isoformat()
+    if report.panel_last_date is not None:
+        panel["last_date"] = report.panel_last_date.isoformat()
+
+    folds: dict = {"count": len(report.folds)}
+    if report.folds:
+        folds["first"] = _fold_document(report.folds[0])
+        folds["last"] = _fold_document(report.folds[-1])
+
+    metrics: dict = {
+        "forecast_count": len(report.forecasts),
+        "mae_bps": report.mae_bps,
+        "mae_bps_interval": {
+            "lower": lower,
+            "upper": upper,
+            "level": BOOTSTRAP_LEVEL,
+            "method": "stationary_bootstrap",
+            # The block length is measured off this run's own fold horizons --
+            # see `_maximum_horizon_overlap` -- so a wider gap widens the
+            # blocks, which is the dependence the gap creates being carried by
+            # the resample that reports it.
+            "block_length": block,
+            "replications": BOOTSTRAP_REPLICATIONS,
+            "seed": seed,
+        },
+        "interval_coverage": report.interval_coverage,
+        "interval_probability": INTERVAL_PROBABILITY,
+    }
+    if report.quantile_levels:
+        # Keyed by the level, from the levels the losses were computed at. The
+        # two tuples are aligned by construction in the backtest and zipped
+        # once, here, so there is exactly one place a loss could acquire the
+        # wrong heading.
+        metrics["pinball_loss"] = {
+            _level_key(level): loss
+            for level, loss in zip(report.quantile_levels, report.pinball_loss)
+        }
+    if report.crps_bps is not None:
+        metrics["crps_bps"] = report.crps_bps
+
+    return {
+        "declaration": declaration,
+        "derived": {
+            "sources": sorted(report.sources),
+            "purge_days": report.purge_days,
+        },
+        "panel": panel,
+        "folds": folds,
+        "metrics": metrics,
+    }
+
+
+def _fold_document(fold: ScoredFold) -> dict:
+    return {
+        "train_start": fold.train_start.isoformat(),
+        "train_end": fold.train_end.isoformat(),
+        "train_rows": fold.train_rows,
+        "feature_date": fold.feature_date.isoformat(),
+        "scored_date": fold.scored_date.isoformat(),
+    }
+
+
+def _level_key(level: float) -> str:
+    """A JSON object key for a quantile level, stable across runs.
+
+    `repr` of a float is stable in Python but is not a promise about a file
+    format, and `0.5` and `0.50` would be two keys for one level. Formatted to
+    a fixed width instead, so the declared grid always reads `0.05 0.25 0.50
+    0.75 0.95` and a reader diffing two artifacts is diffing values.
+    """
+
+    return f"{float(level):.2f}"
 
 
 def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
