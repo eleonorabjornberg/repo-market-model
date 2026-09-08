@@ -232,41 +232,96 @@ def brier_score(probabilities: Sequence[float], outcomes: Sequence[float]) -> fl
     return sum((p - y) ** 2 for p, y in zip(forecast, realized)) / len(forecast)
 
 
+def _reference_curve(climatology, rows: int) -> Tuple[float, ...]:
+    """The reference forecast, one value per scored row.
+
+    Two shapes, because a climatology is fitted and a fitted thing has a
+    training set. A **scalar** is one reference standing behind every row: the
+    caller estimated a base rate once, off data it is not scoring. A
+    **sequence** is one reference per row, which is what a reference refitted
+    fold by fold looks like once the folds are pooled -- the same object the
+    scored model is, refitted on the same rows, so that the ratio compares two
+    things measured the same way.
+
+    The two admit different values, and the difference is not an oversight:
+
+    * A scalar must be strictly inside `(0, 1)`. A scalar is a *declaration*
+      that the event has this rate, and a declared 0 or 1 says the event is
+      impossible or certain -- for which the reference Brier score is 0
+      whenever the declaration is right, and the ratio is undefined.
+    * A sequence element may be exactly 0 or 1. It is not a declaration; it is
+      an estimate on one fold's training rows, and
+      `baseline.climatology_exceedance` returns a hard 0 above everything it
+      was fitted on, deliberately and at length. Refusing that element would
+      make the honest early folds of a rolling run unscoreable, and the failure
+      it is meant to catch -- a reference that agrees with every outcome -- is
+      caught where it actually lives, on the pooled reference score below.
+    """
+
+    if isinstance(climatology, (str, bytes)):
+        raise MetricError(f"climatology must be a number or a sequence, got {climatology!r}")
+    if isinstance(climatology, bool):
+        raise MetricError(f"climatology must be a number, got {climatology!r}")
+    if isinstance(climatology, (int, float)):
+        value = float(climatology)
+        if not math.isfinite(value) or not 0.0 < value < 1.0:
+            raise MetricError(
+                f"climatology must be strictly inside (0, 1), got {value}; at 0 "
+                "or 1 the reference Brier score can be 0 and the skill score is undefined"
+            )
+        return (value,) * rows
+    try:
+        supplied = tuple(climatology)
+    except TypeError as exc:
+        raise MetricError(
+            f"climatology must be a number or a sequence, got {climatology!r}"
+        ) from exc
+    curve = _validate_probabilities(supplied, "climatology")
+    if len(curve) != rows:
+        raise MetricError(
+            f"{len(curve)} climatology values against {rows} outcomes; a "
+            "per-row reference has one value per scored row, in the same order"
+        )
+    return curve
+
+
 def brier_skill_score(
     probabilities: Sequence[float],
     outcomes: Sequence[float],
     *,
-    climatology: float,
+    climatology,
 ) -> float:
     """Brier score against a climatological reference. Higher is better; 0 is no skill.
 
     Args:
         probabilities: forecast `P(event)`, one per scored row.
         outcomes: the realized 0/1 labels.
-        climatology: the reference base rate. **Required, and estimated outside
-            this module, from data that is not being scored here.** Computing it
+        climatology: the reference. **Required, and estimated outside this
+            module, from data that is not being scored here.** Computing it
             from `outcomes` would be a learned parameter fitted on the
             evaluation window -- the contract's transform-isolation failure --
             and it fails quietly, because the resulting score stays finite and
             plausible while measuring the model against a baseline that already
             knows the answer. There is deliberately no default.
 
+            Either a single base rate, or one value per scored row. The second
+            is what a reference refitted on each fold's training rows looks
+            like once the folds are pooled, and it is the only shape in which
+            such a reference can be expressed: a rolling run's reference is not
+            one number, and collapsing it to one would be exactly the
+            asymmetric comparison `rolling_exceedance_backtest` exists to
+            avoid. See `_reference_curve` for what each shape admits.
+
     Raises:
-        MetricError: on malformed inputs, or a climatology of exactly 0 or 1,
-            for which the reference score is 0 whenever it is right and the
-            skill score is undefined or infinite.
+        MetricError: on malformed inputs, on a scalar climatology of exactly 0
+            or 1, or when the pooled reference Brier score is 0 -- a reference
+            that was right about every scored row, against which no model can
+            have measurable skill.
     """
 
     forecast, realized = _paired(probabilities, outcomes)
-    if isinstance(climatology, bool) or not isinstance(climatology, (int, float)):
-        raise MetricError(f"climatology must be a number, got {climatology!r}")
-    climatology = float(climatology)
-    if not math.isfinite(climatology) or not 0.0 < climatology < 1.0:
-        raise MetricError(
-            f"climatology must be strictly inside (0, 1), got {climatology}; at 0 "
-            "or 1 the reference Brier score can be 0 and the skill score is undefined"
-        )
-    reference = sum((climatology - y) ** 2 for y in realized) / len(realized)
+    curve = _reference_curve(climatology, len(realized))
+    reference = sum((c - y) ** 2 for c, y in zip(curve, realized)) / len(realized)
     if reference == 0.0:
         raise MetricError("reference Brier score is 0; skill is undefined")
     return 1.0 - brier_score(forecast, realized) / reference

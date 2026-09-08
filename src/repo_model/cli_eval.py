@@ -34,6 +34,8 @@ from .baseline import (
     arx_exceedance,
     backtest_document,
     climatology_exceedance,
+    exceedance_backtest_document,
+    rolling_exceedance_backtest,
     rolling_persistence_backtest,
     threshold_exceedance,
 )
@@ -545,6 +547,124 @@ def _event_holdout(args: argparse.Namespace) -> int:
     return 0
 
 
+def _exceedance_backtest(args: argparse.Namespace) -> int:
+    """Score an exceedance predictor at every purged rolling origin, and publish.
+
+    The scoring holdout for the probabilistic target, and the first command
+    that computes the number `AGENT_CONTRACT.md`'s "Metrics" section calls the
+    headline: "Brier skill score against climatology, plus Murphy
+    decomposition". Every part of that was implemented in `metrics.py` and
+    called by nothing outside the test suite, because the only evaluator that
+    consumed an `ExceedancePredictor` was `event-holdout` -- and there the
+    contract forbids an aggregate. There was nowhere to compute it.
+
+    **This is not `event-holdout` with a different flag, and the difference is
+    the contract's, not an implementation detail.** `event-holdout` scores a
+    knowledge holdout: crises stripped from training entirely, scored once per
+    window, "reported separately and never averaged into the main table", and
+    it prints the exceedance curve and the realized path and nothing that
+    aggregates them. This command scores the scoring holdout: an expanding
+    rolling origin over the whole panel, where a crisis date is available for
+    training once it is in the past. That is where an aggregate belongs, and
+    the artifact carries `holdout_role` so a reader of the file can tell the
+    two apart without having read either docstring.
+
+    **It selects through `_select_model`, the same mapping `event-holdout`
+    uses.** Not a second name-to-factory table: two of those agree until they
+    do not, and `tests/test_baseline.py::ExceedancePredictorCoverageTests`
+    asserts `MODEL_FACTORIES` covers every discovered implementer -- a second
+    mapping would be a set of names that guard cannot see. So `--model` is
+    required here for the reason it is required there, and the reason is
+    sharper on this command: the default a convenience would pick is the
+    climatology, and on this path the climatology is not merely the honest
+    baseline, it is *the reference the reported number is a ratio against*. A
+    run that meant to score the ARX and got the climatology would publish a
+    skill score of exactly zero and every other field would be correct.
+
+    **No `--purge`, no `--source` and no `--taus`.** The first two for the
+    reasons `_backtest` and `_event_holdout` give at length. The third for the
+    reason `_event_holdout` gives: the tau family is `AGENT_CONTRACT.md`'s,
+    `metadata/stress_thresholds.json` carries it, and this module contains no
+    tau. It comes in through `--thresholds`, read once by
+    `data.load_stress_thresholds` and passed once, because a path that reads
+    the declaration twice can disagree with itself about which threshold a
+    curve was produced at.
+
+    **`--report` is required**, as it is on `backtest`, and here the argument
+    is stronger. A skill score in a terminal is a figure whose reference,
+    whose gap and whose fold count are gone the moment the scrollback is, and
+    the next place such a figure appears is prose. The artifact is the
+    publication; the human wires it to a page. Nothing here writes into a
+    Markdown document.
+
+    The document is `baseline.exceedance_backtest_document`'s. Shaping it here
+    would put the schema in the caller and leave the run unable to say what it
+    produced. The file is written only after the run returns: a refusal must
+    leave no artifact behind, because a report on disk is a claim that a
+    scoring happened.
+    """
+
+    model_name, predictor = _select_model(args)
+
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+
+    declaration = load_stress_thresholds(args.thresholds)
+    taus = tuple(float(tau) for tau in declaration["taus_bp"])
+
+    report = rolling_exceedance_backtest(
+        rows,
+        predictor=predictor,
+        model_name=model_name,
+        features=args.feature,
+        registry=_registry(args),
+        decision_time=time.fromisoformat(args.decision_time),
+        taus=taus,
+        minimum_history=args.minimum_history,
+    )
+
+    document = exceedance_backtest_document(report, panel_path=args.panel)
+    args.report.write_text(
+        json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    # Unrounded in the file, rounded on the console, both off the one report --
+    # the summary is not a second computation of anything in the document. The
+    # skill score is printed per tau because that is the shape it has: one
+    # number for the run would be an average over four thresholds nobody asked
+    # for. `null` where it could not be computed, which on a short panel is the
+    # common and correct answer at the upper taus.
+    print(
+        json.dumps(
+            {
+                "holdout_role": report.holdout_role,
+                "model": report.model_name,
+                "scored_days": len(report.scored_dates),
+                "fold_count": len(report.folds),
+                "brier_skill_score": {
+                    f"{metric.tau_bp:g}": (
+                        None
+                        if metric.brier_skill_score is None
+                        else round(metric.brier_skill_score, 4)
+                    )
+                    for metric in report.metrics
+                },
+                "features": sorted(report.features),
+                "purge_days": report.purge_days,
+                "sources": sorted(report.sources),
+                "fields": [
+                    f"{source}.{field}" for source, field in sorted(report.field_sources)
+                ],
+                "minimum_history": args.minimum_history,
+                "report": str(args.report),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
@@ -574,6 +694,53 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     # No --purge and no --source. See _backtest.
     backtest.set_defaults(handler=_backtest)
+
+    exceedance = subparsers.add_parser(
+        "exceedance-backtest",
+        help="score an exceedance predictor at every purged rolling origin",
+    )
+    exceedance.add_argument("--panel", type=Path, required=True)
+    exceedance.add_argument("--thresholds", type=Path, required=True)
+    exceedance.add_argument("--registry", type=Path, required=True)
+    exceedance.add_argument(
+        "--feature",
+        action="append",
+        required=True,
+        metavar="COLUMN",
+        help="a panel column the model reads, repeatable; these derive the "
+        "sources, which size the purge gap",
+    )
+    exceedance.add_argument("--decision-time", required=True, metavar="HH:MM")
+    exceedance.add_argument(
+        "--model",
+        required=True,
+        metavar="NAME",
+        help="which exceedance predictor to score, one of "
+        + _model_names()
+        + "; required with no default, because the default would be the "
+        "climatology and on this command the climatology is the reference the "
+        "reported skill score is a ratio against",
+    )
+    exceedance.add_argument(
+        "--regime-variable",
+        metavar="COLUMN",
+        default=None,
+        help="the panel column a two-regime model reads to choose a regime; "
+        "required for --model threshold, refused for the others, and it must "
+        "be one of --feature",
+    )
+    exceedance.add_argument("--minimum-history", type=int, default=20)
+    exceedance.add_argument(
+        "--report",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="where to write the JSON evaluation record; required, because a "
+        "skill score whose reference, gap and fold count exist only in a "
+        "terminal is a figure the next document will carry as prose",
+    )
+    # No --purge, no --source and no --taus. See _exceedance_backtest.
+    exceedance.set_defaults(handler=_exceedance_backtest)
 
     holdout = subparsers.add_parser(
         "event-holdout",

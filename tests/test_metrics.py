@@ -166,6 +166,93 @@ class BrierSkillTests(unittest.TestCase):
         )
 
 
+class BrierSkillReferenceSeriesTests(unittest.TestCase):
+    """A reference refitted per fold is a series, so the argument accepts one.
+
+    The scalar form is a caller that estimated one base rate off data it is not
+    scoring. The sequence form is that same caller having refitted the estimate
+    at every rolling origin, which is what
+    `baseline.rolling_exceedance_backtest` does and the only shape in which
+    such a reference can be passed: a rolling run's reference is not one
+    number, and collapsing it to one is the asymmetric comparison that path
+    exists to avoid.
+
+    Nothing about the scalar form changed. These tests are about the second
+    shape and about the one place the two deliberately differ.
+    """
+
+    def test_a_constant_series_is_the_scalar_it_repeats(self):
+        """The two shapes are one rule, so they must agree where they overlap."""
+
+        probabilities, outcomes = synthetic()
+        self.assertEqual(
+            brier_skill_score(probabilities, outcomes, climatology=0.2),
+            brier_skill_score(
+                probabilities, outcomes, climatology=[0.2] * len(outcomes)
+            ),
+        )
+
+    def test_a_moving_reference_is_not_its_own_mean(self):
+        """Why the shape matters, stated as a number.
+
+        If a per-row reference and its average gave the same skill score, the
+        second shape would be ceremony and hoisting the climatology out of the
+        fold loop would be harmless. They do not agree: the reference enters
+        the denominator paired with each row's own outcome, so a reference that
+        moves *with* the base rate is a different denominator from a flat one
+        at the same mean.
+        """
+
+        outcomes = [0] * 10 + [1] * 10
+        probabilities = [0.1] * 10 + [0.8] * 10
+        moving = [0.05] * 10 + [0.7] * 10
+        flat = [sum(moving) / len(moving)] * len(moving)
+        self.assertAlmostEqual(sum(moving), sum(flat), places=12)
+        self.assertNotAlmostEqual(
+            brier_skill_score(probabilities, outcomes, climatology=moving),
+            brier_skill_score(probabilities, outcomes, climatology=flat),
+            places=3,
+        )
+
+    def test_an_element_may_be_zero_where_a_scalar_may_not(self):
+        """The one place the two shapes differ, and it is not an oversight.
+
+        A scalar 0 is a declaration that the event is impossible, for which the
+        reference score is 0 whenever the declaration holds. An element of 0 is
+        an estimate on one fold's training rows, and
+        `baseline.climatology_exceedance` returns a hard 0 above everything it
+        was fitted on, deliberately -- refusing it would make the honest early
+        folds of a rolling run unscoreable. The failure the scalar rule guards
+        against is caught where it actually lives: on the pooled reference.
+        """
+
+        outcomes = [0, 0, 1, 1]
+        reference = [0.0, 0.0, 0.4, 0.6]
+        self.assertLess(brier_skill_score([0.1] * 4, outcomes, climatology=reference), 1.0)
+        with self.assertRaisesRegex(MetricError, "climatology"):
+            brier_skill_score([0.1] * 4, outcomes, climatology=0.0)
+
+    def test_a_reference_that_was_right_about_every_row_has_no_denominator(self):
+        with self.assertRaisesRegex(MetricError, "reference Brier score is 0"):
+            brier_skill_score([0.3, 0.4], [0, 1], climatology=[0.0, 1.0])
+
+    def test_a_reference_of_the_wrong_length_is_refused(self):
+        with self.assertRaisesRegex(MetricError, "climatology values"):
+            brier_skill_score([0.3, 0.4, 0.5], [0, 1, 1], climatology=[0.2, 0.2])
+
+    def test_a_reference_element_outside_zero_to_one_is_refused(self):
+        for bad in ([0.2, 1.4], [0.2, -0.1], [0.2, float("nan")], [0.2, "x"]):
+            with self.subTest(reference=bad):
+                with self.assertRaisesRegex(MetricError, "climatology"):
+                    brier_skill_score([0.3, 0.4], [0, 1], climatology=bad)
+
+    def test_a_string_is_not_a_reference_series(self):
+        """`str` is a sequence, and iterating one would read characters."""
+
+        with self.assertRaisesRegex(MetricError, "climatology"):
+            brier_skill_score([0.3, 0.4], [0, 1], climatology="0.2")
+
+
 class CorpDecompositionTests(unittest.TestCase):
     """The identity, and the properties that make the components mean something."""
 

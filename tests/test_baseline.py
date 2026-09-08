@@ -56,7 +56,7 @@ Mutation record, the field-priced purge
 Run against a copy of the tree under `$HOME` -- never the mount -- carrying
 `data/`, `metadata/`, `.github/` and the top-level documents, with
 `__pycache__` cleared, stdlib only, under `-B` with `PYTHONDONTWRITEBYTECODE=1`.
-Unmutated control first: 528 tests, OK, 4 skipped, zero `expectedFailure`. The
+Unmutated control first: green, zero `expectedFailure`. The
 same control after each mutation was reverted.
 
   1. **The acceptance mutation.** `_derive_purge` passes `sources` to
@@ -78,7 +78,7 @@ same control after each mutation was reverted.
          -- exit 2 where 0 was expected. The command-level statement that the
          shipped registry now runs.
 
-     Nothing else in 528 tests notices, which is correct: every other registry
+     Nothing else in the suite notices, which is correct: every other registry
      in the suite is a fixture that declares no fields, and on such a registry
      the two derivations agree by construction.
 
@@ -144,6 +144,7 @@ No mutation was planted in the ARX, the threshold model, the bootstrap or the
 quantile machinery; the runs say nothing about them.
 """
 
+import hashlib
 import inspect
 import json
 import math
@@ -155,7 +156,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model import baseline, cli_eval
+from repo_model import baseline, cli_eval, event_eval
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     DegenerateRegimeError,
@@ -173,12 +174,16 @@ from repo_model.baseline import (
     _quantile,
     arx_exceedance,
     climatology_exceedance,
+    exceedance_backtest_document,
     fit,
     fit_arx,
     fit_threshold,
+    rolling_exceedance_backtest,
     rolling_persistence_backtest,
     threshold_exceedance,
+    twcrps_weights,
 )
+from repo_model.metrics import MetricError, brier_skill_score
 from repo_model.contract import (
     QUANTILE_LEVELS,
     UndeclaredFeatureError,
@@ -2723,6 +2728,695 @@ class ThresholdExceedanceTests(ExceedancePredictorConformance, unittest.TestCase
         ]
         with self.assertRaises(DegenerateRegimeError):
             self.make_predictor()(flat, feature_rows, EXCEEDANCE_TAUS)
+
+
+# --------------------------------------------------------------------------
+# The pooled exceedance path
+# --------------------------------------------------------------------------
+
+#: The threshold this section's assertions are made at. The frame below is
+#: built so that this one separates the two regimes and the three above it
+#: separate nothing: every scored spread is under 10bp, so a run that scored a
+#: curve against the wrong tau column is scoring against an all-zero outcome
+#: series and says so.
+REGIME_TAU = 5.0
+EXCEEDANCE_MINIMUM_HISTORY = 20
+
+
+def regime_shift_frame(count=60, seed=20260908, shift_at=30):
+    """A panel that sits around 2bp and then sits around 9bp.
+
+    Built for one property: **a later fold's training rows change the
+    climatology materially.** Before the shift no training row exceeds
+    `REGIME_TAU`, so the unconditional base rate is 0; by the last origin
+    roughly half of them do. A reference fitted once over the whole frame lands
+    near the middle and is wrong at both ends, which is what makes the two
+    constructions in
+    `test_the_climatology_reference_is_refitted_on_each_fold_like_the_model_it_scores`
+    tell each other apart. On a stationary frame they would agree to several
+    places and the acceptance test would pass under its own mutation.
+
+    Generated rather than stored, for the reason `regressor_frame` gives: the
+    property under test is a property of the numbers. The jitter is kept under
+    0.2bp so it moves the spread without moving it across `REGIME_TAU`, and the
+    9bp regime stays under 10bp so the declared taus above the first have no
+    positives at all -- an absence the artifact has to report rather than
+    default.
+    """
+
+    rows = []
+    state = seed
+    for index in range(count):
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        level = 0.02 if index < shift_at else 0.09
+        rows.append(
+            DailyObservation(
+                date(2026, 1, 1) + timedelta(days=index),
+                {
+                    "sofr": 4.30 + level + 0.0001 * (state % 20),
+                    "iorb": 4.30,
+                    "sofr_volume": 2100.0 + (state % 1301) / 3.0,
+                    "on_rrp": 90.0 + (state % 211) / 10.0,
+                },
+            )
+        )
+    return rows
+
+
+class RollingExceedanceTests(unittest.TestCase):
+    """The scoring holdout for the probabilistic target, and its one criterion.
+
+    `AGENT_CONTRACT.md`'s "Metrics" names the headline -- Brier skill score
+    against climatology plus a Murphy decomposition -- and `metrics.py` had
+    implemented every part of it while nothing in `src/repo_model/` outside
+    `metrics.py` called any of them. That was structural rather than an
+    oversight: `rolling_persistence_backtest` scores a `FittedForecastModel`
+    and reports continuous-target numbers, exceedance probabilities come only
+    from an `ExceedancePredictor`, and the only evaluator consuming one was
+    `event_eval`, where the contract forbids an aggregate. So the headline had
+    nowhere to be computed, and `rolling_exceedance_backtest` is that place.
+
+    **Where the aggregate is allowed.** On the scoring holdout, produced by
+    `rolling_origin`: crisis dates excluded from the headline metric but
+    available for training once they are in the past. Not on a knowledge
+    holdout, where "Event windows get the exceedance curve and realized path.
+    No aggregate Brier or reliability number on a single event window."
+    `test_the_knowledge_holdout_path_still_carries_no_aggregate` is the
+    standing guard on the second half, and it is a guard on an *absence*, so it
+    reads the module rather than a result.
+
+    Why the reference is refitted per fold
+    ======================================
+
+    A skill score is a ratio against a reference, and the reference is a fitted
+    object with a training set. There are two ways to get it wrong and both
+    leave every number in range:
+
+    * **Fitted once over all rows.** The reference has then seen the scored
+      days, so it is better than it could have been in production, and the
+      ratio is *understated*. The error is in the conservative direction, which
+      is exactly why nobody catches it.
+    * **Fitted once over the first fold's rows and reused.** The reference
+      decays as the window advances while the scored model is refitted, so the
+      skill score climbs for no reason but the asymmetry.
+
+    Either way the arithmetic is right and the comparison is not between two
+    things measured the same way. So `climatology_exceedance` is *called*
+    inside the fold loop, on the same rows and through the same interface as
+    the model it is the reference for.
+
+    Which windows the pooled set contains, and which it excludes
+    ===========================================================
+
+    Every fold `rolling_origin` yields over the panel the run was handed, and
+    nothing else. Event windows are neither excluded nor specially included:
+    the scoring holdout is defined by crisis dates being available for training
+    *once they are in the past*, which is what an expanding rolling origin does
+    by construction, and a crisis day is scored on a model that was not allowed
+    to see it. What is excluded is the knowledge holdout -- crises stripped
+    from training entirely and scored once per window. That is `event_eval`'s,
+    it is reported separately, and no number from it reaches this table.
+    `rolling_exceedance_backtest` reads no events file and must not.
+
+    Mutation record
+    ===============
+
+    Control first, green before and after each: OK, zero `expectedFailure`.
+    Stdlib only, run from a copy of the tree under `$HOME` -- never the mount --
+    carrying `data/`, `.github/`, `metadata/`, `.gitignore`, the root Markdown
+    and `docs/PROJECT_STATUS.md`, because `tests/test_docs_freshness.py` reads
+    those and their absence is a fistful of kills that look real and are not.
+    `-B` with `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` cleared before each
+    run.
+
+    1. **The acceptance mutation: the climatology fitted once, outside the fold
+       loop, over the whole frame.** One line moved -- the reference predictor
+       called on `tuple(rows)` rather than on `train_rows`. Every fold still
+       scores, every artifact still writes, the skill score is still a number
+       in range. Kills 2, both `AssertionError`:
+
+       * `test_the_climatology_reference_is_refitted_on_each_fold_like_the_model_it_scores`
+         -- **the criterion and the mutation do not come apart.** It dies on
+         its first assertion, comparing the reference the run scored against to
+         the one this test walks the splitter to build: `[0.0, 0.0, ...]` where
+         the early folds had seen nothing above 5bp, against `[0.5, 0.5, ...]`
+         from a reference that had seen the whole regime shift. The reported
+         skill score moves from a per-fold `0.88` to a whole-frame `-0.65`,
+         which is the "understated in the conservative direction" failure with
+         its sign visible.
+       * `test_the_climatology_scored_against_itself_has_no_skill` -- `-0.65 !=
+         0.0`. Worth having beside the criterion because it needs no fixture at
+         all: when the scored model *is* the reference, skill is 0 by
+         definition, and it stops being 0 the moment the two see different rows.
+
+    2. **The purge dropped from the exceedance path only.** `rolling_origin`
+       and `_feature_index` called with a literal `0` while `_derive_purge`
+       still runs and `purge_days` is still reported, so the artifact claims a
+       gap the run did not have. The rolling quantile path keeps its gap; this
+       one loses it. Kills 3, all `AssertionError`:
+
+       * `test_the_pooled_set_is_the_folds_the_splitter_yields_behind_the_derived_gap`
+         -- on the fold-level boundary, `scored_date - feature_date >
+         purge_days`. The gap the report names is not the gap the folds were
+         built at.
+       * `test_the_climatology_reference_is_refitted_on_each_fold_like_the_model_it_scores`
+         -- collateral, and informative: the fold structure moved, so the
+         reference this test rebuilds at the *reported* gap no longer matches
+         the one the run used. A gap that is decorative shows up as a
+         disagreement about which rows trained.
+       * `tests/test_cli_eval.py::ExceedanceBacktestCommandTests::test_the_gap_follows_from_the_declared_features_and_reaches_the_numbers`
+         -- the command-level half: a wider declaration no longer costs
+         origins, because no declaration costs any.
+
+    3. **The pooled outcomes taken one tau along** -- `_at_tau` projecting the
+       outcome column at `position + 1` while the curve stays at `position`, so
+       a curve produced at 5bp is scored against the exceedances of 10bp. The
+       declared family is read once and indexed twice, and the two disagree.
+       Kills 5:
+
+       * `test_each_outcome_is_taken_at_the_threshold_its_curve_was_produced_at`
+         -- `AssertionError: 0 not greater than 0`. The frame's scored spreads
+         all sit under 10bp, so the shifted column has no positives at the one
+         tau that should have some.
+       * `test_the_climatology_reference_is_refitted_on_each_fold_like_the_model_it_scores`
+         -- `AssertionError` on the outcome vector, which this test derives
+         from the realized path and the threshold rather than from the
+         projection. That independence is deliberate and was added after a
+         first run of this mutation left the criterion green: a test that read
+         its outcomes through the projection it is checking would have been
+         handed the same wrong column and agreed with itself.
+       * `test_the_artifact_carries_what_produced_the_numbers` and
+         `tests/test_cli_eval.py::ExceedanceBacktestCommandTests::test_the_command_publishes_the_headline_metric`
+         -- `KeyError: 'decomposition'`. The shifted column is one class, so
+         CORP refuses it and the field is absent with its reason. The artifact
+         still writes; it simply has nothing in it.
+       * `test_the_reliability_band_is_reproducible_and_per_threshold` --
+         `KeyError: 'reliability_curve'`, the same degeneracy one field over.
+
+    4. **The boring one, and it was boring.** The three things this block must
+       not move: the continuous-target artifact, the exceedance curves of all
+       three predictors, and the six-day purge the real registry produces for
+       `spread_bps`. Checked directly rather than by planting anything --
+       `python3 -m repo_model backtest` run against `origin/main` and against
+       this branch on the same panel, registry, decision time and minimum
+       history, and the two JSON files diffed: **identical, byte for byte,
+       bootstrap seed included.** The seed matters because `_report_seed` was
+       refactored to share `_seed_from` with the exceedance artifact, and a
+       shared digest that changed the continuous path's material would have
+       moved every interval that path has ever reported. The three predictors'
+       curves and `features_read` were dumped on a fixed frame in both trees
+       and diffed the same way: identical. `derived.purge_days` is 6 on both.
+
+       Mutations 1 through 3 corroborate it from the other side: across all
+       three runs, **no test outside `RollingExceedanceTests` and
+       `ExceedanceBacktestCommandTests` changed status.** A mutation in this
+       block's code that reached the continuous path would have said so.
+    """
+
+    FEATURES = ARX_FEATURES
+    TAU_FAMILY = EXCEEDANCE_TAUS
+    MINIMUM_HISTORY = EXCEEDANCE_MINIMUM_HISTORY
+
+    def setUp(self):
+        self.rows = regime_shift_frame()
+
+    def predictor(self):
+        return arx_exceedance(REGRESSORS, minimum_history=self.MINIMUM_HISTORY)
+
+    def report(self, purge=1, predictor=None, model_name="arx", features=None):
+        declared = self.FEATURES if features is None else features
+        return rolling_exceedance_backtest(
+            self.rows,
+            predictor=self.predictor() if predictor is None else predictor,
+            model_name=model_name,
+            features=declared,
+            registry=declared_registry(purge, declared),
+            decision_time=DECISION_TIME,
+            taus=self.TAU_FAMILY,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+    def per_fold_climatology(self, purge, tau):
+        """The reference, rebuilt from the fold structure rather than the code.
+
+        Walks the same splitter at the same gap and counts, for each fold, the
+        training spreads strictly above `tau`. That is the definition of a
+        climatology and it is written out here so the assertion below compares
+        the run against the definition rather than against a helper the run
+        also calls.
+        """
+
+        dates = [row.date for row in self.rows]
+        reference = []
+        for train_indices, _test in rolling_origin(
+            dates, self.MINIMUM_HISTORY, 1, purge
+        ):
+            history = [self.rows[i].spread_bps for i in train_indices]
+            reference.append(sum(1 for v in history if v > tau) / len(history))
+        return reference
+
+    def test_the_climatology_reference_is_refitted_on_each_fold_like_the_model_it_scores(self):
+        """The acceptance criterion, and the mutation is the same test.
+
+        Three assertions, in the order the failure would be reasoned about.
+
+        The reference the run used is the fold-by-fold one, element for
+        element. Derived here from the fold structure, never read off the
+        report and never typed: a number obtained by running the code and
+        pasted into a test is the failure this repository keeps finding, and it
+        would pass under every mutation that changed the code and the number
+        together.
+
+        The reported skill score is the one that reference produces. That is
+        the assertion the criterion is written as -- the reference could be
+        carried correctly on the report and a second, single one used for the
+        ratio.
+
+        And the two constructions genuinely differ, by more than rounding. That
+        is what makes the first two assertions mean anything: on a stationary
+        panel a per-fold reference and a whole-frame one agree to several
+        places, and every assertion above would hold under the mutation.
+        """
+
+        purge = 1
+        report = self.report(purge=purge)
+        position = list(report.taus).index(REGIME_TAU)
+        predicted, referenced, _projected = report.at_tau(position)
+        # The outcomes derived here from the realized path and the threshold,
+        # not read off the projection the run scored with. Otherwise a run that
+        # scored the curve against the wrong tau column would hand this test
+        # the same wrong column and the comparison would agree with itself.
+        realized = [1 if value > REGIME_TAU else 0 for value in report.realized_bps]
+        self.assertEqual(list(_projected), realized)
+
+        per_fold = self.per_fold_climatology(purge, REGIME_TAU)
+        self.assertEqual(len(per_fold), len(realized))
+        self.assertEqual(
+            per_fold,
+            list(referenced),
+            msg="the reference the run scored against is not the fold-by-fold one",
+        )
+
+        expected = brier_skill_score(predicted, realized, climatology=per_fold)
+        self.assertAlmostEqual(
+            report.metrics[position].brier_skill_score, expected, places=12
+        )
+
+        # The mutation, constructed: one climatology fitted over the whole
+        # frame, which is what hoisting the reference out of the fold loop
+        # produces. Every fold still scores, the artifact still writes, and the
+        # skill score is still a number in range -- it is simply a different
+        # number, measured against a reference that had seen the scored days.
+        whole_frame = sum(
+            1 for row in self.rows if row.spread_bps > REGIME_TAU
+        ) / len(self.rows)
+        single = brier_skill_score(predicted, realized, climatology=whole_frame)
+        self.assertGreater(
+            abs(expected - single),
+            0.01,
+            msg="the two constructions agree here, so this panel cannot tell "
+            "them apart and the assertions above prove nothing",
+        )
+        self.assertNotAlmostEqual(
+            report.metrics[position].brier_skill_score, single, places=6
+        )
+
+    def test_the_reference_is_the_climatology_and_is_not_the_caller_s_to_choose(self):
+        """`AGENT_CONTRACT.md` says skill *against climatology*, so it is fixed.
+
+        A reference argument would let a run publish a ratio against something
+        else under a heading that says climatology -- the failure `--model`
+        having no default was written to prevent, one level in. Asserted on the
+        signature, because it is an absence and no behavioural test can catch
+        an argument nobody passes.
+        """
+
+        parameters = inspect.signature(rolling_exceedance_backtest).parameters
+        for name in ("reference", "climatology", "reference_predictor"):
+            self.assertNotIn(name, parameters)
+
+    def test_the_pooled_set_is_the_folds_the_splitter_yields_behind_the_derived_gap(self):
+        """The gap follows from `--feature` and it reaches the pooled numbers.
+
+        Asserted as a relation between two gaps rather than against a literal.
+        A wider gap costs origins, and every fold's feature row has to clear
+        it -- `scored_date - feature_date > purge`, the splitter's own strict
+        boundary. A path that reported a `purge_days` it did not pass to
+        `rolling_origin` would hold the first assertion and fail the rest.
+        """
+
+        narrow = self.report(purge=1)
+        wide = self.report(purge=6)
+
+        self.assertEqual(narrow.purge_days, 1)
+        self.assertEqual(wide.purge_days, 6)
+        self.assertLess(len(wide.folds), len(narrow.folds))
+
+        for report in (narrow, wide):
+            for fold in report.folds:
+                self.assertGreater(
+                    (fold.scored_date - fold.feature_date).days, report.purge_days
+                )
+                self.assertEqual(fold.train_end, fold.feature_date)
+
+        position = list(narrow.taus).index(REGIME_TAU)
+        self.assertNotEqual(
+            narrow.metrics[position].brier, wide.metrics[position].brier
+        )
+
+    def test_each_outcome_is_taken_at_the_threshold_its_curve_was_produced_at(self):
+        """Curve and outcome share one reading of the declared family.
+
+        Two facts, neither of them a restatement of the loop that builds them.
+        The frame's scored spreads all sit under 10bp, so the three upper taus
+        must have no positives and the lowest must have some -- a column read
+        one position over collapses that. And exceedance events nest: a day
+        above 20bp is above 5bp, so a day's outcome vector is non-increasing,
+        which a mis-indexed column breaks whenever the day straddles two taus.
+        """
+
+        report = self.report()
+        self.assertLess(max(report.realized_bps), 10.0)
+
+        positives = {metric.tau_bp: metric.positives for metric in report.metrics}
+        self.assertGreater(positives[5.0], 0)
+        self.assertEqual(positives[10.0], 0)
+        self.assertEqual(positives[20.0], 0)
+        self.assertEqual(positives[50.0], 0)
+
+        for day, row in zip(report.realized_bps, report.outcomes):
+            for position in range(1, len(row)):
+                self.assertLessEqual(
+                    row[position],
+                    row[position - 1],
+                    msg=f"{day}bp is recorded as exceeding "
+                    f"{report.taus[position]} but not {report.taus[position - 1]}",
+                )
+
+    def test_the_aggregate_is_labelled_the_scoring_holdout(self):
+        """The table says which table it is, in the file and not only in prose.
+
+        The contract keeps two holdouts apart and says the knowledge one is
+        "never averaged into the main table". This artifact is the main table.
+        A file that could not say so is one somebody eventually averages an
+        event window into, and the label is the cheapest thing that makes the
+        conflation visible in a diff.
+        """
+
+        report = self.report()
+        self.assertEqual(report.holdout_role, event_eval.SCORING_HOLDOUT)
+        self.assertNotEqual(event_eval.SCORING_HOLDOUT, event_eval.KNOWLEDGE_HOLDOUT)
+        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        self.assertEqual(document["holdout_role"], event_eval.SCORING_HOLDOUT)
+
+    def test_the_knowledge_holdout_path_still_carries_no_aggregate(self):
+        """`event_eval` gained no aggregate, and cannot have gained one quietly.
+
+        An absence, so it is asserted against the module rather than against a
+        result. `event_eval` imports no metric: an aggregate Brier, skill,
+        reliability or log score on that path has to come from `metrics.py`,
+        and there is no import to bring one in. And no field of
+        `EventWindowReport` is named for one, which is where a number would
+        have to surface to reach the CLI.
+
+        What this does not cover, stated rather than left to be discovered: a
+        future block could compute an aggregate inside `cli_eval._event_holdout`
+        from the curves the report already carries. That path is guarded by
+        `tests/test_cli_eval.py`, which pins what `event-holdout` prints.
+        """
+
+        source = Path(event_eval.__file__).read_text(encoding="utf-8")
+        # Import statements only. The module's prose names `metrics` where it
+        # explains why it holds no aggregate, and a substring check over the
+        # whole file would be a guard that fires on the explanation of itself.
+        importing = [
+            line
+            for line in source.splitlines()
+            if line.split(" ")[:1] in (["import"], ["from"]) and "metrics" in line
+        ]
+        self.assertEqual(importing, [])
+
+        fields = event_eval.EventWindowReport.__dataclass_fields__
+        for banned in ("brier", "skill", "reliability", "decomposition", "log_score"):
+            for name in fields:
+                self.assertNotIn(banned, name)
+
+    def test_a_predictor_reading_outside_the_declaration_is_refused(self):
+        """The same guard the other two paths use, on this one too.
+
+        The purge was sized from the declaration before anything was fitted, so
+        a predictor reading a column outside it was purged over the wrong
+        fields -- and the error is in the flattering direction, because the
+        undeclared column's release lag was never taken into the maximum.
+        """
+
+        with self.assertRaises(LookAheadError):
+            self.report(features=FEATURES)
+
+    def test_the_reference_is_checked_against_the_declaration_too(self):
+        """It is fitted on the same rows, so its read had to be covered too.
+
+        `climatology_exceedance` reports `("spread_bps",)`, so a declaration
+        that omits the target is refused even when the scored model would have
+        been satisfied by it. Run with a predictor that reads nothing else, so
+        the refusal can only be the reference's.
+        """
+
+        declared = ("on_rrp",)
+        with self.assertRaises(LookAheadError) as caught:
+            rolling_exceedance_backtest(
+                self.rows,
+                predictor=_reads_nothing_but(("on_rrp",)),
+                model_name="fixture",
+                features=declared,
+                registry=declared_registry(1, declared),
+                decision_time=DECISION_TIME,
+                taus=self.TAU_FAMILY,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        self.assertIn("spread_bps", str(caught.exception))
+
+    def test_the_twcrps_weights_come_from_the_declared_family(self):
+        """Derived, not typed, so a change to the declaration moves them.
+
+        Four numbers written beside the four declared taus would be the same
+        weighting today and a silent disagreement the day
+        `metadata/stress_thresholds.json` changed. Asserted as the relation --
+        ascending, normalised at the top, and following a family this test
+        invents rather than the declared one.
+        """
+
+        self.assertEqual(twcrps_weights((1.0, 2.0, 4.0)), (0.25, 0.5, 1.0))
+        report = self.report()
+        self.assertEqual(
+            report.twcrps_weights,
+            tuple(tau / report.taus[-1] for tau in report.taus),
+        )
+        with self.assertRaises(SplitError):
+            twcrps_weights((-5.0, -1.0))
+
+    def test_an_unrepresentable_or_degenerate_metric_is_absent_with_its_reason(self):
+        """Absent rather than defaulted, and accounted for rather than silent.
+
+        Three absences this frame actually produces, and each is a result
+        rather than a failure. Above 10bp nothing was scored, so the reference
+        is right about every day and the ratio has no denominator; the outcomes
+        are one class, so the decomposition is degenerate and CORP says so. At
+        `REGIME_TAU` the ARX puts probability 0 on days the regime shift then
+        delivers, so the log score is infinite -- deliberately unclipped, and
+        unrepresentable in strict JSON, which is a different thing from
+        uncomputed and is recorded as such.
+        """
+
+        report = self.report()
+        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+
+        high = document["metrics"]["by_tau"]["50"]
+        self.assertNotIn("brier_skill_score", high)
+        self.assertNotIn("decomposition", high)
+        self.assertIn("brier_skill_score", high["unavailable"])
+        self.assertIn("decomposition", high["unavailable"])
+        # Retained because the contract commits to retaining it, and computable
+        # on a sample no ratio survives.
+        self.assertIn("brier", high)
+
+        low = document["metrics"]["by_tau"]["5"]
+        self.assertNotIn("log_score", low)
+        self.assertIn("log_score", low["unavailable"])
+        self.assertTrue(math.isinf(log_score_of(report, REGIME_TAU)))
+
+        # Whatever else is absent, nothing is `Infinity` or `NaN`: the file has
+        # to parse under a strict reader, and `json` writes both without
+        # complaint.
+        text = json.dumps(document)
+        self.assertNotIn("Infinity", text)
+        self.assertNotIn("NaN", text)
+
+    def test_the_artifact_carries_what_produced_the_numbers(self):
+        """Declaration, derivation, panel, folds, metrics -- as the continuous one does.
+
+        The fields are asserted against the run rather than against literals:
+        the panel digest against the bytes, the fold extent against the report,
+        the derived gap against what the run was purged at. A document that
+        recomputed any of them would be a second derivation of the number that
+        shaped the run.
+        """
+
+        report = self.report()
+        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+
+        self.assertEqual(document["declaration"]["model"], "arx")
+        self.assertEqual(document["declaration"]["features"], sorted(self.FEATURES))
+        self.assertEqual(document["declaration"]["taus_bp"], list(report.taus))
+        self.assertEqual(
+            document["declaration"]["twcrps_weights"], list(report.twcrps_weights)
+        )
+        self.assertEqual(document["declaration"]["minimum_history"], self.MINIMUM_HISTORY)
+        self.assertEqual(document["declaration"]["decision_time"], "16:00")
+
+        self.assertEqual(document["derived"]["purge_days"], report.purge_days)
+        self.assertEqual(document["derived"]["sources"], sorted(report.sources))
+        self.assertEqual(
+            document["derived"]["fields"],
+            [f"{s}.{f}" for s, f in sorted(report.field_sources)],
+        )
+
+        self.assertEqual(
+            document["panel"]["sha256"],
+            hashlib.sha256(SAMPLE_PANEL.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(document["panel"]["row_count"], len(self.rows))
+        self.assertEqual(document["panel"]["first_date"], self.rows[0].date.isoformat())
+        self.assertEqual(document["panel"]["last_date"], self.rows[-1].date.isoformat())
+
+        self.assertEqual(document["folds"]["count"], len(report.folds))
+        self.assertEqual(
+            document["folds"]["first"]["scored_date"],
+            report.folds[0].scored_date.isoformat(),
+        )
+        self.assertEqual(
+            document["folds"]["last"]["scored_date"],
+            report.folds[-1].scored_date.isoformat(),
+        )
+
+        metrics = document["metrics"]
+        self.assertEqual(metrics["scored_days"], len(report.scored_dates))
+        self.assertEqual(sorted(metrics["by_tau"]), ["10", "20", "5", "50"])
+        self.assertEqual(metrics["threshold_weighted_crps"], report.twcrps)
+
+        scored = metrics["by_tau"]["5"]
+        self.assertEqual(scored["brier_skill_score"], report.metrics[0].brier_skill_score)
+        # Nothing rounded: rounding belongs to whoever displays them, and an
+        # artifact that rounded would make two runs that genuinely differ look
+        # identical.
+        self.assertNotEqual(scored["brier"], round(scored["brier"], 4))
+
+        decomposition = scored["decomposition"]
+        self.assertAlmostEqual(decomposition["identity_residual"], 0.0, places=12)
+        self.assertAlmostEqual(
+            decomposition["score"],
+            decomposition["reliability"]
+            - decomposition["resolution"]
+            + decomposition["uncertainty"],
+            places=12,
+        )
+
+    def test_the_reliability_band_is_reproducible_and_per_threshold(self):
+        """Every interval comes through the stationary bootstrap, seeded from the run.
+
+        The seed is a digest of what the run was, so the same run on the same
+        panel reproduces the same band exactly and a reader can recompute it
+        from fields the artifact already carries. Per threshold, so the four
+        bands are four resample streams: a band sharing a stream with the one
+        above it would understate how much the two differ, invisibly.
+        """
+
+        report = self.report()
+        first = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        again = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        self.assertEqual(first, again)
+
+        curve = first["metrics"]["by_tau"]["5"]["reliability_curve"]
+        self.assertEqual(curve["method"], "corp_isotonic")
+        self.assertEqual(curve["band"]["method"], "stationary_bootstrap")
+        # Measured off this run's own fold horizons, not computed from the gap:
+        # a weekend inside a six-day gap spans seven calendar days and five
+        # panel rows, and `purge + 1` would be a number from the wrong
+        # vocabulary that looks about right.
+        self.assertEqual(
+            curve["band"]["block_length"], baseline._maximum_horizon_overlap(report.folds)
+        )
+        for point in curve["points"]:
+            self.assertLessEqual(point["lower"], point["upper"])
+            self.assertLessEqual(point["lower"], point["recalibrated"] + 1e-12)
+
+        seeds = {
+            key: row["reliability_curve"]["band"]["seed"]
+            for key, row in first["metrics"]["by_tau"].items()
+            if "reliability_curve" in row
+        }
+        self.assertEqual(len(set(seeds.values())), len(seeds))
+
+        # A different model on the same panel is a different run and draws a
+        # different stream.
+        other = self.report(
+            predictor=climatology_exceedance(minimum_history=self.MINIMUM_HISTORY),
+            model_name="climatology",
+        )
+        published = exceedance_backtest_document(other, panel_path=SAMPLE_PANEL)
+        self.assertNotEqual(
+            published["metrics"]["by_tau"]["5"]["reliability_curve"]["band"]["seed"],
+            curve["band"]["seed"],
+        )
+
+    def test_the_climatology_scored_against_itself_has_no_skill(self):
+        """A sanity anchor with no free parameters: skill 0, exactly.
+
+        The scored model and the reference are then the same predictor fitted
+        on the same rows at every origin, so the two Brier scores are the same
+        number and the ratio is 1. It is worth pinning because it is the one
+        value in this file that follows from the definition rather than from
+        the data, and because it fails under any mutation that makes the
+        reference and the model see different rows.
+        """
+
+        report = self.report(
+            predictor=climatology_exceedance(minimum_history=self.MINIMUM_HISTORY),
+            model_name="climatology",
+        )
+        position = list(report.taus).index(REGIME_TAU)
+        self.assertEqual(report.metrics[position].brier_skill_score, 0.0)
+        self.assertEqual(
+            report.metrics[position].brier, report.metrics[position].reference_brier
+        )
+
+
+def log_score_of(report, tau):
+    """The log score at `tau`, recomputed from the report's own pooled columns."""
+
+    from repo_model.metrics import log_score
+
+    position = list(report.taus).index(tau)
+    predicted, _reference, realized = report.at_tau(position)
+    return log_score(predicted, realized)
+
+
+def _reads_nothing_but(features):
+    """An `ExceedancePredictor` fixture that reports reading exactly `features`.
+
+    Not a model. It exists so that
+    `test_the_reference_is_checked_against_the_declaration_too` can hold the
+    scored model's declaration constant and let the reference be the only
+    thing that can exceed it -- with a real predictor, both claims move
+    together and the test could not say which one was refused.
+    """
+
+    def fit_predict(train_rows, feature_rows, taus):
+        return ExceedanceCurves(
+            tuple((0.5,) * len(taus) for _ in feature_rows), tuple(features)
+        )
+
+    return fit_predict
 
 
 def _exceedance_implementations():

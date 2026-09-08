@@ -2026,18 +2026,385 @@ class RealRegistryTests(unittest.TestCase):
         )
 
 
+class ExceedanceBacktestHarness(unittest.TestCase):
+    """A panel that shifts regime, so the pooled table has something in it.
+
+    The `event-holdout` fixture is calm-then-spiked *inside a window*, which is
+    the shape a knowledge holdout needs. This command pools every origin over
+    the whole panel, so what it needs instead is a panel whose base rate
+    changes as the window advances -- otherwise the climatology reference is
+    the same number at every fold and the block's whole subject, that the
+    reference is refitted per fold, has nothing to show.
+
+    Sixty business days: the first thirty around 2bp, the rest around 9bp. The
+    lowest declared tau separates the two regimes; the three above it separate
+    nothing, so the artifact has to report three absences with their reasons
+    and one real skill score, which is exactly the mix a real run produces.
+    """
+
+    LOW_BPS = 2.0
+    HIGH_BPS = 9.0
+    MINIMUM_HISTORY = "20"
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        self.registry = declared_registry_file(self.tmp, features=(FEATURE,))
+        self.days = business_days(date(2025, 11, 3), 60)
+        self.panel = self.write_panel()
+        self.report_path = self.tmp / "exceedance.json"
+
+    def write_panel(self, path=None):
+        path = path or self.tmp / "panel.csv"
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(PANEL_COLUMNS)
+            for index, when in enumerate(self.days):
+                spread = self.LOW_BPS if index < 30 else self.HIGH_BPS
+                # A little jitter so the pooled forecasts are not one repeated
+                # value, which the CORP decomposition refuses outright.
+                spread += (index % 7) / 100.0
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     2100 + index, 4.30, 4.32, 4.30, 4.31, 3200, 720,
+                     # `on_rrp` moves so a two-regime model has a cutoff to
+                     # find; a constant column has no split and the fitter
+                     # refuses it, correctly.
+                     115 + (index % 11),
+                     "", "", "", 0, 0]
+                )
+        return path
+
+    def run_command(self, *extra, model="climatology", features=None,
+                    thresholds=None, report=None):
+        argv = [
+            "exceedance-backtest",
+            "--panel", str(self.panel),
+            "--thresholds", str(thresholds or THRESHOLDS),
+            "--registry", str(self.registry),
+            "--decision-time", DECISION_TIME,
+            "--minimum-history", self.MINIMUM_HISTORY,
+            "--report", str(report or self.report_path),
+        ]
+        for feature in (features if features is not None else (FEATURE,)):
+            argv += ["--feature", feature]
+        if model is not False:
+            argv += ["--model", model]
+        argv += [*extra]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def scored(self, *extra, **kwargs):
+        code, out, err = self.run_command(*extra, **kwargs)
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+        return json.loads(out)
+
+    def published(self, *extra, **kwargs):
+        self.scored(*extra, **kwargs)
+        return json.loads(self.report_path.read_text(encoding="utf-8"))
+
+
+class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
+    """The headline metric, reachable by name from the command line.
+
+    The packet this block came from put it plainly: the contract's headline
+    metric was implemented, unit-tested and wired to nothing. These tests are
+    about the wiring -- that the command runs, that it publishes, that it takes
+    every declaration from where the declaration lives, and that it is the
+    scoring holdout rather than a second way to score an event window.
+
+    Mutation record
+    ===============
+
+    The three mutations this command's guards were planted against are recorded
+    in full in `tests/test_baseline.py::RollingExceedanceTests`, where the code
+    they mutate lives. Two of them reach this file and are recorded there with
+    the tests they killed here: the purge dropped from the exceedance path
+    kills
+    `test_the_gap_follows_from_the_declared_features_and_reaches_the_numbers`,
+    and the outcomes taken one tau along kill
+    `test_the_command_publishes_the_headline_metric` with a `KeyError` on the
+    decomposition the shifted column can no longer support.
+
+    Two mutations belong to this file rather than to that one, and both are
+    about absences, so both had to be planted here:
+
+      * **A `--model` default of `climatology` added to the subparser.** The
+        command runs, publishes, and reports a skill score of exactly zero --
+        the reference scored against itself -- under whatever name a caller
+        thought they were running. Fails 1, `test_the_model_has_no_default`,
+        and only one, which is the point: a default changes no output for any
+        caller who passes the flag, and every other test in this class passes
+        it. **On its first run this mutation killed nothing.** The class had a
+        test for an unknown `--model` being refused, which a default does not
+        touch, and no test for the absence itself. `test_the_model_has_no_default`
+        was written because of that run, not before it, and it is the reason
+        this mutation is worth recording rather than merely worth doing.
+
+      * **The tau family hard-coded as the declared four** in
+        `_exceedance_backtest` instead of read from `--thresholds`. Fails 2:
+        `test_the_taus_come_from_the_thresholds_file_and_nowhere_else` on
+        behaviour -- the command accepts a thresholds file it should have
+        refused -- and `DeclarationTests::test_the_tau_family_carries_no_literal_in_this_module`
+        on the source, an existing guard from the `event-holdout` block that
+        turns out to cover the second command for free because it reads the
+        module rather than a call site. The literal happens to be correct
+        today, which is exactly why a suite that only compared outputs would
+        stay green while the declaration stopped being load-bearing.
+
+    Control green before and after each, zero `expectedFailure`, run from a
+    copy under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the
+    root Markdown and `docs/PROJECT_STATUS.md` carried across, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` cleared before each run.
+    """
+
+    def test_the_command_publishes_the_headline_metric(self):
+        """A skill score exists, it is in the artifact, and it is labelled.
+
+        The one assertion the whole packet was written for. Not pinned to a
+        value: what is asserted is that the number is finite, in range, and
+        computed at the threshold the panel actually crosses.
+        """
+
+        summary = self.scored()
+        document = self.published()
+
+        self.assertEqual(summary["holdout_role"], "scoring")
+        self.assertEqual(document["holdout_role"], "scoring")
+
+        skill = document["metrics"]["by_tau"]["5"]["brier_skill_score"]
+        self.assertTrue(-10.0 < skill <= 1.0)
+        self.assertEqual(summary["brier_skill_score"]["5"], round(skill, 4))
+
+        # Murphy: reliability and resolution reported separately, which is what
+        # the contract asks the decomposition for.
+        decomposition = document["metrics"]["by_tau"]["5"]["decomposition"]
+        self.assertIn("reliability", decomposition)
+        self.assertIn("resolution", decomposition)
+        self.assertNotIn("ece", json.dumps(document))
+
+    def test_every_selectable_model_runs_on_this_command(self):
+        """One mapping, and this command reaches all of it.
+
+        `MODEL_FACTORIES` is block 1's, shared rather than copied, so a fourth
+        implementer becomes runnable here by being added there. Running each
+        name end to end is what turns that from a claim about a dict into a
+        claim about the command.
+        """
+
+        for name in sorted(cli_eval.MODEL_FACTORIES):
+            with self.subTest(model=name):
+                features = [FEATURE, "sofr_volume"]
+                extra = []
+                if cli_eval.MODEL_FACTORIES[name].needs_regime_variable:
+                    features.append("on_rrp")
+                    extra = ["--regime-variable", "on_rrp"]
+                # The registry has to price whatever this run declares: the
+                # gap is the maximum over the declared set's fields, and a
+                # source the file does not carry is a refusal rather than a
+                # zero.
+                self.registry = declared_registry_file(
+                    self.tmp, features=tuple(features)
+                )
+                report = self.tmp / f"{name}.json"
+                code, _out, err = self.run_command(
+                    *extra, model=name, features=features, report=report
+                )
+                self.assertEqual(code, 0, msg=f"{name} failed: {err.strip()}")
+                document = json.loads(report.read_text(encoding="utf-8"))
+                self.assertEqual(document["declaration"]["model"], name)
+
+    def test_an_unknown_model_is_refused_and_writes_no_report(self):
+        """A refusal must leave no artifact: a report on disk claims a run.
+
+        And there is no fallback. A misspelled `--model` resolving to the
+        climatology would publish a skill score of exactly zero -- the
+        reference scored against itself -- under the name of a conditional
+        model, with every other field correct.
+        """
+
+        code, _out, err = self.run_command(model="arxx")
+        self.assertEqual(code, 2)
+        self.assertIn("unknown --model", err)
+        self.assertFalse(self.report_path.exists())
+
+    def test_the_taus_come_from_the_thresholds_file_and_nowhere_else(self):
+        """The declared family is Track A's, and this module carries no tau.
+
+        Behavioural half: a thresholds file declaring something else is
+        refused, so the flag is load-bearing rather than decorative. Source
+        half: the literal is nowhere in the module, so a run cannot agree with
+        the file by coincidence.
+        """
+
+        other = self.tmp / "other-thresholds.json"
+        declared = json.loads(THRESHOLDS.read_text(encoding="utf-8"))
+        declared["taus_bp"] = [5, 10, 20, 60]
+        other.write_text(json.dumps(declared), encoding="utf-8")
+
+        code, _out, err = self.run_command(thresholds=other)
+        self.assertEqual(code, 2)
+        self.assertIn("5, 10, 20, and 50", err)
+        self.assertFalse(self.report_path.exists())
+
+        document = self.published()
+        self.assertEqual(document["declaration"]["taus_bp"], [5.0, 10.0, 20.0, 50.0])
+
+    def test_the_command_offers_no_purge_no_source_and_no_taus(self):
+        """Three absences, and an absence is only guarded by a test asserting it.
+
+        No behavioural test can catch a flag nobody passes, so this reads the
+        parser. The gap follows from the declared features, the sources follow
+        from the features, and the tau family comes from the file that declares
+        it -- none of the three is a caller's to set by hand.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        exceedance = command.choices["exceedance-backtest"]
+        options = {
+            option
+            for action in exceedance._actions
+            for option in action.option_strings
+        }
+        for banned in ("--purge", "--source", "--taus", "--tau", "--climatology"):
+            self.assertNotIn(banned, options)
+
+    def test_the_gap_follows_from_the_declared_features_and_reaches_the_numbers(self):
+        """A wider gap costs origins and moves the pooled table.
+
+        A relation between two runs rather than a literal: a command that
+        reported a `purge_days` it did not pass on would hold the first
+        assertion and fail the rest.
+        """
+
+        narrow = self.published()
+        wide_path = self.tmp / "wide.json"
+        self.registry = declared_registry_file(
+            self.tmp, purge=9, features=(FEATURE,)
+        )
+        self.report_path = wide_path
+        wide = self.published()
+
+        self.assertGreater(wide["derived"]["purge_days"], narrow["derived"]["purge_days"])
+        self.assertLess(wide["folds"]["count"], narrow["folds"]["count"])
+        self.assertNotEqual(
+            wide["metrics"]["by_tau"]["5"]["brier"],
+            narrow["metrics"]["by_tau"]["5"]["brier"],
+        )
+
+    def test_the_artifact_is_the_publication_and_parses_strictly(self):
+        """Required, written only on success, and readable by a strict reader.
+
+        `log_score` is `inf` whenever a forecast put probability 0 on something
+        that happened, which this panel produces. `json.dumps` writes that as
+        `Infinity` and no strict reader accepts it, so the field is absent with
+        its reason -- the number is unrepresentable, not uncomputed.
+        """
+
+        document = self.published()
+        text = self.report_path.read_text(encoding="utf-8")
+        self.assertNotIn("Infinity", text)
+        self.assertNotIn("NaN", text)
+        json.loads(text, parse_constant=self._no_constants)
+
+        upper = document["metrics"]["by_tau"]["50"]
+        self.assertNotIn("brier_skill_score", upper)
+        self.assertIn("brier_skill_score", upper["unavailable"])
+        self.assertEqual(upper["positives"], 0)
+
+    @staticmethod
+    def _no_constants(name):
+        raise AssertionError(f"the artifact carries {name}, which is not JSON")
+
+    def test_the_report_is_required(self):
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        exceedance = command.choices["exceedance-backtest"]
+        report = next(a for a in exceedance._actions if a.dest == "report")
+        self.assertTrue(report.required)
+
+    def test_the_model_has_no_default(self):
+        """The sharpest instance of the rule, on the command it is sharpest on.
+
+        On `event-holdout` a `--model` default would publish the baseline's
+        numbers under a conditional model's name. Here it is worse: the
+        climatology is *the reference the reported number is a ratio against*,
+        so a run that fell back to it would report a skill score of exactly
+        zero -- the reference scored against itself -- with every other field
+        in the artifact correct and nothing disagreeing.
+
+        Asserted on the parser, because a default changes no output for any
+        caller who passes the flag, and every test in this class passes it. A
+        mutation that gave `--model` a default of `climatology` left the whole
+        suite green until this test existed.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        for name in ("exceedance-backtest", "event-holdout"):
+            with self.subTest(command=name):
+                model = next(
+                    a for a in command.choices[name]._actions if a.dest == "model"
+                )
+                self.assertTrue(model.required)
+                self.assertIsNone(model.default)
+
+    def test_this_command_reads_no_events_file(self):
+        """It is the scoring holdout, so it knows nothing about event windows.
+
+        The knowledge holdout is `event-holdout`'s, is scored once per window,
+        and is never averaged into this table. A command that grew an
+        `--events` flag would be one that could pool a window into an
+        aggregate, which the contract forbids.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        exceedance = command.choices["exceedance-backtest"]
+        options = {
+            option
+            for action in exceedance._actions
+            for option in action.option_strings
+        }
+        self.assertNotIn("--events", options)
+        self.assertNotIn("--window", options)
+        self.assertNotIn("--journal", options)
+
+
 class SeamTests(unittest.TestCase):
     """The property "Decided: who owns the CLI" was written to get."""
 
     def test_adding_the_subcommand_required_no_edit_to_the_dispatcher(self):
         dispatcher = inspect.getsource(cli)
-        self.assertNotIn("event-holdout", dispatcher)
-        self.assertNotIn("event_holdout", dispatcher)
+        for name in ("event-holdout", "event_holdout",
+                     "exceedance-backtest", "exceedance_backtest"):
+            self.assertNotIn(name, dispatcher)
 
     def test_the_dispatcher_nevertheless_offers_it(self):
         parser = cli.build_parser()
         command = next(a for a in parser._actions if a.dest == "command")
         self.assertIn("event-holdout", command.choices)
+        self.assertIn("exceedance-backtest", command.choices)
+
+    def test_the_second_track_b_subcommand_landed_the_same_way(self):
+        """The property is not that the file got an owner once.
+
+        `exceedance-backtest` is the first command added since the split that
+        is not the one the split was written for, so it is the first evidence
+        that the seam holds for the next command rather than for the example.
+        """
+
+        args = cli.build_parser().parse_args(
+            ["exceedance-backtest", "--panel", "p", "--thresholds", "t",
+             "--registry", "r", "--feature", "spread_bps",
+             "--decision-time", "16:30", "--model", "climatology",
+             "--report", "o"]
+        )
+        self.assertIs(args.handler, cli_eval._exceedance_backtest)
 
     def test_the_handler_is_registered_by_this_track_module(self):
         args = cli.build_parser().parse_args(
