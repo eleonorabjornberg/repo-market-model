@@ -326,7 +326,12 @@ def _backtest(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
     )
 
-    document = backtest_document(report, panel_path=args.path)
+    # `--registry` is passed to the record as well as to the run: the record
+    # must identify the registry version the gap was priced by, and the only
+    # file that can answer is the one this command actually opened.
+    document = backtest_document(
+        report, panel_path=args.path, registry_path=args.registry
+    )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -623,7 +628,14 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
     )
 
-    document = exceedance_backtest_document(report, panel_path=args.panel)
+    # Both declaration files the run opened, identified in the record by the
+    # digest of the bytes that were read.
+    document = exceedance_backtest_document(
+        report,
+        panel_path=args.panel,
+        registry_path=args.registry,
+        thresholds_path=args.thresholds,
+    )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

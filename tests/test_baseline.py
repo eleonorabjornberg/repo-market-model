@@ -148,7 +148,9 @@ import hashlib
 import inspect
 import json
 import math
+import subprocess
 import sys
+import tempfile
 import unittest
 from datetime import date, time, timedelta
 from functools import partial
@@ -159,6 +161,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model import baseline, cli_eval, event_eval
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
+    BacktestReport,
     DegenerateRegimeError,
     ExceedanceCurves,
     FittedArx,
@@ -166,6 +169,7 @@ from repo_model.baseline import (
     FittedThreshold,
     Forecast,
     MissingRegressorError,
+    ProvenanceMismatchError,
     SingularDesignError,
     UnobservedThresholdError,
     _dot,
@@ -173,6 +177,7 @@ from repo_model.baseline import (
     _least_squares,
     _quantile,
     arx_exceedance,
+    backtest_document,
     climatology_exceedance,
     exceedance_backtest_document,
     fit,
@@ -218,6 +223,11 @@ ARX_FEATURES = FEATURES + REGRESSORS
 DECISION_TIME = time(16, 0)
 
 REAL_REGISTRY = Path(__file__).parents[1] / "metadata" / "sources.json"
+
+#: The declaration files a published record must identify by digest. Named
+#: beside `REAL_REGISTRY` because the record's claim about them is the same
+#: claim -- the bytes this run read -- and neither is parsed to make it.
+REAL_THRESHOLDS = Path(__file__).parents[1] / "metadata" / "stress_thresholds.json"
 
 
 def declared_registry(purge, features=FEATURES):
@@ -3126,7 +3136,12 @@ class RollingExceedanceTests(unittest.TestCase):
         report = self.report()
         self.assertEqual(report.holdout_role, event_eval.SCORING_HOLDOUT)
         self.assertNotEqual(event_eval.SCORING_HOLDOUT, event_eval.KNOWLEDGE_HOLDOUT)
-        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        document = exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
         self.assertEqual(document["holdout_role"], event_eval.SCORING_HOLDOUT)
 
     def test_the_knowledge_holdout_path_still_carries_no_aggregate(self):
@@ -3229,7 +3244,12 @@ class RollingExceedanceTests(unittest.TestCase):
         """
 
         report = self.report()
-        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        document = exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
 
         high = document["metrics"]["by_tau"]["50"]
         self.assertNotIn("brier_skill_score", high)
@@ -3263,7 +3283,12 @@ class RollingExceedanceTests(unittest.TestCase):
         """
 
         report = self.report()
-        document = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        document = exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
 
         self.assertEqual(document["declaration"]["model"], "arx")
         self.assertEqual(document["declaration"]["features"], sorted(self.FEATURES))
@@ -3332,8 +3357,18 @@ class RollingExceedanceTests(unittest.TestCase):
         """
 
         report = self.report()
-        first = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
-        again = exceedance_backtest_document(report, panel_path=SAMPLE_PANEL)
+        first = exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
+        again = exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
         self.assertEqual(first, again)
 
         curve = first["metrics"]["by_tau"]["5"]["reliability_curve"]
@@ -3363,7 +3398,12 @@ class RollingExceedanceTests(unittest.TestCase):
             predictor=climatology_exceedance(minimum_history=self.MINIMUM_HISTORY),
             model_name="climatology",
         )
-        published = exceedance_backtest_document(other, panel_path=SAMPLE_PANEL)
+        published = exceedance_backtest_document(
+            other,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
         self.assertNotEqual(
             published["metrics"]["by_tau"]["5"]["reliability_curve"]["band"]["seed"],
             curve["band"]["seed"],
@@ -3582,6 +3622,414 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
                 f"ExceedancePredictor in repo_model.baseline"
             ),
         )
+
+
+class RunProvenanceTests(unittest.TestCase):
+    """What a published record says produced it, and what it refuses to say.
+
+    `REPRODUCIBILITY.md`'s "Requirements for a reportable experiment" is this
+    repository's own definition of when a number may be reported, and it lists
+    eight things a run record must identify. The two records this repository
+    emits satisfied the feature set and decision cutoff, the model
+    configuration and seed, and the rolling-origin split and derived purge gap.
+    Of the rest they carried the panel file's path and digest and nothing else.
+
+    None of the rest was unrecorded. `data.write_daily_panel` writes every
+    built panel with a `<panel>.manifest.json` beside it, carrying the build
+    cutoff, the extent, the built and refused columns, the holes and
+    `source_shas` -- the raw snapshot digests the panel was built from. Nothing
+    read it. `grep -c manifest` returned nothing in every one of this track's
+    modules. **A manifest nobody reads is a file, not a record.**
+
+    Every fixture here is built in a temporary directory. Nothing under
+    `data/raw/` or `data/processed/` is read and nothing is downloaded: the
+    record's claims about a panel, a build, a registry and a threshold family
+    are claims about bytes, and bytes are the one thing a test can make.
+
+    Why the criterion is a mismatch and not a fields-are-present case
+    ================================================================
+
+    The build manifest records `"path": str(path)` and **no digest of the panel
+    it describes**. So a manifest found beside a panel is a claim about a
+    *name*, and the bytes under that name may have changed since -- the decay
+    `backtest_document`'s own docstring rejects, in this repository, about this
+    file. Binding on that path is what a reasonable person writes first and it
+    is green on every well-formed input, including a manifest belonging to an
+    entirely different build. A test asserting only that the section exists
+    passes just as happily on provenance belonging to another panel.
+
+    So the record binds by what the manifest does carry and the record already
+    knows -- `row_count`, `start_date`, `end_date` -- and says in the artifact
+    that the binding is by extent rather than by digest. The digest gap is
+    `write_daily_panel`'s, it is Track A's to close, and it is reported rather
+    than reached for.
+
+    Mutation record
+    ===============
+
+    Run from a copy of the tree under `$HOME`, never the mount, with `-B` and
+    `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` cleared before each run --
+    a stale cache has already produced one false result on this project.
+    Control green before and after, zero `expectedFailure` throughout.
+
+    **The mutation: bind on `manifest["path"]` alone.** `_bind_build_manifest`
+    replaced by an equality check between the manifest's `path` and the panel
+    the record names, with the extent comparison dropped. Every well-formed run
+    still publishes, `panel.build_manifest` is still carried whole, and every
+    other assertion in this class still holds.
+
+    Killed, by exception type rather than by count:
+    `test_a_manifest_that_does_not_describe_the_scored_panel_is_refused_rather_than_published`
+    dies with `AssertionError: ProvenanceMismatchError not raised`, on each of
+    the three extent fields and on both records. Its CLI counterpart in
+    `tests/test_cli_eval.py`,
+    `test_a_manifest_that_does_not_describe_the_panel_leaves_no_report_behind`,
+    dies the same way -- the command exits 0 and writes the artifact.
+    """
+
+    #: The gap the fixture run is purged at. One day, because this class is
+    #: about what a record says produced it and not about the gap; the gap has
+    #: its own tests and a wider one here would only slow the fixture.
+    PURGE = 1
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+        self.rows = regime_shift_frame()
+
+        # The panel file. Written from the same rows both reports are built
+        # over, so the file, the report and the manifest fixture are one story
+        # rather than three. Its bytes are never parsed by a record -- they are
+        # hashed -- but a fixture whose parts disagree teaches a reader the
+        # wrong thing about what the record is claiming.
+        self.panel = self.root / "panel.csv"
+        self.panel.write_text(
+            "\n".join(
+                ["date,spread_bps"]
+                + [
+                    f"{row.date.isoformat()},{format(row.spread_bps, '.15g')}"
+                    for row in self.rows
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        # The two declaration files. Neither is parsed by a record -- a record
+        # identifies them by the digest of the bytes the run read -- so these
+        # are as small as that claim allows. The registry the run is *given* is
+        # `declared_registry`'s dict, as everywhere else in this file.
+        self.registry = self.root / "sources.json"
+        self.registry.write_text(
+            json.dumps({"sources": {}}, indent=2) + "\n", encoding="utf-8"
+        )
+        self.thresholds = self.root / "stress_thresholds.json"
+        self.thresholds.write_text(
+            json.dumps({"taus_bp": list(EXCEEDANCE_TAUS)}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    def manifest_path(self):
+        """The name `write_daily_panel` gives the manifest, derived not typed."""
+
+        return Path(str(self.panel) + ".manifest.json")
+
+    def write_manifest(self, **overrides):
+        """The manifest `write_daily_panel` would have left beside this panel.
+
+        Every field is the one that writer records, in its shape: the extent as
+        an integer and two ISO dates, the refusals and holes as objects, the
+        snapshot digests as a list. Values are derived from the fixture, never
+        read off a run. `overrides` is how a test states a disagreement, and it
+        leaves `path` alone so a record binding on the path stays green.
+        """
+
+        manifest = {
+            "path": str(self.panel),
+            "build_cutoff": self.rows[-1].date.isoformat(),
+            "decision_time": str(DECISION_TIME),
+            "row_count": len(self.rows),
+            "start_date": self.rows[0].date.isoformat(),
+            "end_date": self.rows[-1].date.isoformat(),
+            "built_columns": ["spread_bps"],
+            "refused_columns": {},
+            "holes": {},
+            "source_shas": [hashlib.sha256(self.panel.read_bytes()).hexdigest()],
+        }
+        manifest.update(overrides)
+        self.manifest_path().write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        return manifest
+
+    def disagreements(self):
+        """One wrong manifest field per element of the extent.
+
+        Each derived from the fixture rather than typed, and each a value a
+        real build could have produced -- an off-by-one row count, a start a
+        day late, an end a day early. None of them touches `path`.
+        """
+
+        return (
+            ("row_count", len(self.rows) + 1),
+            ("start_date", (self.rows[0].date + timedelta(days=1)).isoformat()),
+            ("end_date", (self.rows[-1].date - timedelta(days=1)).isoformat()),
+        )
+
+    def continuous_report(self):
+        """A `BacktestReport` carrying the fixture's extent and little else.
+
+        Constructed longhand, as `tests/test_cli_eval.py` does for the absent-
+        conditions case: this class is about the provenance section, and a full
+        rolling backtest would add a minute of fitting to say nothing more
+        about it. The extent is the part the binding reads and it comes from
+        the same rows the manifest fixture is derived from.
+        """
+
+        return BacktestReport(
+            forecasts=[Forecast(1.0, 0.5, 0.0, 2.0, (0.0, 0.25, 0.5, 1.0, 2.0))],
+            mae_bps=0.5,
+            interval_coverage=1.0,
+            panel_rows=len(self.rows),
+            panel_first_date=self.rows[0].date,
+            panel_last_date=self.rows[-1].date,
+        )
+
+    def exceedance_report(self):
+        """A real pooled exceedance run over the fixture rows.
+
+        Climatology rather than the ARX: the reference predictor is the cheap
+        one and this class asserts nothing about skill.
+        """
+
+        return rolling_exceedance_backtest(
+            self.rows,
+            predictor=climatology_exceedance(
+                minimum_history=EXCEEDANCE_MINIMUM_HISTORY
+            ),
+            model_name="climatology",
+            features=FEATURES,
+            registry=declared_registry(self.PURGE, FEATURES),
+            decision_time=DECISION_TIME,
+            taus=EXCEEDANCE_TAUS,
+            minimum_history=EXCEEDANCE_MINIMUM_HISTORY,
+        )
+
+    def builders(self):
+        """Both records this repository publishes, over the one fixture.
+
+        Named together and asserted over together because the section under
+        test is one section built in one place. A test exercising only the
+        continuous record would pass on an exceedance record that grew nothing,
+        which is the drift the shared builder exists to prevent.
+        """
+
+        continuous = self.continuous_report()
+        exceedance = self.exceedance_report()
+        self.assertEqual(exceedance.panel_rows, continuous.panel_rows)
+        return (
+            (
+                "backtest_document",
+                lambda: backtest_document(
+                    continuous, panel_path=self.panel, registry_path=self.registry
+                ),
+            ),
+            (
+                "exceedance_backtest_document",
+                lambda: exceedance_backtest_document(
+                    exceedance,
+                    panel_path=self.panel,
+                    registry_path=self.registry,
+                    thresholds_path=self.thresholds,
+                ),
+            ),
+        )
+
+    def test_a_manifest_that_does_not_describe_the_scored_panel_is_refused_rather_than_published(
+        self,
+    ):
+        """Publishing provenance that belongs to another build is refused.
+
+        The acceptance criterion. A manifest beside the panel whose extent is
+        not the scored panel's, with its `path` left correct so that a record
+        binding on the name alone would publish it happily. The document call
+        raises, so there is no document for a caller to write.
+
+        The control is inside the test: the matching manifest publishes, and
+        publishes under `panel.build_manifest`. Without it a binder that
+        refused everything would pass.
+        """
+
+        for name, build in self.builders():
+            with self.subTest(document=name):
+                self.write_manifest()
+                published = build()
+                self.assertIn("build_manifest", published["panel"])
+
+                for key, wrong in self.disagreements():
+                    with self.subTest(field=key):
+                        claimed = self.write_manifest(**{key: wrong})
+                        # The manifest still names this panel. A record bound
+                        # on `manifest["path"]` would find nothing wrong here,
+                        # which is why the criterion is a mismatch case.
+                        self.assertEqual(claimed["path"], str(self.panel))
+                        self.assertNotEqual(claimed[key], published["panel"][
+                            {
+                                "row_count": "row_count",
+                                "start_date": "first_date",
+                                "end_date": "last_date",
+                            }[key]
+                        ])
+                        with self.assertRaises(ProvenanceMismatchError):
+                            build()
+
+    def test_the_build_manifest_is_carried_whole_and_bound_by_extent(self):
+        """The manifest is embedded as it is, and the binding names its limit.
+
+        Carried rather than re-keyed: the manifest's schema is Track A's, and a
+        record that selected or renamed fields would be a second copy of a
+        schema this module does not own -- agreeing today, drifting the first
+        time a field is added there. Carrying it whole is also how this record
+        gains every future field for free, which is asserted by embedding an
+        extra key the reader has never heard of and finding it in the record.
+        """
+
+        written = self.write_manifest(a_field_track_b_has_never_heard_of=True)
+        for name, build in self.builders():
+            with self.subTest(document=name):
+                panel = build()["panel"]
+                self.assertEqual(panel["build_manifest"], written)
+
+                binding = panel["build_manifest_binding"]
+                self.assertEqual(binding["kind"], "extent")
+                self.assertEqual(
+                    binding["compared"], ["row_count", "first_date", "last_date"]
+                )
+                # The record says what it did not check. A reader who finds a
+                # manifest embedded beside a digest would otherwise assume the
+                # two were checked against each other.
+                self.assertIn("no digest", binding["note"])
+
+                # And nothing the record already carried was weakened.
+                self.assertEqual(panel["path"], str(self.panel))
+                self.assertEqual(
+                    panel["sha256"],
+                    hashlib.sha256(self.panel.read_bytes()).hexdigest(),
+                )
+
+    def test_a_panel_with_no_build_manifest_carries_no_stand_in_for_one(self):
+        """No manifest, no section. Not `null`, not `{}`, not `"none"`.
+
+        A fixture panel has no build behind it and a record that says so by
+        omission is honest; one that says so with a stand-in invites a reader
+        to think the field was computed. The rule `backtest_document` already
+        follows for `decision_time` and `minimum_history`, unchanged here.
+        """
+
+        self.assertFalse(self.manifest_path().exists())
+        for name, build in self.builders():
+            with self.subTest(document=name):
+                document = build()
+                self.assertNotIn("build_manifest", document["panel"])
+                self.assertNotIn("build_manifest_binding", document["panel"])
+                self.assertNotIn("null", json.dumps(document["panel"]))
+                self.assertNotIn("null", json.dumps(document["provenance"]))
+
+    def test_the_declaration_files_are_identified_by_the_digest_of_what_was_read(self):
+        """Registry and thresholds, by path and `sha256`, as the panel is.
+
+        `REPRODUCIBILITY.md` asks for "the source-registry and stress-threshold
+        versions". Neither file carries a version field, and a digest is the
+        version of a file that carries none: it changes exactly when the bytes
+        change and it cannot be typed wrong. The expected digests are computed
+        here from the fixture files, so this compares the record against the
+        bytes rather than against a second call of the same helper.
+
+        The continuous benchmark takes no `--thresholds` and its record says so
+        by omission rather than by naming a file it never opened.
+        """
+
+        registry_digest = hashlib.sha256(self.registry.read_bytes()).hexdigest()
+        thresholds_digest = hashlib.sha256(self.thresholds.read_bytes()).hexdigest()
+
+        continuous, exceedance = (build() for _name, build in self.builders())
+
+        for document in (continuous, exceedance):
+            source_registry = document["provenance"]["inputs"]["source_registry"]
+            self.assertEqual(source_registry["path"], str(self.registry))
+            self.assertEqual(source_registry["sha256"], registry_digest)
+
+        self.assertNotIn("stress_thresholds", continuous["provenance"]["inputs"])
+        stress = exceedance["provenance"]["inputs"]["stress_thresholds"]
+        self.assertEqual(stress["path"], str(self.thresholds))
+        self.assertEqual(stress["sha256"], thresholds_digest)
+
+        # A digest that did not come from these bytes would still be a digest.
+        self.assertNotEqual(registry_digest, thresholds_digest)
+
+    def test_the_commit_is_never_recorded_without_the_state_of_its_tree(self):
+        """A commit id read from a modified tree names code that did not run.
+
+        So the tree is checked in the same breath and the answer is carried
+        whichever way it came out: `tree_modified` is present and `False` on a
+        clean tree, because a reader must be able to tell "checked, and clean"
+        from "not checked", and an omitted field cannot say the first.
+
+        Compared against `git` run from this test rather than against the
+        record's own helper. Skipped where git is absent, which is the case the
+        record answers by omitting the section entirely.
+        """
+
+        try:
+            commit = subprocess.run(
+                ("git", "rev-parse", "HEAD"),
+                cwd=SAMPLE_PANEL.parents[2],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            status = subprocess.run(
+                ("git", "status", "--porcelain"),
+                cwd=SAMPLE_PANEL.parents[2],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):  # pragma: no cover
+            self.skipTest("git is not available here; the record omits the section")
+
+        for name, build in self.builders():
+            with self.subTest(document=name):
+                code = build()["provenance"]["code"]
+                self.assertEqual(code["commit"], commit)
+                self.assertIn("tree_modified", code)
+                self.assertIs(code["tree_modified"], bool(status.strip()))
+
+    def test_the_new_arguments_are_required_and_undefaulted(self):
+        """A default here publishes a record missing its provenance.
+
+        With every other field correct, which is the trap `--model` having no
+        default was written to prevent one block ago. Read off the signatures,
+        because a default is a property of the function and not of a run.
+        """
+
+        required = {
+            baseline.backtest_document: ("panel_path", "registry_path"),
+            baseline.exceedance_backtest_document: (
+                "panel_path",
+                "registry_path",
+                "thresholds_path",
+            ),
+        }
+        for function, names in required.items():
+            parameters = inspect.signature(function).parameters
+            for name in names:
+                with self.subTest(function=function.__name__, argument=name):
+                    parameter = parameters[name]
+                    self.assertIs(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
+                    self.assertIs(parameter.default, inspect.Parameter.empty)
 
 
 if __name__ == "__main__":

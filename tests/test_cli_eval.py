@@ -1106,7 +1106,12 @@ class RollingBacktestHarness(unittest.TestCase):
         }
 
     def run_backtest(
-        self, *features, decision_time=DECISION_TIME, registry=None, report=None
+        self,
+        *features,
+        decision_time=DECISION_TIME,
+        registry=None,
+        report=None,
+        panel=None,
     ):
         """Run the command. `report` names the artifact; one is always written.
 
@@ -1115,13 +1120,16 @@ class RollingBacktestHarness(unittest.TestCase):
         runs two feature sets does not have the second overwrite the first --
         which would make the acceptance test below compare a report against
         itself and pass on any mutation at all.
+
+        `panel` defaults to the sample panel. A test names its own only to put
+        a build manifest beside one, which cannot be done to a tracked file.
         """
 
         self.last_report = Path(
             report or self.tmp / f"report-{'-'.join(features) or 'none'}.json"
         )
         argv = [
-            "backtest", str(self.PANEL),
+            "backtest", str(panel or self.PANEL),
             "--minimum-history", self.MINIMUM_HISTORY,
             "--registry", str(registry or self.registry),
             "--decision-time", decision_time,
@@ -1792,7 +1800,9 @@ class PublishedReportTests(RollingBacktestHarness):
             mae_bps=0.5,
             interval_coverage=1.0,
         )
-        document = backtest_document(bare, panel_path=self.PANEL)
+        document = backtest_document(
+            bare, panel_path=self.PANEL, registry_path=REGISTRY
+        )
 
         self.assertNotIn("decision_time", document["declaration"])
         self.assertNotIn("minimum_history", document["declaration"])
@@ -1813,6 +1823,93 @@ class PublishedReportTests(RollingBacktestHarness):
         self.assertIn("minimum_history", full["declaration"])
         self.assertIn("pinball_loss", full["metrics"])
         self.assertIn("first", full["folds"])
+
+
+    def panel_with_manifest(self, **overrides):
+        """A copy of the sample panel with a build manifest beside it.
+
+        A copy, in this test's own directory, because `data/sample/` is tracked
+        and a manifest written beside the tracked panel would be a fixture the
+        repository ships. The manifest's fields are derived from the copy that
+        was written -- the extent by loading it -- so `overrides` states a
+        disagreement against a value nothing typed.
+        """
+
+        panel = self.tmp / "panel.csv"
+        panel.write_bytes(self.PANEL.read_bytes())
+        rows = load_daily_panel(panel)
+        manifest = {
+            "path": str(panel),
+            "build_cutoff": rows[-1].date.isoformat(),
+            "decision_time": DECISION_TIME,
+            "row_count": len(rows),
+            "start_date": rows[0].date.isoformat(),
+            "end_date": rows[-1].date.isoformat(),
+            "built_columns": ["spread_bps"],
+            "refused_columns": {},
+            "holes": {},
+            "source_shas": [hashlib.sha256(panel.read_bytes()).hexdigest()],
+        }
+        manifest.update(overrides)
+        Path(str(panel) + ".manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        return panel, manifest
+
+    def test_the_build_manifest_beside_the_panel_reaches_the_published_record(self):
+        """The command reads the manifest, and carries it whole into the file.
+
+        `write_daily_panel` has recorded the build all along and nothing read
+        it. This is the end of that: the provenance a reader needs is one file
+        away from the record, and the command is what crosses the gap.
+        """
+
+        panel, manifest = self.panel_with_manifest()
+        report = self.tmp / "with-manifest.json"
+        code, _out, err = self.run_backtest(
+            *self.FAST_FEATURES, panel=panel, report=report
+        )
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+
+        published = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(published["panel"]["build_manifest"], manifest)
+        self.assertEqual(
+            published["provenance"]["inputs"]["source_registry"]["path"],
+            str(self.registry),
+        )
+        self.assertEqual(
+            published["provenance"]["inputs"]["source_registry"]["sha256"],
+            hashlib.sha256(self.registry.read_bytes()).hexdigest(),
+        )
+
+    def test_a_manifest_that_does_not_describe_the_panel_leaves_no_report_behind(self):
+        """The refusal reaches the command, and no artifact survives it.
+
+        A report on disk is a claim that a benchmark ran, and a report carrying
+        another build's provenance is a claim a reader has no way to check. The
+        command exits 2 with the refusal on stderr and writes nothing -- and
+        the refusal is not catchable-and-ignorable here: `cli_eval` has no
+        `try`/`except` around the document, so it reaches the dispatcher as any
+        other refusal does.
+
+        The manifest still names this panel, so a record bound on the
+        manifest's `path` alone would have published it.
+        """
+
+        panel, manifest = self.panel_with_manifest(row_count=0)
+        self.assertEqual(manifest["path"], str(panel))
+
+        report = self.tmp / "refused.json"
+        code, out, err = self.run_backtest(
+            *self.FAST_FEATURES, panel=panel, report=report
+        )
+        self.assertEqual(code, 2)
+        self.assertFalse(
+            report.exists(),
+            msg="a refused run left a report behind, which is a claim it ran",
+        )
+        self.assertEqual(out, "")
+        self.assertIn("does not describe the scored panel", err)
 
     def test_the_artifact_is_not_optional_and_the_numbers_are_not_rounded(self):
         """`--report` is required, and the file publishes what was computed.
