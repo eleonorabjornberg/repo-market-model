@@ -75,7 +75,7 @@ The exceedance interface
 
 `ExceedancePredictor` is the second interface this module declares, and it is
 the knowledge holdout's: `event_eval.evaluate_event_window` calls one of these
-and scores what comes back. It has two implementers here, for the same reason
+and scores what comes back. It has three implementers here, for the same reason
 the forecast interface needed a second one.
 
 `climatology_exceedance` is the unconditional baseline a Brier skill score is
@@ -85,6 +85,17 @@ ARX already fits, read once per feature row. Until the interface carried rows
 rather than one series of values no covariate could reach a model through it,
 so the climatology was the only thing the knowledge holdout could score and the
 skill score had nothing to be measured against.
+
+`threshold_exceedance` is the third, and it is here because the first two move
+their curves for one reason and it moves its own for two. The ARX's curve
+responds to a covariate smoothly, through the design row. A threshold model's
+covariate also decides **which fitted relationship is in force**: two feature
+rows straddling the fitted cutoff and differing in nothing else get different
+centres and therefore different exceedance probabilities, discontinuously.
+`FittedThreshold.features_read` already reports the regime variable, so the
+knowledge-holdout path sizes its gap over that column's fields too -- which is
+the read this implementer exists to put through `event_eval`'s declaration
+check, the second and last path on which it had never been checked.
 
 That alias was declared twice before this block, here and as
 `event_eval.FitPredict`. It is declared once now, here, and the evaluator
@@ -2768,6 +2779,106 @@ def arx_exceedance(
         taus: Sequence[float],
     ) -> ExceedanceCurves:
         model = fit_arx(train_rows, declared, minimum_history=minimum_history)
+        return ExceedanceCurves(
+            tuple(model.predict_stress(row, taus) for row in feature_rows),
+            model.features_read,
+        )
+
+    return fit_predict
+
+
+def threshold_exceedance(
+    regressors: Sequence[str],
+    threshold_variable: str,
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """Conditional exceedance from the two-regime ARX's own fitted law.
+
+    The third implementer of `ExceedancePredictor`, and the first whose curve
+    moves for two reasons rather than one. `arx_exceedance`'s curve responds to
+    a covariate through the design row -- smoothly, because the design row moves
+    smoothly. This one's covariate does that *and* selects which of two fitted
+    relationships produces the centre, so two feature rows on opposite sides of
+    the fitted cutoff get different curves however little else separates them.
+    Nothing in `event_eval` had ever scored a predictor that does that.
+
+    **What the block is actually about is the declaration, not the curve.**
+    `da78dea` put the regime variable through the *rolling* path's lock: it is
+    in `FittedThreshold.features_read`, so `_derive_purge` sizes the gap over
+    its fields and `_check_fitter_stayed_inside` refuses a fitter that exceeds
+    the declaration. The knowledge holdout is a second path with its own
+    declaration check, reached through `ExceedanceCurves.features_read` rather
+    than through a fitted model the evaluator never holds, and the regime
+    variable had never been through it. The failure that was still available is
+    the one four blocks have closed one level at a time: a predictor that
+    consults the regime variable to pick a regime, reports only its regressors,
+    and gets a gap sized over the wrong fields -- correct arithmetic, wrong set,
+    flattering direction.
+
+    `fit_threshold` is fitted on the training rows the evaluator hands over,
+    which is everything that cleared the purge gap ahead of the window and
+    nothing from inside it, and the fitted model is then read once per feature
+    row. Everything fitted is fitted there: the imputations, the threshold, the
+    regime assignment and the residual law.
+
+    **`features_read` comes off the fitted model**, exactly as
+    `arx_exceedance`'s does. That is where the regime variable is already
+    correctly reported -- once, even when it is also a regressor -- and reading
+    it a second time here would be a second answer to what the model read.
+
+    **Nothing is re-derived.** The curve is `FittedThreshold.predict_stress`,
+    which is `_exceedance_from_residuals` over the pooled leave-one-out law that
+    model already fits: no Gaussian, no parametric family, no smoothing and no
+    Laplace correction. Above the fitted support a zero stays a zero, for the
+    reason `climatology_exceedance` gives at length. Building the curve here
+    from the residual vector directly would agree with the model about the
+    centre and disagree with it across the cutoff, because the centre is the
+    only place the regime enters -- which is precisely the difference this
+    implementer exists to score.
+
+    **One law, pooled across regimes.** That is `FittedThreshold`'s decision and
+    not one this function may revisit: `FittedForecastModel.residuals` is the
+    single sample both outputs read, and a per-regime law would make `predict`
+    and `predict_stress` disagree. The regime dependence scored here enters
+    through the centre, not the spread.
+
+    Args:
+        regressors: the ordered exogenous regressor names, as `fit_threshold`
+            takes them. **Required, with no default**, for the reason `fit_arx`
+            and `arx_exceedance` refuse one: a default would be a silent
+            assumption about which columns a model is entitled to read.
+        threshold_variable: the panel column the regime is read off. Required
+            and undefaulted for the same reason and more sharply, the one
+            `fit_threshold` gives: this column does not merely contribute a
+            term, it chooses the model.
+        minimum_history: the shortest training frame that may produce a fitted
+            law. Passed to `fit_threshold`, which raises below it.
+
+    Returns:
+        A `fit_predict` callable suitable for `event_eval.evaluate_event_window`.
+
+    Raises:
+        ValueError, MissingRegressorError, SingularDesignError,
+        UnobservedThresholdError, DegenerateRegimeError, LookAheadError: at call
+            time, whatever `fit_threshold` raises on the training frame it is
+            given -- the degenerate-split refusal included. They are not caught
+            and re-wrapped: a refusal to fit is the fitter's statement about the
+            frame, and a wrapper would put a second vocabulary between it and
+            the caller. A window with no second regime in it is a fact about the
+            window, and the honest report of it is the refusal.
+    """
+
+    declared = tuple(str(name) for name in regressors)
+    selector = str(threshold_variable)
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+    ) -> ExceedanceCurves:
+        model = fit_threshold(
+            train_rows, declared, selector, minimum_history=minimum_history
+        )
         return ExceedanceCurves(
             tuple(model.predict_stress(row, taus) for row in feature_rows),
             model.features_read,
