@@ -177,6 +177,7 @@ from repo_model.baseline import (
     fit_arx,
     fit_threshold,
     rolling_persistence_backtest,
+    threshold_exceedance,
 )
 from repo_model.contract import (
     QUANTILE_LEVELS,
@@ -2560,6 +2561,168 @@ class ArxExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
             arx_exceedance((), minimum_history=self.MINIMUM_HISTORY)(
                 train, feature_rows, EXCEEDANCE_TAUS
             )
+
+
+class ThresholdExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `threshold_exceedance`, on regime rows.
+
+    The third implementer, and the first whose curve moves for two reasons. The
+    mixin's `regressor_frame` carries no `tgcr`, so `frame` is overridden to
+    `regime_frame` -- the same fixture `FittedThresholdTests` fits on, for the
+    same reason: the regime variable has to resolve to a source neither
+    `spread_bps` nor the regressors draw on, or the claim that declaring it
+    widens the source set asserts nothing.
+
+    What the third implementer adds to the mixin is a predictor whose curve is
+    not a continuous function of the feature row. Every inherited assertion --
+    the probabilities, the non-increasing curve on a dense grid, the hard zero
+    above the fitted support -- was a statement about two smooth predictors
+    until now.
+
+    This class exists because `ExceedancePredictorCoverageTests` demanded it,
+    which is that guard working: it failed on the first run of the block that
+    added `threshold_exceedance`, before a line of test was written, reporting
+    `['threshold_exceedance'] != []`.
+
+    The mutation record for the block that added this implementer is in
+    `tests/test_event_eval.py::RegimeDeclarationTests`, with the acceptance
+    criterion. Two of the four mutations are killed here and nowhere else.
+    """
+
+    IMPLEMENTATION = staticmethod(threshold_exceedance)
+
+    def frame(self):
+        return regime_frame()
+
+    def make_predictor(self):
+        return threshold_exceedance(
+            THRESHOLD_REGRESSORS,
+            THRESHOLD_VARIABLE,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+    def fitted(self):
+        train, _feature_rows = self.split()
+        return fit_threshold(
+            train,
+            THRESHOLD_REGRESSORS,
+            THRESHOLD_VARIABLE,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+    def test_it_reports_the_regime_variable_as_well_as_its_regressors(self):
+        """The read that is neither a term in the design nor the target.
+
+        `event_eval` and `rolling_persistence_backtest` both check this claim
+        against the declared feature set, so a predictor naming only its
+        exogenous columns would let the purge be sized without the regime
+        variable's fields in the maximum. `THRESHOLD_VARIABLE` is disjoint from
+        `THRESHOLD_REGRESSORS` on purpose: if it were also a regressor the claim
+        would be satisfied by the design alone and this would assert nothing.
+        """
+
+        self.assertEqual(
+            self.curves().features_read,
+            ("spread_bps",) + THRESHOLD_REGRESSORS + (THRESHOLD_VARIABLE,),
+        )
+        self.assertNotIn(THRESHOLD_VARIABLE, THRESHOLD_REGRESSORS)
+
+    def test_the_law_is_the_one_the_fitted_model_already_reports(self):
+        """Not a second reading of the residuals. The model's own.
+
+        Character for character `FittedThreshold.predict_stress`. A curve built
+        here from `model.residuals` directly agrees with this about the centre
+        on any row in whichever regime it happened to anchor on and disagrees
+        only across the cutoff -- the regime enters through the centre and
+        nowhere else. `regime_frame`'s last four rows all fall in the low
+        regime, so this assertion cannot see that construction and, mutated,
+        does not: the kill belongs to the test below, which builds the
+        straddling pair rather than hoping the frame supplies one. What this
+        one holds is everything else -- a Gaussian, a smoothing, a Laplace
+        correction, a second residual vector -- and it holds it exactly.
+        """
+
+        model = self.fitted()
+        _train, feature_rows = self.split()
+        self.assertEqual(
+            self.curves().curves,
+            tuple(model.predict_stress(row, EXCEEDANCE_TAUS) for row in feature_rows),
+        )
+
+    def test_the_curve_moves_across_the_fitted_cutoff(self):
+        """The property neither of the other two implementers can have.
+
+        Two feature rows identical in every column but the regime variable, one
+        either side of the fitted threshold. `arx_exceedance` given this pair
+        would return one curve twice: the design row is the same, so a smooth
+        response to a covariate has nothing to respond to. This returns two,
+        and the difference is the regime reaching the centre.
+
+        The pair is constructed rather than found among `regime_frame`'s rows
+        because the frame's last four all fall in the low regime -- which is a
+        fact about the fixture and not about the model, and a test that depended
+        on it would be testing the fixture. `FittedThresholdTests` builds the
+        same pair one level down, against `point_forecast`; this is the same
+        construction carried through to the exceedance curve, which is where
+        `event_eval` reads it.
+        """
+
+        model = self.fitted()
+        _train, feature_rows = self.split()
+        row = feature_rows[-1]
+
+        low = DailyObservation(
+            row.date, dict(row.values, **{THRESHOLD_VARIABLE: model.threshold})
+        )
+        high = DailyObservation(
+            row.date, dict(row.values, **{THRESHOLD_VARIABLE: model.threshold + 1.0})
+        )
+        self.assertEqual(model.regime_for(low), "low")
+        self.assertEqual(model.regime_for(high), "high")
+        self.assertEqual(model.design_row(low), model.design_row(high))
+
+        curves = self.make_predictor()(
+            self.split()[0], (low, high), EXCEEDANCE_TAUS
+        ).curves
+        self.assertNotEqual(
+            curves[0],
+            curves[1],
+            msg="one design row scored under two regimes gave one curve; the "
+            "regime is not reaching the centre, and a curve re-derived from "
+            "the pooled residuals about a single centre would look like this",
+        )
+
+    def test_an_undeclared_regime_variable_is_not_available(self):
+        """Both columns are positional and neither has a default.
+
+        `fit_threshold` refuses a defaulted regressor set and a defaulted
+        threshold variable, and a factory that supplied either would be making
+        the silent assumption on the fitter's behalf one call up.
+        """
+
+        with self.assertRaises(TypeError):
+            threshold_exceedance(THRESHOLD_REGRESSORS)
+        with self.assertRaises(TypeError):
+            threshold_exceedance()
+
+    def test_a_window_with_no_second_regime_is_refused_not_flattened(self):
+        """`fit_threshold`'s refusal, uncaught and unrewrapped.
+
+        A constant regime variable offers no candidate that splits the window,
+        and the honest answer is that there is no two-regime model to estimate
+        here. A wrapper that fell back to a single regime would report itself as
+        a threshold model over a regime structure that was never estimated.
+        """
+
+        train, feature_rows = self.split()
+        flat = [
+            DailyObservation(
+                row.date, dict(row.values, **{THRESHOLD_VARIABLE: 4.30})
+            )
+            for row in train
+        ]
+        with self.assertRaises(DegenerateRegimeError):
+            self.make_predictor()(flat, feature_rows, EXCEEDANCE_TAUS)
 
 
 def _exceedance_implementations():

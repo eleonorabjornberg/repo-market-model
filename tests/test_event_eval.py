@@ -179,6 +179,7 @@ from repo_model.baseline import (
     ExceedanceCurves,
     arx_exceedance,
     climatology_exceedance,
+    threshold_exceedance,
 )
 from repo_model.contract import UndeclaredFeatureError, event_window_digest
 from repo_model.data import DailyObservation
@@ -205,7 +206,12 @@ from repo_model.registry import RegistryContractError
 # file needs the same fixture for the same reason. A third copy would be a third
 # thing to keep in step with `max_release_lag_days`, and the copies would agree
 # until one of them did not.
-from test_baseline import DECISION_TIME, declared_registry
+from test_baseline import (
+    DECISION_TIME,
+    THRESHOLD_VARIABLE,
+    declared_registry,
+    mixed_registry,
+)
 
 
 # The exceedance family declared in AGENT_CONTRACT.md, "Decided: stress target
@@ -796,6 +802,315 @@ class ConditionalExceedanceTests(EvaluatorHarness):
             features=FEATURES,
         )
         self.assertEqual(report.features, FEATURES)
+
+
+#: The regime variable, and the feature set a threshold model on this panel
+#: declares. `THRESHOLD_VARIABLE` is `tests/test_baseline.py`'s, imported for the
+#: reason `declared_registry` is: it resolves to `nyfed_tgcr`, a source neither
+#: `spread_bps` nor `on_rrp` draws on, so declaring it widens the *source* set
+#: and not merely the feature list. A regime read off `on_rrp` would share
+#: `fred_macro_latest_vintage` with `iorb` and the second half of the acceptance
+#: criterion -- that the derived purge reflects the column's `(source, field)`
+#: pair -- would assert nothing.
+#:
+#: `REGIME_REGRESSORS` is `on_rrp` and the regime variable is not, deliberately.
+#: A regime variable that were also a regressor would be reported through the
+#: design alone, and the read this block exists to check would be invisible.
+REGIME_REGRESSORS = (COVARIATE,)
+REGIME_FEATURES = FEATURES + (THRESHOLD_VARIABLE,)
+
+
+def regime_panel_rows(seed=20260909):
+    """`PANEL_ROWS` plus a `tgcr` column, and nothing else touched.
+
+    Built by copying each row's values rather than by widening `panel_row`, so
+    that **no number in this file moves**: the spreads are `PANEL_ROWS`'
+    spreads, `on_rrp` is `PANEL_ROWS`' covariate, and the climatology and ARX
+    figures the surrounding tests pin are computed from rows this function never
+    sees. `regime_frame` in `tests/test_baseline.py` derives its own rows from
+    `regressor_frame` the same way and for the same reason.
+
+    The seed is that file's, and the values sit in the same narrow band, so a
+    split exists on the 19 rows that clear a three-day gap ahead of this window
+    and both regimes stay populated. The property that matters and is asserted
+    where it is used: the three rows ever read as a feature row here do not all
+    fall in one regime.
+    """
+
+    state = seed
+    rows = []
+    for row in PANEL_ROWS:
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        values = dict(row.values)
+        values[THRESHOLD_VARIABLE] = 4.28 + (state % 97) / 1000.0
+        rows.append(DailyObservation(row.date, values))
+    return rows
+
+
+REGIME_PANEL_ROWS = regime_panel_rows()
+
+
+class RegimeDeclarationTests(EvaluatorHarness):
+    """A covariate that chooses the model, on the knowledge-holdout path.
+
+    `da78dea` put the regime variable through the *rolling* path's lock. This is
+    the second path, and it has its own declaration check: `event_eval` sizes
+    the gap from the caller's feature set before anything is fitted and then
+    verifies `ExceedanceCurves.features_read` against it, through the same
+    `baseline._check_fitter_stayed_inside` the rolling path uses. Two evaluation
+    paths, two checks; the regime variable had been through one of them.
+
+    The failure that was available is the one this repository keeps finding one
+    level at a time: a predictor that consults the regime variable to pick a
+    regime, reports only its regressors, and gets a gap sized over the wrong
+    fields. The arithmetic is right, the set is wrong, and the error is in the
+    flattering direction because the undeclared column's release lag is the one
+    missing from the maximum.
+
+    The registry is `mixed_registry` rather than `declared_registry` for the
+    reason that file gives: under a uniform registry every source costs the same
+    and the derived purge would be the same number whether the regime variable
+    was declared or not, so "the purge reflects the column" would pass while
+    demonstrating nothing.
+
+    Mutation record
+    ===============
+
+    Unmutated control first: the suite green before and after every run below --
+    557 tests, 4 skips, zero `expectedFailure` -- stdlib only, run from a copy
+    under `$HOME` with `data/`, `.github/`, `metadata/`, `.gitignore`, the root
+    Markdown and `docs/PROJECT_STATUS.md` carried across, because
+    `tests/test_docs_freshness.py` reads those and their absence is two kills
+    that look real and are not. `-B` with `PYTHONDONTWRITEBYTECODE=1` and
+    `__pycache__` cleared before each run.
+
+    1. **`threshold_exceedance` reports its regressors alone.**
+       `ExceedanceCurves(..., model.features_read)` became
+       `ExceedanceCurves(..., declared)`, so the returned claim is
+       `("on_rrp",)` and the regime variable is not in it. The predictor still
+       fits, still returns a curve per scored day, and still switches regimes
+       across the fitted cutoff -- only the account of what it read is short by
+       the one column this block is about. **2 tests fail:**
+
+       * `RegimeDeclarationTests::test_the_regime_variable_is_declared_on_the_holdout_path_too`
+         -- `AssertionError: LookAheadError not raised`. This class's acceptance
+         criterion. The undeclared run, which must be refused, completes and is
+         journalled: a knowledge holdout purged over
+         `spread_bps` and `on_rrp` while the model was also reading `tgcr`.
+       * `tests/test_baseline.py::ThresholdExceedanceTests::test_it_reports_the_regime_variable_as_well_as_its_regressors`
+         -- `AssertionError: Tuples differ: ('sofr_volume',) != ('spread_bps',
+         'sofr_volume', 'tgcr')`.
+
+       The second kill was not expected when this record was drafted, and it is
+       worth saying why it happens rather than quietly counting it. That test
+       reads `ExceedanceCurves.features_read` -- the predictor's claim -- and
+       not `FittedThreshold.features_read`, so it sits on the same claim the
+       evaluator checks, one level lower. It reports the wrong tuple; the
+       acceptance test reports the *consequence*, an unrefused evaluation with
+       a gap sized over the wrong fields. Nothing else in
+       `tests/test_baseline.py` sees the mutation: the rolling path checks the
+       fitted model's tuple, which is untouched.
+
+    2. **The curve re-derived from the pooled residuals rather than taken from
+       `FittedThreshold.predict_stress`.** `model.predict_stress(row, taus)`
+       became `_exceedance_from_residuals` over `model.residuals` about a single
+       regime-independent centre -- the `"low"` coefficients applied to every
+       feature row's design row. The two agree exactly on any row the low regime
+       would have claimed anyway and diverge across the cutoff. **1 test
+       fails:**
+
+       * `tests/test_baseline.py::ThresholdExceedanceTests::test_the_curve_moves_across_the_fitted_cutoff`
+         -- `AssertionError: (0.9266951315779685, 0.9145730036194362,
+         0.7952526956667105, 0.478193103494276) == (same tuple)`. One design row
+         scored under two regimes gave one curve.
+
+       **`test_the_law_is_the_one_the_fitted_model_already_reports` survives**,
+       and that is the fixture finding the brief anticipated rather than a
+       weakness in the test: `regime_frame`'s last four rows -- the mixin's
+       feature rows -- all fall in the low regime, so anchoring every row on the
+       low coefficients reproduces the model's own curves character for
+       character. A frame with no two rows straddling the fitted threshold
+       cannot see this mutation at all. The test that does see it is the one
+       above, and it exists for this reason: it *constructs* the straddling pair
+       from one row and its copy with the regime variable moved across the
+       threshold, rather than hoping the frame supplies one.
+
+       Nothing in this file fails either, for the same reason in a different
+       shape: this window's feature rows do fall in both regimes, but no two of
+       them differ *only* in the regime variable, so a flattened centre moves
+       the numbers without moving anything `RegimeDeclarationTests` asserts.
+       This class asserts the declaration; the curve's construction is
+       `tests/test_baseline.py`'s to hold.
+
+    3. **The threshold estimated over the feature rows as well as the training
+       rows.** `fit_threshold(train_rows, ...)` became
+       `fit_threshold(tuple(train_rows) + tuple(feature_rows), ...)`, so the
+       imputations, the threshold, the regime assignment and the residual law
+       are all fitted on rows from inside the window. **4 tests fail, 2 as
+       errors:**
+
+       * `RegimeDeclarationTests::test_the_regime_variable_is_declared_on_the_holdout_path_too`
+         -- `repo_model.splits.SplitError: training frame dates must be strictly
+         ascending and unique; 2026-01-30 at position 20 follows 2026-01-30`.
+         Three of this window's five scored days read the same feature row, so
+         the concatenation repeats a date and `ensure_strictly_ascending` refuses
+         the frame. The leak is caught by the shape it has to take to happen
+         here, which is luck rather than a guard -- worth recording as such.
+       * `tests/test_baseline.py::ThresholdExceedanceTests::test_the_curve_moves_across_the_fitted_cutoff`
+         -- the same `SplitError` at `2026-02-09`, from the constructed pair
+         carrying its source row's date.
+       * `tests/test_baseline.py::ThresholdExceedanceTests::test_the_law_is_the_one_the_fitted_model_already_reports`
+         -- `AssertionError: Tuples differ`, the control fitting on the training
+         rows and the mutant on four more. This is the kill that does not depend
+         on a date collision, and the one that would still fire if the
+         concatenation were sorted.
+       * `tests/test_baseline.py::ThresholdExceedanceTests::test_a_training_frame_below_the_minimum_is_refused`
+         -- `AssertionError: ValueError not raised`. Four feature rows pushed a
+         19-row frame over a 20-row minimum, so a refusal that belongs to the
+         predictor stopped firing because of rows it was never allowed to fit
+         on.
+
+       `test_a_window_with_no_second_regime_is_refused_not_flattened` survives:
+       the four feature rows do supply a moving `tgcr`, but four rows cannot
+       make a regime of the five `fit_threshold` requires, so the refusal still
+       fires. The fallback the brief warns about is one row short of arriving
+       through this leak, which is not a margin to rely on.
+
+    4. **The boring one, and it is boring.** No mutation: the claim is that this
+       block moved no existing number. `climatology_exceedance` and
+       `arx_exceedance` were run on `PANEL_ROWS` at `purge=3` through
+       `evaluate_event_window`, and the persistence benchmark and the real
+       registry's derived purge through `_derive_purge`, against a pristine
+       `git archive HEAD` checkout and against the working tree. The two outputs
+       are **byte-identical**: the ARX's five curves, the climatology's flat
+       one, `train_rows=19`, `last_train_date=2026-01-29`, and `35c3125`'s
+       six-day purge over `(fred_macro_latest_vintage, IORB)` and
+       `(nyfed_sofr, SOFR)` with its fold count and MAE unchanged. **0 tests
+       fail.** Nothing this block adds reads `PANEL_ROWS`: `regime_panel_rows`
+       copies each row and adds a column, and the registry it evaluates under is
+       a different fixture.
+
+    Why the curve comes off the fitted model
+    ========================================
+
+    `FittedThreshold.predict_stress` is `_exceedance_from_residuals` over the
+    pooled leave-one-out law the model already fits, anchored on the
+    **regime's** point forecast. Re-deriving it here would be a second opinion
+    about one distribution, and mutation 2 shows what that second opinion costs:
+    it agrees about the centre and disagrees across the cutoff, which is exactly
+    the behaviour this implementer was added to score. The regime enters through
+    the centre and nowhere else -- the law is one law, pooled, by
+    `test_one_pooled_law_because_the_interface_declares_one` -- so a curve built
+    from the residual vector without asking the model which regime it is in is
+    an `arx_exceedance` wearing a threshold model's name.
+
+    The discovery-guard gap in the brief is already closed
+    =====================================================
+
+    The brief for this block records that `tests/test_contract.py`'s
+    `_forecast_implementations` has no counterpart for `ExceedancePredictor` and
+    asks that one be left for its own block. That is a stale premise:
+    `tests/test_baseline.py::ExceedancePredictorCoverageTests` is the
+    counterpart and it landed already, discovering factories by their
+    `-> ExceedancePredictor` annotation exactly as `_forecast_implementations`
+    discovers implementers by subclass. It fired on the first run of this block,
+    before any test was written -- `['threshold_exceedance'] != []` -- which is
+    the guard doing its job and is why `ThresholdExceedanceTests` exists. No
+    guard was built here; a conformance case was added because the guard that
+    was already there demanded one.
+    """
+
+    MINIMUM_HISTORY = 10
+
+    #: Two numbers, so that declaring the regime variable *changes* the gap. The
+    #: base prices every source `FEATURES` resolves to; the regime price is
+    #: `nyfed_tgcr`'s alone and is the larger, so the derived purge under
+    #: `REGIME_FEATURES` is the regime one and under `FEATURES` is the base one.
+    BASE_PURGE = 2
+    REGIME_PURGE = 3
+
+    def regime_report(self, **overrides):
+        kwargs = dict(
+            observations=REGIME_PANEL_ROWS,
+            fit_predict=threshold_exceedance(
+                REGIME_REGRESSORS,
+                THRESHOLD_VARIABLE,
+                minimum_history=self.MINIMUM_HISTORY,
+            ),
+            features=REGIME_FEATURES,
+            registry=mixed_registry(self.BASE_PURGE, self.REGIME_PURGE),
+            model_config={
+                "model": "threshold",
+                "regressors": list(REGIME_REGRESSORS),
+                "threshold_variable": THRESHOLD_VARIABLE,
+            },
+        )
+        kwargs.update(overrides)
+        return self.evaluate(**kwargs)
+
+    def test_the_regime_variable_is_declared_on_the_holdout_path_too(self):
+        """The block's acceptance criterion, and its own mutation target.
+
+        Two runs of one predictor over one panel, differing only in what the
+        caller declared.
+
+        Undeclared, the regime variable is a column the model reads and the gap
+        was not sized over: refused, `LookAheadError`, naming the column. The
+        refusal comes before the record, so a run purged against the wrong
+        fields leaves no journal line claiming a single-evaluation budget was
+        spent on it.
+
+        Declared, the same run scores -- and the gap it scored under is the
+        regime variable's. `nyfed_tgcr` is in the report's `field_sources` as
+        the pair `(nyfed_tgcr, TGCR)` and projected into `sources`, and the
+        purge is the larger of the two prices rather than the base one. That
+        second half is why the registry is mixed: under a uniform one the number
+        would be the same either way and this would assert that a column had
+        been added to a tuple.
+
+        The premises are asserted rather than left in a comment. The regime
+        variable is not a regressor, so the design cannot be reporting it; and
+        the two prices differ, so the purge has somewhere to move.
+        """
+
+        self.assertNotIn(THRESHOLD_VARIABLE, REGIME_REGRESSORS)
+        self.assertLess(self.BASE_PURGE, self.REGIME_PURGE)
+
+        # Undeclared: read, not declared, refused by name -- and unjournalled.
+        with self.assertRaises(LookAheadError) as caught:
+            self.regime_report(features=FEATURES)
+        self.assertIn(THRESHOLD_VARIABLE, str(caught.exception))
+        self.assertEqual(read_journal(self.journal), ())
+
+        # Declared: the same run, scored.
+        report = self.regime_report()
+        self.assertEqual(report.features, REGIME_FEATURES)
+        self.assertEqual(
+            list(report.scored_dates),
+            [when for when in PANEL_DATES if EVENT_START <= when <= EVENT_END],
+        )
+        self.assertEqual(len(report.exceedance), len(report.scored_dates))
+        self.assertEqual(report.record.holdout_role, KNOWLEDGE_HOLDOUT)
+
+        # Knowledge holdout: nothing in or near the window trained.
+        self.assertGreater(
+            (EVENT_START - report.last_train_date).days, report.purge_days
+        )
+
+        # And the gap it was scored under is the regime variable's. The pair is
+        # read from `contract` rather than typed, so a change to the field a
+        # column resolves to is a failure here and not a stale literal.
+        regime_pairs = contract.field_sources_for_features((THRESHOLD_VARIABLE,))
+        self.assertEqual(len(regime_pairs), 1)
+        self.assertIn(regime_pairs[0], report.field_sources)
+        self.assertIn(regime_pairs[0][0], report.sources)
+        self.assertNotIn(
+            regime_pairs[0],
+            contract.field_sources_for_features(FEATURES),
+            msg="the regime variable's field is already in the undeclared set; "
+            "declaring it cannot be shown to have widened anything",
+        )
+        self.assertEqual(report.purge_days, self.REGIME_PURGE)
 
 
 class FeatureRowTests(EvaluatorHarness):
