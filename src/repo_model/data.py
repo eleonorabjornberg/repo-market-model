@@ -154,6 +154,119 @@ class CrossSectionCoverage:
         }
 
 
+# The three answers a declared identity can give about one `ref_date`. There
+# used to be two, and the missing one was not "violated" -- it was this:
+#
+#   held           every declared term was observed and the residual is within
+#                  the declared tolerance
+#   violated       every declared term was observed and the residual is not
+#   not_evaluable  at least one declared term has no observation for that
+#                  `ref_date`, so no residual exists to compare
+#
+# `not_evaluable` is the one that has to be named. A check that never ran and a
+# check that passed are indistinguishable from the outside unless the code says
+# which happened, and the failure mode this repo keeps meeting is a guard that
+# reads as vigilance because nothing recorded that its input was absent. It is
+# the degenerate case of an identity anchored to the thing it is checking: not a
+# check that cannot fail because both sides moved together, but a check that
+# cannot fail because it has no terms.
+IDENTITY_HELD = "held"
+IDENTITY_VIOLATED = "violated"
+IDENTITY_NOT_EVALUABLE = "not_evaluable"
+
+# The verdict an identity earns over a whole panel when some of its reference
+# dates could not be checked. Deliberately not spelled `held`, and deliberately
+# not `not_evaluable` either: both would be false. It held where it ran, and a
+# caller testing for `held` gets a mismatch, which is the point.
+IDENTITY_HELD_WHERE_EVALUABLE = "held_where_evaluable"
+
+
+@dataclass(frozen=True)
+class UnevaluatedIdentity:
+    """One `(source, identity, ref_date)` the identity could not be checked on.
+
+    `absent_fields` names the declared terms that have no observation for that
+    `ref_date`. Recording the verdict without the terms would be a claim a
+    reader cannot act on -- "it did not evaluate" says nothing about whether the
+    remedy is a field mapping, a missing table, or a source that never collected
+    the column. It is the same reason `CrossSectionCoverage.absent_fields`
+    exists, one level up: an absence is only legible once it is named.
+
+    The absent term is never read as `0.0` to make the sum evaluate. An identity
+    that "holds" because a missing term was substituted with a zero is strictly
+    worse than one that visibly did not run, because the first destroys the
+    evidence that anything was missing.
+    """
+
+    source_id: str
+    identity: str
+    ref_date: date
+    absent_fields: tuple = ()
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "source_id": self.source_id,
+            "identity": self.identity,
+            "ref_date": self.ref_date.isoformat(),
+            "verdict": IDENTITY_NOT_EVALUABLE,
+            "absent_fields": list(self.absent_fields),
+            "reason": (
+                "a declared term of this identity has no observation for this "
+                "reference date; the identity was not checked"
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class IdentityEvaluation:
+    """What one declared identity actually established over a panel.
+
+    This replaces a bare maximum residual as the thing a caller reads to learn
+    "the identities are fine". A float alone cannot answer the question, because
+    it is computed only over the reference dates where every term was present
+    and carries no trace of the ones where it was not -- so a panel whose first
+    5.5 years cannot be checked at all reports exactly the same number as one
+    that was checked throughout.
+
+    `verdict` is therefore `held` only when nothing was left unchecked. When
+    some reference dates could not be evaluated it is
+    `held_where_evaluable`, which no caller can mistake for the former.
+    """
+
+    source_id: str
+    name: str
+    maximum_residual: Optional[float]
+    evaluated_ref_dates: int
+    unevaluated: tuple = ()
+
+    @property
+    def verdict(self) -> str:
+        if self.unevaluated:
+            return IDENTITY_HELD_WHERE_EVALUABLE
+        return IDENTITY_HELD
+
+    @property
+    def fully_evaluated(self) -> bool:
+        return not self.unevaluated
+
+    @property
+    def absent_fields(self) -> tuple:
+        """Every declared term absent on at least one unevaluated date."""
+
+        names: set = set()
+        for item in self.unevaluated:
+            names.update(item.absent_fields)
+        return tuple(sorted(names))
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "verdict": self.verdict,
+            "maximum_residual": self.maximum_residual,
+            "evaluated_ref_dates": self.evaluated_ref_dates,
+            "unevaluated_ref_dates": [item.as_dict() for item in self.unevaluated],
+        }
+
+
 @dataclass(frozen=True)
 class PointInTimeAuditReport:
     row_count: int
@@ -164,6 +277,7 @@ class PointInTimeAuditReport:
     missing_series: Mapping[str, int]
     warnings: Sequence[str]
     excluded_cross_sections: Sequence[CrossSectionCoverage] = ()
+    unevaluated_identities: Sequence[UnevaluatedIdentity] = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -196,6 +310,18 @@ class PointInTimeAuditReport:
                 for coverage in sorted(
                     self.excluded_cross_sections,
                     key=lambda item: (item.source_id, item.ref_date),
+                )
+            ],
+            # Its own key for the same reason excluded_cross_sections is its
+            # own key. "This identity was checked and held" and "this identity
+            # was not checked" are different facts, and a reader who cannot
+            # tell them apart will read the second as the first -- which is
+            # the whole defect this records.
+            "unevaluated_identities": [
+                item.as_dict()
+                for item in sorted(
+                    self.unevaluated_identities,
+                    key=lambda item: (item.source_id, item.identity, item.ref_date),
                 )
             ],
             "warnings": list(self.warnings),
@@ -362,6 +488,7 @@ def audit_point_in_time_panel(
     *,
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
+    unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
 ) -> PointInTimeAuditReport:
     """Summarize coverage and revisions without treating a revision as coverage.
 
@@ -445,6 +572,7 @@ def audit_point_in_time_panel(
         },
         warnings=warnings,
         excluded_cross_sections=tuple(excluded_cross_sections or ()),
+        unevaluated_identities=tuple(unevaluated_identities or ()),
     )
 
 
@@ -522,6 +650,7 @@ def write_point_in_time_audit_report(
     *,
     expected_ref_dates: Optional[Mapping[str, Iterable[date]]] = None,
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
+    unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
 ) -> PointInTimeAuditReport:
     """Write a deterministic JSON missingness/revision report."""
 
@@ -529,6 +658,7 @@ def write_point_in_time_audit_report(
         observations,
         expected_ref_dates=expected_ref_dates,
         excluded_cross_sections=excluded_cross_sections,
+        unevaluated_identities=unevaluated_identities,
     )
     payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -627,11 +757,62 @@ def validate_publication_gaps(
     return worst
 
 
+def _identity_verdict(
+    left_fields: Sequence[str],
+    right_fields: Sequence[str],
+    values: Mapping[str, Optional[float]],
+    tolerance: float,
+) -> tuple:
+    """Answer one declared identity on one reference date.
+
+    Returns `(verdict, residual, absent_fields)`. The verdict is one of
+    `IDENTITY_HELD`, `IDENTITY_VIOLATED` or `IDENTITY_NOT_EVALUABLE`; the
+    residual is `None` for the last, because on that reference date there is no
+    residual -- not a large one, not a zero one, none.
+
+    An absent term is never read as `0.0`. The sums are not formed at all when
+    a term is missing, so nothing here can turn "we did not observe it" into
+    "we observed nothing". Substituting a zero would make the identity evaluate
+    and, on a balance sheet, would usually make it fail loudly -- but on a panel
+    where the missing terms sit on the same side it can just as easily make it
+    hold, and an identity that holds because a missing term was imputed is worse
+    than one that visibly did not run: the first destroys the evidence.
+    """
+
+    absent = tuple(
+        field
+        for field in (*left_fields, *right_fields)
+        if values.get(field) is None
+    )
+    if absent:
+        return IDENTITY_NOT_EVALUABLE, None, absent
+    left_value = sum(float(values[field]) for field in left_fields)
+    right_value = sum(float(values[field]) for field in right_fields)
+    residual = abs(left_value - right_value)
+    verdict = IDENTITY_HELD if residual <= tolerance else IDENTITY_VIOLATED
+    return verdict, residual, ()
+
+
 def validate_accounting_identities(
     observations: Iterable[PointInTimeObservation],
     registry: Mapping[str, Mapping[str, object]],
-) -> Mapping[str, float]:
-    """Validate declared additive identities on the latest supplied vintages."""
+) -> Mapping[str, "IdentityEvaluation"]:
+    """Validate declared additive identities on the latest supplied vintages.
+
+    Returns one `IdentityEvaluation` per declared identity, keyed
+    `"{source_id}:{name}"`. Deliberately not a bare maximum residual any more.
+    That float was computed over the intersection of the declared terms'
+    reference dates, so a panel whose first years cannot be checked at all
+    produced exactly the same answer as one checked throughout, and a caller
+    asking "are the identities fine?" could not tell the two apart. `verdict` is
+    `held` only when every reference date any term was observed on was actually
+    checked.
+
+    A violated identity still raises, as it always did. An unevaluable reference
+    date does not raise: it is recorded, named term by named term. Which
+    reference dates belong in the panel is a policy question and it is not this
+    function's to answer -- but it can no longer be answered by accident.
+    """
 
     latest = {}
     for row in observations:
@@ -640,7 +821,7 @@ def validate_accounting_identities(
         if previous is None or row.available_at > previous.available_at:
             latest[key] = row
 
-    maximum_residuals: Dict[str, float] = {}
+    evaluations: Dict[str, IdentityEvaluation] = {}
     for source_id, source in registry.items():
         identities = source.get("identities", [])
         if not isinstance(identities, list):
@@ -662,7 +843,9 @@ def validate_accounting_identities(
             absolute = tolerance.get("absolute")
             if isinstance(absolute, bool) or not isinstance(absolute, (int, float)):
                 raise DataContractError(f"{source_id}: identity {name} has invalid tolerance")
-            fields = [str(field) for field in (*left, *right)]
+            left_fields = [str(field) for field in left]
+            right_fields = [str(field) for field in right]
+            fields = [*left_fields, *right_fields]
             dates_by_field = {
                 field: {ref_date for series_id, ref_date in latest if series_id == field}
                 for field in fields
@@ -672,19 +855,51 @@ def validate_accounting_identities(
                 raise DataContractError(
                     f"{source_id}: identity {name} has no complete reference date"
                 )
+            # The union, not the intersection. Every reference date on which any
+            # declared term was observed is a date this identity has something
+            # to say about -- including "I could not be checked here". Iterating
+            # the intersection is what made 5.5 years of an unchecked balance
+            # sheet invisible: those dates were not failing the identity, they
+            # were never reaching it.
+            observed_dates = set().union(*dates_by_field.values()) if fields else set()
             maximum = 0.0
-            for ref_date in complete_dates:
-                left_value = sum(latest[(field, ref_date)].value for field in left)
-                right_value = sum(latest[(field, ref_date)].value for field in right)
-                residual = abs(left_value - right_value)
-                maximum = max(maximum, residual)
-                if residual > float(absolute):
+            unevaluated: List[UnevaluatedIdentity] = []
+            for ref_date in sorted(observed_dates):
+                values = {
+                    field: (
+                        latest[(field, ref_date)].value
+                        if (field, ref_date) in latest
+                        else None
+                    )
+                    for field in fields
+                }
+                verdict, residual, absent = _identity_verdict(
+                    left_fields, right_fields, values, float(absolute)
+                )
+                if verdict == IDENTITY_NOT_EVALUABLE:
+                    unevaluated.append(
+                        UnevaluatedIdentity(
+                            source_id=source_id,
+                            identity=name,
+                            ref_date=ref_date,
+                            absent_fields=absent,
+                        )
+                    )
+                    continue
+                if verdict == IDENTITY_VIOLATED:
                     raise DataContractError(
                         f"{source_id}: identity {name} residual {residual:g} exceeds "
                         f"tolerance {float(absolute):g} on {ref_date}"
                     )
-            maximum_residuals[f"{source_id}:{name}"] = maximum
-    return maximum_residuals
+                maximum = max(maximum, residual)
+            evaluations[f"{source_id}:{name}"] = IdentityEvaluation(
+                source_id=source_id,
+                name=name,
+                maximum_residual=maximum,
+                evaluated_ref_dates=len(observed_dates) - len(unevaluated),
+                unevaluated=tuple(unevaluated),
+            )
+    return evaluations
 
 
 def load_stress_thresholds(

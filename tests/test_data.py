@@ -199,14 +199,126 @@ class PointInTimeDataContractTests(unittest.TestCase):
                 }]
             }
         }
-        residuals = validate_accounting_identities(rows, registry)
-        self.assertEqual(residuals["source:balance_sheet"], 0.0)
+        evaluations = validate_accounting_identities(rows, registry)
+        self.assertEqual(evaluations["source:balance_sheet"].maximum_residual, 0.0)
         bad = dict(registry)
         bad["source"] = dict(registry["source"])
         bad["source"]["identities"] = [dict(registry["source"]["identities"][0])]
         bad["source"]["identities"][0]["tolerance"] = {"absolute": 0.0}
         with self.assertRaisesRegex(DataContractError, "residual"):
             validate_accounting_identities(rows[:-1], bad)
+
+    def test_an_identity_with_an_unobserved_term_is_recorded_unevaluated_not_satisfied(
+        self,
+    ):
+        """An identity that could not be checked must not read as one that held.
+
+        The defect this pins, in the panel it was found in: `sec_nmfp` declares
+        a balance-sheet identity over five terms, and `CASH` and
+        `TOTALVALUEPORTFOLIOSECURITIES` are empty in every archive before the
+        2016-04 report month. Those months were not violating the identity and
+        were not passing it -- they never reached it, because the check iterated
+        the intersection of the terms' reference dates. The panel reported one
+        maximum residual, the quality report reported no violation, and a reader
+        concluded a balance sheet reconciled over history where two of its three
+        left-hand terms had no observation at all.
+
+        So this asserts the distinction itself rather than any count: the same
+        fixture with a term withheld and with every term present must give
+        answers a caller can tell apart, and the withheld one must name the term
+        that was missing. Both halves are load-bearing. Without the second, an
+        implementation that reported everything unevaluable would pass; without
+        the first, one that reported everything held would.
+
+        Fixture-based, so it holds in a fresh clone with an empty `data/raw/`.
+        """
+
+        def panel(with_equity_on_second_date: bool):
+            rows = [
+                self.observation(
+                    "assets", "2026-01-01", "2026-01-02T12:00:00+00:00", 10.0, "v1"
+                ),
+                self.observation(
+                    "liabilities", "2026-01-01", "2026-01-02T12:01:00+00:00", 4.0, "v1"
+                ),
+                self.observation(
+                    "equity", "2026-01-01", "2026-01-02T12:02:00+00:00", 6.0, "v1"
+                ),
+                self.observation(
+                    "assets", "2026-02-01", "2026-02-02T12:00:00+00:00", 12.0, "v1"
+                ),
+                self.observation(
+                    "liabilities", "2026-02-01", "2026-02-02T12:01:00+00:00", 5.0, "v1"
+                ),
+            ]
+            if with_equity_on_second_date:
+                rows.append(
+                    self.observation(
+                        "equity", "2026-02-01", "2026-02-02T12:02:00+00:00", 7.0, "v1"
+                    )
+                )
+            return rows
+
+        registry = {
+            "source": {
+                "identities": [
+                    {
+                        "name": "balance_sheet",
+                        "left": ["assets"],
+                        "right": ["liabilities", "equity"],
+                        "tolerance": {"absolute": 0.01, "unit": "USD"},
+                    }
+                ]
+            }
+        }
+
+        withheld = validate_accounting_identities(panel(False), registry)[
+            "source:balance_sheet"
+        ]
+        complete = validate_accounting_identities(panel(True), registry)[
+            "source:balance_sheet"
+        ]
+
+        # Every term present on every date: checked throughout, and it held.
+        self.assertEqual(complete.verdict, "held")
+        self.assertTrue(complete.fully_evaluated)
+        self.assertEqual(complete.unevaluated, ())
+        self.assertEqual(complete.evaluated_ref_dates, 2)
+
+        # One term withheld on one date: that date is not reported as satisfied,
+        # and the verdict of the identity as a whole is no longer `held`.
+        self.assertNotEqual(withheld.verdict, complete.verdict)
+        self.assertNotEqual(withheld.verdict, "held")
+        self.assertFalse(withheld.fully_evaluated)
+        self.assertEqual(withheld.evaluated_ref_dates, 1)
+
+        # And the absent term is named, per reference date. A verdict that says
+        # "this did not evaluate" without saying what was missing is a claim a
+        # reader cannot act on.
+        self.assertEqual(len(withheld.unevaluated), 1)
+        unevaluated = withheld.unevaluated[0]
+        self.assertEqual(unevaluated.ref_date, date(2026, 2, 1))
+        self.assertEqual(unevaluated.absent_fields, ("equity",))
+        self.assertEqual(withheld.absent_fields, ("equity",))
+        self.assertEqual(unevaluated.as_dict()["verdict"], "not_evaluable")
+        self.assertEqual(unevaluated.as_dict()["absent_fields"], ["equity"])
+
+        # The reference date that did evaluate is unchanged by the other one
+        # having been withheld: it held, with the residual it always had.
+        self.assertEqual(withheld.maximum_residual, 0.0)
+
+        # And the record reaches the quality report a reader actually opens,
+        # beside the coverage decision rather than folded into it.
+        report = audit_point_in_time_panel(
+            panel(False), unevaluated_identities=withheld.unevaluated
+        ).as_dict()
+        self.assertEqual(len(report["unevaluated_identities"]), 1)
+        self.assertEqual(
+            report["unevaluated_identities"][0]["absent_fields"], ["equity"]
+        )
+        self.assertEqual(
+            report["unevaluated_identities"][0]["ref_date"], "2026-02-01"
+        )
 
 
 class StressLabelTests(unittest.TestCase):

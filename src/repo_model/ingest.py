@@ -101,7 +101,7 @@ class PanelArtifact:
     raw_snapshots: Sequence[Mapping[str, object]]
     quality_report_path: Path
     quality_report_sha256: str
-    accounting_residuals: Mapping[str, float]
+    accounting_identities: Mapping[str, object]
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -113,7 +113,15 @@ class PanelArtifact:
             "raw_snapshots": list(self.raw_snapshots),
             "quality_report_path": str(self.quality_report_path),
             "quality_report_sha256": self.quality_report_sha256,
-            "accounting_residuals": dict(sorted(self.accounting_residuals.items())),
+            # Renamed from `accounting_residuals`, 8 Sep 2026. A residual is
+            # what an identity produces when it evaluates; it says nothing
+            # about the reference dates where it could not. The value is now
+            # a verdict per identity, and it reads `held` only when nothing
+            # was left unchecked.
+            "accounting_identities": {
+                key: evaluation.as_dict()
+                for key, evaluation in sorted(self.accounting_identities.items())
+            },
         }
 
 
@@ -1794,7 +1802,12 @@ def build_point_in_time_snapshot(
     )
 
     validate_publication_gaps(rows, selected_registry)
-    accounting_residuals = validate_accounting_identities(rows, selected_registry)
+    accounting_identities = validate_accounting_identities(rows, selected_registry)
+    unevaluated_identities = [
+        item
+        for evaluation in accounting_identities.values()
+        for item in evaluation.unevaluated
+    ]
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(("series_id", "ref_date", "available_at", "value", "vintage_id", "source_sha"))
@@ -1823,6 +1836,7 @@ def build_point_in_time_snapshot(
         excluded_cross_sections=[
             item for item in parsed.coverage if not item.admitted
         ],
+        unevaluated_identities=unevaluated_identities,
     )
     quality_report_sha256 = hashlib.sha256(quality_report_path.read_bytes()).hexdigest()
     artifact = PanelArtifact(
@@ -1834,7 +1848,7 @@ def build_point_in_time_snapshot(
         raw_snapshots=tuple(item.as_dict() for item in materialized),
         quality_report_path=quality_report_path.resolve(),
         quality_report_sha256=quality_report_sha256,
-        accounting_residuals=accounting_residuals,
+        accounting_identities=accounting_identities,
     )
     _atomic_write(
         output_path.with_suffix(output_path.suffix + ".manifest.json"),
