@@ -191,6 +191,22 @@ Stated explicitly, because each is easy to mistake for something stronger.
 8. Report the frozen event windows separately from rolling-origin evaluation.
 9. Add a quantile machine-learning model only after the baselines are frozen.
 
+## Who is responsible for what
+
+The author holds research design, implementation, evaluation, and every claim on this
+page. Nicholas Beroud is the project's finance collaborator, contributing repo- and
+money-market domain expertise and the finance side of the research design: which of
+the open decisions in `DATA_QUALITY_DECISIONS.md` are questions about markets rather
+than about code, and what a series has to represent before it is worth fitting on.
+
+The split is worth stating on a status page specifically, because the gaps listed
+above are not all of one kind. Some are engineering — a join not yet run, a freeze not
+yet taken. Others are finance judgments that no amount of test coverage will settle:
+whether a summed settlement series can stand in for a collateral-supply channel,
+whether an accounting identity means anything on a partial cross-section, what a
+stress regime should be declared to be. Advisory input does not transfer
+responsibility for any of them.
+
 ## Portfolio interpretation
 
 The repository may accurately be described as a leakage-safe, point-in-time
@@ -201,6 +217,11 @@ not yet be described as a successful machine-learning forecast of repo stress: n
 result rests on real data, no panel has been produced from the join that would
 supply it, and the monthly money-fund panel is one cross-section rather than a
 series.
+
+As an academic exercise, its current contribution is methodological: the repository
+shows what it takes to keep a funding-market forecast honest before any forecast is
+made. That is a real contribution and it is also a limited one, and this page exists to
+keep the two from being confused.
 
 The next portfolio milestone is a compact results package containing a frozen data
 snapshot, a persistence-versus-challenger comparison under purged evaluation,

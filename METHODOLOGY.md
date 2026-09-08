@@ -1,5 +1,25 @@
 # Academic methodology
 
+## Status of this work
+
+This is an academic exercise. Its purpose is to demonstrate that a forecasting claim
+about a funding market can be made *defensibly* — with point-in-time provenance,
+declared availability, honest holdouts, and evaluation that cannot quietly reward a
+leak. It is not a production system and produces no investment advice. Where the
+repository has not yet earned a claim, the correct entry in these documents is that
+it has not, and that convention is enforced rather than left to editorial care.
+
+## Contributors and their roles
+
+| Person | Role |
+|---|---|
+| Eleonora Björnberg | Author. Research design, implementation, evaluation protocol, and final academic responsibility for every claim made here. |
+| Nicholas Beroud | Finance collaborator. Repo- and money-market domain expertise; the finance side of the research design, including which quantities are economically meaningful, how funding-market mechanics should be represented in the panel, and which open decisions are finance questions rather than engineering ones. |
+
+Domain input is advisory. It shapes what this project chooses to measure and how the
+measurements are interpreted; it does not certify any result, and responsibility for
+what the repository asserts is not divisible.
+
 ## Research question
 
 Can publicly observable funding, reserve, Treasury-settlement, dealer, money-fund,
@@ -42,6 +62,19 @@ Missing aggregates may be imputed with time-aware statistical models. Missing
 counterparty networks and collateral paths will be represented by posterior ensembles
 subject to accounting, relationship, timing, and collateral constraints. Systemic-risk
 results will be labelled robust only when they persist across plausible completions.
+
+## Standard of evidence
+
+A claim in this repository is admissible only when the artifact that supports it is
+identifiable: a commit, a snapshot digest, a declared feature set, and a run record.
+Prose is not evidence, and a passing suite is evidence about software, not about
+markets. Two conventions follow, and both are enforced by tests rather than by
+diligence:
+
+- No published document transcribes a measurement that rots — a test count, or a
+  hand-typed date. The commit is the timestamp.
+- A quantity that could not be computed is recorded as absent rather than defaulted,
+  because a default is indistinguishable from a measurement once it is written down.
 
 ## Literature access
 

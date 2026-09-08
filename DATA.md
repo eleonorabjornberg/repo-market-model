@@ -1,5 +1,16 @@
 # Data map
 
+This is the data map for an academic exercise. Only the public layer below is
+acquired, and it is acquired under each provider's own terms; raw responses are kept
+out of Git and are not redistributed here. The restricted layer is recorded because a
+serious treatment of this market would need it, and because naming what is missing is
+part of stating what the public-data results can and cannot support — not because any
+of it has been obtained.
+
+Source, availability and revision behaviour for anything actually ingested are
+declared in `metadata/sources.json` and enforced by the registry. This page is the
+map; the registry is the authority.
+
 ## Public U.S. modeling layer
 
 | Domain | Candidate source | Native frequency | Public resolution | Role |

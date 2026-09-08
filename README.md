@@ -10,10 +10,12 @@ The first target is deliberately narrow: the next-business-day distribution of
 `SOFR - IORB`, accompanied by SOFR dispersion and volume forecasts and the
 probability that the spread exceeds predeclared stress thresholds.
 
-This is an academic and portfolio project, not a production trading system or a
-source of investment advice. It currently demonstrates the data, validation, and
-evaluation architecture needed for credible forecasting; it does **not** yet claim
-successful predictive performance on historical market data.
+This is an **academic exercise** and a portfolio project. It is not a production
+trading system, not a risk-management tool, and not a source of investment advice,
+and no part of it should be used to size, price, or time a position. It currently
+demonstrates the data, validation, and evaluation architecture needed for credible
+forecasting; it does **not** yet claim successful predictive performance on
+historical market data.
 
 ## Why this project
 
@@ -107,6 +109,23 @@ public observations -> point-in-time panel -> probabilistic forecast
 Longer-term latent-liquidity, market-clearing, and network-stress components are
 research directions, not completed features.
 
+## People
+
+- **Eleonora Björnberg** — author. Research design, implementation, and all final
+  academic responsibility for what this repository claims.
+- **Nicholas Beroud** — finance collaborator. Repo-market and money-market domain
+  expertise, and the finance side of the research design: which quantities are
+  economically meaningful, how the funding market's institutional mechanics should be
+  represented, and which of the open modelling decisions are questions of finance
+  rather than questions of code.
+
+The distinction matters to how this repository is read. Most of what is built here is
+data engineering and evaluation discipline, and those are the parts a test suite can
+defend. The judgments a suite cannot defend — whether a series measures the thing its
+name suggests, whether an aggregate hides the mechanism that matters, which decisions
+must be made before fitting rather than after — are finance judgments, and they are
+where the collaboration sits.
+
 ## Repository guide
 
 - [`METHODOLOGY.md`](METHODOLOGY.md) defines the academic claims and evaluation
@@ -117,15 +136,20 @@ research directions, not completed features.
   of work used during development.
 - [`docs/DATA_QUALITY_DECISIONS.md`](docs/DATA_QUALITY_DECISIONS.md) records open
   modeling decisions that must be resolved before empirical fitting.
+- [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) separates what a clean clone can
+  reproduce today from what a published empirical result would additionally require.
 
 ## Development process and AI disclosure
 
 Parts of the implementation were developed with AI coding agents operating in
 separate Git worktrees. Their allowed files and shared interfaces are defined in a
 human-owned contract and checked in CI. Tests, source provenance, model claims, and
-final academic responsibility remain with the project author. Any academic
+final academic responsibility remain with the project author. Domain input from the
+finance collaborator named above is advisory: it informs the research design, and it
+does not transfer responsibility for any claim this repository makes. Any academic
 submission based on this repository should also follow the relevant instructor's
-AI-use and citation requirements.
+AI-use and citation requirements, and should disclose both the AI-agent workflow and
+the collaboration.
 
 ## License
 

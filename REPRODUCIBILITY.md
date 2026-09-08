@@ -101,3 +101,9 @@ Passing tests demonstrates that the declared software properties hold for the
 cases exercised. It does not demonstrate forecast skill, economic causality, or
 fitness for trading or risk-limit decisions. Those claims require historical
 out-of-sample evidence and remain outside the repository's current status.
+
+This is an academic exercise, and the boundary above is the point of it rather than a
+disclaimer attached to it. A reader who reproduces the code path has reproduced the
+argument this repository is currently making: that the pipeline does not let
+information reach a forecast before it was available. Reproducing a *result* is a
+different act, and the requirements listed above are what it would take.
