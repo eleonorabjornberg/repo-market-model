@@ -181,8 +181,11 @@ from repo_model.baseline import (
     climatology_exceedance,
     exceedance_backtest_document,
     fit,
+    comparison_seed,
     fit_arx,
     fit_threshold,
+    paired_comparison_document,
+    paired_model_comparison,
     rolling_exceedance_backtest,
     rolling_persistence_backtest,
     threshold_exceedance,
@@ -4217,6 +4220,430 @@ class RecordGitStateTests(unittest.TestCase):
                 True,
                 "an edited tracked file is exactly what this field is for",
             )
+
+
+#: The constant separating the two fitters in `PairedComparisonTests`. Small
+#: beside the fixture's daily move -- see `rising_frame` -- so that every
+#: per-origin error is larger than it and `|e| - |e - OFFSET_BPS|` is exactly
+#: `OFFSET_BPS` at every origin rather than only at most of them.
+OFFSET_BPS = 3.0
+
+#: The gap the comparison fixtures are priced at. Any gap works; this one is
+#: pinned so the reader can see the paired difference does not depend on it.
+COMPARISON_PURGE = 2
+
+
+def rising_frame(count=44, seed=20260909):
+    """A panel that rises every day, by a varying amount that is never small.
+
+    Two properties, and the test needs both.
+
+    **Every increment is at least 25 bp**, which is far more than `OFFSET_BPS`.
+    Persistence forecasts the last spread it was allowed to see, so on a rising
+    panel it always under-predicts, and the error at every origin exceeds the
+    offset. That is what makes `|e| - |e - c|` collapse to `c`: with `e >= c`
+    the two absolute values are `e` and `e - c`, and the fixture guarantees the
+    inequality rather than hoping for it.
+
+    **The increments vary**, so the loss series itself varies across origins.
+    That is not decoration. If every origin carried the same loss, the two
+    models bootstrapped *independently* would still return the same endpoints,
+    and the acceptance test would pass under the very mutation it exists to
+    catch. The fixture has to make the losses move and the difference stand
+    still.
+
+    Values are exact in binary. `spread_bps` is `100 * (sofr - iorb)`, so
+    `iorb` is zero and `sofr` is a multiple of `0.25`: the spread is then an
+    exact integer number of basis points, every subtraction below is exact, and
+    the test can assert equality rather than closeness. A fixture that produced
+    5.0000000000000004 would force `assertAlmostEqual`, which is a weaker
+    statement than the degenerate interval this test is making.
+    """
+
+    rows = []
+    quarters = 0
+    state = seed
+    for index in range(count):
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        quarters += 1 + (state >> 16) % 5
+        rows.append(
+            DailyObservation(
+                date(2026, 1, 1) + timedelta(days=index),
+                {"sofr": 0.25 * quarters, "iorb": 0.0},
+            )
+        )
+    return rows
+
+
+class _OffsetForecast:
+    """A fitted model that is another one plus a constant on its centre.
+
+    A test double and not a model: it exists so that two fitters can be handed
+    to one comparison whose forecasts differ by a known constant on every
+    origin, which is the only construction under which the paired difference
+    has zero variance and the expected interval can be *derived* rather than
+    read off a run.
+
+    It delegates everything else, including `features_read`, so the offset side
+    declares exactly what persistence declares and both sides price the same
+    gap. A double that reported a wider feature set would be refused by
+    `_check_fitter_stayed_inside`, which would be that guard working and this
+    fixture being wrong.
+    """
+
+    def __init__(self, inner, offset):
+        self._inner = inner
+        self._offset = offset
+        self.cutoff = inner.cutoff
+        self.levels = inner.levels
+
+    @property
+    def residuals(self):
+        return self._inner.residuals
+
+    @property
+    def features_read(self):
+        return self._inner.features_read
+
+    def trained_beyond(self, feature_row):
+        return self._inner.trained_beyond(feature_row)
+
+    def point_forecast(self, feature_row):
+        return self._inner.point_forecast(feature_row) + self._offset
+
+    def predict(self, feature_row):
+        return tuple(
+            value + self._offset for value in self._inner.predict(feature_row)
+        )
+
+    def predict_stress(self, feature_row, taus=None):
+        return self._inner.predict_stress(feature_row, taus)
+
+
+def offset_fitter(offset=OFFSET_BPS):
+    """`fit`, with `offset` added to every point forecast it will make."""
+
+    def fit_offset(train_frame, minimum_history=20):
+        return _OffsetForecast(
+            fit(train_frame, minimum_history=minimum_history), offset
+        )
+
+    return fit_offset
+
+
+class PairedComparisonTests(unittest.TestCase):
+    """A comparison is not two runs, and an interval on it is not two intervals.
+
+    **The finding.** `PLAN.md` Phase 2 exits on *"a model that beats
+    persistence out of sample"*, and until this block the repository could not
+    state either half of that. `mae_bootstrap_interval` names the hazard in its
+    own docstring -- a single MAE "invites a reader to believe that a
+    difference between two models is real" -- and then the only thing available
+    to a reader with two models was two such intervals and the overlap between
+    them. Overlap answers a different question and answers it wrongly in both
+    directions: overlapping intervals routinely contain a real difference, and
+    separated ones can be produced by a shared shock that cancels in the
+    difference.
+
+    So `paired_model_comparison` scores both models in one fold loop, on the
+    same training rows and the same origin, and puts **one** draw of indices
+    through the differenced series. The exceedance path already had this
+    property -- `brier_skill_score`'s bootstrap applies one draw to the model
+    and its reference together -- and this is the continuous path's version.
+
+    Decisions
+    ---------
+
+    **The pairing is by construction, not by comparison of two files.** Two
+    published records carry metrics and not per-origin losses, deliberately, so
+    they cannot be differenced after the fact -- and adding the losses to them
+    so that they could would turn the record from a publication into an
+    intermediate. One loop makes the two series the same length, in the same
+    order, over the same days, and nothing has to be checked because nothing
+    could have differed.
+
+    **Two declarations, one gap.** Each model declares its own feature set,
+    because an ARX reads columns persistence does not and one shared
+    declaration would either over-purge the simpler model or leave the richer
+    one's columns unpriced. The gap is the one thing the single loop cannot
+    settle, since it is derived from each declaration before any fold exists,
+    so a comparison whose sides price different gaps is refused --
+    `IncomparablePurgeError`. Two gaps are two origin sets, and losses at
+    different origins are not paired however carefully they are subtracted.
+
+    **The sign convention, and why it is in the artifact.** The difference is
+    `absolute_error(model_a) - absolute_error(model_b)` at each origin, so a
+    positive mean means `model_a` carried the larger loss and `model_b` was the
+    more accurate of the two. `model_a` is written first because that is the
+    order the flags read and the order the sentence reads, and the sentence is
+    rendered from the two names the run was given and published in the record:
+    *a signed difference with no statement of direction is a number half its
+    readers will read as the opposite conclusion, and a docstring is not
+    shipped with the record while the record is what a later reader has.*
+
+    **What the interval does not license.** The record reports a difference and
+    an interval around it and stops there. `REPRODUCIBILITY.md`'s
+    "Interpretation boundary" is this project's standing statement on what a
+    reader may conclude from that, and neither the code nor these tests say
+    anything about it.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, never the mount, carrying `src/`, `tests/`,
+    `data/`, `.github/`, `metadata/`, `.claude/`, `.gitignore`, the root
+    Markdown and `docs/PROJECT_STATUS.md`. `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`, `__pycache__` cleared between runs, unmutated control green
+    before and after each mutation. Exception types recorded, not counts.
+
+    `.claude/` is copied because the ownership hook lives there and its test
+    contributes seven errors to an otherwise green control without it. The copy
+    list in `CLAUDE.md` predates the hook and does not name it; that is a
+    `HUMAN_ONLY` page, so it is reported rather than edited.
+
+      1. **Each model's loss series bootstrapped with its own index draw**, and
+         the point estimates and endpoints differenced afterwards --
+         `stationary_bootstrap_interval` called twice, on `losses_a` and
+         `losses_b`, with `seed` and `seed + 1`, returning
+         `(lower_a - lower_b, upper_a - upper_b)`. This is the defect the block
+         exists to prevent and it is the one a green suite hides: every other
+         test in the suite stays green under it, because the models really were
+         both scored at every origin and every other published field is
+         correct. Kills exactly 1 --
+         `test_one_resample_is_applied_to_both_models_so_a_constant_difference_has_a_degenerate_interval`,
+         `AssertionError: Tuples differ: (3.0, 1.863636363636374) != (3.0,
+         3.0)`. **This is the acceptance criterion and the mutation target, and
+         they did not come apart.**
+
+         The degenerate case is what makes the kill unambiguous. A numeric
+         interval pinned from a run would agree with any mutation that moved
+         the run and the literal together; a constant difference has zero
+         variance, so *any* resample of it returns the constant, and an
+         interval that is not degenerate here is an interval that resampled the
+         two models apart.
+
+         **Note which endpoint moved.** The lower endpoint came back at exactly
+         `3.0` under the mutation and only the upper one moved, which is
+         coincidence and not structure: two independent resamples of two loss
+         series that differ by a constant can agree at one percentile and not
+         at the other. Recorded because the kill would look stronger written as
+         "both endpoints moved", and because a later reader tightening this
+         test to assert only the lower endpoint would blunt it to nothing.
+
+      2. **The gap refusal removed** -- `IncomparablePurgeError` never raised,
+         the comparison continuing on `purge_a`. Kills exactly 2 --
+         `test_two_declarations_pricing_different_gaps_are_refused` here,
+         `AssertionError: IncomparablePurgeError not raised`, and
+         `test_cli_eval.PairedComparisonCommandTests.test_two_declarations_pricing_different_gaps_are_refused_by_the_command`,
+         `AssertionError: 0 != 2`. That second number is the finding rather
+         than the test: the command **succeeds** and publishes a comparison
+         record, because the `b` side is scored at the `a` side's origins and
+         every loss in it is a real loss from a real fit. Nothing in the
+         artifact disagrees with itself, which is why this is a refusal and not
+         a warning.
+    """
+
+    def _comparison(self, rows=None, features_b=FEATURES, registry=None, seed=20260909):
+        return paired_model_comparison(
+            rows if rows is not None else rising_frame(),
+            model_a="persistence",
+            fit_a=fit,
+            features_a=FEATURES,
+            model_b="persistence-plus-offset",
+            fit_b=offset_fitter(),
+            features_b=features_b,
+            registry=registry
+            if registry is not None
+            else declared_registry(COMPARISON_PURGE),
+            decision_time=DECISION_TIME,
+            seed=seed,
+        )
+
+    def test_one_resample_is_applied_to_both_models_so_a_constant_difference_has_a_degenerate_interval(
+        self,
+    ):
+        """The block's acceptance criterion, derived from the fixture.
+
+        `model_b` is `model_a` plus `OFFSET_BPS` on every point forecast, and
+        `rising_frame` guarantees every error exceeds the offset, so the
+        per-origin loss difference is `OFFSET_BPS` at every origin. A series
+        with zero variance has the same mean under every resample of it, so a
+        bootstrap that applies one draw of origins to both models must return
+        that constant at both endpoints. Nothing here is read off a run: the
+        expected value comes from how the fixture was built.
+        """
+
+        comparison = self._comparison()
+
+        # The fixture's own precondition, asserted rather than assumed: if the
+        # losses did not move, two independently drawn resamples would agree
+        # too and the assertions below would hold under the mutation they are
+        # aimed at.
+        self.assertGreater(
+            len(set(comparison.losses_a)),
+            1,
+            "the fixture's losses must vary across origins, or an interval "
+            "that resampled the two models apart would be degenerate as well "
+            "and this test would pass on the defect it exists to catch",
+        )
+
+        self.assertEqual(
+            set(comparison.differences),
+            {OFFSET_BPS},
+            "model_b is model_a plus a constant on a panel where the error "
+            "always exceeds that constant, so every paired difference is the "
+            "constant",
+        )
+        self.assertEqual(comparison.mean_difference_bps, OFFSET_BPS)
+        self.assertEqual(
+            comparison.difference_interval,
+            (OFFSET_BPS, OFFSET_BPS),
+            "a difference series with zero variance has the same mean under "
+            "every resample of it, so one draw applied to both models collapses "
+            "the interval onto the constant; an interval that is not degenerate "
+            "here resampled the two models independently",
+        )
+
+    def test_two_declarations_pricing_different_gaps_are_refused(self):
+        """Different gaps are different origins, and different origins do not pair.
+
+        The one comparability question the single fold loop does not settle,
+        because the gap is derived from the declaration before the loop exists.
+        Refused before the panel is walked, so nothing is fitted and no
+        artifact can be written.
+        """
+
+        registry = {
+            source: {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": days,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+            for days, features in ((1, FEATURES), (6, ("treasury_settlement",)))
+            for source in sources_for_features(features)
+        }
+
+        with self.assertRaises(baseline.IncomparablePurgeError) as caught:
+            self._comparison(
+                features_b=FEATURES + ("treasury_settlement",), registry=registry
+            )
+
+        message = str(caught.exception)
+        self.assertIn("1-day", message)
+        self.assertIn("6-day", message)
+        self.assertIn("treasury_settlement", message)
+
+    def test_each_side_is_scored_exactly_as_the_single_model_benchmark_scores_it(self):
+        """The comparison's folds and per-model MAE are the benchmark's own.
+
+        The pairing is worth nothing if either side is scored differently from
+        the way `rolling_persistence_backtest` scores it, because then the
+        difference is between one model and a variant of another. Checked
+        against a separate benchmark run at the same gap, on the `a` side,
+        which is the side that has one to compare against.
+        """
+
+        rows = rising_frame()
+        comparison = self._comparison(rows=rows)
+        benchmark = at_gap(rows, purge=COMPARISON_PURGE)
+
+        self.assertEqual(
+            [fold.scored_date for fold in comparison.folds],
+            [fold.scored_date for fold in benchmark.folds],
+        )
+        self.assertEqual(
+            [fold.feature_date for fold in comparison.folds],
+            [fold.feature_date for fold in benchmark.folds],
+        )
+        self.assertEqual(comparison.mae_a_bps, benchmark.mae_bps)
+
+    def test_the_record_names_both_models_and_states_which_way_the_sign_runs(self):
+        """A signed difference is unreadable without its direction, in the file.
+
+        The convention is checked in the artifact rather than in a docstring,
+        because the artifact is what a later reader has. The per-origin losses
+        are checked *absent* for the same reason they are not published: the
+        record is a publication and not an intermediate, and shipping them
+        would support the after-the-fact differencing this block replaced.
+        """
+
+        comparison = self._comparison(rows=load_daily_panel(SAMPLE_PANEL))
+        document = paired_comparison_document(
+            comparison, panel_path=SAMPLE_PANEL, registry_path=REAL_REGISTRY
+        )
+
+        self.assertEqual(document["declaration"]["model_a"]["model"], "persistence")
+        self.assertEqual(
+            document["declaration"]["model_b"]["model"], "persistence-plus-offset"
+        )
+
+        convention = document["comparison"]["sign_convention"]
+        self.assertIn("model_a=persistence", convention)
+        self.assertIn("model_b=persistence-plus-offset", convention)
+        self.assertIn(baseline.COMPARISON_LOSS, convention)
+
+        interval = document["comparison"]["mean_difference_interval"]
+        self.assertEqual(interval["block_length"], comparison.block_length)
+        self.assertEqual(interval["seed"], comparison.seed)
+
+        serialised = json.dumps(document)
+        for withheld in ("losses_a", "losses_b", "differences"):
+            self.assertNotIn(withheld, serialised)
+
+    def test_the_seed_follows_the_run_rather_than_a_literal(self):
+        """Two comparisons that differ in what they compare do not share a stream.
+
+        `stationary_bootstrap_interval` requires a seed because an interval
+        that cannot be reproduced cannot be checked, and a literal would
+        satisfy the signature while making every comparison in the project draw
+        the same resample sequence. The material is the declaration, and the
+        order of the two sides is part of it: `a` against `b` and `b` against
+        `a` publish different records and must not silently share a draw.
+        """
+
+        digest = "0" * 64
+        forward = comparison_seed(
+            digest,
+            model_a="persistence",
+            features_a=FEATURES,
+            model_b="arx",
+            features_b=ARX_FEATURES,
+            decision_time=DECISION_TIME,
+        )
+        reversed_sides = comparison_seed(
+            digest,
+            model_a="arx",
+            features_a=ARX_FEATURES,
+            model_b="persistence",
+            features_b=FEATURES,
+            decision_time=DECISION_TIME,
+        )
+        other_panel = comparison_seed(
+            "1" * 64,
+            model_a="persistence",
+            features_a=FEATURES,
+            model_b="arx",
+            features_b=ARX_FEATURES,
+            decision_time=DECISION_TIME,
+        )
+
+        self.assertNotEqual(forward, reversed_sides)
+        self.assertNotEqual(forward, other_panel)
+        self.assertEqual(
+            forward,
+            comparison_seed(
+                digest,
+                model_a="persistence",
+                features_a=FEATURES,
+                model_b="arx",
+                features_b=ARX_FEATURES,
+                decision_time=DECISION_TIME,
+            ),
+        )
 
 
 if __name__ == "__main__":

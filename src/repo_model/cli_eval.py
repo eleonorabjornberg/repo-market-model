@@ -37,10 +37,14 @@ from .baseline import (
     arx_exceedance,
     backtest_document,
     climatology_exceedance,
+    comparison_seed,
     exceedance_backtest_document,
     fit,
     fit_arx,
     fit_threshold,
+    paired_comparison_document,
+    paired_model_comparison,
+    panel_sha256,
     rolling_exceedance_backtest,
     rolling_persistence_backtest,
     threshold_exceedance,
@@ -204,7 +208,11 @@ def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
 
 
 def _regressors_and_regime(
-    args: argparse.Namespace, name: str, needs_regime_variable: bool
+    args: argparse.Namespace,
+    name: str,
+    needs_regime_variable: bool,
+    *,
+    side: str = "",
 ) -> Tuple[Tuple[str, ...], Optional[str]]:
     """Split `--feature` into regressors and a regime variable, or refuse.
 
@@ -219,6 +227,13 @@ def _regressors_and_regime(
 
     Every message names `--model {name}` rather than a model class, so a caller
     reads back the flag they typed.
+
+    `side` is the suffix the flags carry on the command being served -- `""` on
+    the three single-model commands, `"-a"` and `"-b"` on `compare`, which
+    declares each model separately. It is a label on the messages and nothing
+    else: the rule this function applies does not vary by side, and a second
+    copy of it that happened to spell its flags differently is exactly what
+    sharing this function prevents.
     """
 
     declared = tuple(sorted(args.feature))
@@ -227,24 +242,25 @@ def _regressors_and_regime(
     if needs_regime_variable:
         if regime_variable is None:
             raise SplitError(
-                f"--model {name} reads a regime variable off each row to choose "
+                f"--model{side} {name} reads a regime variable off each row to choose "
                 "which of two fitted relationships produces the centre, and "
-                "--regime-variable names no column. It is required and "
+                f"--regime-variable{side} names no column. It is required and "
                 "undefaulted for the reason the column is: it does not merely "
                 "contribute a term, it chooses the model"
             )
         if regime_variable not in declared:
             raise SplitError(
-                f"--regime-variable {regime_variable} is not one of the declared "
+                f"--regime-variable{side} {regime_variable} is not one of the declared "
                 f"features {list(declared)}. The purge is sized over the "
                 "declaration before anything is fitted, so a regime variable "
                 "outside it would have its release lag missing from the gap -- "
-                f"declare it with --feature {regime_variable} rather than "
+                f"declare it with --feature{side} {regime_variable} rather than "
                 "reading a column the run did not declare"
             )
     elif regime_variable is not None:
         raise SplitError(
-            f"--regime-variable {regime_variable} was given, but --model {name} "
+            f"--regime-variable{side} {regime_variable} was given, but "
+            f"--model{side} {name} "
             "reads no regime variable. A flag that is accepted and ignored is "
             "read by the next person as a setting that took effect"
         )
@@ -331,7 +347,9 @@ def _fitter_names() -> str:
     return ", ".join(sorted(FITTER_FACTORIES))
 
 
-def _select_fitter(args: argparse.Namespace) -> Tuple[str, ModelFitter]:
+def _select_fitter(
+    args: argparse.Namespace, *, side: str = ""
+) -> Tuple[str, ModelFitter]:
     """Resolve `--model` to a constructed `ModelFitter`, or refuse first.
 
     `_select_model`'s counterpart on the continuous path, and the argument for
@@ -361,7 +379,7 @@ def _select_fitter(args: argparse.Namespace) -> Tuple[str, ModelFitter]:
     choice = FITTER_FACTORIES.get(name)
     if choice is None:
         raise SplitError(
-            f"unknown --model {name!r}; this command can run "
+            f"unknown --model{side} {name!r}; this command can run "
             f"{_fitter_names()}. There is no default: the default would be "
             "persistence, which is the benchmark every other model here is "
             "asked to beat, so a run meaning to score a challenger would "
@@ -369,7 +387,7 @@ def _select_fitter(args: argparse.Namespace) -> Tuple[str, ModelFitter]:
         )
 
     regressors, regime_variable = _regressors_and_regime(
-        args, name, choice.needs_regime_variable
+        args, name, choice.needs_regime_variable, side=side
     )
     return name, choice.construct(
         regressors=regressors, regime_variable=regime_variable
@@ -534,6 +552,154 @@ def _backtest(args: argparse.Namespace) -> int:
                 "fields": [
                     f"{source}.{field}" for source, field in sorted(report.field_sources)
                 ],
+                "minimum_history": args.minimum_history,
+                "report": str(args.report),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
+    """One side of `compare`, in the shape `_select_fitter` already reads.
+
+    `compare` declares each model separately -- `--model-a`, `--feature-a`,
+    `--regime-variable-a`, and the same three for `b` -- because the two models
+    being compared are usually declared over different columns and one shared
+    `--feature` would either over-purge the simpler model or leave the richer
+    one's columns unpriced.
+
+    This projects one side of that namespace onto the field names the existing
+    selector reads, so `compare` reaches models through **the same mapping and
+    the same argument rules** as `backtest` rather than through a second copy.
+    That is the packet's reason for the ordering: block 3 is what makes a name
+    mean a model on this path, and a comparison that resolved names itself
+    would be a second answer to what `arx` means, agreeing with the first until
+    it did not.
+
+    `minimum_history` is carried across unchanged and is deliberately one
+    number for both sides: two models fitted on different minimum frames are
+    scored at different origins, which is the same defect the derived-gap
+    refusal exists to catch, arriving through a different door.
+    """
+
+    return argparse.Namespace(
+        model=getattr(args, f"model_{side}"),
+        feature=getattr(args, f"feature_{side}"),
+        regime_variable=getattr(args, f"regime_variable_{side}"),
+        minimum_history=args.minimum_history,
+    )
+
+
+def _compare(args: argparse.Namespace) -> int:
+    """Score two continuous models at the same origins and publish the gap.
+
+    **The command `PLAN.md`'s Phase 2 exit criterion needed and did not have.**
+    That criterion is *"a model that beats persistence out of sample"*, which
+    is a comparison; what the repository could produce was two `backtest`
+    records, each carrying an MAE and an interval around it. A reader with two
+    such files compares the intervals and asks whether they overlap, which is
+    not the question -- and the two records cannot be made to answer the real
+    one, because they carry metrics rather than per-origin losses and
+    deliberately so.
+
+    So the pairing is made by construction rather than reconstructed
+    afterwards: `baseline.paired_model_comparison` runs one fold loop, fits
+    both models on each fold's training rows, scores both on that fold's
+    origin, and puts one resample draw through the differenced series. This
+    function reads the panel, derives the seed, writes the bytes and prints a
+    summary; it computes no statistic of its own.
+
+    **Both model names are required and neither has a default,** for the reason
+    `--model` is required on `backtest` with more force. There the default a
+    convenience would pick is persistence, the benchmark. Here a defaulted side
+    would make the *comparison* persistence-against-persistence while carrying
+    the challenger's name, and the record would report a difference of zero
+    with a degenerate interval -- which is exactly the shape of the
+    climatology-against-itself sanity check that this project treats as
+    evidence that everything is wired correctly.
+
+    **`--report` is required**, for the reason every other command here
+    requires one: a figure that exists only in a terminal is a figure whose
+    conditions are gone the moment the scrollback is, and the next place it
+    appears is prose.
+
+    **There is no `--purge` and no `--source`**, on either side. Both gaps are
+    derived from their own declarations, and the run is refused if they differ
+    -- see `baseline.IncomparablePurgeError`. A flag that set the gap by hand
+    would be reached for at exactly the moment it must not be, because the
+    obvious way to make two declarations comparable is to overrule one of them.
+
+    The file is written only after the run returns, so a refusal -- an unknown
+    model name, mismatched gaps, a starved fold -- leaves no artifact behind.
+    """
+
+    # Before the panel is read, so a refused model name or a refused
+    # regime variable leaves no report behind.
+    model_a, fit_a = _select_fitter(_side(args, "a"), side="-a")
+    model_b, fit_b = _select_fitter(_side(args, "b"), side="-b")
+
+    rows = load_daily_panel(args.path)
+    audit_panel(rows)
+
+    decision_time = time.fromisoformat(args.decision_time)
+    # The digest is `baseline`'s to take, and it is taken once: the seed and
+    # the record's `panel.sha256` must identify the same bytes, and two
+    # spellings of one hash is where they would come apart while each stayed
+    # internally correct.
+    seed = comparison_seed(
+        panel_sha256(args.path),
+        model_a=model_a,
+        features_a=args.feature_a,
+        model_b=model_b,
+        features_b=args.feature_b,
+        decision_time=decision_time,
+    )
+
+    comparison = paired_model_comparison(
+        rows,
+        model_a=model_a,
+        fit_a=fit_a,
+        features_a=args.feature_a,
+        model_b=model_b,
+        fit_b=fit_b,
+        features_b=args.feature_b,
+        registry=_registry(args),
+        decision_time=decision_time,
+        seed=seed,
+        minimum_history=args.minimum_history,
+    )
+
+    document = paired_comparison_document(
+        comparison, panel_path=args.path, registry_path=args.registry
+    )
+    args.report.write_text(
+        json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    lower, upper = comparison.difference_interval
+    # Unrounded in the file, rounded on the console, both read off the one
+    # report -- the summary is not a second computation of anything above.
+    # `sign_convention` is printed rather than summarised: a reader looking at
+    # a signed number in a terminal needs the direction in the same breath as
+    # the number, and shortening it here would be a second, weaker statement of
+    # the thing the record states once.
+    print(
+        json.dumps(
+            {
+                "model_a": comparison.model_a,
+                "model_b": comparison.model_b,
+                "sign_convention": comparison.sign_convention,
+                "origin_count": len(comparison.differences),
+                "mae_a_bps": round(comparison.mae_a_bps, 4),
+                "mae_b_bps": round(comparison.mae_b_bps, 4),
+                "mean_difference_bps": round(comparison.mean_difference_bps, 4),
+                "difference_interval_bps": [round(lower, 4), round(upper, 4)],
+                "interval_level": comparison.level,
+                "block_length": comparison.block_length,
+                "purge_days": comparison.purge_days,
                 "minimum_history": args.minimum_history,
                 "report": str(args.report),
             },
@@ -900,6 +1066,60 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     # No --purge and no --source. See _backtest. `--model` carries no default
     # either, and for a reason of the same kind: see _select_fitter.
     backtest.set_defaults(handler=_backtest)
+
+    compare = subparsers.add_parser(
+        "compare",
+        help="score two continuous models at the same origins and interval "
+        "the paired difference",
+    )
+    compare.add_argument("path", type=Path)
+    compare.add_argument("--minimum-history", type=int, default=20)
+    compare.add_argument("--registry", type=Path, required=True)
+    compare.add_argument("--decision-time", required=True, metavar="HH:MM")
+    for side in ("a", "b"):
+        compare.add_argument(
+            f"--model-{side}",
+            required=True,
+            metavar="NAME",
+            help=f"the {side} side of the comparison, one of "
+            + _fitter_names()
+            + "; required with no default, because a defaulted side would "
+            "compare persistence against itself under the other model's name "
+            "and report a difference of zero that looks like a clean run",
+        )
+        compare.add_argument(
+            f"--feature-{side}",
+            action="append",
+            required=True,
+            metavar="COLUMN",
+            help=f"a panel column the {side} model reads, repeatable; these "
+            "derive that side's sources, which size its purge gap. The two "
+            "sides must price the same gap or the run is refused: a different "
+            "gap is a different set of origins, and losses at different "
+            "origins are not paired",
+        )
+        compare.add_argument(
+            f"--regime-variable-{side}",
+            metavar="COLUMN",
+            default=None,
+            help=f"the panel column the {side} model reads to choose a "
+            f"regime; required for --model-{side} threshold, refused for the "
+            f"others, and it must be one of --feature-{side}",
+        )
+    compare.add_argument(
+        "--report",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="where to write the JSON comparison record; required, because a "
+        "signed difference whose sign convention, gap and origin count exist "
+        "only in a terminal is the figure the next document carries as prose",
+    )
+    # No --purge and no --source, on either side. See _compare: the obvious way
+    # to make two declarations comparable is to overrule one of them, and that
+    # is exactly what must not be available here.
+    compare.set_defaults(handler=_compare)
+
 
     exceedance = subparsers.add_parser(
         "exceedance-backtest",

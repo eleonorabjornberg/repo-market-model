@@ -505,6 +505,39 @@ class ProvenanceMismatchError(ValueError):
     """
 
 
+class IncomparablePurgeError(ValueError):
+    """Two models in one comparison derived different purge gaps.
+
+    The paired difference this module reports is a difference *per origin*, and
+    an origin set is a function of the gap: `rolling_origin` builds the folds
+    from `min_train`, the step and the purge, so two declarations that price
+    different gaps produce two different fold sequences over the same panel.
+    Subtracting one model's loss series from the other's would then subtract
+    losses computed on different days, in different numbers, and call the
+    result a difference between models.
+
+    Nothing downstream could see it. Both series are real losses from real
+    fits, the arithmetic is correct, and the mean of the subtraction is a
+    finite number the interval will happily be computed around -- the same
+    shape as a gap computed correctly over the wrong sources, one level up.
+
+    **This is the one comparability question the single fold loop does not
+    settle.** Everything else is settled by construction: one loop, one purge,
+    one feature row per origin, both models fitted on the same training rows
+    and scored on the same day. The gap is the exception because it is derived
+    from the *declaration* before the loop exists, so it has to be checked
+    before the loop is built rather than observed inside it.
+
+    Raised, never asserted, and never resolved by taking the wider of the two:
+    a comparison run under a gap neither declaration asked for is a third run
+    that nobody requested, and its numbers would be attributed to two models
+    that were never scored that way.
+
+    A `ValueError` subclass, so the CLI dispatcher already turns it into exit 2
+    with a message and no artifact -- the shape every other refusal here has.
+    """
+
+
 #: The two regimes, in the order every report and every coefficient mapping
 #: lists them. Named once and iterated rather than written out at each use, so
 #: that "there are exactly two" is a single statement a reader can check and not
@@ -3133,6 +3166,546 @@ def _level_key(level: float) -> str:
     """
 
     return f"{float(level):.2f}"
+
+
+# --------------------------------------------------------------------------
+# Comparison: two models at the same origins, one resample, one difference
+# --------------------------------------------------------------------------
+
+#: The loss the paired difference is taken over, named once and published in
+#: the record. Absolute error per scored origin, so its mean over the origins
+#: is exactly `BacktestReport.mae_bps` for each side -- which is the quantity
+#: `PLAN.md`'s Phase 2 exit criterion phrases *"beats persistence out of
+#: sample"* on, and the one `mae_bootstrap_interval` already puts an interval
+#: around for a single model.
+COMPARISON_LOSS = "absolute_error_bps"
+
+
+def _sign_convention(model_a: str, model_b: str) -> str:
+    """Which model is subtracted from which, as a sentence naming both.
+
+    A signed difference with no statement of direction is a number a reader
+    gets backwards half the time, and the half that reads it backwards reads it
+    as the opposite conclusion. So the convention is rendered from the two
+    names the run was given and carried in the artifact, not only in a
+    docstring -- a docstring is not shipped with the record and the record is
+    what a later reader has.
+
+    Rendered with the `model_a=` / `model_b=` labels rather than with the bare
+    names, so the sentence stays unambiguous when a run compares two models
+    that happen to share a name -- which is the climatology-against-itself
+    sanity check, on this path, and a run worth being able to make.
+    """
+
+    return (
+        f"difference = {COMPARISON_LOSS}(model_a={model_a}) - "
+        f"{COMPARISON_LOSS}(model_b={model_b}) at each scored origin; a "
+        f"positive mean difference means model_a={model_a} carried the larger "
+        f"loss over these origins, so model_b={model_b} was the more accurate "
+        "of the two on them"
+    )
+
+
+@dataclass(frozen=True)
+class PairedComparisonReport:
+    """Two models scored at one set of origins, and the interval on their gap.
+
+    **Every field is required.** `BacktestReport` defaults most of its fields
+    because tests construct one by hand to exercise a reporter, and a report
+    that cannot say what it ran under must not claim a default. Nothing
+    constructs this by hand: it exists only as `paired_model_comparison`'s
+    return value, every field is computed in the run that emits it, and an
+    optional field here would be a place a comparison could quietly fail to say
+    which models it compared.
+
+    `losses_a`, `losses_b` and `differences` are carried at per-origin
+    granularity, positionally aligned with `folds`, because the pairing is the
+    property the whole block exists for and a reader of the *object* has to be
+    able to check it. They are deliberately **not** published: see
+    `paired_comparison_document`.
+    """
+
+    #: The names the caller selected, in the order the sign convention reads.
+    model_a: str
+    model_b: str
+    #: Each model's own declared feature set. Two declarations, not one: the
+    #: models being compared are usually declared over different columns -- an
+    #: ARX reads regressors persistence does not -- and forcing one declaration
+    #: would either over-purge the simpler model or leave the richer one's
+    #: columns unpriced.
+    features_a: Tuple[str, ...]
+    features_b: Tuple[str, ...]
+    #: What each declaration resolved to, read off `_derive_purge` rather than
+    #: re-resolved by whoever prints them, for the reason `BacktestReport`
+    #: carries the same pair.
+    sources_a: Tuple[str, ...]
+    sources_b: Tuple[str, ...]
+    field_sources_a: Tuple[Tuple[str, str], ...]
+    field_sources_b: Tuple[Tuple[str, str], ...]
+    #: The gap both declarations produced. One number, because a comparison in
+    #: which they differed is refused before the folds are built -- see
+    #: `IncomparablePurgeError`.
+    purge_days: int
+    #: One loss per scored origin, per model, and their difference. Aligned
+    #: with `folds` by construction: they are appended inside one loop.
+    losses_a: Tuple[float, ...]
+    losses_b: Tuple[float, ...]
+    differences: Tuple[float, ...]
+    #: The statistic, and each side's own mean loss beside it. The two means
+    #: are reported because a difference without its levels is a number a
+    #: reader cannot place -- half a basis point between two models at four is
+    #: not half a basis point between two models at forty.
+    mean_difference_bps: float
+    mae_a_bps: float
+    mae_b_bps: float
+    #: The interval on `mean_difference_bps`, and the resample structure that
+    #: produced it. The block length is carried beside the endpoints because an
+    #: interval whose resample structure is unstated cannot be reproduced, and
+    #: this one is measured off the run's own fold horizons rather than
+    #: declared.
+    difference_interval: Tuple[float, float]
+    block_length: int
+    seed: int
+    replications: int
+    level: float
+    #: The sentence `_sign_convention` rendered, held here so the console and
+    #: the artifact read one string rather than each composing their own.
+    sign_convention: str
+    #: The origins, earliest first, one per entry of `differences`. One
+    #: sequence and not two: both models were scored on these.
+    folds: Tuple[ScoredFold, ...]
+    decision_time: time
+    minimum_history: int
+    panel_rows: int
+    panel_first_date: date
+    panel_last_date: date
+
+
+def paired_model_comparison(
+    observations: Iterable[DailyObservation],
+    *,
+    model_a: str,
+    fit_a: ModelFitter,
+    features_a: Sequence[str],
+    model_b: str,
+    fit_b: ModelFitter,
+    features_b: Sequence[str],
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    seed: int,
+    minimum_history: int = 20,
+) -> PairedComparisonReport:
+    """Score two continuous models at the same origins and interval the gap.
+
+    `PLAN.md` Phase 2 exits on *"a model that beats persistence out of
+    sample"*. That is a comparison, and until this function the repository had
+    no way to make one: `mae_bootstrap_interval` names the hazard in its own
+    docstring -- a single MAE "invites a reader to believe that a difference
+    between two models is real" -- and what a reader does with two of those is
+    check whether the intervals overlap, which answers a different question and
+    answers it wrongly in both directions. Overlapping intervals routinely
+    contain a real difference, and separated ones can be produced by a shared
+    shock that cancels in the difference.
+
+    The quantity is the **paired per-origin difference**, and the interval
+    comes from resampling origins once and applying that one draw to both
+    models. The exceedance path already has this property --
+    `brier_skill_score` is a ratio against a reference refitted on each fold,
+    and its bootstrap applies one index draw to the model and the reference
+    together -- and this is the continuous path's version of it.
+
+    **The pairing is by construction, and that is the design.** One run, one
+    fold loop, both models fitted on each fold's training rows and scored on
+    that fold's origin. The two loss series are then the same length, in the
+    same order, over the same days, and nothing has to be checked afterwards
+    because nothing could have differed. Two existing report files cannot be
+    made to yield this: they carry metrics rather than per-origin losses, and
+    deliberately so.
+
+    **The one thing the loop does not settle is the gap**, because the gap is
+    derived from each declaration before any fold exists. Two declarations that
+    price different gaps do not share an origin set at all, so they are refused
+    here rather than reconciled -- see `IncomparablePurgeError`.
+
+    **There is no second bootstrap.** `metrics.stationary_bootstrap_interval`
+    is the one this project has, per the contract, and the statistic handed to
+    it indexes the *difference* series. Bootstrapping the two models separately
+    and differencing endpoints is the defect the acceptance test in
+    `tests/test_baseline.py::PairedComparisonTests` is shaped to catch.
+
+    **`mae_bootstrap_interval` is untouched.** The single-model interval keeps
+    exactly the meaning it has; this stands beside it.
+
+    Args:
+        observations: the panel, ascending by date.
+        model_a: the name recorded for the first model. Required and
+            undefaulted for the reason `backtest_document`'s `model` is: a
+            comparison whose sides cannot be named is a signed number with
+            nothing to attach either end of it to.
+        fit_a: the first model's fitting call, `(train_frame,
+            minimum_history=...) -> fitted model`.
+        features_a: the first model's declared feature set, which sizes its
+            gap. Required, keyword-only and undefaulted for the reason
+            `rolling_persistence_backtest`'s is.
+        model_b, fit_b, features_b: the same three for the second model. The
+            subtraction runs a minus b; see `_sign_convention`.
+        registry: the parsed source registry, for `max_release_lag_days`. One
+            registry, because a comparison priced by two registries is a
+            comparison of two runs again.
+        decision_time: when the forecast is made. One value, for the same
+            reason: the gap is a function of it, and two decision times are two
+            different runs.
+        seed: required, as `stationary_bootstrap_interval` requires it and for
+            the same reason -- an interval that cannot be reproduced cannot be
+            checked. `comparison_seed` derives one from the run's identity;
+            a literal here would make every comparison in the project draw the
+            same resample sequence regardless of what it scored.
+        minimum_history: the first origin scored and the shortest training
+            frame either fit is allowed. One value, so the two models see the
+            same rows.
+
+    Returns:
+        A `PairedComparisonReport`.
+
+    Raises:
+        IncomparablePurgeError: the two declarations derived different gaps, so
+            there is no shared origin set to pair on.
+        ValueError: the panel is too short for `minimum_history`.
+        SplitError: as `rolling_origin` raises -- a panel whose dates repeat or
+            go backwards, or a gap that leaves no origin with `minimum_history`
+            training rows behind it.
+        LookAheadError: a fold's feature row does not clear the gap, or either
+            fitted model reads a column outside its own declaration. The second
+            is checked per side, against that side's declaration, because each
+            side's gap was sized from its own.
+        UndeclaredFeatureError: either declaration names a column
+            `contract.field_sources_for_features` cannot classify.
+        RegistryContractError: either declaration's fields cannot support a
+            safe bound. Track A's refusal, with Track A's message.
+    """
+
+    declared_a: Tuple[str, ...] = tuple(features_a)
+    declared_b: Tuple[str, ...] = tuple(features_b)
+
+    # Before the panel is walked and before a single fold: two declarations
+    # that price different gaps have no shared origin set, so there is nothing
+    # for the rest of this function to pair.
+    field_sources_a, sources_a, purge_a = _derive_purge(
+        registry, declared_a, decision_time=decision_time
+    )
+    field_sources_b, sources_b, purge_b = _derive_purge(
+        registry, declared_b, decision_time=decision_time
+    )
+    if purge_a != purge_b:
+        raise IncomparablePurgeError(
+            f"model_a={model_a} declares {list(declared_a)}, which prices a "
+            f"{purge_a}-day purge gap, and model_b={model_b} declares "
+            f"{list(declared_b)}, which prices a {purge_b}-day gap. The gap "
+            "builds the folds, so these two models would be scored at "
+            "different origins and their losses are not paired -- the "
+            "difference between them would be a difference between two runs, "
+            "which is what this function exists instead of. Declare feature "
+            "sets that price the same gap, or run them as two backtests and "
+            "report them as two backtests"
+        )
+    purge = purge_a
+
+    rows = list(observations)
+    if len(rows) <= minimum_history:
+        raise ValueError("not enough observations for requested minimum history")
+
+    dates = [row.date for row in rows]
+    folds: List[ScoredFold] = []
+    losses_a: List[float] = []
+    losses_b: List[float] = []
+    differences: List[float] = []
+    checked = False
+
+    # `step=1`, the origin-by-origin shape `rolling_persistence_backtest` has,
+    # and one loop rather than two calls to it: the whole property this
+    # function delivers is that the two models were scored on the same days, in
+    # the same order, and a second call could only be checked for that
+    # afterwards rather than made to hold.
+    for train_indices, test_indices in rolling_origin(
+        dates, minimum_history, 1, purge
+    ):
+        index = test_indices[0]
+        train_frame = [rows[i] for i in train_indices]
+        fitted_a = fit_a(train_frame, minimum_history=minimum_history)
+        fitted_b = fit_b(train_frame, minimum_history=minimum_history)
+        if not checked:
+            # After the first fit and only the first, as the single-model path
+            # does, and once per side against that side's own declaration: the
+            # gap each model was purged under was sized from its own features,
+            # so checking either against the other's would be checking the
+            # wrong claim.
+            _check_fitter_stayed_inside(
+                fitted_a.features_read, declared_a, sources_a, purge
+            )
+            _check_fitter_stayed_inside(
+                fitted_b.features_read, declared_b, sources_b, purge
+            )
+            checked = True
+
+        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        actual = rows[index].spread_bps
+        loss_a = abs(actual - fitted_a.point_forecast(feature_row))
+        loss_b = abs(actual - fitted_b.point_forecast(feature_row))
+        losses_a.append(loss_a)
+        losses_b.append(loss_b)
+        differences.append(loss_a - loss_b)
+        folds.append(
+            ScoredFold(
+                train_start=rows[train_indices[0]].date,
+                train_end=rows[train_indices[-1]].date,
+                train_rows=len(train_indices),
+                feature_date=feature_row.date,
+                scored_date=rows[index].date,
+            )
+        )
+
+    count = len(differences)
+    block = _maximum_horizon_overlap(folds)
+
+    def paired_difference(indices: Sequence[int]) -> float:
+        """The mean paired difference over one resample of the origins.
+
+        Indexes `differences`, which is the whole point: one draw of origins
+        reaches both models through the series that was already differenced
+        origin by origin. There is no way to write this that resamples the two
+        models apart, because by the time this is called they are one series.
+        """
+
+        return sum(differences[i] for i in indices) / len(indices)
+
+    lower, upper = stationary_bootstrap_interval(
+        paired_difference,
+        count,
+        block_length=block,
+        seed=seed,
+        replications=BOOTSTRAP_REPLICATIONS,
+        level=BOOTSTRAP_LEVEL,
+    )
+
+    return PairedComparisonReport(
+        model_a=model_a,
+        model_b=model_b,
+        features_a=declared_a,
+        features_b=declared_b,
+        sources_a=sources_a,
+        sources_b=sources_b,
+        field_sources_a=field_sources_a,
+        field_sources_b=field_sources_b,
+        purge_days=purge,
+        losses_a=tuple(losses_a),
+        losses_b=tuple(losses_b),
+        differences=tuple(differences),
+        mean_difference_bps=sum(differences) / count,
+        mae_a_bps=sum(losses_a) / count,
+        mae_b_bps=sum(losses_b) / count,
+        difference_interval=(lower, upper),
+        block_length=block,
+        seed=seed,
+        replications=BOOTSTRAP_REPLICATIONS,
+        level=BOOTSTRAP_LEVEL,
+        sign_convention=_sign_convention(model_a, model_b),
+        folds=tuple(folds),
+        decision_time=decision_time,
+        minimum_history=minimum_history,
+        panel_rows=len(rows),
+        panel_first_date=rows[0].date,
+        panel_last_date=rows[-1].date,
+    )
+
+
+def panel_sha256(panel_path: Path) -> str:
+    """The digest of the panel bytes a run scored.
+
+    One spelling, because the comparison path needs the digest twice and for
+    two different purposes: `comparison_seed` derives the resample stream from
+    it before the run starts, and `paired_comparison_document` publishes it
+    after. Two spellings of the same hash is two places one number comes from,
+    and the failure mode is a record whose published digest and whose seed
+    material identify different bytes -- which no field of the record could
+    disagree about, because each half would be internally correct.
+
+    The CLI never hashes anything itself for the same reason it never derives a
+    purge: what identifies the run belongs with the code that produces the run.
+    """
+
+    return hashlib.sha256(panel_path.read_bytes()).hexdigest()
+
+
+def comparison_seed(
+    panel_sha256: str,
+    *,
+    model_a: str,
+    features_a: Sequence[str],
+    model_b: str,
+    features_b: Sequence[str],
+    decision_time: time,
+) -> int:
+    """A reproducible bootstrap seed for a comparison, from what it compares.
+
+    `_report_seed`'s counterpart, and it goes through `_seed_from` for the
+    reason that function's docstring gives: the *material* differs between
+    artifacts and should, but the digest that turns material into a seed must
+    not, or two records that agree about what they scored could still disagree
+    about how a seed was derived from it.
+
+    The material is the run's declaration -- the panel bytes, both model names
+    and both feature sets in the order the sign convention reads them, and the
+    decision time. Not the derived gap: it is a function of the feature sets,
+    the registry and the decision time, so including it would add nothing a
+    reader could not already recompute, and it is not known until the run has
+    started while this must be known before it.
+
+    Order-sensitive, and deliberately: `a` against `b` and `b` against `a` are
+    the same comparison with the sign flipped, they publish different records,
+    and two records that differ in what they report should not silently share a
+    resample stream.
+    """
+
+    return _seed_from(
+        (
+            panel_sha256,
+            model_a,
+            ",".join(sorted(features_a)),
+            model_b,
+            ",".join(sorted(features_b)),
+            decision_time.isoformat(),
+        )
+    )
+
+
+def paired_comparison_document(
+    comparison: PairedComparisonReport, *, panel_path: Path, registry_path: Path
+) -> dict:
+    """The comparison as a publishable record: both sides, and the direction.
+
+    `backtest_document`'s counterpart, and the same four questions shape it --
+    what was declared, what that derived, what was scored, what came out --
+    with each of the first two answered twice because there are two models.
+    Nothing is defaulted: a field this cannot compute is absent rather than
+    present with a stand-in, which is the rule the sibling record follows and
+    the reason `PairedComparisonReport` has no optional fields to omit.
+
+    **`comparison.sign_convention` is published.** A record carrying a signed
+    difference and no statement of which model was subtracted from which is a
+    record half its readers will read as the opposite result. The sentence
+    names both models rather than referring to "the first" and "the second",
+    because a reader who has to count fields to resolve a pronoun will
+    sometimes count wrong.
+
+    **The per-origin losses are not published, and that is a decision rather
+    than an omission.** They exist on the report, where the pairing can be
+    checked by whatever holds it, and they stay off the artifact for the reason
+    `backtest_document` publishes no per-forecast dump: the record is a
+    publication and not an intermediate. Publishing them would also invite
+    exactly the workflow this function was written to replace -- two files
+    differenced after the fact -- with the difference that it would look
+    supported.
+
+    Args:
+        comparison: a report from `paired_model_comparison`.
+        panel_path: the panel file as the caller named it. Read here, once, for
+            its bytes, so the artifact cannot name one file and hash another.
+        registry_path: the source registry the run actually read. Required and
+            undefaulted, as it is on the sibling record.
+
+    Returns:
+        A JSON-serialisable dict. The caller writes it; this shapes it.
+
+    Raises:
+        ProvenanceMismatchError: when a build manifest beside the panel does
+            not describe the panel that was scored.
+    """
+
+    digest = panel_sha256(panel_path)
+
+    panel: dict = {
+        "path": str(panel_path),
+        "sha256": digest,
+        "row_count": comparison.panel_rows,
+        "first_date": comparison.panel_first_date.isoformat(),
+        "last_date": comparison.panel_last_date.isoformat(),
+    }
+    # After the extent, because the binding compares against it, and before
+    # anything is returned, because a manifest that does not describe this
+    # panel must leave no document behind to be written.
+    provenance = _run_provenance(
+        panel, panel_path, registry_path=registry_path, thresholds_path=None
+    )
+
+    folds: dict = {"count": len(comparison.folds)}
+    if comparison.folds:
+        folds["first"] = _fold_document(comparison.folds[0])
+        folds["last"] = _fold_document(comparison.folds[-1])
+
+    return {
+        "declaration": {
+            "model_a": {
+                "model": comparison.model_a,
+                "features": sorted(comparison.features_a),
+            },
+            "model_b": {
+                "model": comparison.model_b,
+                "features": sorted(comparison.features_b),
+            },
+            "decision_time": comparison.decision_time.isoformat(
+                timespec="minutes"
+            ),
+            "minimum_history": comparison.minimum_history,
+        },
+        "derived": {
+            "model_a": {
+                "sources": sorted(comparison.sources_a),
+                "fields": [
+                    f"{source}.{field}"
+                    for source, field in sorted(comparison.field_sources_a)
+                ],
+            },
+            "model_b": {
+                "sources": sorted(comparison.sources_b),
+                "fields": [
+                    f"{source}.{field}"
+                    for source, field in sorted(comparison.field_sources_b)
+                ],
+            },
+            # One number, for both sides. A comparison in which the two
+            # declarations priced different gaps never reaches this function.
+            "purge_days": comparison.purge_days,
+        },
+        "panel": panel,
+        "provenance": provenance,
+        "folds": folds,
+        "comparison": {
+            "loss": COMPARISON_LOSS,
+            "sign_convention": comparison.sign_convention,
+            "origin_count": len(comparison.differences),
+            "model_a": {
+                "model": comparison.model_a,
+                "mae_bps": comparison.mae_a_bps,
+            },
+            "model_b": {
+                "model": comparison.model_b,
+                "mae_bps": comparison.mae_b_bps,
+            },
+            "mean_difference_bps": comparison.mean_difference_bps,
+            "mean_difference_interval": {
+                "lower": comparison.difference_interval[0],
+                "upper": comparison.difference_interval[1],
+                "level": comparison.level,
+                "method": "stationary_bootstrap",
+                # Measured off this run's own fold horizons, which both models
+                # share, so the dependence the gap creates is carried by the
+                # resample that reports it.
+                "block_length": comparison.block_length,
+                "replications": comparison.replications,
+                "seed": comparison.seed,
+            },
+        },
+    }
 
 
 def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
