@@ -241,6 +241,78 @@ def published_cli_commands():
     return found
 
 
+def cli_subcommands():
+    """Every subcommand `cli.build_parser()` defines, asked of the parser.
+
+    Asked of the parser and not of a list kept beside it: a list is a second
+    declaration of what this package ships, and two declarations agree until
+    they do not. `_name_parser_map` is argparse's own record of the choices a
+    subparsers action accepts.
+    """
+    names = set()
+    for action in cli.build_parser()._actions:
+        mapping = getattr(action, "_name_parser_map", None)
+        if mapping:
+            names |= set(mapping)
+    return names
+
+
+def published_subcommands():
+    """The subcommand each published invocation actually runs, by document.
+
+    The first non-flag token of the argv `published_cli_commands` extracted,
+    which is where argparse reads the choice from. Skipped and unlexable
+    commands carry no subcommand and are not counted as publishing one -- a
+    template teaching the *shape* of a command has not told anybody how to run
+    it, and that is the distinction this whole extractor keeps.
+    """
+    running = {}
+    for document, _command, argv in published_cli_commands():
+        if argv is None or isinstance(argv, Unlexable):
+            continue
+        for token in argv:
+            if token.startswith("-"):
+                break
+            running.setdefault(token, set()).add(document)
+            break
+    return running
+
+
+# Every subcommand this package ships, and whether a reader is told how to run
+# it. `PUBLISHED` means some document in scope publishes an invocation of it.
+# Anything else is the reason it deliberately ships unpublished, and that reason
+# is checked in the other direction too: an exemption whose command has since
+# been published is wrong in exactly the way a published command that stopped
+# parsing is wrong, and it is the half nobody would look at.
+PUBLISHED = None
+
+CLI_PUBLICATION = {
+    "audit": PUBLISHED,
+    "backfill-nmfp": (
+        "requires SEC_CONTACT_EMAIL and a route to the SEC, and writes archives "
+        "under the gitignored data/raw/. Run as written in a clone it exits on "
+        "the missing contact address, so a published invocation would be a "
+        "recipe whose first outcome is a refusal"
+    ),
+    "backtest": PUBLISHED,
+    "build": (
+        "reads data/raw/, which is gitignored. Run as written in a clone it "
+        "exits with 'no raw snapshot manifests under data/raw'. This is "
+        "Milestone A's open reproduction clause seen from the command line: "
+        "what would make it publishable is committing the inputs or a digest, "
+        "not a differently worded invocation"
+    ),
+    "compare": PUBLISHED,
+    "event-holdout": (
+        "the declared event windows are 2019 and 2020 and the shipped fixture "
+        "is 2026, so on the only panel a clone receives it exits with 'no "
+        "training row clears a 6-day gap before 2019-09-16'. A runnable "
+        "invocation needs the frozen panel, which is gitignored"
+    ),
+    "exceedance-backtest": PUBLISHED,
+    "fetch": PUBLISHED,
+}
+
 # A stated interpreter version in prose: "Python 3.10". Two components only --
 # a patch level is not a support claim anybody could keep true.
 PYTHON_VERSION = re.compile(r"\bPython (\d+\.\d+)\b")
@@ -745,6 +817,18 @@ def _treasury_settlement_is_one_aggregate():
     return False
 
 
+def _part_of_the_cli_is_unpublished():
+    """A subcommand the parser defines that no published document invokes.
+
+    Evaluated against `cli.build_parser()` and the documents themselves, never
+    against `CLI_PUBLICATION`: a predicate over that table would be a claim
+    about the exemption list rather than about the software, and recording one
+    more exemption would silently repair the limitation it is supposed to
+    disclose.
+    """
+    return bool(cli_subcommands() - set(published_subcommands()))
+
+
 def _identity_tolerance_is_a_single_absolute():
     """Every declared identity tolerance is an absolute bound and nothing else."""
     identities = registry()["sec_nmfp"]["identities"]
@@ -788,6 +872,12 @@ LIMITATIONS = (
             "Fed SOMA add-ons are summed into one series.",
         ),
         _treasury_settlement_is_one_aggregate,
+    ),
+    (
+        "cli_partially_unpublished",
+        "docs/PROJECT_STATUS.md",
+        ("**Part of the command line is unpublished.**",),
+        _part_of_the_cli_is_unpublished,
     ),
 )
 
@@ -944,3 +1034,142 @@ class PublishedLimitationTests(unittest.TestCase):
             + "\nDeleting the sentence is the cheapest way to pass the "
             "companion assertion, and it is what this one refuses.",
         )
+
+
+class PublishedCommandCoverageTests(unittest.TestCase):
+    """A command nobody publishes is the half the parse guard cannot see.
+
+    `PublishedCommandTests` above checks that every command a document tells a
+    reader to run still parses. It validates in the direction the defect it was
+    born from ran: a published command decayed, and the guard was written to
+    catch a published command decaying. The other direction was never checked,
+    and it does not decay -- it accumulates. A subcommand added to the parser
+    and published nowhere is invisible to a guard whose scope is the set of
+    published invocations, because it is the complement of that set.
+
+    Run red first against the live defect, before any repair: with every
+    subcommand declared published it named five --
+    `backfill-nmfp, build, compare, event-holdout, exceedance-backtest` -- out of
+    the eight `build_parser` defines. `compare` had landed in the same round and
+    the other four had accumulated over many. Two of the five were published
+    against the shipped fixture in the same commit, after checking that they run
+    there and not only that they parse; the three that remain each exit on
+    something a clone does not have, and each carries that reason here.
+
+    **The exemption is the cheap pass, so it is checked in both directions.**
+    Recording a reason is how a subcommand leaves the set the second assertion
+    reads, and an exemption is the one claim in this module that nothing else
+    would ever contradict: the command it exempts is by definition absent from
+    the documents, so the guard sees nothing either way. The third assertion is
+    what bites when a recorded exemption stops being true.
+
+    `CLI_PUBLICATION` is not a list of what this package ships -- `cli_subcommands`
+    asks the parser for that -- and the first assertion is the seam between them.
+    Without it the other two are assertions about a subset somebody chose.
+
+    Mutation record
+    ---------------
+
+    Clone under `$HOME`, never the mount, with the working-tree copies of the
+    three files this commit changes laid over it and `.claude/` copied in --
+    `CLAUDE.md`'s copy list predates the ownership hook and omits it, which costs
+    seven errors in an otherwise green control. `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, `__pycache__` cleared between runs, control green before and
+    after all four. Every mutation confirmed present in the file before its
+    result was read: a `sed` that does not match prints `OK` exactly like a
+    mutation that killed nothing. Exception types recorded, not counts.
+
+    1. **`build`'s exemption removed**, declared `PUBLISHED` -- the live defect
+       replayed for one command. Kills exactly 1 --
+       `test_every_command_declared_published_is_published_somewhere`,
+       `AssertionError: Lists differ: [] != ['build']`.
+    2. **`compare` recorded as unpublished** with the reason *"no recipe has been
+       written for it yet"*, while `REPRODUCIBILITY.md` publishes it. Kills
+       exactly 1 -- `test_a_command_recorded_as_unpublished_is_not_published_anywhere`,
+       `AssertionError`, naming the command, the reason and the document that
+       contradicts it. This is the cheapest way to pass assertion 2 and this is
+       what refuses it.
+    3. **`compare` dropped from `CLI_PUBLICATION` altogether.** Kills exactly 1 --
+       `test_the_registry_classifies_exactly_the_commands_the_parser_defines`,
+       `AssertionError: Tuples differ: (set(), set()) != ({'compare'}, set())`.
+       **Assertion 2 did not fire**, and that is the finding this mutation
+       records rather than a weakness in it: an unclassified command is outside
+       the set assertion 2 iterates, so dropping the entry is quieter than
+       lying in it. The same shape as `PublishedCommandTests`' mutation 3, where
+       a silenced extractor made the parse assertion pass by having nothing to
+       fail.
+    4. **The limitation sentence deleted from `docs/PROJECT_STATUS.md`.** Kills
+       exactly 1 -- `PublishedLimitationTests.test_every_limitation_that_still_holds_is_still_published`,
+       `AssertionError`, naming `cli_partially_unpublished`. Recorded here rather
+       than there because it is this block's registry entry that it validates:
+       the gap is disclosed on the status page and `_part_of_the_cli_is_unpublished`
+       is evaluated against the parser and the documents, so publishing the
+       remaining three is the only thing that may remove the sentence.
+
+    **Not run as a mutation, because it cannot be one.** Evaluating
+    `_part_of_the_cli_is_unpublished` over `CLI_PUBLICATION` instead of over the
+    parser and the documents returns the same answer on this tree and kills
+    nothing. It is wrong anyway, and the docstring there says why: the two
+    disagree exactly when someone records one more exemption, which is the
+    moment the limitation would be silently repaired. A mutation that cannot
+    separate the two on the tree it is run against is recorded as an argument,
+    not dressed up as evidence.
+    """
+
+    def test_the_registry_classifies_exactly_the_commands_the_parser_defines(self):
+        """A command added to the parser cannot be ignored by not classifying it."""
+        defined = cli_subcommands()
+        classified = set(CLI_PUBLICATION)
+        self.assertEqual(
+            (set(), set()),
+            (defined - classified, classified - defined),
+            "CLI_PUBLICATION and cli.build_parser() disagree about what this "
+            "package ships. Unclassified: "
+            + repr(sorted(defined - classified))
+            + "; classified but no longer defined: "
+            + repr(sorted(classified - defined))
+            + ". Every subcommand is either published or carries the reason it "
+            "is not; a new one may not arrive unclassified, which is how the "
+            "other two assertions here are kept from being about a subset "
+            "somebody chose.",
+        )
+
+    def test_every_command_declared_published_is_published_somewhere(self):
+        """A command declared published must have an invocation to point at."""
+        running = published_subcommands()
+        missing = sorted(
+            name
+            for name, reason in CLI_PUBLICATION.items()
+            if reason is PUBLISHED and name not in running
+        )
+        self.assertEqual(
+            [],
+            missing,
+            "These subcommands are declared published and no document in scope "
+            "publishes an invocation of them: "
+            + ", ".join(missing)
+            + ".\nA reader who is invited to check this repository's provenance "
+            "is told how to run some of what it ships and left to read argparse "
+            "for the rest.",
+        )
+
+    def test_a_command_recorded_as_unpublished_is_not_published_anywhere(self):
+        """An exemption that has stopped being true is a stale claim like any other."""
+        running = published_subcommands()
+        contradicted = sorted(
+            f"{name}: recorded as unpublished ({reason!r}) but published in "
+            + ", ".join(sorted(running[name]))
+            for name, reason in CLI_PUBLICATION.items()
+            if reason is not PUBLISHED and name in running
+        )
+        self.assertEqual(
+            [],
+            contradicted,
+            "A subcommand recorded here as deliberately unpublished is published "
+            "after all:\n  "
+            + "\n  ".join(contradicted)
+            + "\nRecording an exemption is the cheapest way to pass the "
+            "assertion above, and this is what stops one from outliving the "
+            "documentation that made it false.",
+        )
+

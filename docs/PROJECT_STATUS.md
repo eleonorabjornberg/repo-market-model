@@ -149,6 +149,16 @@ Stated explicitly, because each is easy to mistake for something stronger.
   two-dozen-row synthetic sample with one constant regressor, and it remains
   evidence about the harness. A challenger measured on the frozen panel is Phase
   2's first job.
+- **Part of the command line is unpublished.** `build`, `backfill-nmfp` and
+  `event-holdout` ship with no invocation any published document tells a reader
+  to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
+  published command still parses; it validated in the direction its own defect
+  ran, and the complement -- a command published nowhere at all -- is outside
+  the set it reads. `compare` and `exceedance-backtest` were in that complement
+  until they were published against the shipped fixture; the three that remain
+  each exit on something a clone does not have, and `build`'s is the same
+  missing thing as Milestone A's open reproduction clause.
+
 - **The daily panel has been built and run.** `data/processed/` is no longer
   empty. What the run exposed is that `build` had been writing a panel `backtest`
   could not open -- the row grid was the union of every source's reference dates,

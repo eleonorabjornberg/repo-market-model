@@ -64,7 +64,34 @@ PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv \
   --decision-time 16:00 \
   --model persistence \
   --report /tmp/persistence_sample.json
+PYTHONPATH=src python3 -m repo_model.cli compare data/sample/daily_market.csv \
+  --registry metadata/sources.json \
+  --model-a persistence --feature-a spread_bps \
+  --model-b arx --feature-b spread_bps --feature-b sofr_volume \
+  --decision-time 16:00 \
+  --report /tmp/compare_sample.json
+PYTHONPATH=src python3 -m repo_model.cli exceedance-backtest \
+  --panel data/sample/daily_market.csv \
+  --thresholds metadata/stress_thresholds.json \
+  --registry metadata/sources.json \
+  --feature spread_bps \
+  --decision-time 16:00 \
+  --model climatology \
+  --report /tmp/climatology_sample.json
 ```
+
+`compare` declares each side separately and defaults neither: a defaulted side
+would score persistence against itself under the other model's name and report a
+difference of zero with a degenerate interval, which is the shape of a passing
+sanity check. Its record states the sign convention as a sentence, because a
+signed difference with no statement of direction is a number half its readers
+read as the opposite result.
+
+`--feature-b sofr_volume` is not decoration. `iorb` is constant across these
+twenty-five rows, and an ARX declared over it is refused for a rank-deficient
+design -- correctly, and it is the first thing a reader who swaps the regressor
+will hit. The other panel columns draw on sources whose snapshots do not ship,
+so the declaration is refused before any fold is built.
 
 The sample panel contains 25 synthetic rows. These commands verify parsing,
 validation, chronological forecasting, and reporting only. Their numerical output
