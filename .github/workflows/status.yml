@@ -1,0 +1,78 @@
+name: status
+
+# docs/status.json is the only machine-readable claim this repository publishes
+# about itself, and the portfolio site reads it. Regenerating it by hand is a
+# step that gets skipped, and a status file lagging its own repository is
+# precisely the failure this project is built to avoid — so CI does it.
+#
+# The commit this job makes carries [skip ci]. Without that guard the job would
+# see its own push, re-emit against the new HEAD, find a new commit sha, and
+# commit again, without end.
+#
+# Nothing installs here: the emitter is standard library only, by contract, the
+# same as the test suite.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: status
+  cancel-in-progress: false
+
+jobs:
+  emit:
+    name: publish docs/status.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate docs/status.json
+        id: emit
+        run: |
+          python3 scripts/emit_status.py
+          if git diff --quiet -- docs/status.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "docs/status.json already describes this commit."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff -- docs/status.json
+          fi
+
+      # generated_at and commit come from HEAD at the time the emitter runs, so
+      # the file records the commit that did the work rather than the commit
+      # that recorded it. That is the honest way round: the bookkeeping commit
+      # is not a development.
+      - name: Commit it back
+        if: steps.emit.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/status.json
+          git commit -m "Regenerate docs/status.json [skip ci]"
+          git push || { git pull --rebase --autostash origin main && git push; }
+
+      # The site also syncs on a daily schedule, so a missing or expired token
+      # delays the update by hours rather than losing it. That is why this step
+      # warns instead of failing.
+      - name: Tell the site
+        if: steps.emit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::warning title=No dispatch token::SITE_DISPATCH_TOKEN is not set. The site will pick this up on its daily schedule instead of immediately."
+            exit 0
+          fi
+          gh api --method POST \
+            repos/eleonorabjornberg/eleonorabjornberg.com/dispatches \
+            -f event_type=model-status
+          echo "Dispatched model-status to the site repository."
