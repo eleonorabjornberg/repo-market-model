@@ -85,42 +85,36 @@ bid-ask proxies.
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
 
-## Milestone A — the first observable result (critical path)
+## Milestone A — the first observable result (met)
 
-**This sits ahead of the remainder of Phase 1 and is the single highest-value thing
-outstanding.**
+**Was the single highest-value thing outstanding, ahead of the remainder of Phase 1.**
+Until it landed, every backtest, every purge gap, every leakage guard and every
+mutation record was anchored to a twenty-five-row synthetic fixture -- the
+repository's own recurring finding turned on itself: *a check anchored to nothing
+cannot fail.* The guards were real, the discipline was real, and until this milestone
+they protected no observable quantity.
 
-Nothing in this repository has yet been measured on data it fetched. Every backtest,
-every purge gap, every leakage guard and every mutation record is anchored to a
-twenty-five-row synthetic fixture. That is the repository's own recurring finding
-turned on itself: *a check anchored to nothing cannot fail.* The guards are real, the
-discipline is real, and so far they protect no observable quantity.
+Steps taken, in order:
 
-The cheapest real number does not wait on any of the remaining breadth. `SOFR - IORB`
-is the declared primary target and both legs are already fetchable.
+1. **Release lags declared at field granularity.** `fred_macro_latest_vintage` had
+   carried one `release_lag` for a set of series whose revision behaviour is not one
+   thing: administered rates that are never revised sit beside H.4.1 weeklies that
+   are. A latest-vintage source may back a point-in-time feature only for a field
+   declared never-revised, with its evidence recorded.
+2. **The field-level declaration is consumed in the evaluation path**, so the purge
+   is sized over the fields a feature set actually reads. Fields with no declared
+   revision policy stay refused.
+3. **A funding-only daily panel was fetched and frozen** -- the two legs of the
+   spread and nothing else -- with its snapshot manifest and data-quality report.
+4. **The persistence benchmark was published on it:** pinball loss, interval
+   coverage and MAE under the registry-derived purge, beside the fold count and the
+   training window.
 
-Steps, in order:
-
-1. **Declare release lags at field granularity.** `fred_macro_latest_vintage` carries
-   one `release_lag` for a set of series whose revision behaviour is not one thing:
-   administered rates that are never revised sit beside H.4.1 weeklies that are. One
-   basis for all of them is a declaration that was never asserted against what it
-   describes, and it is why the target variable cannot currently be priced at all. A
-   latest-vintage source may back a point-in-time feature only for a field declared
-   never-revised, with its evidence recorded.
-2. **Consume the field-level declaration in the evaluation path**, so the purge is
-   sized over the fields a feature set actually reads. The refusal narrows; it does not
-   disappear. Fields with no declared revision policy stay refused.
-3. **Fetch and freeze a funding-only daily panel** — the two legs of the spread and
-   nothing else — with its snapshot manifest and data-quality report.
-4. **Publish the persistence benchmark on it:** pinball loss, interval coverage and MAE
-   under the registry-derived purge, beside the fold count and the training window.
-
-Exit criterion: a reader who clones the repository and runs one command reproduces a
-published quantile loss and interval coverage for the persistence benchmark on a
-fetched panel rather than a fixture — and the published figures are generated output,
-not prose. A number typed into a document is the same drift as a hand-written date, and
-the rule against one is the rule against the other.
+Exit criterion, met: a reader who clones the repository and runs the commands in
+`REPRODUCIBILITY.md` reproduces the persistence benchmark's run record on the fetched
+panel rather than a fixture. The published figures live in `docs/runs/` as generated
+output, never transcribed into prose -- see `docs/PROJECT_STATUS.md` for what the
+benchmark does and does not establish.
 
 ## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
 
@@ -250,9 +244,8 @@ work blocks: a plan's "next steps" section is the part that goes stale first, an
 listing blocks here guarantees it. Block-level sequencing lives in the session handoff
 and in the block briefs; what belongs here is the order of the milestones and why.
 
-1. **Milestone A — the first observable result.** Ahead of everything else, including
-   the remainder of Phase 1's ingest list. Until it is met, every guard in the
-   repository protects a fixture.
+1. ~~**Milestone A — the first observable result.**~~ Met -- see above. Every guard
+   in the repository now protects an observable quantity, not only a fixture.
 2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
    Two open questions predate the breadth: the shape of the N-MFP identity tolerance,
    which is currently one absolute bound across cross-sections spanning three orders of

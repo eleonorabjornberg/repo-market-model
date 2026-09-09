@@ -175,24 +175,24 @@ Stated explicitly, because each is easy to mistake for something stronger.
   resolved across the whole archive set rather than within one archive -- an
   amendment routinely lands in a different archive from the filing it restates, and
   per-archive resolution could not see the pair, so it left originals standing that
-  a later filing had corrected. What has *not* been settled is what a cross-section
-  is: a split month-end still divides one reporting universe across two reference
-  dates, and the coverage floor is still one number for every era. Until both land,
-  a monthly N-MFP field is a series whose unit of observation is still under
-  revision, and no benchmark should take one as a regressor. The daily
-  shareholder-flow series are unaffected by all of this.
+  a later filing had corrected. What a cross-section *is* has now been settled on
+  both open questions: a split month-end is assembled as one cross-section
+  (`346d4ff`), and the coverage floor is declared per era rather than as one number
+  (`94bf2db`). A monthly N-MFP field's unit of observation is therefore no longer
+  under revision on those two axes; what is still open is item 5 below -- the
+  identity tolerance calibrated against it. The daily shareholder-flow series were
+  unaffected by all of this throughout.
 - **The pre-2016 N-MFP balance sheet is missing two of three left-hand terms.**
   `CASH` and `TOTALVALUEPORTFOLIOSECURITIES` are present as columns and entirely
   empty before the 2016 boundary. Those months are now reported as unevaluable
   rather than counted as holding, which is the honest treatment of the symptom; the
   field mapping that would let the identity actually evaluate over that period does
   not exist.
-- **The coverage floor is declared for one era.** A single absolute count
-  calibrated on a recent month is weak in eras when the filer universe was
-  substantially larger — it is roughly a quarter of the early universe and around
-  two thirds of the current one. The registry schema is intended to accept a per-era
-  declaration, each entry calibrated from an observed complete month; the observed
-  counts exist, and the implementation does not.
+- **The coverage floor is now declared per era (`94bf2db`)**, closing the gap
+  where one absolute count -- roughly a quarter of the early universe and two
+  thirds of the current one -- was weak in the eras it was not calibrated on.
+  Each era entry is calibrated from an observed complete month, assembled by
+  `346d4ff`'s cross-section rule rather than by report date.
 - **A declared field has never produced data.** `mmf_on_rrp` is declared in the
   source registry and has emitted no row against any real archive. Its derivation
   searches security-description text for a counterparty name. For the period held
@@ -238,9 +238,10 @@ where they left off.
    claim of any kind.
 2. Make the exceedance metric affordable at panel length, then take it with a
    conditional model rather than with climatology alone.
-3. Settle what a monthly N-MFP cross-section *is*: a split month-end assembled as
-   one cross-section, and a coverage floor declared per era, each entry calibrated
-   from an observed complete month.
+3. ~~Settle what a monthly N-MFP cross-section *is*~~ -- done: a split month-end is
+   assembled as one cross-section (`346d4ff`) and the coverage floor is declared per
+   era (`94bf2db`). What is not yet done is recalibrating the identity tolerance (item
+   5) against the cross-sections this unlocks.
 4. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
    money funds held Fed reverse repo at scale, and make an absent declared field
    distinguishable from a parsing failure. The backfill supplies the evidence this

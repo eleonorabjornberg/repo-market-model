@@ -58,6 +58,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import io
+import json
 import pathlib
 import re
 import shlex
@@ -705,3 +706,175 @@ class SpecifierEvaluationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def registry():
+    """The source registry, read fresh: a mutation must be able to move it."""
+    return json.loads(
+        (REPO_ROOT / "metadata" / "sources.json").read_text(encoding="utf-8")
+    )
+
+
+def _coverage_floor_is_one_number():
+    """One declared floor for the whole published history."""
+    cross_section = registry()["sec_nmfp"]["cross_section"]
+    return len(cross_section.get("eras", ())) <= 1
+
+
+def _split_month_end_divides_the_universe():
+    """Two REPORTDATEs inside one calendar month are two cross-sections.
+
+    Evaluated by asking the code, not by reading a test name: 29 and 31 July
+    2011 is the split this limitation was written about.
+    """
+    from repo_model.ingest import _nmfp_cross_section
+
+    return _nmfp_cross_section(datetime.date(2011, 7, 29)) != _nmfp_cross_section(
+        datetime.date(2011, 7, 31)
+    )
+
+
+def _identity_tolerance_is_a_single_absolute():
+    """Every declared identity tolerance is an absolute bound and nothing else."""
+    identities = registry()["sec_nmfp"]["identities"]
+    return all(
+        set(identity["tolerance"]) <= {"absolute", "unit"} for identity in identities
+    )
+
+
+# A limitation the repository publishes, the exact words it publishes it in, and
+# a predicate that says whether it still holds. The predicate is evaluated
+# against the registry or the code -- never against another document, and never
+# against the presence of a test class, which is a claim about the suite rather
+# than about the software.
+LIMITATIONS = (
+    (
+        "nmfp_per_era_floor",
+        "docs/PROJECT_STATUS.md",
+        (
+            "**The coverage floor is declared for one era.**",
+            "the coverage floor is still one number for every era.",
+        ),
+        _coverage_floor_is_one_number,
+    ),
+    (
+        "nmfp_split_month_end",
+        "docs/PROJECT_STATUS.md",
+        ("a split month-end still divides one reporting universe",),
+        _split_month_end_divides_the_universe,
+    ),
+    (
+        "nmfp_identity_tolerance",
+        "docs/PROJECT_STATUS.md",
+        ("**The N-MFP identity tolerance is a single absolute bound**",),
+        _identity_tolerance_is_a_single_absolute,
+    ),
+)
+
+
+def _words(path):
+    """Whitespace-separated words with the line each came from.
+
+    Published prose is hard-wrapped, so a sentence is not a line and a claim
+    quoted from one is not a substring of any line in the file.
+    """
+    found = []
+    for number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        for word in line.split():
+            found.append((word, number))
+    return found
+
+
+def _line_stating(path, claim):
+    """The line the claim starts on, or None if the document does not state it."""
+    wanted = claim.split()
+    words = _words(path)
+    for start in range(len(words) - len(wanted) + 1):
+        if [word for word, _ in words[start : start + len(wanted)]] == wanted:
+            return words[start][1]
+    return None
+
+
+class PublishedLimitationTests(unittest.TestCase):
+    """A published limitation must not outlive the work that repaired it.
+
+    Every other guard in this module watches a claim that decays on its own: a
+    count drifts, a date recedes, a command stops parsing. A limitation decays
+    the opposite way -- it is falsified by *success*, at the moment the thing it
+    describes gets fixed, which is the moment nobody is looking for it. The page
+    that says "not yet" is read as the honest half of a status page and is the
+    half with no reader watching it.
+
+    Two of them went stale here within one day and neither commit was wrong to
+    leave them. `346d4ff` made the calendar month the assembly unit while
+    `docs/PROJECT_STATUS.md` went on publishing *"a split month-end still divides
+    one reporting universe across two reference dates"*; a per-era coverage floor
+    landed the same evening under a heading reading **"The coverage floor is
+    declared for one era."** Both are HUMAN_ONLY pages that no track may edit, so
+    each track did the correct thing and the page stayed wrong. `PROJECT_STATUS.md`
+    is published as a *measured* file, and what is measured about it is the counts,
+    the dates, the commands and the interpreter. Everything it says about what the
+    software cannot yet do is prose, and prose is what went stale.
+
+    So each limitation is declared once here with the words it is published in
+    and a predicate over the registry or the code, and the two are required to
+    agree in both directions. A repaired limitation may not still be published,
+    and a live one may not have quietly stopped being. The second half is what
+    stops the cheap pass: deleting the sentence would otherwise satisfy the
+    first assertion exactly as removing the limitation does.
+
+    **What this cannot do is find a limitation nobody declared here**, the same
+    honest bound `PublishedPythonVersionTests` carries: it enforces that there is
+    one declaration and that nothing disagrees with it, not that everything true
+    has been declared. A limitation added to a published page and not added to
+    this table is invisible to it. `test_ingest.py` and `test_data.py` are where
+    a new limitation earns an entry -- a block that closes one is the block that
+    should be deleting a row's worth of prose.
+
+    Mutation record. Disposable clone under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, control green before and after, module alone and whole suite.
+    """
+
+    def test_no_published_limitation_outlives_its_repair(self):
+        """A limitation the code no longer has is not a limitation."""
+        stale = []
+        for name, document, claims, still_holds in LIMITATIONS:
+            if still_holds():
+                continue
+            for claim in claims:
+                line = _line_stating(REPO_ROOT / document, claim)
+                if line is not None:
+                    stale.append(f"{document}:{line}: {name}: {claim!r}")
+
+        self.assertEqual(
+            [],
+            stale,
+            "A published document still states a limitation this repository has "
+            "already repaired:\n  "
+            + "\n  ".join(stale)
+            + "\nThe block that closed it did not close the page. Edit the "
+            "document, or the predicate is wrong about the repair.",
+        )
+
+    def test_every_limitation_that_still_holds_is_still_published(self):
+        """A limitation that stops being disclosed has not stopped being one."""
+        unstated = []
+        for name, document, claims, still_holds in LIMITATIONS:
+            if not still_holds():
+                continue
+            if all(
+                _line_stating(REPO_ROOT / document, claim) is None for claim in claims
+            ):
+                unstated.append(f"{document}: {name}: {claims[0]!r}")
+
+        self.assertEqual(
+            [],
+            unstated,
+            "A limitation this repository still has is no longer stated in the "
+            "document that declared it:\n  "
+            + "\n  ".join(unstated)
+            + "\nDeleting the sentence is the cheapest way to pass the "
+            "companion assertion, and it is what this one refuses.",
+        )
