@@ -13,7 +13,8 @@ the repository does not yet publish those results.
 
 ## Environment
 
-- Python 3.9 or newer
+- Python 3.10, declared in `pyproject.toml` and stated nowhere else that is not
+  checked against it. 3.11 rejects the package at import; 3.9 has never been run.
 - no third-party Python packages
 - commands run from the repository root
 

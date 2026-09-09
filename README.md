@@ -64,7 +64,9 @@ implemented infrastructure and open research work.
 
 ## Quick start
 
-Requirements: Python 3.9 or newer. The project intentionally uses only the Python
+Requirements: Python 3.10. That is the interpreter the suite is run on, and it is
+declared once in `pyproject.toml`; 3.11 rejects the package at import. The project
+intentionally uses only the Python
 standard library, so no package installation is required.
 
 ```bash

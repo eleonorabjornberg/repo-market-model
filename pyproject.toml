@@ -9,7 +9,13 @@ description = "Probabilistic modeling of Treasury repo-market pressure"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [{name = "Eleonora Bjornberg"}]
-requires-python = ">=3.9"
+# The only declaration of the supported interpreter. Published documents state
+# this version and tests/test_docs_freshness.py refuses any that states another.
+# 3.10 is the version the suite has actually been run on. 3.11 rejects the
+# package at import: baseline.py carries a mappingproxy default on a frozen
+# dataclass field, which 3.11 refuses as a mutable default. 3.9 has never been
+# exercised -- every module parses under 3.9 syntax, which is not the same claim.
+requires-python = "~=3.10.0"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "License :: OSI Approved :: MIT License",

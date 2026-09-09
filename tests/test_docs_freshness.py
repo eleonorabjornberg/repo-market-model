@@ -53,6 +53,7 @@ import io
 import pathlib
 import re
 import shlex
+import sys
 import unittest
 
 from repo_model import cli
@@ -227,6 +228,29 @@ def published_cli_commands():
     return found
 
 
+# A stated interpreter version in prose: "Python 3.10". Two components only --
+# a patch level is not a support claim anybody could keep true.
+PYTHON_VERSION = re.compile(r"\bPython (\d+\.\d+)\b")
+
+# `requires-python` out of pyproject.toml. Read by regex rather than by a TOML
+# parser because `tomllib` arrived in 3.11 and this repository does not run there,
+# which is the very fact this guard exists to keep published.
+REQUIRES_PYTHON = re.compile(r"^requires-python\s*=\s*[\"']([^\"']+)[\"']", re.MULTILINE)
+
+
+def declared_python():
+    """The `requires-python` string, the single declaration of the interpreter."""
+    text = (REPO_ROOT / "pyproject.toml").read_text()
+    match = REQUIRES_PYTHON.search(text)
+    if match is None:
+        raise AssertionError(
+            "pyproject.toml declares no requires-python. It is the one place the "
+            "supported interpreter is stated; without it the published documents "
+            "have nothing to agree with."
+        )
+    return match.group(1)
+
+
 class PublishedDocumentTests(unittest.TestCase):
     """Neither a count nor a future date survives in a document a cloner reads."""
 
@@ -397,6 +421,87 @@ class PublishedCommandTests(unittest.TestCase):
             "parses:\n  "
             + "\n  ".join(offences)
             + "\nFix the document, or the flag, whichever moved.",
+        )
+
+
+class PublishedPythonVersionTests(unittest.TestCase):
+    """No document states an interpreter version other than the declared one.
+
+    `README.md` and `REPRODUCIBILITY.md` both published *"Python 3.9 or newer"*, and
+    `pyproject.toml` declared `>=3.9` beside them. All three agreed with each other
+    and none of them was true: the package does not import on 3.11 -- `baseline.py`
+    carries a `mappingproxy` default on a frozen dataclass field, which 3.11 refuses
+    as a mutable default -- and 3.9 had never been run. Every module parses under
+    3.9 syntax, which is a different claim from working there and was the only
+    evidence the number ever had.
+
+    **Three documents agreeing is not verification.** What this guard can enforce is
+    that there is one declaration and that nothing restates it differently, which is
+    the drift that let one hand-repaired page sit beside an unrepaired one for four
+    commits in the command case. What licenses the declaration itself is measurement,
+    and it is recorded in `pyproject.toml` beside the value.
+
+    Mutation record. Disposable clone under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, control green before and after, module alone and whole suite.
+
+    1. `README.md`'s stated version changed to 3.9, the historical value. Killed the
+       agreement assertion -- `AssertionError: [] != ['README.md:67: Python 3.9 ...']`
+       -- naming the document, the line and the declaration it disagrees with.
+    2. The version sentence deleted from `REPRODUCIBILITY.md` outright. Killed the
+       named-document assertion -- `AssertionError: 'REPRODUCIBILITY.md' not found in
+       {'README.md': ['3.10']}` -- while the agreement list stayed empty, because a
+       document that says nothing agrees with every declaration. Deleting the claim is
+       the cheapest way to make this guard pass, and it is what that assertion refuses.
+    3. `requires-python` set to `~=3.12.0`, excluding the running interpreter. Killed
+       **both** tests: the interpreter assertion, `AssertionError: '3.10' not found in
+       '~=3.12.0'`, and the agreement assertion, which then named both documents at
+       once. That is the shape to expect -- moving the single declaration moves what
+       every document is checked against, which is the point of there being one.
+    """
+
+    def test_every_published_python_version_is_the_declared_one(self):
+        """A version number in prose is a measurement of an interpreter, not a fact."""
+        requirement = declared_python()
+
+        stated_by = {}
+        offences = []
+        for relative, path in published_markdown():
+            for number, line in enumerate(path.read_text().splitlines(), start=1):
+                for version in PYTHON_VERSION.findall(line):
+                    stated_by.setdefault(relative, []).append(version)
+                    if version not in requirement:
+                        offences.append(f"{relative}:{number}: Python {version}")
+
+        for document in ("README.md", "REPRODUCIBILITY.md"):
+            self.assertIn(
+                document,
+                stated_by,
+                f"{document} states no Python version. It is where a reader looks "
+                f"before running anything, and a document that states nothing agrees "
+                f"with every declaration -- which is the cheapest way to make this "
+                f"guard pass.",
+            )
+
+        self.assertEqual(
+            [],
+            offences,
+            f"A published document states a Python version that "
+            f"pyproject.toml's requires-python = {requirement!r} does not:\n  "
+            + "\n  ".join(offences)
+            + "\nOne declaration, in pyproject.toml. Change it there, or the document.",
+        )
+
+    def test_the_interpreter_running_this_suite_is_the_declared_one(self):
+        """A green suite on an unsupported interpreter says nothing about the claim."""
+        requirement = declared_python()
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        self.assertIn(
+            running,
+            requirement,
+            f"This suite is running on Python {running}, which "
+            f"requires-python = {requirement!r} does not admit. Either the project "
+            f"supports it and the declaration is stale, or it does not and this run "
+            f"proves nothing.",
         )
 
 
