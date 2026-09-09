@@ -3047,5 +3047,306 @@ class SeamTests(unittest.TestCase):
         self.assertIs(args.handler, cli_eval._event_holdout)
 
 
+class PairedComparisonCommandTests(ContinuousModelHarness):
+    """`compare`: two models, one run, and a record that says which way it runs.
+
+    **The finding this closes at the command layer.** After
+    `ContinuousModelSelectorTests` a caller could publish an ARX record and a
+    persistence record. What they could not do is compare them: the two files
+    carry metrics rather than per-origin losses, so the only comparison
+    available from outside is whether two intervals overlap, which is not the
+    question `PLAN.md`'s Phase 2 exit criterion asks. `baseline` holds the
+    comparison; these tests are about the *caller* -- which mapping it resolves
+    names through, which flags it refuses to default, and whether the artifact
+    it writes says which model was subtracted from which.
+
+    **Both sides reach `FITTER_FACTORIES`, not a second mapping.** That is the
+    packet's whole reason for running the selector block first: a comparison
+    that resolved names itself would be a second answer to what `arx` means,
+    and two answers agree until they do not. `_side` projects one half of this
+    command's namespace onto the fields `_select_fitter` already reads, so the
+    mapping and the regressor-splitting rule are reached rather than restated.
+
+    Mutation record
+    ---------------
+
+    Same protocol as `ContinuousModelSelectorTests` above: disposable copy
+    under `$HOME`, `data/`, `.github/`, `metadata/`, `docs/`, `.claude/`,
+    `.gitignore` and the root Markdown copied, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` cleared, control green before
+    and after, exception types recorded.
+
+      * **`_compare` resolving `--model-b` through its own table** -- a literal
+        `{"persistence": fit, "arx": functools.partial(fit_arx, regressors=())}`
+        in the handler instead of `_select_fitter`. Kills exactly 2, and
+        neither is the failure this mutation was expected to produce, which is
+        the part worth recording.
+
+        `test_the_record_carries_the_comparison_the_declaration_describes`
+        fails with `AssertionError: 2 != 0 : command failed: error: no
+        regressors declared; an ARX with no exogenous term is an AR, and an
+        empty list is how a caller omits the decision rather than makes it`.
+        The expectation was a wrong *number* -- an ARX fitted without its
+        regressors -- and instead `fit_arx` refused the empty list outright.
+        That is a guard from an earlier block firing before this one could, and
+        it means this test's kill is currently carried by that refusal rather
+        than by the arithmetic. A second table that happened to bind
+        `regressors` correctly would get past it, and the assertion that would
+        then bite is the equality against the directly-built comparison, which
+        is the assertion the test actually makes.
+
+        `test_an_unknown_model_name_names_the_side_it_was_given_on` **errors**
+        rather than fails, with `KeyError: 'arxx'` out of the handler. The
+        second table has no refusal path, so an unknown name reaches the user
+        as a traceback instead of exit 2 with a message. Recorded as an error
+        and not a failure: a mutation that produces a crash somewhere in the
+        run is weaker evidence than one that produces a wrong answer, and
+        reading the two together is what says the shared selector is carrying
+        both the mapping and the refusal.
+
+      * **`--model-b` given a default of `persistence`** (`required=(side ==
+        "a")`, `default="persistence"`). Kills exactly 1 --
+        `test_neither_side_of_the_comparison_may_be_omitted`, subtest
+        `flag='model_b'`, `AssertionError: False is not true : --model-b is not
+        required`. No behavioural test can catch this: a flag every caller
+        passes changes no output, and the run it enables -- persistence against
+        persistence under the challenger's name, reporting a difference of zero
+        with a degenerate interval -- looks exactly like the sanity check this
+        project treats as evidence that everything is wired correctly.
+    """
+
+    def run_compare(
+        self,
+        *,
+        model_a="persistence",
+        features_a=None,
+        model_b="arx",
+        features_b=None,
+        regime_variable_a=None,
+        regime_variable_b=None,
+        report=None,
+        registry=None,
+    ):
+        """Run the command. `--report` is required, so every caller supplies one."""
+
+        features_a = self.FEATURES if features_a is None else features_a
+        features_b = self.FEATURES if features_b is None else features_b
+        self.last_report = Path(
+            report or self.tmp / f"compare-{model_a}-vs-{model_b}.json"
+        )
+        argv = [
+            "compare", str(self.PANEL),
+            "--minimum-history", self.MINIMUM_HISTORY,
+            "--registry", str(registry or self.registry),
+            "--decision-time", DECISION_TIME,
+            "--model-a", model_a,
+            "--model-b", model_b,
+            "--report", str(self.last_report),
+        ]
+        for feature in features_a:
+            argv += ["--feature-a", feature]
+        for feature in features_b:
+            argv += ["--feature-b", feature]
+        if regime_variable_a is not None:
+            argv += ["--regime-variable-a", regime_variable_a]
+        if regime_variable_b is not None:
+            argv += ["--regime-variable-b", regime_variable_b]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def _compare_parser(self):
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        return command.choices["compare"]
+
+    def test_the_record_carries_the_comparison_the_declaration_describes(self):
+        """The published numbers are the ones `baseline` produces for that declaration.
+
+        The expectation is built from `baseline` directly -- the fitters
+        constructed here, from the flags the command was given, never through
+        `cli_eval.FITTER_FACTORIES` -- so an assertion that the record agrees
+        with it is a claim about the command's wiring rather than a restatement
+        of it. A literal read off a run would agree with any mutation that moved
+        the run and the literal together.
+        """
+
+        code, _, err = self.run_compare(features_b=self.FEATURES)
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+        record = json.loads(self.last_report.read_text(encoding="utf-8"))
+
+        regressors = tuple(
+            column for column in sorted(self.FEATURES) if column != FEATURE
+        )
+        expected = baseline.paired_model_comparison(
+            load_daily_panel(self.PANEL),
+            model_a="persistence",
+            fit_a=baseline.fit,
+            features_a=self.FEATURES,
+            model_b="arx",
+            fit_b=functools.partial(fit_arx, regressors=regressors),
+            features_b=self.FEATURES,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            seed=baseline.comparison_seed(
+                baseline.panel_sha256(self.PANEL),
+                model_a="persistence",
+                features_a=self.FEATURES,
+                model_b="arx",
+                features_b=self.FEATURES,
+                decision_time=time.fromisoformat(DECISION_TIME),
+            ),
+            minimum_history=int(self.MINIMUM_HISTORY),
+        )
+
+        self.assertEqual(
+            record["comparison"]["mean_difference_bps"],
+            expected.mean_difference_bps,
+        )
+        self.assertEqual(
+            record["comparison"]["model_a"]["mae_bps"], expected.mae_a_bps
+        )
+        self.assertEqual(
+            record["comparison"]["model_b"]["mae_bps"], expected.mae_b_bps
+        )
+        self.assertEqual(
+            record["comparison"]["mean_difference_interval"]["lower"],
+            expected.difference_interval[0],
+        )
+        self.assertEqual(
+            record["comparison"]["mean_difference_interval"]["upper"],
+            expected.difference_interval[1],
+        )
+        self.assertEqual(record["declaration"]["model_a"]["model"], "persistence")
+        self.assertEqual(record["declaration"]["model_b"]["model"], "arx")
+
+    def test_neither_side_of_the_comparison_may_be_omitted(self):
+        """The absence of a default is the guard, so this reads the parser.
+
+        No behavioural test can catch a defaulted side: every caller passes the
+        flag, so the output never changes, and the run a default enables --
+        persistence against itself under the other model's name -- produces a
+        difference of zero and a degenerate interval, which is the shape of a
+        passing sanity check rather than of a failure.
+        """
+
+        required = {
+            action.dest: action.required
+            for action in self._compare_parser()._actions
+            if action.option_strings
+        }
+        for flag in (
+            "model_a",
+            "model_b",
+            "feature_a",
+            "feature_b",
+            "registry",
+            "decision_time",
+            "report",
+        ):
+            with self.subTest(flag=flag):
+                self.assertTrue(
+                    required.get(flag),
+                    msg=f"--{flag.replace('_', '-')} is not required",
+                )
+
+    def test_the_comparison_command_sets_no_gap_by_hand(self):
+        """No `--purge` and no `--source`, on either side.
+
+        The absence matters more here than on `backtest`. Two declarations that
+        price different gaps are refused, and the obvious way to make a refused
+        comparison run is to overrule one of the declarations -- so a flag that
+        set the gap would be reached for at exactly the moment it must not be.
+        """
+
+        options = {
+            option
+            for action in self._compare_parser()._actions
+            for option in action.option_strings
+        }
+        for banned in (
+            "--purge", "--purge-days", "--gap", "--source",
+            "--source-a", "--source-b",
+        ):
+            self.assertNotIn(banned, options, msg=f"{banned} is back")
+        self.assertIn("--feature-a", options)
+        self.assertIn("--feature-b", options)
+
+    def test_an_unknown_model_name_names_the_side_it_was_given_on(self):
+        """A caller reads back the flag they typed, and no artifact is written.
+
+        The refusal is `_select_fitter`'s -- the one mapping, reached rather
+        than restated -- and it runs before the panel is read, so a refused
+        comparison leaves nothing on disk to be mistaken for a run.
+        """
+
+        code, _, err = self.run_compare(model_b="arxx")
+
+        self.assertEqual(code, 2)
+        self.assertIn("--model-b", err)
+        self.assertIn("arxx", err)
+        self.assertFalse(
+            self.last_report.exists(),
+            "a refused comparison wrote a report, which is a claim that it ran",
+        )
+
+    def test_two_declarations_pricing_different_gaps_are_refused_by_the_command(self):
+        """`baseline`'s refusal reaches the caller as exit 2 and no artifact.
+
+        The command does not restate the rule -- it declares two feature sets
+        and lets the run price them -- so what is asserted here is that the
+        refusal arrives whole rather than being caught and softened on the way
+        out.
+
+        **The registry is written here rather than taken from the harness, and
+        the first version of this test was wrong for exactly that reason.** The
+        harness prices only the sources its three declarations resolve to, so a
+        `b` side naming `treasury_settlement` was refused for an *unknown
+        source* before the gaps were ever compared -- exit 2, the column named
+        in the message, and every assertion green over a refusal that would
+        still have been there with the guard removed. A test that cannot fail
+        on the thing it names is the recurring finding in this repository,
+        pointed at a fixture. So this registry prices both sides, at different
+        lags, and the assertions below name the gap rather than the column.
+        """
+
+        registry = self.tmp / "two-gaps.json"
+        registry.write_text(
+            json.dumps(
+                {
+                    source: {
+                        "release_lag": {
+                            "basis": "record_date",
+                            "unit": "calendar_days",
+                            "days": days,
+                            "available_time": "00:00",
+                            "timezone": "America/New_York",
+                        }
+                    }
+                    for days, features in (
+                        (2, self.FEATURES),
+                        (7, ("treasury_settlement",)),
+                    )
+                    for source in sources_for_features(features)
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        code, _, err = self.run_compare(
+            model_b="persistence",
+            features_b=self.FEATURES + ("treasury_settlement",),
+            registry=registry,
+        )
+
+        self.assertEqual(code, 2)
+        self.assertIn("2-day purge gap", err)
+        self.assertIn("7-day gap", err)
+        self.assertIn("treasury_settlement", err)
+        self.assertFalse(self.last_report.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
