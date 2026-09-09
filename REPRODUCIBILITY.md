@@ -8,8 +8,13 @@ This repository separates two kinds of reproducibility:
    immutable raw snapshots, their manifests, the panel build configuration, the
    Git revision, and the evaluation journal.
 
-The first is available now. The second will accompany the first research results;
-the repository does not yet publish those results.
+The first is available now. The second is **partly** available: `docs/runs/` holds
+three generated run records and the frozen panel's build manifest, so the figures and
+the digests of the snapshots behind them are published. What is not available is the
+rebuild — the panel itself is gitignored, and the caveat below about re-running a
+download applies to any attempt to regenerate it. A reader can therefore read the
+numbers and check what they were computed from, and cannot yet independently reproduce
+them.
 
 ## Environment
 

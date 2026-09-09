@@ -85,7 +85,7 @@ bid-ask proxies.
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
 
-## Milestone A — the first observable result (met)
+## Milestone A — the first observable result (published, not yet reproducible)
 
 **Was the single highest-value thing outstanding, ahead of the remainder of Phase 1.**
 Until it landed, every backtest, every purge gap, every leakage guard and every
@@ -110,11 +110,38 @@ Steps taken, in order:
    coverage and MAE under the registry-derived purge, beside the fold count and the
    training window.
 
-Exit criterion, met: a reader who clones the repository and runs the commands in
-`REPRODUCIBILITY.md` reproduces the persistence benchmark's run record on the fetched
-panel rather than a fixture. The published figures live in `docs/runs/` as generated
-output, never transcribed into prose -- see `docs/PROJECT_STATUS.md` for what the
-benchmark does and does not establish.
+Exit criterion, as written before the work and unchanged: *a reader who clones the
+repository and runs one command reproduces a published quantile loss and interval
+coverage for the persistence benchmark on a fetched panel rather than a fixture — and
+the published figures are generated output, not prose. A number typed into a document
+is the same drift as a hand-written date, and the rule against one is the rule against
+the other.*
+
+**It has two clauses and they do not have the same answer.**
+
+**Publication: met.** `docs/runs/persistence_funding.json` is tracked and generated. A
+cloner receives pinball loss at five quantiles, interval coverage, MAE with a
+stationary-bootstrap interval and a recorded seed, over 2080 folds on a fetched panel
+spanning 2018-04-03 to 2026-09-03, with the build manifest and source digests beside
+them. No figure from it is transcribed into any Markdown page in this repository, which
+was the harder half to hold and it held.
+
+**Reproduction: not met.** A clone receives two files under `data/`: the twenty-five-row
+fixture and its README. The panel is `data/processed/funding_panel.csv` and is
+gitignored. Rebuilding it is four commands rather than one, and it would still not
+reproduce: `REPRODUCIBILITY.md` records that re-running a download is not guaranteed to
+return an earlier byte stream, and that the FRED adapter acquires the latest revised
+vintage rather than the historical one. The fetch a reader performs is not the fetch
+that produced the record.
+
+**This criterion was briefly rewritten to say it had been met**, on 9 September, by
+pointing at `REPRODUCIBILITY.md`'s command list instead of naming the figures — and the
+rewritten version was not true either. The original stands above because a criterion
+edited after the result is not a criterion, which is the same finding this repository
+records about a guard shaped to fit the thing it measures. What closes the gap is
+committing the panel or its inputs, or publishing a digest a rebuild can be checked
+against; both are open. See `docs/PROJECT_STATUS.md` for what the benchmark does and
+does not establish.
 
 ## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
 

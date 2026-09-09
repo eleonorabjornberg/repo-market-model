@@ -210,11 +210,12 @@ Stated explicitly, because each is easy to mistake for something stronger.
   now be evaluated, a **majority exceed the absolute bound**, and every one of the
   exceedances is a complete month rather than a straggler, so no coverage floor can
   clear it. The bound is therefore not merely uncalibrated but **known to be wrong**,
-  and it is retained only because nothing yet depends on it. It is calibrated last,
-  after the split month-end and the per-era floor land, because both move the
-  residuals a calibration would be computed from. `DATA_QUALITY_DECISIONS.md` is the
-  authority and records that the earlier deferral must not be read as still
-  standing.
+  and it is retained only because nothing yet depends on it. It was to be calibrated
+  last, after the split month-end and the per-era floor, because both move the
+  residuals a calibration would be computed from. **Both have landed** (`346d4ff`,
+  `94bf2db`), so it is deferred behind nothing now and is simply not done.
+  `DATA_QUALITY_DECISIONS.md` is the authority and records that the earlier deferral
+  must not be read as still standing.
 - **The Treasury settlement series aggregates decisions it does not implement.**
   Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
   limitation now says so, and names the fields that are present in the snapshot and

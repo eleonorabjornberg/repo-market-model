@@ -734,6 +734,17 @@ def _split_month_end_divides_the_universe():
     )
 
 
+def _treasury_settlement_is_one_aggregate():
+    """The settlement series is declared as one field, with no split components."""
+    for source in registry().values():
+        fields = source.get("fields", ())
+        if "treasury_settlement" in fields:
+            return not any(
+                str(field).startswith("treasury_settlement_") for field in fields
+            )
+    return False
+
+
 def _identity_tolerance_is_a_single_absolute():
     """Every declared identity tolerance is an absolute bound and nothing else."""
     identities = registry()["sec_nmfp"]["identities"]
@@ -768,6 +779,15 @@ LIMITATIONS = (
         "docs/PROJECT_STATUS.md",
         ("**The N-MFP identity tolerance is a single absolute bound**",),
         _identity_tolerance_is_a_single_absolute,
+    ),
+    (
+        "treasury_settlement_aggregate",
+        "docs/PROJECT_STATUS.md",
+        (
+            "aggregates decisions it does not implement.** Security type, tenor, and "
+            "Fed SOMA add-ons are summed into one series.",
+        ),
+        _treasury_settlement_is_one_aggregate,
     ),
 )
 
@@ -833,8 +853,54 @@ class PublishedLimitationTests(unittest.TestCase):
     a new limitation earns an entry -- a block that closes one is the block that
     should be deleting a row's worth of prose.
 
-    Mutation record. Disposable clone under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
-    `python3 -B`, control green before and after, module alone and whole suite.
+    Mutation record. Disposable copy under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, `__pycache__` cleared before each run, control green before and after,
+    module alone and whole suite. Every kill below is an `AssertionError`.
+
+    **The copy list in `CLAUDE.md` does not produce a green control.** It names `data/`,
+    `.github/`, `metadata/`, `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md`,
+    and omits `.claude/`, which has held the ownership hook since 9 September. Without it
+    `test_ownership_hook` contributes seven errors to the control -- a red control that
+    looks like a finding and is a missing directory, which is the exact trap the same
+    paragraph warns about. Copied `.claude/` too; reported for a human edit.
+
+    1. **The repaired sentences restored to the page.** Both N-MFP claims re-inserted
+       into `docs/PROJECT_STATUS.md` with the code left repaired. Killed
+       `test_no_published_limitation_outlives_its_repair`, one test in the whole suite.
+       This is the acceptance criterion and its own mutation target: the defect restated
+       must not pass.
+    2. **The registry reverted and the page not.** `cross_section.eras` truncated to its
+       first entry, so the per-era floor "holds" again while the page no longer says so.
+       Killed `test_every_limitation_that_still_holds_is_still_published` in this module.
+       **It is a coarse mutation and the record should not overstate it:** across the
+       whole suite it took down eighteen tests carrying `KeyError` and `ValueError` as
+       well, because truncating the era list breaks ingestion outright. The kill that
+       counts is the single `AssertionError` in this module; the rest is collateral and
+       is recorded as collateral.
+    3. **The live claim deleted from the page.** The Treasury-settlement sentence removed
+       while the limitation still holds. Killed
+       `test_every_limitation_that_still_holds_is_still_published`, one test in the whole
+       suite. Deleting the sentence is the cheapest way to pass assertion 1, and this is
+       the assertion that refuses it.
+    4. **Claim matching made line-local** -- `_line_stating` searching each line for the
+       claim as a substring instead of matching across the document's word stream. Killed
+       the same assertion, one test in the whole suite, because the Treasury-settlement
+       claim spans a line break.
+
+       **This mutation killed nothing when the guard was first committed, and that was
+       measured rather than assumed.** Re-run against the table as it then stood -- two
+       repaired entries and one live one whose sentence happened to fit on a single line
+       -- it returns `OK`. Assertion 1 only ever requires a claim to be *absent*, and
+       narrower matching cannot make an absent claim present, so nothing there could see
+       it. The word-stream matching was unexercised code in a published guard until a
+       live entry with a wrapped sentence existed. A guard needs at least one live entry
+       per code path it claims to have, and counting entries is not the same as covering
+       paths.
+    5. **The live predicate forced to "repaired."** `_treasury_settlement_is_one_aggregate`
+       reduced to `return False` while the page still states the limitation. Killed
+       `test_no_published_limitation_outlives_its_repair`, one test in the whole suite --
+       the mirror of mutation 1, moving the predicate rather than the prose, so both
+       halves of the agreement are shown to be load-bearing from both sides.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):
