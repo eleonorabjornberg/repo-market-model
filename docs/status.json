@@ -1,0 +1,26 @@
+{
+  "commit": "6708755",
+  "figures": {
+    "dependencies": 0,
+    "event_holdouts": 2,
+    "panel_end": "2026-09-03",
+    "panel_rows": 2104,
+    "panel_start": "2018-04-03"
+  },
+  "generated_at": "2026-09-09",
+  "next": {
+    "exit": "frozen checksummed snapshots with provenance and a data-quality report",
+    "name": "Point-in-time public dataset",
+    "number": 1
+  },
+  "phase": {
+    "name": "Reproducible foundation",
+    "number": 0,
+    "state": "complete"
+  },
+  "run_records": [
+    "exceedance_funding_climatology.json",
+    "funding_panel.manifest.json",
+    "persistence_funding.json"
+  ]
+}

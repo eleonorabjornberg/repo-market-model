@@ -54,11 +54,15 @@ a commit message:
 
 - The standard-library suite completes successfully, with no expected failures.
   How many tests that is belongs to CI, not to this page.
-- The `fit` / `predict` / `predict_stress` interface has **two** implementers — a
-  persistence benchmark and an autoregressive model with exogenous regressors. Its
-  conformance tests are parametrized over implementations, so each runs once per
-  implementer rather than once in total; that doubling, not the file diff, is what
-  makes it an interface rather than a description of one model.
+- The `fit` / `predict` / `predict_stress` interface has **three** implementers — a
+  persistence benchmark, an autoregressive model with exogenous regressors, and a
+  two-regime threshold model. The `ExceedancePredictor` interface beside it has
+  three as well. Both sets of conformance tests are parametrized over
+  implementations, so each assertion runs once per implementer rather than once in
+  total; that multiplication, not the file diff, is what makes each an interface
+  rather than a description of one model. A coverage guard asserts that the set of
+  implementers and the set of covered ones are the same set, so a fourth cannot
+  arrive with a bespoke test class and quietly skip the shared assertions.
 - Stress probabilities are derived from the predictive distribution, and a
   conformance test asserts the derivation: at a declared level `q`, the exceedance
   reported at that quantile is `1 - q`. A separately fitted classifier fails that
@@ -129,7 +133,10 @@ a commit message:
   metrics are implemented and tested.
 
 These facts show that the research harness operates. They do not establish
-forecast skill, because the checked-in sample is synthetic.
+forecast skill. The reason is no longer that the sample is synthetic -- the
+benchmark's numbers are now measured on a fetched panel. It is that skill is a
+*comparison*, and no challenger has been scored against that benchmark on the
+panel.
 
 ## Known gaps in the evidence
 
@@ -153,16 +160,27 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `exceedance-backtest` refits at every rolling origin, which is the whole point
   of it, and the cost is roughly quadratic in panel length: seconds on the
   twenty-five-row fixture, minutes on 2104 rows. Nothing about the number is
-  wrong; the command simply outgrew the fixture it was developed against, and no
-  run record for it exists yet on the frozen panel. This is a real gap between
-  "the metric has a path" and "the metric has been taken".
-- **The monthly N-MFP panel is a single observation.** One quarterly archive yields
-  one complete monthly cross-section, and one archive has been acquired. After the
-  coverage floor is applied, the monthly `mmf_*` series have one reference date. No
-  monthly N-MFP field can serve as a regressor until the archive history is
-  backfilled. The daily shareholder-flow series are not affected. The archive set is
-  declared and its members are readable subject to the era boundary; declared is not
-  fetched, and fetched is not parsed.
+  wrong; the command simply outgrew the fixture it was developed against. One
+  record of it on the frozen panel does exist, and it is deliberately the least
+  interesting run available: a climatology scored against itself, which must show
+  exactly no skill and does, at every declared threshold. That is the check every
+  later skill score rests on, and it is not a result. **No conditional model has
+  been scored with this metric on the panel**, which is the real gap between "the
+  metric has a path" and "the metric has been taken".
+- **The monthly N-MFP panel is no longer a single observation, and is not yet a
+  trustworthy series.** The archive history has been backfilled: the declared set is
+  fetched and digested in full, none of it refused as unreadable, and the monthly
+  `mmf_*` series now span the archive period rather than one reference date. Two
+  things follow, and only the first is good news. Supersession and coverage are now
+  resolved across the whole archive set rather than within one archive -- an
+  amendment routinely lands in a different archive from the filing it restates, and
+  per-archive resolution could not see the pair, so it left originals standing that
+  a later filing had corrected. What has *not* been settled is what a cross-section
+  is: a split month-end still divides one reporting universe across two reference
+  dates, and the coverage floor is still one number for every era. Until both land,
+  a monthly N-MFP field is a series whose unit of observation is still under
+  revision, and no benchmark should take one as a regressor. The daily
+  shareholder-flow series are unaffected by all of this.
 - **The pre-2016 N-MFP balance sheet is missing two of three left-hand terms.**
   `CASH` and `TOTALVALUEPORTFOLIOSECURITIES` are present as columns and entirely
   empty before the 2016 boundary. Those months are now reported as unevaluable
@@ -186,10 +204,17 @@ Stated explicitly, because each is easy to mistake for something stronger.
   spanning three orders of magnitude, so it is loose on the smallest and tight on
   the largest. The schema now accepts a relative bound with an absolute floor, so
   the change is a one-line edit to a declaration rather than a change to a shared
-  contract — but it is **deliberately not made**, because the coverage floor rejects
-  exactly the small cross-sections that make the case for it, and recalibrating
-  against the one admitted cross-section is the failure the change was meant to
-  prevent. See `DATA_QUALITY_DECISIONS.md`.
+  contract — and it is **still deliberately not made, for a different reason than
+  before.** The old reason was that one admitted cross-section is nothing to
+  calibrate against. The backfill voided that: across the cross-sections that can
+  now be evaluated, a **majority exceed the absolute bound**, and every one of the
+  exceedances is a complete month rather than a straggler, so no coverage floor can
+  clear it. The bound is therefore not merely uncalibrated but **known to be wrong**,
+  and it is retained only because nothing yet depends on it. It is calibrated last,
+  after the split month-end and the per-era floor land, because both move the
+  residuals a calibration would be computed from. `DATA_QUALITY_DECISIONS.md` is the
+  authority and records that the earlier deferral must not be read as still
+  standing.
 - **The Treasury settlement series aggregates decisions it does not implement.**
   Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
   limitation now says so, and names the fields that are present in the snapshot and
@@ -203,26 +228,31 @@ Stated explicitly, because each is easy to mistake for something stronger.
 
 ## Work required before empirical claims
 
-1. Run the panel build against the fetched snapshots and freeze the result. The
-   join exists; nothing has been produced with it. This is what ends the synthetic
-   era, and everything below reads differently once a panel is on disk.
-2. Backfill and freeze the SEC Form N-MFP archive history, applying the coverage
-   floor to every reference date found rather than trusting an archive's contents,
-   refusing any archive whose schema the adapter cannot read faithfully, and proving
-   that overlapping archives, amendments and straggler filings do not double count.
-3. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
+The first two items of every previous revision of this list -- build and freeze a
+panel, and backfill the archive history -- have been done, and the list now starts
+where they left off.
+
+1. Score a challenger against the persistence benchmark on the frozen panel. The
+   threshold model is built and reachable; what is missing is the comparison, and
+   it is the one thing standing between a measured benchmark and an empirical
+   claim of any kind.
+2. Make the exceedance metric affordable at panel length, then take it with a
+   conditional model rather than with climatology alone.
+3. Settle what a monthly N-MFP cross-section *is*: a split month-end assembled as
+   one cross-section, and a coverage floor declared per era, each entry calibrated
+   from an observed complete month.
+4. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
    money funds held Fed reverse repo at scale, and make an absent declared field
-   distinguishable from a parsing failure.
-4. Resolve the N-MFP identity-tolerance and Treasury-settlement aggregation
-   decisions recorded in `DATA_QUALITY_DECISIONS.md`. The tolerance decision waits
-   on item 2: it cannot honestly be calibrated against one cross-section.
-5. Replace the never-revised prose with committed vintages and a test that
-   recomputes the comparison offline.
-6. Extend the same freeze to the remaining sources, with a machine-readable quality
+   distinguishable from a parsing failure. The backfill supplies the evidence this
+   needs; it does not fix the derivation.
+5. Calibrate the N-MFP identity tolerance -- after item 3, not before -- and split
+   the Treasury-settlement aggregate into its bill, coupon and SOMA components.
+   Both decisions are recorded in `DATA_QUALITY_DECISIONS.md`.
+6. Replace the never-revised prose with committed vintages and a test that
+   recomputes the comparison offline. The IOER declaration is the weaker of the two
+   and the one covering the earlier stress episode.
+7. Extend the same freeze to the remaining sources, with a machine-readable quality
    report.
-7. Add a threshold benchmark against the shared interface, and re-run the
-   persistence-versus-ARX comparison on the built panel, where the result carries
-   evidence.
 8. Report the frozen event windows separately from rolling-origin evaluation.
 9. Add a quantile machine-learning model only after the baselines are frozen.
 
@@ -246,15 +276,16 @@ responsibility for any of them.
 
 The repository may accurately be described as a leakage-safe, point-in-time
 financial research pipeline with a tested probabilistic evaluation harness, a
-model interface with two implementers, purged rolling-origin evaluation of both,
+model interface with three implementers, purged rolling-origin evaluation of them,
 and a benchmark that publishes a reproducible record of its own run. It should
 not yet be described as a successful machine-learning forecast of repo stress. A
 frozen funding panel now exists and the persistence benchmark has been measured
 on it, so the phrase that stood here -- that no result rests on real data -- has
 stopped being true. What has not happened is the part that would make it a
 forecast: no challenger has been scored against that benchmark on real data, the
-headline exceedance metric has not been taken on the panel at all, and the
-monthly money-fund panel is still one cross-section rather than a series.
+headline exceedance metric has been taken on the panel only against climatology,
+and the monthly money-fund panel, though no longer a single cross-section, rests
+on a unit of observation still under revision.
 
 As an academic exercise, its current contribution is methodological: the repository
 shows what it takes to keep a funding-market forecast honest before any forecast is
