@@ -2714,7 +2714,7 @@ def _git_output(*arguments: str) -> str:
 
 
 def _code_provenance() -> Optional[dict]:
-    """The commit the code was read from, and whether that tree was modified.
+    """The commit the code was read from, and two facts about its tree.
 
     `REPRODUCIBILITY.md` asks first for "the Git commit". A commit id alone is
     not that answer: read from a modified working tree it names code that did
@@ -2724,6 +2724,32 @@ def _code_provenance() -> Optional[dict]:
     a reader must be able to tell "checked, and clean" from "not checked", and
     an omitted field cannot say the first.
 
+    That standard is about **code**, and until 9 September this function did not
+    hold itself to it. `git status --porcelain` reports untracked files with
+    `??`, and any output at all was read as a modified tree -- so a record
+    written into `docs/runs/` made the *next* record report a modified tree, and
+    only the first record produced in a clean checkout could ever report
+    `False`. The two records published on 9 September say so: produced minutes
+    apart from one commit with no code changed between them, they disagree,
+    because by the time the second ran the first was sitting untracked beside
+    it. A guard that fires on everything is a guard that fires on nothing, and
+    the record that carries `tree_modified` because somebody really did run from
+    an edited tree would have been drowned by its own siblings.
+
+    So the question is split and both halves are kept:
+
+      * `tree_modified` answers the code question and counts tracked
+        modifications only -- `--untracked-files=no`.
+      * `untracked_files_present` reports the rest, because untracked files are
+        real and suppressing them would be a loosening rather than a scoping. A
+        boolean, deliberately: a file list would put a developer's scratch
+        filenames into a published record and would change size with the
+        working directory.
+
+    Both come from `git` and neither knows the name of any directory. A
+    provenance field that special-cased `docs/runs/` would lie the first time a
+    record was written somewhere else.
+
     Returns `None` when git is absent or the command fails, and the section is
     then absent from the record entirely, by the rule the rest of this document
     follows: a field this cannot compute is omitted rather than filled with a
@@ -2732,12 +2758,17 @@ def _code_provenance() -> Optional[dict]:
 
     try:
         commit = _git_output("rev-parse", "HEAD").strip()
-        status = _git_output("status", "--porcelain")
+        status = _git_output("status", "--porcelain", "--untracked-files=no")
+        untracked = _git_output("ls-files", "--others", "--exclude-standard")
     except (OSError, subprocess.SubprocessError):
         return None
     if not commit:
         return None
-    return {"commit": commit, "tree_modified": bool(status.strip())}
+    return {
+        "commit": commit,
+        "tree_modified": bool(status.strip()),
+        "untracked_files_present": bool(untracked.strip()),
+    }
 
 
 def _bind_build_manifest(panel: dict, manifest: dict) -> dict:
