@@ -21,6 +21,7 @@ from repo_model.ingest import (
     REFUSAL_UNREADABLE,
     SnapshotArtifact,
     _decode_transport,
+    _nmfp_number,
     _sec_nmfp_rows,
     fetch_sec_nmfp_archives,
     load_sec_nmfp_archive_manifest,
@@ -492,6 +493,37 @@ class NMFPSchemaGuardTests(unittest.TestCase):
             r"TOTALVALUEOTHERASSETS, TOTALVALUEPORTFOLIOSECURITIES$",
         ):
             _sec_nmfp_rows(self.artifact, rewritten.getvalue())
+
+
+class NMFPDecimalCommaTests(unittest.TestCase):
+    """What `_nmfp_number` does with a decimal comma, pinned rather than fixed.
+
+    `metadata/sources.json` records this behaviour in the `sec_nmfp`
+    limitation. A claim in the registry with nothing executing it is the drift
+    this repository keeps naming, so the claim and the code are asserted
+    against each other here.
+
+    The behaviour is deliberately not corrected. A locale-sniffing heuristic
+    would be a silent behaviour change calibrated on data nobody has seen, and
+    a differently-formatted extract should fail loudly rather than parse
+    plausibly. This test exists so that a later change to `_nmfp_number` has to
+    change the recorded claim with it.
+    """
+
+    def test_a_thousands_comma_is_stripped(self):
+        self.assertEqual(_nmfp_number("1,234.56", "CASH"), 1234.56)
+
+    def test_a_decimal_comma_parses_silently_and_wrong(self):
+        # One digit after the comma is a factor of ten; two is a hundred.
+        # Neither raises, which is the whole hazard.
+        self.assertEqual(_nmfp_number("1234,5", "CASH"), 12345.0)
+        self.assertEqual(_nmfp_number("1234,56", "CASH"), 123456.0)
+
+    def test_a_european_grouped_number_parses_silently_and_wrong(self):
+        # Period as the thousands separator survives the comma strip and is
+        # then read as the decimal point, so the value is off by a thousand in
+        # the other direction.
+        self.assertEqual(_nmfp_number("1.234,56", "CASH"), 1.23456)
 
 
 class ArchiveManifestTests(unittest.TestCase):
