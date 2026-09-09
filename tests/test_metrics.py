@@ -420,6 +420,232 @@ class ReliabilityCurveTests(unittest.TestCase):
         )
 
 
+class _CountingSequence:
+    """A sequence that counts every element access, indexed or iterated.
+
+    It deliberately defines no `__iter__`. An implementation that iterates
+    rather than indexes then falls back to the old `__getitem__` protocol,
+    which this counts, so a reinstated linear scan cannot walk the sequence
+    without the counter seeing it. A counter wired to nothing reads exactly
+    like a fast implementation, which is why the test below proves it fires
+    before it trusts that it stayed low.
+    """
+
+    def __init__(self, items):
+        self._items = list(items)
+        self.accesses = 0
+
+    def __len__(self):
+        return len(self._items)
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            raise AssertionError(
+                "sliced rather than indexed; a slice is one access here and "
+                "would hide the cost this fixture exists to measure"
+            )
+        if index < 0:
+            index += len(self._items)
+        if not 0 <= index < len(self._items):
+            raise IndexError(index)
+        self.accesses += 1
+        return self._items[index]
+
+
+class StepLookupCostTests(unittest.TestCase):
+    """`_step_lookup` bisects, and its cost is asserted rather than trusted.
+
+    The scan this replaced was *correct*. It was a linear walk over a list its
+    own docstring said was sorted, called `replications * n` times inside
+    `corp_reliability_curve`, so the curve cost `O(replications * n^2)`.
+    Profiled on a 500-row panel at 2000 replications it was 3.90 s of 5.36 s
+    -- 73% of the curve, 1,000,000 calls -- and on the frozen 2104-row funding
+    panel the exceedance backtest it sits under took about fourteen minutes.
+    The suite could not see any of that, because it exercises the metric on
+    twenty-five rows, where quadratic and logarithmic are indistinguishable.
+
+    So the single test below asserts two things that fail apart:
+
+      1. **Agreement** with a brute-force right-continuous scan written here as
+         an oracle rather than imported, over a fixture with `x` below the
+         first key, above the last, exactly equal to several keys, and strictly
+         between keys, with duplicate keys present. The exact-equality cases
+         carry the test: they are the only ones that separate `bisect_right`
+         from `bisect_left`.
+      2. **Cost**, via a sequence that counts element accesses. Logarithmic and
+         linear differ by three orders of magnitude at n = 4096, so the bound
+         does not have to be tight to be decisive.
+
+    They are subtests rather than two tests because neither alone is the
+    criterion -- correct-and-slow and fast-and-wrong are both failures -- and
+    subtests so that a mutation killing one is seen not to have killed the
+    other.
+
+    Mutation record
+    ---------------
+
+    Both planted in `src/repo_model/metrics.py` in a disposable copy under
+    `$HOME`, never in the mount, stdlib only, run with `-B` and
+    `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` cleared first. The unmutated
+    control was green before and after both runs: 623 tests, OK, 5 skipped,
+    zero `expectedFailure`.
+
+      1. **The linear scan restored** -- the pre-block body, iterating
+         `zip(keys, values)` and breaking on the first key past `x`. One
+         failure, `AssertionError`, in the **cost** subtest: 2735 accesses
+         against a bound of 40. The **agreement** subtest stayed green, as it
+         must -- the scan is correct, it is only slow, and a test that cannot
+         tell those apart is not measuring cost. Nothing else in the suite
+         moved: 622 other tests green under a quadratic implementation, which
+         is the gap this block closes.
+      2. **`bisect_right` -> `bisect_left`** -- the plausible off-by-one, one
+         token, and the reason this block records two mutations rather than
+         one. One failure, `AssertionError`, in the **agreement** subtest, at
+         `x=0.1`, an exact and duplicated key: 1.0 where the scan gives 2.0.
+         The **cost** subtest stayed green -- bisecting to the wrong side is
+         just as fast. Again nothing else in the suite moved.
+
+    The first draft of the cost subtest queried an exact key, and mutation 2
+    killed both halves. That looked like a stronger test and was a weaker one:
+    two assertions that always fail together cannot show which property broke,
+    and the pairing above is the entire point of recording two mutations. The
+    cost query is now strictly between keys on purpose, and the comment at that
+    line says so, because it looks like an arbitrary choice and is not.
+
+    Mutation 2 is the one this test exists for. It is invisible on data with no
+    exact ties, it does not raise, and it silently makes the step function
+    left-continuous -- which moves a published reliability curve without moving
+    any test that existed before this block.
+    """
+
+    # `bisect_right` probes ceil(log2(n + 1)) = 13 elements at n = 4096, and
+    # the lookup then reads one value. 40 leaves room for a different but still
+    # logarithmic implementation -- a couple of probes either way, a bounds
+    # read -- while staying two orders of magnitude below 4096, which is the
+    # only distinction being drawn. An exact count would pin the implementation
+    # rather than the cost and would break on a correct refactor.
+    MAX_ACCESSES = 40
+
+    # Ascending, with duplicate runs at 0.10, 0.40 and 0.70. The values are
+    # distinct so that landing on the wrong member of a run is visible.
+    PAIRS = (
+        (0.10, 1.0),
+        (0.10, 2.0),
+        (0.25, 3.0),
+        (0.40, 4.0),
+        (0.40, 5.0),
+        (0.40, 6.0),
+        (0.55, 7.0),
+        (0.70, 8.0),
+        (0.70, 9.0),
+        (0.90, 10.0),
+    )
+
+    QUERIES = (
+        0.05,   # below the first key -- the fallback branch
+        0.10,   # exactly the first key, and a duplicated one
+        0.17,   # strictly between keys
+        0.25,   # exactly a singleton key
+        0.33,   # strictly between keys
+        0.40,   # exactly a triplicated key
+        0.47,   # strictly between keys
+        0.55,   # exactly a singleton key
+        0.62,   # strictly between keys
+        0.70,   # exactly a duplicated key
+        0.80,   # strictly between keys
+        0.90,   # exactly the last key
+        0.99,   # above the last key
+    )
+
+    @staticmethod
+    def _oracle(pairs, x):
+        """Brute-force right-continuous step lookup. The specification, slowly.
+
+        Written here rather than imported from `metrics`, so that a mutation of
+        the implementation cannot mutate its own oracle.
+        """
+
+        best = pairs[0][1]
+        for key, value in pairs:
+            if key <= x:
+                best = value
+            else:
+                break
+        return best
+
+    def test_the_lookup_does_not_visit_every_pair_and_agrees_with_the_scan_it_replaces(
+        self,
+    ):
+        keys = [key for key, _ in self.PAIRS]
+        values = [value for _, value in self.PAIRS]
+
+        with self.subTest("agreement with the scan it replaces"):
+            for x in self.QUERIES:
+                self.assertEqual(
+                    metrics._step_lookup(keys, values, x),
+                    self._oracle(self.PAIRS, x),
+                    msg=(
+                        f"the lookup disagrees with the brute-force scan at "
+                        f"x={x!r}; on an exact key this is bisect_left where "
+                        f"bisect_right is required, which makes the step "
+                        f"function left-continuous"
+                    ),
+                )
+
+        with self.subTest("cost is logarithmic, not linear"):
+            size = 4096
+            big_keys = [index / size for index in range(size)]
+            big_values = [float(index) for index in range(size)]
+
+            # The counter has to be shown to fire before a low count means
+            # anything, and it has to see iteration as well as indexing, or a
+            # reinstated scan reads as fast. Walking a wrapper with the old
+            # `__getitem__` protocol proves both.
+            control = _CountingSequence(big_keys)
+            for _ in control:
+                pass
+            self.assertGreaterEqual(
+                control.accesses,
+                size,
+                msg="the access counter does not see iteration; a scan would "
+                "read as free and this assertion would prove nothing",
+            )
+
+            counted_keys = _CountingSequence(big_keys)
+            counted_values = _CountingSequence(big_values)
+            # Strictly between two keys, deliberately. The exact-key cases
+            # belong to the agreement subtest; querying one here would make
+            # this subtest fail on the bisect_left off-by-one too, and then a
+            # cost assertion and a correctness assertion could not be seen to
+            # fail apart -- which is the whole reason there are two of them.
+            index = size // 3
+            x = (big_keys[index] + big_keys[index + 1]) / 2.0
+            result = metrics._step_lookup(counted_keys, counted_values, x)
+
+            self.assertEqual(
+                result,
+                self._oracle(list(zip(big_keys, big_values)), x),
+                msg="the counted call did not return the right value, so the "
+                "access count below is measuring the wrong thing",
+            )
+            accesses = counted_keys.accesses + counted_values.accesses
+            self.assertGreater(
+                accesses,
+                0,
+                msg="no accesses were counted at all; the counter is not "
+                "wired to the sequences the lookup reads",
+            )
+            self.assertLessEqual(
+                accesses,
+                self.MAX_ACCESSES,
+                msg=(
+                    f"{accesses} element accesses to answer one lookup over "
+                    f"{size} pairs. That is a linear scan, not a bisection; "
+                    f"inside corp_reliability_curve it is O(replications * n^2)"
+                ),
+            )
+
+
 class LogScoreTests(unittest.TestCase):
     def test_a_perfect_confident_forecast_scores_zero(self):
         self.assertEqual(log_score([1.0, 0.0], [1, 0]), 0.0)

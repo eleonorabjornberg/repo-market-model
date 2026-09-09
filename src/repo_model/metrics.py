@@ -97,6 +97,7 @@ is not reproducible, which the contract makes load-bearing.
 
 from __future__ import annotations
 
+import bisect
 import math
 import random
 from dataclasses import dataclass
@@ -525,9 +526,14 @@ def corp_reliability_curve(
         resampled_outcomes = [realized[i] for i in indices]
         fit = _recalibrate(resampled_forecast, resampled_outcomes)
         # Step-interpolate the replicate's fit back onto the observed grid.
+        # The keys are split out here, once per replicate, rather than inside
+        # `_step_lookup`: the lookup runs n times per replicate, and building a
+        # key list inside it would trade a linear scan for a linear copy.
         pairs = sorted(zip(resampled_forecast, fit))
+        keys = [key for key, _ in pairs]
+        values = [value for _, value in pairs]
         replicate_curves.append(
-            tuple(_step_lookup(pairs, x) for x in sorted_forecast)
+            tuple(_step_lookup(keys, values, x) for x in sorted_forecast)
         )
 
     lower_probability = (1.0 - level) / 2.0
@@ -542,16 +548,29 @@ def corp_reliability_curve(
     )
 
 
-def _step_lookup(pairs: Sequence[Tuple[float, float]], x: float) -> float:
-    """Value of a right-continuous step function at `x`. `pairs` sorted by key."""
+def _step_lookup(
+    keys: Sequence[float], values: Sequence[float], x: float
+) -> float:
+    """Value of a right-continuous step function at `x`.
 
-    best = pairs[0][1]
-    for key, value in pairs:
-        if key <= x:
-            best = value
-        else:
-            break
-    return best
+    `keys` is ascending and `values[i]` belongs to `keys[i]`. The value at `x`
+    is the one belonging to the greatest key `<= x`, so a key exactly equal to
+    `x` counts -- that is `bisect_right`, not `bisect_left`. With duplicate
+    keys the last of the run wins, which is what the linear scan this replaced
+    did and what keeps the step function right-continuous. Below the first key
+    the first value is returned, as the scan's initialisation did.
+
+    `bisect_right` rather than a scan because this is called
+    `replications * n` times inside `corp_reliability_curve` on a sequence
+    already sorted; the scan made that `O(replications * n^2)` and was 78% of
+    the exceedance backtest. `StepLookupCostTests` asserts the cost, because a
+    scan reinstated here would be correct and the numbers would not move.
+    """
+
+    position = bisect.bisect_right(keys, x) - 1
+    if position < 0:
+        return values[0]
+    return values[position]
 
 
 def _quantile(ordered: Sequence[float], probability: float) -> float:
