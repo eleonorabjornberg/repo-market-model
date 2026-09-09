@@ -1315,18 +1315,57 @@ def _nmfp_date(raw: object, field: str) -> date:
 #: series, so counting accessions would count an amended series twice.
 NMFP_ENTITY_UNIT = "series_id"
 
+#: How a contributed cell earns its `ref_date`, recorded in the cell key rather
+#: than recovered from the series name. A balance-sheet or holdings cell is
+#: dated by the cross-section it was filed under, so assembling a split
+#: month-end into one cross-section re-dates it; a daily shareholder-flow cell
+#: is dated by the day whose flows it reports, and that day does not move
+#: because the month around it was assembled. The distinction cannot be read off
+#: the `ref_date` -- a flow reported on the last business day of the month
+#: carries the same date as the cross-section it was filed under -- and June
+#: 2024, the first report month with a flow table, is itself a split month-end,
+#: so the ambiguity is present the first time the table exists.
+NMFP_DATED_BY_CROSS_SECTION = "cross_section"
+NMFP_DATED_BY_FLOW_DATE = "flow_date"
+
+
+def _nmfp_cross_section(report_date: date) -> tuple:
+    """The cross-section a report date belongs to: its calendar month.
+
+    A month-end that is not a business day splits the reporting universe across
+    two adjacent `REPORTDATE`s -- the funds reporting as of the last business
+    day and the funds reporting as of the last calendar day -- and neither half
+    is the universe. The calendar month is the unit, and it is the calendar
+    month rather than a window around a month-end because any window wide enough
+    to gather a split month-end also gathers the month next to it: 30 April 2016
+    and 31 May 2016 are 31 days apart. See `docs/DATA_QUALITY_DECISIONS.md`,
+    "The split month-end".
+    """
+
+    return (report_date.year, report_date.month)
+
 
 def _resolve_nmfp_submissions(submissions):
-    """Pick the one submission that speaks for each (series, report date).
+    """Pick the one submission that speaks for each (series, cross-section).
+
+    `submissions` maps accession to `(series_id, cross_section, filing_date)`.
+    The **caller** says what a cross-section is, and it is not always the report
+    date: `_sec_nmfp_rows` reads one archive and keys on the report date, while
+    `_assemble_sec_nmfp` assembles a split month-end into one cross-section and
+    keys on the calendar month. Both are the same rule -- one submission speaks
+    for a series in a cross-section -- applied to the unit the caller assembles
+    on. Hard-coding the report date here would mean that a series filing in both
+    halves of a split month kept both filings and had its balance sheet booked
+    twice into the month they were assembled into.
 
     Form N-MFP is filed per series per month, so a series that appears twice for
-    one report date has been amended: `N-MFP3/A` is a second accession restating
-    the first, not a second fund. `_sec_nmfp_rows` aggregates by adding every
-    accession's values together, which is right across series and wrong across a
-    series and its own amendment -- it books the restated balance sheet on top of
-    the one it replaces. A quarterly extract and the monthly extract that follows
-    it both carry such pairs, so the backfill turns a case that never arose on one
-    archive into the normal one.
+    one cross-section has been amended: `N-MFP3/A` is a second accession
+    restating the first, not a second fund. The value tables aggregate by adding
+    every accession's values together, which is right across series and wrong
+    across a series and its own amendment -- it books the restated balance sheet
+    on top of the one it replaces. A quarterly extract and the monthly extract
+    that follows it both carry such pairs, so the backfill turns a case that
+    never arose on one archive into the normal one.
 
     The winner is the latest `FILING_DATE`, because that is the archive's own
     statement of filing order and it is what makes an amendment an amendment.
@@ -1343,8 +1382,8 @@ def _resolve_nmfp_submissions(submissions):
     """
 
     best = {}
-    for accession, (series_id, report_date, filing_date) in submissions.items():
-        key = (series_id, report_date)
+    for accession, (series_id, cross_section, filing_date) in submissions.items():
+        key = (series_id, cross_section)
         rank = (filing_date, accession)
         if key not in best or rank > best[key][0]:
             best[key] = (rank, accession)
@@ -1358,12 +1397,14 @@ def _nmfp_archive_scan(payload: bytes):
     Returns `(submissions, submission_types, contributions, absent)`.
     `submissions` maps accession to `(series_id, report_date, filing_date)`;
     `submission_types` maps accession to its `SUBMISSIONTYPE`; `contributions`
-    maps accession to the `(series_id, ref_date)` cells it supplies and the
-    value it supplies to each; `absent` maps each report date this archive
-    carries to the panel series this archive could supply no observation of,
-    because the table that carries them is not in the archive or because the
-    report month has no declared `INVESTMENTCATEGORY` vocabulary. Absent, never
-    zero.
+    maps accession to the `(series_id, ref_date, dated_by)` cells it supplies
+    and the value it supplies to each, where `dated_by` is one of
+    `NMFP_DATED_BY_CROSS_SECTION` or `NMFP_DATED_BY_FLOW_DATE` and says whether
+    the cell's `ref_date` moves when its cross-section is assembled; `absent`
+    maps each report date this archive carries to the panel series this archive
+    could supply no observation of, because the table that carries them is not
+    in the archive or because the report month has no declared
+    `INVESTMENTCATEGORY` vocabulary. Absent, never zero.
 
     Supersession is deliberately *not* applied here, and that is the whole point
     of the split. An amendment is resolved per `(SERIESID, REPORTDATE)` across
@@ -1387,9 +1428,15 @@ def _nmfp_archive_scan(payload: bytes):
     submission_types = {}
     contributions = {}
 
-    def add(accession: str, series_id: str, ref_date: date, value: float) -> None:
+    def add(
+        accession: str,
+        series_id: str,
+        ref_date: date,
+        value: float,
+        dated_by: str,
+    ) -> None:
         cells = contributions.setdefault(accession, {})
-        key = (series_id, ref_date)
+        key = (series_id, ref_date, dated_by)
         cells[key] = cells.get(key, 0.0) + value
 
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
@@ -1433,7 +1480,13 @@ def _nmfp_archive_scan(payload: bytes):
                 for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
                     value = _nmfp_number(record.get(raw_field), raw_field)
                     if value is not None:
-                        add(accession, series_id, section, value / 1_000_000_000)
+                        add(
+                            accession,
+                            series_id,
+                            section,
+                            value / 1_000_000_000,
+                            NMFP_DATED_BY_CROSS_SECTION,
+                        )
 
         # Every archive filed before 2024-06-10 predates this table: daily
         # shareholder flows were not collected, so there is nothing to read and
@@ -1468,7 +1521,13 @@ def _nmfp_archive_scan(payload: bytes):
                     value = _nmfp_number(record.get(raw_field), raw_field)
                     if value is not None:
                         values[series_id] = value / 1_000_000_000
-                        add(accession, series_id, ref_date, values[series_id])
+                        add(
+                            accession,
+                            series_id,
+                            ref_date,
+                            values[series_id],
+                            NMFP_DATED_BY_FLOW_DATE,
+                        )
                 if len(values) == 2:
                     add(
                         accession,
@@ -1476,6 +1535,7 @@ def _nmfp_archive_scan(payload: bytes):
                         ref_date,
                         values["mmf_gross_subscriptions"]
                         - values["mmf_gross_redemptions"],
+                        NMFP_DATED_BY_FLOW_DATE,
                     )
 
         holdings_table = _nmfp_table_if_present(
@@ -1517,7 +1577,13 @@ def _nmfp_archive_scan(payload: bytes):
                 )
                 if value is None:
                     continue
-                add(accession, field, section, value / 1_000_000_000)
+                add(
+                    accession,
+                    field,
+                    section,
+                    value / 1_000_000_000,
+                    NMFP_DATED_BY_CROSS_SECTION,
+                )
                 if field == "mmf_repo_holdings":
                     counterparty = " ".join(
                         str(record.get(name) or "")
@@ -1526,7 +1592,13 @@ def _nmfp_archive_scan(payload: bytes):
                         )
                     ).upper()
                     if "FEDERAL RESERVE" in counterparty:
-                        add(accession, "mmf_on_rrp", section, value / 1_000_000_000)
+                        add(
+                            accession,
+                            "mmf_on_rrp",
+                            section,
+                            value / 1_000_000_000,
+                            NMFP_DATED_BY_CROSS_SECTION,
+                        )
             for section in undeclared:
                 absent.setdefault(section, set()).update(NMFP_CATEGORY_FIELDS)
 
@@ -1540,19 +1612,27 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     this adapter has always returned, for the one caller that legitimately holds
     a single archive and no others: a schema check on a rewritten payload.
 
-    `parse_snapshots` no longer goes through here, and the reason is the whole of
-    block 2. Resolving supersession inside this function resolves it inside one
-    archive, which was correct when the repository held one extract and became
-    wrong the moment the backfill put a filing and its amendment in different
-    ones. The panel is assembled by `_assemble_sec_nmfp` instead, which resolves
-    per `(SERIESID, REPORTDATE)` across every archive. On a single archive the
-    two agree by construction, which is why this function is still a faithful
-    description of what one archive says.
+    `parse_snapshots` no longer goes through here. Resolving supersession inside
+    this function resolves it inside one archive, which was correct when the
+    repository held one extract and became wrong the moment the backfill put a
+    filing and its amendment in different ones. The panel is assembled by
+    `_assemble_sec_nmfp` instead, which resolves per `(SERIESID, month)` across
+    every archive.
+
+    **This function and the panel no longer agree, and the difference is not an
+    oversight.** It groups by `REPORTDATE`, so on a split month-end it reports
+    the two halves the archive actually filed; the panel assembles them into one
+    cross-section dated the month's greatest `REPORTDATE`. That is right for
+    what this is used for -- one caller, a schema check on a rewritten payload,
+    which asks what a single archive *says* rather than what the panel makes of
+    it -- and it would be wrong to answer that question with an assembly the
+    archive did not perform. Nothing downstream of the panel reads this.
 
     Each element of `rows` pairs an observation with the report date of the
-    submission it came from -- its cross-section -- which is not always its own
-    `ref_date`: a daily shareholder-flow row is dated within the reporting month
-    but belongs to that month's cross-section and stands or falls with it.
+    submission it came from -- its cross-section as this function groups them --
+    which is not always its own `ref_date`: a daily shareholder-flow row is
+    dated within the reporting month but belongs to that month's cross-section
+    and stands or falls with it.
     `entity_counts` maps each cross-section to the number of distinct reporting
     entities that filed for it. `submission_types` maps each cross-section to
     how many submissions of each `SUBMISSIONTYPE` it carries, superseded ones
@@ -1570,7 +1650,11 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     totals = {}
     for accession in sorted(kept_accessions):
         section = submissions[accession][1]
-        for (series_id, ref_date), value in contributions.get(accession, {}).items():
+        for (series_id, ref_date, _dated_by), value in contributions.get(
+            accession, {}
+        ).items():
+            # One archive read alone assembles nothing, so a cell's `ref_date`
+            # is already the one it will carry and the basis is not consulted.
             key = (section, series_id, ref_date)
             totals[key] = totals.get(key, 0.0) + value
 
@@ -1634,15 +1718,17 @@ def _assemble_sec_nmfp(
     """Assemble every `sec_nmfp` archive into cross-sections, then admit them.
 
     Returns `(candidates, coverage)`: `(retrieved_at, observation)` pairs for the
-    revision logic, and one `CrossSectionCoverage` per archive that carries a
-    report date, recording the *assembled* state of that cross-section as of
+    revision logic, and one `CrossSectionCoverage` per archive that files into a
+    calendar month, recording the *assembled* state of that cross-section as of
     that archive.
 
-    A cross-section is a report date, not an archive. That was the same
-    statement while the repository held one extract, and the backfill separated
-    the two without anything noticing, because each archive on its own still
-    looks exactly as it did. Two consequences, and they are different questions
-    decided on the same wrong unit:
+    A cross-section is a calendar month, not a report date and not an archive.
+    Both corrections were made against the same original claim -- that a
+    cross-section is an archive -- which was true while the repository held one
+    extract and stopped being true without anything noticing, because each
+    archive on its own still looks exactly as it did. Three questions were being
+    decided on a unit that was wrong for all of them, and they are not the same
+    question:
 
     - **Supersession is per `(SERIESID, REPORTDATE)` across every archive.**
       `N-MFP3/A` is a second accession restating the first, and the backfill
@@ -1657,6 +1743,17 @@ def _assemble_sec_nmfp(
       amendments away with the cohort, leaving the originals they were filed to
       replace standing unreplaced, and drops a series that filed only there.
 
+    - **The cross-section is the calendar month, not the `REPORTDATE`.** A
+      month-end that is not a business day splits the reporting universe across
+      two adjacent `REPORTDATE`s, and judged a report date at a time neither
+      half is the universe: usually only the larger clears the floor and the
+      month is admitted about a quarter short, and where both cleared it the
+      month put two partial cross-sections in the panel and the identity was
+      reconciled on each as though it were whole. The month's reference date is
+      the **greatest `REPORTDATE` observed in it** -- a date the data contains,
+      rather than the calendar month-end, which in a month ending on a Sunday is
+      a date no filer used.
+
     Assembly is progressive, in retrieval order, and that is what keeps this a
     change to *what* a cross-section is rather than to when the panel could have
     known it. At each archive the cross-sections that archive touches are
@@ -1668,9 +1765,30 @@ def _assemble_sec_nmfp(
     correction history into one row and claim the whole panel was knowable at
     the last retrieval, which is a look-ahead in everything but name.
 
+    Three things follow from assembling by month, and each is a way it could be
+    got wrong:
+
+    - **Supersession resolves on the assembled cross-section.** A series that
+      files in both halves of a split month-end is one series' account of one
+      cross-section, so the later-filed submission supersedes the earlier rather
+      than being added to it. Resolving on the report date instead would keep
+      both and book that series' balance sheet into the month twice.
+    - **Only cross-section-dated cells move.** A balance-sheet or holdings cell
+      is dated by the cross-section it was filed under and is re-dated with it;
+      a daily shareholder-flow cell is dated by the day whose flows it reports
+      and is not. `NMFP_DATED_BY_CROSS_SECTION` and `NMFP_DATED_BY_FLOW_DATE` carry
+      that in the cell key so it is not re-derived from the series name.
+    - **The reference date is progressive, like the floor.** It is the greatest
+      report date observed *in the archives retrieved so far*, for the same
+      reason the count is taken over those archives: dating a month by a report
+      date that no archive had yet filed would label a cross-section with a day
+      nobody had observed. Where a later archive extends a month past the date
+      an earlier vintage was emitted under, the earlier vintage stands as what
+      was known then; it is not retracted and no zero is written at it.
+
     The floor's value is untouched, and so is the unit it counts -- distinct
     `SERIESID`. Only the population it counts over changed, from one archive's
-    filings for a report date to every archive's.
+    filings for a report date to every archive's filings for a calendar month.
     """
 
     from .data import CrossSectionCoverage, PointInTimeObservation, declared_coverage_floor
@@ -1690,12 +1808,13 @@ def _assemble_sec_nmfp(
 
     submissions = {}          # accession -> (series_id, report_date, filing_date)
     submission_types = {}     # accession -> SUBMISSIONTYPE
-    contributions = {}        # accession -> {(series_id, ref_date): value}
-    cell_accessions = {}      # (series_id, ref_date) -> {accession}
-    section_accessions = {}   # report_date -> {accession}
-    absent = {}               # report_date -> set of unobservable fields
+    contributions = {}        # accession -> {(series_id, ref_date, dated_by): value}
+    cell_accessions = {}      # cell -> {accession}
+    section_cells = {}        # (month, series_id) -> {cross-section-dated cell}
+    section_accessions = {}   # month -> {accession}
+    absent = {}               # month -> set of unobservable fields
 
-    scanned_sections = []     # per archive, the report dates it carries
+    scanned_sections = []     # per archive, the months it files into
     scanned_accessions = []   # per archive, the accessions it carries
 
     for artifact in ordered:
@@ -1712,23 +1831,41 @@ def _assemble_sec_nmfp(
                 )
             submissions[accession] = entry
             submission_types[accession] = types[accession]
-            section_accessions.setdefault(entry[1], set()).add(accession)
+            section_accessions.setdefault(
+                _nmfp_cross_section(entry[1]), set()
+            ).add(accession)
         for accession, supplied in cells.items():
             contributions[accession] = supplied
             for cell in supplied:
                 cell_accessions.setdefault(cell, set()).add(accession)
-        for section, fields in missing.items():
+                # A cross-section-dated cell is filed with its submission's own
+                # report date -- that is what `_nmfp_archive_scan` dates it by --
+                # so the month it belongs to is readable from the cell, without
+                # the accession. That is what lets `panel_cell` be a function of
+                # the cell alone, and it is what this index records.
+                if cell[2] == NMFP_DATED_BY_CROSS_SECTION:
+                    key = (_nmfp_cross_section(cell[1]), cell[0])
+                    section_cells.setdefault(key, set()).add(cell)
+        # `missing` is seeded with exactly the report dates the archive carries,
+        # populated or not, so its keys name the archive's cross-sections once
+        # they are folded onto the month.
+        archive_absent = {}
+        for report_date, fields in missing.items():
+            section = _nmfp_cross_section(report_date)
+            if section in archive_absent:
+                archive_absent[section] &= set(fields)
+            else:
+                archive_absent[section] = set(fields)
+        for section, fields in archive_absent.items():
             # A field is absent from an assembled cross-section only when no
-            # archive carrying that report date could supply it. One archive
+            # archive filing into that month could supply it. One archive
             # predating the daily-flow table does not make the month's flows
             # unobservable if another archive carries them.
             if section in absent:
-                absent[section] &= set(fields)
+                absent[section] &= fields
             else:
-                absent[section] = set(fields)
-        # `missing` is seeded with exactly the report dates the archive carries,
-        # populated or not, so its keys are the archive's cross-sections.
-        scanned_sections.append(sorted(missing))
+                absent[section] = fields
+        scanned_sections.append(sorted(archive_absent))
         scanned_accessions.append(frozenset(scanned))
 
     active = set()
@@ -1737,6 +1874,36 @@ def _assemble_sec_nmfp(
     coverage = []
     known = set()
     admitted = set()
+    section_ref_dates = {}    # month -> greatest report date observed so far
+
+    def panel_cell(cell):
+        """Where a contributed cell lands in the panel, given today's assembly.
+
+        A cross-section-dated cell carries its month's reference date; a
+        flow-dated cell carries the day whose flows it reports, which does not
+        move because the month around it was assembled.
+        """
+
+        series_id, ref_date, dated_by = cell
+        if dated_by == NMFP_DATED_BY_CROSS_SECTION:
+            ref_date = section_ref_dates[_nmfp_cross_section(ref_date)]
+        return (series_id, ref_date)
+
+    def contributing_cells(target):
+        """Every contributed cell that lands on one panel cell today.
+
+        The cross-section-dated ones are the month's, which the target's own
+        reference date names because that date is one of the month's report
+        dates. The flow-dated one is the cell for that exact day. A series is
+        dated one way or the other, so one of these two is always empty -- and
+        if a series were ever dated both ways, both contributions would belong
+        to that panel cell anyway.
+        """
+
+        series_id, ref_date = target
+        found = set(section_cells.get((_nmfp_cross_section(ref_date), series_id), ()))
+        found.add((series_id, ref_date, NMFP_DATED_BY_FLOW_DATE))
+        return found
 
     for index, artifact in enumerate(ordered):
         retrieved_at = datetime.fromisoformat(
@@ -1744,8 +1911,39 @@ def _assemble_sec_nmfp(
         )
         sections = scanned_sections[index]
         known |= scanned_accessions[index]
+        # The greatest report date observed *so far* in each month. Taking it
+        # over every archive instead would date a cross-section by a report date
+        # that no archive had yet filed, which is the same look-ahead the count
+        # below is careful to avoid, one field over.
+        previous_ref_dates = dict(section_ref_dates)
+        for accession in scanned_accessions[index]:
+            report_date = submissions[accession][1]
+            section = _nmfp_cross_section(report_date)
+            if report_date > section_ref_dates.get(section, date.min):
+                section_ref_dates[section] = report_date
+        # Compared against the previous archive's state rather than accumulated
+        # while scanning this one: a month first seen here has not moved, and
+        # two accessions of one month arriving in either order must give the
+        # same answer. `scanned_accessions` is a set, so an incremental test
+        # would depend on its iteration order.
+        moved = {
+            section
+            for section, ref_date in section_ref_dates.items()
+            if section in previous_ref_dates and previous_ref_dates[section] != ref_date
+        }
+        # A submission speaks for a series in a *cross-section*, and the
+        # cross-section is the month: a series that filed in both halves of a
+        # split month-end filed twice about one month, and the later filing
+        # supersedes the earlier rather than being added to it.
         kept, _superseded = _resolve_nmfp_submissions(
-            {accession: submissions[accession] for accession in known}
+            {
+                accession: (
+                    submissions[accession][0],
+                    _nmfp_cross_section(submissions[accession][1]),
+                    submissions[accession][2],
+                )
+                for accession in known
+            }
         )
         # Counted over the archives retrieved so far, not over all of them. The
         # floor is a statement about what had been assembled by this retrieval,
@@ -1769,19 +1967,32 @@ def _assemble_sec_nmfp(
         wanted = {
             accession
             for accession in kept
-            if submissions[accession][1] in admitted
+            if _nmfp_cross_section(submissions[accession][1]) in admitted
         }
         changed = (wanted - active) | (active - wanted)
+        # A month whose reference date moved re-dates every cross-section-dated
+        # cell its active submissions supply, whether or not those submissions
+        # themselves changed. The rows emitted at the month's previous reference
+        # date are left standing: they are what this source said when that was
+        # the greatest report date anyone had seen, and retracting a vintage --
+        # or writing a zero at it -- would state something the archives do not.
+        restated = {
+            accession
+            for accession in wanted
+            if _nmfp_cross_section(submissions[accession][1]) in moved
+        }
         active = wanted
         dirty = set()
-        for accession in changed:
-            dirty |= set(contributions.get(accession, ()))
-        for cell in dirty:
+        for accession in changed | restated:
+            for cell in contributions.get(accession, ()):
+                dirty.add(panel_cell(cell))
+        for target in dirty:
             total = 0.0
-            for accession in sorted(cell_accessions[cell]):
-                if accession in active:
-                    total += contributions[accession][cell]
-            assembled[cell] = total
+            for cell in sorted(contributing_cells(target)):
+                for accession in sorted(cell_accessions.get(cell, ())):
+                    if accession in active:
+                        total += contributions[accession][cell]
+            assembled[target] = total
         for series_id, ref_date in sorted(dirty):
             candidates.append(
                 (
@@ -1804,14 +2015,14 @@ def _assemble_sec_nmfp(
             # `row_count` counts what this cross-section would put in the panel,
             # so an excluded one still reports the rows it was declined for.
             surviving = {
-                cell
+                panel_cell(cell)
                 for accession in members[section] & kept
                 for cell in contributions.get(accession, ())
             }
             coverage.append(
                 CrossSectionCoverage(
                     source_id=source_id,
-                    ref_date=section,
+                    ref_date=section_ref_dates[section],
                     entity_unit=entity_unit,
                     entity_count=counts[section],
                     declared_floor=floor,
