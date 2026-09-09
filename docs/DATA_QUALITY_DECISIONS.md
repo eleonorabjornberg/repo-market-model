@@ -189,17 +189,26 @@ amendments and stragglers for adjacent months. After the coverage floor is appli
 extract therefore yields **one** monthly cross-section — roughly one archive per usable
 observation.
 
-At the time of writing the repository holds one archive, so `mmf_net_assets` has one
-`ref_date` (alongside 23 daily shareholder-flow dates, which are unaffected).
+When this was written the repository held one archive, so `mmf_net_assets` had one
+`ref_date`. **That is no longer so.** The backfill landed at `992a91c`, which also recorded
+the archive set in `metadata/sec_nmfp_archives.json`. That manifest is the count, and it is
+deliberately not transcribed here: a number written where nothing can update it is the
+defect this document exists to name.
 
 **Consequence for modeling:** the monthly `mmf_*` series cannot support a fit of any
 kind, and no benchmark may take a monthly N-MFP field as a regressor until several
 archives are ingested. The daily flow series are not subject to this. This is a data
 availability limit, not a modeling choice, and a green test suite says nothing about it.
 
-**Required resolution:** backfill the SEC monthly N-MFP data sets and the earlier
-quarterly sets, applying the coverage floor to every reference date found rather than
-trusting the archives' own contents.
+**Resolved** by the backfill at `992a91c`, by cross-archive supersession at `8d77691`,
+and by `346d4ff`, which moved the unit of assembly from the report date to the calendar
+month so a split month-end is one cross-section rather than two. The coverage floor is
+applied to every assembled cross-section rather than to the archives' own contents.
+
+**What this leaves open is the floor, not the series length.** A single declared absolute
+of 200 distinct `SERIESID` stands across a reporting universe that changed size by roughly
+a factor of two over the archive period; the per-era replacement is specified and not yet
+implemented. See the coverage section at the head of this document.
 
 ## N-MFP schema drift is a silent-emptiness hazard, not a loud one
 
@@ -217,13 +226,43 @@ The second mode produces no error, no missingness signal, and a green identity c
 is the coverage failure one level lower down: a check computed from the same partial
 extract it validates cannot fail.
 
-**Required resolution:** version boundaries established empirically from the archives
-themselves — table and column lists diffed against the schema the parser assumes — and a
-posture of **refusing** an archive that cannot be read faithfully rather than parsing
-what it can. A partially-read archive that passes the identity check is worse than no
-archive. Overlap between quarterly and monthly sets covering the same month, and between
-original and amended accessions for the same series and report date, must be shown not to
-double count.
+**Resolved** — and the two bullets above now describe the hazard rather than this adapter.
+Both failure modes moved, in opposite directions, and neither reads as written any more:
+
+- **A renamed or restructured column no longer yields `None`. It refuses the archive.**
+  `NMFP_REQUIRED_COLUMNS` is derived from the balance-field and flow-field mappings the
+  parser actually reads — not from a copy in the registry, which would drift from the
+  parser silently — and `_nmfp_table` compares it against the header before a single
+  record is parsed, naming the table and the missing columns. Implemented at `cbbc864`,
+  extended to per-table refusal at `a675a11`.
+- **A missing table raises only for the spine.** `_nmfp_table_if_present` returns `None`
+  for an absent non-spine table, which costs the panel the fields that table supplies —
+  named in `NMFP_TABLE_FIELDS` — and refuses nothing, because a field with no observation
+  is a state the panel already represents. Absence and unreadability are different claims
+  about a file and are now priced differently. So "a missing table raises" is true of
+  `NMFP_SUBMISSION.tsv` and of no other table.
+
+The empirical half is done too. Every archive in `metadata/sec_nmfp_archives.json` was
+diffed against the schema the parser assumes, and the boundaries that scan established are
+recorded in the `sec_nmfp` limitation in `metadata/sources.json`. On that set the guard
+refuses no archive outright; the only refusals are absent fields, all from
+`NMFP_DLYSHAREHOLDERFLOWREPORT.tsv`, which did not exist before Form N-MFP3. **Refusing
+nothing is a result here, not a null:** it is what licenses the coverage floors to be
+calibrated from the admitted set as it stands.
+
+The double-counting clause is resolved separately, at `8d77691`: supersession and coverage
+resolve across archives on `(SERIESID, month)` rather than within one, so quarterly and
+monthly sets covering the same month, and original and amended accessions for the same
+series, resolve to one cross-section rather than two.
+
+**One hazard of this shape remains open, and is deliberately unfixed.** `_nmfp_number`
+strips commas as thousands separators before `float()`, so an extract written in a
+decimal-comma locale parses silently and wrong by a power of ten. It is recorded in the
+`sec_nmfp` limitation and pinned to the parser by `NMFPDecimalCommaTests` at `19968d6`.
+It is not fixed: a locale-sniffing heuristic would be a silent behaviour change calibrated
+on data nobody has seen, and a differently formatted extract should fail loudly rather
+than parse plausibly. That is the posture of refusing an unreadable header, applied to a
+value rather than to a column name.
 
 ## The ON RRP channel is declared, empty, and unverified
 
