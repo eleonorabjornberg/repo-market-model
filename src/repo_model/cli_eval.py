@@ -22,6 +22,7 @@ Stdlib only, by contract.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 from dataclasses import dataclass
 from datetime import time
@@ -31,10 +32,15 @@ from typing import Callable, Optional, Tuple
 
 from .baseline import (
     ExceedancePredictor,
+    FittedForecastModel,
+    ModelFitter,
     arx_exceedance,
     backtest_document,
     climatology_exceedance,
     exceedance_backtest_document,
+    fit,
+    fit_arx,
+    fit_threshold,
     rolling_exceedance_backtest,
     rolling_persistence_backtest,
     threshold_exceedance,
@@ -187,10 +193,38 @@ def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
             "numbers under that model's name"
         )
 
+    regressors, regime_variable = _regressors_and_regime(
+        args, name, choice.needs_regime_variable
+    )
+    return name, choice.construct(
+        regressors=regressors,
+        regime_variable=regime_variable,
+        minimum_history=args.minimum_history,
+    )
+
+
+def _regressors_and_regime(
+    args: argparse.Namespace, name: str, needs_regime_variable: bool
+) -> Tuple[Tuple[str, ...], Optional[str]]:
+    """Split `--feature` into regressors and a regime variable, or refuse.
+
+    Shared by both selectors, because the rules are one rule and not two. The
+    *mappings* are deliberately separate -- a `ModelFitter` is not an
+    `ExceedancePredictor`, and one table for both interfaces would be a lie
+    about the types -- but how `--feature` is divided, and when
+    `--regime-variable` is required or refused, is a property of the
+    declaration rather than of either interface. Written twice it would be two
+    statements of the same rule that agree until one of them is edited, which
+    is the failure a second name-to-model mapping would be.
+
+    Every message names `--model {name}` rather than a model class, so a caller
+    reads back the flag they typed.
+    """
+
     declared = tuple(sorted(args.feature))
     regime_variable = args.regime_variable
 
-    if choice.needs_regime_variable:
+    if needs_regime_variable:
         if regime_variable is None:
             raise SplitError(
                 f"--model {name} reads a regime variable off each row to choose "
@@ -220,10 +254,125 @@ def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
         for column in declared
         if column != _AUTOREGRESSIVE_TERM and column != regime_variable
     )
+    return regressors, regime_variable
+
+
+@dataclass(frozen=True)
+class _FitterChoice:
+    """One `--model` name on the continuous path, and the fitter behind it.
+
+    `_ModelChoice`'s counterpart for the other interface, and separate from it
+    on purpose. `rolling_persistence_backtest` takes a `ModelFitter` --
+    `(train_frame, minimum_history=...) -> FittedForecastModel` -- and
+    `rolling_exceedance_backtest` takes an `ExceedancePredictor`. One table
+    covering both would have to hold a value that is sometimes one and
+    sometimes the other, and the type would stop saying which.
+
+    The three fitters have different signatures -- `fit(train_frame)`,
+    `fit_arx(train_frame, regressors)`,
+    `fit_threshold(train_frame, regressors, threshold_variable)` -- so `build`
+    carries construction, and what it constructs is a `functools.partial`,
+    which is the shape `baseline.ModelFitter`'s own docstring names.
+
+    `factory` is the `baseline` fitter itself and `build` is handed that same
+    object rather than closing over one of its own, for the reason
+    `_ModelChoice` gives: the two cannot then name different models.
+    """
+
+    factory: Callable[..., FittedForecastModel]
+    build: Callable[..., ModelFitter]
+    needs_regime_variable: bool
+
+    def construct(
+        self, *, regressors: Tuple[str, ...], regime_variable: Optional[str]
+    ) -> ModelFitter:
+        return self.build(self.factory, regressors, regime_variable)
+
+
+#: `--model NAME` -> the continuous fitter it names. **One mapping, in one
+#: place**, and the only thing in this repository that turns a name into a
+#: `ModelFitter`. A second one would be how `backtest` and the comparison that
+#: follows it come to disagree about what `arx` means while both look right.
+#:
+#: `minimum_history` is absent from the partials on purpose:
+#: `rolling_persistence_backtest` passes it at every origin, so binding it here
+#: as well would be two places one number comes from.
+FITTER_FACTORIES = MappingProxyType(
+    {
+        "persistence": _FitterChoice(
+            factory=fit,
+            # Nothing to bind: `fit` already has the `ModelFitter` shape. The
+            # entry exists so that persistence is a *name* a caller selects
+            # rather than what happens when nobody says.
+            build=lambda factory, regressors, regime: factory,
+            needs_regime_variable=False,
+        ),
+        "arx": _FitterChoice(
+            factory=fit_arx,
+            build=lambda factory, regressors, regime: functools.partial(
+                factory, regressors=regressors
+            ),
+            needs_regime_variable=False,
+        ),
+        "threshold": _FitterChoice(
+            factory=fit_threshold,
+            build=lambda factory, regressors, regime: functools.partial(
+                factory, regressors=regressors, threshold_variable=regime
+            ),
+            needs_regime_variable=True,
+        ),
+    }
+)
+
+
+def _fitter_names() -> str:
+    """The selectable continuous models, for a help string and a refusal."""
+
+    return ", ".join(sorted(FITTER_FACTORIES))
+
+
+def _select_fitter(args: argparse.Namespace) -> Tuple[str, ModelFitter]:
+    """Resolve `--model` to a constructed `ModelFitter`, or refuse first.
+
+    `_select_model`'s counterpart on the continuous path, and the argument for
+    refusing rather than falling back is the same one with more force. There
+    the default a convenience would pick is the climatology, which is the
+    reference a skill score is a ratio against. Here it is **persistence**,
+    which is the model `PLAN.md`'s Phase 2 exit criterion names: *"a model that
+    beats persistence out of sample"*. A run meaning to publish an ARX and
+    getting the persistence fitter publishes the benchmark's own numbers under
+    the ARX's name, in a record whose feature set, gap, folds, panel digest and
+    provenance are all correct -- and the comparison block reading two such
+    records would conclude that the challenger ties the baseline exactly.
+
+    Until this block there was no flag at all and `_backtest` called the
+    backtest without `fit_model`, so that failure did not need a misspelling:
+    it was the only behaviour available. The flag is required and undefaulted
+    so that behaviour does not survive as an unnamed path.
+
+    Returns:
+        `(name, fit_model)`, where `name` is the string the caller passed and
+        is what the record will carry. Not re-derived from the fitter: several
+        of these produce objects of the same class, so a name reconstructed
+        from one would not identify it.
+    """
+
+    name = args.model
+    choice = FITTER_FACTORIES.get(name)
+    if choice is None:
+        raise SplitError(
+            f"unknown --model {name!r}; this command can run "
+            f"{_fitter_names()}. There is no default: the default would be "
+            "persistence, which is the benchmark every other model here is "
+            "asked to beat, so a run meaning to score a challenger would "
+            "publish the benchmark's numbers under the challenger's name"
+        )
+
+    regressors, regime_variable = _regressors_and_regime(
+        args, name, choice.needs_regime_variable
+    )
     return name, choice.construct(
-        regressors=regressors,
-        regime_variable=regime_variable,
-        minimum_history=args.minimum_history,
+        regressors=regressors, regime_variable=regime_variable
     )
 
 
@@ -283,6 +432,18 @@ def _backtest(args: argparse.Namespace) -> int:
     and nothing downstream could tell. `--feature` is the one declaration, and
     everything else follows from it.
 
+    **There is a `--model`, and it is required.** This command used to call
+    `rolling_persistence_backtest` without `fit_model`, so the only continuous
+    model reachable from outside the test suite was the default persistence
+    fitter -- while `baseline` had `fit_arx` and `fit_threshold` beside it and
+    `PLAN.md`'s Phase 2 exit criterion asked for *"a model that beats
+    persistence"*. A conditional model had no path to a published record. It
+    selects through `_select_fitter`, whose mapping is the only thing here that
+    turns a name into a `ModelFitter`, and the flag is undefaulted because the
+    default would be the very model the comparison is against. The regressors
+    come out of `--feature` rather than beside it, so what the fitter is handed
+    and what the run declared are the same set by construction.
+
     `features`, `sources`, `fields` and `purge_days` are reported beside the
     metrics for the reason `model_config` carries them on the event path: a
     benchmark whose gap came from somewhere an auditor cannot follow is not a
@@ -316,6 +477,11 @@ def _backtest(args: argparse.Namespace) -> int:
     no benchmark: a report on disk is a claim that a benchmark ran.
     """
 
+    # Before the panel is read, so a refused `--model` leaves no report behind
+    # for the same reason a starved gap does not: a file on disk is a claim
+    # that a benchmark ran.
+    model_name, fit_model = _select_fitter(args)
+
     rows = load_daily_panel(args.path)
     audit_panel(rows)
     report = rolling_persistence_backtest(
@@ -324,13 +490,19 @@ def _backtest(args: argparse.Namespace) -> int:
         registry=_registry(args),
         decision_time=time.fromisoformat(args.decision_time),
         minimum_history=args.minimum_history,
+        fit_model=fit_model,
     )
 
     # `--registry` is passed to the record as well as to the run: the record
     # must identify the registry version the gap was priced by, and the only
     # file that can answer is the one this command actually opened.
+    # `model` is passed for the same kind of reason and is the name the caller
+    # selected, travelling with the numbers that name produced.
     document = backtest_document(
-        report, panel_path=args.path, registry_path=args.registry
+        report,
+        panel_path=args.path,
+        registry_path=args.registry,
+        model=model_name,
     )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -344,6 +516,9 @@ def _backtest(args: argparse.Namespace) -> int:
     print(
         json.dumps(
             {
+                # The one thing the console could not previously say, because
+                # there was only one answer it could have given.
+                "model": model_name,
                 "forecast_count": len(report.forecasts),
                 "mae_bps": round(report.mae_bps, 4),
                 "interval_coverage": round(report.interval_coverage, 4),
@@ -696,6 +871,24 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     backtest.add_argument("--decision-time", required=True, metavar="HH:MM")
     backtest.add_argument(
+        "--model",
+        required=True,
+        metavar="NAME",
+        help="which continuous model to fit at every origin, one of "
+        + _fitter_names()
+        + "; required with no default, because the default would be "
+        "persistence and persistence is the benchmark every other model here "
+        "is asked to beat",
+    )
+    backtest.add_argument(
+        "--regime-variable",
+        metavar="COLUMN",
+        default=None,
+        help="the panel column a two-regime model reads to choose a regime; "
+        "required for --model threshold, refused for the others, and it must "
+        "be one of --feature",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -704,7 +897,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "run whose figures exist only in a terminal is what this command was "
         "changed to stop",
     )
-    # No --purge and no --source. See _backtest.
+    # No --purge and no --source. See _backtest. `--model` carries no default
+    # either, and for a reason of the same kind: see _select_fitter.
     backtest.set_defaults(handler=_backtest)
 
     exceedance = subparsers.add_parser(

@@ -94,8 +94,10 @@ No mutation was planted in the report shaping or the journal path; those are
 `event_eval`'s and are recorded in `tests/test_event_eval.py`.
 """
 
+import argparse
 import contextlib
 import csv
+import functools
 import hashlib
 import inspect
 import io
@@ -116,6 +118,8 @@ from repo_model.baseline import (
     BacktestReport,
     Forecast,
     backtest_document,
+    fit_arx,
+    fit_threshold,
     rolling_persistence_backtest,
 )
 from repo_model.contract import (
@@ -1105,6 +1109,13 @@ class RollingBacktestHarness(unittest.TestCase):
             }
         }
 
+    #: What these tests run unless they say otherwise. Passed explicitly on
+    #: every invocation rather than defaulted in the parser: `--model` is
+    #: required and undefaulted precisely so that no run is the persistence
+    #: benchmark by omission, and a harness that let the flag be omitted would
+    #: be a second place the default lived.
+    MODEL = "persistence"
+
     def run_backtest(
         self,
         *features,
@@ -1112,29 +1123,40 @@ class RollingBacktestHarness(unittest.TestCase):
         registry=None,
         report=None,
         panel=None,
+        model=None,
+        regime_variable=None,
     ):
         """Run the command. `report` names the artifact; one is always written.
 
         `--report` is required now, so every caller supplies one. The default
-        is a fresh path per call, named after the declaration so a test that
-        runs two feature sets does not have the second overwrite the first --
-        which would make the acceptance test below compare a report against
-        itself and pass on any mutation at all.
+        is a fresh path per call, named after the declaration *and the model*
+        so a test that runs two feature sets, or the same feature set under two
+        models, does not have the second overwrite the first -- which would
+        make the acceptance tests below compare a report against itself and
+        pass on any mutation at all. The model is in the name for the same
+        reason the features are, and it was added when `--model` arrived:
+        without it `ContinuousModelSelectorTests` would compare `arx`'s report
+        to `arx`'s report and hold under a selector that ignored the flag.
 
         `panel` defaults to the sample panel. A test names its own only to put
         a build manifest beside one, which cannot be done to a tracked file.
         """
 
+        model = self.MODEL if model is None else model
         self.last_report = Path(
-            report or self.tmp / f"report-{'-'.join(features) or 'none'}.json"
+            report
+            or self.tmp / f"report-{model}-{'-'.join(features) or 'none'}.json"
         )
         argv = [
             "backtest", str(panel or self.PANEL),
             "--minimum-history", self.MINIMUM_HISTORY,
             "--registry", str(registry or self.registry),
             "--decision-time", decision_time,
+            "--model", model,
             "--report", str(self.last_report),
         ]
+        if regime_variable is not None:
+            argv += ["--regime-variable", regime_variable]
         for feature in features:
             argv += ["--feature", feature]
         out, err = io.StringIO(), io.StringIO()
@@ -1801,7 +1823,7 @@ class PublishedReportTests(RollingBacktestHarness):
             interval_coverage=1.0,
         )
         document = backtest_document(
-            bare, panel_path=self.PANEL, registry_path=REGISTRY
+            bare, panel_path=self.PANEL, registry_path=REGISTRY, model="persistence"
         )
 
         self.assertNotIn("decision_time", document["declaration"])
@@ -1982,6 +2004,509 @@ class PublishedReportTests(RollingBacktestHarness):
         )
 
 
+class ContinuousModelHarness(RollingBacktestHarness):
+    """A panel a continuous conditional model can actually be fitted on.
+
+    `RollingBacktestHarness`' fixture is the tracked sample panel, and three of
+    its columns are empty throughout -- `treasury_settlement` among them. That
+    is the right fixture for persistence, which reads only the spread, and an
+    impossible one for an ARX: `fit_arx` refuses a regressor that is unobserved
+    on every training row rather than filling it with zero, which is the
+    coercion the contract prohibits. So this widens the *fixture* rather than
+    the models, exactly as `ConditionalModelHarness` does for the exceedance
+    path, and for the same reason.
+
+    Nothing here is random. The spread carries a trend and a cycle so the
+    lagged target identifies a coefficient; `on_rrp` cycles at a different rate
+    so it is not collinear with it; `tgcr` moves through a band wide enough
+    that the training rows fall on both sides of a fitted threshold. The three
+    models therefore produce three different sets of forecasts on this panel
+    **by construction**, which is what lets the acceptance test below derive
+    its expectation from the fixture instead of reading a number off a run.
+    """
+
+    #: Declared for every run here, so two runs differ only in `--model`.
+    #: `on_rrp` is the exogenous regressor; `spread_bps` is declared because
+    #: every model reads it and is *not* a regressor, because the fitter
+    #: supplies it as the autoregressive term.
+    FEATURES = (FEATURE, "on_rrp")
+
+    #: `tgcr` resolves to `nyfed_tgcr`, a source neither of the above draws on,
+    #: so declaring it widens the source set rather than only the feature list.
+    REGIME_VARIABLE = "tgcr"
+    REGIME_FEATURES = FEATURES + (REGIME_VARIABLE,)
+
+    #: Long enough that a six-day gap still leaves folds after the minimum
+    #: history, and that the ARX has design rows to spare.
+    PANEL_DAYS = 90
+    MINIMUM_HISTORY = "25"
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        # Prices every source the three declarations resolve to, so the gap is
+        # the same whichever model runs and the only difference between two
+        # runs is the fitter.
+        self.registry = declared_registry_file(
+            self.tmp, features=self.REGIME_FEATURES
+        )
+        self.PANEL = self.write_panel()
+
+    def write_panel(self, path=None):
+        """The panel described in the class docstring, written once per test."""
+
+        path = path or self.tmp / "panel.csv"
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(PANEL_COLUMNS)
+            state = 20260908
+            for index, when in enumerate(business_days(date(2025, 1, 1), self.PANEL_DAYS)):
+                state = (1103515245 * state + 12345) % (2 ** 31)
+                spread = 8.0 + 4.0 * math.sin(index * 0.9) + 0.1 * index
+                on_rrp = 300.0 + 50.0 * math.cos(index * 0.41)
+                tgcr = 4.28 + (state % 97) / 1000.0
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     2100, 4.30, 4.32, round(tgcr, 6),
+                     4.31, 3200, 720, round(on_rrp, 6), "", "", "", 0, 0]
+                )
+        return path
+
+    def fitted_elsewhere(self, fit_model, features):
+        """The same backtest, with the fitter built here instead of selected.
+
+        The expectation for the acceptance test, and it is built from
+        `baseline` directly: this constructs the fitter itself, from the
+        declaration the command was given, and never goes through
+        `cli_eval.FITTER_FACTORIES`. So an assertion that the record's numbers
+        equal these is a claim about the command's wiring rather than a
+        restatement of it, and a literal MAE read off a run -- which would
+        agree with any mutation that changed both the run and the literal
+        together -- never enters.
+        """
+
+        return rolling_persistence_backtest(
+            load_daily_panel(self.PANEL),
+            features=features,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=int(self.MINIMUM_HISTORY),
+            fit_model=fit_model,
+        )
+
+
+class ContinuousModelSelectorTests(ContinuousModelHarness):
+    """Which continuous model ran, and whether the record says so.
+
+    **The finding.** `rolling_persistence_backtest` has taken a `fit_model`
+    since it was written, and `baseline` has `fit_arx` and `fit_threshold`
+    beside the default persistence fitter. `_backtest` called the backtest
+    without `fit_model` and `backtest` had no `--model`, so the only continuous
+    model reachable from outside the test suite was persistence -- **which is
+    the model `PLAN.md`'s Phase 2 exit criterion asks every other model to
+    beat.** A conditional continuous model had no path to a published record,
+    and the comparison that criterion describes had nothing to compare.
+
+    This is the same defect `ModelSelectorTests` closed on the exceedance path,
+    in the sibling evaluator, and the reasoning transfers whole. It is repeated
+    here only where the sharper form of it applies: there the default a
+    convenience would pick is the climatology, the reference a skill score is a
+    ratio against; here it is persistence, the benchmark itself. Both are the
+    same failure -- a run publishing the comparison baseline's numbers under
+    another model's name, in a record whose every other field is correct.
+
+    **Why `--model` is required rather than defaulted.** A default would be
+    persistence, and the flagless behaviour this block removed *was* that
+    default. Leaving it in place under a flag would keep the unnamed path
+    alive: every record written before this block says nothing about which
+    model produced it, and a reader cannot distinguish "the benchmark ran" from
+    "nobody chose". After this block there is no way to run `backtest` without
+    saying which model ran, which is the property the parser test below asserts
+    and no behavioural test can.
+
+    **Why the regressors come out of `--feature`.** `sorted(report.features)`
+    is what sizes the purge and what `_check_fitter_stayed_inside` checks the
+    fitted model's `features_read` against, so the regressors are taken *from*
+    the declaration rather than declared beside it. What the fitter is handed
+    and what the run declared are then the same set by construction, and there
+    is no second list that could disagree with the first. This is block 1 of
+    the last packet's decision, applied to the other interface.
+
+    Mutation record
+    ---------------
+
+    Unmutated control first, green before and after each. Copied under `$HOME`,
+    never the mount, with `data/`, `.github/`, `metadata/`, `docs/` and also
+    `.gitignore` and the root Markdown -- the freshness guard reads those and
+    their absence is kills that look real and are not. Run with `-B` and
+    `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` cleared between mutations.
+    Exception types recorded rather than counts. The copy skips one test the
+    worktree runs -- the provenance test that reads a commit id, which skips
+    itself with "git is not available here" because a copied tree is not a
+    repository. That is the skip its own message describes and not a kill.
+
+      * **The selector resolves every name to the default persistence fitter**
+        while still recording the caller's name: `_select_fitter` constructs
+        the choice, discards it and returns `(name, fit)`. The command still
+        runs, still writes a record, and every field of that record is correct
+        except that the numbers belong to another model. Kills exactly 1 --
+        `test_the_record_names_the_model_that_produced_the_forecasts`,
+        `AssertionError: 4.017881967213107 != 3.5655503282939662`, the ARX
+        record carrying persistence's MAE. **This is the acceptance criterion
+        and the mutation target, and they did not come apart.** Worth saying
+        what stayed green: the refusal test, the parser test and all three
+        regime-variable tests pass, because the flag is still required, still
+        validated and still refused for the right values. Only the wiring
+        between the name and the fitter is cut, and only a test that compares
+        the record's numbers to an independently constructed model can see it.
+        A test asserting merely that two records differ would also have died
+        here -- but it would have stayed green under a selector that swapped
+        `arx` and `threshold`, and this one does not.
+
+      * **An unknown `--model` value resolves to persistence** instead of
+        raising: `FITTER_FACTORIES.get(name, FITTER_FACTORIES["persistence"])`
+        with the refusal branch made unreachable. Kills exactly 1 --
+        `test_the_backtest_refuses_a_continuous_model_it_cannot_run`,
+        `AssertionError: 0 != 2`: the command succeeded and wrote a report
+        where it should have refused and written nothing. The acceptance test
+        stays green, which is the point of running this one. Without it the
+        refusal half of the selector would be unexercised, and a fallback is
+        exactly how a misspelled `--model arx` publishes the benchmark's
+        numbers under the ARX's name.
+
+      * **The regime variable admitted when it is not one of `--feature`** --
+        the `regime_variable not in declared` branch of
+        `_regressors_and_regime` made unreachable. Kills 3, and the third is
+        the informative one:
+
+          - `ContinuousModelSelectorTests.test_the_regime_variable_must_be_one_-
+            of_the_declared_features`, `AssertionError` -- `--regime-variable`
+            absent from the message.
+          - `ContinuousModelSelectorTests.test_the_regime_variable_outside_the_-
+            declaration_is_refused_before_the_panel_is_read`, `AssertionError`
+            -- the message names the missing panel file instead, which is the
+            command having got as far as reading a panel.
+          - `ModelSelectorTests.test_the_regime_variable_must_be_one_of_the_-
+            declared_features`, `AssertionError`, on the **exceedance** path.
+            That is `_regressors_and_regime` being genuinely shared rather than
+            copied: one deletion breaks both commands, which is the property a
+            second spelling of the rule would not have.
+
+        **The downstream guard fires too, and the two are distinguishable.**
+        With the branch gone the command reaches
+        `rolling_persistence_backtest`, whose `_check_fitter_stayed_inside`
+        raises `LookAheadError` -- and `cli.main` catches that as a `ValueError`
+        subclass and returns 2, so the *exit code is unchanged* and a test
+        asserting only on the code would have stayed green through all three.
+        What differs is the message: the downstream one reads "the fitted model
+        reads ['tgcr'], which the declared feature set ... does not contain",
+        naming a fitted model to a caller who typed a flag. All three tests
+        assert on the message for that reason. That the deeper guard also
+        catches it is defence in depth working; that it catches it with a
+        fitted-model-shaped message, after the panel has been read, is why the
+        CLI refuses first.
+
+      * **An absent `model` defaulted rather than refused** in
+        `backtest_document`: the non-empty check replaced by
+        `model = model or "persistence"`. Kills exactly 1 --
+        `test_a_record_cannot_be_written_without_a_name_for_what_produced_it`,
+        `AssertionError: ValueError not raised`. Worth having because the
+        default it installs is the plausible one and is invisible in the
+        artifact: the record would read `"model": "persistence"` and no field
+        anywhere in it would disagree.
+
+      * **The boring one, and it did not move.** `--model persistence` must
+        produce the record the flagless command produced. Checked by running
+        the command at `c72bff0`, before any of this block's edits, and again
+        after, over the same panel, registry, declaration and decision time,
+        then diffing the two documents field by field. The only difference is
+        the new `declaration.model`. `provenance.code.tree_modified` also
+        differs, and it is not this block's: it is `True` in the second run
+        because the working tree was dirty while the block was in progress,
+        which is that field doing exactly what it was added to do. Nothing
+        under `metrics`, `derived`, `folds` or `panel` moved, so every
+        benchmark record already published stays comparable to the ones this
+        command writes now. Had any of them moved, the right response would
+        have been to say so loudly rather than to accept the diff.
+    """
+
+    def test_the_record_names_the_model_that_produced_the_forecasts(self):
+        """**The acceptance criterion.** The declared name and the numbers agree.
+
+        Three runs over one panel and one declaration, differing only in
+        `--model`. Each record must name the model that was asked for *and*
+        carry that model's numbers, and the second half is what a selector
+        wired to the wrong fitter fails.
+
+        The expectation is derived from the fixture, never from a literal read
+        off a run: `fitted_elsewhere` builds each fitter from `baseline`
+        directly, bypassing `FITTER_FACTORIES` entirely, and the record's MAE
+        must equal what that produced. A literal would have agreed with any
+        mutation that moved the run and the literal together.
+
+        The three MAEs are also asserted distinct. Without that this would hold
+        on a fixture where the models happen to coincide -- and on
+        `RollingBacktestHarness`' flat sample panel two of them nearly do,
+        which is why this class writes its own.
+        """
+
+        cases = {
+            "persistence": (None, self.FEATURES, None),
+            "arx": (
+                functools.partial(fit_arx, regressors=("on_rrp",)),
+                self.FEATURES,
+                None,
+            ),
+            "threshold": (
+                functools.partial(
+                    fit_threshold,
+                    regressors=("on_rrp",),
+                    threshold_variable=self.REGIME_VARIABLE,
+                ),
+                self.REGIME_FEATURES,
+                self.REGIME_VARIABLE,
+            ),
+        }
+
+        published = {}
+        for name, (fit_model, features, regime) in cases.items():
+            record = self.published(
+                *features, model=name, regime_variable=regime
+            )
+
+            # The record says what was asked for.
+            self.assertEqual(record["declaration"]["model"], name)
+
+            # And carries that model's numbers. Not "differs from the other
+            # runs" -- equals what this model produces on this panel when it is
+            # constructed here instead of selected there.
+            expected = self.fitted_elsewhere(fit_model, features)
+            self.assertEqual(record["metrics"]["mae_bps"], expected.mae_bps)
+            self.assertEqual(
+                record["metrics"]["interval_coverage"], expected.interval_coverage
+            )
+            self.assertEqual(
+                record["metrics"]["forecast_count"], len(expected.forecasts)
+            )
+            published[name] = record["metrics"]["mae_bps"]
+
+        # The fixture separates the three models, so a record that named one
+        # and ran another would have to disagree with the assertions above.
+        self.assertEqual(
+            len(set(published.values())),
+            len(published),
+            msg=f"the fixture failed to separate the models: {published}",
+        )
+
+    def test_the_backtest_will_not_run_without_being_told_which_model(self):
+        """No default, so the flagless run this block removed cannot come back.
+
+        Reads the parser rather than the result, because that is the only thing
+        that can see it: a default would change no output that any behavioural
+        test compares. The same shape as
+        `test_the_subcommand_offers_no_purge_argument`, and for the same reason
+        -- an absence is only guarded by a test that asserts the absence.
+        """
+
+        action = self._backtest_option("--model")
+        self.assertTrue(action.required, msg="--model must be required")
+        self.assertIsNone(action.default, msg="--model must carry no default")
+
+        # And the parser refuses the invocation, not merely the inspection.
+        with self.assertRaises(SystemExit) as raised:
+            self._run_argv([
+                "backtest", str(self.PANEL),
+                "--registry", str(self.registry),
+                "--decision-time", DECISION_TIME,
+                "--feature", FEATURE,
+                "--report", str(self.tmp / "never.json"),
+            ])
+        self.assertEqual(raised.exception.code, 2)
+        self.assertFalse((self.tmp / "never.json").exists())
+
+    def test_the_backtest_refuses_a_continuous_model_it_cannot_run(self):
+        """An unknown name is refused, named, and leaves no artifact behind.
+
+        A selector that fell back would run to completion and write a real
+        record with real numbers and the misspelled name in it, and nothing in
+        the artifact would disagree. So the refusal names the value it could
+        not resolve and the names that exist, and it happens before the panel
+        is read -- a report on disk is a claim that a benchmark ran.
+        """
+
+        report = self.tmp / "refused.json"
+        code, _, err = self.run_backtest(
+            *self.FEATURES, model="arxx", report=report
+        )
+
+        self.assertEqual(code, 2)
+        self.assertIn("arxx", err)
+        for name in ("persistence", "arx", "threshold"):
+            self.assertIn(name, err)
+        self.assertFalse(
+            report.exists(), msg="a refused run must leave no record behind"
+        )
+
+    def test_the_regime_variable_is_required_by_the_threshold_model_alone(self):
+        """Required where it chooses the model, refused where it does nothing.
+
+        The same rule `event-holdout` and `exceedance-backtest` carry, and it
+        is one rule: `_regressors_and_regime` is shared, so this asserts the
+        continuous command reaches it rather than restating it.
+        """
+
+        code, _, err = self.run_backtest(
+            *self.REGIME_FEATURES, model="threshold", regime_variable=None
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+
+        # And a flag that would be accepted and ignored is refused instead,
+        # because the next reader takes it for a setting that took effect.
+        code, _, err = self.run_backtest(
+            *self.REGIME_FEATURES,
+            model="arx",
+            regime_variable=self.REGIME_VARIABLE,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertIn("arx", err)
+
+    def test_the_regime_variable_must_be_one_of_the_declared_features(self):
+        """A regime variable outside `--feature` is refused by the CLI itself.
+
+        `_check_fitter_stayed_inside` would also catch it, and that guard is
+        correct and stays. But a CLI that leans on a downstream guard to
+        validate its own arguments stops doing so the moment the call site
+        moves, and the message a caller gets should name the column and the
+        flag they typed rather than describe a fitted model. So this asserts on
+        the message, which is what separates the two refusals -- the exit code
+        does not, because `cli.main` turns `LookAheadError` into 2 as well.
+        """
+
+        code, _, err = self.run_backtest(
+            *self.FEATURES,
+            model="threshold",
+            regime_variable=self.REGIME_VARIABLE,
+        )
+
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertIn(self.REGIME_VARIABLE, err)
+        self.assertIn("--feature", err)
+
+    def test_the_regime_variable_outside_the_declaration_is_refused_before_the_panel_is_read(
+        self,
+    ):
+        """The refusal precedes the run, so no record is written for it.
+
+        Asserted against a panel path that does not exist: if the command read
+        the panel before validating its arguments the error would name the
+        missing file, and the message the caller needs would be gone.
+        """
+
+        report = self.tmp / "undeclared.json"
+        code, _, err = self.run_backtest(
+            *self.FEATURES,
+            model="threshold",
+            regime_variable=self.REGIME_VARIABLE,
+            panel=self.tmp / "no-such-panel.csv",
+            report=report,
+        )
+
+        self.assertEqual(code, 2)
+        self.assertIn("--regime-variable", err)
+        self.assertNotIn("no-such-panel", err)
+        self.assertFalse(report.exists())
+
+    def test_every_selectable_name_is_a_fitter_from_baseline(self):
+        """One mapping, and everything in it is `baseline`'s, not a local lambda.
+
+        `MODEL_FACTORIES` is not touched by this: the two interfaces are
+        different -- a `ModelFitter` is not an `ExceedancePredictor` -- so one
+        mapping per interface is right and one mapping for both would be a lie
+        about the types. What must not happen is a *second* mapping for this
+        interface, so this pins that everything selectable here is a fitter
+        `baseline` exports under that name.
+        """
+
+        for name, choice in cli_eval.FITTER_FACTORIES.items():
+            self.assertIs(
+                choice.factory,
+                {
+                    "persistence": baseline.fit,
+                    "arx": baseline.fit_arx,
+                    "threshold": baseline.fit_threshold,
+                }[name],
+            )
+
+        # The two mappings stay apart, and neither leaks a name into the other.
+        self.assertEqual(
+            set(cli_eval.FITTER_FACTORIES) & set(cli_eval.MODEL_FACTORIES),
+            {"arx", "threshold"},
+            msg="the two interfaces share names by coincidence of vocabulary; "
+            "they must not share a table",
+        )
+        self.assertIsNot(cli_eval.FITTER_FACTORIES, cli_eval.MODEL_FACTORIES)
+
+    def test_a_record_cannot_be_written_without_a_name_for_what_produced_it(self):
+        """`backtest_document` refuses an absent model rather than publishing null.
+
+        Lives here rather than beside the document's other tests because it is
+        this block's guard and this class carries this block's mutation record.
+        The document's own rule is that a field it cannot compute is absent
+        rather than defaulted, and `test_no_field_in_the_report_is_defaulted_-
+        into_existence` asserts no value in it is ever null. `model` cannot be
+        absent -- a record that does not say what produced it cannot be
+        compared to one that does -- so the only remaining way to satisfy both
+        is to refuse. Same refusal, same reasoning, as
+        `rolling_exceedance_backtest`'s on `model_name`.
+        """
+
+        report = self.fitted_elsewhere(None, self.FEATURES)
+        for missing in ("", None):
+            with self.assertRaises(ValueError) as raised:
+                backtest_document(
+                    report,
+                    panel_path=self.PANEL,
+                    registry_path=self.registry,
+                    model=missing,
+                )
+            self.assertIn("model", str(raised.exception))
+
+        # And the good case still builds, so the guard is not refusing
+        # everything.
+        document = backtest_document(
+            report,
+            panel_path=self.PANEL,
+            registry_path=self.registry,
+            model="persistence",
+        )
+        self.assertEqual(document["declaration"]["model"], "persistence")
+
+    def _backtest_option(self, flag):
+        """The `backtest` subparser's action for `flag`."""
+
+        parser = cli.build_parser()
+        subparsers = [
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        ][0]
+        backtest = subparsers.choices["backtest"]
+        for action in backtest._actions:
+            if flag in action.option_strings:
+                return action
+        self.fail(f"{flag} is not an option of `backtest`")
+
+    @staticmethod
+    def _run_argv(argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            return cli.main(argv)
+
+
 class RealRegistryTests(unittest.TestCase):
     """What the commands do against `metadata/sources.json` as it stands today.
 
@@ -2022,6 +2547,10 @@ class RealRegistryTests(unittest.TestCase):
                 "--minimum-history", "10",
                 "--registry", str(REGISTRY),
                 "--decision-time", DECISION_TIME,
+                # The real registry is what this class varies; the model is
+                # not, so it names the benchmark explicitly rather than
+                # relying on an omission the parser no longer permits.
+                "--model", "persistence",
                 "--report", str(report),
             ]
             for feature in features:

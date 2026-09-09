@@ -3838,7 +3838,13 @@ class RunProvenanceTests(unittest.TestCase):
             (
                 "backtest_document",
                 lambda: backtest_document(
-                    continuous, panel_path=self.panel, registry_path=self.registry
+                    continuous,
+                    panel_path=self.panel,
+                    registry_path=self.registry,
+                    # The name is required now. These tests are about the
+                    # provenance block and are indifferent to which model ran,
+                    # so they name the one this fixture's report was built by.
+                    model="persistence",
                 ),
             ),
             (
