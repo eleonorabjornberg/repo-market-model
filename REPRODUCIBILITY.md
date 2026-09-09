@@ -13,8 +13,9 @@ the repository does not yet publish those results.
 
 ## Environment
 
-- Python 3.10, declared in `pyproject.toml` and stated nowhere else that is not
-  checked against it. 3.11 rejects the package at import; 3.9 has never been run.
+- Python 3.9 or Python 3.10, declared as a range in `pyproject.toml` and stated
+  nowhere else that is not checked against it. Both were run whole before the
+  range was widened to admit them. 3.11 rejects the package at import.
 - no third-party Python packages
 - commands run from the repository root
 

@@ -263,6 +263,90 @@ def declared_python():
     return match.group(1)
 
 
+def _padded(text, width):
+    """`"3.10"` as a tuple of ints, zero-filled to `width` components."""
+    parts = [int(part) for part in text.split(".")]
+    return tuple(parts + [0] * (width - len(parts)))
+
+
+def _clause_admits(operator, bound, version):
+    """One comparison of a `requires-python` specifier, against a `major.minor`."""
+    if bound.endswith(".*"):
+        if operator not in ("==", "!="):
+            raise ValueError(
+                f"requires-python clause {operator}{bound!r} puts a wildcard behind "
+                f"an operator that cannot carry one."
+            )
+        prefix = bound[:-2]
+        matched = version == prefix or version.startswith(prefix + ".")
+        return matched if operator == "==" else not matched
+
+    if operator == "~=":
+        components = bound.split(".")
+        if len(components) < 2:
+            raise ValueError(
+                f"requires-python clause ~={bound!r} names one component. A "
+                f"compatible release needs a series to be compatible with."
+            )
+        ceiling = _padded(".".join(components[:-1]), len(components) - 1)
+        ceiling = ceiling[:-1] + (ceiling[-1] + 1,)
+        width = max(len(components), len(version.split(".")))
+        return (
+            _padded(version, width) >= _padded(bound, width)
+            and _padded(version, len(ceiling)) < ceiling
+        )
+
+    width = max(len(bound.split(".")), len(version.split(".")))
+    left = _padded(version, width)
+    right = _padded(bound, width)
+    return {
+        ">=": left >= right,
+        "<=": left <= right,
+        "==": left == right,
+        "!=": left != right,
+        ">": left > right,
+        "<": left < right,
+    }[operator]
+
+
+# Longest first: ">=" must be tried before ">", or ">=3.9" reads as ">" of "=3.9".
+_OPERATORS = ("~=", ">=", "<=", "==", "!=", ">", "<")
+
+
+def python_version_admitted(requirement, version):
+    """Does `requires-python` admit an interpreter, read as the specifier it is?
+
+    `version` is two components, `"3.10"`, as both prose and `sys.version_info`
+    give it, and it is compared as `3.10.0` -- the first release of the series,
+    the weakest thing a two-component claim can mean.
+
+    **Substring containment stood here, and it is not this.** It admitted 3.1 under
+    `~=3.10.0`; it refused 3.10 under `>=3.9,<3.11`; and under that same range it
+    admitted 3.11, the one version this package provably does not import on, because
+    the exclusion `<3.11` contains the digits it excludes. A check that reads a
+    bound as an endorsement is worse than no check, and the only declaration it
+    evaluated correctly was one naming a single series -- which is how the supported
+    set came to be one minor version wide, and this machine outside it.
+    """
+    for clause in requirement.split(","):
+        clause = clause.strip()
+        if not clause:
+            continue
+        for operator in _OPERATORS:
+            if clause.startswith(operator):
+                bound = clause[len(operator):].strip()
+                break
+        else:
+            raise ValueError(
+                f"requires-python clause {clause!r} states no comparison operator. "
+                f"An unreadable declaration is not a permissive one."
+            )
+        if not _clause_admits(operator, bound, version):
+            return False
+    return True
+
+
+
 class PublishedDocumentTests(unittest.TestCase):
     """Neither a count nor a future date survives in a document a cloner reads."""
 
@@ -460,6 +544,13 @@ class PublishedPythonVersionTests(unittest.TestCase):
     3.9 syntax, which is a different claim from working there and was the only
     evidence the number ever had.
 
+    3.9 has since been run whole, and the declaration is a range taken from that
+    measurement rather than from a pin: both admitted versions run the entire suite
+    and the excluded one still fails at import. Until then the declaration was also
+    shaped by its own guard -- containment could evaluate a single-series pin and
+    nothing else, so `~=3.10.0` was the only honest string it was able to check.
+    See `SpecifierEvaluationTests`.
+
     **Three documents agreeing is not verification.** What this guard can enforce is
     that there is one declaration and that nothing restates it differently, which is
     the drift that let one hand-repaired page sit beside an unrepaired one for four
@@ -478,10 +569,13 @@ class PublishedPythonVersionTests(unittest.TestCase):
        document that says nothing agrees with every declaration. Deleting the claim is
        the cheapest way to make this guard pass, and it is what that assertion refuses.
     3. `requires-python` set to `~=3.12.0`, excluding the running interpreter. Killed
-       **both** tests: the interpreter assertion, `AssertionError: '3.10' not found in
-       '~=3.12.0'`, and the agreement assertion, which then named both documents at
-       once. That is the shape to expect -- moving the single declaration moves what
-       every document is checked against, which is the point of there being one.
+       **both** tests. Re-run after the specifier evaluator replaced containment, as a
+       mutation whose fixture this block changed: the interpreter assertion now reports
+       `AssertionError: False is not true` and carries the declaration in its message
+       rather than in the diff line, and the agreement assertion named every stated
+       version in all three documents at once, `CLAUDE.md` included. That is the shape
+       to expect -- moving the single declaration moves what every document is checked
+       against, which is the point of there being one.
     """
 
     def test_every_published_python_version_is_the_declared_one(self):
@@ -494,7 +588,7 @@ class PublishedPythonVersionTests(unittest.TestCase):
             for number, line in enumerate(path.read_text().splitlines(), start=1):
                 for version in PYTHON_VERSION.findall(line):
                     stated_by.setdefault(relative, []).append(version)
-                    if version not in requirement:
+                    if not python_version_admitted(requirement, version):
                         offences.append(f"{relative}:{number}: Python {version}")
 
         for document in ("README.md", "REPRODUCIBILITY.md"):
@@ -520,13 +614,92 @@ class PublishedPythonVersionTests(unittest.TestCase):
         """A green suite on an unsupported interpreter says nothing about the claim."""
         requirement = declared_python()
         running = f"{sys.version_info.major}.{sys.version_info.minor}"
-        self.assertIn(
-            running,
-            requirement,
+        self.assertTrue(
+            python_version_admitted(requirement, running),
             f"This suite is running on Python {running}, which "
             f"requires-python = {requirement!r} does not admit. Either the project "
             f"supports it and the declaration is stale, or it does not and this run "
             f"proves nothing.",
+        )
+
+
+class SpecifierEvaluationTests(unittest.TestCase):
+    """A declaration is evaluated as a specifier, not searched for as a substring.
+
+    `requires-python` was checked with `version in requirement` -- containment in a
+    string. It agreed with the specifier only for a declaration naming exactly one
+    series, which is how the supported set came to be one minor version wide: the
+    declaration was shaped to fit its guard. Three divergences, all live:
+
+    * `~=3.10.0` **admitted 3.1**, a version that has never run this package, because
+      `3.1` is a substring of `3.10.0`.
+    * `>=3.9,<3.11` **refused 3.10**, a version measured green, because `3.10` appears
+      nowhere in that string.
+    * `>=3.9,<3.11` **admitted 3.11**, the one version that provably fails at import,
+      because an exclusion contains the digits it excludes. A check that reads a bound
+      as an endorsement is worse than no check.
+
+    The third is why this could not wait on the interpreter question being settled some
+    other way. Widening the declaration without replacing the check would have published
+    a range whose upper bound the guard read as permission.
+
+    Run red first against containment, which is what the module carried: the criterion
+    failed naming all three cases above, `AssertionError`, before the evaluator existed.
+
+    Mutation record. Disposable copy under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, control green before and after, criterion alone and whole suite.
+
+    1. `<` made unconditionally true. Killed the criterion -- `AssertionError: [] !=
+       ["'>=3.9,<3.11' vs Python 3.11: expected False, got True"]` -- and killed nothing
+       else in the suite.
+    2. `~=` reduced to its floor, dropping the series ceiling. Killed the criterion on
+       `'~=3.10.0' vs Python 3.11`, same exception type, one test.
+    3. The zero-fill removed from `_padded`, so tuples of unequal length compare. Killed
+       the criterion on `'~=3.10.0' vs Python 3.10` -- `(3, 10)` is less than
+       `(3, 10, 0)` -- one test.
+
+    A fourth attempt is recorded because it proved nothing. Comparing versions as strings
+    rather than integers, to test the ordering, raised `TypeError: can only concatenate
+    str (not "int") to str` out of the `~=` ceiling arithmetic before any comparison
+    happened: red, and about something else entirely. Mutation 3 is the ordering
+    hypothesis actually tested.
+
+    What this cannot see. A document may state a version the range admits and still be
+    wrong about it. `PYTHON_VERSION` reads every `Python X.Y` in prose as a claim of
+    support, so a page cannot name an unsupported version in that form, and both pages
+    state the exclusion without the keyword -- a hole, not a style choice. And the
+    unreadable-clause branch of `python_version_admitted`, which refuses a declaration
+    stating no operator rather than admitting everything, is exercised by nothing here.
+    """
+
+    CASES = (
+        ("~=3.10.0", "3.1", False,
+         "containment admits it: '3.1' is a substring of '~=3.10.0'"),
+        (">=3.9,<3.11", "3.10", True,
+         "containment refuses it: '3.10' is not a substring of '>=3.9,<3.11'"),
+        (">=3.9,<3.11", "3.9", True, "the floor is inclusive"),
+        (">=3.9,<3.11", "3.11", False, "the ceiling is exclusive"),
+        (">=3.9,<3.11", "3.8", False, "below the floor"),
+        ("~=3.10.0", "3.10", True, "the declared series"),
+        ("~=3.10.0", "3.11", False, "~= caps the minor series"),
+    )
+
+    def test_a_declaration_is_evaluated_as_a_specifier_not_as_a_substring(self):
+        """Containment agrees with the specifier only for a single-series pin."""
+        wrong = []
+        for requirement, version, expected, why in self.CASES:
+            got = python_version_admitted(requirement, version)
+            if got is not expected:
+                wrong.append(
+                    f"{requirement!r} vs Python {version}: expected {expected}, "
+                    f"got {got} -- {why}"
+                )
+        self.assertEqual(
+            [],
+            wrong,
+            "requires-python is a PEP 440 specifier and these cases are where "
+            "substring containment and the specifier disagree:\n  "
+            + "\n  ".join(wrong),
         )
 
 

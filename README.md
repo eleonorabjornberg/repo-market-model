@@ -64,10 +64,10 @@ implemented infrastructure and open research work.
 
 ## Quick start
 
-Requirements: Python 3.10. That is the interpreter the suite is run on, and it is
-declared once in `pyproject.toml`; 3.11 rejects the package at import. The project
-intentionally uses only the Python
-standard library, so no package installation is required.
+Requirements: Python 3.9 or Python 3.10. Both run the suite; the supported range
+is declared once in `pyproject.toml` and is checked against the interpreter that
+runs the suite. 3.11 rejects the package at import. The project intentionally uses
+only the Python standard library, so no package installation is required.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git
