@@ -591,52 +591,166 @@ class CoverageFloorDeclarationTests(unittest.TestCase):
     that has never been shown to fire.
     """
 
+    @staticmethod
+    def _era(**overrides):
+        era = {
+            "era_id": "only",
+            "start": "2010-11",
+            "end": "2026-07",
+            "minimum_reporting_entities": 200,
+            "observed_minimum_entities": 325,
+            "observed_complete_months": 12,
+        }
+        era.update(overrides)
+        return era
+
+    def _floor(self, cross_section):
+        return declared_coverage_floor("sec_nmfp", {"cross_section": cross_section})
+
     def test_a_source_that_declares_no_floor_is_a_contract_error(self):
         with self.assertRaisesRegex(DataContractError, "declares no"):
             declared_coverage_floor("sec_nmfp", {"access": "public"})
 
+    def test_a_source_that_declares_no_eras_is_a_contract_error(self):
+        with self.assertRaisesRegex(DataContractError, "declares no eras"):
+            self._floor({"entity_unit": "series_id"})
+
+    def test_an_empty_era_list_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "no floor anywhere"):
+            self._floor({"entity_unit": "series_id", "eras": []})
+
     def test_a_floor_of_zero_is_rejected_as_the_prohibited_silent_zero(self):
         with self.assertRaisesRegex(DataContractError, "guards nothing"):
-            declared_coverage_floor(
-                "sec_nmfp",
+            self._floor(
                 {
-                    "cross_section": {
-                        "entity_unit": "series_id",
-                        "minimum_reporting_entities": 0,
-                    }
-                },
+                    "entity_unit": "series_id",
+                    "eras": [self._era(minimum_reporting_entities=0)],
+                }
             )
 
     def test_a_boolean_does_not_pass_as_a_floor(self):
         with self.assertRaisesRegex(DataContractError, "must be an integer"):
-            declared_coverage_floor(
-                "sec_nmfp",
+            self._floor(
                 {
-                    "cross_section": {
-                        "entity_unit": "series_id",
-                        "minimum_reporting_entities": True,
-                    }
-                },
+                    "entity_unit": "series_id",
+                    "eras": [self._era(minimum_reporting_entities=True)],
+                }
             )
 
     def test_an_unnamed_entity_unit_is_rejected(self):
         with self.assertRaisesRegex(DataContractError, "entity_unit"):
-            declared_coverage_floor(
-                "sec_nmfp",
-                {"cross_section": {"minimum_reporting_entities": 200}},
-            )
+            self._floor({"eras": [self._era()]})
 
     def test_an_unpermitted_key_is_rejected_rather_than_ignored(self):
         with self.assertRaisesRegex(DataContractError, "unpermitted keys"):
-            declared_coverage_floor(
-                "sec_nmfp",
+            self._floor(
                 {
-                    "cross_section": {
-                        "entity_unit": "series_id",
-                        "minimum_reporting_entities": 200,
-                        "minimum_net_assets": 1000,
-                    }
-                },
+                    "entity_unit": "series_id",
+                    "eras": [self._era()],
+                    "minimum_net_assets": 1000,
+                }
+            )
+
+    def test_an_unpermitted_key_inside_an_era_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "unpermitted keys"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [self._era(minimum_net_assets=1000)],
+                }
+            )
+
+    def test_an_era_missing_its_calibration_numbers_is_rejected(self):
+        """A floor whose calibration input is absent is a number nobody computed."""
+
+        era = self._era()
+        del era["observed_minimum_entities"]
+        with self.assertRaisesRegex(
+            DataContractError, r"lacks required keys \['observed_minimum_entities'\]"
+        ):
+            self._floor({"entity_unit": "series_id", "eras": [era]})
+
+    def test_a_floor_above_its_own_calibration_minimum_is_rejected(self):
+        """The floor refuses a month its own calibration observed.
+
+        Whatever such a number is guarding against, it is not stragglers, and
+        it is wrong on the evidence stated beside it.
+        """
+
+        with self.assertRaisesRegex(DataContractError, "refuses a cross-section"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [
+                        self._era(
+                            minimum_reporting_entities=400,
+                            observed_minimum_entities=325,
+                        )
+                    ],
+                }
+            )
+
+    def test_a_bound_that_is_not_a_month_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "inclusive YYYY-MM months"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [self._era(start="2010-11-30")],
+                }
+            )
+
+    def test_an_era_that_ends_before_it_starts_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "no months at all"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [self._era(start="2016-04", end="2010-11")],
+                }
+            )
+
+    def test_overlapping_eras_are_rejected(self):
+        """One month cannot have two floors, and picking one would be arbitrary."""
+
+        with self.assertRaisesRegex(DataContractError, "overlap"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [
+                        self._era(era_id="a", start="2010-11", end="2016-03"),
+                        self._era(era_id="b", start="2016-03", end="2026-07"),
+                    ],
+                }
+            )
+
+    def test_a_gap_between_eras_is_rejected(self):
+        """A month inside the declared range that no era claims.
+
+        Worse than the undeclared tail, which at least looks undeclared: these
+        months lie between the first era and the last, so they read as covered,
+        and are refused anyway.
+        """
+
+        with self.assertRaisesRegex(DataContractError, "2016-04 undeclared"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [
+                        self._era(era_id="a", start="2010-11", end="2016-03"),
+                        self._era(era_id="b", start="2016-05", end="2026-07"),
+                    ],
+                }
+            )
+
+    def test_a_duplicate_era_id_is_rejected(self):
+        with self.assertRaisesRegex(DataContractError, "twice"):
+            self._floor(
+                {
+                    "entity_unit": "series_id",
+                    "eras": [
+                        self._era(era_id="same", start="2010-11", end="2016-03"),
+                        self._era(era_id="same", start="2016-04", end="2026-07"),
+                    ],
+                }
             )
 
     def test_the_live_registry_declaration_is_readable(self):
@@ -645,11 +759,11 @@ class CoverageFloorDeclarationTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        entity_unit, floor = declared_coverage_floor(
-            "sec_nmfp", registry["sec_nmfp"]
-        )
-        self.assertEqual(entity_unit, "series_id")
-        self.assertGreaterEqual(floor, 1)
+        floors = declared_coverage_floor("sec_nmfp", registry["sec_nmfp"])
+        self.assertEqual(floors.entity_unit, "series_id")
+        self.assertTrue(floors.eras)
+        for era in floors.eras:
+            self.assertGreaterEqual(era.minimum_reporting_entities, 1)
 
 
 class RealSnapshotCoverageTests(unittest.TestCase):

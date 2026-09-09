@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model.data import load_point_in_time_panel
+from repo_model.data import declared_coverage_floor, load_point_in_time_panel
 from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
@@ -44,17 +44,26 @@ SOURCE_REGISTRY = REPO_ROOT / "metadata" / "sources.json"
 
 
 def registry_with_nmfp_coverage_floor(directory: Path, floor: int) -> Path:
-    """The real registry with only `sec_nmfp`'s declared coverage floor changed.
+    """The real registry with only `sec_nmfp`'s declared coverage floors changed.
 
     A fixture cross-section is a handful of rows, so exercising the production
-    floor of 200 reporting series would mean fabricating a universe before any
-    assertion could be made. Overriding the single number keeps every other
-    declaration -- `entity_unit` above all -- exactly the shape the adapter reads
-    in production, so a registry that drifts still breaks these tests.
+    floors -- hundreds of reporting series -- would mean fabricating a universe
+    before any assertion could be made. Overriding the number keeps every other
+    declaration -- `entity_unit` and the era bounds above all -- exactly the
+    shape the adapter reads in production, so a registry that drifts still
+    breaks these tests.
+
+    Every declared era gets the same floor, deliberately. A fixture that lowered
+    one era's floor would be admitted or refused according to which era its
+    invented `REPORTDATE` happened to land in, and a test that changes verdict
+    because someone moved a fixture date by a month is testing the calendar.
+    Tests about the eras themselves declare their own registry rather than
+    calling this.
     """
 
     registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
-    registry["sec_nmfp"]["cross_section"]["minimum_reporting_entities"] = floor
+    for era in registry["sec_nmfp"]["cross_section"]["eras"]:
+        era["minimum_reporting_entities"] = floor
     path = directory / "sources.json"
     path.write_text(json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8")
     return path
@@ -1142,6 +1151,11 @@ class CrossArchiveSupersessionTests(unittest.TestCase):
        the unit coverage is judged on; it does not move the floor. The declared
        `minimum_reporting_entities` is still 200 and `entity_unit` is still
        `series_id` in `metadata/sources.json`, which this block does not touch.
+
+    The single `minimum_reporting_entities` named in item 4 was replaced by a
+    per-era declaration in a later block -- see `CoverageEraTests`. The record
+    above is left as it was run rather than restated, because it is the account
+    of an experiment on the tree as it then stood; only this note is new.
     """
 
     #: A report date filed into by more than one archive. Every fixture here
@@ -1671,17 +1685,31 @@ class PerTableRefusalTests(unittest.TestCase):
         it has no vocabulary anyone has read, so the categorical fields have no
         observation -- and the balance sheet, which does not depend on the
         categorical at all, is unaffected.
+
+        The registry's *coverage* eras are widened here so that this test asks
+        only its own question. Those are a second era vocabulary, bounded for
+        their own reasons, and a `ref_date` outside them is refused outright --
+        see `CoverageEraTests`. The two vocabularies currently share their
+        bounds, so without this widening the archive would be refused for
+        having no declared floor and the rule under test here would never be
+        reached. That is a real interaction and it is asserted, in
+        `test_an_undeclared_coverage_era_refuses_before_the_category_era_can_cost_fields`;
+        what it must not do is quietly stand in for this rule.
         """
 
         report_date = date(2005, 6, 30)
-        parsed = self._parse(
-            nmfp_archive(
+        registry = json.loads(json.dumps(self.registry))
+        registry["sec_nmfp"]["cross_section"]["eras"][0]["start"] = "2005-01"
+        artifact = fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/undeclared_era.zip",
+            lambda url: nmfp_archive(
                 self._submissions("30-JUN-2005"),
                 omit=("NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",),
                 treasury_category="Whatever Was Filed In 2005",
             ),
-            name="undeclared_era",
-        )
+        )[0]
+        parsed = parse_snapshots([artifact], registry=registry)
 
         series = {row.series_id for row in parsed.rows}
         self.assertIn("mmf_net_assets", series)
@@ -1754,6 +1782,8 @@ class CrossSectionCoverageTests(unittest.TestCase):
     | result discarded, so every cross-section is admitted.    |              |
     | `minimum_reporting_entities` lowered 200 -> 1 in          | 1 failure    |
     | `metadata/sources.json`, admitting the 1-series April.   |              |
+    | (That single key is now a per-era declaration; the row   |              |
+    | records the run as it was made.)                         |              |
     | Rows filtered on their own `ref_date` instead of on the  | 1 failure,   |
     | cross-section they were filed under.                     | 1 error      |
 
@@ -1918,6 +1948,248 @@ class CrossSectionCoverageTests(unittest.TestCase):
             msg="the excluded reference date is reported as series coverage",
         )
         self.assertEqual(report["warnings"], [])
+
+
+
+class CoverageEraTests(unittest.TestCase):
+    """The coverage floor is per era, and an undeclared date has none.
+
+    One absolute floor cannot guard a universe that changes size. `sec_nmfp`
+    falls from 730 reporting series in 2010 to 307 in 2024, so the single floor
+    of 200 these replaced was 27 percent of the early universe and 65 percent of
+    the late one: not one rule applied twice, but two different rules wearing
+    one number. The first test here is the whole content of that claim -- one
+    entity count, two eras, opposite verdicts -- and no single-absolute
+    implementation can pass it.
+
+    The eras declared in these fixtures are invented, and deliberately so. The
+    production numbers are calibrated from the archives on disk and would make
+    every assertion here depend on a backfill; what is under test is that a
+    declared era is *read and applied*, not that any particular number is right.
+
+    Mutation record
+    ---------------
+    Run in a disposable copy under `$HOME` carrying `data/`, `.github/`,
+    `metadata/`, `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`. The unmutated control was
+    OK with zero expected failures. Every kill below is an assertion failure,
+    not a raise: no mutation was caught by one incidental `ValueError` counted
+    several times.
+
+    1. **The era floors collapsed to one number.** `CoverageFloor.era_for`
+       returns `self.eras[0]` whatever the `ref_date`. 5 failures, all in this
+       class, including the acceptance test
+       `test_one_entity_count_is_admitted_in_one_era_and_refused_in_another`.
+       This is the acceptance criterion and its own mutation target, and they
+       did not come apart.
+    2. **The era inferred from the counts rather than read from the declared
+       bounds** -- the admitting loop picks the era whose
+       `observed_minimum_entities` is nearest the count it is judging, which is
+       the floor choosing its own eras from the data it guards. 4 failures,
+       including the acceptance test. Something notices, which was the open
+       question this mutation was written to settle.
+    3. **An undeclared `ref_date` admitted on the nearest era's floor** instead
+       of refused. 4 failures, including both undeclared-`ref_date` tests and
+       the live-registry test.
+    4. **The boring one, and it stayed boring.** Rebuilt the panel and the
+       cross-section coverage from the 97 archives on disk before and after the
+       change: `daily_panel.csv` and `daily_panel_point_in_time.csv` are
+       byte-identical, all 6474 observations are identical, and all 929
+       coverage verdicts agree on `(ref_date, entity_count, admitted, rows)`.
+       189 cross-sections admitted before, 189 after, the same ones. The only
+       field that moved is `declared_floor`, from the single 200 to the floor of
+       the era each cross-section falls in. Per-era floors change which floor
+       applies where; they do not change what this extract admits.
+
+    Under mutations 1 to 3 the panel still builds and the quality report still
+    reports. That is the point: none of them is visible in an output anyone
+    reads, which is why each needs a test that names it.
+    """
+
+    #: Two eras whose floors differ, and one entity count that falls between
+    #: them. `EARLY_FLOOR` is above the count and `LATE_FLOOR` below it, so the
+    #: same three-series cross-section is refused in one and admitted in the
+    #: other on `ref_date` alone.
+    EARLY_FLOOR = 4
+    LATE_FLOOR = 3
+    EARLY_REPORT = "29-JUN-2018"
+    LATE_REPORT = "30-JUN-2025"
+    EARLY_REF = date(2018, 6, 29)
+    LATE_REF = date(2025, 6, 30)
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    def _registry(self, eras):
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        registry["sec_nmfp"]["cross_section"]["eras"] = eras
+        return registry
+
+    @staticmethod
+    def _era(era_id, start, end, floor):
+        return {
+            "era_id": era_id,
+            "start": start,
+            "end": end,
+            "minimum_reporting_entities": floor,
+            "observed_minimum_entities": floor,
+            "observed_complete_months": 1,
+            "note": "declared by a fixture",
+        }
+
+    def _two_eras(self):
+        return [
+            self._era("early", "2010-11", "2024-05", self.EARLY_FLOOR),
+            self._era("late", "2024-06", "2026-07", self.LATE_FLOOR),
+        ]
+
+    def _submissions(self, report):
+        return tuple(
+            {
+                "accession": f"A{index}{report[:2]}",
+                "series": f"S{index}",
+                "report": report,
+                "net_assets": 1_000_000_000,
+            }
+            for index in (1, 2, 3)
+        )
+
+    def _parse(self, registry, submissions, name):
+        artifact = fetch_sec_nmfp(
+            self.output_root,
+            f"https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/{name}.zip",
+            lambda url: nmfp_archive(submissions),
+        )[0]
+        return parse_snapshots([artifact], registry=registry)
+
+    def test_one_entity_count_is_admitted_in_one_era_and_refused_in_another(self):
+        """Same count, opposite verdicts, on `ref_date` alone.
+
+        This is the acceptance criterion for the per-era floor and it is also
+        the mutation target: collapse the era floors to any single number and
+        the two verdicts become the same verdict, whichever number is chosen.
+        """
+
+        registry = self._registry(self._two_eras())
+        early = self._parse(registry, self._submissions(self.EARLY_REPORT), "early")
+        late = self._parse(registry, self._submissions(self.LATE_REPORT), "late")
+
+        early_section = {item.ref_date: item for item in early.coverage}[self.EARLY_REF]
+        late_section = {item.ref_date: item for item in late.coverage}[self.LATE_REF]
+
+        # The premise: one count, so the verdicts cannot differ on the count.
+        self.assertEqual(early_section.entity_count, late_section.entity_count)
+        self.assertEqual(early_section.entity_count, 3)
+
+        self.assertFalse(
+            early_section.admitted,
+            msg="three series cleared a floor of four in the early era",
+        )
+        self.assertTrue(
+            late_section.admitted,
+            msg="three series failed a floor of three in the late era",
+        )
+        self.assertEqual(early_section.declared_floor, self.EARLY_FLOOR)
+        self.assertEqual(late_section.declared_floor, self.LATE_FLOOR)
+        self.assertEqual(early_section.era_id, "early")
+        self.assertEqual(late_section.era_id, "late")
+
+    def test_a_ref_date_before_the_first_era_is_refused_and_named(self):
+        """No declared floor is not a floor of zero, and not the nearest one."""
+
+        registry = self._registry(
+            [self._era("late", "2024-06", "2026-07", self.LATE_FLOOR)]
+        )
+        parsed = self._parse(registry, self._submissions(self.EARLY_REPORT), "before")
+
+        section = {item.ref_date: item for item in parsed.coverage}[self.EARLY_REF]
+        self.assertFalse(section.admitted)
+        self.assertIsNone(section.era_id)
+        self.assertIsNone(
+            section.declared_floor,
+            msg="an undeclared era reported a floor it does not have",
+        )
+        self.assertIn("no declared coverage era", section.reason)
+        self.assertNotIn(
+            "mmf_net_assets", {row.series_id for row in parsed.rows},
+            msg="a cross-section with no declared floor reached the panel",
+        )
+
+    def test_a_ref_date_after_the_last_era_is_refused_and_named(self):
+        """The last era is bounded, so a later month is undeclared, not open."""
+
+        registry = self._registry(
+            [self._era("early", "2010-11", "2024-05", self.LATE_FLOOR)]
+        )
+        parsed = self._parse(registry, self._submissions(self.LATE_REPORT), "after")
+
+        section = {item.ref_date: item for item in parsed.coverage}[self.LATE_REF]
+        self.assertFalse(
+            section.admitted,
+            msg="a month past the last declared era was admitted on the "
+            "nearest era's floor",
+        )
+        self.assertIsNone(section.era_id)
+        self.assertIsNone(section.declared_floor)
+
+    def test_an_undeclared_coverage_era_refuses_before_the_category_era_can_cost_fields(
+        self,
+    ):
+        """The two era vocabularies are separate, and this one refuses first.
+
+        `NMFP_INVESTMENT_CATEGORY_ERAS` costs a month outside it the categorical
+        fields and admits the rest of the archive. The coverage eras refuse the
+        cross-section outright. Both rules are right and they are about
+        different things, so the order matters and is asserted rather than left
+        to whichever check happens to run first.
+
+        The two vocabularies currently share their bounds, because both follow
+        the Form N-MFP version. Nothing requires them to stay equal -- a form
+        revision that rewrites the categories without moving the universe is
+        exactly when they should diverge -- so this asserts the precedence, not
+        the coincidence.
+        """
+
+        registry = self._registry(self._two_eras())
+        parsed = self._parse(registry, self._submissions("30-JUN-2005"), "undeclared")
+
+        section = {item.ref_date: item for item in parsed.coverage}[date(2005, 6, 30)]
+        self.assertFalse(section.admitted)
+        self.assertIsNone(section.era_id)
+        self.assertEqual(parsed.rows, ())
+
+    def test_the_live_registry_declares_a_floor_for_every_month_it_carries(self):
+        """The production eras cover the archive set, with no month left out.
+
+        The independent anchor: the eras are declared by hand in
+        `metadata/sources.json` and the months come from the archives on disk,
+        so a boundary typed a month out lands here rather than in a silently
+        smaller panel.
+        """
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        floors = declared_coverage_floor("sec_nmfp", registry["sec_nmfp"])
+        self.assertGreater(len(floors.eras), 1, "a single era is not a per-era floor")
+        for era in floors.eras:
+            self.assertLessEqual(
+                era.minimum_reporting_entities,
+                era.observed_minimum_entities,
+                msg=f"era {era.era_id} refuses the smallest month it was "
+                "calibrated from",
+            )
+        first, last = floors.eras[0], floors.eras[-1]
+        self.assertIsNotNone(floors.era_for(date(2010, 11, 30)))
+        self.assertIsNotNone(floors.era_for(date(2026, 7, 31)))
+        self.assertIsNone(
+            floors.era_for(date(2010, 10, 31)),
+            msg=f"a month before {first.start} found a floor",
+        )
+        self.assertIsNone(
+            floors.era_for(date(2026, 8, 31)),
+            msg=f"a month after {last.end} found a floor",
+        )
 
 
 class AvailableAtDerivationTests(unittest.TestCase):
