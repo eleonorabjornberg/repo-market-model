@@ -85,6 +85,30 @@ would be the loosening, and is not what this says.
 
 ## N-MFP accounting-identity tolerance
 
+> **Resolved at `febba6d`: calibrated, and left absolute.** Everything below this
+> block is kept as the record of what was known when each part of it was written,
+> annotated rather than restated. Two of its measurements were taken before the
+> per-era coverage floor landed and on a different denominator than the verdict
+> uses, and they no longer agree with the derivation now carried in
+> `metadata/sources.json`'s `tolerance_note`: this section counts **69 of 124**
+> exceeding and a median residual of **123 ppm** of the cross-section, where the
+> calibration counts **80 of 124** refused and a median of **171 ppm** of scale
+> taken as the larger side of the identity, the way the verdict takes it. The
+> maximum agrees at 6395 ppm. **Neither number has been reconciled against the
+> other**, and the reconciliation is a human-side item, not a reason to prefer
+> one; the `tolerance_note` is the one derived after the floor.
+>
+> What the calibration settled, and this section did not anticipate: the case for
+> a relative bound rested on a scale range that the per-era floor and monthly
+> assembly removed. Over the 2.9x range that remains, scale explains almost none
+> of the residual spread (rank correlation +0.05), so `relative_ppm` has nothing
+> to correct. The bound stays where it was — not as a provisional number nobody
+> has got to, but as a measured decision — and the majority it refuses is
+> explained by a one-sided identity break running 2024-06 to 2026-02, beginning
+> exactly at the `n_mfp2`-to-`n_mfp3` form-version boundary. **That break is a
+> finding against the ingestion or the filings and is not this number's to
+> absorb.** It is open.
+
 The current assets-to-liabilities identity uses an absolute tolerance of USD 0.5
 billion. An absolute bound calibrated on a multi-trillion-dollar cross-section can
 be too permissive for a small or partial extract.
@@ -100,20 +124,47 @@ Changing the tolerance now would calibrate a shared-schema shape against a singl
 observation, which is the failure the change was meant to prevent. The decision waits on
 a backfilled history with at least three admitted months.
 
-**The deferral's condition is now met, and its premise is void.** The backfill supplies
-97 archives and 192 admitted cross-sections, of which 124 have every declared identity
-term observed. The bound is not merely uncalibrated against them; it is refuted by them:
+**The deferral's condition was met, and the calibration has now run.** It landed at
+`febba6d`, and its answer is no. The tolerance stays `{absolute: 0.5, unit: "USD
+billions"}` and the registry's `tolerance_note` carries the derivation in place of the
+deferral.
 
-- **69 of the 124 evaluable cross-sections exceed the absolute 0.5 USD billions** — a
-  majority, not a tail.
-- Residual as a fraction of the cross-section: median 123 ppm, p90 786 ppm, p99 5754 ppm,
-  maximum 6395 ppm on 2021-03-31 at 35.14 USD billions.
-- **All 69 violating reference dates carry their month's largest cross-section.** They are
-  the complete months. No coverage floor can clear this, and a floor tuned until the
-  identity agreed would be the anchoring failure this repository keeps finding.
-- The `tolerance_note` says 0.5 is "about 35 parts per million of the largest
-  cross-section observed". The median admitted cross-section is over three times that,
-  and the worst is nearly two hundred times.
+Derived over the 124 admitted cross-sections on which every declared identity term is
+observed; 65 further admitted cross-sections are not evaluable at all, being the `n_mfp1`
+era, which does not report this balance sheet:
+
+- Scale, taken as the larger side of the identity the way the verdict takes it, runs 3178
+  to 9254 USD billions — a factor of 2.9, and not the three orders of magnitude this
+  section argued from. That population no longer exists: the per-era coverage floor
+  refuses the small cross-sections that made the case and monthly assembly merged the
+  split month-ends that halved the rest. Over a 2.9x range a relative bound and an
+  absolute one are nearly the same bound.
+- Normalising the residual by scale moves its dispersion from 0.764 to 0.745 decades and
+  leaves its rank correlation with scale at +0.05. Scale explains almost none of the
+  spread, so a `relative_ppm` has almost nothing to correct. This is the measurement the
+  argument above assumed would come out the other way.
+- The bound admits 44 of the 124 and refuses 80. The `tolerance_note` records the outcome
+  in those terms, as "an ingestion check that currently fails on a majority of the
+  population it checks", and declines to widen the bound into a description of that
+  population.
+- From 2024-06 to 2026-02 the identity breaks one-sidedly in all 21 months, beginning
+  exactly at the declared `n_mfp2` to `n_mfp3` boundary and resolving after it. A bound
+  sized to admit that would be sized to admit a defect that starts and stops on a
+  form-version boundary. It is a finding against the ingestion or the filings, it is open,
+  and it is not this number's to absorb.
+
+**The figures this section carried before `febba6d` are withdrawn.** They were derived at
+`37fa054` and read: 192 admitted cross-sections, 69 of 124 exceeding the bound, a median
+of 123 ppm. `8d77691`, `346d4ff` and `94bf2db` all landed after them, and all three move
+the residuals a calibration is computed from — which the paragraph below anticipated in
+as many words, about a calibration that had not yet run. The two derivations agree on the
+extremes, 6395 ppm at 35.14 USD billions, and disagree on the count and the median. The
+later one is the one computed on the current assembly.
+
+**Neither derivation is reproducible from a clone.** Both were computed against
+`data/raw/sec_nmfp/`, which is gitignored, and published as prose; nothing in the suite
+can re-derive either. That is why the disagreement above is settled by commit order rather
+than by recomputation, and it is the open item this section leaves behind.
 
 An absolute bound also tightens as the industry grows: 0.5 USD billions is about 141 ppm
 of a 3,500 billion cross-section and about 54 ppm of a 9,200 billion one. A bound that
@@ -130,21 +181,24 @@ What is settled: **the absolute bound is known to be wrong and is retained only 
 nothing yet depends on it.** That is a different statement from the one above it, and the
 earlier deferral must not be read as still standing.
 
-**Interim position:** the absolute bound of USD 0.5 billion is retained, and its
-`tolerance_note` must state that it is calibrated against one admitted cross-section and
-has not been tested against a second. It remains a provisional ingestion check, not
-evidence that a cross-section represents the market. **The note now says this**; before,
-it read as though USD 0.5 billion had been calibrated against the market rather than
-against one extract.
+**Interim position, discharged.** This section used to require that the
+`tolerance_note` state it was calibrated against one admitted cross-section and had not
+been tested against a second. That requirement is met and withdrawn: the note is
+calibrated over 124 of them. What the note must still say, and does, is that this is an
+ingestion check and not evidence that a cross-section represents the market.
 
-**The schema half has landed and the number has not.** `contract.py` now accepts
+**The schema half landed and the number was declined.** `contract.py` now accepts
 `relative_ppm` alongside `absolute` on any identity tolerance, with `absolute` acting as
 a floor under the relative part, and `data.py` resolves the bound at the magnitude of
 the quantity the identity is about. Nothing declares a relative bound. This was
 separated out deliberately: the deferral is about calibrating a number against one
 observation, and a schema calibrates against nothing. The consequence is that lifting
 this deferral is a one-line edit to a declaration in `metadata/sources.json` rather than
-a change to a shared contract with two tracks' tests attached to it.
+a change to a shared contract with two tracks' tests attached to it. The deferral has
+since been lifted and answered no, so that edit stays available and unused. `contract.py`
+resolves the pair as `max(absolute, relative_ppm * 1e-6 * scale)`, and
+`IdentityToleranceScaleTests` in `tests/test_data.py` is what keeps that path exercised
+while no declaration uses it.
 
 The restatement of the tolerance rules that used to sit in the registry conformance test
 required `absolute` to be present, so an absolute-only bound was the only kind the

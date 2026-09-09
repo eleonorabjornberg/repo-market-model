@@ -210,22 +210,31 @@ Stated explicitly, because each is easy to mistake for something stronger.
   distinguish a working derivation from a broken one. `mmf_repo_holdings` is
   affected wherever this is, since private-sector repo is the difference between
   the two series.
-- **The N-MFP identity tolerance is a single absolute bound** across cross-sections
-  spanning three orders of magnitude, so it is loose on the smallest and tight on
-  the largest. The schema now accepts a relative bound with an absolute floor, so
-  the change is a one-line edit to a declaration rather than a change to a shared
-  contract — and it is **still deliberately not made, for a different reason than
-  before.** The old reason was that one admitted cross-section is nothing to
-  calibrate against. The backfill voided that: across the cross-sections that can
-  now be evaluated, a **majority exceed the absolute bound**, and every one of the
-  exceedances is a complete month rather than a straggler, so no coverage floor can
-  clear it. The bound is therefore not merely uncalibrated but **known to be wrong**,
-  and it is retained only because nothing yet depends on it. It was to be calibrated
-  last, after the split month-end and the per-era floor, because both move the
-  residuals a calibration would be computed from. **Both have landed** (`346d4ff`,
-  `94bf2db`), so it is deferred behind nothing now and is simply not done.
-  `DATA_QUALITY_DECISIONS.md` is the authority and records that the earlier deferral
-  must not be read as still standing.
+- **The N-MFP identity tolerance is a single absolute bound** and after
+  calibration it stays one. That is now a decision rather than a deferral
+  (`febba6d`), and two claims this page previously made about it were measured
+  and are false. The admitted cross-sections do **not** span three orders of
+  magnitude: post-floor and post-assembly, scale runs 3178 to 9254 USD billions,
+  a factor of 2.9, and the population of small months that made the case for a
+  relative bound no longer exists. Nor is the bound "loose on the smallest and
+  tight on the largest" — normalising the residual by scale moves its dispersion
+  from 0.764 to 0.745 decades and leaves its rank correlation with scale at
+  +0.05, so a `relative_ppm` has almost nothing to correct. The schema accepts
+  one and `contract.py` resolves the pair; the mechanism is present and
+  exercised. What is absent is a reason to use it here.
+
+  **The bound is still refused by a majority of the population it checks** — it
+  admits 44 of the 124 evaluable cross-sections — and the reason is a finding
+  rather than a bound problem. From 2024-06 to 2026-02, twenty-one consecutive
+  months beginning exactly at the declared `n_mfp2`-to-`n_mfp3` boundary and
+  resolving after it, the identity breaks one-sidedly: assets exceed liabilities
+  plus net assets in all twenty-one. A bound sized to admit that would be sized
+  to admit a defect that starts and stops on a form-version boundary. Outside
+  that window the residual is two-sided and still exceeds the bound on 59 of 103,
+  so the check is tight for the well-behaved regime too — tight in absolute terms
+  at every scale, which is not what a relative bound corrects.
+  `metadata/sources.json`'s `tolerance_note` carries the derivation and
+  `DATA_QUALITY_DECISIONS.md` records the decision.
 - **The Treasury settlement series aggregates decisions it does not implement.**
   Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
   limitation now says so, and names the fields that are present in the snapshot and
