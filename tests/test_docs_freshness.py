@@ -35,6 +35,14 @@ structural and this module enforces both:
   needs to say when it was measured names the commit and lets the reader run
   `git show -s --format=%ci <sha>`.
 
+`CLAUDE.md` and `AGENTS.md` were once excluded here, as stop-work pointers that
+existed only in the author's checkout. They are tracked from 9 September 2026 --
+they carry the standing rules every agent session loads, and a rule that lives in
+one checkout is a rule no fresh worktree has. Being tracked makes them published
+documents, and everything below applies to them: no transcribed count, no
+hand-written date, no command that has stopped parsing, no Python version other
+than the declared one. Standing rules decay exactly like the pages they govern.
+
 Scope is the Markdown a cloner actually receives. The working logs under
 `docs/block-*/`, `docs/merge-*/`, `docs/state-of-main-*.md` and
 `docs/track-*-decisions-*.md` are gitignored by design and are out of scope --
@@ -68,11 +76,6 @@ EXCLUDED_PREFIXES = (
     "docs/track-",
 )
 
-# Present only in the author's checkout, via .git/info/exclude: the stop-work
-# pointers that halt an agent opened in the integration folder. A fresh clone
-# does not contain them, so seeing them here is a local artifact, not a document.
-LOCAL_ONLY = ("CLAUDE.md", "AGENTS.md")
-
 # A digit run standing within two words of "test", "pass" or "assertion". Catches
 # "409 tests", "361 standard-library tests", "360 passes". Does not catch prose
 # that counts in words ("two implementers"), which does not rot the same way: a
@@ -103,8 +106,6 @@ def published_markdown():
         if relative.startswith(".git/") or "/.git/" in f"/{relative}":
             continue
         if relative.startswith(EXCLUDED_PREFIXES):
-            continue
-        if relative in LOCAL_ONLY:
             continue
         found.append((relative, path))
     return found
@@ -143,10 +144,18 @@ def dates_in(text):
     return found
 
 
-# A published invocation of this package's command line. The marker is the module
-# path rather than the subcommand names: a subcommand this guard has not heard of
-# is exactly the one most likely to have been published and then renamed.
-CLI_MARKER = "repo_model.cli"
+# A published *invocation* of this package's command line: `-m repo_model.cli`,
+# or the `repo-model` console script pyproject declares. Subcommand names are
+# deliberately not part of the marker -- a subcommand this guard has not heard of
+# is the one most likely to have been published and then renamed.
+#
+# It matches an invocation rather than the bare module path because prose names
+# the module too. `CLAUDE.md` entered this guard's scope on 9 September and the
+# first thing it caught was the sentence "a `repo_model.cli` command that no
+# longer parses", reported as a command that does not parse. It does not parse;
+# it is also not a command. A guard that cannot tell a mention from an invocation
+# reports a defect in its own documentation.
+CLI_MARKER = re.compile(r"-m\s+repo_model\.cli\b|(?:^|\s)repo-model(?:\s|$)")
 
 FENCE = re.compile(r"^\s*```")
 INLINE_CODE = re.compile(r"`([^`]+)`")
@@ -154,9 +163,12 @@ INLINE_CODE = re.compile(r"`([^`]+)`")
 # A leading environment assignment, not an argument: PYTHONPATH=src, and so on.
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
-# A value the shell would compute. Such a command cannot be parsed as written,
-# because a type converter would receive the literal text of the substitution.
-SUBSTITUTION = re.compile(r"\$\(|\$\{|\$[A-Za-z_]|`")
+# Text that stands for a value rather than being one, so the command cannot be
+# parsed as written: a substitution the shell would compute, or an `<angle>`
+# placeholder a reader is meant to replace. Both are skipped rather than guessed
+# at -- substituting a value here would check a command nobody published -- and
+# a skip is kept distinguishable from a parse all the way up to the assertion.
+UNRUNNABLE = re.compile(r"\$\(|\$\{|\$[A-Za-z_]|`|<[A-Za-z][A-Za-z0-9_-]*>")
 
 
 class Unlexable(str):
@@ -172,13 +184,13 @@ class Unlexable(str):
 def _argv(command):
     """The arguments `repo_model.cli` would receive.
 
-    Returns a token list; `None` for a command *skipped* because it contains a
-    shell substitution, which is a different outcome from parsing and is kept
-    distinguishable all the way up to the assertion -- substituting a value here
-    would check a command nobody published; or `Unlexable` if the shell lexer
-    refused the text.
+    Returns a token list; `None` for a command *skipped* because it stands for a
+    value rather than being one -- a shell substitution, or an `<angle>`
+    placeholder -- which is a different outcome from parsing and is kept
+    distinguishable all the way up to the assertion; or `Unlexable` if the shell
+    lexer refused the text.
     """
-    if SUBSTITUTION.search(command):
+    if UNRUNNABLE.search(command):
         return None
     try:
         tokens = shlex.split(command)
@@ -221,7 +233,7 @@ def published_cli_commands():
                 continue
             candidates = [line] if fenced else INLINE_CODE.findall(line)
             for candidate in candidates:
-                if CLI_MARKER not in candidate:
+                if not CLI_MARKER.search(candidate):
                     continue
                 command = candidate.strip()
                 found.append((relative, command, _argv(command)))
@@ -354,6 +366,19 @@ class PublishedCommandTests(unittest.TestCase):
        extracted there is nothing to fail. That is the whole reason the document
        assertion exists. An extractor is the part of this guard that can go
        quiet, so its silence is made a failure rather than a pass.
+    4. **The `<angle>` placeholder dropped from `UNRUNNABLE`**, so a template is
+       parsed as though it were a command. Killed the parse assertion, naming
+       `CLAUDE.md`'s `... cli <subcommand>` and argparse's *"invalid choice:
+       '<subcommand>'"*. The skip is load-bearing: without it a document may not
+       teach the shape of a command, only run one.
+
+    All four were re-run when `CLAUDE.md` and `AGENTS.md` entered scope and the
+    marker changed, by the rule that a mutation whose kill list names a fixture
+    you have changed is re-run rather than assumed. **Mutation 3 was where that
+    mattered**: the first attempt applied it with a `sed` whose pattern did not
+    match, the suite stayed green, and a mutation that never applied is
+    indistinguishable from a mutation that killed nothing -- both print `OK`.
+    The mutation was confirmed in the file before its result was believed.
 
     A count of commands would have been the obvious second assertion and would
     have been wrong twice: it is a transcribed number in the one module that
@@ -389,7 +414,7 @@ class PublishedCommandTests(unittest.TestCase):
             "The reproduction page published no command this guard could parse. "
             "It publishes several, so either the extractor stopped matching -- a "
             "changed fence, a continuation it no longer joins -- or every command "
-            "on the page was skipped for a shell substitution."
+            "on the page stands for a value rather than being one."
             + ("\n  skipped:\n    " + "\n    ".join(skipped) if skipped else ""),
         )
 

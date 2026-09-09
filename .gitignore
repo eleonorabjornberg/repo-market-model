@@ -20,3 +20,8 @@ docs/block-*/
 docs/merge-*/
 docs/state-of-main-*.md
 docs/track-*-decisions-*.md
+
+# Per-machine Claude Code settings. The shared ones -- .claude/settings.json and
+# .claude/hooks/ -- are tracked on purpose: a hook that enforces the ownership
+# contract must exist in every worktree, not in whichever one wrote it.
+.claude/settings.local.json

@@ -61,6 +61,26 @@ HUMAN_ONLY = (
     # the fourth and fifth files the gate had nothing to say about.
     "src/repo_model/__init__.py",
     "src/repo_model/__main__.py",
+    # The agents' own standing rules and the hook that enforces this file.
+    # Assigned here on 9 Sep when they were first tracked: an agent that can
+    # edit its own instructions, or the gate that refuses its edits, can edit
+    # around the contract, which is the single thing AGENT_CONTRACT.md forbids
+    # outright. A rule an agent believes is wrong is a report, not a patch.
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".claude/",
+    # The hook's own test. An agent that may weaken the test guarding the hook
+    # that enforces this file has edited around the contract in three moves
+    # rather than one.
+    "tests/test_ownership_hook.py",
+    # The status emitter and the measured file it writes. Found unowned on
+    # 9 Sep, on the commit that introduced them -- the sixth and seventh files
+    # this gate had nothing to say about, and the same shape as cli.py and the
+    # package plumbing before them. docs/PROJECT_STATUS.md was already here;
+    # what produces it belongs here too, or the page is reserved and its source
+    # is not.
+    "scripts/",
+    "docs/status.json",
 )
 
 # Owned by neither track. Allowed, but always surfaced for human review.
