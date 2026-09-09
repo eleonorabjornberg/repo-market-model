@@ -55,6 +55,7 @@ PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv \
   --registry metadata/sources.json \
   --feature spread_bps \
   --decision-time 16:00 \
+  --model persistence \
   --report /tmp/persistence_sample.json
 ```
 

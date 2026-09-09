@@ -17,6 +17,16 @@ dated other than when it was actually available: the exact failure this reposito
 is built to detect, published on its own front matter, where a reviewer invited by
 the README to check provenance will find it first.
 
+**A command that no longer parses.** `REPRODUCIBILITY.md` told readers to run
+`backtest data/sample/daily_market.csv` with no further arguments. From `1cd7a9f`
+that command exited with *"the following arguments are required"*, and the README
+published the same broken invocation. A published command is a claim about the
+software in exactly the way a published count is a claim about the suite: true
+when it was typed, decaying from that moment, and read by someone who was invited
+to check this repository's provenance. The first repair of it was made by hand,
+which is not a guard -- the identical rot two files away in `README.md` survived
+that repair and was found only by parsing every invocation.
+
 Neither is a discipline problem, so neither has an editorial fix. The remedies are
 structural and this module enforces both:
 
@@ -37,10 +47,15 @@ must start reading them.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
+import io
 import pathlib
 import re
+import shlex
 import unittest
+
+from repo_model import cli
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -127,6 +142,91 @@ def dates_in(text):
     return found
 
 
+# A published invocation of this package's command line. The marker is the module
+# path rather than the subcommand names: a subcommand this guard has not heard of
+# is exactly the one most likely to have been published and then renamed.
+CLI_MARKER = "repo_model.cli"
+
+FENCE = re.compile(r"^\s*```")
+INLINE_CODE = re.compile(r"`([^`]+)`")
+
+# A leading environment assignment, not an argument: PYTHONPATH=src, and so on.
+ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+# A value the shell would compute. Such a command cannot be parsed as written,
+# because a type converter would receive the literal text of the substitution.
+SUBSTITUTION = re.compile(r"\$\(|\$\{|\$[A-Za-z_]|`")
+
+
+class Unlexable(str):
+    """A command the shell itself could not read, carrying the lexer's complaint.
+
+    Not a skip. An unbalanced quote or a dangling continuation is a defect in the
+    published text, and it is also what a dropped continuation join looks like
+    from in here -- so it is reported as an offence naming the document, rather
+    than raising a traceback out of the extractor.
+    """
+
+
+def _argv(command):
+    """The arguments `repo_model.cli` would receive.
+
+    Returns a token list; `None` for a command *skipped* because it contains a
+    shell substitution, which is a different outcome from parsing and is kept
+    distinguishable all the way up to the assertion -- substituting a value here
+    would check a command nobody published; or `Unlexable` if the shell lexer
+    refused the text.
+    """
+    if SUBSTITUTION.search(command):
+        return None
+    try:
+        tokens = shlex.split(command)
+    except ValueError as error:
+        return Unlexable(str(error))
+    while tokens and ASSIGNMENT.match(tokens[0]):
+        tokens.pop(0)
+    if tokens and pathlib.PurePath(tokens[0]).name.startswith("python"):
+        tokens.pop(0)
+    while tokens and tokens[0].startswith("-") and tokens[0] != "-m":
+        tokens.pop(0)  # interpreter flags: -B and friends
+    if tokens[:1] == ["-m"]:
+        tokens.pop(0)
+        if tokens:
+            tokens.pop(0)  # the module path itself
+    return tokens
+
+
+def published_cli_commands():
+    """Every `repo_model.cli` invocation a cloner is told to run.
+
+    Continuations are joined before anything is matched. These documents wrap
+    commands across lines, and a line-by-line extractor sees a fragment, parses
+    the fragment and passes -- the quietest way for this guard to check nothing.
+
+    Scope is `published_markdown()`, not a walk of its own. A guard with its own
+    idea of which documents are published is a guard that can disagree with the
+    one beside it.
+
+    Returns:
+        `(document, command, argv)` triples, `argv` None for a skipped command.
+    """
+    found = []
+    for relative, path in published_markdown():
+        text = re.sub(r"\\\n\s*", " ", path.read_text())
+        fenced = False
+        for line in text.splitlines():
+            if FENCE.match(line):
+                fenced = not fenced
+                continue
+            candidates = [line] if fenced else INLINE_CODE.findall(line)
+            for candidate in candidates:
+                if CLI_MARKER not in candidate:
+                    continue
+                command = candidate.strip()
+                found.append((relative, command, _argv(command)))
+    return found
+
+
 class PublishedDocumentTests(unittest.TestCase):
     """Neither a count nor a future date survives in a document a cloner reads."""
 
@@ -197,6 +297,106 @@ class PublishedDocumentTests(unittest.TestCase):
             + "\n  ".join(offences)
             + "\nName the commit instead; `git show -s --format=%ci <sha>` is a "
             "timestamp nobody has to type.",
+        )
+
+
+class PublishedCommandTests(unittest.TestCase):
+    """Every command a published document tells a reader to run still parses.
+
+    Mutation record. Disposable clone under `$HOME` with `data/`, `.github/`,
+    `metadata/`, `.gitignore`, the root Markdown and `docs/PROJECT_STATUS.md`
+    present -- this module reads the last three and their absence is a false
+    kill. `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`. Control green before and
+    after each mutation, module alone and whole suite.
+
+    1. **The historical bug, replayed.** `REPRODUCIBILITY.md`'s `backtest`
+       invocation reverted to its pre-repair form, the bare
+       `backtest data/sample/daily_market.csv`. Not a hypothetical: this is what
+       shipped at `1cd7a9f` and stood for four commits. Killed the parse
+       assertion -- `AssertionError: Lists differ: [] != ['REPRODUCIBILITY.md:
+       ...']`, carrying argparse's own *"the following arguments are required:
+       --registry, --feature, --decision-time, --model, --report"*.
+    2. **The continuation join removed**, so a wrapped command is read as its
+       first line. Killed the parse assertion, naming both wrapped commands and
+       the shell lexer's complaint, *"No escaped character"* -- a line ending in
+       a bare backslash is not a command. **This mutation changed the guard.**
+       Run before `Unlexable` existed, `shlex.split` raised `ValueError` straight
+       out of the extractor: the test died with a traceback that named no
+       document, which is the failure mode the brief warns about one level down.
+       An unreadable command is now an offence that names its document.
+    3. **`CLI_MARKER` tightened** so the extractor matches nothing. Killed the
+       document assertion -- `AssertionError: 'REPRODUCIBILITY.md' not found in
+       set()` -- and the parse assertion did **not** fire, because with nothing
+       extracted there is nothing to fail. That is the whole reason the document
+       assertion exists. An extractor is the part of this guard that can go
+       quiet, so its silence is made a failure rather than a pass.
+
+    A count of commands would have been the obvious second assertion and would
+    have been wrong twice: it is a transcribed number in the one module that
+    exists to refuse transcribed numbers, and it breaks for anyone who correctly
+    adds a command. A named document that is known to publish several does the
+    same work and stays true.
+    """
+
+    def test_every_published_cli_command_parses_against_the_real_parser(self):
+        """A published command is a claim about the software, and it decays.
+
+        Parsed, not executed. Parsing catches the whole class of defect that
+        occurred -- an argument added, renamed or made required, a subcommand
+        removed -- with no network, no writes, and no panel. It does not catch
+        an argument whose *value* went stale: a feature name the registry no
+        longer carries, or a decision time the panel has no rows for, parses
+        perfectly and fails on execution. That gap is a larger block.
+        """
+        commands = published_cli_commands()
+        skipped = [
+            f"{relative}: {command}"
+            for relative, command, argv in commands
+            if argv is None
+        ]
+        parsed_from = {
+            relative
+            for relative, _, argv in commands
+            if argv is not None and not isinstance(argv, Unlexable)
+        }
+        self.assertIn(
+            "REPRODUCIBILITY.md",
+            parsed_from,
+            "The reproduction page published no command this guard could parse. "
+            "It publishes several, so either the extractor stopped matching -- a "
+            "changed fence, a continuation it no longer joins -- or every command "
+            "on the page was skipped for a shell substitution."
+            + ("\n  skipped:\n    " + "\n    ".join(skipped) if skipped else ""),
+        )
+
+        parser = cli.build_parser()
+        offences = []
+        for relative, command, argv in commands:
+            if argv is None:
+                continue
+            if isinstance(argv, Unlexable):
+                offences.append(
+                    f"{relative}: {command}\n      -> the shell could not read "
+                    f"this command: {argv}"
+                )
+                continue
+            captured = io.StringIO()
+            try:
+                with contextlib.redirect_stderr(captured):
+                    parser.parse_args(argv)
+            except SystemExit:
+                complaint = captured.getvalue().strip().splitlines()
+                offences.append(
+                    f"{relative}: {command}\n      -> "
+                    + (complaint[-1] if complaint else "argparse exited")
+                )
+        self.assertEqual(
+            [],
+            offences,
+            "A published document tells a reader to run a command that no longer "
+            "parses:\n  "
+            + "\n  ".join(offences)
+            + "\nFix the document, or the flag, whichever moved.",
         )
 
 
