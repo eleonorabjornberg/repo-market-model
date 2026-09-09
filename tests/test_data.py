@@ -1939,3 +1939,169 @@ class IdentityVerdictTests(unittest.TestCase):
         # violating reference date and wrote nothing, which is why the second
         # cross-section could not have been reported either way.
         self.assertTrue(panel_path.exists())
+
+
+class IdentityToleranceScaleTests(unittest.TestCase):
+    """One residual, two cross-sections, opposite verdicts on scale alone.
+
+    `resolve_identity_tolerance` makes the effective bound
+    `max(absolute, relative_ppm * 1e-6 * abs(scale))`, so a tolerance that
+    declares both parts is not one number applied twice: the same residual is
+    inside the bound on a large cross-section and outside it on a small one.
+    That difference is the whole content of a relative bound, and no
+    absolute-only tolerance can produce it -- an absolute-only tolerance gives
+    both cross-sections the same bound, and therefore the same verdict, however
+    far apart their scales are.
+
+    The tolerance in these fixtures is invented, and deliberately so. The
+    production declaration for `sec_nmfp` is an absolute bound and this block
+    left it that way: the residual derived over the admitted cross-sections
+    does not license a relative one, and the registry's `tolerance_note`
+    records why. What is under test here is that a declared `relative_ppm` is
+    *read and applied to scale*, not that any particular number belongs in the
+    registry. Calibrating a fixture from the archives would make every
+    assertion below depend on a backfill, which is the mistake
+    `CoverageEraTests` records one layer up.
+
+    A note on what could not be mutated, because it is a property of the
+    bound's shape rather than of this test. The absolute part is a *floor*
+    under the relative part, so it can only ever raise the effective bound --
+    it admits, and it can never refuse. It follows that no two-cross-section
+    fixture can make dropping `relative_ppm` flip a verdict while dropping
+    `absolute` also flips one: `max` is monotone in scale, so the larger
+    cross-section's bound is never below the smaller's, and the only reachable
+    pair of opposite verdicts is (larger held, smaller violated). Removing the
+    floor lowers both bounds and leaves that pair unchanged. Mutation 3 below
+    is that argument executed rather than asserted.
+
+    Mutation record
+    ---------------
+    Run in a disposable copy under `$HOME` carrying `data/`, `.github/`,
+    `.claude/`, `metadata/`, `.gitignore`, the root Markdown and
+    `docs/PROJECT_STATUS.md`, with `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`. `.claude/` is absent from `CLAUDE.md`'s copy list and its
+    absence costs seven errors in the control; it is copied here anyway and
+    that gap is reported. The unmutated control was OK with zero expected
+    failures.
+
+    1. **The effective bound ignores `relative_ppm`** -- `resolve_identity_tolerance`
+       returns `absolute` alone. 3 failures, all assertion failures: the
+       acceptance test here, and `IdentityToleranceTests`'
+       `test_the_resolved_bound_moves_with_the_scale` and
+       `test_the_absolute_part_is_a_floor_and_not_a_ceiling` in
+       `tests/test_contract.py`. This is the acceptance criterion and its own
+       mutation target, and they did not come apart.
+    2. **The bound stops being a function of scale** -- `_identity_verdict`
+       takes `scale = 1.0` instead of the larger side. 1 failure, this test
+       alone. The narrowest kill available and the one that names the claim
+       exactly: with scale held constant the two cross-sections get one bound,
+       and one residual against one bound cannot earn two verdicts. Production
+       is untouched by this mutation, every declared tolerance being absolute
+       only, which is why nothing else notices.
+    3. **The effective bound ignores the absolute floor** -- it returns the
+       relative part alone. 5 failures, and **the acceptance test is not among
+       them.** This is the argument in the paragraph above, executed rather
+       than asserted: the floor can only raise a bound, so removing it cannot
+       turn the larger cross-section's `held` into a `violated`, and the pair
+       of verdicts this test asserts is unchanged. What the mutation does kill
+       is `test_the_absolute_part_is_a_floor_and_not_a_ceiling` in
+       `tests/test_contract.py` and four `IdentityVerdictTests` here, whose
+       absolute-only production tolerances collapse to a bound of zero. The
+       floor is guarded; it is guarded there and not here, and a mutation
+       record that did not run this one would have implied otherwise.
+    4. **The fixture drops `absolute`**, leaving `relative_ppm` alone -- the
+       same claim from the declaration side. The acceptance assertion passes
+       unchanged; the run then errors in the collapse assertion below it,
+       where removing `relative_ppm` from an already-relative-only tolerance
+       leaves a tolerance declaring neither part, and
+       `validate_identity_tolerance` refuses it as one that "bounds nothing
+       admits everything". A `DataContractError`, not a kill of the criterion,
+       and recorded as such: the second assertion is a statement about the
+       absolute part being load-bearing *for the pair*, and mutation 3 is why
+       only one direction of it can be.
+    """
+
+    #: Same residual on both cross-sections, and the scales are far enough
+    #: apart that the relative part binds on one and the absolute floor on the
+    #: other. 100 ppm of 9000 is 0.9, above the 0.5 floor; 100 ppm of 3000 is
+    #: 0.3, below it.
+    TOLERANCE = {"absolute": 0.5, "relative_ppm": 100, "unit": "USD billions"}
+
+    LARGE = date(2026, 6, 30)
+    SMALL = date(2016, 6, 30)
+
+    @staticmethod
+    def _registry(tolerance):
+        return {
+            "sec_nmfp": {
+                "identities": [
+                    {
+                        "name": "series_assets_reconcile_to_liabilities_and_net_assets",
+                        "left": [
+                            "mmf_cash",
+                            "mmf_portfolio_securities",
+                            "mmf_other_assets",
+                        ],
+                        "right": ["mmf_liabilities", "mmf_net_assets"],
+                        "tolerance": dict(tolerance),
+                    }
+                ]
+            }
+        }
+
+    def _observations(self):
+        """Two cross-sections carrying a residual of 0.7 on scales 9000 and 3000."""
+
+        rows = []
+        for ref_date, cash, securities, other, liabilities, net_assets in (
+            (self.LARGE, 100.0, 8850.0, 50.0, 200.0, 8799.3),
+            (self.SMALL, 50.0, 2930.0, 20.0, 100.0, 2899.3),
+        ):
+            for series_id, value in (
+                ("mmf_cash", cash),
+                ("mmf_portfolio_securities", securities),
+                ("mmf_other_assets", other),
+                ("mmf_liabilities", liabilities),
+                ("mmf_net_assets", net_assets),
+            ):
+                rows.append(
+                    PointInTimeObservation(
+                        series_id=series_id,
+                        ref_date=ref_date,
+                        available_at=datetime(
+                            ref_date.year, ref_date.month, ref_date.day, 16, 0,
+                            tzinfo=timezone.utc,
+                        ),
+                        value=value,
+                        vintage_id=f"{ref_date.isoformat()}-v1",
+                        source_sha="0" * 64,
+                    )
+                )
+        return rows
+
+    def _violated_dates(self, tolerance):
+        evaluations = validate_accounting_identities(
+            self._observations(), self._registry(tolerance)
+        )
+        evaluation = evaluations[
+            "sec_nmfp:series_assets_reconcile_to_liabilities_and_net_assets"
+        ]
+        self.assertEqual(evaluation.evaluated_ref_dates, 2)
+        return [item.ref_date for item in evaluation.violations]
+
+    def test_one_residual_is_admitted_at_one_scale_and_refused_at_another(self):
+        # The acceptance criterion. The two cross-sections carry the same
+        # residual, so anything that separates them separated them on scale.
+        self.assertEqual(self._violated_dates(self.TOLERANCE), [self.SMALL])
+
+        # And the difference is created by the declaration, not present without
+        # it: keep the absolute part alone and both cross-sections get the same
+        # bound, so the same residual earns the same verdict on both.
+        absolute_only = {
+            key: value
+            for key, value in self.TOLERANCE.items()
+            if key != "relative_ppm"
+        }
+        self.assertEqual(
+            self._violated_dates(absolute_only), [self.SMALL, self.LARGE]
+        )
