@@ -15,6 +15,12 @@ name: status
 on:
   push:
     branches: [main]
+  # A pull request that edits PLAN.md can make the status unpublishable — a
+  # phase heading the parser will not guess at, a published phase with no exit
+  # criterion. Checking on the pull request means that fails at review rather
+  # than after the merge, when the emit job would go red on main instead.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -35,8 +41,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      # On a pull request, print and write nothing: the point is only whether
+      # PLAN.md still yields a status file.
+      - name: Check the plan parses
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/emit_status.py --check
+
       - name: Regenerate docs/status.json
         id: emit
+        if: github.event_name != 'pull_request'
         run: |
           python3 scripts/emit_status.py
           if git diff --quiet -- docs/status.json; then

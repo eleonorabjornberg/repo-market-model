@@ -1,5 +1,5 @@
 {
-  "commit": "17e3ec7",
+  "commit": "2ced98e",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -9,18 +9,19 @@
   },
   "generated_at": "2026-09-09",
   "next": {
-    "exit": "frozen checksummed snapshots with provenance and a data-quality report",
-    "name": "Point-in-time public dataset",
-    "number": 1
+    "exit": "a model that beats persistence out of sample and remains calibrated in the tails",
+    "name": "Forecasting benchmarks and probabilistic ML",
+    "number": 2
   },
   "phase": {
-    "name": "Reproducible foundation",
-    "number": 0,
-    "state": "complete"
+    "name": "Public U.S. dataset",
+    "number": 1,
+    "state": "in progress"
   },
   "run_records": [
     "exceedance_funding_climatology.json",
     "funding_panel.manifest.json",
     "persistence_funding.json"
-  ]
+  ],
+  "total_phases": 8
 }
