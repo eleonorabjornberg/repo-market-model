@@ -2893,7 +2893,7 @@ def _run_provenance(
 
 
 def backtest_document(
-    report: BacktestReport, *, panel_path: Path, registry_path: Path
+    report: BacktestReport, *, panel_path: Path, registry_path: Path, model: str
 ) -> dict:
     """The report as a publishable record: every number, and what produced it.
 
@@ -2916,9 +2916,17 @@ def backtest_document(
     things: what was declared, what that derived, what was scored, and what
     came out.
 
-    * `declaration` -- the feature set, the decision time, the minimum history.
-      The one thing the caller chose, plus the two settings that shape what
-      follows from it. Everything else in the run is a consequence of these.
+    * `declaration` -- the model, the feature set, the decision time, the
+      minimum history. The two things the caller chose, plus the two settings
+      that shape what follows from them. Everything else in the run is a
+      consequence of these. `model` is the name the caller selected and never a
+      re-derivation from `report.model`: this function is handed a fitted
+      object, several fitters produce the same class, and a name reconstructed
+      from one would agree with the request only for as long as that mapping
+      stayed a bijection. It is the field a reader compares two artifacts by,
+      and until `backtest` grew `--model` there was only one model to name, so
+      the document did not carry it -- which is why the sibling record's
+      docstring says this path "reports none".
     * `derived` -- the `(source, field)` pairs the features resolved to, the
       sources projected from them, and the gap those fields produced. Never
       supplied and never re-derived here: read off the report, because a
@@ -2962,20 +2970,40 @@ def backtest_document(
             here is a run that meant to publish a reportable record and
             published one missing its provenance, with every other field
             correct.
+        model: what to record as having produced these numbers -- the name the
+            caller selected, not a re-derivation. Required and undefaulted by
+            the same argument, and here it is the sharpest instance of it: the
+            default a convenience would pick is `persistence`, and persistence
+            is the benchmark `PLAN.md`'s Phase 2 exit criterion asks every
+            other model to beat. A run meaning to publish an ARX would publish
+            the baseline's numbers under the ARX's name in a record whose every
+            other field is correct.
 
     Returns:
         A JSON-serialisable dict. The caller writes it; this shapes it.
 
     Raises:
+        ValueError: when `model` is not a non-empty string.
         ProvenanceMismatchError: when a build manifest beside the panel does
             not describe the panel that was scored.
     """
+
+    # Before the panel is read and before anything is resampled, so a record
+    # that could not say what produced it leaves no file behind. The same
+    # refusal, with the same reasoning, as `rolling_exceedance_backtest`'s on
+    # `model_name`.
+    if not isinstance(model, str) or not model:
+        raise ValueError(
+            f"model must be a non-empty string, got {model!r}; an artifact that "
+            "cannot say which model produced it cannot be compared to one that "
+            "can"
+        )
 
     digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
     seed = _report_seed(report, digest)
     lower, upper, block = mae_bootstrap_interval(report, seed=seed)
 
-    declaration: dict = {"features": sorted(report.features)}
+    declaration: dict = {"model": model, "features": sorted(report.features)}
     if report.decision_time is not None:
         declaration["decision_time"] = report.decision_time.isoformat(
             timespec="minutes"
@@ -4032,10 +4060,13 @@ def exceedance_backtest_document(
       knowledge holdout is "never averaged into the main table". This file is
       the main table, and a file that cannot say so is one somebody will
       eventually average an event window into.
-    * `declaration.model`. The continuous path names its model by the fitter
-      the caller passed and reports none; this one is selected by name from the
-      command line and the name is the thing a reader compares two artifacts
-      by.
+    `declaration.model` **is no longer one of them.** It was, for as long as
+    the continuous path named its model by the fitter the caller passed and
+    reported none. `backtest` has grown `--model` since, and both records now
+    carry the selected name by the same argument -- it is the thing a reader
+    compares two artifacts by, and a record that cannot say what produced it
+    cannot be compared to one that can.
+
     * `declaration.taus_bp` and `declaration.twcrps_weights`. The tau family is
       Track A's declaration and this run consumed a particular version of it;
       the weights are derived from that family by `twcrps_weights` and are
