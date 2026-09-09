@@ -21,6 +21,7 @@ from repo_model.ingest import (
     REFUSAL_UNREADABLE,
     SnapshotArtifact,
     _decode_transport,
+    _nmfp_number,
     _sec_nmfp_rows,
     fetch_sec_nmfp_archives,
     load_sec_nmfp_archive_manifest,
@@ -492,6 +493,37 @@ class NMFPSchemaGuardTests(unittest.TestCase):
             r"TOTALVALUEOTHERASSETS, TOTALVALUEPORTFOLIOSECURITIES$",
         ):
             _sec_nmfp_rows(self.artifact, rewritten.getvalue())
+
+
+class NMFPDecimalCommaTests(unittest.TestCase):
+    """What `_nmfp_number` does with a decimal comma, pinned rather than fixed.
+
+    `metadata/sources.json` records this behaviour in the `sec_nmfp`
+    limitation. A claim in the registry with nothing executing it is the drift
+    this repository keeps naming, so the claim and the code are asserted
+    against each other here.
+
+    The behaviour is deliberately not corrected. A locale-sniffing heuristic
+    would be a silent behaviour change calibrated on data nobody has seen, and
+    a differently-formatted extract should fail loudly rather than parse
+    plausibly. This test exists so that a later change to `_nmfp_number` has to
+    change the recorded claim with it.
+    """
+
+    def test_a_thousands_comma_is_stripped(self):
+        self.assertEqual(_nmfp_number("1,234.56", "CASH"), 1234.56)
+
+    def test_a_decimal_comma_parses_silently_and_wrong(self):
+        # One digit after the comma is a factor of ten; two is a hundred.
+        # Neither raises, which is the whole hazard.
+        self.assertEqual(_nmfp_number("1234,5", "CASH"), 12345.0)
+        self.assertEqual(_nmfp_number("1234,56", "CASH"), 123456.0)
+
+    def test_a_european_grouped_number_parses_silently_and_wrong(self):
+        # Period as the thousands separator survives the comma strip and is
+        # then read as the decimal point, so the value is off by a thousand in
+        # the other direction.
+        self.assertEqual(_nmfp_number("1.234,56", "CASH"), 1.23456)
 
 
 class ArchiveManifestTests(unittest.TestCase):
@@ -2117,6 +2149,450 @@ class LegacySourceIdBuildTests(unittest.TestCase):
             {item["source_id"] for item in manifest["raw_snapshots"]},
             {"nyfed-sofr-rate", "nyfed-sofr-volume", "fred-macro-latest-vintage"},
         )
+
+
+class MonthCrossSectionTests(unittest.TestCase):
+    """A split month-end is one cross-section, assembled by month.
+
+    A month-end that is not a business day splits the reporting universe across
+    two adjacent `REPORTDATE`s: the funds that report as of the last business
+    day and the funds that report as of the last calendar day. Measured on the
+    archives on disk, 2013-06 files 159 series on the 28th and 473 on the 30th
+    -- 632 together, against 629 and 634 in the adjacent complete months.
+
+    Judged a report date at a time, neither half is the universe. Usually only
+    the larger clears the coverage floor, so the month is admitted about a
+    quarter short; where both cleared it -- 2011-07 and 2011-12 -- the same
+    month put *two* partial cross-sections in the panel, and the identity was
+    reconciled on each as though it were whole. The alternating identity scale,
+    roughly 5,500 against 3,900 USD billions, tracks the split exactly.
+
+    So the assembly unit moves from the report date to the calendar month. The
+    cross-section's reference date is the **greatest `REPORTDATE` observed in
+    that month**, which is a date the data contains, rather than the calendar
+    month-end, which may be a date no filer used. See
+    `docs/DATA_QUALITY_DECISIONS.md`, "The split month-end".
+
+    Three things move with the unit, and each has a test here because each is a
+    way this change could be made wrong:
+
+    - **Supersession.** `_resolve_nmfp_submissions` keys on (series,
+      cross-section). While the cross-section was the report date, a series
+      that filed in both halves of a split month was two submissions and both
+      were kept; once the halves are one cross-section, keeping both books that
+      series' balance sheet twice. The unit the block moves is the unit
+      supersession resolves on.
+    - **Cell dating.** A balance-sheet cell is dated by the cross-section it was
+      filed under and moves with it. A daily shareholder-flow cell is dated by
+      the day it describes and does not. Re-dating flows would relabel the flows
+      of 28 June as the flows of 30 June, and June 2024 -- the first month with
+      a flow table -- is itself a split month, so this is not hypothetical.
+    - **The ordinary month.** A month filed under one report date must come out
+      exactly as it did. That is `test_a_month_with_one_report_date_is_unchanged`,
+      and it is the test that says this block fixed the split case rather than
+      changing every case.
+
+    The floor's *value* is untouched -- 200 distinct `SERIESID` in
+    `metadata/sources.json`, which this block does not edit. Only the population
+    it counts over moved, from a report date's filers to a month's.
+
+    These fixtures are built from in-memory archives rather than from
+    `data/raw/`, so they state the structural case rather than depending on a
+    particular backfill still containing it. They date themselves into 2016-04
+    -- a real split month-end, the 30th being a Saturday -- and into the
+    `INVESTMENTCATEGORY` era beginning 2016-04-01, so the holdings tables parse
+    rather than being refused for an undeclared vocabulary.
+
+    Mutation record
+    ---------------
+    Run in a copy under `$HOME` -- never in the mount -- with `data/`,
+    `.github/`, `metadata/`, `.gitignore`, the root Markdown and
+    `docs/PROJECT_STATUS.md` alongside, `__pycache__` cleared before each run,
+    `-B` and PYTHONDONTWRITEBYTECODE=1. Unmutated control run before and after,
+    green both times: 628 tests, OK, zero expected failures. A red run is not
+    evidence the aimed-at test fired, so every kill is recorded with the
+    exception it raised.
+
+    | Mutation                                                   | Result      |
+    |------------------------------------------------------------|-------------|
+    | 1. `_nmfp_cross_section` returns the report date itself, so | 5 failures  |
+    |    assembly is keyed on `REPORTDATE` again.                 |             |
+    | 2. The reference date taken as the *earliest* `REPORTDATE`  | 5 failures  |
+    |    observed in the month rather than the greatest.          |             |
+    | 3. `_nmfp_cross_section` returns a 35-day bucket counted    | 1 failure   |
+    |    from a fixed epoch rather than the calendar month.       |             |
+    | 4. `_nmfp_cross_section` rewritten to an equivalent key --  | no change   |
+    |    `f"{year:04d}-{month:02d}"` for the `(year, month)`      |             |
+    |    tuple -- and nothing else touched.                       |             |
+
+    Which tests fired, and with what. Every kill is an `AssertionError`, and
+    every one is in this class:
+
+    1. All five of the tests that assert something about a split month:
+       `test_a_month_split_across_two_report_dates_is_one_cross_section`
+       (`[] is not true : no mmf_net_assets row was emitted at all on
+       2016-04-30` -- neither half clears the floor alone, so the month reaches
+       the panel as nothing at all),
+       `test_the_reference_date_is_the_greatest_report_date_in_the_month`
+       (`[] != [datetime.date(2016, 4, 30)]`),
+       `test_the_assembled_count_is_distinct_series_and_not_submissions`
+       (`2 != 3 : the assembled month counted submissions rather than series`),
+       `test_a_daily_flow_keeps_its_own_date_when_its_month_is_assembled`
+       (the same empty-panel assertion) and
+       `test_two_cross_sections_in_different_months_are_not_merged`
+       (`[datetime.date(2016, 5, 31)] != [datetime.date(2016, 4, 30),
+       datetime.date(2016, 5, 31)]` -- April is assembled from neither half and
+       so is not admitted). This is the defect the block exists for and the
+       acceptance test sees it.
+    2. The same five. The date-rule kills are the legible ones:
+       `test_the_reference_date_is_the_greatest_report_date_in_the_month` gives
+       `[datetime.date(2016, 4, 29)] != [datetime.date(2016, 4, 30)]` and
+       `test_two_cross_sections_in_different_months_are_not_merged` gives
+       `[datetime.date(2016, 4, 29), datetime.date(2016, 5, 31)] !=
+       [datetime.date(2016, 4, 30), datetime.date(2016, 5, 31)]`. The date rule
+       is defended, which is what this mutation was run to establish.
+    3. Only `test_two_cross_sections_in_different_months_are_not_merged`, with
+       the same list mismatch as in mutation 1: 30 April and 31 May 2016 fall in
+       one 35-day bucket, so the second month is swallowed by the first. It does
+       **not** kill the acceptance test, and that is correct rather than a gap:
+       within a single month a bucket and a calendar month agree, so no
+       one-month fixture can distinguish them. That is precisely why the
+       not-merged companion exists.
+    4. Nothing changed. The month key is a value, not a shape, and rewriting it
+       to an equivalent must not move a single test.
+
+    One test in this class was killed by none of the four:
+    `test_a_month_with_one_report_date_is_unchanged`. That is not a hole, it is
+    what the test is for. All four mutations change how the *split* case
+    assembles, and on a month filed under one report date every one of them --
+    the report date, the earliest, the greatest, a 35-day bucket -- names the
+    same cross-section and the same reference date, because assembly has nothing
+    to do there. The test would fire on a mutation that moved the ordinary
+    month, and its value is that it is standing by when someone writes one.
+    """
+
+    #: 2016-04-30 was a Saturday, so April 2016 is a real split month-end: the
+    #: funds that report as of the last business day file the 29th and the rest
+    #: file the 30th. The month is also inside the `INVESTMENTCATEGORY` era
+    #: beginning 2016-04-01, so the fixtures' category strings are declared.
+    BUSINESS_DAY = "29-APR-2016"
+    CALENDAR_DAY = "30-APR-2016"
+    REF_DATE = date(2016, 4, 30)
+    EARLIER_HALF = date(2016, 4, 29)
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    @staticmethod
+    def _submission(accession, series, report, billions, filing="10-MAY-2016", **extra):
+        entry = {
+            "accession": accession,
+            "series": series,
+            "report": report,
+            "filing": filing,
+            "submission_type": "N-MFP3",
+            "net_assets": billions * 1_000_000_000,
+        }
+        entry.update(extra)
+        return entry
+
+    def _archive(self, name, submissions, retrieved_at, **kwargs):
+        artifact = fetch_sec_nmfp(
+            self.output_root / name,
+            f"https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/{name}.zip",
+            lambda url: nmfp_archive(submissions, **kwargs),
+        )[0]
+        return replace(artifact, retrieved_at=retrieved_at)
+
+    def _value(self, parsed, series_id, ref_date):
+        """The latest vintage of one series on one reference date."""
+
+        rows = [
+            row
+            for row in parsed.rows
+            if row.series_id == series_id and row.ref_date == ref_date
+        ]
+        self.assertTrue(
+            rows, f"no {series_id} row was emitted at all on {ref_date.isoformat()}"
+        )
+        return max(rows, key=lambda row: row.available_at).value
+
+    def _admitted(self, parsed):
+        """The reference dates the coverage floor admitted, in date order."""
+
+        return sorted(
+            {item.ref_date for item in parsed.coverage if item.admitted}
+        )
+
+    def _section(self, parsed, ref_date):
+        """The last coverage record for one reference date.
+
+        Asserted rather than indexed, so a mutation that stops a cross-section
+        being assembled at all reports which date went missing instead of an
+        `IndexError` on an empty list.
+        """
+
+        found = [item for item in parsed.coverage if item.ref_date == ref_date]
+        self.assertTrue(
+            found, f"no cross-section was recorded at {ref_date.isoformat()}"
+        )
+        return found[-1]
+
+    def test_a_month_split_across_two_report_dates_is_one_cross_section(self):
+        """The acceptance criterion. Fails against per-report-date assembly.
+
+        Two disjoint halves of one April: two series file as of Friday the 29th
+        and two as of Saturday the 30th. Against a floor of three, neither half
+        is a cross-section and the month reaches the panel as nothing at all --
+        not as a small cross-section, as no rows. Assembled by month it is four
+        series, dated the 30th, and admitted.
+        """
+
+        archive = self._archive(
+            "split",
+            [
+                self._submission("0000000000-16-000001", "S000000001", self.BUSINESS_DAY, 1),
+                self._submission("0000000000-16-000002", "S000000002", self.BUSINESS_DAY, 2),
+                self._submission("0000000000-16-000003", "S000000003", self.CALENDAR_DAY, 3),
+                self._submission("0000000000-16-000004", "S000000004", self.CALENDAR_DAY, 4),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        self.assertEqual(
+            self._value(parsed, "mmf_net_assets", self.REF_DATE),
+            10.0,
+            msg="the halves of a split month-end were not assembled into one "
+            "cross-section",
+        )
+        self.assertEqual(self._admitted(parsed), [self.REF_DATE])
+        section = self._section(parsed, self.REF_DATE)
+        self.assertEqual(section.entity_count, 4)
+        self.assertTrue(section.admitted)
+
+    def test_the_reference_date_is_the_greatest_report_date_in_the_month(self):
+        """Dated by a date the data contains, chosen by a rule.
+
+        Not the calendar month-end, which in a month whose last day is a Sunday
+        is a date no filer used, and not the earliest, which would date the
+        whole universe to the half that filed first. The earlier half must not
+        survive as a reference date of its own: that is the two-partial-
+        cross-sections shape the decision exists to remove.
+        """
+
+        archive = self._archive(
+            "dated",
+            [
+                self._submission("0000000000-16-000001", "S000000001", self.BUSINESS_DAY, 1),
+                self._submission("0000000000-16-000002", "S000000002", self.BUSINESS_DAY, 2),
+                self._submission("0000000000-16-000003", "S000000003", self.CALENDAR_DAY, 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        self.assertEqual(self._admitted(parsed), [self.REF_DATE])
+        self.assertEqual(
+            [item.ref_date for item in parsed.coverage],
+            [self.REF_DATE],
+            msg="the earlier half of the split survived as its own cross-section",
+        )
+        self.assertEqual(
+            [row.ref_date for row in parsed.rows if row.series_id == "mmf_net_assets"],
+            [self.REF_DATE],
+        )
+
+    def test_two_cross_sections_in_different_months_are_not_merged(self):
+        """Assemble by month, not by proximity -- the obvious way to overshoot.
+
+        April 2016 is split across the 29th and the 30th; May 2016 is not split.
+        The last report date of April and the only one of May are 31 days apart,
+        so any rule that gathers report dates within a window wide enough to
+        catch a split month-end also merges two adjacent months. The calendar
+        month does not, and that is the difference this test holds.
+        """
+
+        archive = self._archive(
+            "adjacent",
+            [
+                self._submission("0000000000-16-000001", "S000000001", self.BUSINESS_DAY, 1),
+                self._submission("0000000000-16-000002", "S000000002", self.CALENDAR_DAY, 2),
+                self._submission("0000000000-16-000003", "S000000003", self.CALENDAR_DAY, 3),
+                self._submission(
+                    "0000000000-16-000011", "S000000001", "31-MAY-2016", 10,
+                    filing="10-JUN-2016",
+                ),
+                self._submission(
+                    "0000000000-16-000012", "S000000002", "31-MAY-2016", 5,
+                    filing="10-JUN-2016",
+                ),
+                self._submission(
+                    "0000000000-16-000013", "S000000003", "31-MAY-2016", 16,
+                    filing="10-JUN-2016",
+                ),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        self.assertEqual(
+            self._admitted(parsed), [self.REF_DATE, date(2016, 5, 31)]
+        )
+        self.assertEqual(self._value(parsed, "mmf_net_assets", self.REF_DATE), 6.0)
+        self.assertEqual(
+            self._value(parsed, "mmf_net_assets", date(2016, 5, 31)), 31.0
+        )
+
+    def test_the_assembled_count_is_distinct_series_and_not_submissions(self):
+        """A filer in both halves is one filer, counted once and valued once.
+
+        `S000000001` files as of the 29th and again as of the 30th. Counted by
+        submission the month is four filings; counted by reporting entity it is
+        three series, which is what the floor is declared in. The value follows
+        the same unit: the two filings are one series' account of one
+        cross-section, so the later-filed one supersedes the earlier rather than
+        being added to it. Adding them is the double-booking
+        `_resolve_nmfp_submissions` exists to prevent, one assembly unit up --
+        and it is a defect this block would introduce, because while the
+        cross-section was the report date the two filings were not the same
+        cross-section at all.
+        """
+
+        archive = self._archive(
+            "repeat-filer",
+            [
+                self._submission(
+                    "0000000000-16-000001", "S000000001", self.BUSINESS_DAY, 1,
+                    filing="10-MAY-2016",
+                ),
+                self._submission(
+                    "0000000000-16-000009", "S000000001", self.CALENDAR_DAY, 100,
+                    filing="12-MAY-2016",
+                ),
+                self._submission("0000000000-16-000002", "S000000002", self.BUSINESS_DAY, 2),
+                self._submission("0000000000-16-000003", "S000000003", self.CALENDAR_DAY, 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        section = self._section(parsed, self.REF_DATE)
+        self.assertEqual(
+            section.entity_count,
+            3,
+            msg="the assembled month counted submissions rather than series",
+        )
+        # 100 + 2 + 3. 106.0 would mean both of S000000001's filings were
+        # booked into the month it filed them for.
+        self.assertEqual(
+            self._value(parsed, "mmf_net_assets", self.REF_DATE),
+            105.0,
+            msg="a series that filed in both halves was booked twice",
+        )
+
+    def test_a_daily_flow_keeps_its_own_date_when_its_month_is_assembled(self):
+        """Balance cells move with the cross-section; flow cells do not.
+
+        A balance-sheet cell is dated by the cross-section it was filed under,
+        so assembling the month re-dates it. A daily shareholder-flow cell is
+        dated by the day whose flows it reports, and that day does not move
+        because the month it was filed in was assembled. June 2024 -- the first
+        report month with a flow table at all -- ends on a Sunday and is
+        therefore itself a split month, so re-dating the earlier half's flows
+        onto the later half's date is a defect that would land on the very first
+        month the table exists for.
+        """
+
+        archive = self._archive(
+            "flows",
+            [
+                self._submission(
+                    "0000000000-16-000001", "S000000001", self.BUSINESS_DAY, 1,
+                    flows=(("28-APR-2016", 7_000_000_000, 3_000_000_000),),
+                ),
+                self._submission("0000000000-16-000002", "S000000002", self.BUSINESS_DAY, 2),
+                self._submission("0000000000-16-000003", "S000000003", self.CALENDAR_DAY, 3),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        # The balance sheet is dated by the assembled month.
+        self.assertEqual(self._value(parsed, "mmf_net_assets", self.REF_DATE), 6.0)
+        # The flows are dated by the day they describe.
+        self.assertEqual(
+            self._value(parsed, "mmf_net_flow", date(2016, 4, 28)), 4.0
+        )
+        self.assertEqual(
+            [row.ref_date for row in parsed.rows if row.series_id == "mmf_net_flow"],
+            [date(2016, 4, 28)],
+            msg="a daily flow was re-dated onto the assembled month's reference date",
+        )
+
+    def test_a_month_with_one_report_date_is_unchanged(self):
+        """The ordinary case, which this block must leave exactly alone.
+
+        Almost every month-end is a business day and files under one report
+        date. Assembling by month has nothing to do there, and the cross-section
+        must come out with the same reference date, the same entity count and
+        the same values it had before. A block that fixes the split month by
+        changing every month has not fixed the split month.
+        """
+
+        archive = self._archive(
+            "ordinary",
+            [
+                self._submission(
+                    "0000000000-16-000011", "S000000001", "31-MAY-2016", 10,
+                    filing="10-JUN-2016",
+                ),
+                self._submission(
+                    "0000000000-16-000012", "S000000002", "31-MAY-2016", 5,
+                    filing="10-JUN-2016",
+                ),
+                self._submission(
+                    "0000000000-16-000013", "S000000003", "31-MAY-2016", 16,
+                    filing="10-JUN-2016",
+                ),
+            ],
+            "2026-03-01T00:00:00+00:00",
+        )
+
+        parsed = parse_snapshots(
+            [archive],
+            registry_path=registry_with_nmfp_coverage_floor(self.output_root, 3),
+        )
+
+        self.assertEqual(self._admitted(parsed), [date(2016, 5, 31)])
+        self.assertEqual(
+            self._value(parsed, "mmf_net_assets", date(2016, 5, 31)), 31.0
+        )
+        section = self._section(parsed, date(2016, 5, 31))
+        self.assertEqual(section.entity_count, 3)
+        self.assertEqual(section.declared_floor, 3)
 
 
 if __name__ == "__main__":
