@@ -134,11 +134,12 @@ class CrossSectionCoverage:
     ref_date: date
     entity_unit: str
     entity_count: int
-    declared_floor: int
+    declared_floor: Optional[int]
     admitted: bool
     row_count: int
     submission_types: tuple = ()
     absent_fields: tuple = ()
+    era_id: Optional[str] = None
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -147,16 +148,38 @@ class CrossSectionCoverage:
             "entity_unit": self.entity_unit,
             "entity_count": self.entity_count,
             "declared_floor": self.declared_floor,
+            "era_id": self.era_id,
             "rows": self.row_count,
             "submission_types": {
                 str(name): int(count) for name, count in self.submission_types
             },
             "absent_fields": list(self.absent_fields),
-            "reason": (
-                "reporting entities below the coverage floor declared in the "
-                "source registry"
-            ),
+            "reason": self.reason,
         }
+
+    @property
+    def reason(self) -> str:
+        """Why this cross-section was refused, or why it was admitted.
+
+        Two refusals, and they are not the same finding. A cross-section below
+        its era's floor is a straggler cohort: the floor did its job. A
+        cross-section whose `ref_date` falls in no declared era is a gap in the
+        registry, and reading it as "below the floor" would report a
+        measurement where there was none -- the undeclared thing priced at
+        zero, one level up from the values.
+        """
+
+        if self.era_id is None:
+            return (
+                "ref_date falls in no declared coverage era, so no floor "
+                "applies to it; declare the era rather than admitting it"
+            )
+        if not self.admitted:
+            return (
+                "reporting entities below the coverage floor declared in the "
+                f"source registry for era {self.era_id}"
+            )
+        return f"admitted against the declared floor for era {self.era_id}"
 
 
 # The three answers a declared identity can give about one `ref_date`. There
@@ -760,20 +783,238 @@ def write_point_in_time_audit_report(
     return report
 
 
+#: How a coverage era declares its bounds. Inclusive at both ends, and a
+#: calendar month rather than a date, because the cross-section a floor judges
+#: is a calendar month -- see `_nmfp_cross_section`. Declaring a bound as a date
+#: would invite the reader to believe a floor can change mid-month.
+COVERAGE_ERA_MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+COVERAGE_ERA_KEYS = frozenset(
+    {
+        "era_id",
+        "start",
+        "end",
+        "minimum_reporting_entities",
+        "observed_minimum_entities",
+        "observed_complete_months",
+        "note",
+    }
+)
+
+
+@dataclass(frozen=True)
+class CoverageEra:
+    """One declared era of a source's reporting universe, and its floor.
+
+    `minimum_reporting_entities` is the floor. The other two numbers are what
+    it was calibrated from and are carried beside it deliberately: a floor
+    whose calibration input is not stated is a number nobody can check, and
+    the registry has already been through one round of exactly that.
+
+    Bounds are inclusive `YYYY-MM` strings. They are *declared*, never derived
+    from the counts the floor judges -- a floor that infers its own eras from
+    the data it is guarding is the anchoring failure this repository keeps
+    finding, and `validate_coverage_eras` refuses a declaration that leaves
+    any month between the first and last era unclaimed rather than letting one
+    be filled in by proximity.
+    """
+
+    era_id: str
+    start: str
+    end: str
+    minimum_reporting_entities: int
+    observed_minimum_entities: int
+    observed_complete_months: int
+    note: str = ""
+
+    def contains(self, ref_date: date) -> bool:
+        return self.start <= f"{ref_date.year:04d}-{ref_date.month:02d}" <= self.end
+
+
+@dataclass(frozen=True)
+class CoverageFloor:
+    """A source's declared coverage floors, one per era of its universe.
+
+    Replaces the `(entity_unit, floor)` pair this function used to return. That
+    pair bundled two scalars that always travelled together; the floor is no
+    longer a scalar, and returning `(entity_unit, something_with_methods)`
+    would keep the shape of an answer that no longer exists.
+
+    There is exactly one way to ask for a floor -- `era_for` -- and it returns
+    `None` for a `ref_date` in no declared era rather than a number. A second
+    accessor that raised, or one that fell back to the nearest era, would be a
+    second reading of the same question, and the fallback is the silent zero
+    this repository legislates against: an undeclared date admitted on a floor
+    that was calibrated for a different universe.
+    """
+
+    entity_unit: str
+    eras: tuple
+
+    def era_for(self, ref_date: date) -> Optional[CoverageEra]:
+        """The era governing `ref_date`, or `None` if none declares it."""
+
+        for era in self.eras:
+            if era.contains(ref_date):
+                return era
+        return None
+
+
+def validate_coverage_eras(source_id: str, declared: object) -> tuple:
+    """Read and check a source's declared eras, or say exactly what is wrong.
+
+    Every branch here is a way the declaration can stop guarding while still
+    looking like a declaration, so each one raises with its own message.
+    """
+
+    if not isinstance(declared, Sequence) or isinstance(declared, (str, bytes)):
+        raise DataContractError(
+            f"{source_id}: cross_section.eras must be a list of declared eras"
+        )
+    if not declared:
+        raise DataContractError(
+            f"{source_id}: cross_section.eras is empty; a source that emits "
+            "cross-sections and declares no era has no floor anywhere"
+        )
+    eras = []
+    for entry in declared:
+        if not isinstance(entry, Mapping):
+            raise DataContractError(
+                f"{source_id}: each cross_section.eras entry must be an object"
+            )
+        unknown = sorted(set(entry) - COVERAGE_ERA_KEYS)
+        if unknown:
+            raise DataContractError(
+                f"{source_id}: cross_section.eras entry has unpermitted keys "
+                f"{unknown}"
+            )
+        missing = sorted(COVERAGE_ERA_KEYS - {"note"} - set(entry))
+        if missing:
+            raise DataContractError(
+                f"{source_id}: cross_section.eras entry lacks required keys "
+                f"{missing}"
+            )
+        era_id = entry["era_id"]
+        if not isinstance(era_id, str) or not era_id.strip():
+            raise DataContractError(
+                f"{source_id}: cross_section.eras entry needs a non-empty era_id"
+            )
+        for key in ("start", "end"):
+            bound = entry[key]
+            if not isinstance(bound, str) or not COVERAGE_ERA_MONTH.match(bound):
+                raise DataContractError(
+                    f"{source_id}: era {era_id} has a {key} of {bound!r}; "
+                    "bounds are inclusive YYYY-MM months"
+                )
+        if entry["start"] > entry["end"]:
+            raise DataContractError(
+                f"{source_id}: era {era_id} starts at {entry['start']} and ends "
+                f"at {entry['end']}, which declares no months at all"
+            )
+        counts = {}
+        for key in (
+            "minimum_reporting_entities",
+            "observed_minimum_entities",
+            "observed_complete_months",
+        ):
+            value = entry[key]
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise DataContractError(
+                    f"{source_id}: era {era_id} {key} must be an integer"
+                )
+            counts[key] = value
+        floor = counts["minimum_reporting_entities"]
+        if floor < 1:
+            # The prohibited silent zero, written down as data. A floor of 0
+            # admits every cross-section and reads, to the next person, as a
+            # check that ran.
+            raise DataContractError(
+                f"{source_id}: era {era_id} minimum_reporting_entities must be "
+                f"at least 1; {floor} admits every cross-section and guards nothing"
+            )
+        if counts["observed_complete_months"] < 1:
+            raise DataContractError(
+                f"{source_id}: era {era_id} declares a floor calibrated from "
+                "no observed month; state the months it was measured over"
+            )
+        if floor > counts["observed_minimum_entities"]:
+            # A floor above the smallest complete month observed in its own era
+            # refuses a month that era saw. Whatever it is guarding against, it
+            # is not stragglers, and the number is wrong on its own evidence.
+            raise DataContractError(
+                f"{source_id}: era {era_id} floor {floor} exceeds the smallest "
+                f"complete month it was calibrated from "
+                f"({counts['observed_minimum_entities']}), so it refuses a "
+                "cross-section its own calibration observed"
+            )
+        note = entry.get("note", "")
+        if not isinstance(note, str):
+            raise DataContractError(
+                f"{source_id}: era {era_id} note must be a string"
+            )
+        eras.append(
+            CoverageEra(
+                era_id=era_id.strip(),
+                start=entry["start"],
+                end=entry["end"],
+                minimum_reporting_entities=floor,
+                observed_minimum_entities=counts["observed_minimum_entities"],
+                observed_complete_months=counts["observed_complete_months"],
+                note=note,
+            )
+        )
+    eras.sort(key=lambda era: era.start)
+    seen = set()
+    for era in eras:
+        if era.era_id in seen:
+            raise DataContractError(
+                f"{source_id}: cross_section.eras declares era_id {era.era_id!r} twice"
+            )
+        seen.add(era.era_id)
+    for earlier, later in zip(eras, eras[1:]):
+        if later.start <= earlier.end:
+            raise DataContractError(
+                f"{source_id}: eras {earlier.era_id} and {later.era_id} overlap "
+                f"at {later.start}; one month cannot have two floors"
+            )
+        if _month_after(earlier.end) != later.start:
+            # A gap between declared eras is worse than an undeclared tail: the
+            # months in it look covered, because they lie inside the declared
+            # range, and are refused anyway.
+            raise DataContractError(
+                f"{source_id}: eras {earlier.era_id} and {later.era_id} leave "
+                f"{_month_after(earlier.end)} undeclared; declare every month "
+                "between the first era and the last"
+            )
+    return tuple(eras)
+
+
+def _month_after(month: str) -> str:
+    year, index = int(month[:4]), int(month[5:])
+    return f"{year + 1:04d}-01" if index == 12 else f"{year:04d}-{index + 1:02d}"
+
+
 def declared_coverage_floor(
     source_id: str,
     source: Mapping[str, object],
-) -> tuple[str, int]:
-    """Read one source's declared cross-section coverage floor.
+) -> CoverageFloor:
+    """Read one source's declared cross-section coverage floors.
 
-    Returns `(entity_unit, minimum_reporting_entities)`. Raises if the source
-    does not declare one, or declares one that cannot guard anything.
+    Returns a `CoverageFloor` carrying the entity unit and one `CoverageEra`
+    per declared era. Raises if the source does not declare one, or declares
+    one that cannot guard anything.
 
     Fails closed on purpose. An adapter reaches this function only because it
     knows how to count that source's reporting entities, and a counted quantity
     with no declared floor is a measurement nothing acts on. The registry is
-    where the floor lives -- it is a claim about the source, not about the code,
-    and Track A owns the registry.
+    where the floors live -- they are claims about the source, not about the
+    code, and Track A owns the registry.
+
+    The floor is per era because one absolute cannot hold across a universe
+    that changes size. `sec_nmfp` falls from 730 reporting series in 2010 to
+    307 in 2024: the single floor of 200 this replaced was 27 percent of the
+    early universe and 65 percent of the late one, which is not one floor
+    applied twice but two different rules wearing one number.
     """
 
     declaration = source.get("cross_section")
@@ -782,7 +1023,7 @@ def declared_coverage_floor(
             f"{source_id}: emits cross-sections but the registry declares no "
             "cross_section coverage floor"
         )
-    permitted = {"entity_unit", "minimum_reporting_entities", "note"}
+    permitted = {"entity_unit", "eras", "note"}
     unknown = sorted(set(declaration) - permitted)
     if unknown:
         raise DataContractError(
@@ -794,19 +1035,14 @@ def declared_coverage_floor(
             f"{source_id}: cross_section.entity_unit must be a non-empty string "
             "naming what is counted"
         )
-    floor = declaration.get("minimum_reporting_entities")
-    if isinstance(floor, bool) or not isinstance(floor, int):
+    if "eras" not in declaration:
         raise DataContractError(
-            f"{source_id}: cross_section.minimum_reporting_entities must be an integer"
+            f"{source_id}: cross_section declares no eras; the floor is per era"
         )
-    if floor < 1:
-        # The prohibited silent zero, written down as data. A floor of 0 admits
-        # every cross-section and reads, to the next person, as a check that ran.
-        raise DataContractError(
-            f"{source_id}: cross_section.minimum_reporting_entities must be at "
-            f"least 1; {floor} admits every cross-section and guards nothing"
-        )
-    return entity_unit.strip(), floor
+    return CoverageFloor(
+        entity_unit=entity_unit.strip(),
+        eras=validate_coverage_eras(source_id, declaration["eras"]),
+    )
 
 
 def validate_publication_gaps(

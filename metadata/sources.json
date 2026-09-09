@@ -161,8 +161,36 @@
     "access": "public",
     "cross_section": {
       "entity_unit": "series_id",
-      "minimum_reporting_entities": 200,
-      "note": "Each bulk extract covers a filing window and carries one dominant monthly cross-section plus amendment and straggler filings for adjacent months, and the stragglers are not a universe: in the 2026-07 extract, July has 325 reporting series and the other five report dates have between 1 and 5. A ref_date below this floor is excluded from the panel and recorded in the quality report, with the SUBMISSIONTYPE mix of its submissions alongside as a corroborating record that is never a filter. The floor counts distinct SERIESID and never a value total, because the values are what the floor exists to make trustworthy. It is an absolute count rather than a fraction of a trailing median because the trailing median is itself computed from straggler months: on this extract the straggler counts have a median of 4, so a quarter-of-median rule would set the floor at 1 and admit the 1-series April cross-section it was written to reject. 200 is about 60 percent of the 325 observed in the one complete month available when it was calibrated. The 26-archive backfill of 7 September 2026 shows that one absolute count does not hold across the published history: the reporting universe falls from 728 series in 2010 to about 310 in 2026, so 200 is 27 percent of the early universe and 64 percent of the current one. A per-era declared absolute is the decided remedy and is not implemented here; the observed counts each era entry would be calibrated from are in the Track A decision memo of 7 September 2026."
+      "eras": [
+        {
+          "era_id": "n_mfp1",
+          "start": "2010-11",
+          "end": "2016-03",
+          "minimum_reporting_entities": 328,
+          "observed_minimum_entities": 546,
+          "observed_complete_months": 65,
+          "note": "Original Form N-MFP, from the first monthly filing in November 2010. The universe falls from 730 series to 546 across the era."
+        },
+        {
+          "era_id": "n_mfp2",
+          "start": "2016-04",
+          "end": "2024-05",
+          "minimum_reporting_entities": 193,
+          "observed_minimum_entities": 322,
+          "observed_complete_months": 98,
+          "note": "Form N-MFP2, the 2014 money-market-fund reform amendments. The structural 2a-7 changes that consolidated the industry took effect 14 October 2016, inside this era rather than at its start."
+        },
+        {
+          "era_id": "n_mfp3",
+          "start": "2024-06",
+          "end": "2026-07",
+          "minimum_reporting_entities": 184,
+          "observed_minimum_entities": 307,
+          "observed_complete_months": 26,
+          "note": "Form N-MFP3, the 2023 amendments. Bounded at the newest month the declared archive set carries, for the same reason NMFP_INVESTMENT_CATEGORY_ERAS bounds its last era: a month nobody has observed has no calibrated floor, and refusing it is the fail-closed reading."
+        }
+      ],
+      "note": "Each bulk extract covers a filing window and carries one dominant monthly cross-section plus amendment and straggler filings for adjacent months, and the stragglers are not a universe. The floor counts distinct SERIESID and never a value total, because the values are what the floor exists to make trustworthy. A ref_date below its era's floor is excluded from the panel and recorded in the quality report, with the SUBMISSIONTYPE mix of its submissions alongside as a corroborating record that is never a filter. The floor is per era because one absolute cannot hold across a universe that changes size: the single floor of 200 this replaced was 27 percent of the 2010 universe and 65 percent of the 2024 one. It is an absolute count per era rather than a fraction of a trailing median because the trailing median is itself computed from straggler months -- on the 2026-07 extract the straggler counts have a median of 4, so a quarter-of-median rule would set the floor at 1 and admit the 1-series cross-section it was written to reject. Each era's floor is 60 percent of the smallest complete month observed inside it, the same proportion the original single floor used, and observed_minimum_entities and observed_complete_months state what it was measured over. Those counts were derived on 9 September 2026 from the 97 archives on disk, on assembled monthly cross-sections rather than report dates: the earlier counts in this note were measured per REPORTDATE and understated every split month by whichever half they missed -- 2013-06 files 159 series on the 28th and 473 on the 30th, 632 assembled, against 634 and 629 in the adjacent months. 54 of the 189 months are split. The era BOUNDARIES are declared from the Form N-MFP version, which is a dated published fact about who files and on what schedule. They are deliberately not derived from the counts, because a floor that infers its own eras from the data it judges is calibrated against the evidence that is supposed to check it. They should not be read as steps in the size of the universe, and the counts say they are not: the universe declines smoothly and almost monotonically from 730 to 307 with no discontinuity at either boundary. 2016-03 to 2016-04 falls 546 to 529, the third largest month-over-month fall of 188 and smaller than 2013-02 to 2013-03; 2024-05 to 2024-06 does not fall at all, 323 to 323, ranking 123rd. These bounds coincide with NMFP_INVESTMENT_CATEGORY_ERAS because both follow the form version, not because either was fitted to the other; nothing asserts they must stay equal, and a form version that rewrites the categories without moving the universe is exactly the case where they should be allowed to diverge. A ref_date in no declared era is refused and named, never admitted on the nearest era's floor."
     },
     "coverage": [
       "fund identity",

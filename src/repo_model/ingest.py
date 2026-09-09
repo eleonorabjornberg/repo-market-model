@@ -1804,7 +1804,8 @@ def _assemble_sec_nmfp(
         raise ValueError(
             f"snapshots have no source-registry entry: [{source_id!r}]"
         ) from exc
-    entity_unit, floor = declared_coverage_floor(source_id, source)
+    floors = declared_coverage_floor(source_id, source)
+    entity_unit = floors.entity_unit
 
     submissions = {}          # accession -> (series_id, report_date, filing_date)
     submission_types = {}     # accession -> SUBMISSIONTYPE
@@ -1962,7 +1963,12 @@ def _assemble_sec_nmfp(
             for section, found in members.items()
         }
         for section in sections:
-            if counts[section] >= floor:
+            # The floor is the one declared for the era the cross-section's own
+            # reference date falls in. A section in no declared era is refused:
+            # there is no floor to clear, and admitting it on the nearest era's
+            # floor would judge it against a universe it is not part of.
+            era = floors.era_for(section_ref_dates[section])
+            if era is not None and counts[section] >= era.minimum_reporting_entities:
                 admitted.add(section)
         wanted = {
             accession
@@ -2019,13 +2025,17 @@ def _assemble_sec_nmfp(
                 for accession in members[section] & kept
                 for cell in contributions.get(accession, ())
             }
+            era = floors.era_for(section_ref_dates[section])
             coverage.append(
                 CrossSectionCoverage(
                     source_id=source_id,
                     ref_date=section_ref_dates[section],
                     entity_unit=entity_unit,
                     entity_count=counts[section],
-                    declared_floor=floor,
+                    declared_floor=(
+                        None if era is None else era.minimum_reporting_entities
+                    ),
+                    era_id=None if era is None else era.era_id,
                     admitted=section in admitted,
                     row_count=len(surviving),
                     submission_types=tuple(sorted(mix.items())),
