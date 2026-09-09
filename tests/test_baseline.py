@@ -3988,26 +3988,32 @@ class RunProvenanceTests(unittest.TestCase):
         clean tree, because a reader must be able to tell "checked, and clean"
         from "not checked", and an omitted field cannot say the first.
 
-        Compared against `git` run from this test rather than against the
-        record's own helper. Skipped where git is absent, which is the case the
-        record answers by omitting the section entirely.
+        `tree_modified` counts **tracked** modifications, and untracked files
+        are reported beside it under their own name -- see
+        `RecordGitStateTests`, which owns that split and proves it on a
+        purpose-built repository. This test asserts the same two fields against
+        this checkout, whatever state it happens to be in: the expectations are
+        derived by running `git` from the test rather than read off the
+        record's own helper, and both are asserted so a checkout that is clean
+        today cannot let half the pair go unchecked.
+
+        Skipped where git is absent, which is the case the record answers by
+        omitting the section entirely.
         """
 
-        try:
-            commit = subprocess.run(
-                ("git", "rev-parse", "HEAD"),
-                cwd=SAMPLE_PANEL.parents[2],
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout.strip()
-            status = subprocess.run(
-                ("git", "status", "--porcelain"),
+        def git(*arguments):
+            return subprocess.run(
+                ("git", *arguments),
                 cwd=SAMPLE_PANEL.parents[2],
                 capture_output=True,
                 text=True,
                 check=True,
             ).stdout
+
+        try:
+            commit = git("rev-parse", "HEAD").strip()
+            status = git("status", "--porcelain", "--untracked-files=no")
+            untracked = git("ls-files", "--others", "--exclude-standard")
         except (OSError, subprocess.SubprocessError):  # pragma: no cover
             self.skipTest("git is not available here; the record omits the section")
 
@@ -4017,6 +4023,10 @@ class RunProvenanceTests(unittest.TestCase):
                 self.assertEqual(code["commit"], commit)
                 self.assertIn("tree_modified", code)
                 self.assertIs(code["tree_modified"], bool(status.strip()))
+                self.assertIn("untracked_files_present", code)
+                self.assertIs(
+                    code["untracked_files_present"], bool(untracked.strip())
+                )
 
     def test_the_new_arguments_are_required_and_undefaulted(self):
         """A default here publishes a record missing its provenance.
@@ -4041,6 +4051,172 @@ class RunProvenanceTests(unittest.TestCase):
                     parameter = parameters[name]
                     self.assertIs(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
                     self.assertIs(parameter.default, inspect.Parameter.empty)
+
+
+class RecordGitStateTests(unittest.TestCase):
+    """`tree_modified` answers a question about code, not about housekeeping.
+
+    The finding, observed rather than reasoned. The two records published on
+    9 September 2026 were produced minutes apart, from `568c9ba`, in one tree,
+    with nothing about the code changed between them. They disagree:
+
+    | record                                        | `tree_modified` |
+    |-----------------------------------------------|-----------------|
+    | `docs/runs/persistence_funding.json`          | `false`         |
+    | `docs/runs/exceedance_funding_climatology.json` | `true`        |
+
+    What changed is that by the time the second ran, the first was sitting
+    untracked beside it. `_code_provenance` asked `git status --porcelain`,
+    which reports untracked files with `??`, and read any output at all as a
+    modified tree -- so a record published into the repository made the *next*
+    record report a modified tree, and because these records are written into
+    `docs/runs/`, only the first record produced in a clean checkout could ever
+    report `False`.
+
+    The failure mode is the worse direction. A reader who sees
+    `tree_modified: true` on nearly every record learns to ignore the field,
+    and then the one record that carries it because somebody really did run
+    from an edited working tree says nothing, because the signal has been
+    drowned by its own siblings. A guard that fires on everything is a guard
+    that fires on nothing -- this repository's own recurring finding, pointed
+    at a field rather than at a test.
+
+    So the question is split and both halves are kept: `tree_modified` counts
+    tracked modifications only, and `untracked_files_present` reports the rest
+    under a name no reader can mistake for a synonym of it. Suppressing the
+    untracked signal entirely would have been a loosening rather than a
+    scoping; publishing the file *names* would have put a developer's scratch
+    files into a published record.
+
+    This class builds its own git repository rather than reading this one,
+    because the states it has to assert are states this checkout cannot be put
+    into on demand -- and because a fixture that special-cased `docs/runs/`
+    would be testing the one implementation the block forbids.
+
+    Mutation record, the untracked sibling
+    --------------------------------------
+
+    Run in a disposable copy of the tree under `$HOME` -- never in the mount --
+    carrying `data/`, `.github/`, `metadata/`, `.gitignore`, the root Markdown
+    and `docs/PROJECT_STATUS.md`, with `__pycache__` cleared, stdlib only,
+    under `-B` with `PYTHONDONTWRITEBYTECODE=1`. Unmutated control green before
+    and after.
+
+      * **`--untracked-files=no` dropped** from `_code_provenance`'s status
+        call, restoring the behaviour that produced the two disagreeing
+        records. Kills exactly 1 --
+        `RecordGitStateTests::test_an_untracked_sibling_does_not_make_the_tree_modified`,
+        and inside it exactly the `state='untracked sibling'` subtest:
+        `AssertionError: True is not False : an untracked record beside the one
+        being written is not code that did not run`. The `clean` and `tracked
+        file modified` subtests stay green under it, which is what says the
+        fixture isolates the untracked case rather than merely noticing that
+        something moved.
+
+        Note the shape of the control here: in the copy under `$HOME` there is
+        no enclosing git repository, so `_code_provenance` returns `None` and
+        `RunProvenanceTests`' checkout-reading sibling skips itself. This class
+        is unaffected, because it supplies its own repository -- which is the
+        argument for building one instead of reading the tree the suite is run
+        from.
+    """
+
+    def _git(self, *arguments):
+        subprocess.run(
+            ("git", *arguments),
+            cwd=self.repository,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+    def setUp(self):
+        try:
+            subprocess.run(
+                ("git", "--version"), capture_output=True, check=True
+            )
+        except (OSError, subprocess.SubprocessError):  # pragma: no cover
+            self.skipTest("git is not available here; the record omits the section")
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.repository = Path(directory.name).resolve()
+
+        self._git("init", "--quiet")
+        # On the repository, not on the machine: the fixture must not depend on
+        # whoever's git config the suite happens to run under, and must not
+        # write to it either.
+        self._git("config", "user.email", "fixture@example.invalid")
+        self._git("config", "user.name", "Fixture")
+        self._git("config", "commit.gpgsign", "false")
+
+        (self.repository / "tracked.txt").write_text("one\n", encoding="utf-8")
+        self._git("add", "tracked.txt")
+        self._git("commit", "--quiet", "-m", "one")
+
+        # `_code_provenance` runs git at the module-level repository root.
+        # Point it at the fixture for the duration of the test and put it back
+        # afterwards, so a failure cannot leave the constant redirected for
+        # everything that runs next.
+        original = baseline._REPOSITORY_ROOT
+        self.addCleanup(setattr, baseline, "_REPOSITORY_ROOT", original)
+        baseline._REPOSITORY_ROOT = self.repository
+
+    def test_an_untracked_sibling_does_not_make_the_tree_modified(self):
+        """**The acceptance criterion.** Three states, and they only mean
+        something together.
+
+        A record written into the repository must not be what makes the next
+        record say the tree was modified. State 2 is the finding. State 1 is
+        the reason the field is present-and-`False` rather than omitted: a
+        reader must be able to tell "checked, and clean" from "not checked".
+        State 3 is not padding -- without it this test passes on an
+        implementation that hardcodes `False`, which is the shortest wrong fix
+        available and the one a hurry produces.
+
+        The untracked file is named like a run record because that is what it
+        is about: the sibling in `docs/runs/` that the second published record
+        was standing next to. Nothing in the implementation may notice the
+        name, and nothing here checks that it does.
+        """
+
+        head = subprocess.run(
+            ("git", "rev-parse", "HEAD"),
+            cwd=self.repository,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+        with self.subTest(state="clean"):
+            code = baseline._code_provenance()
+            self.assertEqual(code["commit"], head)
+            self.assertIs(code["tree_modified"], False)
+            self.assertIs(code["untracked_files_present"], False)
+
+        (self.repository / "persistence_funding.json").write_text(
+            "{}\n", encoding="utf-8"
+        )
+
+        with self.subTest(state="untracked sibling"):
+            code = baseline._code_provenance()
+            self.assertIs(
+                code["tree_modified"],
+                False,
+                "an untracked record beside the one being written is not code "
+                "that did not run",
+            )
+            self.assertIs(code["untracked_files_present"], True)
+
+        (self.repository / "tracked.txt").write_text("two\n", encoding="utf-8")
+
+        with self.subTest(state="tracked file modified"):
+            code = baseline._code_provenance()
+            self.assertIs(
+                code["tree_modified"],
+                True,
+                "an edited tracked file is exactly what this field is for",
+            )
 
 
 if __name__ == "__main__":
