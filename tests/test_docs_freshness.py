@@ -1173,3 +1173,124 @@ class PublishedCommandCoverageTests(unittest.TestCase):
             "documentation that made it false.",
         )
 
+
+
+# A quotation is a third kind of published claim. A count rots because the suite
+# grows; a limitation is falsified by success; a quotation is falsified by
+# someone editing the *other* document. `docs/DATA_QUALITY_DECISIONS.md` quotes
+# `metadata/sources.json` to argue from it, and the registry is a track's file
+# while the document is HUMAN_ONLY -- so the correct action on one side leaves
+# the other side wrong, and no assertion in this module could see it.
+
+
+def _nmfp_identity_tolerance_note():
+    """The `tolerance_note` on the N-MFP balance-sheet identity, read fresh."""
+    for identity in registry()["sec_nmfp"]["identities"]:
+        if identity["name"] == "series_assets_reconcile_to_liabilities_and_net_assets":
+            return identity.get("tolerance_note", "")
+    return ""
+
+
+#: Each entry: a name, the document that quotes, the sentence the document
+#: publishes the quotation in, the words attributed to the registry, and the
+#: registry field they are attributed to.
+QUOTATIONS = (
+    (
+        "nmfp_tolerance_note",
+        "docs/DATA_QUALITY_DECISIONS.md",
+        "The `tolerance_note` records the outcome in those terms, as \"an ingestion "
+        "check that currently fails on a majority of the population it checks\", and "
+        "declines to widen the bound into a description of that population.",
+        "an ingestion check that currently fails on a majority of the population it "
+        "checks",
+        _nmfp_identity_tolerance_note,
+    ),
+)
+
+
+def _collapsed(text):
+    """Whitespace collapsed, so a hard-wrapped quotation matches a JSON string."""
+    return " ".join(text.split())
+
+
+class RegistryQuotationTests(unittest.TestCase):
+    """A document that quotes the registry must still be quoting it.
+
+    A count rots because the suite grows; a limitation is falsified by success;
+    a quotation is falsified by someone editing the *other* document. The
+    registry is a track's file and `docs/DATA_QUALITY_DECISIONS.md` is
+    `HUMAN_ONLY`, so the correct action on one side leaves the other side
+    wrong and no assertion in this module could see it.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, control green before and after all four (702
+    tests, OK, on 3.10.12). Each mutation was confirmed present before its
+    result was read, and each was applied to a restored copy rather than on top
+    of the last.
+
+    1. **A track edits the registry and the page's quotation goes stale.** The
+       `tolerance_note`'s "fails on a majority of the population it checks"
+       reworded to "fails on most of the population it checks" -- a change no
+       reviewer of `metadata/sources.json` would think twice about. Kills
+       `test_every_quoted_registry_claim_is_still_in_the_registry`,
+       `AssertionError`, naming the entry and the document. This is the failure
+       the guard exists for, in the direction it actually runs.
+    2. **The page stops publishing the sentence.** "The `tolerance_note` records
+       the outcome" reworded to "The registry note records the outcome". Kills
+       `test_every_declared_quotation_is_still_published`, `AssertionError`. The
+       reverse direction: a declaration left behind by the document it describes
+       would otherwise pass by absence.
+
+    Two mutations survived, and only one of them was expected to.
+
+    3. **The `QUOTATIONS` entry dropped entirely.** Kills nothing: both
+       assertions iterate the table, so an empty table satisfies both. Expected,
+       and it is the same hole this repository closed one file away at
+       `2ced98e`, where dropping a `CLI_PUBLICATION` entry was quieter than
+       lying in one. **It cannot be closed the same way here.** That guard could
+       assert its registry against `cli.build_parser()`, an enumerable universe
+       of commands; there is no enumerable universe of quotations in a Markdown
+       page, so nothing can say this table is complete. The table is a
+       declaration, and its completeness rests on whoever adds a quotation
+       adding a row. Recorded as the standing limit of this guard rather than
+       left to be rediscovered.
+    4. **`_collapsed` replaced with the identity function.** Kills nothing, and
+       this one was expected to kill. Its docstring says it exists so a
+       hard-wrapped quotation matches a JSON string -- but the only entry in the
+       table today is a single-line implicit concatenation, the registry value
+       it is compared against is a single-line JSON string, and the document
+       side goes through `_line_stating`, which does its own word-stream
+       matching. So the helper is defensive against a registry value containing
+       a newline and **no current input exercises it**. Not wrong; unexercised,
+       which in this repository is a thing worth saying out loud rather than a
+       thing to leave looking tested.
+    """
+
+    def test_every_quoted_registry_claim_is_still_in_the_registry(self):
+        wrong = []
+        for name, document, _published, quoted, field in QUOTATIONS:
+            if _collapsed(quoted) not in _collapsed(field()):
+                wrong.append(f"{name}: {document} attributes to the registry: {quoted!r}")
+        self.assertEqual(
+            [],
+            wrong,
+            "A published document quotes the registry saying something the "
+            "registry does not say:\n  " + "\n  ".join(wrong),
+        )
+
+    def test_every_declared_quotation_is_still_published(self):
+        missing = []
+        for name, document, published, _quoted, _field in QUOTATIONS:
+            path = REPO_ROOT / document
+            if _line_stating(path, published) is None:
+                missing.append(f"{name}: {document} no longer states it")
+        self.assertEqual(
+            [],
+            missing,
+            "A quotation is declared here that its document no longer "
+            "publishes; remove the declaration deliberately rather than "
+            "leaving it to pass by absence:\n  " + "\n  ".join(missing),
+        )
