@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import time
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Union
 
 from .baseline import (
     ExceedancePredictor,
@@ -76,28 +76,82 @@ _AUTOREGRESSIVE_TERM = "spread_bps"
 
 
 @dataclass(frozen=True)
+class _DeferredFactory:
+    """An exceedance factory in `repo_model.ml`, named rather than imported.
+
+    `tests/test_dependency_boundary.py` fails this module for a *module-level*
+    `from .ml import ...`: the core must import on an interpreter that has no
+    `ml` extra, and `import repo_model.cli` would otherwise pull the boundary
+    module in at import time. But `--model gbm` still has to reach the real
+    function object, because
+    `tests/test_baseline.py::ExceedancePredictorCoverageTests::test_every_exceedance_predictor_is_reachable_by_name_from_the_cli`
+    compares the mapping's factories to the discovered ones **by identity** --
+    a wrapper that merely calls through would be a second object and would read
+    as an unreachable implementer.
+
+    So the entry names the attribute and resolves it inside a function. What is
+    deferred is the *import*, not the identity: `resolve` returns
+    `repo_model.ml`'s own function, so the mapping and the walk end at one
+    object. `repo_model.ml` itself imports on an interpreter without the extra
+    -- that is what its own boundary test requires of it -- so resolving costs
+    nothing until a fit is actually run.
+    """
+
+    attribute: str
+
+    def resolve(self) -> Callable[..., ExceedancePredictor]:
+        from . import ml
+
+        return getattr(ml, self.attribute)
+
+
+@dataclass(frozen=True)
 class _ModelChoice:
     """One `--model` name, and how the predictor behind it is constructed.
 
-    The three factories have different signatures --
+    The four factories have different signatures --
     `climatology_exceedance(minimum_history)`,
     `arx_exceedance(regressors, minimum_history)`,
-    `threshold_exceedance(regressors, threshold_variable, minimum_history)` --
-    so the mapping has to carry construction and cannot be a name-to-callable
-    table.
+    `threshold_exceedance(regressors, threshold_variable, minimum_history)`,
+    `gbm_exceedance(regressors, minimum_history)` -- so the mapping has to carry
+    construction and cannot be a name-to-callable table.
 
-    `factory` is the `baseline` factory itself, and `build` is handed that same
-    object rather than closing over one of its own. The two therefore cannot
-    name different models: `tests/test_baseline.py`'s
+    `factory` is the `baseline` (or `ml`) factory itself, and `build` is handed
+    that same object rather than closing over one of its own. The two therefore
+    cannot name different models: `tests/test_baseline.py`'s
     `ExceedancePredictorCoverageTests` reads `factory` to assert every
     discovered implementer is reachable from here, and a `build` free to call
     something else would make that assertion a statement about a field nobody
     runs.
+
+    `declared` is the field and `factory` is the property, because one entry --
+    the one in `repo_model.ml` -- may not be imported at module level; see
+    `_DeferredFactory`. Every other entry stores the function directly and the
+    property hands it straight back.
     """
 
-    factory: Callable[..., ExceedancePredictor]
+    declared: Union[Callable[..., ExceedancePredictor], _DeferredFactory]
     build: Callable[..., ExceedancePredictor]
     needs_regime_variable: bool
+
+    @property
+    def factory(self) -> Callable[..., ExceedancePredictor]:
+        if isinstance(self.declared, _DeferredFactory):
+            return self.declared.resolve()
+        return self.declared
+
+    @property
+    def needs_ml_extra(self) -> bool:
+        """Does running this name require the optional `ml` extra?
+
+        Read by `tests/test_cli_eval.py`, which runs every selectable name end
+        to end and must skip the one name that cannot run on a core checkout.
+        Derived from how the entry is declared rather than written down beside
+        it: a second list of which models need the extra would be updated in
+        the same commit that added the model it was meant to cover.
+        """
+
+        return isinstance(self.declared, _DeferredFactory)
 
     def construct(
         self,
@@ -114,30 +168,42 @@ class _ModelChoice:
 #: Every `ExceedancePredictor` in `baseline` is required to appear here, and
 #: that requirement is enforced by extending the guard that already discovers
 #: them -- `tests/test_baseline.py::ExceedancePredictorCoverageTests` -- rather
-#: than by a second guard beside it. A fourth implementer the command line
+#: than by a second guard beside it. A fifth implementer the command line
 #: cannot run then fails an existing test instead of going unnoticed.
 MODEL_FACTORIES = MappingProxyType(
     {
         "climatology": _ModelChoice(
-            factory=climatology_exceedance,
+            declared=climatology_exceedance,
             build=lambda factory, regressors, regime, minimum_history: factory(
                 minimum_history=minimum_history
             ),
             needs_regime_variable=False,
         ),
         "arx": _ModelChoice(
-            factory=arx_exceedance,
+            declared=arx_exceedance,
             build=lambda factory, regressors, regime, minimum_history: factory(
                 regressors, minimum_history=minimum_history
             ),
             needs_regime_variable=False,
         ),
         "threshold": _ModelChoice(
-            factory=threshold_exceedance,
+            declared=threshold_exceedance,
             build=lambda factory, regressors, regime, minimum_history: factory(
                 regressors, regime, minimum_history=minimum_history
             ),
             needs_regime_variable=True,
+        ),
+        # The one entry the core cannot import; see `_DeferredFactory`. Its
+        # construction signature is the ARX's -- regressors plus a minimum
+        # history -- because it reads the same declared feature set: the
+        # autoregressive term the fitter supplies itself, plus whatever
+        # `--feature` named.
+        "gbm": _ModelChoice(
+            declared=_DeferredFactory("gbm_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history: factory(
+                regressors, minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
         ),
     }
 )
