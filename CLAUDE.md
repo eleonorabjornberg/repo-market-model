@@ -74,9 +74,16 @@ Every new guard gets a recorded mutation.
 - Make the copy from **git's own file list**, not from a list of directories:
 
   ```
-  COPY="$HOME/mutation-copy"; rm -rf "$COPY"; mkdir -p "$COPY"
+  BR="$(git rev-parse --abbrev-ref HEAD | tr / -)"; rm -rf "$HOME/mutation-copy-$BR"-*
+  COPY="$HOME/mutation-copy-$BR-$(git rev-parse --short HEAD)"; mkdir -p "$COPY"
   git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - | tar -xf - -C "$COPY"
   ```
+
+  The path is per branch and per commit because both tracks run mutations at once: a
+  shared `$HOME/mutation-copy` was rebuilt by one track in the middle of the other's run,
+  and scored a mutation against the wrong branch. The branch is the part that isolates —
+  after a round's fast-forward both tracks sit on the same commit — and the first line
+  clears only your own track's stale copies.
 
   That is every tracked file as your working tree has it, plus your new untracked files,
   and nothing gitignored -- no `.venv/`, no frozen panel. A hand-kept list of directories
