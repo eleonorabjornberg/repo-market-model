@@ -4337,13 +4337,17 @@ class RunProvenanceTests(unittest.TestCase):
     ===================================
 
     Same discipline, and one addition to it. The disposable copy was taken at
-    `$HOME/mutation-copy`, the path this repository's standing rules name, and
-    a **concurrently running track rebuilt that same path mid-run** -- the
-    second mutation was scored against the other branch's tree, which showed
-    four unrelated `test_contract` failures and one silently reverted module.
-    The copy is now taken at a path unique to the block. A shared literal path
-    under `$HOME` is a shared mutable resource between two agents told to use
-    it, and it fails exactly as one: quietly, and looking like a finding.
+    `$HOME/mutation-copy`, which was then the path this repository's standing
+    rules named, and a **concurrently running track rebuilt that same path
+    mid-run** -- the second mutation was scored against the other branch's
+    tree, which showed four unrelated `test_contract` failures and one silently
+    reverted module. That finding closed the rule: `CLAUDE.md`, "Mutations are
+    the evidence", now names a copy per branch and per commit --
+    `$HOME/mutation-copy-<branch>-<short sha>`, with the branch as the part
+    that isolates, because after a round's fast-forward both tracks sit on the
+    same commit. A shared literal path under `$HOME` is a shared mutable
+    resource between two agents told to use it, and it fails exactly as one:
+    quietly, and looking like a finding.
 
     All three mutations killed
     `test_a_manifest_whose_digest_is_not_the_scored_panel_is_refused`, which is
