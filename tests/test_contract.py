@@ -193,9 +193,11 @@ tests claims.
 
 import argparse
 import ast
+import contextlib
 import importlib.util
 import inspect
 import json
+import pkgutil
 import re
 import subprocess
 import sys
@@ -208,6 +210,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+import repo_model
 from repo_model import baseline, cli
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
@@ -1633,27 +1636,65 @@ class RollingResidualLawForecastInterfaceTests(
         )
 
 
-def _forecast_implementations():
-    """Fitted-model implementations in `repo_model.baseline`, by name.
+def _package_modules(package):
+    """Every module of `package`, imported, in `pkgutil` order.
 
-    Discovered rather than listed. A class defined in `baseline` that offers
-    both `predict` and `predict_stress` is a fitted model as far as the contract
-    is concerned, whatever else it does. Protocols are excluded because
-    `FittedForecastModel` is the shape, not an implementation of it, and classes
-    merely imported into the module are excluded by `__module__` -- which is
-    where a class was defined, not where it was bound.
+    A walk over `package.__path__`, not a list of module names: a list is the
+    thing that has to be kept up to date, and it would be updated in the same
+    commit that added the module it was meant to catch.
+
+    One name is skipped. `repo_model/__main__.py` is the `python -m` entry
+    point: its body calls `cli.main()` and raises SystemExit at import, so
+    importing it would end the test run rather than fail a test. That name is a
+    fact about Python packaging and not a list of models.
+
+    Consequence, for any module this walk will reach: it must import on the core
+    job. `src/repo_model/ml.py` will therefore have to import scikit-learn
+    inside the functions that use it, never at module level -- a module-level
+    optional import would turn this walk into an ImportError on every checkout
+    without the `ml` extra.
+    """
+
+    modules = []
+    for info in pkgutil.iter_modules(package.__path__):
+        if info.name == "__main__":
+            continue
+        modules.append(importlib.import_module(f"{package.__name__}.{info.name}"))
+    return modules
+
+
+def _forecast_implementations(package=repo_model):
+    """Fitted-model implementations across the `repo_model` package.
+
+    Keyed by qualified name, `module.Class`. Bare class names would collide:
+    two modules may one day define the same name, and the later would silently
+    replace the earlier in the dict -- one implementation lost, and lost exactly
+    where a second model of the same shape is most likely to appear.
+
+    Discovered rather than listed, and discovered from every module of the
+    package rather than from `baseline` alone. A class defined in any package
+    module that offers both `predict` and `predict_stress` is a fitted model as
+    far as the contract is concerned, whatever else it does. Protocols are
+    excluded because `FittedForecastModel` is the shape, not an implementation
+    of it, and classes merely imported into another module are excluded by
+    `__module__` -- which is where a class was defined, not where it was bound.
+
+    `package` is a parameter so a test can hand the discovery a package the walk
+    could not have been written to expect. There is no second code path behind
+    it: the default is the real package, and every call walks.
     """
 
     found = {}
-    for name, obj in vars(baseline).items():
-        if not inspect.isclass(obj) or obj.__module__ != baseline.__name__:
-            continue
-        if getattr(obj, "_is_protocol", False):
-            continue
-        if callable(getattr(obj, "predict", None)) and callable(
-            getattr(obj, "predict_stress", None)
-        ):
-            found[name] = obj
+    for module in _package_modules(package):
+        for name, obj in vars(module).items():
+            if not inspect.isclass(obj) or obj.__module__ != module.__name__:
+                continue
+            if getattr(obj, "_is_protocol", False):
+                continue
+            if callable(getattr(obj, "predict", None)) and callable(
+                getattr(obj, "predict_stress", None)
+            ):
+                found[f"{module.__name__}.{name}"] = obj
     return found
 
 
@@ -1681,21 +1722,222 @@ class ForecastInterfaceCoverageTests(unittest.TestCase):
     is discovered is a sixth model breaking a caller that relied on something
     only the first model ever guaranteed.
 
-    So the implementations are discovered from the module and checked against
+    So the implementations are discovered from the package and checked against
     the cases. Discovered, not enumerated: a list that has to be kept up to date
     is exactly the failure this test exists to prevent, and it would be updated
     in the same commit that added the model it was meant to catch.
+
+    Discovery reads the whole package, not `baseline` alone. It read `baseline`
+    alone until block 9, which left one door open in the failure described
+    above: a model defined in `src/repo_model/ml.py` would implement the
+    interface, arrive with a bespoke test class, pass everything, and never run
+    AGENT_CONTRACT.md's five assertions. Closed before the model that would use
+    it exists.
+
+    Mutations, all six against
+    `test_an_implementation_in_any_package_module_is_discovered`, run in a
+    disposable copy under `$HOME` built from `git ls-files`, on CPython 3.9.6.
+    Unmutated control green before and after; each target confirmed to appear
+    exactly once before it was applied.
+
+    ===============================  ==============  ==========================
+    Mutation                         Exception       Killed
+    ===============================  ==============  ==========================
+    `for module in                   AssertionError  the planted model, and
+    _package_modules(package)` ->                    only baseline's four, are
+    `for module in [baseline]`                       in the result
+    `obj.__module__ != module.       AssertionError  the imported binding is
+    __name__` guard dropped                          counted a second time
+    `_is_protocol` guard dropped     AssertionError  the planted Protocol is an
+                                                     implementation (and
+                                                     `FittedForecastModel`
+                                                     surfaces as uncovered in
+                                                     the test above)
+    `found[f"{module.__name__}.      AssertionError  the twin overwrites the
+    {name}"]` -> `found[name]`                       first: one class name,
+                                                     one entry, one model lost
+    `__main__` skip dropped          SystemExit      the walk imports
+                                                     `__main__`, which raises
+                                                     at import
+    `pkgutil.iter_modules(package.   AssertionError  nothing is discovered at
+    __path__)` -> `()`                               all; the anchor fires in
+                                                     the test above
+    ===============================  ==============  ==========================
+
+    A seventh mutation survived and is recorded because it is the finding.
+    Discovery was first written as `_forecast_implementations(modules=None)`
+    walking the package only when `modules is None`. Restricting *that default*
+    to `[baseline]` left the whole suite green: the acceptance test always
+    passed its modules explicitly, so the default branch -- the branch the
+    production guard actually takes -- was never executed under test. The
+    parameter is now the package and there is one code path, which is why the
+    first mutation above kills.
     """
+
+    #: A package planted on disk for the discovery to walk. Every module is a
+    #: case: one fitted model, a second module defining the *same class name*, a
+    #: module that merely imports the first one's class, a Protocol of the same
+    #: shape, and a `__main__` that raises on import the way the real one does.
+    #: Named nothing a list would have anticipated, which is the point -- it
+    #: stands for the module that does not exist yet.
+    PLANTED_PACKAGE = {
+        "__init__.py": "",
+        "__main__.py": (
+            'raise SystemExit("the walk imported __main__")\n'
+        ),
+        "law_of_the_river.py": """
+            class FittedTanagraLaw:
+                def predict(self, frame):
+                    return []
+
+                def predict_stress(self, frame):
+                    return []
+        """,
+        "twin_law.py": """
+            class FittedTanagraLaw:
+                def predict(self, frame):
+                    return []
+
+                def predict_stress(self, frame):
+                    return []
+        """,
+        "importer.py": """
+            from .law_of_the_river import FittedTanagraLaw
+        """,
+        "shape.py": """
+            from typing import Protocol
+
+            class TanagraShape(Protocol):
+                def predict(self, frame):
+                    ...
+
+                def predict_stress(self, frame):
+                    ...
+        """,
+    }
+
+    PLANTED_NAME = "tanagra_pkg"
+
+    @contextlib.contextmanager
+    def _planted_package(self):
+        """`PLANTED_PACKAGE` written to a temporary directory and imported.
+
+        A real package on a real path, not a `types.ModuleType` stand-in,
+        because what is under test is a `pkgutil` walk over `__path__` -- a
+        hand-built module object would skip the very mechanism the block adds.
+        `sys.path` and `sys.modules` are put back on the way out so the walk
+        leaves no residue for the rest of the suite.
+        """
+
+        with tempfile.TemporaryDirectory() as root:
+            package_dir = Path(root) / self.PLANTED_NAME
+            package_dir.mkdir()
+            for filename, source in self.PLANTED_PACKAGE.items():
+                (package_dir / filename).write_text(textwrap.dedent(source))
+            sys.path.insert(0, root)
+            try:
+                yield importlib.import_module(self.PLANTED_NAME)
+            finally:
+                sys.path.remove(root)
+                for name in [
+                    name
+                    for name in sys.modules
+                    if name == self.PLANTED_NAME
+                    or name.startswith(self.PLANTED_NAME + ".")
+                ]:
+                    del sys.modules[name]
+
+    def test_an_implementation_in_any_package_module_is_discovered(self):
+        """A model outside `baseline` is found, and three things are not.
+
+        The door the guard above left open: a model defined in
+        `src/repo_model/ml.py` implements the interface, arrives with a test
+        class of its own, passes everything, and never runs AGENT_CONTRACT.md's
+        five assertions -- the exact failure this class's docstring describes,
+        walking in through the one module the discovery never read.
+        """
+
+        with self._planted_package() as package:
+            discovered = _forecast_implementations(package)
+
+            self.assertIn(
+                "tanagra_pkg.law_of_the_river.FittedTanagraLaw",
+                discovered,
+                msg=(
+                    "a fitted model outside repo_model.baseline was not "
+                    "discovered; the walk is still reading one module, and a "
+                    "model added in any other module of the package would "
+                    "never run the conformance suite"
+                ),
+            )
+
+            # Two modules defining one class name are two implementations.
+            # Keyed by bare name the later would silently replace the earlier,
+            # and the one lost is exactly the second model of the same shape.
+            self.assertIn("tanagra_pkg.twin_law.FittedTanagraLaw", discovered)
+            self.assertIsNot(
+                discovered["tanagra_pkg.law_of_the_river.FittedTanagraLaw"],
+                discovered["tanagra_pkg.twin_law.FittedTanagraLaw"],
+                msg="two modules defining one class name collapsed to one entry",
+            )
+
+            # A class imported into a second module is counted once, under the
+            # module that defines it. The `__module__` rule, now across
+            # modules: `baseline` imports classes from `contract` and the walk
+            # reaches both, so a bound name would otherwise be found twice.
+            self.assertNotIn(
+                "tanagra_pkg.importer.FittedTanagraLaw",
+                discovered,
+                msg=(
+                    "a class imported into a second module was counted twice; "
+                    "__module__ is where a class was defined, not where it "
+                    "was bound"
+                ),
+            )
+
+            # A Protocol is the shape, not an implementation of it.
+            self.assertNotIn(
+                "tanagra_pkg.shape.TanagraShape",
+                discovered,
+                msg="a Protocol was discovered as an implementation of itself",
+            )
+
+            # `__main__` was skipped. The planted one raises SystemExit at
+            # import, as `repo_model/__main__.py` does, so a walk that imported
+            # it would end the test run rather than fail this assertion -- the
+            # assertion is here for the case where it is skipped for a reason
+            # that later stops being true.
+            self.assertNotIn("tanagra_pkg.__main__", sys.modules)
+
+            self.assertEqual(
+                sorted(discovered),
+                [
+                    "tanagra_pkg.law_of_the_river.FittedTanagraLaw",
+                    "tanagra_pkg.twin_law.FittedTanagraLaw",
+                ],
+            )
+
+        # The anchor. Every negative assertion above is satisfied by a walk that
+        # finds nothing at all, so one of them has to be that the real package
+        # still comes back populated.
+        self.assertIn(
+            "repo_model.baseline.FittedPersistence",
+            _forecast_implementations(),
+            msg=(
+                "discovery over the real package found no persistence model; "
+                "a walk that finds nothing passes every negative assertion here"
+            ),
+        )
 
     def test_every_implementation_in_baseline_runs_the_conformance_suite(self):
         implementations = _forecast_implementations()
         self.assertIn(
-            "FittedPersistence",
+            "repo_model.baseline.FittedPersistence",
             implementations,
             msg="discovery found no persistence model; the discovery is broken, "
-            "not the module",
+            "not the package",
         )
-        self.assertIn("FittedArx", implementations)
+        self.assertIn("repo_model.baseline.FittedArx", implementations)
 
         cases = _conformance_cases()
         uncovered = sorted(
@@ -1708,7 +1950,7 @@ class ForecastInterfaceCoverageTests(unittest.TestCase):
             [],
             msg=(
                 f"{uncovered} implement the forecast interface in "
-                f"repo_model.baseline and no conformance case runs "
+                f"the repo_model package and no conformance case runs "
                 f"AGENT_CONTRACT.md's five assertions against them. Add a "
                 f"ForecastInterfaceConformance subclass rather than a bespoke "
                 f"test class: a model with its own tests and no conformance case "

@@ -135,10 +135,11 @@ same control after each mutation was reverted.
      a registry that declares no fields: the gap comes from somewhere else and
      arrives at the same value, and nothing downstream of it moves.
 
-     The conformance suites still run once per implementer on both interfaces,
-     counted rather than diffed: `tests/test_registry_interface.py` 37 tests,
-     `tests/test_events_metadata_spec.py` 42, `tests/test_contract.py` 69 --
-     the same three counts before and after.
+     The conformance suites still run once per implementer on both
+     interfaces, counted rather than diffed: the same counts before and
+     after this block. The absolute numbers that stood here were cut in
+     block 9 -- `tests/test_contract.py` had grown well past the one
+     recorded, so the figure read as a present-tense fact and was wrong.
 
 No mutation was planted in the ARX, the threshold model, the bootstrap or the
 quantile machinery; the runs say nothing about them.
