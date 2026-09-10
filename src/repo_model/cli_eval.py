@@ -41,6 +41,7 @@ from .baseline import (
     exceedance_backtest_document,
     fit,
     fit_arx,
+    fit_rolling_residual_law,
     fit_threshold,
     paired_comparison_document,
     paired_model_comparison,
@@ -273,6 +274,68 @@ def _regressors_and_regime(
     return regressors, regime_variable
 
 
+def _residual_window(
+    args: argparse.Namespace,
+    name: str,
+    needs_window: bool,
+    *,
+    side: str = "",
+) -> Optional[int]:
+    """Resolve `--residual-window`, or refuse. `_regressors_and_regime`'s shape.
+
+    Required for the model that reads it and refused for the models that do not,
+    by the same two-sided rule `--regime-variable` follows: a missing required
+    argument is a decision nobody made, and an accepted-and-ignored one is read
+    by the next person as a setting that took effect.
+
+    **Required and undefaulted, and the reason is `--model`'s own.** The window
+    decides how much history the published interval is a statement about. A
+    default would be that decision made by whoever wrote this line, carried into
+    every record that did not override it, and indistinguishable in the artifact
+    from a window somebody chose. It is also the argument a reader would most
+    expect to be tuned, which is the second reason it cannot be: a window picked
+    by scoring candidate lengths against the panel is a hyperparameter fitted
+    outside `fit`, and the contract forbids that in those words.
+
+    **The flag is not `--residual-window`'s obvious shorter name.**
+    `event-holdout` already has a `--window NAME`, which names a declared event
+    window, and two flags spelled the same across two subcommands meaning a
+    crisis period in one and a count of residuals in the other is the
+    same-name-different-meaning collision `AGENT_CONTRACT.md` has now recorded
+    five times. The value is still `window` where the fitter receives it,
+    because that is what the argument is called in `baseline`.
+
+    Range is not checked here. `fit_rolling_residual_law` refuses a window below
+    2 and one longer than the frame's residuals, and the second of those cannot
+    be checked before the panel is read -- so checking the first here would put
+    half the rule in each of two places.
+    """
+
+    window = args.residual_window
+
+    if needs_window:
+        if window is None:
+            raise SplitError(
+                f"--model{side} {name} reads its residual law from a trailing "
+                f"window of the training frame, and --residual-window{side} "
+                "names no length. It is required and undefaulted for the reason "
+                f"--model{side} is: the window decides how much history the "
+                "reported interval is a statement about, and a default would be "
+                "that decision made by nobody and invisible in the record"
+            )
+        return int(window)
+
+    if window is not None:
+        raise SplitError(
+            f"--residual-window{side} {window} was given, but --model{side} "
+            f"{name} reads its residual law from the whole training frame. A "
+            "flag that is accepted and ignored is read by the next person as a "
+            "setting that took effect -- here, as an interval narrower than the "
+            "one the record actually reports"
+        )
+    return None
+
+
 @dataclass(frozen=True)
 class _FitterChoice:
     """One `--model` name on the continuous path, and the fitter behind it.
@@ -284,25 +347,39 @@ class _FitterChoice:
     covering both would have to hold a value that is sometimes one and
     sometimes the other, and the type would stop saying which.
 
-    The three fitters have different signatures -- `fit(train_frame)`,
+    The four fitters have different signatures -- `fit(train_frame)`,
     `fit_arx(train_frame, regressors)`,
-    `fit_threshold(train_frame, regressors, threshold_variable)` -- so `build`
-    carries construction, and what it constructs is a `functools.partial`,
-    which is the shape `baseline.ModelFitter`'s own docstring names.
+    `fit_threshold(train_frame, regressors, threshold_variable)`,
+    `fit_rolling_residual_law(train_frame, window)` -- so `build` carries
+    construction, and what it constructs is a `functools.partial`, which is the
+    shape `baseline.ModelFitter`'s own docstring names.
 
     `factory` is the `baseline` fitter itself and `build` is handed that same
     object rather than closing over one of its own, for the reason
     `_ModelChoice` gives: the two cannot then name different models.
+
+    `needs_window` is `needs_regime_variable`'s counterpart for the trailing
+    residual window, and it is a separate flag rather than a shared "takes an
+    extra argument" because the two arguments are required of different models
+    and refused of different models. One flag covering both would make
+    `--regime-variable` accepted by a model that reads no regime, and a flag
+    accepted and ignored is read by the next person as a setting that took
+    effect.
     """
 
     factory: Callable[..., FittedForecastModel]
     build: Callable[..., ModelFitter]
     needs_regime_variable: bool
+    needs_window: bool = False
 
     def construct(
-        self, *, regressors: Tuple[str, ...], regime_variable: Optional[str]
+        self,
+        *,
+        regressors: Tuple[str, ...],
+        regime_variable: Optional[str],
+        window: Optional[int] = None,
     ) -> ModelFitter:
-        return self.build(self.factory, regressors, regime_variable)
+        return self.build(self.factory, regressors, regime_variable, window)
 
 
 #: `--model NAME` -> the continuous fitter it names. **One mapping, in one
@@ -320,22 +397,35 @@ FITTER_FACTORIES = MappingProxyType(
             # Nothing to bind: `fit` already has the `ModelFitter` shape. The
             # entry exists so that persistence is a *name* a caller selects
             # rather than what happens when nobody says.
-            build=lambda factory, regressors, regime: factory,
+            build=lambda factory, regressors, regime, window: factory,
             needs_regime_variable=False,
         ),
         "arx": _FitterChoice(
             factory=fit_arx,
-            build=lambda factory, regressors, regime: functools.partial(
+            build=lambda factory, regressors, regime, window: functools.partial(
                 factory, regressors=regressors
             ),
             needs_regime_variable=False,
         ),
         "threshold": _FitterChoice(
             factory=fit_threshold,
-            build=lambda factory, regressors, regime: functools.partial(
+            build=lambda factory, regressors, regime, window: functools.partial(
                 factory, regressors=regressors, threshold_variable=regime
             ),
             needs_regime_variable=True,
+        ),
+        # Persistence's point rule with its residual law cut to a trailing
+        # window. Selectable by name for the reason every other model here is:
+        # a model the command line cannot construct is one only the test suite
+        # can run, and this one exists to be one side of a published comparison
+        # against the persistence entry two lines up.
+        "rolling-residual": _FitterChoice(
+            factory=fit_rolling_residual_law,
+            build=lambda factory, regressors, regime, window: functools.partial(
+                factory, window=window
+            ),
+            needs_regime_variable=False,
+            needs_window=True,
         ),
     }
 )
@@ -389,8 +479,9 @@ def _select_fitter(
     regressors, regime_variable = _regressors_and_regime(
         args, name, choice.needs_regime_variable, side=side
     )
+    window = _residual_window(args, name, choice.needs_window, side=side)
     return name, choice.construct(
-        regressors=regressors, regime_variable=regime_variable
+        regressors=regressors, regime_variable=regime_variable, window=window
     )
 
 
@@ -566,10 +657,13 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     """One side of `compare`, in the shape `_select_fitter` already reads.
 
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
-    `--regime-variable-a`, and the same three for `b` -- because the two models
-    being compared are usually declared over different columns and one shared
-    `--feature` would either over-purge the simpler model or leave the richer
-    one's columns unpriced.
+    `--regime-variable-a`, `--residual-window-a`, and the same four for `b` --
+    because the two models being compared are usually declared over different
+    columns and one shared `--feature` would either over-purge the simpler model
+    or leave the richer one's columns unpriced. The window is per side for a
+    sharper version of the same reason: the comparison this model was built for
+    is one window against another, or a window against the full sample, and a
+    shared flag could not express either.
 
     This projects one side of that namespace onto the field names the existing
     selector reads, so `compare` reaches models through **the same mapping and
@@ -589,6 +683,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         model=getattr(args, f"model_{side}"),
         feature=getattr(args, f"feature_{side}"),
         regime_variable=getattr(args, f"regime_variable_{side}"),
+        residual_window=getattr(args, f"residual_window_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1055,6 +1150,17 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "be one of --feature",
     )
     backtest.add_argument(
+        "--residual-window",
+        type=int,
+        metavar="N",
+        default=None,
+        help="how many trailing one-step residuals the fitted law is read "
+        "from; required for --model rolling-residual, refused for the others. "
+        "No default: it decides how much history the reported interval is a "
+        "statement about. Not spelled --window, which means a declared event "
+        "window on event-holdout",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -1105,6 +1211,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             help=f"the panel column the {side} model reads to choose a "
             f"regime; required for --model-{side} threshold, refused for the "
             f"others, and it must be one of --feature-{side}",
+        )
+        compare.add_argument(
+            f"--residual-window-{side}",
+            type=int,
+            metavar="N",
+            default=None,
+            help=f"how many trailing one-step residuals the {side} model's "
+            f"law is read from; required for --model-{side} rolling-residual, "
+            f"refused for the others. Per side, because a window against the "
+            f"full sample is the comparison this model exists for",
         )
     compare.add_argument(
         "--report",

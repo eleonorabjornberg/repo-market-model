@@ -166,6 +166,7 @@ from repo_model.baseline import (
     ExceedanceCurves,
     FittedArx,
     FittedPersistence,
+    FittedRollingResidualLaw,
     FittedThreshold,
     Forecast,
     MissingRegressorError,
@@ -185,6 +186,7 @@ from repo_model.baseline import (
     fit,
     comparison_seed,
     fit_arx,
+    fit_rolling_residual_law,
     fit_threshold,
     interval_calibration,
     paired_comparison_document,
@@ -492,6 +494,347 @@ class FittedPersistenceTests(unittest.TestCase):
                 minimum_history=self.MINIMUM_HISTORY,
                 interval_probability=0.50,
             )
+
+
+#: A spread path in basis points whose one-step residuals are **large early and
+#: small late**, so that the trailing window and the largest residuals are
+#: disjoint sets. Declared as the residual sequence and accumulated, because the
+#: residuals are the thing under test and a path written directly would leave a
+#: reader differencing it by hand to see the property.
+#:
+#: Twenty-one residuals of 25..45 bp, then eight of alternating sign and single
+#: digits. Not monotone in time, which the acceptance criterion requires: a
+#: monotone sequence makes "the last eight" and "the eight largest" the same
+#: eight, and the mutation this block records would survive.
+NON_MONOTONE_RESIDUALS_BPS = (
+    tuple(float(step) for step in range(25, 46))
+    + (1.0, -2.0, 3.0, -1.0, 2.0, -3.0, 4.0, -4.0)
+)
+
+#: How many trailing residuals the law is read from, in this file. Small enough
+#: that the windowed law is entirely inside the small-residual tail above and
+#: the full-sample law is not.
+RESIDUAL_WINDOW = 8
+
+
+def non_monotone_frame():
+    """Rows whose one-step residuals are `NON_MONOTONE_RESIDUALS_BPS`, in order.
+
+    The spread is carried the way every other fixture here carries it -- as
+    `sofr` against a constant `iorb`, so `DailyObservation.spread_bps` computes
+    it rather than the fixture asserting it -- and the residual sequence is
+    accumulated into the path. The oracle below differences `spread_bps` back
+    out, so the two meet on the same floats and the comparison can be exact.
+    """
+
+    spread = 0.0
+    rows = [
+        DailyObservation(
+            date(2026, 1, 1), {"sofr": 4.30 + spread / 10000.0, "iorb": 4.30}
+        )
+    ]
+    for step, residual in enumerate(NON_MONOTONE_RESIDUALS_BPS, start=1):
+        spread += residual
+        rows.append(
+            DailyObservation(
+                date(2026, 1, 1) + timedelta(days=step),
+                {"sofr": 4.30 + spread / 10000.0, "iorb": 4.30},
+            )
+        )
+    return rows
+
+
+def oracle_trailing_residuals(rows, window):
+    """The last `window` one-step residuals of `rows`, in time order.
+
+    **The oracle, and it shares no code path with `baseline`.** It differences
+    consecutive `spread_bps` in this file and slices the tail of the result. That
+    is the whole of what `fit_rolling_residual_law` is supposed to do, written
+    out independently, which is the only way a test of it is evidence: reusing
+    `FittedPersistence.residuals` and slicing *that* is the mutation this
+    block's record names, and an oracle built the same way would agree with a
+    wrong implementation.
+
+    Returned in time order, unsorted. The fitted object sorts what it is handed
+    -- every model in `baseline` does, because `_quantile` reads order
+    statistics -- so callers compare against `sorted(...)` of this. The ordering
+    is kept here so that a reader can see the selection was made in time.
+    """
+
+    residuals = [
+        rows[index].spread_bps - rows[index - 1].spread_bps
+        for index in range(1, len(rows))
+    ]
+    return tuple(residuals[-window:])
+
+
+class RollingResidualLawTests(unittest.TestCase):
+    """`fit_rolling_residual_law`: persistence's centre, a trailing-window law.
+
+    `PLAN.md` Phase 2 lists "rolling mean/quantiles" among four benchmarks and
+    no rolling anything existed. This is the quantile half, built against a
+    measured finding rather than a list: persistence wins on accuracy and
+    **under-covers its nominal 90% interval**, and the interval is the residual
+    law, so the law is what a challenger changes. Nothing here changes the point
+    forecast; a challenger that moved both would leave the coverage finding
+    unattributable to either change.
+
+    `window` is required and undefaulted. Not a style preference: a default
+    would be a decision nobody made about how much history the published
+    interval is a statement about, and it would be the decision most likely to
+    be made by whoever typed the command last. Nothing in this model chooses it
+    from data either -- a window selected by scoring candidate lengths is a
+    hyperparameter fitted outside `fit`, which the contract forbids in those
+    words, and neither track can see the frozen panel to pick one honestly.
+
+    Acceptance criterion and mutation record, the trailing-window law
+    ------------------------------------------------------------------
+
+    Acceptance criterion, which is also the mutation target:
+    `test_the_residual_law_is_the_trailing_window_ending_at_the_cutoff`.
+
+    Run in a disposable copy of the tree under `$HOME`, never in the mount,
+    carrying `data/`, `.github/`, `.claude/`, `metadata/`, `.gitignore`, the root
+    Markdown and `docs/PROJECT_STATUS.md`, with `PYTHONDONTWRITEBYTECODE=1`
+    under `python3 -B`. Unmutated control green before and after, zero
+    `expectedFailure`. Python 3.9.6.
+
+      1. **The acceptance mutation -- the sorted vector, tailed.**
+         `fit_rolling_residual_law` builds a `FittedPersistence` over the whole
+         frame and hands `FittedRollingResidualLaw` the tail of *its*
+         `residuals`, which is the sorted vector. The result is the `window`
+         largest residuals: a set of real residuals, of the right length, biased
+         upward, and producing a perfectly plausible interval that is not a
+         trailing window of anything.
+
+         Kills exactly 1, `AssertionError`:
+         `test_the_residual_law_is_the_trailing_window_ending_at_the_cutoff`.
+         On the fixture above the two sets are disjoint, so the comparison
+         against the oracle fails on the first level it reports.
+         `test_the_fixture_would_catch_a_law_read_from_the_largest_residuals`
+         passes under the mutation -- it is a statement about the fixture, not
+         about the code -- which is what makes it a fixture guard rather than a
+         second acceptance test. **The criterion and the mutation do not come
+         apart:** the test the brief names is the test that dies, and it dies
+         because the selection was made after the sort.
+
+         Nothing in the conformance suite notices, and that is correct rather
+         than a gap: the `window` largest residuals are still a residual sample,
+         still ascending, still the one law both outputs read, so every
+         interface assertion holds over them. An interface cannot see which rows
+         a law was read from, which is why this criterion is here and not in
+         `tests/test_contract.py`.
+
+      2. **The window silently truncated to the frame.** `fit_rolling_residual_law`
+         returns `ordered[-requested:]` with the length refusal removed, so a
+         window longer than the history yields the whole sample -- this model
+         collapsed into persistence while still reporting itself as a
+         challenger, and still carrying the `window` it did not honour.
+         Kills 1, `AssertionError`:
+         `test_a_window_longer_than_the_history_is_refused_not_truncated`.
+
+      3. **`window` given a default of 20.** The signature alone, nothing else
+         touched. Kills 1, `TypeError` absent where one was expected:
+         `test_the_window_is_required_and_undefaulted`. Worth recording because
+         it is the mutation a reader expects to be caught by more than one test
+         and is not: every other test in this file passes a window explicitly,
+         so a default changes nothing for any of them. A required argument is
+         only required where something demands the refusal.
+
+    **One existing mutation re-run**, because this block edited `_select_fitter`
+    and `_FitterChoice`, which the selector's own record names: "the selector
+    resolves every name to the default persistence fitter". It still kills, and
+    it now kills 3 rather than the 1 its record states --
+    `ContinuousModelSelectorTests.test_the_record_names_the_model_that_produced_the_forecasts`,
+    the new `test_the_windowed_model_is_reachable_by_name_and_the_record_says_so`
+    beside it, and
+    `PairedComparisonCommandTests.test_the_record_carries_the_comparison_the_declaration_describes`,
+    which did not exist when that record was written. The guard was strengthened
+    rather than blunted; the count in the other record is stale and is that
+    record's to correct, not this one's.
+    """
+
+    MINIMUM_HISTORY = 10
+
+    def setUp(self):
+        self.rows = non_monotone_frame()
+
+    def test_the_residual_law_is_the_trailing_window_ending_at_the_cutoff(self):
+        """The acceptance criterion: the law is the last `window` residuals.
+
+        Against `oracle_trailing_residuals`, which differences `spread_bps` in
+        this file and takes the tail. The fitted vector is ascending -- the
+        interface declares that and both outputs depend on it -- so the oracle's
+        time-ordered tail is sorted for the comparison. Sorting *after*
+        selecting is the whole content of this model, and sorting before it is
+        mutation 1.
+        """
+
+        fitted = fit_rolling_residual_law(
+            self.rows, RESIDUAL_WINDOW, minimum_history=self.MINIMUM_HISTORY
+        )
+
+        expected = oracle_trailing_residuals(self.rows, RESIDUAL_WINDOW)
+        self.assertEqual(len(expected), RESIDUAL_WINDOW)
+        self.assertEqual(fitted.residuals, tuple(sorted(expected)))
+        self.assertEqual(fitted.window, RESIDUAL_WINDOW)
+        self.assertEqual(fitted.cutoff, self.rows[-1].date)
+
+        # And on a frame that ends before a declared cutoff, the law is that
+        # frame's trailing window: there are no rows between its end and the
+        # cutoff, so "ending at the cutoff" can mean nothing else. The cutoff is
+        # still the declared one, because what the model was allowed to see and
+        # what it happened to read are different facts.
+        shorter = self.rows[:-4]
+        earlier = fit_rolling_residual_law(
+            shorter,
+            RESIDUAL_WINDOW,
+            cutoff=self.rows[-1].date,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(
+            earlier.residuals,
+            tuple(sorted(oracle_trailing_residuals(shorter, RESIDUAL_WINDOW))),
+        )
+        self.assertEqual(earlier.cutoff, self.rows[-1].date)
+        self.assertNotEqual(earlier.residuals, fitted.residuals)
+
+    def test_the_fixture_would_catch_a_law_read_from_the_largest_residuals(self):
+        """Guards the criterion above: the two candidate laws must differ here.
+
+        On a frame whose residuals rise monotonically the trailing window *is*
+        the largest residuals, and the acceptance test passes over a
+        sorted-then-tailed implementation while asserting an equality that looks
+        decisive. This asserts the fixture has the property that makes the
+        comparison evidence -- the same role
+        `test_the_frame_this_class_relies_on_has_no_tied_residuals` plays for the
+        exceedance round trip in `tests/test_contract.py`.
+        """
+
+        every = [
+            self.rows[index].spread_bps - self.rows[index - 1].spread_bps
+            for index in range(1, len(self.rows))
+        ]
+        trailing = oracle_trailing_residuals(self.rows, RESIDUAL_WINDOW)
+        largest = tuple(sorted(every)[-RESIDUAL_WINDOW:])
+
+        self.assertGreater(len(every), RESIDUAL_WINDOW)
+        self.assertNotEqual(tuple(sorted(trailing)), largest)
+        # Disjoint, not merely unequal: every residual the windowed law reads is
+        # outside the eight largest, so the mutation cannot pass by overlapping.
+        self.assertEqual(set(trailing) & set(largest), set())
+        # And not monotone in time, which is what the criterion names.
+        self.assertNotEqual(every, sorted(every))
+
+    def test_the_window_is_required_and_undefaulted(self):
+        """No default, for the reason `--model` has none: nobody made the choice.
+
+        The refusal is `TypeError` from the call itself rather than a validation
+        error inside the body, because the argument is positional and required in
+        the signature. Checked by calling rather than by reading
+        `inspect.signature`, so that a default added anywhere in the chain fails
+        here -- a signature assertion passes over a wrapper that supplies one.
+        """
+
+        with self.assertRaises(TypeError):
+            fit_rolling_residual_law(
+                self.rows, minimum_history=self.MINIMUM_HISTORY
+            )
+
+    def test_a_window_longer_than_the_history_is_refused_not_truncated(self):
+        """A window the frame cannot fill is an error, not the full sample.
+
+        Truncating is the dangerous answer: the law becomes persistence's,
+        identical to the benchmark this model is a challenger to, while the
+        fitted object still reports the window it did not use and the record
+        still carries the challenger's name. Both sides of a published
+        comparison would then be persistence, and the difference would be zero
+        for a reason no field of the record discloses.
+        """
+
+        residual_count = len(self.rows) - 1
+
+        with self.assertRaisesRegex(ValueError, "exceeds"):
+            fit_rolling_residual_law(
+                self.rows, residual_count + 1, minimum_history=self.MINIMUM_HISTORY
+            )
+
+        # The largest window the frame *can* fill is the full sample, and that
+        # is allowed: it is persistence's law, honestly reached, and refusing it
+        # would make the boundary a guess rather than the count of residuals.
+        whole = fit_rolling_residual_law(
+            self.rows, residual_count, minimum_history=self.MINIMUM_HISTORY
+        )
+        persistence = fit(self.rows, minimum_history=self.MINIMUM_HISTORY)
+        self.assertEqual(whole.residuals, persistence.residuals)
+
+    def test_a_one_residual_law_is_refused(self):
+        """Below two residuals every declared level reports the same number.
+
+        `_quantile` over a single value is constant in its probability, so
+        `predict` would return five copies of one number and the reported
+        interval would have width zero -- a coverage figure of 0.0 or 1.0 that
+        is an artefact of the window and reads as a finding about the model.
+        """
+
+        with self.assertRaisesRegex(ValueError, "at least 2"):
+            fit_rolling_residual_law(
+                self.rows, 1, minimum_history=self.MINIMUM_HISTORY
+            )
+
+    def test_the_windowed_model_is_not_a_persistence_model(self):
+        """Distinct classes, not a subclass, and the reason is load-bearing.
+
+        Three tests in this file assert `isinstance(report.model,
+        FittedPersistence)` to pin that the default fitter is the benchmark
+        rather than a challenger. A subclass of `FittedPersistence` satisfies
+        all three while being a different model, so the blunting would land on
+        exactly the assertions that keep a challenger from being published under
+        the baseline's name. This states the separation so that introducing the
+        inheritance fails a test instead of quietly weakening three.
+        """
+
+        fitted = fit_rolling_residual_law(
+            self.rows, RESIDUAL_WINDOW, minimum_history=self.MINIMUM_HISTORY
+        )
+
+        self.assertIsInstance(fitted, FittedRollingResidualLaw)
+        self.assertNotIsInstance(fitted, FittedPersistence)
+        self.assertFalse(issubclass(FittedRollingResidualLaw, FittedPersistence))
+        # It reads what persistence reads, so it is purged over the same
+        # sources: the window narrows which rows the law came from, never which
+        # columns the model touches.
+        self.assertEqual(
+            fitted.features_read,
+            fit(self.rows, minimum_history=self.MINIMUM_HISTORY).features_read,
+        )
+        # And the centre is persistence's, unchanged.
+        self.assertEqual(
+            fitted.point_forecast(self.rows[-1]), self.rows[-1].spread_bps
+        )
+
+    def test_the_backtest_runs_it_and_reports_a_windowed_model(self):
+        """It is a `ModelFitter`, so the rolling backtest can score it.
+
+        Through a `functools.partial` over `window`, which is the shape
+        `baseline.ModelFitter`'s docstring names and the shape
+        `cli_eval.FITTER_FACTORIES` builds. The assertion is that the run
+        finishes, reports a windowed model, and that the model's law is the
+        window's -- not that its numbers beat persistence's, which is scored on
+        the frozen panel and is not this block's.
+        """
+
+        report = at_gap(
+            self.rows,
+            purge=1,
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=partial(fit_rolling_residual_law, window=RESIDUAL_WINDOW),
+        )
+
+        self.assertIsInstance(report.model, FittedRollingResidualLaw)
+        self.assertEqual(report.model.window, RESIDUAL_WINDOW)
+        self.assertEqual(len(report.model.residuals), RESIDUAL_WINDOW)
+        self.assertGreater(len(report.forecasts), 0)
 
 
 class FittedArxTests(unittest.TestCase):
