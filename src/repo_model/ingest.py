@@ -1741,12 +1741,13 @@ class ParsedSnapshots:
     coverage: tuple
 
 
-def _nmfp_unmatched_derived_fields(observed, structural_zeros):
+def _nmfp_unmatched_derived_fields(observed, structural_zeros, ref_date):
     """Derived fields whose input was observed and which matched nothing.
 
     `observed` is the set of panel field names this cross-section supplies;
-    `structural_zeros` maps a field to the `when` the registry declares for it,
-    as `declared_structural_zeros` reads it. Returns `(field, disposition)` pairs
+    `structural_zeros` maps a field to the `StructuralZeroPeriod` the registry
+    declares for it, as `declared_structural_zeros` reads it; `ref_date` is this
+    cross-section's own report month. Returns `(field, disposition)` pairs
     in field order, for `CrossSectionCoverage.unmatched_derived_fields`.
 
     Both halves of the condition matter and they fail in opposite directions:
@@ -1770,6 +1771,18 @@ def _nmfp_unmatched_derived_fields(observed, structural_zeros):
     `structural_zeros` with `structural_zeros_reviewed`. What it records is that
     the derivation ran and came back empty, which is the fact the review needs
     and the one nothing was keeping.
+
+    A declaration applies to a **period**, and the date it is compared against is
+    this cross-section's own `ref_date`. Not today, not the build cutoff, not the
+    latest month in the batch: each of those happens to get `sec_nmfp`'s case
+    right on the archives currently on disk and then reads differently on a
+    re-run six months later, or on a backfill of older ones, which would make a
+    coverage record depend on when it was produced rather than on what was in
+    the archive. Outside the declared period the answer is
+    `DERIVED_ABSENCE_UNDECLARED`, which is not a hedge -- it is literally true
+    that nobody has declared that month, and it is the answer that keeps
+    2026-07-31 distinguishable from the thirty-two pre-facility months once the
+    pending review declares them.
     """
 
     from .data import DERIVED_ABSENCE_DECLARED_ZERO, DERIVED_ABSENCE_UNDECLARED
@@ -1778,11 +1791,12 @@ def _nmfp_unmatched_derived_fields(observed, structural_zeros):
     for derived, base in sorted(NMFP_DERIVED_FROM_MATCH.items()):
         if base not in observed or derived in observed:
             continue
+        period = structural_zeros.get(derived)
         found.append(
             (
                 derived,
                 DERIVED_ABSENCE_DECLARED_ZERO
-                if derived in structural_zeros
+                if period is not None and period.covers(ref_date)
                 else DERIVED_ABSENCE_UNDECLARED,
             )
         )
@@ -1892,10 +1906,11 @@ def _assemble_sec_nmfp(
         ) from exc
     floors = declared_coverage_floor(source_id, source)
     entity_unit = floors.entity_unit
-    # Read once per source rather than once per cross-section: it is a
-    # declaration about the source, and re-reading it per month would invite a
-    # reader to think it varies by month, which is exactly the thing the
-    # free-form `when` cannot currently say.
+    # Read once per source, asked per cross-section. Which fields a source
+    # declares is a property of the source, so parsing them once is right;
+    # whether a declaration reaches a given month is a property of the month,
+    # and `StructuralZeroPeriod.covers` answers that below against each
+    # cross-section's own ref_date.
     structural_zeros = declared_structural_zeros(source_id, source)
 
     submissions = {}          # accession -> (series_id, report_date, filing_date)
@@ -2140,7 +2155,7 @@ def _assemble_sec_nmfp(
                     submission_types=tuple(sorted(mix.items())),
                     absent_fields=tuple(sorted(absent.get(section, ()))),
                     unmatched_derived_fields=_nmfp_unmatched_derived_fields(
-                        observed, structural_zeros
+                        observed, structural_zeros, section_ref_dates[section]
                     ),
                 )
             )

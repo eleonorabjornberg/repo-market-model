@@ -2024,11 +2024,18 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
     in this package to read `structural_zeros`, which was declared, shape-checked
     and never consulted.
 
-    `when` is carried verbatim and not compared against a reference date: the
-    registry declares no grammar for it, only that it be a non-empty string, so
-    the disposition says "declared at all" and not "declared for this month".
-    Narrowing that needs a `when` grammar in the registry, which is a shared
-    schema change and is not this block.
+    **A declaration covers a period, and "declared at all" was the wrong
+    question.** `when` stays the reviewer's prose and is still required, but a
+    declaration now also carries `through` (required, inclusive) and may carry
+    `from`, and the disposition is decided against the cross-section's own
+    ref_date. The 33 months above are why: the review this class waits on will
+    declare the 32 pre-facility months structurally zero, and a disposition
+    that answered "declared at all" would extend that reviewer's statement
+    over 2026-07-31 as well -- the one month of the 33 where the facility
+    existed, and so the only one where "these funds held none" is a claim
+    nobody has made. `test_a_declaration_does_not_reach_past_its_period` is
+    that case. Outside a declared period the record reads `no_declaration`,
+    which is literally true of that month.
 
     Mutation record
     ---------------
@@ -2053,13 +2060,16 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
     1. **The zero written instead of the record.** An
        `add(accession, "mmf_on_rrp", section, 0.0, ...)` in the `else` of the
        `FEDERAL RESERVE` match -- the trap this block exists to refuse,
-       implemented. Kills **three**, all `AssertionError`:
+       implemented. Kills **four**, all `AssertionError` (**three** when first
+       run; re-run below on the period commit, where it also kills the new
+       acceptance test):
        `test_a_derived_field_with_no_match_in_a_read_table_is_recorded_absent_not_omitted`
        (the acceptance test and the mutation target) on
-       `'mmf_on_rrp' unexpectedly found in {...}`, and both
-       `test_a_declared_structural_zero_changes_the_disposition` and
-       `test_an_excluded_cross_section_still_carries_the_record` on
-       `() != (('mmf_on_rrp', ...),)`. The last two are the informative part: an
+       `'mmf_on_rrp' unexpectedly found in {...}`, and
+       `test_a_declared_structural_zero_changes_the_disposition`,
+       `test_an_excluded_cross_section_still_carries_the_record` and
+       `test_a_declaration_does_not_reach_past_its_period` on
+       `() != (('mmf_on_rrp', ...),)`. The last three are the informative part: an
        emitted zero does not merely add a row, it *erases the record*, because a
        field that is observed is by definition not one the derivation missed. The
        zero and the record cannot coexist, which is the strongest available
@@ -2080,14 +2090,16 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
        `(('mmf_on_rrp', 'no_declaration'),) != ()`.
     4. **The registry read discarded**: `declared_structural_zeros` still called
        and its result replaced with `{}` at the call site, so every disposition is
-       `no_declaration`. Kills
-       `test_a_declared_structural_zero_changes_the_disposition`,
-       `AssertionError`,
-       `(('mmf_on_rrp', 'no_declaration'),) != (('mmf_on_rrp', 'declared_structural_zero'),)`.
-       This is the mutation that proves the declaration is *read* rather than
-       mentioned, which is the second clause of the published limitation's
-       predicate and the only clause an agent can satisfy -- see the sixth run
-       below.
+       `no_declaration`. Kills **two**, both `AssertionError` (**one** when first
+       run; re-run below on the period commit):
+       `test_a_declared_structural_zero_changes_the_disposition` and
+       `test_a_declaration_does_not_reach_past_its_period`, each on
+       `(('mmf_on_rrp', 'no_declaration'),) != (('mmf_on_rrp', 'declared_structural_zero'),)`
+       -- the second on the half of that test where the declaration *does* cover
+       the cross-section. This is the mutation that proves the declaration is
+       *read* rather than mentioned, which is the second clause of the published
+       limitation's predicate and the only clause an agent can satisfy -- see the
+       sixth run below.
     5. **The era case collapsed**: the `undeclared` branch in
        `_nmfp_archive_scan` made to fall through instead of costing
        `NMFP_CATEGORY_FIELDS`. Kills **two**, both `AssertionError`:
@@ -2114,6 +2126,45 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
     fires the moment a reviewer lands it, on the strength of the read this block
     added. See the report for the consequence: this block does **not** turn the
     suite red, contrary to the brief that asked for it.
+
+    Mutation record: the declared period
+    ------------------------------------
+
+    The block that gave a declaration a `through` and a `from`, and decided the
+    disposition against the cross-section's own ref_date. Same protocol: a
+    disposable copy under `$HOME` built by copying the whole tree minus `.git`,
+    `python3 -B` with `PYTHONDONTWRITEBYTECODE=1`, on **3.9.6**, each mutation
+    applied to a freshly restored copy. Unmutated control green before and
+    after -- 743 tests OK, zero `expectedFailure`, both runs.
+
+    7. **The period comparison dropped** (the required mutation): `covers`
+       removed from the disposition in `_nmfp_unmatched_derived_fields`, so a
+       declared field reads `declared_structural_zero` whatever month it is.
+       Kills `test_a_declaration_does_not_reach_past_its_period` **alone**,
+       `AssertionError`,
+       `(('mmf_on_rrp', 'declared_structural_zero'),) != (('mmf_on_rrp', 'no_declaration'),)`
+       on the first half. That it kills exactly one test is the point: this is
+       the whole of the difference between "declared at all" and "declared for
+       this month", and nothing else in the suite could tell the two apart.
+       Mutations 1 and 4 above were re-run on this tree because the fixture
+       they name changed: the declaration in
+       `test_a_declared_structural_zero_changes_the_disposition` was prose with
+       no `through`, which is now refused, so it was given a period covering
+       `REF_DATE`. Both kill strictly more than they did, and their entries
+       above are updated in place rather than restated here.
+
+    8. **The `through` requirement removed**, which is a **finding and not a
+       kill**. A declaration with no `through` made to mean unbounded above
+       (`last = date.max`) instead of raising `DataContractError`. Kills
+       **nothing**: 743 tests OK. So the three refusals the grammar added to
+       `declared_structural_zeros` -- no `through`, an unparseable bound,
+       `from` later than `through` -- are unguarded. They are real refusals and
+       they run, but no test asserts any of them, and the first is exactly the
+       declaration that would silently annex every month the source has not
+       reached. Recorded here rather than repaired: a test for them is a second
+       acceptance criterion, which is a block and not a patch. It belongs with
+       `declared_structural_zeros` in `tests/test_data.py`, which today tests
+       nothing about structural zeros at all.
     """
 
     #: Three filers over the floor, none of whose repo rows is the facility. The
@@ -2323,11 +2374,19 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
         """
 
         artifact = self.archive(self.DEALER_ONLY)
+        # `through` is required, so the declaration that used to be prose alone
+        # would now be refused. It is given a period that covers `REF_DATE`
+        # because this test is about the disposition a covering declaration
+        # produces; that a non-covering one produces the other disposition is
+        # `test_a_declaration_does_not_reach_past_its_period`, and keeping the
+        # two apart is what stops either from passing for the wrong reason.
         declared = self.registry(
             structural_zeros=(
                 {
                     "field": "mmf_on_rrp",
                     "when": "months in which no reporting series lent to the facility",
+                    "from": "2010-11-30",
+                    "through": "2026-12-31",
                 },
             )
         )
@@ -2348,6 +2407,69 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
              if row.series_id == "mmf_on_rrp"],
             [],
             msg="a declared structural zero was materialised as a 0.0 observation",
+        )
+
+    def test_a_declaration_does_not_reach_past_its_period(self):
+        """A declared period that ended before this month does not declare it.
+
+        The fixture month is 2026-07-31 -- the one of the 33 unmatched repo
+        months in which the facility existed. The review this class waits on
+        declares the 32 months from 2010-11 to 2013-08, and the question here is
+        whether that declaration reaches a month thirteen years past its own
+        last covered date. It must not: the disposition would then say a
+        reviewer had judged 2026-07-31 a structural zero, which no reviewer has.
+
+        Both halves are here on purpose, and neither alone is the criterion. The
+        first passes an implementation that ignores declarations entirely; the
+        second passes one that ignores the period. Only the pair says the
+        declaration is read *and* bounded.
+
+        The date it is bounded against is the cross-section's own `ref_date`.
+        Comparing against today, the build cutoff, or the latest month in the
+        batch would each get this fixture right by coincidence -- all three sit
+        past 2013-08 -- and would each read a re-run or a backfill differently
+        from the run that wrote the record.
+        """
+
+        artifact = self.archive(self.DEALER_ONLY)
+
+        expired = self.registry(
+            structural_zeros=(
+                {
+                    "field": "mmf_on_rrp",
+                    "when": "months before the facility accepted money-fund cash",
+                    "from": "2010-11-30",
+                    "through": "2013-08-31",
+                },
+            )
+        )
+        self.assertEqual(
+            self.coverage_for(
+                parse_snapshots([artifact], registry=expired), self.REF_DATE
+            ).unmatched_derived_fields,
+            (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+            msg="a declaration that ends in 2013 was read as covering 2026-07-31",
+        )
+
+        current = self.registry(
+            structural_zeros=(
+                {
+                    "field": "mmf_on_rrp",
+                    "when": "months before the facility accepted money-fund cash",
+                    "from": "2010-11-30",
+                    "through": self.REF_DATE.isoformat(),
+                },
+            )
+        )
+        self.assertEqual(
+            self.coverage_for(
+                parse_snapshots([artifact], registry=current), self.REF_DATE
+            ).unmatched_derived_fields,
+            (("mmf_on_rrp", DERIVED_ABSENCE_DECLARED_ZERO),),
+            msg=(
+                "a declaration whose `through` is the cross-section's own date "
+                "was not read as covering it; the bound is inclusive"
+            ),
         )
 
     def test_an_excluded_cross_section_still_carries_the_record(self):
