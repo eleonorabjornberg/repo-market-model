@@ -844,7 +844,20 @@ def _nmfp_absence_is_indistinguishable_from_parse_failure():
     hazard `_part_of_the_cli_is_unpublished` refuses two screens up. A declaration
     nothing reads cannot distinguish anything. So the limitation holds until the
     package actually reads the declaration, and no edit to the registry alone can
-    end it. Track A's block 4b is what makes it end.
+    end it.
+
+    **The second clause is now satisfied, and the first is gated on a review.**
+    Block 4b (`d8675d2`) added the reader -- `declared_structural_zeros` in
+    `data.py` -- and a record of a derived field that matched nothing in a table
+    it read. The brief for it said this guard would fire; it could not, and
+    Track A said so before anyone asked. `tests/test_contract.py` refuses any
+    `structural_zeros` entry while `structural_zeros_reviewed` is false, so no
+    block can land the first clause without a review nobody has done. The row is
+    therefore a `declaration` row now, not a `software` one, and it names the
+    review as its blocker. A review recorded before a declaration's `when` has a
+    grammar would let one period's zero stand for every month, 2026-07-31
+    included -- the reader answers "declared at all", not "declared for this
+    month".
 
     Mutation record
     ---------------
@@ -872,6 +885,20 @@ def _nmfp_absence_is_indistinguishable_from_parse_failure():
     )
     return not (declared and read)
 
+
+
+def _sec_nmfp_structural_zeros_are_unreviewed():
+    """Nobody has reviewed Form N-MFP's structural zeros, so none may be declared.
+
+    The blocker for `nmfp_absence_indistinguishable` since block 4b landed its
+    reader. When a review is recorded this goes false, and the limitation is
+    then either repaired -- a declaration exists and is read, so
+    `test_no_published_limitation_outlives_its_repair` fires until the page
+    changes -- or it still holds with no blocker, so
+    `test_no_published_limitation_claims_a_blocker_that_has_cleared` fires. Either
+    way the page is made to say what the review found.
+    """
+    return not registry()["sec_nmfp"]["structural_zeros_reviewed"]
 
 def _identity_tolerance_is_a_single_absolute():
     """Every declared identity tolerance is an absolute bound and nothing else."""
@@ -980,14 +1007,14 @@ LIMITATIONS = (
     ),
     (
         "nmfp_absence_indistinguishable",
-        "software",
+        "declaration",
         "docs/PROJECT_STATUS.md",
         # The trailing comma is part of the published token: the matcher is a
         # word stream and "representation" is not "representation,". The same
         # punctuation trap failed the corrected bullet at 2ced98e.
         ("an absent value and a parse failure still have the same representation,",),
         _nmfp_absence_is_indistinguishable_from_parse_failure,
-        None,
+        _sec_nmfp_structural_zeros_are_unreviewed,
     ),
 )
 
@@ -1119,10 +1146,11 @@ class PublishedLimitationTests(unittest.TestCase):
     closed under `src/`; a `documentation` row is closed on a HUMAN_ONLY page and no
     track can close it however well it does its block.
 
-    `blocked_by` answers the second, and only one row carries one, deliberately.
-    `cli_partially_unpublished` is blocked by something checkable -- a clone does not
-    receive the frozen panel, so no runnable invocation can publish `build` -- and
-    the other five carry `None`, which is not an exemption but the assertion that
+    `blocked_by` answers the second, and only rows with a checkable blocker carry
+    one. `cli_partially_unpublished` is blocked by something checkable -- a clone
+    does not receive the frozen panel, so no runnable invocation can publish
+    `build` -- and so, since block 4b, is `nmfp_absence_indistinguishable`, by the
+    unreviewed `sec_nmfp` structural zeros. The other four carry `None`, which is not an exemption but the assertion that
     nothing is claimed to block them. Both branches are live, which is the standing
     requirement mutation 4 above established: a guard needs at least one live entry
     per code path it claims to have.
@@ -1147,6 +1175,15 @@ class PublishedLimitationTests(unittest.TestCase):
     Control green before and after all three, 704 tests, run in a disposable copy
     under `$HOME` with `__pycache__` cleared between runs and each mutation applied
     to a restored copy rather than on top of the last.
+
+    9. **The review recorded** (added with the second blocker, after block 4b):
+       `sec_nmfp`'s `structural_zeros_reviewed` set true, `structural_zeros` left
+       empty. Killed `test_no_published_limitation_claims_a_blocker_that_has_cleared`,
+       `AssertionError` naming `nmfp_absence_indistinguishable`, one test in the
+       whole suite. Against the table as it stood before the blocker was added,
+       the same mutation -- all six sources flipped -- killed nothing: a review
+       could land and the page would go on saying the gap was the software's.
+       Control green before and after, 721 tests on 3.10.12, disposable copy.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):
