@@ -17,6 +17,7 @@ from repo_model.data import (
     audit_point_in_time_panel,
     audit_panel,
     declared_coverage_floor,
+    declared_structural_zeros,
     expected_ref_dates_from_registry,
     fixed_bp_stress_label_columns,
     load_daily_panel,
@@ -775,6 +776,170 @@ class CoverageFloorDeclarationTests(unittest.TestCase):
             self.assertGreaterEqual(era.minimum_reporting_entities, 1)
 
 
+
+class StructuralZeroPeriodGrammarTests(unittest.TestCase):
+    """Every refusal of the period grammar names its own reason.
+
+    `declared_structural_zeros` reads one source's `structural_zeros` and
+    returns, per field, the period a reviewer declared. Block 7 gave that
+    declaration a grammar -- `through` required and inclusive, `from`
+    optional -- and recorded, as item 8 of its mutation record in
+    `DerivedFieldAbsenceTests` (`tests/test_ingest.py`), that the three
+    refusals the grammar added were **unguarded**: the `through` requirement
+    made a no-op killed nothing at all. That record names this module as
+    where the guard belongs, and names the state it found: `tests/test_data.py`
+    tested nothing about structural zeros. This class is the repair, and it is
+    the first thing here to test them.
+
+    **A refusal shadowed by a later refusal is killable only by its message.**
+    That is the shape of the whole class. With the `through is None` check made
+    a no-op, the declaration does not sail through: `_structural_zero_bound`
+    refuses `None` one line down as a bound that is not a string. A
+    `DataContractError` is still raised, the entry is still refused, and a test
+    asserting only `assertRaises(DataContractError)` is green over a deleted
+    refusal. So each case below asserts `assertRaisesRegex` on the phrase only
+    its own refusal writes, and each also asserts that the *shadowing*
+    refusal's phrase is absent -- the two halves of "this refusal, not the one
+    behind it". The kill for a shadowed refusal is an `AssertionError` of the
+    regex-mismatch kind, not "not raised", and the record below says which kind
+    each was.
+
+    The distinction is not decorative. The three refusals are not
+    interchangeable: no `through` is the declaration that annexes every month
+    the source has not reached, an unparseable bound is a typo that would
+    otherwise silently stop declaring, and a `from` after its `through` is a
+    declaration that covers nothing while reading as though it covers a span.
+    A caller told only "DataContractError" cannot act on any of them, and a
+    reviewer reading the message is the person who has to fix the registry.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME`, never in the mount, made from
+    git's own file list (`git ls-files -z --cached --others
+    --exclude-standard` piped through `tar`) as `CLAUDE.md` directs.
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, CPython 3.9.6 on darwin.
+    Unmutated control green in the copy before the first mutation and again
+    after the last was reverted; each mutation was applied to a freshly
+    restored copy rather than on top of the last, and the branch carries none
+    of them. Each is the named check in `src/repo_model/data.py` made a no-op.
+
+    1. **The `through` requirement made a no-op** -- the acceptance mutation.
+       `if through is None: raise` deleted from `declared_structural_zeros`,
+       leaving `through = declaration.get("through")`. Kills
+       `test_each_structural_zero_period_refusal_names_its_own_reason`
+       **alone**, and the kind is the one this class is about: an
+       `AssertionError` of the **regex mismatch**, not "not raised" --
+       `"states no 'through'" does not match "sec_nmfp: structural_zeros entry
+       for 'mmf_on_rrp' has a through of None; bounds are inclusive ISO
+       YYYY-MM-DD dates"`. The entry is still refused, one line further down,
+       by `_structural_zero_bound` reading `None` as a bound that is not a
+       string. This is item 8 of the block-7 record repaired: the same
+       mutation killed nothing there.
+
+    2. **The unparseable-bound refusal made a no-op**: `except ValueError:
+       return date.min` in `_structural_zero_bound` in place of the
+       `DataContractError`, so a bound that does not parse is accepted as a
+       date rather than refused. Kills the same test **alone**, both subTests,
+       `AssertionError: DataContractError not raised` -- **not** shadowed,
+       because with the bound accepted there is nothing left to object to:
+       `2013-08-32` becomes a `through` and `31-08-2010` a `from` that is not
+       after it. The two subTests are the point of the mutation: one refusal
+       serves both keys, and the message names the key it read, so a single
+       kill would not have shown the `from` path runs at all.
+
+    3. **The empty-period refusal made a no-op**: `if first > last: raise`
+       deleted, so a declaration running from `2013-08-31` through
+       `2010-11-30` is accepted and declares nothing -- `covers` is false for
+       every date. Kills the same test **alone**, `AssertionError:
+       DataContractError not raised`. This is the one case of the three that
+       is not shadowed, and the kill kind says so: nothing behind it objects,
+       so the entry becomes a declaration a reviewer wrote and no
+       cross-section can ever match.
+
+    Each kill is a single test and it is the acceptance criterion, so the
+    criterion and the mutation target did not come apart. Nothing else in the
+    suite noticed any of the three, which is the same finding block 7 recorded
+    and the reason this class exists rather than a fourth assertion added to
+    something already green.
+    """
+
+    #: The reviewer's prose is required and orthogonal to the period, so every
+    #: fixture here carries the same one. What varies below is only the dates.
+    WHEN = "the facility did not exist; see the review of 2026-09-10"
+
+    def source(self, **declaration):
+        """One source declaring one structural zero for `mmf_on_rrp`.
+
+        A mapping rather than the real registry: `metadata/sources.json` is a
+        human's file and the grammar under test is not about any source in it.
+        `declared_structural_zeros` reads `structural_zeros` and nothing else.
+        """
+
+        entry = {"field": "mmf_on_rrp", "when": self.WHEN}
+        entry.update(declaration)
+        return {"structural_zeros": [entry]}
+
+    def test_a_well_formed_declaration_is_read_as_the_period_it_states(self):
+        """The control. Without it every refusal below could be the fixture's."""
+
+        declared = declared_structural_zeros(
+            "sec_nmfp", self.source(through="2013-08-31", **{"from": "2010-11-30"})
+        )
+        period = declared["mmf_on_rrp"]
+        self.assertEqual(period.when, self.WHEN)
+        self.assertEqual(period.through, date(2013, 8, 31))
+        self.assertEqual(period.start, date(2010, 11, 30))
+        self.assertTrue(period.covers(date(2013, 8, 31)))
+        self.assertFalse(period.covers(date(2026, 7, 31)))
+
+    def test_each_structural_zero_period_refusal_names_its_own_reason(self):
+        """The acceptance criterion and the mutation target. See the class docstring.
+
+        Three refusals, each asserted against the phrase only that refusal's
+        message carries, and each asserted not to be answered by the refusal
+        standing behind it. `assertRaises(DataContractError)` alone would pass
+        for (a) with the check deleted, which is the trap block 7 proved on the
+        same function and this test exists not to re-prove.
+        """
+
+        # (a) No `through`. Shadowed by `_structural_zero_bound`, which refuses
+        # `None` as a bound that is not a string -- a different reason for the
+        # same entry, and the one a reader would have to act on if this refusal
+        # were gone.
+        with self.assertRaisesRegex(DataContractError, "states no 'through'") as caught:
+            declared_structural_zeros("sec_nmfp", self.source())
+        self.assertNotIn("bounds are inclusive", str(caught.exception))
+
+        # (b) An unparseable bound, `through` and `from` separately. Both are
+        # the same refusal in `_structural_zero_bound`, and it names which key
+        # it read, so each case asserts its own key as well as the phrase.
+        for key, entry in (
+            ("through", {"through": "2013-08-32"}),
+            ("from", {"through": "2013-08-31", "from": "31-08-2010"}),
+        ):
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(
+                    DataContractError, "not an ISO YYYY-MM-DD date"
+                ) as caught:
+                    declared_structural_zeros("sec_nmfp", self.source(**entry))
+                self.assertIn(f"has a {key} of", str(caught.exception))
+
+        # (c) `from` after `through`. Not shadowed: both bounds parse and the
+        # field is named once, so with this check gone the entry is accepted
+        # and declares an empty period -- no refusal at all, which is why its
+        # kill is "not raised" and the other two are regex mismatches.
+        with self.assertRaisesRegex(
+            DataContractError, "declares no cross-sections at all"
+        ) as caught:
+            declared_structural_zeros(
+                "sec_nmfp",
+                self.source(through="2010-11-30", **{"from": "2013-08-31"}),
+            )
+        message = str(caught.exception)
+        self.assertIn("2013-08-31", message)
+        self.assertIn("2010-11-30", message)
+
 class RealSnapshotCoverageTests(unittest.TestCase):
     """The coverage floor, against the extract in `data/raw/` rather than a fixture.
 
@@ -1487,7 +1652,12 @@ class PanelDigestTests(unittest.TestCase):
     This class now holds two blocks' criteria: the writer's, below, and the
     reader's, `test_a_panel_one_byte_off_its_manifest_digest_is_refused`, whose
     record is the second one at the end. Each is the mutation target of its own
-    block; neither is the other's.
+    block; neither is the other's. It also holds one test that is no block's
+    criterion --
+    `test_a_manifest_digest_that_is_not_lowercase_hex_is_refused_as_such`,
+    carried by the block after the reader's because the reader's brief asked
+    for a mutation its refusal could not produce. Item 4 of the second record
+    is that mutation, run at last.
 
     The writing side's acceptance criterion is
     `test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk`, and it is
@@ -1607,6 +1777,29 @@ class PanelDigestTests(unittest.TestCase):
        repository can separate them. The guard against it is the docstring on
        `verify_daily_panel` and the fact that the writer hashes the same way;
        naming that here is worth more than a test that would pass either way.
+
+    4. **The malformed-digest refusal made a no-op** -- the record of a
+       mutation this block's brief asked for and could not get, run at the
+       block after it, when the refusal acquired a test.
+       `if not isinstance(recorded, str) or not SHA256_PATTERN.match(recorded)`
+       and its raise deleted from `verify_daily_panel`. Kills
+       `test_a_manifest_digest_that_is_not_lowercase_hex_is_refused_as_such`
+       **alone**, both subTests, `AssertionError` of the **regex mismatch**
+       kind: `"not 64 lowercase hex" does not match "... hashes to
+       3a790697..., but ... records 3A790697.... The panel is not the file the
+       manifest describes"`, and the same for the non-string, whose `repr`
+       lands in the mismatch message instead.
+
+       That is the whole of the correction. The brief for the block above
+       required this refusal to be killed by `DataContractError not raised`,
+       which it can never produce: a recorded digest that is not 64 lowercase
+       hex characters can never equal a computed one, so the comparison below
+       refuses the identical inputs -- for the wrong reason, reporting a
+       mismatch where the truth is that there is nothing well formed to
+       compare. **A refusal shadowed by a later refusal is killable only by
+       its message.** The uppercase copy of the true digest is the case that
+       earns the guard: it is the one malformed value that hashing agrees
+       with, so any verifier that normalised case would pass it.
     """
 
     #: The same `ref_date` fixture source the join tests use, at one declared
@@ -1805,6 +1998,54 @@ class PanelDigestTests(unittest.TestCase):
 
         with self.assertRaisesRegex(DataContractError, "no digest to compare"):
             verify_daily_panel(path, manifest_path)
+
+
+
+    def test_a_manifest_digest_that_is_not_lowercase_hex_is_refused_as_such(self):
+        """Carried from the block above: the malformed-digest refusal, guarded.
+
+        That block's brief asked for this refusal to be killed by
+        `DataContractError not raised`, and it never can be. A malformed
+        recorded digest can never equal a computed one, so with the format
+        check made a no-op the comparison one line down refuses the very same
+        inputs -- with a different message, about a mismatch, which is not what
+        happened. The refusal is shadowed, so it is killable only by its own
+        phrase, and the kill is a regex mismatch rather than a missing
+        exception. Item 4 of the record above is that mutation.
+
+        The uppercase copy of the *true* digest is the case that makes this
+        more than a spelling rule. It is the one malformed digest that would
+        otherwise be right: hashing agrees with it up to case, so a verifier
+        that lowercased what it read, or compared case-insensitively, would
+        pass it. It is refused because the manifest is a record other tools
+        parse -- the run records write lowercase hex -- and a field that is
+        sometimes one spelling and sometimes another is a field every reader
+        has to normalise and one of them will forget.
+        """
+
+        path, manifest_path = self.loadable_written_panel()
+        true_digest = manifest_digest(manifest_path)
+        self.assertEqual(verify_daily_panel(path, manifest_path), true_digest)
+
+        for label, recorded in (
+            ("uppercase", true_digest.upper()),
+            ("not a string", ["a" * 64]),
+        ):
+            with self.subTest(recorded=label):
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                manifest["sha256"] = recorded
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(
+                    DataContractError, "not 64 lowercase hex"
+                ) as caught:
+                    verify_daily_panel(path, manifest_path)
+                message = str(caught.exception)
+                self.assertNotIn("is not the file the manifest describes", message)
+                self.assertIn(str(manifest_path), message)
+                self.assertIn(str(path), message)
 
 
 
