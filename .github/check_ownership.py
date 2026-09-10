@@ -95,10 +95,34 @@ HUMAN_ONLY = (
     # reasoning as tests/test_docs_freshness.py: it checks human-owned pages, so
     # it is human-owned too.
     "tests/test_generated_results.py",
+    # What is tracked at all. Assigned 10 Sep with the widened tripwire in
+    # tests/test_contract.py, which found it unowned. Same argument as CLAUDE.md
+    # and .claude/ above, one level further out: an agent that may edit
+    # .gitignore can untrack a file and every guard that reads the tree stops
+    # seeing it. That is editing around the contract without touching it.
+    ".gitignore",
 )
 
 # Owned by neither track. Allowed, but always surfaced for human review.
-SHARED = ("tests/test_contract.py",)
+SHARED = (
+    "tests/test_contract.py",
+    # Records of runs that happened. CLAUDE.md already rules that a change
+    # altering what a re-run produces is a report and not a rewrite of the
+    # record, but nothing enforced it and nothing surfaced it: this directory
+    # was in no list at all, so both tracks could rewrite a published figure
+    # and the gate would say nothing. Shared rather than HUMAN_ONLY on purpose
+    # -- adding a record is ordinary track work and blocking it would push the
+    # evidence back into terminals, which is the thing --report exists to stop.
+    "docs/runs/",
+    # Cross-track executable specifications: each tests a module its author is
+    # forbidden to edit, and each says so in its own docstring. Assigning
+    # either one to the track that owns the module under test would lock out
+    # the track that wrote the spec; assigning it to the author would lock out
+    # the track that must satisfy it. Neither owns it, both may propose, and a
+    # human reads every change.
+    "tests/test_events_metadata_spec.py",
+    "tests/test_registry_interface.py",
+)
 
 # Each track's counterpart. Two branches that independently ADD the same new
 # path are not caught by the ownership lists -- both can be perfectly in lane --
@@ -120,6 +144,13 @@ TRACKS = {
             "src/repo_model/registry.py",
             "src/repo_model/cli_data.py",
             "data/",
+            # The tests of the four modules above. Added 10 Sep: the modules
+            # were forbidden and their tests were not, so the gate blocked an
+            # edit to ingest.py and allowed an edit to the test that says what
+            # ingest.py must do. Owning a guard is owning what it guards.
+            "tests/test_ingest.py",
+            "tests/test_data.py",
+            "tests/test_registry.py",
         ),
         "owner": "Track A (data layer)",
     },
@@ -135,6 +166,16 @@ TRACKS = {
             # list -- the same hole as cli.py, one file over. Applying an
             # existing ruling, not making a new one.
             "src/repo_model/baseline.py",
+            # The tests of the five modules above, by the same ruling applied
+            # to Track A's tests one entry up. tests/ belonged to neither track
+            # wholesale, which the COUNTERPART comment above already names as
+            # the usual site of an add/add collision; it was also the usual
+            # site of a silent one.
+            "tests/test_baseline.py",
+            "tests/test_cli_eval.py",
+            "tests/test_metrics.py",
+            "tests/test_splits.py",
+            "tests/test_event_eval.py",
         ),
         "owner": "Track B (model and evaluation)",
     },

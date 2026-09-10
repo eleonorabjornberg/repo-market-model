@@ -197,6 +197,7 @@ import importlib.util
 import inspect
 import json
 import re
+import subprocess
 import sys
 import textwrap
 import tempfile
@@ -1848,15 +1849,101 @@ class CommandLineOwnershipTests(unittest.TestCase):
             "'register' is part of the seam.",
         )
 
-    def test_every_source_module_is_owned_by_exactly_one_party(self):
-        """No module under `src/repo_model/` belongs to nobody.
+    # Every path this gate is expected to have an answer for. Enumerated from
+    # the filesystem rather than from `git ls-files`, because a mutation
+    # control is a `cp` of the tree into $HOME with no `.git` in it, and a
+    # guard that errors in every control run is a guard that gets deleted
+    # rather than repaired.
+    GOVERNED = (
+        "src/repo_model/*.py",
+        "tests/*.py",
+        "scripts/*.py",
+        "metadata/*.json",
+        "data/*",
+        "docs/*.md",
+        "docs/status.json",
+        "docs/runs/*",
+        "docs/figures/*",
+        "examples/*",
+        "notebooks/*",
+        ".github/*",
+        ".claude/*",
+        "*.md",
+        "*.toml",
+        "LICENSE",
+        ".gitignore",
+    )
 
-        This is the general form of the two holes already paid for. A module is
-        owned if it is HUMAN_ONLY, SHARED, or forbidden to exactly one track --
-        forbidden to Track B means owned by Track A, and vice versa. A module in
-        none of those lists is one the gate is silent about: both tracks may
-        edit it and nothing says so until the merge.
+    def _governed_paths(self):
+        paths = set()
+        for pattern in self.GOVERNED:
+            for child in REPO_ROOT.glob(pattern):
+                if child.is_file() and "__pycache__" not in child.parts:
+                    paths.add(child.relative_to(REPO_ROOT).as_posix())
+        # Ask git which of those are tracked. An ignored memo sitting in
+        # `docs/` is not a path this gate owes an answer for, and flagging one
+        # would train a reader to skim the list. Returns None when git cannot
+        # answer, and the caller skips: the first draft of this guard fell back
+        # to the unfiltered filesystem list instead, and the mutation control
+        # -- a tree copied under $HOME with no `.git` in it -- went red on two
+        # ignored files. A guard that fails in every control run is a guard
+        # that gets deleted rather than repaired. Same idiom and same reason as
+        # the git-state tests in tests/test_baseline.py.
+        try:
+            listed = subprocess.run(
+                ["git", "ls-files"],
+                cwd=str(REPO_ROOT),
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.split("\n")
+        except (OSError, subprocess.SubprocessError):
+            return None
+        tracked = {line for line in listed if line}
+        if not tracked:
+            return None
+        return sorted(paths & tracked)
+
+    def test_every_governed_path_is_owned_by_exactly_one_party(self):
+        """No path this gate governs belongs to nobody.
+
+        A path is owned if it is HUMAN_ONLY, SHARED, or forbidden to exactly
+        one track -- forbidden to Track B means owned by Track A, and vice
+        versa. A path in none of those lists is one the gate is silent about:
+        both tracks may edit it and nothing says so until the merge.
+
+        **This test used to claim to be "the general form of the two holes
+        already paid for" while globbing `src/repo_model/*.py` and nothing
+        else.** It was not the general form of anything. Widened on 10
+        September, it named fourteen unowned paths on its first run: the three
+        published records under `docs/runs/`, ten test modules, and
+        `.gitignore`. Seven earlier holes in this gate were each found by a
+        person reading the file; these fourteen were found by the guard that
+        existed to find them, once it was allowed to look outside one
+        directory.
+
+        Mutation record, 10 September, in a disposable copy under `$HOME` with
+        `git init` run inside it, so this guard is exercisable there rather
+        than skipped. Unmutated control green before and after: 702 tests, OK.
+
+          * `docs/runs/` deleted from SHARED -> `AssertionError` naming the
+            three published records. Kill.
+          * `tests/test_baseline.py` deleted from Track B's forbidden list ->
+            `AssertionError` naming exactly that path. Kill.
+          * `.gitignore` deleted from HUMAN_ONLY -> `AssertionError` naming
+            exactly that path. Kill.
+
+        Three kills, no survivors. The run produced a fourth result that was
+        not a mutation and mattered more: with the git filter first written as
+        a *fallback* to the raw filesystem list, the unmutated control went red
+        on two ignored files in `docs/`. The control caught a defect in the
+        guard it was controlling for, which is the whole reason it is run
+        before and after rather than only after.
         """
+
+        governed = self._governed_paths()
+        if governed is None:
+            self.skipTest("git is not available here; tracked paths cannot be enumerated")
 
         gate = self._gate()
         a_owned = set(gate.TRACKS["feature/model-eval"]["forbidden"])
@@ -1864,8 +1951,7 @@ class CommandLineOwnershipTests(unittest.TestCase):
 
         unowned = []
         contested = []
-        for module in sorted((REPO_ROOT / "src" / "repo_model").glob("*.py")):
-            path = f"src/repo_model/{module.name}"
+        for path in governed:
             claims = [
                 label
                 for label, patterns in (

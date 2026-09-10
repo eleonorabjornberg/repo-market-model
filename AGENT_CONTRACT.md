@@ -30,6 +30,45 @@ in `.github/check_ownership.py`. It guards the published documents against
 transcribed test counts and hand-written dates, so it belongs with those
 documents rather than with either track's tests.
 
+### Test modules, published records, and `.gitignore`
+
+Assigned 10 September. The gate governed `src/` and said nothing about
+`tests/`, `docs/runs/` or `.gitignore`: **fourteen tracked paths were in no
+list at all**, so the gate would neither block an edit to them nor surface one,
+and both tracks could change the same file with nothing saying so until the
+merge.
+
+| Path | Owner | Gate |
+|---|---|---|
+| `tests/test_ingest.py`, `tests/test_data.py`, `tests/test_registry.py` | Track A | forbidden to `feature/model-eval` |
+| `tests/test_baseline.py`, `tests/test_cli_eval.py`, `tests/test_metrics.py`, `tests/test_splits.py`, `tests/test_event_eval.py` | Track B | forbidden to `feature/data-layer` |
+| `tests/test_events_metadata_spec.py`, `tests/test_registry_interface.py` | neither | `SHARED` |
+| `docs/runs/` | neither | `SHARED` |
+| `.gitignore` | human | `HUMAN_ONLY` |
+
+**A test goes with the module it guards.** `ingest.py` was forbidden to Track B
+and the test saying what `ingest.py` must do was not, so the gate blocked the
+implementation and allowed the specification.
+
+**The two cross-track specs are `SHARED` rather than assigned.** Each tests a
+module its own author is forbidden to edit, and each says so in its docstring.
+Giving one to the track that owns the module under test locks out the track
+that wrote the spec; giving it to the author locks out the track that has to
+satisfy it. Neither owns it, both may propose, a human reads every change.
+
+**`docs/runs/` is `SHARED`, not `HUMAN_ONLY`.** Adding a record is ordinary
+track work, and blocking it would push evidence back into terminals, which is
+the thing `--report` exists to stop. Rewriting an existing record is already
+refused by `CLAUDE.md`; `SHARED` is what makes either case visible.
+
+**`.gitignore` is `HUMAN_ONLY`** by the argument that put `CLAUDE.md` and
+`.claude/` there, one level further out: an agent that may untrack a file can
+remove it from every guard that reads the tree without editing a guard.
+
+None of the fourteen was found by a person reading the gate. The tripwire in
+`tests/test_contract.py` found all of them the moment it was allowed to look
+outside `src/repo_model/` — which its own docstring had claimed it did.
+
 ## Why this matters more than usual here
 
 Both tracks can silently introduce look-ahead. Track A leaks by backfilling
