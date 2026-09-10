@@ -174,6 +174,7 @@
       "PDPOSGSC-G3L6",
       "PDPOSGSC-G6L7",
       "PDPOSGSC-G7L11",
+      "PDPOSGSC-G11",
       "PDPOSGSC-G11L21",
       "PDPOSGSC-G21",
       "PDPOSTIPS-L2",
@@ -190,6 +191,7 @@
       "PDPOSGSC-G3L6": "weekly",
       "PDPOSGSC-G6L7": "weekly",
       "PDPOSGSC-G7L11": "weekly",
+      "PDPOSGSC-G11": "weekly",
       "PDPOSGSC-G11L21": "weekly",
       "PDPOSGSC-G21": "weekly",
       "PDPOSTIPS-L2": "weekly",
@@ -200,6 +202,71 @@
     "frequency": "weekly",
     "identities": [
       {
+        "eras": [
+          {
+            "id": "no_frn_combined_over_11",
+            "from": "2013-04-03",
+            "through": "2015-01-06",
+            "left": ["PDPOSGST-TOT"],
+            "right": [
+              "PDPOSGS-B",
+              "PDPOSGSC-L2",
+              "PDPOSGSC-G2L3",
+              "PDPOSGSC-G3L6",
+              "PDPOSGSC-G6L7",
+              "PDPOSGSC-G7L11",
+              "PDPOSGSC-G11",
+              "PDPOSTIPS-L2",
+              "PDPOSTIPS-G2",
+              "PDPOSTIPS-G6L11",
+              "PDPOSTIPS-G11"
+            ],
+            "note": "PDPOSGST-TOT's first as-of date is 2013-04-03; the earlier report used other vocabularies, ends 2013-03-27 and is not mapped, so a date before 2013-04-03 falls in no era of this identity and is recorded not_evaluable rather than checked against these eleven terms. See docs/DATA_QUALITY_DECISIONS.md, 'Dealer Treasury positions'. No floating-rate-note bucket in this era, and the over-eleven-year nominal coupon bucket is the single series PDPOSGSC-G11."
+          },
+          {
+            "id": "frn_combined_over_11",
+            "from": "2015-01-07",
+            "through": "2022-01-04",
+            "left": ["PDPOSGST-TOT"],
+            "right": [
+              "PDPOSGS-B",
+              "PDPOSGS-BFRN",
+              "PDPOSGSC-L2",
+              "PDPOSGSC-G2L3",
+              "PDPOSGSC-G3L6",
+              "PDPOSGSC-G6L7",
+              "PDPOSGSC-G7L11",
+              "PDPOSGSC-G11",
+              "PDPOSTIPS-L2",
+              "PDPOSTIPS-G2",
+              "PDPOSTIPS-G6L11",
+              "PDPOSTIPS-G11"
+            ],
+            "note": "PDPOSGS-BFRN begins 2015-01-07; the over-eleven-year bucket is still the single series PDPOSGSC-G11, whose last as-of date is 2021-12-29. The windows are contiguous rather than ending on the last observed date of each era: a bound at 2014-12-31 or 2021-12-29 would leave the turn-of-year weeks between the eras declared by nobody, and a reference date arriving there would be recorded not_evaluable instead of checked. Contiguity is a claim about which vocabulary was in force, which is what an era is; it is not a claim that an as-of date exists in the gap."
+          },
+          {
+            "id": "frn_split_over_11",
+            "from": "2022-01-05",
+            "left": ["PDPOSGST-TOT"],
+            "right": [
+              "PDPOSGS-B",
+              "PDPOSGS-BFRN",
+              "PDPOSGSC-L2",
+              "PDPOSGSC-G2L3",
+              "PDPOSGSC-G3L6",
+              "PDPOSGSC-G6L7",
+              "PDPOSGSC-G7L11",
+              "PDPOSGSC-G11L21",
+              "PDPOSGSC-G21",
+              "PDPOSTIPS-L2",
+              "PDPOSTIPS-G2",
+              "PDPOSTIPS-G6L11",
+              "PDPOSTIPS-G11"
+            ],
+            "note": "PDPOSGSC-G11 is retired and split into PDPOSGSC-G11L21 and PDPOSGSC-G21 from 2022-01-05. No 'through': this era has not ended, and any date written here would be a hand-written future one rather than a measurement. The 'left' and 'right' above are the identity's top-level terms restated, which validate_accounting_identities requires of the most recent era so that the two declarations cannot drift apart."
+          }
+        ],
+        "eras_note": "The identity is evaluated era by era because the source's vocabulary has a history and its data does not have a hole. Declared over the current thirteen terms alone it can be evaluated on 243 of the tracked extract's 700 weekly as-of dates and is not_evaluable on the other 457. The alternative that is refused rather than merely not chosen is one identity over the union of all fifteen terms: on a date in an early era the later era's terms are absent, so the union is not_evaluable everywhere -- and read an absent term as 0.0 to make the sum close and it holds everywhere instead, which turns an absence into a measured value.",
         "left": ["PDPOSGST-TOT"],
         "name": "dealer_treasury_total_is_its_declared_components",
         "right": [
@@ -221,10 +288,10 @@
           "absolute": 0.000001,
           "unit": "USD billions"
         },
-        "tolerance_note": "Exact, and absolute-only for the same reason shareholder_flows_reconcile is: the total is a re-summation of the thirteen terms in the same export, not two independently measured quantities that happen to agree. On the tracked fixture at 2026-08-26 the residual is 5.7e-14 USD billions, which is the double-precision cost of dividing fourteen integers by 1000 and adding thirteen of them, and a bound of a millionth of a billion is the statement that nothing but that is tolerated. The thirteen terms are named one by one and never globbed. The globs PDPOSGSC-* and PDPOSTIPS-* also match the C-suffixed series in the same buckets -- PDPOSGSC-L2C and its siblings -- and summing those in gives 492637 rather than 477607 millions at that date, so a glob does not merely risk overshooting the total, it does overshoot it on the only date this repository can check."
+        "tolerance_note": "Exact, and absolute-only for the same reason shareholder_flows_reconcile is: the total is a re-summation of its era's terms in the same export, not two independently measured quantities that happen to agree. On the tracked fixture at 2026-08-26 the residual is 5.7e-14 USD billions, which is the double-precision cost of dividing fourteen integers by 1000 and adding thirteen of them, and a bound of a millionth of a billion is the statement that nothing but that is tolerated. The thirteen terms are named one by one and never globbed, and so are the eleven and the twelve of the two earlier eras -- see eras and eras_note above. The globs PDPOSGSC-* and PDPOSTIPS-* also match the C-suffixed series in the same buckets -- PDPOSGSC-L2C and its siblings -- and summing those in gives 492637 rather than 477607 millions at that date, so a glob does not merely risk overshooting the total, it does overshoot it on the only date this repository can check."
       }
     ],
-    "limitation": "One row per series per as-of date, and each row carries its own As Of Date: the tracked 'latest' export mixes 2026-07-31, -08-13, -08-18, -08-20 and -08-26 in one file, so no date may be taken from the file as a whole. A value of '*' marks a figure the New York Fed withheld for confidentiality. It yields no observation -- never 0.0, and never a parse failure -- and the tree carries no record type that distinguishes a suppression from a series the export simply does not contain. The two absence-recording shapes that exist, CrossSectionCoverage.absent_fields and its unmatched_derived_fields, are both attached to a cross-sectional assembly with a declared entity_unit and a coverage floor, which this weekly time series has neither of; giving one to FR 2004 would mean inventing both. So the distinction this adapter can make is the one PDPOSGST-TOT's identity records: a week with a suppressed term evaluates to not_evaluable, naming the term, rather than to violated. The series is not yet a panel column -- contract.py keeps dealer_treasury_position in UNSOURCED_FEATURES -- so nothing here reaches build_daily_panel yet. Only the fourteen fields declared above are read; every other series in the export is ignored rather than parsed, so a suppression or a malformed value in one of them is invisible to this adapter.",
+    "limitation": "One row per series per as-of date, and each row carries its own As Of Date: the tracked 'latest' export mixes 2026-07-31, -08-13, -08-18, -08-20 and -08-26 in one file, so no date may be taken from the file as a whole. A value of '*' marks a figure the New York Fed withheld for confidentiality. It yields no observation -- never 0.0, and never a parse failure -- and the tree carries no record type that distinguishes a suppression from a series the export simply does not contain. The two absence-recording shapes that exist, CrossSectionCoverage.absent_fields and its unmatched_derived_fields, are both attached to a cross-sectional assembly with a declared entity_unit and a coverage floor, which this weekly time series has neither of; giving one to FR 2004 would mean inventing both. So the distinction this adapter can make is the one PDPOSGST-TOT's identity records: a week with a suppressed term evaluates to not_evaluable, naming the term, rather than to violated. The series is a panel column: contract.FEATURE_FIELDS maps dealer_treasury_position to PDPOSGST-TOT, so a build that carries the column depends on this source and a violated identity in it stops that build. Only the fifteen fields declared above are read -- fourteen current ones and PDPOSGSC-G11, the over-eleven-year bucket retired in 2022, which is declared so the identity's earlier eras have their own components to be checked against and which appears in no current export; every other series in the export is ignored rather than parsed, so a suppression or a malformed value in one of them is invisible to this adapter.",
     "provider": "Federal Reserve Bank of New York",
     "release_lag": {
       "available_time": "16:30",

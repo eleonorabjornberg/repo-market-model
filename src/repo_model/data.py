@@ -263,12 +263,38 @@ class UnevaluatedIdentity:
     that "holds" because a missing term was substituted with a zero is strictly
     worse than one that visibly did not run, because the first destroys the
     evidence that anything was missing.
+
+    `era_id` names the `IdentityEra` whose terms were the ones looked for, and
+    `undeclared_ref_date` is the second, different way a date can go unchecked:
+    it fell in no declared era at all, so there was no term list to look for.
+    Recording those two as one verdict with no distinguishing field would be the
+    defect `absent_fields` was added to fix, one level out -- "a term was
+    withheld this week" and "this repository has declared nothing about this
+    week" have different remedies, and only the record says which. `reason` is a
+    property for the same reason `CrossSectionCoverage.reason` is: the two
+    refusals are not the same finding and the sentence has to say which one
+    happened.
     """
 
     source_id: str
     identity: str
     ref_date: date
     absent_fields: tuple = ()
+    era_id: Optional[str] = None
+    undeclared_ref_date: bool = False
+
+    @property
+    def reason(self) -> str:
+        if self.undeclared_ref_date:
+            return (
+                "this reference date falls in no declared era of this "
+                "identity, so no component set applies to it; declare the era "
+                "rather than checking the date against another era's terms"
+            )
+        return (
+            "a declared term of this identity has no observation for this "
+            "reference date; the identity was not checked"
+        )
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -277,10 +303,8 @@ class UnevaluatedIdentity:
             "ref_date": self.ref_date.isoformat(),
             "verdict": IDENTITY_NOT_EVALUABLE,
             "absent_fields": list(self.absent_fields),
-            "reason": (
-                "a declared term of this identity has no observation for this "
-                "reference date; the identity was not checked"
-            ),
+            "era_id": self.era_id,
+            "reason": self.reason,
         }
 
 
@@ -388,6 +412,22 @@ class IdentityEvaluation:
         for item in self.unevaluated:
             names.update(item.absent_fields)
         return tuple(sorted(names))
+
+    @property
+    def undeclared_ref_dates(self) -> tuple:
+        """Every reference date that fell in no declared era of this identity.
+
+        Kept apart from `absent_fields` deliberately: such a date names no
+        absent term, because with no era covering it there was no list of terms
+        to find one absent from. Folding it in would report an empty absence
+        list as "nothing was missing".
+        """
+
+        return tuple(
+            sorted(
+                {item.ref_date for item in self.unevaluated if item.undeclared_ref_date}
+            )
+        )
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -1316,6 +1356,213 @@ def validate_publication_gaps(
     return worst
 
 
+@dataclass(frozen=True)
+class IdentityEra:
+    """One era of a declared identity: a date window and the terms that hold in it.
+
+    An additive identity over a published series is a claim about a vocabulary,
+    and a vocabulary has a history. FR 2004's `PDPOSGST-TOT` equals the sum of
+    its components on every weekly as-of date from 2013-04-03, but the
+    components are not the same set throughout: there is no floating-rate-note
+    bucket before 2015-01-07, and the over-eleven-year nominal coupon bucket is
+    one series (`PDPOSGSC-G11`) through 2021-12-29 and two (`-G11L21`, `-G21`)
+    from 2022-01-05. An identity declared over the current thirteen terms alone
+    can be evaluated on 243 of the tracked extract's 700 weekly dates and is
+    `not_evaluable` on the other 457 -- honest, and also five sixths of the
+    history left unchecked by a guard that reads as vigilance.
+
+    The alternative that has to be refused rather than merely not chosen is one
+    identity declared over the union of every era's components: on a date in an
+    early era the later era's terms are simply absent, so the union identity
+    is `not_evaluable` everywhere -- and if an absent term is read as `0.0` to
+    make the sum close, it *holds* everywhere instead, which turns absence into
+    a measured value. `docs/DATA_QUALITY_DECISIONS.md` forbids exactly that, and
+    `_identity_verdict` never forms the sums when a term is missing. Eras are
+    how the identity is made evaluable without it.
+
+    Both bounds are inclusive and both are optional. That is deliberately not
+    `_StructuralZeroWindow`'s asymmetry, where `through` is required and `from`
+    is not. A structural zero with no last covered cross-section is an unbounded
+    claim that some field is always zero, and what is refused there is the claim
+    outliving the regime that made it true. An era is the opposite shape: the
+    whole content of the current era is that it has not ended, and giving it a
+    `through` would mean writing a future date by hand. Unboundedness is
+    constrained instead by the overlap rule in `declared_identity_eras`, which
+    refuses two eras unbounded on the same side because they necessarily
+    overlap.
+    """
+
+    era_id: str
+    left: tuple
+    right: tuple
+    start: Optional[date] = None
+    through: Optional[date] = None
+
+    @property
+    def fields(self) -> tuple:
+        """Every term this era declares, left side then right."""
+
+        return (*self.left, *self.right)
+
+    def covers(self, ref_date: date) -> bool:
+        if self.start is not None and ref_date < self.start:
+            return False
+        if self.through is not None and ref_date > self.through:
+            return False
+        return True
+
+
+def _identity_era_bound(
+    source_id: str, name: str, era_id: str, key: str, value: object
+) -> date:
+    if not isinstance(value, str):
+        raise DataContractError(
+            f"{source_id}: identity {name} era {era_id} has a {key} that is "
+            f"not an ISO date string"
+        )
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise DataContractError(
+            f"{source_id}: identity {name} era {era_id} has a {key} that is "
+            f"not an ISO date: {value!r}"
+        ) from exc
+
+
+def _identity_era_terms(
+    source_id: str, name: str, era_id: str, side: str, declared: object
+) -> tuple:
+    if not isinstance(declared, list) or not declared:
+        raise DataContractError(
+            f"{source_id}: identity {name} era {era_id} states no {side} terms; "
+            f"an era is a component set and inherits none"
+        )
+    return tuple(str(field) for field in declared)
+
+
+def declared_identity_eras(
+    source_id: str, name: str, identity: Mapping[str, object]
+) -> tuple:
+    """The eras one declared identity is evaluated over, in date order.
+
+    An identity with no `eras` key gets a single unbounded era carrying its
+    top-level `left` and `right`. That is not a special case bolted on: it means
+    every caller iterates one shape and the un-era'd declaration cannot drift
+    down a second code path that the era'd one is not tested on.
+
+    Each declared era states its own `left` and `right` in full and inherits
+    neither. Inheritance is what would put the union declaration back: an era
+    that omits a side and picks up the identity's would be checked against terms
+    that did not exist in it.
+
+    The refusals, each of which is a malformed declaration and therefore a fault
+    in what this repository wrote rather than a finding about a source's data:
+
+    * an `eras` value that is not a non-empty list, or an entry that is not an
+      object, or one with no `id`, or two entries sharing an `id`;
+    * an era stating no `left` or no `right` terms;
+    * a `from` or `through` that is not an ISO date string;
+    * an era whose `from` is after its `through` -- a window that covers no
+      date, which would silently make every date in it undeclared;
+    * two eras whose windows overlap, which includes two eras unbounded on the
+      same side. Overlapping eras make the term set for a date depend on which
+      one is consulted first, and a term set chosen by list order is not a
+      declaration.
+
+    One more, and it is about the seam rather than about the eras: when `eras`
+    is declared, the identity's top-level `left` and `right` must restate its
+    most recent era's, term for term and in order. The top-level declaration
+    cannot simply go away -- `tests/test_contract.py` reads it as the shape both
+    tracks build against, and the registry interface is a shared, human-owned
+    guard. Leaving it unchecked beside the eras would be the duplicated-fact
+    failure this repository keeps meeting: two statements of the current
+    component set with nothing holding them together. So it is required to be
+    the same statement.
+    """
+
+    left = identity.get("left")
+    right = identity.get("right")
+    if not isinstance(left, list) or not isinstance(right, list):
+        raise DataContractError(f"{source_id}: malformed accounting identity")
+    top_left = tuple(str(field) for field in left)
+    top_right = tuple(str(field) for field in right)
+
+    declared = identity.get("eras")
+    if declared is None:
+        return (IdentityEra(era_id="", left=top_left, right=top_right),)
+    if not isinstance(declared, list) or not declared:
+        raise DataContractError(
+            f"{source_id}: identity {name} declares eras, which must be a "
+            f"non-empty list"
+        )
+
+    eras: List[IdentityEra] = []
+    seen: set = set()
+    for entry in declared:
+        if not isinstance(entry, Mapping):
+            raise DataContractError(
+                f"{source_id}: identity {name} has an era that is not an object"
+            )
+        era_id = str(entry.get("id") or "").strip()
+        if not era_id:
+            raise DataContractError(f"{source_id}: identity {name} has an era with no id")
+        if era_id in seen:
+            raise DataContractError(
+                f"{source_id}: identity {name} declares era {era_id} twice"
+            )
+        seen.add(era_id)
+        start = (
+            _identity_era_bound(source_id, name, era_id, "from", entry["from"])
+            if entry.get("from") is not None
+            else None
+        )
+        through = (
+            _identity_era_bound(source_id, name, era_id, "through", entry["through"])
+            if entry.get("through") is not None
+            else None
+        )
+        if start is not None and through is not None and start > through:
+            raise DataContractError(
+                f"{source_id}: identity {name} era {era_id} runs from "
+                f"{start.isoformat()} through {through.isoformat()}, which "
+                f"covers no reference date"
+            )
+        eras.append(
+            IdentityEra(
+                era_id=era_id,
+                left=_identity_era_terms(
+                    source_id, name, era_id, "left", entry.get("left")
+                ),
+                right=_identity_era_terms(
+                    source_id, name, era_id, "right", entry.get("right")
+                ),
+                start=start,
+                through=through,
+            )
+        )
+
+    # `date.min` and `date.max` stand in for the open ends only for the sort and
+    # the comparison below, and never leave this function: an era's own bounds
+    # stay `None`, so `covers` cannot come to depend on a sentinel date.
+    ordered = sorted(eras, key=lambda era: (era.start or date.min, era.through or date.max))
+    for earlier, later in zip(ordered, ordered[1:]):
+        if (later.start or date.min) <= (earlier.through or date.max):
+            raise DataContractError(
+                f"{source_id}: identity {name} eras {earlier.era_id} and "
+                f"{later.era_id} overlap; every reference date must fall in at "
+                f"most one era"
+            )
+
+    latest = ordered[-1]
+    if (latest.left, latest.right) != (top_left, top_right):
+        raise DataContractError(
+            f"{source_id}: identity {name} declares eras, so its top-level "
+            f"terms must restate its most recent era {latest.era_id}; they do "
+            f"not"
+        )
+    return tuple(ordered)
+
+
 def _identity_verdict(
     left_fields: Sequence[str],
     right_fields: Sequence[str],
@@ -1391,6 +1638,16 @@ def validate_accounting_identities(
 
     Which reference dates belong in the panel is a policy question and it is not
     this function's to answer -- but it can no longer be answered by accident.
+
+    Each reference date is checked against the terms of *its own era*. An
+    identity may declare `eras`, and then the term set is a function of the
+    date rather than a constant; one that does not gets a single unbounded era
+    and is evaluated exactly as before. See `IdentityEra` for why a source's
+    vocabulary having a history is not the same problem as its data having
+    holes, and `declared_identity_eras` for what a malformed era declaration is
+    refused for. A date covered by no declared era is recorded `not_evaluable`
+    with `undeclared_ref_date` set, never skipped: a date the declaration is
+    silent about is not a date the identity held on.
     """
 
     latest = {}
@@ -1422,18 +1679,12 @@ def validate_accounting_identities(
             tolerance_problems = validate_identity_tolerance(source_id, name, tolerance)
             if tolerance_problems:
                 raise DataContractError("; ".join(tolerance_problems))
-            left_fields = [str(field) for field in left]
-            right_fields = [str(field) for field in right]
-            fields = [*left_fields, *right_fields]
+            eras = declared_identity_eras(source_id, name, identity)
+            fields = sorted({field for era in eras for field in era.fields})
             dates_by_field = {
                 field: {ref_date for series_id, ref_date in latest if series_id == field}
                 for field in fields
             }
-            complete_dates = set.intersection(*dates_by_field.values()) if fields else set()
-            if not complete_dates:
-                raise DataContractError(
-                    f"{source_id}: identity {name} has no complete reference date"
-                )
             # The union, not the intersection. Every reference date on which any
             # declared term was observed is a date this identity has something
             # to say about -- including "I could not be checked here". Iterating
@@ -1442,19 +1693,42 @@ def validate_accounting_identities(
             # were never reaching it.
             observed_dates = set().union(*dates_by_field.values()) if fields else set()
             maximum = 0.0
+            complete_dates = 0
             unevaluated: List[UnevaluatedIdentity] = []
             violations: List[ViolatedIdentity] = []
             for ref_date in sorted(observed_dates):
+                # At most one era can cover it: `declared_identity_eras` refuses
+                # an overlap, so this is a lookup and not a precedence rule.
+                era = next((item for item in eras if item.covers(ref_date)), None)
+                if era is None:
+                    # Recorded, not skipped. A date the declaration says nothing
+                    # about is not a date the identity held on, and dropping it
+                    # here would leave `evaluated_ref_dates` counting it as
+                    # checked. Same finding as `CrossSectionCoverage`'s
+                    # "ref_date falls in no declared coverage era", one hop down.
+                    unevaluated.append(
+                        UnevaluatedIdentity(
+                            source_id=source_id,
+                            identity=name,
+                            ref_date=ref_date,
+                            undeclared_ref_date=True,
+                        )
+                    )
+                    continue
+                # Exactly this era's terms are looked for, and no others. A term
+                # that belongs only to a different era is not consulted, so its
+                # absence here is not an absence -- it is a series that did not
+                # exist yet.
                 values = {
                     field: (
                         latest[(field, ref_date)].value
                         if (field, ref_date) in latest
                         else None
                     )
-                    for field in fields
+                    for field in era.fields
                 }
                 verdict, residual, absent, bound = _identity_verdict(
-                    left_fields, right_fields, values, tolerance
+                    era.left, era.right, values, tolerance
                 )
                 if verdict == IDENTITY_NOT_EVALUABLE:
                     unevaluated.append(
@@ -1463,9 +1737,11 @@ def validate_accounting_identities(
                             identity=name,
                             ref_date=ref_date,
                             absent_fields=absent,
+                            era_id=era.era_id,
                         )
                     )
                     continue
+                complete_dates += 1
                 if verdict == IDENTITY_VIOLATED:
                     # Recorded, not raised, and deliberately symmetric with the
                     # branch above it. This function runs at the first hop,
@@ -1487,6 +1763,16 @@ def validate_accounting_identities(
                 # and a maximum computed over the passing dates alone would fall
                 # as the data got worse.
                 maximum = max(maximum, residual)
+            if not complete_dates:
+                # Counted while iterating rather than intersected beforehand,
+                # because with eras "complete" is a question about one date and
+                # the terms of *its* era. The refusal itself is unchanged: an
+                # identity no reference date can be checked on is a declaration
+                # that cannot fail, which is the degenerate guard this module
+                # exists to refuse.
+                raise DataContractError(
+                    f"{source_id}: identity {name} has no complete reference date"
+                )
             evaluations[f"{source_id}:{name}"] = IdentityEvaluation(
                 source_id=source_id,
                 name=name,
@@ -2029,7 +2315,12 @@ def write_daily_panel(
     Without it a manifest was a claim about a *name*: `baseline._bind_build_manifest`
     could bind a run record to it only by extent -- row count and end dates --
     and said so in the artifact as `build_manifest_binding.kind = "extent"`.
-    Comparing the digest there is that function's to add, not this one's.
+    Since Track B's B12 that function compares this `sha256` with the scored
+    panel's and reports `kind = "digest"` where the manifest carries one, still
+    checking the extent beside it; `"extent"` is now what a manifest written
+    before the digest landed gets. What this function owes that comparison is
+    a digest of the bytes and not of a second rendering, which is the paragraph
+    above.
     """
 
     header = ["date", *build.built_columns]
@@ -2087,11 +2378,13 @@ def verify_daily_panel(panel_path: Path, manifest_path: Path) -> str:
     two have to hash the same thing or the pair is decorative.
 
     Nor is it a comparison of extent. Row count, first date and last date are
-    what `baseline._bind_build_manifest` can compare today, and it reports that
-    as `build_manifest_binding.kind = "extent"` precisely because a file can
-    keep all three while every value in it changes. Verification that agrees
-    with extent verification on every input it will ever see is extent
-    verification.
+    what `baseline._bind_build_manifest` falls back to when a manifest carries
+    no digest, and it reports that as `build_manifest_binding.kind = "extent"`
+    precisely because a file can keep all three while every value in it changes.
+    Verification that agrees with extent verification on every input it will
+    ever see is extent verification. Since B12 the binder prefers this `sha256`
+    where the manifest has one and says `kind = "digest"`; that is the stronger
+    of the two claims, and it exists because this function wrote the field.
 
     A manifest with no `sha256`, or one whose `sha256` is not 64 lowercase hex
     characters, is refused rather than passed. Every manifest written before
