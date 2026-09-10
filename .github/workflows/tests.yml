@@ -11,14 +11,27 @@ permissions:
 
 jobs:
   suite:
-    name: unit tests
+    name: unit tests (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    # Every interpreter the declaration admits, and both of the two the tracks
+    # actually run. This job was pinned to a single "3.12" until 10 Sep, on
+    # which the suite runs all 700 tests and fails exactly one -- the guard that
+    # enforces requires-python = ">=3.9,<3.11" -- so the badge at the top of
+    # README.md was red for a version the project does not claim to support,
+    # and no CI run had ever exercised 3.9 at all. A matrix is also the honest
+    # answer to "should both tracks run the same interpreter": measured on
+    # 7b8f0c9, 3.9.23 and 3.10.20 are green and identical, so parity by decree
+    # was never the check -- this is.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "${{ matrix.python-version }}"
 
       # No install step: the project is stdlib-only by contract. If this job
       # ever needs a `pip install`, that is a dependency decision for the human,

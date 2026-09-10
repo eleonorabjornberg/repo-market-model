@@ -64,9 +64,12 @@ One block, then stop and report. Never two.
 Every new guard gets a recorded mutation.
 
 - Run it in a **disposable copy under `$HOME`**, never in the mount.
-- Copy `data/`, `.github/`, `metadata/`, `.gitignore`, the root Markdown and
+- Copy `data/`, `.github/`, `.claude/`, `metadata/`, `.gitignore`, the root Markdown and
   `docs/PROJECT_STATUS.md` into that copy. The docs-freshness guard reads the last three
-  and their absence is a kill that looks real and is not.
+  and their absence is a kill that looks real and is not. **`.claude/` was missing from
+  this list for three rounds**, and its absence costs seven errors in an otherwise green
+  control -- a red control that looks like a finding and is a missing directory. Both
+  tracks reported it and worked around it; the list is the thing that was wrong.
 - `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`. **Unmutated control green before and
   after.**
 - Record the **exception type**, not just that something went red. A mutation that kills
@@ -97,9 +100,14 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 
 ## Working rules
 
-- **Stdlib only. No install step. Python 3.10**, declared in `pyproject.toml`; the package
-  does not import on 3.11 and that is a known, unfixed finding, not something to fix inside
-  another block.
+- **Stdlib only. No install step. Python 3.9 or Python 3.10**, which is what
+  `pyproject.toml` declares -- `requires-python = ">=3.9,<3.11"`. This line said "Python
+  3.10" alone for several rounds, which is narrower than the declaration and made a track
+  running 3.9.6 look out of contract. Measured on `7b8f0c9`: 3.9.23 and 3.10.20 both run
+  the whole suite green, 3.11 fails at import on a `mappingproxy` default in
+  `baseline.py`, and 3.12 and 3.13 run everything and fail only the guard that enforces
+  this declaration. So the upper bound is right about 3.11 and wrong about 3.12; widening
+  it waits on the `baseline.py` fix and is not something to fix inside another block.
 - Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
 - **The frozen funding panel is gitignored and is not in your worktree.** No block may
   depend on reading it. Fixtures only.
