@@ -107,7 +107,8 @@ would be the loosening, and is not what this says.
 > explained by a one-sided identity break running 2024-06 to 2026-02, beginning
 > exactly at the `n_mfp2`-to-`n_mfp3` form-version boundary. **That break is a
 > finding against the ingestion or the filings and is not this number's to
-> absorb.** It is open.
+> absorb.** It is answered below, under "The 2024-06 identity break is in the
+> filings", and the answer leaves this number where it is.
 
 The current assets-to-liabilities identity uses an absolute tolerance of USD 0.5
 billion. An absolute bound calibrated on a multi-trillion-dollar cross-section can
@@ -207,6 +208,84 @@ before the question came up. A first attempt at this section's decision changed 
 number as well, on the strength of the Track A memo and a stale open-item list, and had
 to be split back apart — this file is the record that was overridden, and it is tracked
 precisely so that cannot happen quietly.
+
+## The 2024-06 identity break is in the filings, and it is one cash line
+
+The calibration above left one thing open and called it the largest thing open: from
+2024-06 to 2026-02 the identity breaks one-sidedly in all 21 months, assets exceeding
+liabilities plus net assets, beginning exactly at the declared `n_mfp2`-to-`n_mfp3`
+boundary. **It is the filings.** The adapter reads what the filers filed.
+
+**The finding about this repository is the unit the identity is evaluated on.** The
+verdict in `src/repo_model/data.py` is taken over the aggregated cross-section: one
+residual per reference date, summed across every reporting series. An eight-billion-dollar
+defect in one filer's balance sheet arrives at that verdict as a single number attached to
+a whole month, arithmetically indistinguishable from three hundred funds each rounding the
+same way — so the question "is this the bound or the data" could not be asked of the data
+at all. Evaluated one filing at a time it answers immediately.
+
+**The mechanism.** For a small set of series, `TOTALVALUEPORTFOLIOSECURITIES` plus
+`TOTALVALUEOTHERASSETS` already equals `TOTALVALUELIABILITIES` plus `NETASSETOFSERIES`,
+while `CASH` is positive: the filer has counted its cash inside another asset line and
+reports it again on the cash line as a memo. The adapter adds all three asset terms, as
+the form's instructions define them, so the cross-section overstates assets by exactly
+that series' cash. Written as a ratio,
+
+    r = -((securities + other assets) - (liabilities + net assets)) / cash
+
+`r` is 1 when cash is additive and 0 when it is a memo, and the two bands that are neither
+answer are counted rather than folded into the nearest one. On the declared archive set,
+across every archive and era: 75 filings sit at `|r| < 0.10`; 33 sit in the 0.10–0.90
+partial band, of which three fall inside this break's window and none of the three carries
+more than USD 0.3 billion of cash; 28 carry a residual the cash line does not explain at
+all, and **not one of those 28 is inside the window**. The classification is categorical
+rather than a threshold anybody chose, which is the only reason it is worth stating as
+one.
+
+**The population.** 64 of the 75 memo filings fall in the 20 consecutive report months
+2024-06 to 2026-01, across ten distinct series; the run's twenty-first month, 2026-02,
+carries none and is a residual of about USD 1 billion with no memo filer in it. They
+concentrate in two fund families — one series, `S000000128`, appears in 19 of those 20
+months and carries up to USD 9.6 billion of cash, and a second family contributes
+intermittently. **It is not new and it is not
+random: it recurs at form transitions.** The same shape appears in 2016-06, 2016-09 and
+2016-10, in the months immediately after the Form N-MFP2 relabelling, and in 2018-11, in
+the same fund family. What is new after 2024-06 is that it runs for twenty months without
+a gap and at ten times the size.
+
+**What it accounts for, and what it does not.** Removing the memo filings' cash from the
+asset side takes the monthly residual over those 21 months from a median of about USD 8.6
+billion to about USD 1.0 billion, and from 1035 ppm of scale at the median and 2597 ppm at
+its worst to about 117 and 247. What survives is a residual still positive in 20 of the
+21 months, larger than the two-sided ±0.5 billion of the months on either side of the
+window. **The cash line explains the size of the break and not the whole of its sign**,
+and the remainder is not claimed to be explained here.
+
+**Decided: this repository does not correct a filer's arithmetic.** Netting the memo cash
+out of the asset side would be the adapter deciding what a filer meant, on the same
+argument the decimal-comma hazard above is deliberately left unfixed. Three things follow
+instead.
+
+- **The identity is evaluated per reporting entity, not only per cross-section.** A
+  per-entity verdict is what makes this defect a named filing rather than a month, and it
+  is what any future one will surface as. That is a change to the adapter and to the
+  quality report, and it is queued for Track A rather than taken here.
+- **The tolerance stays where the calibration left it.** Nothing above changes the bound;
+  the break was never the bound's to absorb, and it is now attributed rather than absorbed.
+- **`mmf_cash` and `mmf_other_assets` are not disjoint for the affected filings**, and any
+  downstream sum of the three asset terms over those months inherits the overlap. The
+  panel carries both fields as filed.
+
+**The derivation is a command, not prose.** `scripts/nmfp_identity_residuals.py` resolves
+supersession across archives on `(SERIESID, REPORTDATE)`, assembles split month-ends into
+one report month, evaluates the identity per filing and prints the four bands. It reaches
+the residual by its own path rather than calling the adapter, and it reproduces the
+`tolerance_note`'s three headline figures exactly — the median monthly residual, the
+median ppm and the worst ppm. Two derivations agreeing across independent code is why
+those figures can now be cited rather than merely cited from. It reads `data/raw/`, which
+no clone has, so it is a script and not a test; that is the honest half of the answer to
+the reproducibility complaint recorded above, and the complaint is narrowed rather than
+closed.
 
 ## Treasury-settlement aggregation
 
