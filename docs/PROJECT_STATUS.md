@@ -163,9 +163,10 @@ Stated explicitly, because each is easy to mistake for something stronger.
   90% interval on the paired difference excludes zero in rolling-residual's favour.
   Its window needs a longer minimum history than the ARX records used, so its
   origins are not theirs and the two findings are not paired with each other.
-  The threshold ARX (`--model threshold`) and gradient-boosted conditional
-  quantiles (`--model gbm`, behind the `ml` extra) are built and reachable and
-  have not been scored. The rolling-residual result also makes the interval-coverage finding harder rather than easier: the
+  The threshold ARX (`--model threshold`) is built and can be scored and has not
+  been. Gradient-boosted conditional quantiles (`--model gbm`, behind the `ml`
+  extra) run in `exceedance-backtest` only: `backtest` and `compare` cannot
+  construct them, so they cannot yet be scored against persistence at all. The rolling-residual result also makes the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
@@ -281,9 +282,9 @@ The first two items of every previous revision of this list -- build and freeze 
 panel, and backfill the archive history -- have been done, and the list now starts
 where they left off.
 
-1. Score the built, unscored challengers -- `--model threshold` and `--model gbm`
-   -- against the persistence benchmark on the frozen panel under `--loss crps`.
-   The models exist; what is missing is the comparison.
+1. Score the built challengers against the persistence benchmark on the frozen
+   panel under `--loss crps`, before building another: `--model threshold` today,
+   `gbm` once `compare` can construct it. The models exist; the comparisons do not.
 2. Make the exceedance metric affordable at panel length, then take it with a
    conditional model rather than with climatology alone.
 3. ~~Settle what a monthly N-MFP cross-section *is*~~ -- done: a split month-end is
@@ -331,7 +332,7 @@ not yet be described as a successful machine-learning forecast of repo stress. A
 frozen funding panel now exists and the persistence benchmark has been measured
 on it, so the phrase that stood here -- that no result rests on real data -- has
 stopped being true. What has not happened is the part that would make it a
-forecast: no challenger has been scored against that benchmark on real data, the
+forecast: no challenger has met Phase 2's exit criterion against that benchmark, the
 headline exceedance metric has been taken on the panel only against climatology,
 and the monthly money-fund panel, though no longer a single cross-section, rests
 on a unit of observation still under revision.
