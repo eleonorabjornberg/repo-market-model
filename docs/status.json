@@ -1,5 +1,5 @@
 {
-  "commit": "cc3c8b2",
+  "commit": "3b6d752",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -19,6 +19,8 @@
     "state": "in progress"
   },
   "run_records": [
+    "compare_persistence_vs_arx_dispersion.json",
+    "compare_persistence_vs_arx_volume.json",
     "exceedance_funding_climatology.json",
     "funding_panel.manifest.json",
     "persistence_funding.json"
