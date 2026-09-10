@@ -506,6 +506,19 @@ them up and overshoots the total. So the column includes TIPS and
 FRNs; a reader who wants nominal coupons alone, or wants to separate bill from coupon
 inventory as the settlement split does, needs the components, not the total.
 
+**The history, checked per era (human, 10 Sep).** The all-series export runs from
+1998-01-28, but `PDPOSGST-TOT` begins **2013-04-03**: before that the report used a
+different series vocabulary, and mapping it onto this column is an open decision, not an
+extract. From 2013-04-03 the total equals its components exactly on every weekly as-of
+date, in three eras whose component sets differ: no FRN bucket until 2015-01-07, and one
+`PDPOSGSC-G11` bucket until 2021-12-29, split into `-G11L21` and `-G21` from 2022-01-05.
+So the thirteen components are the current era's; an identity declared over those
+thirteen alone is not evaluable before 2022. The export stays gitignored under
+`data/raw/fr2004/`; `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` is
+the tracked extract (the total and every non-`C` component, lines copied byte for byte),
+made and re-checked by `scripts/extract_fr2004.py`, whose sidecar records the export's
+digest and the three eras.
+
 Not yet wired. `contract.py` keeps the column in `UNSOURCED_FEATURES` until the FR 2004
 adapter declares its source; the mapping lands with it. Two properties of the export the
 adapter has to respect: each series carries its own as-of date, so no date may be taken
