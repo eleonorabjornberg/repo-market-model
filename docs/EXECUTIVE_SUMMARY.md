@@ -69,9 +69,11 @@ came from.
   `DATA_QUALITY_DECISIONS.md` rather than resolved. One of them — a group of fund
   filings that report cash twice — was found by checking an accounting identity
   the pipeline enforces, which is the system working, and it is still open.
-- **A full rebuild from a clean clone is not yet possible.** Source snapshots and
-  the frozen panel are not redistributed, so an outside reader can reproduce the
-  code paths but not yet every published figure.
+- **A full rebuild from a clean clone is not yet possible.** The raw inputs of the
+  published persistence run are committed and bound by digest, but the command that
+  rebuilds the panel from them and checks it against the record is not yet
+  published, so an outside reader can reproduce the code paths but not yet every
+  published figure.
 - Nothing here is investment advice, a trading system, or a risk-management
   control. It is an academic and portfolio project.
 

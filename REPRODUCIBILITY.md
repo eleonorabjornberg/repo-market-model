@@ -155,17 +155,19 @@ A result is reportable only when its run record identifies:
 ## The published runs
 
 `docs/runs/` holds the frozen funding panel's build manifest and the run records
-measured on it. The panel itself is derived from gitignored raw snapshots and is
-not tracked; the manifest is, so a cloner receives the digests of the snapshots it
+measured on it. The panel itself is not tracked; the manifest is, so a cloner receives the digests of the snapshots it
 was built from, the build cutoff, the columns built and refused, the holes and the
-count of reported dates that are not rows.
+count of reported dates that are not rows. The raw snapshots behind the published
+persistence run are tracked under `tests/fixtures/snapshots/funding_inputs/`, and
+`metadata/funding_panel_manifest.json` binds them, and the panel's own bytes, by digest.
 
 **No figure from those runs is transcribed here, or into any Markdown page in this
 repository.** The record files are the publication. A number typed into a document
 is the same drift as a hand-written date, and `tests/test_docs_freshness.py`
 refuses both. To see the numbers, read the JSON. To reproduce them, rebuild the
-panel from the snapshot digests the manifest names and re-run the command each
-record's `declaration` block states.
+panel from those snapshots, check it against `metadata/funding_panel_manifest.json` with
+`repo_model.data.verify_daily_panel`, and re-run the command each record's
+`declaration` block states. A single reproduction command is not yet published.
 
 Generated panels, journals, and model artifacts belong under `data/processed/` or
 `artifacts/`; both paths are ignored by Git. Publish compact derived tables and

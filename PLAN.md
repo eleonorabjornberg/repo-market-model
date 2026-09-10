@@ -126,21 +126,24 @@ spanning 2018-04-03 to 2026-09-03, with the build manifest and source digests be
 them. No figure from it is transcribed into any Markdown page in this repository, which
 was the harder half to hold and it held.
 
-**Reproduction: not met.** A clone receives two files under `data/`: the twenty-five-row
-fixture and its README. The panel is `data/processed/funding_panel.csv` and is
-gitignored. Rebuilding it is four commands rather than one, and it would still not
-reproduce: `REPRODUCIBILITY.md` records that re-running a download is not guaranteed to
-return an earlier byte stream, and that the FRED adapter acquires the latest revised
-vintage rather than the historical one. The fetch a reader performs is not the fetch
-that produced the record.
+**Reproduction: not met.** The panel is `data/processed/funding_panel.csv` and is
+gitignored, and re-running a download is not guaranteed to return an earlier byte
+stream -- the FRED adapter acquires the latest revised vintage rather than the
+historical one -- so the fetch a reader performs is not the fetch that produced the
+record. The raw inputs the record was built from are therefore tracked under
+`tests/fixtures/snapshots/funding_inputs/`, and `metadata/funding_panel_manifest.json`
+binds each of them, and the panel, by digest; `repo_model.data.verify_daily_panel`
+checks a panel's bytes against that digest and refuses a manifest that carries none.
+What is still open is the rebuild: one command that builds the panel from those inputs,
+verifies it and re-scores it against the record. The clause is met when that
+reproduces, and not before.
 
 **This criterion was briefly rewritten to say it had been met**, on 9 September, by
 pointing at `REPRODUCIBILITY.md`'s command list instead of naming the figures — and the
 rewritten version was not true either. The original stands above because a criterion
 edited after the result is not a criterion, which is the same finding this repository
-records about a guard shaped to fit the thing it measures. What closes the gap is
-committing the panel or its inputs, or publishing a digest a rebuild can be checked
-against; both are open. See `docs/PROJECT_STATUS.md` for what the benchmark does and
+records about a guard shaped to fit the thing it measures. What closes the gap is the
+rebuild described above. See `docs/PROJECT_STATUS.md` for what the benchmark does and
 does not establish.
 
 ## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
@@ -272,11 +275,9 @@ listing blocks here guarantees it. Block-level sequencing lives in the session h
 and in the block briefs; what belongs here is the order of the milestones and why.
 
 1. **Milestone A — the first observable result.** Publication met; **reproduction not
-   met** -- see above. This line said "Met" while the section it pointed to said
-   otherwise, which is the rewrite that section warns against, made one screen further
-   down. Every guard now protects an observable quantity; what is still open is that a
-   cloner cannot rebuild the panel. It closes by committing the raw inputs the panel was
-   built from and checking the rebuild against the published digest.
+   met** -- see above. Every guard now protects an observable quantity. The raw inputs
+   are committed and the published digest has a verifier; the clause closes when a
+   rebuild from those inputs passes it and re-scores to the record.
 2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
    The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
    bound was argued from three orders of magnitude of scale, and the coverage floor and

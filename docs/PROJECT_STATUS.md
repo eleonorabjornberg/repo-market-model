@@ -159,9 +159,13 @@ Stated explicitly, because each is easy to mistake for something stronger.
   points in one family, both constrained to regressors that price the same purge
   gap, because a different gap is a different set of origins and losses at
   different origins are not paired. Of the other models PLAN.md's Phase 2
-  names, a trailing-window residual law (`--model rolling-residual`) now exists
-  and has not been scored on the fetched panel; gradient-boosted quantiles and
-  regime models do not exist yet. It also makes the interval-coverage finding harder rather than easier: the
+  names, the trailing-window residual law (`--model rolling-residual`) has been
+  scored against persistence under `--loss crps`, in
+  `docs/runs/compare_persistence_vs_rolling_residual_w60_mh61_crps.json`, and its
+  90% interval on the paired difference excludes zero in rolling-residual's favour.
+  Its window needs a longer minimum history than the ARX records used, so its
+  origins are not theirs and the two findings are not paired with each other.
+  Gradient-boosted quantiles and regime models do not exist yet. It also makes the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
@@ -343,7 +347,10 @@ evidence, which is Phase 2.
 
 `docs/runs/` holds the frozen panel's build manifest and the records measured on
 it. The panel itself stays gitignored under `data/processed/`; the manifest is
-the committable half, and it reached nobody while it sat beside the panel.
+the committable half, and it reached nobody while it sat beside the panel. That
+manifest predates the panel digest. The one that carries it, beside the tracked
+inputs, is `metadata/funding_panel_manifest.json`; `verify_daily_panel` checks a panel
+against it and refuses the older one rather than passing it.
 
 `docs/runs/` was chosen over `metadata/panels/` -- which would have followed the
 N-MFP archive-manifest precedent -- because `metadata/` is Track A's and a human
