@@ -507,9 +507,13 @@ FRNs; a reader who wants nominal coupons alone, or wants to separate bill from c
 inventory as the settlement split does, needs the components, not the total.
 
 **The history, checked per era (human, 10 Sep).** The all-series export runs from
-1998-01-28, but `PDPOSGST-TOT` begins **2013-04-03**: before that the report used a
-different series vocabulary, and mapping it onto this column is an open decision, not an
-extract. From 2013-04-03 the total equals its components exactly on every weekly as-of
+1998-01-28, but `PDPOSGST-TOT` begins **2013-04-03**. The earlier report used other
+vocabularies (`PDPUSGTNOP` and its components from 2001-07-04, another before), which end
+on 2013-03-27, so no week carries both and a splice could not be checked against an
+overlap. **Decided (10 Sep): the earlier report is not mapped; the column begins
+2013-04-03.** The panel it feeds begins 2018-04-03, bound by SOFR, so nothing reads the
+earlier weeks. A panel reaching before 2013 would reopen this, from the New York Fed's own
+concordance rather than by matching series names. From 2013-04-03 the total equals its components exactly on every weekly as-of
 date, in three eras whose component sets differ: no FRN bucket until 2015-01-07, and one
 `PDPOSGSC-G11` bucket until 2021-12-29, split into `-G11L21` and `-G21` from 2022-01-05.
 So the thirteen components are the current era's; an identity declared over those
