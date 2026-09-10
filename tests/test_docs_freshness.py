@@ -1594,6 +1594,15 @@ def _collapsed(text):
     return " ".join(text.split())
 
 
+def _still_quotes(quoted, value):
+    """True when `value` still says `quoted`, whitespace aside.
+
+    The one comparison `test_every_quoted_registry_claim_is_still_in_the_registry`
+    makes, named so it can be exercised on the input it exists for.
+    """
+    return _collapsed(quoted) in _collapsed(value)
+
+
 class RegistryQuotationTests(unittest.TestCase):
     """A document that quotes the registry must still be quoting it.
 
@@ -1648,12 +1657,33 @@ class RegistryQuotationTests(unittest.TestCase):
        a newline and **no current input exercises it**. Not wrong; unexercised,
        which in this repository is a thing worth saying out loud rather than a
        thing to leave looking tested.
+
+       **Closed 10 Sep.** The comparison is now `_still_quotes`, and
+       `test_whitespace_is_not_part_of_a_quotation` feeds it the input the
+       helper is for: a registry value wrapped with a newline and a double
+       space. Re-run on 3.10.12, disposable copy, control green: `_collapsed`
+       as the identity kills that test alone, `AssertionError`.
     """
+
+    def test_whitespace_is_not_part_of_a_quotation(self):
+        """A registry value re-wrapped by an editor still says what it said."""
+        self.assertTrue(
+            _still_quotes(
+                "fails on a majority of the population it checks",
+                "currently fails on a majority\nof  the population it checks",
+            )
+        )
+        self.assertFalse(
+            _still_quotes(
+                "fails on a majority of the population it checks",
+                "currently fails on most of the population it checks",
+            )
+        )
 
     def test_every_quoted_registry_claim_is_still_in_the_registry(self):
         wrong = []
         for name, document, _published, quoted, field in QUOTATIONS:
-            if _collapsed(quoted) not in _collapsed(field()):
+            if not _still_quotes(quoted, field()):
                 wrong.append(f"{name}: {document} attributes to the registry: {quoted!r}")
         self.assertEqual(
             [],
