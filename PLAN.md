@@ -271,14 +271,21 @@ work blocks: a plan's "next steps" section is the part that goes stale first, an
 listing blocks here guarantees it. Block-level sequencing lives in the session handoff
 and in the block briefs; what belongs here is the order of the milestones and why.
 
-1. ~~**Milestone A — the first observable result.**~~ Met -- see above. Every guard
-   in the repository now protects an observable quantity, not only a fixture.
+1. **Milestone A — the first observable result.** Publication met; **reproduction not
+   met** -- see above. This line said "Met" while the section it pointed to said
+   otherwise, which is the rewrite that section warns against, made one screen further
+   down. Every guard now protects an observable quantity; what is still open is that a
+   cloner cannot rebuild the panel. It closes by committing the raw inputs the panel was
+   built from and checking the rebuild against the published digest.
 2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
-   Two open questions predate the breadth: the shape of the N-MFP identity tolerance,
-   which is currently one absolute bound across cross-sections spanning three orders of
-   magnitude; and the Treasury-settlement aggregation, which collapsed several fields
-   to one and describes a risk it avoids while saying nothing about the one it creates.
-   Both are recorded in `docs/DATA_QUALITY_DECISIONS.md`.
+   The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
+   bound was argued from three orders of magnitude of scale, and the coverage floor and
+   monthly assembly left a 2.9x range, over which scale explains almost none of the
+   residual. What remains on N-MFP is the structural-zero period and the `sec_nmfp`
+   review it gates. The Treasury-settlement aggregation is half done: the limitation
+   states what was combined, and the split into bill, coupon and SOMA components, from
+   fields already in the snapshot, is next. Both are recorded in
+   `docs/DATA_QUALITY_DECISIONS.md`.
 3. **Then widen Phase 1**: primary-dealer positions first, since a declared-but-unsourced
    column is the one gap the contract already raises on, then bill yields and the
    liquidity proxies.
