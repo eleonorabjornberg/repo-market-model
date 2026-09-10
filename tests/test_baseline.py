@@ -3872,8 +3872,10 @@ def _exceedance_implementations(package=repo_model):
     updated in the same commit that added the implementer it was meant to catch.
     Discovered from every module of the package rather than from `baseline`
     alone, for the reason that discovery walks the package: the next
-    implementer is expected to arrive in `src/repo_model/ml.py`, and a factory
-    there would have been outside the only module this ever read.
+    implementer was expected to arrive in `src/repo_model/ml.py`, and a factory
+    there would have been outside the only module this ever read. It did, at
+    block 11 -- `repo_model.ml.gbm_exceedance` -- and it was discovered with no
+    change here, which is the walk doing what it was widened to do.
 
     A factory imported into a second module is counted once, under the module
     that defines it: `__module__` is where a function was defined, not where a
@@ -4143,7 +4145,16 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
             ),
         )
 
-    def test_every_exceedance_predictor_in_baseline_runs_the_conformance_suite(self):
+    def test_every_exceedance_predictor_in_the_package_runs_the_conformance_suite(
+        self,
+    ):
+        """Renamed at block 11. `_exceedance_implementations` reads every module
+        of `repo_model`, not `baseline`, from block 10 onward; `in_baseline` was
+        already false when it was written and the first factory outside
+        `baseline` -- `repo_model.ml.gbm_exceedance` -- is what made the wrong
+        name misleading rather than merely stale. The assertions are unchanged.
+        """
+
         implementations = _exceedance_implementations()
         self.assertIn(
             "repo_model.baseline.climatology_exceedance",
