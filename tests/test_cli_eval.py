@@ -2141,25 +2141,52 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
     ---------------
 
     Unmutated control first, green before and after each. Copied under `$HOME`,
-    never the mount, with `data/`, `.github/`, `metadata/`, `docs/` and also
-    `.gitignore` and the root Markdown -- the freshness guard reads those and
-    their absence is kills that look real and are not. Run with `-B` and
-    `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` cleared between mutations.
-    Exception types recorded rather than counts. The copy skips one test the
-    worktree runs -- the provenance test that reads a commit id, which skips
-    itself with "git is not available here" because a copied tree is not a
-    repository. That is the skip its own message describes and not a kill.
+    never the mount, by `CLAUDE.md`'s `git ls-files --cached --others
+    --exclude-standard` recipe -- every tracked file plus new untracked ones and
+    nothing gitignored. The hand-kept list of directories this paragraph used to
+    describe was short twice and each omission was a red control that looked
+    like a finding. Run with `-B` and `PYTHONDONTWRITEBYTECODE=1`, `__pycache__`
+    cleared between mutations. Exception types recorded rather than counts. The
+    copy skips tests the worktree runs -- among them the provenance test that
+    reads a commit id, which skips itself with "git is not available here"
+    because a copied tree is not a repository. Those are the skips their own
+    messages describe and not kills.
 
       * **The selector resolves every name to the default persistence fitter**
         while still recording the caller's name: `_select_fitter` constructs
         the choice, discards it and returns `(name, fit)`. The command still
         runs, still writes a record, and every field of that record is correct
-        except that the numbers belong to another model. Kills exactly 1 --
-        `test_the_record_names_the_model_that_produced_the_forecasts`,
-        `AssertionError: 4.017881967213107 != 3.5655503282939662`, the ARX
-        record carrying persistence's MAE. **This is the acceptance criterion
-        and the mutation target, and they did not come apart.** Worth saying
-        what stayed green: the refusal test, the parser test and all three
+        except that the numbers belong to another model.
+
+        **Re-measured on `80c4311`, Python 3.9.6: kills 4, not the 1 this
+        record claimed.** The 1 was true when it was written and stopped being
+        true as later blocks gave the selector more callers; a count in a record
+        is a claim about the whole suite, which keeps moving. All four are
+        `AssertionError`:
+
+          - `ContinuousModelSelectorTests.test_the_record_names_the_model_that_-
+            produced_the_forecasts`, `4.017881967213107 != 3.5655503282939662`,
+            the ARX record carrying persistence's MAE. **This is the acceptance
+            criterion and the mutation target, and they have not come apart.**
+          - `ContinuousModelSelectorTests.test_the_windowed_model_is_reachable_-
+            by_name_and_the_record_says_so`, `0.4262295081967213 !=
+            0.39344262295081966` -- the same defect reaching `rolling-residual`,
+            which did not exist when the 1 was measured.
+          - `PairedComparisonCommandTests.test_the_record_carries_the_comparison_-
+            the_declaration_describes`, `0.0 != 0.45233163891914346`: both sides
+            of the comparison resolve to persistence, so the paired difference
+            is exactly zero.
+          - `PairedComparisonCommandTests.test_the_loss_flag_reaches_the_record_-
+            and_defaults_to_the_point_loss`, `0.0 == 0.0` -- the crps and
+            absolute-error readings of a comparison of a model with itself
+            coincide, which is the failure `compare --loss` was built to
+            separate.
+
+        The last two are the more alarming reading: a selector cut this way
+        publishes a comparison document concluding that a challenger ties the
+        benchmark exactly, which is the shape of a real result.
+
+        Worth saying what stayed green: the refusal test, the parser test and all three
         regime-variable tests pass, because the flag is still required, still
         validated and still refused for the right values. Only the wiring
         between the name and the fitter is cut, and only a test that compares

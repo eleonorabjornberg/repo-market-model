@@ -6,8 +6,11 @@ The forecast interface `AGENT_CONTRACT.md` declares --
     predict(feature_row)        -> quantile vector at contract.QUANTILE_LEVELS
     predict_stress(feature_row) -> exceedance vector aligned to the declared taus_bp
 
--- has three implementers here, which is the point of the second one and, in a
-different way, of the third.
+-- has several implementers here, which is the point of the second one and, in
+a different way, of the third. Not counted: this sentence read "three" until
+`FittedRollingResidualLaw` arrived and made it four, and
+`tests/test_contract.py::ForecastInterfaceCoverageTests` discovers the
+implementations rather than reading a list.
 
 `FittedPersistence` is the persistence-plus-empirical-residual baseline. It
 reads exactly one thing from a feature row, `spread_bps`, and fits nothing but a
@@ -606,7 +609,8 @@ class BacktestReport:
     #: reporter that re-derived them would be a second derivation of the number
     #: that shaped the run, and the two could agree today and drift later --
     #: which is how a benchmark comes to report a `purge_days` it did not use.
-    #: `cli_eval` prints these three straight off the report for that reason.
+    #: `cli_eval` prints them straight off the report for that reason, these
+    #: three and `field_sources` below.
     features: Tuple[str, ...] = ()
     sources: Tuple[str, ...] = ()
     #: The `(source_id, field)` pairs the gap was actually sized over, beside
