@@ -19,8 +19,9 @@ repurchase-agreement market.**
   evaluation, and probabilistic scoring — pinball loss, threshold-weighted CRPS, Brier
   skill and calibration diagnostics — against a persistence benchmark.
 - **Result.** The harness is verified end to end on real market data and the persistence
-  baseline is characterised over a multi-year holdout. **No challenger has yet been
-  shown to beat it.**
+  baseline is characterised over a multi-year holdout. **No model has yet met Phase
+  2's exit criterion against it**: the one challenger with a smaller CRPS under-covers
+  its own nominal interval.
 - **Limitation.** The published interval is under its nominal coverage, the money-fund
   channel has open data-quality decisions recorded rather than resolved, and no result
   here is out-of-sample evidence of forecasting skill.
@@ -53,7 +54,7 @@ historical market data.
      the block is regenerated from the run records and checked in the suite. -->
 
 The baseline is characterised and the scoring is verified. **No model has yet
-been shown to beat it**, which is Phase 2's first clause and is open.
+met Phase 2's exit criterion against it**, and that criterion is open.
 
 **Target.** The next-business-day value of the panel field `spread_bps` — the SOFR
 to IORB spread in basis points — forecast from information available at 16:00
@@ -92,12 +93,13 @@ CORP reliability curves with 90% stationary-bootstrap bands, one panel per decla
 
 ## Quick start
 
-Requirements: Python 3.9 or Python 3.10. Both run the suite; the supported range
-is declared once in `pyproject.toml` and is checked against the interpreter that
-runs the suite. 3.11 rejects the package at import. The project intentionally uses
+Requirements: Python 3.9, 3.10 or 3.11. The supported range is declared once in
+`pyproject.toml` and is checked against the interpreter that runs the suite; 3.12
+moves the published figures in their last digits and is outside it. The project intentionally uses
 only the Python standard library for everything a published result depends on, so
 reproducing one needs no package installation. Phase 2's machine-learning candidates live
-in one module behind an optional extra, `pip install '.[ml]'` (numpy and scikit-learn).
+in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
+scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`).
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git
@@ -154,13 +156,11 @@ Implemented:
 Still in progress:
 
 - validating complete SEC Form N-MFP monthly cross-sections;
-- freezing a sufficiently long historical modeling panel;
-- implementing the common fitted-model forecast interface;
-- adding AR/ARX, threshold, and quantile-model challengers; and
+- scoring the threshold and gradient-boosted challengers, and the ARX pair under
+  CRPS, against persistence on the frozen panel; and
 - producing genuine out-of-sample and event-window results.
 
-The only current end-to-end backtest uses a small synthetic fixture. Its output
-tests the harness and must not be interpreted as empirical evidence. See
+See
 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) for the current boundary between
 implemented infrastructure and open research work.
 

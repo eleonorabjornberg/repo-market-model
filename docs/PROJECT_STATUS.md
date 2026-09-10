@@ -130,11 +130,12 @@ a commit message:
 
 These facts show that the research harness operates. They do not establish
 forecast skill -- but the reason has changed twice. It is no longer that the
-sample is synthetic, and it is no longer that no challenger has been scored: two
-have, against the persistence benchmark on the fetched panel, at the same purged
-rolling origins under the same registry-derived gap. Both lost. Skill is a
-*comparison*, and the comparison this repository can now make is one the
-benchmark wins. The figures are in `docs/runs/`, not here.
+sample is synthetic, and it is no longer that no challenger has been scored:
+three have, against the persistence benchmark on the fetched panel under purged
+rolling origins. The two ARX specifications lost on absolute error; the
+trailing-window residual law won on CRPS and under-covers its own interval (below).
+Skill is a *comparison*, and none yet made meets Phase 2's criterion. The figures
+are in `docs/runs/`, not here.
 
 ## Known gaps in the evidence
 
@@ -162,7 +163,9 @@ Stated explicitly, because each is easy to mistake for something stronger.
   90% interval on the paired difference excludes zero in rolling-residual's favour.
   Its window needs a longer minimum history than the ARX records used, so its
   origins are not theirs and the two findings are not paired with each other.
-  Gradient-boosted quantiles and regime models do not exist yet. It also makes the interval-coverage finding harder rather than easier: the
+  The threshold ARX (`--model threshold`) and gradient-boosted conditional
+  quantiles (`--model gbm`, behind the `ml` extra) are built and reachable and
+  have not been scored. The rolling-residual result also makes the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
@@ -278,10 +281,9 @@ The first two items of every previous revision of this list -- build and freeze 
 panel, and backfill the archive history -- have been done, and the list now starts
 where they left off.
 
-1. Score a challenger against the persistence benchmark on the frozen panel. The
-   threshold model is built and reachable; what is missing is the comparison, and
-   it is the one thing standing between a measured benchmark and an empirical
-   claim of any kind.
+1. Score the built, unscored challengers -- `--model threshold` and `--model gbm`
+   -- against the persistence benchmark on the frozen panel under `--loss crps`.
+   The models exist; what is missing is the comparison.
 2. Make the exceedance metric affordable at panel length, then take it with a
    conditional model rather than with climatology alone.
 3. ~~Settle what a monthly N-MFP cross-section *is*~~ -- done: a split month-end is

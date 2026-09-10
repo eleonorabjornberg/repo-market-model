@@ -141,7 +141,7 @@ def key_findings(persistence, exceedance):
     add("     the block is regenerated from the run records and checked in the suite. -->")
     add("")
     add("The baseline is characterised and the scoring is verified. **No model has yet")
-    add("been shown to beat it**, which is Phase 2's first clause and is open.")
+    add("met Phase 2's exit criterion against it**, and that criterion is open.")
     add("")
     add("**Target.** The next-business-day value of the panel field `%s` — the SOFR")
     add("to IORB spread in basis points — forecast from information available at %s")
