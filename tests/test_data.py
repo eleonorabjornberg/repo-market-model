@@ -24,6 +24,7 @@ from repo_model.data import (
     stress_label_threshold,
     validate_publication_gaps,
     validate_accounting_identities,
+    verify_daily_panel,
     write_point_in_time_audit_report,
 )
 
@@ -36,6 +37,13 @@ sys.path.insert(0, str(Path(__file__).parents[0]))
 
 from repo_model.ingest import build_point_in_time_snapshot, fetch_sec_nmfp
 from test_ingest import nmfp_archive, registry_with_nmfp_coverage_floor
+
+
+def manifest_digest(manifest_path: Path) -> str:
+    """The `sha256` a manifest records, read without `data.py` in between."""
+
+    return json.loads(manifest_path.read_text(encoding="utf-8"))["sha256"]
+
 
 
 class DataContractTests(unittest.TestCase):
@@ -1476,9 +1484,15 @@ class PanelDigestTests(unittest.TestCase):
     the convention the run records already use. Comparing it in the binding is
     Track B's and is not here.
 
-    The acceptance criterion is
+    This class now holds two blocks' criteria: the writer's, below, and the
+    reader's, `test_a_panel_one_byte_off_its_manifest_digest_is_refused`, whose
+    record is the second one at the end. Each is the mutation target of its own
+    block; neither is the other's.
+
+    The writing side's acceptance criterion is
     `test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk`, and it is
-    also the mutation target. Its oracle shares no code path with `data.py`:
+    also that block's mutation target. Its oracle shares no code path with
+    `data.py`:
     the test opens the written panel with `path.read_bytes()` and hashes those
     bytes itself. That is the whole point of the test rather than an incidental
     style. The available shortcut is to hash a second rendering of the panel --
@@ -1530,6 +1544,69 @@ class PanelDigestTests(unittest.TestCase):
     total would be a transcribed number with nothing asserting it, which is the
     drift `tests/test_docs_freshness.py` refuses in Markdown and no more
     defensible here.
+
+    ----
+
+    `verify_daily_panel` -- the reading side, and the second criterion
+    ..................................................................
+
+    A manifest that carries a digest nobody checks is a manifest. The writer
+    above put `sha256` in it; this reads it back and compares it with the panel
+    on disk, and refuses a manifest that has no digest to compare rather than
+    reporting the absence of evidence as evidence. The acceptance criterion is
+    `test_a_panel_one_byte_off_its_manifest_digest_is_refused`, and it is also
+    the mutation target.
+
+    The fixture is a panel `load_daily_panel` opens -- `loadable_written_panel`,
+    which prices `iorb` as well so the file has every `REQUIRED_FIELDS` column.
+    That is load-bearing twice over. It keeps the refusal under test the
+    digest's rather than a parser's, and it is what makes the required mutation
+    legible: an extent check that could not open the file at all would raise
+    from the loader on the untampered panel and the kill would be an accident
+    of the fixture rather than a statement about extent.
+
+    Mutation record, 10 September 2026, CPython 3.9.6 on darwin. Applied in a
+    disposable copy under `$HOME`, never in the mount, made from git's own file
+    list (`git ls-files -z --cached --others --exclude-standard` piped through
+    `tar`) as CLAUDE.md now directs -- every tracked file as the working tree
+    has it plus the new untracked ones, nothing gitignored, so no guard is red
+    for want of a path a hand-kept list forgot. `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`. Unmutated control green in the copy before the first mutation
+    and again after the last was reverted; each was reverted before the next was
+    applied, and the branch carries none of them. No fixture named by the
+    writer's record above was touched, so none of its mutations needed re-running.
+
+    1. **The acceptance mutation, the one the brief required.** The digest
+       comparison in `verify_daily_panel` replaced by a comparison of extent:
+       the panel loaded, and `(len(observations), first date, last date)`
+       checked against the manifest's `row_count`, `start_date` and `end_date`.
+       Killed by exactly one test, `AssertionError: DataContractError not
+       raised`: `test_a_panel_one_byte_off_its_manifest_digest_is_refused`. The
+       criterion and the mutation target did not come apart. This is the
+       `build_manifest_binding.kind = "extent"` binding the writer's record
+       names, transplanted into the verifier, and the one-byte panel is the
+       file it cannot tell from the original.
+
+    2. **A missing digest treated as a pass.** `if recorded is None: return ""`
+       in place of the refusal. Killed by exactly one test, `AssertionError:
+       DataContractError not raised`:
+       `test_a_manifest_with_no_digest_is_refused_rather_than_passed`. Every
+       manifest written before the writer's block is such a manifest, so this
+       is the mutation that decides whether "verified" means anything on the
+       panels that exist today.
+
+    3. **A negative result, and it is the reading side of the writer's own
+       trap.** The digest taken over
+       `panel_path.read_text(encoding="utf-8").encode("utf-8")` instead of
+       `panel_path.read_bytes()`. **Nothing in the suite noticed.** The writer's
+       record above kills the same substitution on the writing side, because
+       there the second rendering is a *different* string -- the joined lines
+       without the trailing newline. Here it is a re-decode and re-encode of
+       the same file, and on a POSIX filesystem with an ASCII panel and LF
+       terminators the two byte strings are equal, so no fixture in this
+       repository can separate them. The guard against it is the docstring on
+       `verify_daily_panel` and the fact that the writer hashes the same way;
+       naming that here is worth more than a test that would pass either way.
     """
 
     #: The same `ref_date` fixture source the join tests use, at one declared
@@ -1579,7 +1656,7 @@ class PanelDigestTests(unittest.TestCase):
         return path, json.loads(manifest_path.read_text(encoding="utf-8"))
 
     def test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk(self):
-        """The acceptance criterion, and the mutation target. See the class docstring.
+        """The writing side's acceptance criterion and mutation target. See the class docstring.
 
         The oracle is the file: `path.read_bytes()` and `hashlib` in this test,
         with nothing from `data.py` between them. A manifest whose `sha256` is
@@ -1602,6 +1679,133 @@ class PanelDigestTests(unittest.TestCase):
             "the run records write lowercase hex and the manifest joins them",
         )
         self.assertEqual(len(manifest["sha256"]), 64)
+
+    #: A registry that prices `iorb` as well, so the panel this class writes
+    #: for `verify_daily_panel` carries every `REQUIRED_FIELDS` column and
+    #: `load_daily_panel` can open it. The `fred_macro_latest_vintage` entry is
+    #: the one the splice test uses: a `record_date` lag, which is what makes
+    #: the column priceable at all -- the real source is
+    #: `snapshot_retrieved_at` with no revision policy and is refused.
+    LOADABLE_REGISTRY = {
+        "nyfed_sofr": REGISTRY["nyfed_sofr"],
+        "fred_macro_latest_vintage": {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": 1,
+                "available_time": "16:15",
+                "timezone": "America/New_York",
+                "note": "fixture",
+            }
+        },
+    }
+
+    def loadable_written_panel(self):
+        """Write a panel `load_daily_panel` can open; return `(panel, manifest)` paths.
+
+        `written_panel` above builds `sofr` alone, which is enough to hold a
+        digest but not enough to load: `REQUIRED_FIELDS` wants `iorb` too, and
+        `write_daily_panel`'s docstring says why it writes the file anyway.
+        The refusal under test here must be the digest's and not a loader's, so
+        the panel this fixture writes is one the loader accepts -- before the
+        byte changes and after.
+        """
+
+        days = [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)]
+        rows = [self.observation(day, 4.30 + index / 100) for index, day in enumerate(days)]
+        rows += [
+            PointInTimeObservation(
+                series_id="IORB",
+                ref_date=day,
+                available_at=datetime.combine(
+                    day + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                ),
+                value=4.40,
+                vintage_id=f"i{day.isoformat()}",
+                source_sha="b" * 64,
+            )
+            for day in days
+        ]
+        build = build_daily_panel(
+            rows,
+            self.LOADABLE_REGISTRY,
+            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=("sofr", "iorb"),
+        )
+        self.assertEqual(build.built_columns, ("sofr", "iorb"))
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv"
+        manifest_path = write_daily_panel(build, path, source_shas=("c" * 64,))
+        return path, manifest_path
+
+    def test_a_panel_one_byte_off_its_manifest_digest_is_refused(self):
+        """The reading side's acceptance criterion and mutation target. See the class docstring.
+
+        One byte, chosen so that everything a weaker check could look at
+        survives it: the file is the same length, it has the same three rows
+        between the same two dates, and `load_daily_panel` opens it before and
+        after. What changes is a value -- `sofr` on 6 January -- which is the
+        whole content of the panel and the only thing the digest is for. A
+        verifier that compares row count and end dates passes this file; that
+        is `build_manifest_binding.kind = "extent"` and it is what this
+        function exists not to be.
+        """
+
+        path, manifest_path = self.loadable_written_panel()
+        before = load_daily_panel(path)
+
+        self.assertEqual(verify_daily_panel(path, manifest_path), manifest_digest(manifest_path))
+
+        original = path.read_bytes()
+        self.assertIn(b"2026-01-06,4.31,4.4", original)
+        tampered = original.replace(b"2026-01-06,4.31,4.4", b"2026-01-06,4.41,4.4", 1)
+        self.assertEqual(len(tampered), len(original))
+        self.assertEqual(
+            sum(1 for old, new in zip(original, tampered) if old != new),
+            1,
+            "the fixture must change exactly one byte or it proves something weaker",
+        )
+        path.write_bytes(tampered)
+
+        after = load_daily_panel(path)
+        self.assertEqual(
+            [row.date for row in after],
+            [row.date for row in before],
+            "the extent must survive the change, or extent would have caught it",
+        )
+        self.assertEqual(len(after), len(before))
+
+        with self.assertRaises(DataContractError) as caught:
+            verify_daily_panel(path, manifest_path)
+
+        message = str(caught.exception)
+        self.assertIn(hashlib.sha256(tampered).hexdigest(), message)
+        self.assertIn(manifest_digest(manifest_path), message)
+        self.assertIn(str(path), message)
+        self.assertIn(str(manifest_path), message)
+
+    def test_a_manifest_with_no_digest_is_refused_rather_than_passed(self):
+        """Every manifest written before the digest landed is one of these.
+
+        The failure mode is not that such a manifest is wrong; it is that a
+        verifier can only report it as a pass, and a pass here reads as "these
+        bytes are the ones that were built". Absence of evidence is refused
+        with its own message so that a caller can tell "nothing to compare"
+        from "compared and disagreed".
+        """
+
+        path, manifest_path = self.loadable_written_panel()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        del manifest["sha256"]
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+
+        with self.assertRaisesRegex(DataContractError, "no digest to compare"):
+            verify_daily_panel(path, manifest_path)
+
 
 
 class IdentityVerdictTests(unittest.TestCase):

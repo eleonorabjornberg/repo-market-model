@@ -2017,9 +2017,8 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
     **This class does not decide which kind of absence any month is.** That is a
     review, recorded by a human in `metadata/sources.json` under
     `structural_zeros` with `structural_zeros_reviewed`. What the code decides is
-    the disposition: whether the registry declares the field a structural zero at
-    all, which is the difference between "these funds held none" and "we never
-    found it". `test_a_declared_structural_zero_changes_the_disposition` is what
+    the disposition: whether a declaration covers the month in hand, which is the
+    difference between "these funds held none" and "we never found it". `test_a_declared_structural_zero_changes_the_disposition` is what
     makes that read load-bearing rather than decorative -- it is the first thing
     in this package to read `structural_zeros`, which was declared, shape-checked
     and never consulted.
