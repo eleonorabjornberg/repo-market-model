@@ -58,6 +58,13 @@ One block, then stop and report. Never two.
    owns, that is a stop-and-report, not a judgement call.
 5. Read only the block you were given. Reading ahead is how two criteria end up in one
    block.
+6. **A brief that asks you to fix a defect carries a command that shows the defect on the
+   current tree.** Run it with the preconditions. If it shows nothing, the defect is not
+   there: stop and report, and do not go looking for a version of it that is.
+7. **A negative result is a finding.** "The defect is not there", "the data is complete",
+   "the premise is false" -- whatever closes a question goes into a tracked document or a
+   tracked test docstring in the commit that closes it. A gitignored memo is where a
+   finding goes to be re-derived by the next block.
 
 ## Mutations are the evidence, and they are not optional
 
@@ -114,10 +121,16 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 - **Do not move a published figure.** `docs/runs/` holds records of runs that happened. If
   a change would alter what a re-run produces, that is a report, not a rewrite of the
   record.
-- **Push your own branch only.** Never `main`, never a merge, never a rebase. Hand the human
-  the command.
-- You have no GitHub credentials and no network route to the NY Fed, FRED or ALFRED.
-  Fetches are the human's.
+- **Your base, at session start and only then:** `git fetch origin`, then
+  `git merge --ff-only origin/main`, before you edit anything. It either fast-forwards or
+  refuses. A refusal means your branch holds commits `main` does not -- **stop and report
+  it; do not merge, rebase or repair.** No other merge, ever, and never a rebase. The
+  fast-forward carries CI's `docs/status.json` commits with it, which is why the base is
+  yours to take rather than the human's to prepare: a human fast-forward was stale the
+  moment CI committed behind it.
+- **Push your own branch only**, as `git push origin HEAD`. Never `main`. If the push is
+  refused, the commit stands; say so and hand the human the command.
+- You have no network route to the NY Fed, FRED or ALFRED. Fetches are the human's.
 
 ## This file, and `.claude/`
 
