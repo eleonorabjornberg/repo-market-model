@@ -52,6 +52,26 @@ next.
    name -- which is why the second half exists.
 3. Control, expected to survive: the same import moved inside the first
    function body in `cli_eval.py`. Both tests green.
+
+H5 (the boundary's own imports), same disposable-copy protocol, red first
+against a planted `src/repo_model/ml.py`; on the real tree the file does not
+exist yet and both new tests skip:
+
+4. Planted `ml.py` whose first line after the docstring is `import sklearn`.
+   Kills `test_ml_imports_its_third_party_packages_only_inside_functions`,
+   `AssertionError` naming `ml.py` and `'sklearn'` -- and the forecast
+   conformance walk errors with `ModuleNotFoundError` beside it, which is the
+   collateral this guard exists to name before it happens.
+5. Planted `ml.py` with module-level `import numpy`. Kills the same test
+   alone, `AssertionError`. **Nothing else noticed**: numpy imports on this
+   interpreter, so the walk stays green. That is the case the guard is for.
+6. Controls, expected to survive: the import inside a function; under
+   `if TYPE_CHECKING:`. Green.
+7. Planted `tests/test_ml.py` with a bare module-level `import sklearn`.
+   Kills `test_the_ml_test_module_imports_without_the_extra`, `AssertionError`
+   (discovery also errors). Wrapped in `try: ... except ImportError:` it is
+   green, which is the pattern `REPO_MODEL_REQUIRE_ML` needs to skip rather
+   than fail.
 """
 
 from __future__ import annotations
@@ -183,6 +203,100 @@ class DependencyBoundaryTests(unittest.TestCase):
             "a core module imports repo_model.ml at import time, so the package "
             "no longer imports without the ml extra; move it inside the function "
             "that needs it -- " + "; ".join(breaches),
+        )
+
+    # -- H5: inside the boundary, the extra is reached only when it is used --
+
+    def _module_level_third_party(self, relative):
+        """Third-party imports that run when `relative` is imported, with lines.
+
+        An import inside a function runs when the function does. One under
+        `if TYPE_CHECKING:` never runs. One inside a `try` whose handlers catch
+        `ImportError` runs but cannot fail the import. Everything else at
+        module level runs at import and fails it on an interpreter without the
+        extra -- and `repo_model`'s conformance walk (B9) and `unittest
+        discover` both import every module they find.
+        """
+
+        path = REPO_ROOT / relative
+        if not path.exists():
+            self.skipTest(f"no {relative} yet; the guard waits for the file")
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        local = self._test_modules() | {PACKAGE}
+        found = []
+
+        def guarded_try(node):
+            for handler in node.handlers:
+                names = []
+                if handler.type is None:
+                    return True
+                kinds = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
+                for kind in kinds:
+                    names.append(getattr(kind, "id", getattr(kind, "attr", "")))
+                if {"ImportError", "ModuleNotFoundError", "Exception"} & set(names):
+                    return True
+            return False
+
+        def type_checking(node):
+            test = node.test
+            return getattr(test, "id", getattr(test, "attr", None)) == "TYPE_CHECKING"
+
+        def walk(node):
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                    continue
+                if isinstance(child, ast.If) and type_checking(child):
+                    walk_body(child.orelse)
+                    continue
+                if isinstance(child, ast.Try) and guarded_try(child):
+                    for part in (child.handlers, child.orelse, child.finalbody):
+                        walk_body(part)
+                    continue
+                if isinstance(child, ast.Import):
+                    names = [alias.name for alias in child.names]
+                elif isinstance(child, ast.ImportFrom) and not child.level:
+                    names = [child.module or ""]
+                else:
+                    names = []
+                for name in names:
+                    top = name.split(".")[0]
+                    if top not in local and not _is_stdlib(top):
+                        found.append(f"{relative}:{child.lineno} imports {top!r}")
+                walk(child)
+
+        def walk_body(statements):
+            holder = ast.Module(body=list(statements), type_ignores=[])
+            walk(holder)
+
+        walk(tree)
+        return found
+
+    def test_ml_imports_its_third_party_packages_only_inside_functions(self):
+        """`import repo_model.ml` must succeed on an interpreter without the extra.
+
+        AGENT_CONTRACT.md, working rules: `ml.py` imports numpy and
+        scikit-learn inside the functions that use them. B9 made forecast
+        conformance discovery walk every module of the package, so a
+        module-level `import sklearn` there fails the core suite -- not
+        `tests/test_ml.py` -- on every interpreter without the extra.
+        """
+        breaches = self._module_level_third_party("src/repo_model/ml.py")
+        self.assertEqual(
+            breaches,
+            [],
+            "src/repo_model/ml.py imports a third-party package at import time; "
+            "move it inside the function that uses it -- " + "; ".join(breaches),
+        )
+
+    def test_the_ml_test_module_imports_without_the_extra(self):
+        """`unittest discover` imports `tests/test_ml.py` whether or not it runs it."""
+        breaches = self._module_level_third_party("tests/test_ml.py")
+        self.assertEqual(
+            breaches,
+            [],
+            "tests/test_ml.py imports a third-party package at module level with "
+            "nothing catching ImportError, so discovery fails without the extra "
+            "-- " + "; ".join(breaches),
         )
 
 
