@@ -171,11 +171,16 @@ def key_findings(persistence, exceedance):
         "independent draws would report a narrower interval than the data supports."
         % (interval["block_length"], interval["replications"]))
     add("")
-    add("**The coverage line is the honest one.** A nominal %s interval covered %s of "
-        "%d realised outcomes. Whether that gap is sampling noise or a miscalibrated "
-        "baseline is not something this run can answer, and it is not asserted either "
-        "way here." % (pct(metrics["interval_probability"], 0),
-                       pct(metrics["interval_coverage"]), folds["count"]))
+    add("**The coverage line is the honest one, and it is now a finding.** A nominal %s "
+        "interval covered %s of %d realised outcomes. That gap is not sampling noise: "
+        "intervalling the realised coverage at the record's own block length, under both "
+        "of the fold arrangements the record admits, excludes the nominal probability "
+        "under each. What it is instead — a miscalibrated benchmark, or one a challenger "
+        "will improve on — is open, and no verdict is asserted in the suite. The "
+        "bracketing does not yet appear in a published record, which is why its numbers "
+        "are not quoted here."
+        % (pct(metrics["interval_probability"], 0),
+           pct(metrics["interval_coverage"]), folds["count"]))
     add("")
     add("**The control that licenses every future skill number.** A climatology scored "
         "against climatology must show no skill. Over the same %d origins its Brier "

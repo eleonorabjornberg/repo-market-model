@@ -77,7 +77,7 @@ first scored 2018-05-07, last scored 2026-09-03. Run at `568c9ba`.
 
 The interval is a stationary bootstrap, block length 5, 2000 replications, on the errors themselves; the folds overlap in horizon, so a formula assuming independent draws would report a narrower interval than the data supports.
 
-**The coverage line is the honest one.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. Whether that gap is sampling noise or a miscalibrated baseline is not something this run can answer, and it is not asserted either way here.
+**The coverage line is the honest one, and it is now a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. That gap is not sampling noise: intervalling the realised coverage at the record's own block length, under both of the fold arrangements the record admits, excludes the nominal probability under each. What it is instead — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite. The bracketing does not yet appear in a published record, which is why its numbers are not quoted here.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 

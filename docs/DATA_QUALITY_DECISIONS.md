@@ -94,9 +94,14 @@ would be the loosening, and is not what this says.
 > exceeding and a median residual of **123 ppm** of the cross-section, where the
 > calibration counts **80 of 124** refused and a median of **171 ppm** of scale
 > taken as the larger side of the identity, the way the verdict takes it. The
-> maximum agrees at 6395 ppm. **Neither number has been reconciled against the
-> other**, and the reconciliation is a human-side item, not a reason to prefer
-> one; the `tolerance_note` is the one derived after the floor.
+> maximum agrees at 6395 ppm. **Reconciled, on Track A's guidance: the
+> `tolerance_note`'s derivation is the one this repository uses.** Not because it
+> is the later of the two, which was the only argument available while the
+> disagreement stood, but because its denominator is *named* — scale, taken as
+> the larger side of the identity — and it is the denominator the verdict itself
+> takes. "Of the cross-section" names no side. The figures in this section below
+> are the earlier derivation, kept as the record of what was known when they were
+> written and deliberately not restated.
 >
 > What the calibration settled, and this section did not anticipate: the case for
 > a relative bound rested on a scale range that the per-era floor and monthly
@@ -160,12 +165,15 @@ of 123 ppm. `8d77691`, `346d4ff` and `94bf2db` all landed after them, and all th
 the residuals a calibration is computed from — which the paragraph below anticipated in
 as many words, about a calibration that had not yet run. The two derivations agree on the
 extremes, 6395 ppm at 35.14 USD billions, and disagree on the count and the median. The
-later one is the one computed on the current assembly.
+later one is the one computed on the current assembly, and it is the one adopted above.
 
-**Neither derivation is reproducible from a clone.** Both were computed against
-`data/raw/sec_nmfp/`, which is gitignored, and published as prose; nothing in the suite
-can re-derive either. That is why the disagreement above is settled by commit order rather
-than by recomputation, and it is the open item this section leaves behind.
+**Neither derivation was reproducible from a clone when this was written.** Both were
+computed against `data/raw/sec_nmfp/`, which is gitignored, and published as prose; nothing
+in the suite could re-derive either, which is why the disagreement above stood on commit
+order for as long as it did. `scripts/nmfp_identity_residuals.py` has since re-derived the
+`tolerance_note`'s three headline figures by an independent path, so the adopted derivation
+rests on a command rather than on a date. It still reads `data/raw/`, so a clone still
+cannot run it, and that half of this paragraph stands.
 
 An absolute bound also tightens as the industry grows: 0.5 USD billions is about 141 ppm
 of a 3,500 billion cross-section and about 54 ppm of a 9,200 billion one. A bound that
