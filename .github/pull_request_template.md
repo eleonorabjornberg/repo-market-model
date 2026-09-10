@@ -10,7 +10,7 @@
 - [ ] No file owned by the other track is touched (CI checks this; say so here if it flagged a shared file)
 - [ ] Leakage guards raise `LookAheadError`, never `assert`
 - [ ] Every new guard has a recorded mutation, run with `-B` and `PYTHONDONTWRITEBYTECODE=1`
-- [ ] Stdlib only - no new dependency
+- [ ] Stdlib only outside `src/repo_model/ml.py` - no new dependency without the human
 
 ## Mutations recorded
 

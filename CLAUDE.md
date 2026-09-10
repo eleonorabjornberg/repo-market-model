@@ -107,7 +107,11 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 
 ## Working rules
 
-- **Stdlib only. No install step. Python 3.9 or Python 3.10**, which is what
+- **Stdlib only, except `src/repo_model/ml.py` and `tests/test_ml.py`**, which may use the
+  optional `ml` extra (numpy, scikit-learn) -- `AGENT_CONTRACT.md`, working rules, and
+  `tests/test_dependency_boundary.py`. A new package is the human's decision. Where a
+  worktree has a `.venv/`, run the suite with `.venv/bin/python` in place of `python3`.
+- **Python 3.9 or Python 3.10**, which is what
   `pyproject.toml` declares -- `requires-python = ">=3.9,<3.11"`. This line said "Python
   3.10" alone for several rounds, which is narrower than the declaration and made a track
   running 3.9.6 look out of contract. Measured on `7b8f0c9`: 3.9.23 and 3.10.20 both run

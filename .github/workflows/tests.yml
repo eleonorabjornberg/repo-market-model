@@ -33,9 +33,10 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      # No install step: the project is stdlib-only by contract. If this job
-      # ever needs a `pip install`, that is a dependency decision for the human,
-      # not a CI fix.
+      # No install step, deliberately: this job is the proof that the core
+      # reproduces with no install. The ml extra has its own job below. If this
+      # job ever needs a `pip install`, that is a dependency decision for the
+      # human, not a CI fix.
       #
       # -B and PYTHONDONTWRITEBYTECODE=1 because a stale __pycache__ has already
       # produced one false mutation result on this project. CPython's mtime+size
@@ -50,6 +51,32 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
+        run: python3 -B -m unittest discover -s tests -v
+
+  ml:
+    # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep). The
+    # whole suite, with numpy and scikit-learn installed, and
+    # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
+    # the extra did not install: the core job above cannot see those tests,
+    # and a skip nothing can see is not a test. 3.9 because it is the floor the
+    # extra's version bounds were chosen for.
+    name: unit tests with the ml extra (3.9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install the ml extra
+        run: python3 -m pip install ".[ml]"
+
+      - name: Run the suite
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+          REPO_MODEL_REQUIRE_ML: "1"
         run: python3 -B -m unittest discover -s tests -v
 
   ownership:

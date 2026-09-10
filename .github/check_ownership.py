@@ -73,6 +73,9 @@ HUMAN_ONLY = (
     # that enforces this file has edited around the contract in three moves
     # rather than one.
     "tests/test_ownership_hook.py",
+    # The third-party boundary (10 Sep). A track that may edit the guard on
+    # where numpy may be imported can import it anywhere.
+    "tests/test_dependency_boundary.py",
     # The status emitter and the measured file it writes. Found unowned on
     # 9 Sep, on the commit that introduced them -- the sixth and seventh files
     # this gate had nothing to say about, and the same shape as cli.py and the
@@ -166,6 +169,10 @@ TRACKS = {
             # list -- the same hole as cli.py, one file over. Applying an
             # existing ruling, not making a new one.
             "src/repo_model/baseline.py",
+            # The ml extra's one module and its test (10 Sep): candidate models
+            # are Track B's, and the boundary test keeps third-party imports here.
+            "src/repo_model/ml.py",
+            "tests/test_ml.py",
             # The tests of the five modules above, by the same ruling applied
             # to Track A's tests one entry up. tests/ belonged to neither track
             # wholesale, which the COUNTERPART comment above already names as

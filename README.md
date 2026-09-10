@@ -95,7 +95,9 @@ CORP reliability curves with 90% stationary-bootstrap bands, one panel per decla
 Requirements: Python 3.9 or Python 3.10. Both run the suite; the supported range
 is declared once in `pyproject.toml` and is checked against the interpreter that
 runs the suite. 3.11 rejects the package at import. The project intentionally uses
-only the Python standard library, so no package installation is required.
+only the Python standard library for everything a published result depends on, so
+reproducing one needs no package installation. Phase 2's machine-learning candidates live
+in one module behind an optional extra, `pip install '.[ml]'` (numpy and scikit-learn).
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git

@@ -21,7 +21,8 @@ them.
 - Python 3.9 or Python 3.10, declared as a range in `pyproject.toml` and stated
   nowhere else that is not checked against it. Both were run whole before the
   range was widened to admit them. 3.11 rejects the package at import.
-- no third-party Python packages
+- no third-party Python packages for any published record; the optional `ml` extra
+  (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`
 - commands run from the repository root
 
 Record the code revision before running an experiment:

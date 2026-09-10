@@ -45,6 +45,8 @@ merge.
 | `tests/test_events_metadata_spec.py`, `tests/test_registry_interface.py` | neither | `SHARED` |
 | `docs/runs/` | neither | `SHARED` |
 | `.gitignore` | human | `HUMAN_ONLY` |
+| `src/repo_model/ml.py`, `tests/test_ml.py` | Track B | forbidden to `feature/data-layer` (10 Sep, with the `ml` extra) |
+| `tests/test_dependency_boundary.py` | human | `HUMAN_ONLY` |
 
 **A test goes with the module it guards.** `ingest.py` was forbidden to Track B
 and the test saying what `ingest.py` must do was not, so the gate blocked the
@@ -167,8 +169,18 @@ written before either track starts producing models.
 - Each agent works only in its own worktree. Do not `cd` into the other.
 - Do not edit files owned by the other track, even to fix an obvious bug.
   Report it instead.
-- Do not add third-party dependencies. The baseline runs on the standard
-  library and that property is load-bearing for reproducibility.
+- **Third-party packages live in `src/repo_model/ml.py` and nowhere else.**
+  Decided by the human on 10 September 2026, for phase 2's candidate models.
+  They are the optional `ml` extra in `pyproject.toml` (numpy, scikit-learn);
+  adding another is the human's decision. Every other module -- data layer,
+  benchmarks, evaluation, the CLI -- stays standard-library only, and that is
+  load-bearing for reproducibility: every record under `docs/runs/` reproduces
+  with no install. A core module reaches `repo_model.ml` only from inside a
+  function, so the package imports without the extra.
+  `tests/test_dependency_boundary.py` enforces both halves. `tests/test_ml.py`
+  skips when the extra is absent and **fails instead when
+  `REPO_MODEL_REQUIRE_ML=1`**, which the CI `ml` job sets: a skip nothing can
+  see is not a test.
 - Raw and processed data stay out of git. Code and metadata are committed.
 - A model that does not beat persistence out of sample is reported as such
   and kept in the results. Failed specifications are published, per
