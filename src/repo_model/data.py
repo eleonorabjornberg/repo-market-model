@@ -145,7 +145,8 @@ class CrossSectionCoverage:
     Each entry is a `(field, disposition)` pair, the same shape as
     `submission_types` above, where `disposition` is one of
     `DERIVED_ABSENCE_DECLARED_ZERO` or `DERIVED_ABSENCE_UNDECLARED` -- whether
-    the source registry declares that field a structural zero at all. That is
+    the registry's structural-zero declaration for that field covers this
+    cross-section's own `ref_date`, not whether one exists at all. That is
     the difference between "these funds held no Fed ON RRP" and "we never found
     it", which is the sentence the published limitation says this repository
     cannot currently write. It is recorded and never resolved: no `0.0` row is
@@ -1085,13 +1086,14 @@ def declared_coverage_floor(
 
 # The two readings of a derived field that ran and matched nothing. They are the
 # two halves of the sentence the published limitation says this repository cannot
-# write, and the only thing that separates them is whether the registry declares
-# the field a structural zero -- which is a reviewer's judgement recorded in
-# `metadata/sources.json`, not something a parser can conclude from an empty
-# match.
+# write, and the only thing that separates them is whether the registry's
+# declaration for that field covers the month in hand -- which is a reviewer's
+# judgement recorded in `metadata/sources.json`, not something a parser can
+# conclude from an empty match.
 #
 # Neither one is a zero. A declared structural zero means a reviewer has said the
-# true value is zero for a stateable reason; it still does not license this
+# true value is zero, over a stated period, for a stateable reason; it still does
+# not license this
 # adapter to write a `0.0` row, because a row is an observation and there was
 # none. The declaration is what lets a *reader* treat the gap as a zero, at the
 # point where they can also see who said so and on what grounds.
@@ -2012,3 +2014,68 @@ def write_daily_panel(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return manifest_path
+
+
+def verify_daily_panel(panel_path: Path, manifest_path: Path) -> str:
+    """Check a panel's bytes against the `sha256` its manifest records.
+
+    Recomputes the SHA-256 of `panel_path` as it is on disk and compares it
+    with the manifest's `sha256`, the field `write_daily_panel` writes. Returns
+    the digest they agreed on. Raises `DataContractError` on disagreement,
+    naming both digests and both paths, because "a digest did not match" is
+    unactionable without knowing which file and which claim.
+
+    The digest is taken over `panel_path.read_bytes()` and nothing else. Not
+    over the panel loaded and re-rendered, and not over its text: a digest over
+    a second rendering is a claim about a string that was never the file, and
+    it stays green through exactly the encoding, line-terminator and write
+    drift a digest exists to catch. `write_daily_panel`'s docstring makes the
+    same point from the writing side; this is the reading side of it, and the
+    two have to hash the same thing or the pair is decorative.
+
+    Nor is it a comparison of extent. Row count, first date and last date are
+    what `baseline._bind_build_manifest` can compare today, and it reports that
+    as `build_manifest_binding.kind = "extent"` precisely because a file can
+    keep all three while every value in it changes. Verification that agrees
+    with extent verification on every input it will ever see is extent
+    verification.
+
+    A manifest with no `sha256`, or one whose `sha256` is not 64 lowercase hex
+    characters, is refused rather than passed. Every manifest written before
+    the digest landed is such a manifest, and "there was no digest to compare"
+    is not "the digest matched" -- a verifier that returns successfully on one
+    of them reports the absence of evidence as evidence.
+
+    The manifest's own `"path"` is deliberately not consulted. It records where
+    the panel was written, which is an absolute path from a machine that may
+    not be this one; binding on it would make a verified panel unverifiable the
+    moment it moved, and it says nothing about the bytes either way.
+    """
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise DataContractError(f"{manifest_path}: manifest is not valid JSON: {exc}")
+    if not isinstance(manifest, dict):
+        raise DataContractError(f"{manifest_path}: manifest is not a JSON object")
+
+    recorded = manifest.get("sha256")
+    if recorded is None:
+        raise DataContractError(
+            f"{manifest_path} carries no 'sha256', so there is no digest to compare "
+            f"against {panel_path}; a manifest written before the digest landed is "
+            "refused rather than passed"
+        )
+    if not isinstance(recorded, str) or not SHA256_PATTERN.match(recorded):
+        raise DataContractError(
+            f"{manifest_path}: 'sha256' is {recorded!r}, not 64 lowercase hex "
+            f"characters, so there is no digest to compare against {panel_path}"
+        )
+
+    computed = hashlib.sha256(panel_path.read_bytes()).hexdigest()
+    if computed != recorded:
+        raise DataContractError(
+            f"{panel_path} hashes to {computed}, but {manifest_path} records "
+            f"{recorded}. The panel is not the file the manifest describes"
+        )
+    return computed
