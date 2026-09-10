@@ -132,7 +132,7 @@ These facts show that the research harness operates. They do not establish
 forecast skill -- but the reason has changed twice. It is no longer that the
 sample is synthetic, and it is no longer that no challenger has been scored:
 three have, against the persistence benchmark on the fetched panel under purged
-rolling origins. The two ARX specifications lost on absolute error; the
+rolling origins. The two ARX specifications lost on absolute error and on CRPS; the
 trailing-window residual law won on CRPS and under-covers its own interval (below).
 Skill is a *comparison*, and none yet made meets Phase 2's criterion. The figures
 are in `docs/runs/`, not here.
@@ -146,13 +146,12 @@ Stated explicitly, because each is easy to mistake for something stronger.
   by a finding. Two ARX challengers were scored against persistence on the
   fetched panel at paired origins -- one reading SOFR volume, one reading the
   p25/p75 dispersion -- and persistence carried the smaller absolute error in
-  both, with neither 90% interval on the paired difference including zero. Both
-  records were scored under the absolute-error loss, which reads only the centre
-  of each forecast; `compare --loss crps` now scores the whole law, and neither
-  comparison has been re-run under it.
-  `docs/runs/compare_persistence_vs_arx_volume.json` and
-  `docs/runs/compare_persistence_vs_arx_dispersion.json` carry the figures, the
-  origins and the seeds; none of them is transcribed here. **What this does not
+  both, with neither 90% interval on the paired difference including zero.
+  Re-run under `--loss crps`, which scores the whole law rather than its centre,
+  persistence again carried the smaller loss in both, again with neither interval
+  including zero. The `docs/runs/compare_persistence_vs_arx_*` records carry the
+  figures, the origins and the seeds for both losses; none of them is transcribed
+  here. **What this does not
   establish is that nothing beats persistence.** Two ARX specifications are two
   points in one family, both constrained to regressors that price the same purge
   gap, because a different gap is a different set of origins and losses at
@@ -161,8 +160,9 @@ Stated explicitly, because each is easy to mistake for something stronger.
   scored against persistence under `--loss crps`, in
   `docs/runs/compare_persistence_vs_rolling_residual_w60_mh61_crps.json`, and its
   90% interval on the paired difference excludes zero in rolling-residual's favour.
-  Its window needs a longer minimum history than the ARX records used, so its
-  origins are not theirs and the two findings are not paired with each other.
+  The ARX CRPS records were run at the same minimum history, over the same
+  origins, so all three CRPS findings are measured against persistence at one
+  set of origins; no challenger has been compared with another directly.
   The threshold ARX (`--model threshold`) is built and can be scored and has not
   been. Gradient-boosted conditional quantiles (`--model gbm`, behind the `ml`
   extra) run in `exceedance-backtest` only: `backtest` and `compare` cannot
