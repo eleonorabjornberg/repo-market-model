@@ -157,6 +157,89 @@
     "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
     "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json"
   },
+  "nyfed_fr2004": {
+    "access": "public",
+    "coverage": [
+      "primary dealer net outright Treasury positions",
+      "bills and Treasury floating-rate notes",
+      "nominal coupons by maturity bucket",
+      "TIPS by maturity bucket"
+    ],
+    "fields": [
+      "PDPOSGST-TOT",
+      "PDPOSGS-B",
+      "PDPOSGS-BFRN",
+      "PDPOSGSC-L2",
+      "PDPOSGSC-G2L3",
+      "PDPOSGSC-G3L6",
+      "PDPOSGSC-G6L7",
+      "PDPOSGSC-G7L11",
+      "PDPOSGSC-G11L21",
+      "PDPOSGSC-G21",
+      "PDPOSTIPS-L2",
+      "PDPOSTIPS-G2",
+      "PDPOSTIPS-G6L11",
+      "PDPOSTIPS-G11"
+    ],
+    "field_frequencies": {
+      "PDPOSGST-TOT": "weekly",
+      "PDPOSGS-B": "weekly",
+      "PDPOSGS-BFRN": "weekly",
+      "PDPOSGSC-L2": "weekly",
+      "PDPOSGSC-G2L3": "weekly",
+      "PDPOSGSC-G3L6": "weekly",
+      "PDPOSGSC-G6L7": "weekly",
+      "PDPOSGSC-G7L11": "weekly",
+      "PDPOSGSC-G11L21": "weekly",
+      "PDPOSGSC-G21": "weekly",
+      "PDPOSTIPS-L2": "weekly",
+      "PDPOSTIPS-G2": "weekly",
+      "PDPOSTIPS-G6L11": "weekly",
+      "PDPOSTIPS-G11": "weekly"
+    },
+    "frequency": "weekly",
+    "identities": [
+      {
+        "left": ["PDPOSGST-TOT"],
+        "name": "dealer_treasury_total_is_its_declared_components",
+        "right": [
+          "PDPOSGS-B",
+          "PDPOSGS-BFRN",
+          "PDPOSGSC-L2",
+          "PDPOSGSC-G2L3",
+          "PDPOSGSC-G3L6",
+          "PDPOSGSC-G6L7",
+          "PDPOSGSC-G7L11",
+          "PDPOSGSC-G11L21",
+          "PDPOSGSC-G21",
+          "PDPOSTIPS-L2",
+          "PDPOSTIPS-G2",
+          "PDPOSTIPS-G6L11",
+          "PDPOSTIPS-G11"
+        ],
+        "tolerance": {
+          "absolute": 0.000001,
+          "unit": "USD billions"
+        },
+        "tolerance_note": "Exact, and absolute-only for the same reason shareholder_flows_reconcile is: the total is a re-summation of the thirteen terms in the same export, not two independently measured quantities that happen to agree. On the tracked fixture at 2026-08-26 the residual is 5.7e-14 USD billions, which is the double-precision cost of dividing fourteen integers by 1000 and adding thirteen of them, and a bound of a millionth of a billion is the statement that nothing but that is tolerated. The thirteen terms are named one by one and never globbed. The globs PDPOSGSC-* and PDPOSTIPS-* also match the C-suffixed series in the same buckets -- PDPOSGSC-L2C and its siblings -- and summing those in gives 492637 rather than 477607 millions at that date, so a glob does not merely risk overshooting the total, it does overshoot it on the only date this repository can check."
+      }
+    ],
+    "limitation": "One row per series per as-of date, and each row carries its own As Of Date: the tracked 'latest' export mixes 2026-07-31, -08-13, -08-18, -08-20 and -08-26 in one file, so no date may be taken from the file as a whole. A value of '*' marks a figure the New York Fed withheld for confidentiality. It yields no observation -- never 0.0, and never a parse failure -- and the tree carries no record type that distinguishes a suppression from a series the export simply does not contain. The two absence-recording shapes that exist, CrossSectionCoverage.absent_fields and its unmatched_derived_fields, are both attached to a cross-sectional assembly with a declared entity_unit and a coverage floor, which this weekly time series has neither of; giving one to FR 2004 would mean inventing both. So the distinction this adapter can make is the one PDPOSGST-TOT's identity records: a week with a suppressed term evaluates to not_evaluable, naming the term, rather than to violated. The series is not yet a panel column -- contract.py keeps dealer_treasury_position in UNSOURCED_FEATURES -- so nothing here reaches build_daily_panel yet. Only the fourteen fields declared above are read; every other series in the export is ignored rather than parsed, so a suppression or a malformed value in one of them is invisible to this adapter.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:30",
+      "basis": "ref_date",
+      "days": 6,
+      "note": "The lag rests on the New York Fed's published Primary Dealer Statistics release schedule and not on the snapshot, which cannot corroborate it: the tracked fixture's manifest records retrieved_on 2026-09-10 with a null retrieved_at and a null url, so the download time and the source URL are both unknown. Six business days from a Wednesday as-of date is the Thursday of the following week -- 2026-08-26 becomes available 2026-09-03 -- which is the calendar-week-plus-a-day gap the documented schedule describes. The directive that queued this adapter asked for 'calendar days 8' and a worst case of 9, and neither is expressible: src/repo_model/contract.py pins UNIT_FOR_BASIS['ref_date'] to 'business_days', so a calendar_days count on this basis is refused outright, and validate_release_lag requires worst_case_calendar_days to be at least days + 5, which puts the smallest admissible bound at 11 rather than 9. Six business days and eight calendar days name the same Thursday on a week with no holiday, and the business-day form is the one that shifts to Friday when one intervenes, which is what the directive's '(Thursday-holiday shift)' worst case describes. contract.py is human-owned, so both refusals are recorded here rather than worked around; 11 is conservative against 9 in the direction splits.py establishes as safe.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 11
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the FR 2004 reporting instructions; the empty declaration is not a finding. A dealer net outright position is a signed quantity that can legitimately be zero, and '*' is a suppression rather than a zero, so the two questions a review has to separate here are not the ones the money-fund sources posed.",
+    "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+  },
   "sec_nmfp": {
     "access": "public",
     "cross_section": {
