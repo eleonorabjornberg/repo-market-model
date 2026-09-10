@@ -157,6 +157,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    NamedTuple,
     Optional,
     Protocol,
     Sequence,
@@ -3896,16 +3897,132 @@ def _level_key(level: float) -> str:
 # Comparison: two models at the same origins, one resample, one difference
 # --------------------------------------------------------------------------
 
-#: The loss the paired difference is taken over, named once and published in
-#: the record. Absolute error per scored origin, so its mean over the origins
-#: is exactly `BacktestReport.mae_bps` for each side -- which is the quantity
-#: `PLAN.md`'s Phase 2 exit criterion phrases *"beats persistence out of
-#: sample"* on, and the one `mae_bootstrap_interval` already puts an interval
+#: The loss the paired difference is taken over by default, named once and
+#: published in the record. Absolute error per scored origin, so its mean over
+#: the origins is exactly `BacktestReport.mae_bps` for each side -- which is the
+#: quantity `PLAN.md`'s Phase 2 exit criterion phrases *"beats persistence out
+#: of sample"* on, and the one `mae_bootstrap_interval` already puts an interval
 #: around for a single model.
 COMPARISON_LOSS = "absolute_error_bps"
 
+#: The distributional loss, published under the name `BacktestReport` already
+#: reports the same metric under. One spelling for one metric: `backtest` and
+#: `compare` must not be able to disagree about what CRPS is, and the way they
+#: are made unable to is that both of them call `metrics.crps_from_quantiles`
+#: on the contract's fixed grid and both of them label the result `crps_bps`.
+CRPS_COMPARISON_LOSS = "crps_bps"
 
-def _sign_convention(model_a: str, model_b: str) -> str:
+
+def _absolute_error_at(
+    fitted: FittedForecastModel, feature_row: DailyObservation, actual: float
+) -> float:
+    """One origin's absolute error, from the model's own point rule.
+
+    The loss `paired_model_comparison` has always taken, moved behind the
+    selector unchanged so that the default path is the same arithmetic in the
+    same order and every record already published keeps its numbers.
+    """
+
+    return abs(actual - fitted.point_forecast(feature_row))
+
+
+def _crps_at(
+    fitted: FittedForecastModel, feature_row: DailyObservation, actual: float
+) -> float:
+    """One origin's CRPS, from the model's own **quantile vector**.
+
+    `fitted.predict`, not `fitted.point_forecast`. A point mass's CRPS is
+    exactly its absolute error -- `2 * mean pinball` over any grid collapses to
+    `|actual - point|` when every level predicts the same number -- so a CRPS
+    path handed a degenerate vector returns the absolute-error series again and
+    reports a difference of zero between two models whose laws differ. That
+    failure is indistinguishable from a correct implementation finding no
+    difference, which is why it is the mutation recorded against
+    `PairedComparisonTests`.
+
+    The grid is read off the model that produced the vector and then checked
+    against the declaration, exactly as `rolling_persistence_backtest` reads and
+    checks it: a label taken from anywhere but the thing it labels can be wrong
+    while looking right, and a model quantiling at a private grid would publish
+    a loss under a heading it does not belong to.
+    """
+
+    levels = tuple(fitted.levels)
+    if levels != tuple(QUANTILE_LEVELS):
+        raise ValueError(
+            f"the fitted model reports quantile levels {levels}, but the "
+            f"contract fixes them at {tuple(QUANTILE_LEVELS)}; a CRPS at a "
+            "private grid is not comparable across models and the paired "
+            "difference between two such grids is not a difference at all"
+        )
+    return crps_from_quantiles(levels, fitted.predict(feature_row), actual)
+
+
+class _ComparisonLoss(NamedTuple):
+    """What one selectable paired loss is: a name, a heading, and a scorer.
+
+    Three facts about one loss held in one place, because they are three things
+    a record has to agree with itself about. `name` is what the record's `loss`
+    field and its sign convention say; `statistic` is the heading each side's
+    mean is published under -- `mae_bps` for the absolute error, `crps_bps` for
+    the CRPS -- and `at_origin` is what actually scored it. Split across
+    parallel dicts these could drift into a record whose stated loss and whose
+    published mean were two different quantities, each internally correct.
+    """
+
+    name: str
+    statistic: str
+    at_origin: Callable[[FittedForecastModel, DailyObservation, float], float]
+
+
+#: The selectable paired losses, keyed by what the caller and `--loss` spell.
+#:
+#: **Absolute error is the default and stays the default.** Every published
+#: `compare` command and every record under `docs/runs/` was produced without
+#: this argument existing, and a default that moved would silently restate what
+#: those records mean rather than adding to what a new one can say.
+#:
+#: **Why CRPS is the second entry and coverage is not.** Coverage is not a
+#: loss: an interval from minus infinity to plus infinity covers every origin,
+#: so a paired coverage difference rewards the model that says least. CRPS is
+#: proper, it reads the whole predictive law rather than its centre, and it
+#: reduces to absolute error for a point mass -- so the two entries here are
+#: the same functional evaluated on progressively more of the forecast, not two
+#: unrelated numbers. Pinball at one declared level and the interval score are
+#: defensible additions and are not in this dict yet.
+COMPARISON_LOSSES: Mapping[str, _ComparisonLoss] = MappingProxyType(
+    {
+        "absolute-error": _ComparisonLoss(
+            COMPARISON_LOSS, "mae", _absolute_error_at
+        ),
+        "crps": _ComparisonLoss(CRPS_COMPARISON_LOSS, "crps", _crps_at),
+    }
+)
+
+#: The loss a comparison takes when the caller does not choose one. See above:
+#: this value is load-bearing for every record already published.
+DEFAULT_COMPARISON_LOSS = "absolute-error"
+
+
+def _select_comparison_loss(loss: str) -> _ComparisonLoss:
+    """The named loss, or a refusal naming what is available.
+
+    Refused rather than defaulted. A comparison asked for a loss this module
+    does not implement and given the absolute error instead would publish a
+    record whose `loss` field is correct and whose numbers answer a question
+    nobody asked.
+    """
+
+    try:
+        return COMPARISON_LOSSES[loss]
+    except KeyError:
+        raise ValueError(
+            f"unknown paired loss {loss!r}; this module implements "
+            + ", ".join(repr(name) for name in sorted(COMPARISON_LOSSES))
+        ) from None
+
+
+def _sign_convention(model_a: str, model_b: str, loss_name: str) -> str:
     """Which model is subtracted from which, as a sentence naming both.
 
     A signed difference with no statement of direction is a number a reader
@@ -3919,11 +4036,20 @@ def _sign_convention(model_a: str, model_b: str) -> str:
     names, so the sentence stays unambiguous when a run compares two models
     that happen to share a name -- which is the climatology-against-itself
     sanity check, on this path, and a run worth being able to make.
+
+    `loss_name` is the third thing the sentence has to say, and it is passed in
+    rather than read off `COMPARISON_LOSS` because the loss is now selectable.
+    A difference is a difference *of something*: two records reporting `-1.38`
+    under one convention sentence, one of them a gap in absolute error and the
+    other a gap in CRPS, would be two incomparable numbers that a reader has no
+    way to tell apart. Required and undefaulted for that reason -- a defaulted
+    name here would label a CRPS comparison as an absolute-error one on the
+    single path where nobody would look.
     """
 
     return (
-        f"difference = {COMPARISON_LOSS}(model_a={model_a}) - "
-        f"{COMPARISON_LOSS}(model_b={model_b}) at each scored origin; a "
+        f"difference = {loss_name}(model_a={model_a}) - "
+        f"{loss_name}(model_b={model_b}) at each scored origin; a "
         f"positive mean difference means model_a={model_a} carried the larger "
         f"loss over these origins, so model_b={model_b} was the more accurate "
         "of the two on them"
@@ -3970,8 +4096,17 @@ class PairedComparisonReport:
     #: which they differed is refused before the folds are built -- see
     #: `IncomparablePurgeError`.
     purge_days: int
+    #: Which paired loss was taken, as the caller spelled it -- a key of
+    #: `COMPARISON_LOSSES`, not the published name. `loss_name` and
+    #: `loss_statistic` below render the two published spellings from it, so
+    #: the record has one source for what it scored rather than three fields
+    #: that can disagree.
+    loss: str
     #: One loss per scored origin, per model, and their difference. Aligned
-    #: with `folds` by construction: they are appended inside one loop.
+    #: with `folds` by construction: they are appended inside one loop. Under
+    #: `loss`, whichever that is: these are absolute errors on the default path
+    #: and per-origin CRPS on the other, and nothing here is specific to
+    #: either.
     losses_a: Tuple[float, ...]
     losses_b: Tuple[float, ...]
     differences: Tuple[float, ...]
@@ -3979,9 +4114,14 @@ class PairedComparisonReport:
     #: are reported because a difference without its levels is a number a
     #: reader cannot place -- half a basis point between two models at four is
     #: not half a basis point between two models at forty.
+    #:
+    #: Named `mean_loss_*` and not `mae_*`: under `--loss crps` these are mean
+    #: CRPS, and a field called `mae` carrying a CRPS is a number that reads
+    #: correctly and means something else. On the default path the value is
+    #: unchanged and is still exactly `BacktestReport.mae_bps` for that side.
     mean_difference_bps: float
-    mae_a_bps: float
-    mae_b_bps: float
+    mean_loss_a_bps: float
+    mean_loss_b_bps: float
     #: The interval on `mean_difference_bps`, and the resample structure that
     #: produced it. The block length is carried beside the endpoints because an
     #: interval whose resample structure is unstated cannot be reproduced, and
@@ -4004,6 +4144,27 @@ class PairedComparisonReport:
     panel_first_date: date
     panel_last_date: date
 
+    @property
+    def loss_name(self) -> str:
+        """The published name of the loss: what `loss` means to a reader.
+
+        Derived rather than stored, so the record's `loss` field, its sign
+        convention sentence and the heading its two means are published under
+        cannot come apart -- they are three renderings of one selection.
+        """
+
+        return COMPARISON_LOSSES[self.loss].name
+
+    @property
+    def loss_statistic(self) -> str:
+        """The heading each side's mean loss is published under.
+
+        `mae` for the absolute error, `crps` for CRPS. The document and the
+        console each append their own suffix; both read this.
+        """
+
+        return COMPARISON_LOSSES[self.loss].statistic
+
 
 def paired_model_comparison(
     observations: Iterable[DailyObservation],
@@ -4018,6 +4179,7 @@ def paired_model_comparison(
     decision_time: time,
     seed: int,
     minimum_history: int = 20,
+    loss: str = DEFAULT_COMPARISON_LOSS,
 ) -> PairedComparisonReport:
     """Score two continuous models at the same origins and interval the gap.
 
@@ -4060,6 +4222,30 @@ def paired_model_comparison(
     **`mae_bootstrap_interval` is untouched.** The single-model interval keeps
     exactly the meaning it has; this stands beside it.
 
+    **The loss is selectable, because a point loss cannot see a law.** The
+    first thing this function was asked to score was persistence against the
+    trailing-window residual law, which is persistence's point rule with a
+    different predictive distribution around it. Under absolute error the two
+    are the same model: every paired difference is exactly `0.0` and the
+    interval is `[0.0, 0.0]`, which is not a null result but a blind
+    instrument -- `backtest` already tells them apart, because its `crps_bps`
+    reads the whole law. So `--loss crps` scores each side's **quantile
+    vector** through `metrics.crps_from_quantiles` on the contract's fixed
+    grid, which is the same call `rolling_persistence_backtest` makes, so the
+    two commands cannot disagree about what CRPS is.
+
+    Coverage would have been the other candidate and is not a loss: an interval
+    from minus infinity to plus infinity covers every origin, so a paired
+    coverage difference is maximised by the model that says least. See
+    `COMPARISON_LOSSES`.
+
+    **Everything else is loss-agnostic.** One fold loop, one resample draw
+    through one differenced series, one gap refusal. The loss decides what
+    number each origin contributes and nothing else, which is why the seed does
+    not carry it: the resample is a draw of *origins*, the origins are the same
+    under either loss, and two records over the same origins sharing one draw
+    is a property rather than a collision.
+
     Args:
         observations: the panel, ascending by date.
         model_a: the name recorded for the first model. Required and
@@ -4087,6 +4273,10 @@ def paired_model_comparison(
         minimum_history: the first origin scored and the shortest training
             frame either fit is allowed. One value, so the two models see the
             same rows.
+        loss: which paired loss to take, a key of `COMPARISON_LOSSES`.
+            Defaults to `DEFAULT_COMPARISON_LOSS`, the absolute error, so every
+            caller written before this argument existed and every record under
+            `docs/runs/` keeps its numbers and its meaning.
 
     Returns:
         A `PairedComparisonReport`.
@@ -4094,7 +4284,9 @@ def paired_model_comparison(
     Raises:
         IncomparablePurgeError: the two declarations derived different gaps, so
             there is no shared origin set to pair on.
-        ValueError: the panel is too short for `minimum_history`.
+        ValueError: the panel is too short for `minimum_history`, `loss` names
+            a loss this module does not implement, or -- under `crps` -- a
+            fitted model reports a quantile grid other than the declared one.
         SplitError: as `rolling_origin` raises -- a panel whose dates repeat or
             go backwards, or a gap that leaves no origin with `minimum_history`
             training rows behind it.
@@ -4107,6 +4299,11 @@ def paired_model_comparison(
         RegistryContractError: either declaration's fields cannot support a
             safe bound. Track A's refusal, with Track A's message.
     """
+
+    # Before the gap derivation and before the panel, for the same reason the
+    # gap refusal comes first: a run that names a loss this module cannot take
+    # must not fit anything.
+    selected = _select_comparison_loss(loss)
 
     declared_a: Tuple[str, ...] = tuple(features_a)
     declared_b: Tuple[str, ...] = tuple(features_b)
@@ -4173,8 +4370,11 @@ def paired_model_comparison(
 
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         actual = rows[index].spread_bps
-        loss_a = abs(actual - fitted_a.point_forecast(feature_row))
-        loss_b = abs(actual - fitted_b.point_forecast(feature_row))
+        # The selected loss, applied to each side's own fitted model. Both
+        # sides go through the same callable, so a loss that read one model
+        # differently from the other is not expressible here.
+        loss_a = selected.at_origin(fitted_a, feature_row, actual)
+        loss_b = selected.at_origin(fitted_b, feature_row, actual)
         losses_a.append(loss_a)
         losses_b.append(loss_b)
         differences.append(loss_a - loss_b)
@@ -4221,18 +4421,19 @@ def paired_model_comparison(
         field_sources_a=field_sources_a,
         field_sources_b=field_sources_b,
         purge_days=purge,
+        loss=loss,
         losses_a=tuple(losses_a),
         losses_b=tuple(losses_b),
         differences=tuple(differences),
         mean_difference_bps=sum(differences) / count,
-        mae_a_bps=sum(losses_a) / count,
-        mae_b_bps=sum(losses_b) / count,
+        mean_loss_a_bps=sum(losses_a) / count,
+        mean_loss_b_bps=sum(losses_b) / count,
         difference_interval=(lower, upper),
         block_length=block,
         seed=seed,
         replications=BOOTSTRAP_REPLICATIONS,
         level=BOOTSTRAP_LEVEL,
-        sign_convention=_sign_convention(model_a, model_b),
+        sign_convention=_sign_convention(model_a, model_b, selected.name),
         folds=tuple(folds),
         decision_time=decision_time,
         minimum_history=minimum_history,
@@ -4404,16 +4605,25 @@ def paired_comparison_document(
         "provenance": provenance,
         "folds": folds,
         "comparison": {
-            "loss": COMPARISON_LOSS,
+            # What was scored, read off the run rather than restated from a
+            # module constant: the loss is selectable and a record that named
+            # one loss while carrying another would be wrong in the one field a
+            # reader uses to interpret every other one.
+            "loss": comparison.loss_name,
             "sign_convention": comparison.sign_convention,
             "origin_count": len(comparison.differences),
+            # Each side's mean, under the heading its loss earns -- `mae_bps`
+            # for the absolute error, `crps_bps` for CRPS. Not one fixed key:
+            # a mean CRPS published as `mae_bps` is a number that parses, reads
+            # correctly and means something else, and the sibling `backtest`
+            # record already spells both headings this way.
             "model_a": {
                 "model": comparison.model_a,
-                "mae_bps": comparison.mae_a_bps,
+                f"{comparison.loss_statistic}_bps": comparison.mean_loss_a_bps,
             },
             "model_b": {
                 "model": comparison.model_b,
-                "mae_bps": comparison.mae_b_bps,
+                f"{comparison.loss_statistic}_bps": comparison.mean_loss_b_bps,
             },
             "mean_difference_bps": comparison.mean_difference_bps,
             "mean_difference_interval": {

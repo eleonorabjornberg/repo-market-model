@@ -37,6 +37,8 @@ from .baseline import (
     arx_exceedance,
     backtest_document,
     climatology_exceedance,
+    COMPARISON_LOSSES,
+    DEFAULT_COMPARISON_LOSS,
     comparison_seed,
     exceedance_backtest_document,
     fit,
@@ -727,6 +729,17 @@ def _compare(args: argparse.Namespace) -> int:
     would be reached for at exactly the moment it must not be, because the
     obvious way to make two declarations comparable is to overrule one of them.
 
+    **`--loss` selects what the difference is a difference of, and defaults to
+    the absolute error.** The first comparison this command was asked for --
+    persistence against the trailing-window residual law -- reported
+    `mean_difference_bps` of `0.0` with a `[0.0, 0.0]` interval, because the two
+    models share a point rule and differ only in the law around it. That is not
+    a null result, it is a point-only instrument reporting on a distributional
+    change; `backtest` already separates the same pair through `crps_bps`. So
+    `--loss crps` is available and `--loss absolute-error` remains the default,
+    which is what keeps every published `compare` command and every record under
+    `docs/runs/` meaning exactly what it meant before this flag existed.
+
     The file is written only after the run returns, so a refusal -- an unknown
     model name, mismatched gaps, a starved fold -- leaves no artifact behind.
     """
@@ -765,6 +778,7 @@ def _compare(args: argparse.Namespace) -> int:
         decision_time=decision_time,
         seed=seed,
         minimum_history=args.minimum_history,
+        loss=args.loss,
     )
 
     document = paired_comparison_document(
@@ -788,8 +802,18 @@ def _compare(args: argparse.Namespace) -> int:
                 "model_b": comparison.model_b,
                 "sign_convention": comparison.sign_convention,
                 "origin_count": len(comparison.differences),
-                "mae_a_bps": round(comparison.mae_a_bps, 4),
-                "mae_b_bps": round(comparison.mae_b_bps, 4),
+                # Keyed by the loss that produced them, as the record is:
+                # `mae_a_bps` under the default and `crps_a_bps` under CRPS.
+                # A fixed key would put a CRPS on the console under the name of
+                # a mean absolute error, which is the one place a reader is
+                # most likely to copy a number out of.
+                f"{comparison.loss_statistic}_a_bps": round(
+                    comparison.mean_loss_a_bps, 4
+                ),
+                f"{comparison.loss_statistic}_b_bps": round(
+                    comparison.mean_loss_b_bps, 4
+                ),
+                "loss": comparison.loss_name,
                 "mean_difference_bps": round(comparison.mean_difference_bps, 4),
                 "difference_interval_bps": [round(lower, 4), round(upper, 4)],
                 "interval_level": comparison.level,
@@ -1222,6 +1246,20 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             f"refused for the others. Per side, because a window against the "
             f"full sample is the comparison this model exists for",
         )
+    compare.add_argument(
+        "--loss",
+        choices=sorted(COMPARISON_LOSSES),
+        default=DEFAULT_COMPARISON_LOSS,
+        help="what the paired difference is a difference of. "
+        "absolute-error is the default and the behaviour every published "
+        "record was produced under; crps scores each side's whole quantile "
+        "forecast through the same metric --model backtests report, so two "
+        "models sharing a point rule and differing in their law -- "
+        "persistence against rolling-residual -- are separated instead of "
+        "reported as identical. Coverage is deliberately not offered: an "
+        "infinitely wide interval covers every origin, so a paired coverage "
+        "difference rewards the model that says least",
+    )
     compare.add_argument(
         "--report",
         type=Path,

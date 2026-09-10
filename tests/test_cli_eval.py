@@ -3250,6 +3250,26 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         persistence under the challenger's name, reporting a difference of zero
         with a degenerate interval -- looks exactly like the sanity check this
         project treats as evidence that everything is wired correctly.
+
+      * **`--loss` parsed and never passed on** -- `loss=args.loss` dropped
+        from the `paired_model_comparison` call in `_compare`, the flag still
+        accepted and still documented. Kills exactly 1 --
+        `test_the_loss_flag_reaches_the_record_and_defaults_to_the_point_loss`,
+        `AssertionError: 'absolute_error_bps' != 'crps_bps'`.
+
+        This is the shape of defect a handler-layer test exists for and a
+        `baseline` test cannot reach: every number in the mutated record is a
+        correct absolute-error comparison, the sign convention and the `loss`
+        field agree with each other, and the only thing wrong is that the run
+        answered a different question from the one the command line asked. The
+        assertion that bites is on the record's `loss` field rather than on a
+        figure, which is why that field is read first here.
+
+        The copy list this was run under is the one named in
+        `test_baseline.PairedComparisonTests`, which is wider than the list
+        stated a few lines above: `notebooks/`, `examples/` and
+        `pyproject.toml` are also required, or the control is red for reasons
+        that have nothing to do with the mutation.
     """
 
     def run_compare(
@@ -3261,6 +3281,9 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         features_b=None,
         regime_variable_a=None,
         regime_variable_b=None,
+        residual_window_a=None,
+        residual_window_b=None,
+        loss=None,
         report=None,
         registry=None,
     ):
@@ -3288,6 +3311,15 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
             argv += ["--regime-variable-a", regime_variable_a]
         if regime_variable_b is not None:
             argv += ["--regime-variable-b", regime_variable_b]
+        if residual_window_a is not None:
+            argv += ["--residual-window-a", str(residual_window_a)]
+        if residual_window_b is not None:
+            argv += ["--residual-window-b", str(residual_window_b)]
+        # Omitted rather than passed as the default, so that a run that does
+        # not name a loss exercises the parser's default rather than this
+        # helper's copy of it.
+        if loss is not None:
+            argv += ["--loss", loss]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = cli.main(argv)
@@ -3342,10 +3374,10 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
             expected.mean_difference_bps,
         )
         self.assertEqual(
-            record["comparison"]["model_a"]["mae_bps"], expected.mae_a_bps
+            record["comparison"]["model_a"]["mae_bps"], expected.mean_loss_a_bps
         )
         self.assertEqual(
-            record["comparison"]["model_b"]["mae_bps"], expected.mae_b_bps
+            record["comparison"]["model_b"]["mae_bps"], expected.mean_loss_b_bps
         )
         self.assertEqual(
             record["comparison"]["mean_difference_interval"]["lower"],
@@ -3357,6 +3389,53 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         )
         self.assertEqual(record["declaration"]["model_a"]["model"], "persistence")
         self.assertEqual(record["declaration"]["model_b"]["model"], "arx")
+
+    def test_the_loss_flag_reaches_the_record_and_defaults_to_the_point_loss(self):
+        """`--loss` on the command, on the pair the flag exists for.
+
+        `persistence` against `rolling-residual` is the same point rule twice,
+        so the default run must report a paired difference of exactly zero --
+        which is the defect this flag answers rather than a failure -- and the
+        CRPS run must not. The record is read for both halves: the `loss` field
+        and the sign convention name what was taken, and each side's mean is
+        published under the heading its loss earns, so a mean CRPS never
+        appears under a name that says mean absolute error.
+
+        The default is checked by *omitting* the flag, not by passing its
+        value: what has to hold is that a command written before this flag
+        existed still produces the record it produced then.
+        """
+
+        records = {}
+        for loss in (None, "crps"):
+            code, _, err = self.run_compare(
+                model_b="rolling-residual",
+                residual_window_b=5,
+                loss=loss,
+                report=self.tmp / f"compare-loss-{loss}.json",
+            )
+            self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+            records[loss] = json.loads(
+                self.last_report.read_text(encoding="utf-8")
+            )["comparison"]
+
+        default, crps = records[None], records["crps"]
+
+        self.assertEqual(default["loss"], baseline.COMPARISON_LOSS)
+        self.assertIn(baseline.COMPARISON_LOSS, default["sign_convention"])
+        self.assertEqual(default["mean_difference_bps"], 0.0)
+        self.assertIn("mae_bps", default["model_a"])
+
+        self.assertEqual(crps["loss"], baseline.CRPS_COMPARISON_LOSS)
+        self.assertIn(baseline.CRPS_COMPARISON_LOSS, crps["sign_convention"])
+        self.assertNotEqual(crps["mean_difference_bps"], 0.0)
+        self.assertIn("crps_bps", crps["model_a"])
+        self.assertNotIn("mae_bps", crps["model_a"])
+
+        # The origins are the loss's business and nothing else's: the same
+        # declaration prices the same gap and walks the same folds whichever
+        # loss scores them.
+        self.assertEqual(crps["origin_count"], default["origin_count"])
 
     def test_neither_side_of_the_comparison_may_be_omitted(self):
         """The absence of a default is the guard, so this reads the parser.
