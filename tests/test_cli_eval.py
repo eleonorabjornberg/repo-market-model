@@ -768,8 +768,9 @@ class ModelSelectorTests(ConditionalModelHarness):
     ================================================
 
     `tests/test_baseline.py::ExceedancePredictorCoverageTests` already discovers
-    every `ExceedancePredictor` in `baseline` by its return annotation and
-    asserts the covered set equals the discovered set. It gained one assertion
+    every `ExceedancePredictor` in the `repo_model` package by its return
+    annotation -- in `baseline` alone until the block that widened the walk --
+    and asserts the covered set equals the discovered set. It gained one assertion
     over that same set -- every implementer is reachable by name from
     `cli_eval.MODEL_FACTORIES`, by factory identity rather than by key
     spelling -- so a fourth implementer the command line cannot run fails an
