@@ -196,7 +196,7 @@ from repo_model.baseline import (
     threshold_exceedance,
     twcrps_weights,
 )
-from repo_model.metrics import MetricError, brier_skill_score
+from repo_model.metrics import MetricError, brier_skill_score, crps_from_quantiles
 from repo_model.contract import (
     QUANTILE_LEVELS,
     UndeclaredFeatureError,
@@ -4578,6 +4578,21 @@ OFFSET_BPS = 3.0
 #: pinned so the reader can see the paired difference does not depend on it.
 COMPARISON_PURGE = 2
 
+#: The trailing window the residual-law side of the CRPS comparison is fitted
+#: at. It has to be shorter than the residuals the *shortest* training frame
+#: carries -- a 20-row frame carries 19 -- or `fit_rolling_residual_law`
+#: refuses the fit; and it has to be short enough that the windowed law and the
+#: expanding full-sample law are actually different samples, because a window
+#: covering the whole frame is persistence's own law under a challenger's name
+#: and the two sides would then agree under every loss including this one.
+CRPS_COMPARISON_WINDOW = 5
+
+#: The seed the CRPS comparison draws its resample from. A literal is right
+#: here and wrong in the CLI: `comparison_seed` derives the published one from
+#: the run's identity, and a test that called it would be restating that
+#: derivation rather than testing the loss.
+CRPS_COMPARISON_SEED = 20260910
+
 
 def rising_frame(count=44, seed=20260909):
     """A panel that rises every day, by a varying amount that is never small.
@@ -4718,14 +4733,47 @@ class PairedComparisonTests(unittest.TestCase):
     different origins are not paired however carefully they are subtracted.
 
     **The sign convention, and why it is in the artifact.** The difference is
-    `absolute_error(model_a) - absolute_error(model_b)` at each origin, so a
-    positive mean means `model_a` carried the larger loss and `model_b` was the
-    more accurate of the two. `model_a` is written first because that is the
-    order the flags read and the order the sentence reads, and the sentence is
-    rendered from the two names the run was given and published in the record:
-    *a signed difference with no statement of direction is a number half its
-    readers will read as the opposite conclusion, and a docstring is not
-    shipped with the record while the record is what a later reader has.*
+    `loss(model_a) - loss(model_b)` at each origin, so a positive mean means
+    `model_a` carried the larger loss and `model_b` was the more accurate of
+    the two. `model_a` is written first because that is the order the flags
+    read and the order the sentence reads, and the sentence is rendered from
+    the two names the run was given *and the loss it was taken over* and
+    published in the record: *a signed difference with no statement of
+    direction is a number half its readers will read as the opposite
+    conclusion, and a docstring is not shipped with the record while the record
+    is what a later reader has.*
+
+    **The loss is selectable, and the reason is a reproduced finding.** On the
+    sample panel, `compare --model-a persistence --model-b rolling-residual
+    --residual-window-b 5` reported `mean_difference_bps` of `0.0` with a
+    `[0.0, 0.0]` interval. The two models are the *same point rule* --
+    `FittedRollingResidualLaw.point_forecast` returns the last observed spread,
+    which is persistence's -- and differ only in the residual sample the
+    predictive law is read off. A paired absolute error can only ever see the
+    centre, so it reported the challenger as identical to the benchmark on
+    exactly the property the challenger changes. `backtest` already separated
+    the pair, through `crps_bps`. So `--loss crps` scores each side's whole
+    quantile vector through `metrics.crps_from_quantiles` on the contract's
+    grid -- the same call `rolling_persistence_backtest` makes, so the two
+    commands cannot disagree about what CRPS is -- and `absolute-error` stays
+    the default, which is what keeps every record under `docs/runs/` meaning
+    what it meant.
+
+    **Coverage was the other candidate and is not a loss.** An interval from
+    minus infinity to plus infinity covers every origin, so a paired coverage
+    difference is maximised by the model that says least. CRPS is proper, reads
+    the whole law, and reduces to absolute error for a point mass, so the two
+    entries in `baseline.COMPARISON_LOSSES` are one functional evaluated on
+    progressively more of the forecast rather than two unrelated numbers.
+
+    **The seed deliberately does not carry the loss**, though
+    `comparison_seed`'s own docstring argues that two records reporting
+    different things should not silently share a resample stream. Two losses
+    over one declaration score *the same origins*: the bootstrap draws origin
+    indices, and one draw reaching both loss series is the same property the
+    pairing itself rests on. Adding the loss to the seed material would also
+    change the published seed of every absolute-error record already under
+    `docs/runs/`, which is a rewrite of a record of a run that happened.
 
     **What the interval does not license.** The record reports a difference and
     an interval around it and stops there. `REPRODUCIBILITY.md`'s
@@ -4746,6 +4794,18 @@ class PairedComparisonTests(unittest.TestCase):
     contributes seven errors to an otherwise green control without it. The copy
     list in `CLAUDE.md` predates the hook and does not name it; that is a
     `HUMAN_ONLY` page, so it is reported rather than edited.
+
+    **Two more paths are missing from that list, found the same way.**
+    `notebooks/` and `examples/` are read by `tests/test_generated_results.py`,
+    and a copy without them fails with `FileNotFoundError:
+    notebooks/01_portfolio_walkthrough.ipynb` -- a red control that looks like
+    a finding and is a missing directory, which is the exact shape `.claude/`
+    had. `pyproject.toml` belongs there too: the docs-freshness guard reads the
+    Python version out of it. The full list this class's mutations were run
+    under is `src/`, `tests/`, `data/`, `.github/`, `.claude/`, `metadata/`,
+    `docs/`, `scripts/`, `notebooks/`, `examples/`, `.gitignore`,
+    `pyproject.toml` and the root Markdown. Reported, not edited: `CLAUDE.md`
+    is `HUMAN_ONLY`.
 
       1. **Each model's loss series bootstrapped with its own index draw**, and
          the point estimates and endpoints differenced afterwards --
@@ -4787,9 +4847,65 @@ class PairedComparisonTests(unittest.TestCase):
          every loss in it is a real loss from a real fit. Nothing in the
          artifact disagrees with itself, which is why this is a refusal and not
          a warning.
+      3. **The CRPS path handed a degenerate quantile vector** -- the point
+         forecast repeated at every declared level, `crps_from_quantiles(levels,
+         tuple(point for _ in levels), actual)` in `_crps_at` in place of
+         `fitted.predict(feature_row)`. **This is the selectable-loss block's
+         acceptance mutation, and its target is the acceptance test**; they did
+         not come apart.
+
+         It is the trap the whole test is shaped around, because it is the one
+         wrong implementation that *looks right*. A point mass's CRPS is
+         exactly its absolute error -- `2 * mean pinball` over any grid
+         collapses to `|actual - point|` when every level predicts the same
+         number -- so this mutation returns the absolute-error series under the
+         CRPS heading, reports `0.0` again for two models sharing a point rule,
+         and is indistinguishable from a correct implementation that happened
+         to find no difference.
+
+         Kills exactly 2, both `AssertionError`:
+         `test_the_crps_loss_separates_models_that_share_a_point_rule`,
+         `AssertionError: 0.0 == 0.0 : the two laws differ, so a proper loss
+         that reads the whole forecast must separate them`; and
+         `test_cli_eval.PairedComparisonCommandTests.test_the_loss_flag_reaches_the_record_and_defaults_to_the_point_loss`,
+         `AssertionError: 0.0 == 0.0`. The per-origin recomputation in the
+         acceptance test would have caught it too, from the other side -- it
+         asserts what the loss *is* rather than that it moved -- but the
+         separation assertion is reached first.
+
+      4. **Each side's mean published under a fixed `mae_bps` heading**
+         regardless of loss, `"mae_bps": comparison.mean_loss_a_bps` in
+         `paired_comparison_document`. Kills 3 assertions across 2 tests, and
+         the two exception types are the finding: `KeyError: 'crps_bps'` from
+         `test_the_record_names_the_loss_the_difference_was_taken_over`'s
+         `loss='crps'` subtest, then `AssertionError: 'mae_bps' unexpectedly
+         found` from the same test, and `AssertionError: 'crps_bps' not found
+         in {'mae_bps': ..., 'model': 'persistence'}` at the command layer.
+
+         Recorded because the mutated record is *self-consistent*: its `loss`
+         field says `crps_bps`, its sign convention says `crps_bps`, and the
+         number beside them is a real mean CRPS. Only the heading lies, and a
+         heading that names a mean absolute error while carrying a CRPS is a
+         number that parses, reads correctly, and is a different quantity.
+
+      5. **An unimplemented loss silently defaulted** --
+         `COMPARISON_LOSSES.get(loss, COMPARISON_LOSSES[DEFAULT_COMPARISON_LOSS])`
+         in `_select_comparison_loss`. Kills exactly 1 --
+         `test_a_loss_this_module_does_not_implement_is_refused`,
+         `AssertionError: ValueError not raised`. The run it enables publishes
+         a record whose `loss` field is accurate and whose numbers answer a
+         question nobody asked.
+
     """
 
-    def _comparison(self, rows=None, features_b=FEATURES, registry=None, seed=20260909):
+    def _comparison(
+        self,
+        rows=None,
+        features_b=FEATURES,
+        registry=None,
+        seed=20260909,
+        **kwargs,
+    ):
         return paired_model_comparison(
             rows if rows is not None else rising_frame(),
             model_a="persistence",
@@ -4803,6 +4919,7 @@ class PairedComparisonTests(unittest.TestCase):
             else declared_registry(COMPARISON_PURGE),
             decision_time=DECISION_TIME,
             seed=seed,
+            **kwargs,
         )
 
     def test_one_resample_is_applied_to_both_models_so_a_constant_difference_has_a_degenerate_interval(
@@ -4849,6 +4966,181 @@ class PairedComparisonTests(unittest.TestCase):
             "the interval onto the constant; an interval that is not degenerate "
             "here resampled the two models independently",
         )
+
+    def test_the_crps_loss_separates_models_that_share_a_point_rule(self):
+        """The selectable-loss block's acceptance criterion: a point loss cannot see a law.
+
+        `persistence` and `rolling-residual` are the same point rule -- the last
+        observed spread, and `FittedRollingResidualLaw.point_forecast` says so
+        in those words. They differ only in the sample the predictive
+        distribution is read off: every residual in the expanding frame against
+        the last `CRPS_COMPARISON_WINDOW` of them. Under absolute error that
+        difference is invisible, and `compare` reported it as invisible on the
+        sample panel -- `mean_difference_bps` of `0.0` with a `[0.0, 0.0]`
+        interval, which reads as "these models are identical" and is really
+        "this instrument reads only the centre". `backtest` already separated
+        the pair through `crps_bps`.
+
+        So both halves are asserted here in one test, because the finding is
+        the *pair* of them: the point loss must still report exactly zero (or
+        the fixture is not two models sharing a point rule and the second half
+        proves nothing), and the distributional loss must not.
+
+        The third assertion is what makes the second one mean something.
+        A point mass's CRPS **is** its absolute error, so a CRPS path that
+        handed `crps_from_quantiles` a degenerate vector -- the point forecast
+        repeated at every level -- would return the absolute-error series
+        again, report zero again, and look like a correct implementation that
+        happened to find no difference. The per-origin losses are therefore
+        recomputed here from each side's own `predict` output, on the dates the
+        run published, so that the test states what the loss *is* and not
+        merely that it moved.
+        """
+
+        rows = rising_frame()
+
+        def compare(loss):
+            return paired_model_comparison(
+                rows,
+                model_a="persistence",
+                fit_a=fit,
+                features_a=FEATURES,
+                model_b="rolling-residual",
+                fit_b=partial(
+                    fit_rolling_residual_law, window=CRPS_COMPARISON_WINDOW
+                ),
+                features_b=FEATURES,
+                registry=declared_registry(COMPARISON_PURGE),
+                decision_time=DECISION_TIME,
+                seed=CRPS_COMPARISON_SEED,
+                loss=loss,
+            )
+
+        point = compare("absolute-error")
+        self.assertGreater(
+            len(point.folds),
+            1,
+            "several origins, or a difference of zero would be one origin's "
+            "coincidence rather than a property of the two point rules",
+        )
+        self.assertEqual(
+            set(point.differences),
+            {0.0},
+            "the two models share a point rule, so every paired absolute-error "
+            "difference is exactly zero -- this is the fixture's precondition "
+            "for the assertions below, not a result",
+        )
+        self.assertEqual(point.mean_difference_bps, 0.0)
+
+        law = compare("crps")
+        self.assertNotEqual(
+            law.mean_difference_bps,
+            0.0,
+            "the two laws differ, so a proper loss that reads the whole "
+            "forecast must separate them; zero here is a CRPS computed from "
+            "the point forecast, whose CRPS is its absolute error",
+        )
+
+        # The dates come off the published folds rather than from a second walk
+        # of the splitter: what the run scored is a claim the record makes, and
+        # `test_each_side_is_scored_exactly_as_the_single_model_benchmark_scores_it`
+        # is what checks that claim. Here they are taken as given so that the
+        # only thing this loop re-derives is the loss.
+        by_date = {row.date: row for row in rows}
+        for position, fold in enumerate(law.folds):
+            train_frame = [
+                row
+                for row in rows
+                if fold.train_start <= row.date <= fold.train_end
+            ]
+            feature_row = by_date[fold.feature_date]
+            actual = by_date[fold.scored_date].spread_bps
+            fitted_a = fit(train_frame)
+            fitted_b = fit_rolling_residual_law(
+                train_frame, window=CRPS_COMPARISON_WINDOW
+            )
+            with self.subTest(scored=fold.scored_date):
+                self.assertEqual(
+                    law.losses_a[position],
+                    crps_from_quantiles(
+                        QUANTILE_LEVELS, fitted_a.predict(feature_row), actual
+                    ),
+                )
+                self.assertEqual(
+                    law.losses_b[position],
+                    crps_from_quantiles(
+                        QUANTILE_LEVELS, fitted_b.predict(feature_row), actual
+                    ),
+                )
+
+    def test_the_record_names_the_loss_the_difference_was_taken_over(self):
+        """A signed difference is a difference *of something*, in the file.
+
+        The direction was already published because a number a reader can get
+        backwards is a number half its readers get backwards. The loss is the
+        same argument one step out: two records reporting the same figure, one
+        a gap in absolute error and the other a gap in CRPS, are incomparable,
+        and nothing on the page would say so.
+
+        `mae_bps` is checked *absent* from the CRPS record. A mean CRPS
+        published under a heading that names a mean absolute error parses,
+        reads correctly, and is a different quantity -- the failure the
+        heading-per-loss exists to prevent.
+        """
+
+        rows = load_daily_panel(SAMPLE_PANEL)
+        for loss, name, statistic in (
+            ("absolute-error", baseline.COMPARISON_LOSS, "mae_bps"),
+            ("crps", baseline.CRPS_COMPARISON_LOSS, "crps_bps"),
+        ):
+            with self.subTest(loss=loss):
+                comparison = paired_model_comparison(
+                    rows,
+                    model_a="persistence",
+                    fit_a=fit,
+                    features_a=FEATURES,
+                    model_b="rolling-residual",
+                    fit_b=partial(
+                        fit_rolling_residual_law, window=CRPS_COMPARISON_WINDOW
+                    ),
+                    features_b=FEATURES,
+                    registry=declared_registry(COMPARISON_PURGE),
+                    decision_time=DECISION_TIME,
+                    seed=CRPS_COMPARISON_SEED,
+                    loss=loss,
+                )
+                document = paired_comparison_document(
+                    comparison, panel_path=SAMPLE_PANEL, registry_path=REAL_REGISTRY
+                )
+                published = document["comparison"]
+
+                self.assertEqual(published["loss"], name)
+                self.assertIn(name, published["sign_convention"])
+                self.assertEqual(
+                    published["model_a"][statistic], comparison.mean_loss_a_bps
+                )
+                self.assertEqual(
+                    published["model_b"][statistic], comparison.mean_loss_b_bps
+                )
+
+        self.assertNotIn("mae_bps", published["model_a"])
+
+    def test_a_loss_this_module_does_not_implement_is_refused(self):
+        """Refused, not quietly defaulted, and refused before anything is fitted.
+
+        A comparison handed an unimplemented loss and given the absolute error
+        instead would publish a record whose `loss` field is accurate and whose
+        numbers answer a question nobody asked. The refusal names what is
+        available so the caller does not have to read this module to find out.
+        """
+
+        with self.assertRaises(ValueError) as caught:
+            self._comparison(loss="coverage")
+
+        message = str(caught.exception)
+        self.assertIn("coverage", message)
+        for available in baseline.COMPARISON_LOSSES:
+            self.assertIn(repr(available), message)
 
     def test_two_declarations_pricing_different_gaps_are_refused(self):
         """Different gaps are different origins, and different origins do not pair.
@@ -4905,7 +5197,7 @@ class PairedComparisonTests(unittest.TestCase):
             [fold.feature_date for fold in comparison.folds],
             [fold.feature_date for fold in benchmark.folds],
         )
-        self.assertEqual(comparison.mae_a_bps, benchmark.mae_bps)
+        self.assertEqual(comparison.mean_loss_a_bps, benchmark.mae_bps)
 
     def test_the_record_names_both_models_and_states_which_way_the_sign_runs(self):
         """A signed difference is unreadable without its direction, in the file.
