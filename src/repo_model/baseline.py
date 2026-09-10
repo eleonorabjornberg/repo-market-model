@@ -147,7 +147,7 @@ import json
 import math
 import subprocess
 from bisect import bisect_right
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, time, timedelta
 from pathlib import Path
 from types import MappingProxyType
@@ -4246,7 +4246,17 @@ class TauMetrics:
     #: Fixed-bin ECE is prohibited at these base rates and none is computed.
     decomposition: Optional[CorpDecomposition] = None
     log_score: Optional[float] = None
-    unavailable: Mapping[str, str] = MappingProxyType({})
+    #: A `field(default_factory=...)`, not a bare `MappingProxyType({})`.
+    #: A mappingproxy sets `__hash__ = None`, and Python 3.11's dataclasses
+    #: reads that as a mutable default and refuses the class outright, so
+    #: `baseline.py` failed to import and took the seven modules that import it
+    #: with it. 3.12 narrowed the check to list/dict/set, which is why only
+    #: 3.11 tripped. The factory keeps the immutability: a plain `{}` default
+    #: would trade an import error on one interpreter for a mutable default on
+    #: a frozen dataclass on all of them.
+    unavailable: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 @dataclass(frozen=True)
