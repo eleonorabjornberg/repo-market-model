@@ -61,6 +61,7 @@ import io
 import json
 import pathlib
 import re
+import subprocess
 import shlex
 import sys
 import unittest
@@ -885,51 +886,108 @@ def _identity_tolerance_is_a_single_absolute():
 # against the registry or the code -- never against another document, and never
 # against the presence of a test class, which is a claim about the suite rather
 # than about the software.
+def _a_clone_does_not_receive_the_frozen_panel():
+    """The panel is not in a clone, so no runnable invocation can publish `build`.
+
+    `docs/PROJECT_STATUS.md` states the blocker in prose: the three unpublished
+    subcommands "each exit on something a clone does not have, and `build`'s is
+    the same missing thing as Milestone A's open reproduction clause." This is
+    that sentence made evaluable.
+
+    Asked of git rather than of the filesystem: the panel exists in the
+    integration checkout, which is exactly the checkout where asking the
+    filesystem would answer the wrong question. Returns True while a clone
+    would not receive it, and therefore while the limitation is blocked rather
+    than merely open.
+    """
+    try:
+        listed = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "data/processed/funding_panel.csv"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return listed.returncode != 0
+
+
+#: Where a limitation lives, and therefore **who is able to close it**. This is
+#: the field the table could not previously carry, and its absence has cost
+#: this repository real rounds: a block was once queued to a track whose three
+#: files were all human-owned, and every stated precondition passed because
+#: each described the state of the tree and none described who was allowed to
+#: change it. A limitation's kind is that question asked one level earlier.
+#:
+#:   `software`      the package cannot do the thing; repaired under src/
+#:   `declaration`   metadata declares one thing where reality has several;
+#:                   repaired in metadata/, which is Track A's
+#:   `documentation` the software is fine and nothing published says so;
+#:                   repaired on a HUMAN_ONLY page, so no track can close it
+KINDS = ("software", "declaration", "documentation")
+
+#: Each entry: a name, its kind, the document that discloses it, the sentences
+#: it is published in, a predicate that is true while the limitation holds, and
+#: a predicate that is true while a *stated blocker* still blocks -- or None
+#: where nothing is claimed to block it, which is itself a claim: a limitation
+#: with no blocker is one nobody has an excuse for leaving open.
 LIMITATIONS = (
     (
         "nmfp_per_era_floor",
+        "declaration",
         "docs/PROJECT_STATUS.md",
         (
             "**The coverage floor is declared for one era.**",
             "the coverage floor is still one number for every era.",
         ),
         _coverage_floor_is_one_number,
+        None,
     ),
     (
         "nmfp_split_month_end",
+        "software",
         "docs/PROJECT_STATUS.md",
         ("a split month-end still divides one reporting universe",),
         _split_month_end_divides_the_universe,
+        None,
     ),
     (
         "nmfp_identity_tolerance",
+        "declaration",
         "docs/PROJECT_STATUS.md",
         ("**The N-MFP identity tolerance is a single absolute bound**",),
         _identity_tolerance_is_a_single_absolute,
+        None,
     ),
     (
         "treasury_settlement_aggregate",
+        "declaration",
         "docs/PROJECT_STATUS.md",
         (
             "aggregates decisions it does not implement.** Security type, tenor, and "
             "Fed SOMA add-ons are summed into one series.",
         ),
         _treasury_settlement_is_one_aggregate,
+        None,
     ),
     (
         "cli_partially_unpublished",
+        "documentation",
         "docs/PROJECT_STATUS.md",
         ("**Part of the command line is unpublished.**",),
         _part_of_the_cli_is_unpublished,
+        _a_clone_does_not_receive_the_frozen_panel,
     ),
     (
         "nmfp_absence_indistinguishable",
+        "software",
         "docs/PROJECT_STATUS.md",
         # The trailing comma is part of the published token: the matcher is a
         # word stream and "representation" is not "representation,". The same
         # punctuation trap failed the corrected bullet at 2ced98e.
         ("an absent value and a parse failure still have the same representation,",),
         _nmfp_absence_is_indistinguishable_from_parse_failure,
+        None,
     ),
 )
 
@@ -1043,12 +1101,58 @@ class PublishedLimitationTests(unittest.TestCase):
        `test_no_published_limitation_outlives_its_repair`, one test in the whole suite --
        the mirror of mutation 1, moving the predicate rather than the prose, so both
        halves of the agreement are shown to be load-bearing from both sides.
+
+    **Two fields added 10 September, and what they are for.** Until then this table
+    said whether a limitation still held and nothing else. It could not say *who is
+    able to close a row*, and it could not say *why a row is still open* -- and the
+    second of those decays exactly like the first. A limitation is falsified by
+    success; a stated blocker is falsified by success one level up, in the reason
+    rather than in the claim, and nothing was watching that at all. A row can sit
+    at the bottom of a queue for four rounds reading "blocked on X" while X cleared
+    in round two.
+
+    `kind` answers the first. It is not a taxonomy for its own sake: this
+    repository once queued a block to a track whose three files were all
+    human-owned, and every stated precondition passed, because each described the
+    state of the tree and none described who was permitted to change it. A
+    `declaration` row is closed in `metadata/` and is Track A's; a `software` row is
+    closed under `src/`; a `documentation` row is closed on a HUMAN_ONLY page and no
+    track can close it however well it does its block.
+
+    `blocked_by` answers the second, and only one row carries one, deliberately.
+    `cli_partially_unpublished` is blocked by something checkable -- a clone does not
+    receive the frozen panel, so no runnable invocation can publish `build` -- and
+    the other five carry `None`, which is not an exemption but the assertion that
+    nothing is claimed to block them. Both branches are live, which is the standing
+    requirement mutation 4 above established: a guard needs at least one live entry
+    per code path it claims to have.
+
+    6. **The blocker cleared.** `_a_clone_does_not_receive_the_frozen_panel` reduced
+       to `return False` while the limitation still holds and the page still states
+       it. Killed `test_no_published_limitation_claims_a_blocker_that_has_cleared`,
+       `AssertionError`, one test in the whole suite. This is the new acceptance
+       criterion and its own mutation target.
+    7. **The blocker dropped to `None`.** `cli_partially_unpublished`'s `blocked_by`
+       replaced with `None`. **Survived, and was expected to:** every assertion here
+       iterates the table, so a row that declares nothing is a row with nothing to
+       contradict. It is the same hole recorded one class down for `QUOTATIONS`, and
+       it cannot be closed the same way `CLI_PUBLICATION` closed its own -- there is
+       no enumerable universe of blockers to check the table against. Recorded as
+       the standing limit rather than left to be rediscovered.
+    8. **A kind misspelled.** `"documentation"` written `"docmentation"`. Killed
+       `test_every_limitation_declares_a_kind_this_module_knows`, `AssertionError`,
+       one test in the whole suite. A closed vocabulary that admits a typo is a
+       field that reads as data and behaves as free text.
+
+    Control green before and after all three, 704 tests, run in a disposable copy
+    under `$HOME` with `__pycache__` cleared between runs and each mutation applied
+    to a restored copy rather than on top of the last.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):
         """A limitation the code no longer has is not a limitation."""
         stale = []
-        for name, document, claims, still_holds in LIMITATIONS:
+        for name, _kind, document, claims, still_holds, _blocked_by in LIMITATIONS:
             if still_holds():
                 continue
             for claim in claims:
@@ -1069,7 +1173,7 @@ class PublishedLimitationTests(unittest.TestCase):
     def test_every_limitation_that_still_holds_is_still_published(self):
         """A limitation that stops being disclosed has not stopped being one."""
         unstated = []
-        for name, document, claims, still_holds in LIMITATIONS:
+        for name, _kind, document, claims, still_holds, _blocked_by in LIMITATIONS:
             if not still_holds():
                 continue
             if all(
@@ -1085,6 +1189,54 @@ class PublishedLimitationTests(unittest.TestCase):
             + "\n  ".join(unstated)
             + "\nDeleting the sentence is the cheapest way to pass the "
             "companion assertion, and it is what this one refuses.",
+        )
+
+    def test_every_limitation_declares_a_kind_this_module_knows(self):
+        """A limitation that does not say where it lives does not say who can close it."""
+        wrong = [
+            f"{name}: {kind!r}"
+            for name, kind, _document, _claims, _holds, _blocked in LIMITATIONS
+            if kind not in KINDS
+        ]
+        self.assertEqual(
+            [],
+            wrong,
+            "A limitation declares a kind this module does not know:\n  "
+            + "\n  ".join(wrong)
+            + f"\nKnown kinds are {KINDS}. The kind is what says whether a "
+            "track can close the row or only a human can.",
+        )
+
+    def test_no_published_limitation_claims_a_blocker_that_has_cleared(self):
+        """A limitation whose stated blocker is gone is open, not blocked.
+
+        The other two assertions both ask whether the limitation still holds.
+        Neither can see the case this one exists for: the limitation holds, the
+        page is right to state it, and the reason it was left alone stopped
+        being true several rounds ago. That is how a row sits at the bottom of
+        a queue with "blocked on X" beside it while nobody re-reads X -- the
+        same decay as a stale limitation, one level up, in the reason rather
+        than in the claim.
+
+        A `None` blocker is not exempt from anything; it is the assertion that
+        nothing is claimed to block the row, which is what makes leaving it
+        open a queue decision rather than an external constraint.
+        """
+        cleared = []
+        for name, kind, document, _claims, still_holds, blocked_by in LIMITATIONS:
+            if blocked_by is None or not still_holds():
+                continue
+            if not blocked_by():
+                cleared.append(f"{name} ({kind}, disclosed in {document})")
+
+        self.assertEqual(
+            [],
+            cleared,
+            "A published limitation still names a blocker that has cleared:\n  "
+            + "\n  ".join(cleared)
+            + "\nThe limitation is still real and the page is still right to "
+            "state it. What is no longer true is the reason it is open. It is "
+            "actionable now: either close it or record a blocker that blocks.",
         )
 
 
