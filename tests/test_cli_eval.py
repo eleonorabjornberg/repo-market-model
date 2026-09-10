@@ -99,6 +99,7 @@ import contextlib
 import csv
 import functools
 import hashlib
+import importlib.util
 import inspect
 import io
 import json
@@ -210,6 +211,18 @@ def business_days(start, count):
             days.append(cursor)
         cursor += timedelta(days=1)
     return days
+
+
+
+def _extra_installed():
+    """Is the optional `ml` extra importable on this interpreter?
+
+    `find_spec`, not an import: `tests/test_dependency_boundary.py` forbids a
+    third-party import in this file at all, and the question here is only
+    whether `--model gbm` can be run end to end.
+    """
+
+    return importlib.util.find_spec("sklearn") is not None
 
 
 class EventHoldoutHarness(unittest.TestCase):
@@ -1027,7 +1040,7 @@ class ModelSelectorTests(ConditionalModelHarness):
 
         choice = cli_eval.MODEL_FACTORIES["threshold"]
         patched = type(choice)(
-            factory=spy, build=choice.build, needs_regime_variable=True
+            declared=spy, build=choice.build, needs_regime_variable=True
         )
         original = dict(cli_eval.MODEL_FACTORIES)
         original["threshold"] = patched
@@ -2994,6 +3007,19 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
 
         for name in sorted(cli_eval.MODEL_FACTORIES):
             with self.subTest(model=name):
+                if (
+                    cli_eval.MODEL_FACTORIES[name].needs_ml_extra
+                    and not _extra_installed()
+                ):
+                    # One name -- `gbm` -- is fitted by the optional `ml`
+                    # extra, and this is a core-suite test that must pass on a
+                    # checkout without it. Asked of the choice rather than
+                    # spelled here, so a second model behind the extra is
+                    # covered without editing this line;
+                    # `tests/test_ml.py` fails rather than skips when
+                    # `REPO_MODEL_REQUIRE_ML` is set, which is where the
+                    # extra's absence is turned into a red build on purpose.
+                    self.skipTest(f"--model {name} needs the optional ml extra")
                 features = [FEATURE, "sofr_volume"]
                 extra = []
                 if cli_eval.MODEL_FACTORIES[name].needs_regime_variable:
