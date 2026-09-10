@@ -147,7 +147,7 @@ import json
 import math
 import subprocess
 from bisect import bisect_right
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, time, timedelta
 from pathlib import Path
 from types import MappingProxyType
@@ -2683,7 +2683,7 @@ class IntervalCalibration:
 
     **A dataclass and not a tuple, unlike `mae_bootstrap_interval`.** That
     function returns three values and a reader can hold three positions in
-    their head. This one carries seven, and a seven-tuple is a shape where a
+    their head. This one carries more, and a tuple of them is a shape where a
     caller who transposes `seed` and `replications` gets no error and a
     different interval. `PairedComparisonReport` made the same call for the
     same reason.
@@ -2720,6 +2720,17 @@ class IntervalCalibration:
     seed: int
     replications: int
     level: float
+    #: The indicator series itself, in origin order -- the thing the interval
+    #: above is a resample of. Carried on the object because the interval is a
+    #: function of the *arrangement* and not of the mean and the length: a block
+    #: resample of 1685 ones and 395 zeros depends on where the zeros are, and
+    #: where the zeros are is exactly what clustering of coverage failures is.
+    #: An object that reported the endpoints without the series would be a
+    #: calibration statement nobody downstream could reproduce, which is the
+    #: defect `docs/runs/persistence_funding.json` was found to have. See
+    #: `_calibration_document`, which publishes it, and
+    #: `calibration_from_document`, which resamples it back.
+    coverage_series: Tuple[float, ...]
 
 
 def interval_calibration(
@@ -2799,20 +2810,10 @@ def interval_calibration(
         if block_length is None
         else int(block_length)
     )
-    # Floats, not bools: `stationary_bootstrap_interval` refuses a non-finite
-    # statistic and a mean over ints would still be a float, but the series is
-    # what a reader is being asked to believe is resampled, and 1.0/0.0 is the
-    # series the mean is of.
-    covered = [
-        1.0 if item.lower_bps <= item.actual_bps <= item.upper_bps else 0.0
-        for item in forecasts
-    ]
-
-    def coverage(indices: Sequence[int]) -> float:
-        return sum(covered[i] for i in indices) / len(indices)
+    covered = _coverage_indicators(forecasts)
 
     lower, upper = stationary_bootstrap_interval(
-        coverage,
+        _coverage_statistic(covered),
         len(covered),
         block_length=block,
         seed=seed,
@@ -2827,7 +2828,47 @@ def interval_calibration(
         seed=seed,
         replications=BOOTSTRAP_REPLICATIONS,
         level=BOOTSTRAP_LEVEL,
+        coverage_series=tuple(covered),
     )
+
+
+#: How `_calibration_document` writes the coverage indicator series into a
+#: record: `[value, length]` pairs in origin order, value first. Named once and
+#: carried in the record beside the pairs, so a reader meets the encoding
+#: stated rather than inferred from the data -- a list of two-element arrays is
+#: also what a summarised series would look like, and the two must not be
+#: guessable apart.
+_COVERAGE_SERIES_ENCODING = "run_length"
+
+
+def _coverage_indicators(forecasts: Sequence[Forecast]) -> List[float]:
+    """The coverage indicator series: `1.0` where the actual fell in its interval.
+
+    One value per scored origin, in origin order. Extracted from
+    `interval_calibration` when `_calibration_document` needed the same series
+    to publish, and extracted rather than duplicated for the reason the class
+    docstring gives about the centre and the interval: two derivations of the
+    series a record is asked to reproduce can agree today and drift later, and
+    the record would then publish an arrangement that is not the one its
+    endpoints came from.
+
+    **The bounds are closed on both sides, deliberately.** That is the
+    definition `rolling_persistence_backtest` computed the published
+    `interval_coverage` under, so a strict indicator here would calibrate a
+    different quantity than the one being calibrated. See
+    `IntervalCalibrationTests`' mutation 6, which is the mutation that found
+    this was unguarded.
+
+    Floats, not bools: `stationary_bootstrap_interval` refuses a non-finite
+    statistic and a mean over ints would still be a float, but the series is
+    what a reader is being asked to believe is resampled, and `1.0`/`0.0` is
+    the series the mean is of.
+    """
+
+    return [
+        1.0 if item.lower_bps <= item.actual_bps <= item.upper_bps else 0.0
+        for item in forecasts
+    ]
 
 
 #: The repository whose commit a record names. Resolved from this module's own
@@ -3109,6 +3150,265 @@ def _run_provenance(
     return provenance
 
 
+def _coverage_statistic(series: Sequence[float]) -> Callable[[Sequence[int]], float]:
+    """The statistic `stationary_bootstrap_interval` resamples: the series mean.
+
+    A factory rather than two closures, because `interval_calibration` builds
+    this from a run's forecasts and `calibration_from_document` builds it from a
+    published record, and the whole point of the second is that it reproduces
+    the first *to the endpoint*. Two textually identical closures reproduce each
+    other until one is touched; one function cannot come apart from itself.
+    """
+
+    def coverage(indices: Sequence[int]) -> float:
+        return sum(series[i] for i in indices) / len(indices)
+
+    return coverage
+
+
+def _encode_indicator_runs(series: Sequence[float]) -> List[List[int]]:
+    """A 0/1 series as `[value, length]` pairs in origin order.
+
+    **Run-length and not one entry per origin, and the cost is stated rather
+    than assumed.** The series is one bit per scored origin -- 2080 of them for
+    the published persistence run -- and three shapes were available: the raw
+    list, these pairs, or a summary. A summary is refused by the criterion this
+    encoding exists to satisfy: the mean and the length do not determine the
+    series, so a record carrying them cannot be resampled and a record that
+    said it could would make a stronger claim than the current one and be no
+    more true.
+
+    Between the other two, the pairs win on the thing a calibration statement is
+    *about*, and **not** on size. A raw list of 2080 zeros and ones is a wall a
+    reader scrolls past; the pairs show, in the JSON, runs of covered origins
+    broken by bursts of failures -- which is the clustering, the property that
+    makes this interval wider than a binomial one, and the property the
+    bracketing finding could previously only reason about from outside.
+
+    **The size argument is weaker than it looks and the measurement is here
+    rather than an assurance.** At 2080 origins and 395 failures, the raw list
+    is 6,240 bytes of JSON and these pairs are:
+
+        one contiguous block of failures        3 runs         30 bytes
+        forty clustered bursts                 81 runs        690 bytes
+        uniformly random positions            642 runs      5,185 bytes
+        failures evenly spread as singletons   790 runs      6,322 bytes
+        alternating at every origin          2,080 runs     16,640 bytes
+
+    So it is a large win on a clustered series, a small one on a random series,
+    and a *loss* on the last two -- the second of which is 2.7x the raw list.
+    That case is a coverage series with no clustering whatever, which is not
+    what a horizon-overlapping benchmark produces, but it is not ruled out and
+    the encoding is chosen with it in view: the bound is `2 * n` integers, about
+    16 KB at 2080 origins, against the 1.5 MB the exceedance record already
+    spends on reliability curves. The shape is bounded by measurement, not small
+    by assumption. `CalibrationDocumentTests` holds the bound as an assertion.
+
+    Raises:
+        ValueError: on any value that is not `0.0` or `1.0`. The encoding is
+            defined on an indicator series and silently rounding anything else
+            would publish an arrangement the run did not produce.
+    """
+
+    runs: List[List[int]] = []
+    for position, value in enumerate(series):
+        if value not in (0.0, 1.0):
+            raise ValueError(
+                f"the coverage indicator at origin {position} is {value!r}, and "
+                "a run-length encoding is defined on an indicator series; a "
+                "record built from anything else would publish an arrangement "
+                "the run did not produce"
+            )
+        bit = int(value)
+        if runs and runs[-1][0] == bit:
+            runs[-1][1] += 1
+        else:
+            runs.append([bit, 1])
+    return runs
+
+
+def _decode_indicator_runs(runs: Sequence[Sequence[int]], length: int) -> List[float]:
+    """`[value, length]` pairs back to the 0/1 series, checked against `length`.
+
+    The declared length is redundant with the pairs -- they sum to it -- and it
+    is carried and compared for exactly that reason: a truncated or hand-edited
+    `runs` array decodes into a shorter series perfectly happily, and a shorter
+    series resamples to a different interval with no sign that anything is
+    wrong. Redundancy that is checked is a guard; redundancy that is not is a
+    second place to be wrong.
+
+    Raises:
+        ValueError: on a malformed pair, a non-positive run length, a value
+            other than 0 or 1, an empty series, or a total that disagrees with
+            `length`.
+    """
+
+    series: List[float] = []
+    for position, run in enumerate(runs):
+        pair = tuple(run)
+        if len(pair) != 2:
+            raise ValueError(
+                f"run {position} carries {len(pair)} value(s); a run-length pair "
+                "is [value, length]"
+            )
+        bit, count = pair
+        if bit not in (0, 1):
+            raise ValueError(f"run {position} carries value {bit!r}, not 0 or 1")
+        if not isinstance(count, int) or count < 1:
+            raise ValueError(
+                f"run {position} declares length {count!r}; a run spans at least "
+                "one origin"
+            )
+        series.extend([float(bit)] * count)
+    if not series:
+        raise ValueError(
+            "the record encodes an empty coverage series, so it states no "
+            "arrangement for an interval to be a resample of"
+        )
+    if len(series) != length:
+        raise ValueError(
+            f"the record's runs decode to {len(series)} origins and it declares "
+            f"{length}; one of the two has been edited and the interval is a "
+            "resample of neither"
+        )
+    return series
+
+
+def _calibration_document(calibration: IntervalCalibration) -> dict:
+    """A calibration statement a reader can recompute, not merely read.
+
+    **The six-field version is the trap and it is already disproved.** A record
+    carrying `realized_coverage`, `declared_probability`, `block_length`,
+    `seed`, `replications` and the fold count is exactly what
+    `docs/runs/persistence_funding.json` carries today plus labels, and
+    `IntervalCalibrationTests` recorded why that is not reproducible: the
+    interval is a resample of the indicator *series*, the mean and the length do
+    not determine the series, and the arrangement is the clustering the
+    statement is about. So the series is here, run-length encoded -- see
+    `_encode_indicator_runs` for the shape and its cost -- and
+    `calibration_from_document` resamples it back.
+
+    `coverage_interval` is published beside the series and is never an input to
+    that reader. The record states the endpoints so a human can read them, and
+    the reader derives them again from the series so that agreeing is a fact
+    rather than a definition.
+    """
+
+    lower, upper = calibration.coverage_interval
+    return {
+        "realized_coverage": calibration.realized_coverage,
+        "declared_probability": calibration.declared_probability,
+        "coverage_interval": {
+            "lower": lower,
+            "upper": upper,
+            "level": calibration.level,
+            "method": "stationary_bootstrap",
+            "block_length": calibration.block_length,
+            "replications": calibration.replications,
+            "seed": calibration.seed,
+        },
+        "coverage_series": {
+            "encoding": _COVERAGE_SERIES_ENCODING,
+            "length": len(calibration.coverage_series),
+            "runs": _encode_indicator_runs(calibration.coverage_series),
+        },
+    }
+
+
+def _required(container: Mapping[str, Any], key: str, where: str) -> Any:
+    """One field of a record, or a `ValueError` naming what is missing and where.
+
+    A record is read by whoever holds the file, often long after the run, and
+    `KeyError: 'runs'` does not tell them which object was short of it.
+    """
+
+    if key not in container:
+        raise ValueError(
+            f"the record's {where} carries no {key!r}, so no calibration "
+            "statement can be recomputed from it"
+        )
+    return container[key]
+
+
+def calibration_from_document(document: Mapping[str, Any]) -> IntervalCalibration:
+    """Recompute a run's coverage calibration from its published record alone.
+
+    The inverse of `_calibration_document`, and the reason that function
+    publishes a series. No report, no panel and no forecasts are in scope: the
+    only input is a `dict` parsed from a `docs/runs/*.json` file, and what comes
+    back is the same `IntervalCalibration` the run produced -- the same centre,
+    the same endpoints, the same resample structure.
+
+    **What is recomputed and what is read.** `realized_coverage` and
+    `coverage_interval` are *recomputed*, from the decoded series, at the
+    resample parameters the record declares. The record's own `coverage_interval`
+    is deliberately not read: a reader that returned the stated endpoints would
+    make this function a field census dressed as a round trip, and the
+    criterion is that the record *reproduces* its statement.
+    `declared_probability` is read, because it is a declaration a run made and
+    not a quantity a series determines -- see `interval_calibration`, which
+    refuses to substitute the contract's grid for the same reason.
+
+    Args:
+        document: a record as `backtest_document` shaped it, parsed from JSON.
+
+    Returns:
+        An `IntervalCalibration` equal to the run's own, at the same seed.
+
+    Raises:
+        ValueError: if the record carries no calibration statement, states an
+            encoding this does not implement, or encodes a series that
+            disagrees with the length it declares. A record that cannot be
+            resampled is refused rather than answered from its summary fields:
+            an interval returned from a mean and a length would be a number
+            nobody computed, which is the decay this whole document exists to
+            refuse.
+    """
+
+    metrics = _required(document, "metrics", "top level")
+    statement = _required(metrics, "interval_calibration", "metrics")
+    series_object = _required(statement, "coverage_series", "interval_calibration")
+    interval = _required(statement, "coverage_interval", "interval_calibration")
+
+    encoding = _required(series_object, "encoding", "coverage_series")
+    if encoding != _COVERAGE_SERIES_ENCODING:
+        raise ValueError(
+            f"the record encodes its coverage series as {encoding!r}; this "
+            f"reader implements {_COVERAGE_SERIES_ENCODING!r} and will not "
+            "guess at another encoding of a series an interval depends on"
+        )
+    series = _decode_indicator_runs(
+        _required(series_object, "runs", "coverage_series"),
+        _required(series_object, "length", "coverage_series"),
+    )
+
+    block_length = _required(interval, "block_length", "coverage_interval")
+    seed = _required(interval, "seed", "coverage_interval")
+    replications = _required(interval, "replications", "coverage_interval")
+    level = _required(interval, "level", "coverage_interval")
+
+    lower, upper = stationary_bootstrap_interval(
+        _coverage_statistic(series),
+        len(series),
+        block_length=block_length,
+        seed=seed,
+        replications=replications,
+        level=level,
+    )
+    return IntervalCalibration(
+        realized_coverage=sum(series) / len(series),
+        declared_probability=_required(
+            statement, "declared_probability", "interval_calibration"
+        ),
+        coverage_interval=(lower, upper),
+        block_length=block_length,
+        seed=seed,
+        replications=replications,
+        level=level,
+        coverage_series=tuple(series),
+    )
+
+
 def backtest_document(
     report: BacktestReport, *, panel_path: Path, registry_path: Path, model: str
 ) -> dict:
@@ -3169,6 +3469,13 @@ def backtest_document(
     * `metrics` -- the numbers, unrounded. Rounding belongs to whoever displays
       them; an artifact that rounded would publish a figure nobody computed and
       would make two runs that genuinely differ look identical.
+      `interval_calibration` is the one field here that carries more than a
+      number: it relates the realized coverage to the probability the run
+      declared, and it carries the indicator series that relation's interval is
+      a resample of, so the statement can be recomputed from this file with no
+      panel and no forecasts. See `_calibration_document` for the shape and
+      `calibration_from_document` for the reader that closes the loop. It is
+      absent from a run that declared no quantile grid, by the rule above.
 
     What is deliberately *not* here: any aggregate over event windows (those
     are the event path's and the contract forbids aggregating a single window),
@@ -3176,6 +3483,15 @@ def backtest_document(
     note: the pinball losses cannot be recomputed from this file alone. They
     can be recomputed from the panel, which the file identifies by digest,
     which is what makes the digest load-bearing rather than decorative.
+
+    **The interval on coverage is the exception, and it is a narrow one.** It
+    is recomputable from the file because the record carries the coverage
+    indicator series -- one bit per origin, run-length encoded -- and one bit
+    per origin is not a forecast row. `PairedComparisonTests` records keeping
+    intermediates off a publication as a deliberate decision and that decision
+    stands: nothing here publishes a prediction, a quantile or an actual. What
+    is published is whether each origin's actual fell inside its own interval,
+    which is the whole of what a coverage statement is over.
 
     Args:
         report: a report from `rolling_persistence_backtest`.
@@ -3267,6 +3583,22 @@ def backtest_document(
         "interval_coverage": report.interval_coverage,
         "interval_probability": INTERVAL_PROBABILITY,
     }
+    # The calibration statement, and it is omitted rather than defaulted when
+    # the run cannot state one: `interval_calibration` refuses a report with no
+    # forecasts and a report that declares fewer than two quantile levels,
+    # because the probability a calibration is against is the run's declaration
+    # and not this checkout's grid. That refusal is the right one and it must
+    # not become this function's, so the condition is asked here -- an absent
+    # field makes a reader ask and a defaulted one makes them believe.
+    #
+    # The block length is handed in rather than measured again. It is the same
+    # `_maximum_horizon_overlap` over the same folds either way, and one
+    # measurement means the record cannot state two different block lengths for
+    # two intervals over one run's origins.
+    if report.forecasts and len(report.quantile_levels) > 1:
+        metrics["interval_calibration"] = _calibration_document(
+            interval_calibration(report, seed=seed, block_length=block)
+        )
     if report.quantile_levels:
         # Keyed by the level, from the levels the losses were computed at. The
         # two tuples are aligned by construction in the backtest and zipped
@@ -4246,7 +4578,17 @@ class TauMetrics:
     #: Fixed-bin ECE is prohibited at these base rates and none is computed.
     decomposition: Optional[CorpDecomposition] = None
     log_score: Optional[float] = None
-    unavailable: Mapping[str, str] = MappingProxyType({})
+    #: A `field(default_factory=...)`, not a bare `MappingProxyType({})`.
+    #: A mappingproxy sets `__hash__ = None`, and Python 3.11's dataclasses
+    #: reads that as a mutable default and refuses the class outright, so
+    #: `baseline.py` failed to import and took the seven modules that import it
+    #: with it. 3.12 narrowed the check to list/dict/set, which is why only
+    #: 3.11 tripped. The factory keeps the immutability: a plain `{}` default
+    #: would trade an import error on one interpreter for a mutable default on
+    #: a frozen dataclass on all of them.
+    unavailable: Mapping[str, str] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 @dataclass(frozen=True)

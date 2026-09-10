@@ -179,6 +179,7 @@ from repo_model.baseline import (
     _quantile,
     arx_exceedance,
     backtest_document,
+    calibration_from_document,
     climatology_exceedance,
     exceedance_backtest_document,
     fit,
@@ -5146,6 +5147,637 @@ class IntervalCalibrationTests(unittest.TestCase):
         # a later block which publishes them has to come back here and say so.
         self.assertNotIn("forecasts", record)
         self.assertEqual(set(record["folds"]), {"count", "first", "last"})
+
+
+#: The origins whose actual is pushed outside its own interval in
+#: `CalibrationDocumentTests`' clustered fixture, and in its scattered one. Both
+#: name four of twenty-four origins, so both fixtures have the **same** realized
+#: coverage, the same length and -- because the seed is derived from the panel
+#: and the declaration, which they share -- the same seed. They differ in
+#: nothing a summary field can see, which is the whole of what
+#: `test_two_documents_agreeing_on_every_summary_field_still_state_different_intervals`
+#: is for.
+CLUSTERED_MISSES = (6, 7, 8, 17)
+SCATTERED_MISSES = (2, 9, 15, 21)
+
+#: How many origins those fixtures score. Twenty-four rather than eight, because
+#: this class needs a coverage interval with live width -- an all-covered series
+#: has zero variance and every arrangement of it resamples to the same
+#: endpoints, which is the property `IntervalCalibrationTests`' acceptance
+#: criterion depends on and the property this one must not have.
+CALIBRATION_DOCUMENT_ORIGINS = 24
+
+
+class CalibrationDocumentTests(unittest.TestCase):
+    """A calibration statement a record can reproduce, and the trap it avoids.
+
+    **The finding this block was built on, restated.** `interval_calibration`
+    landed and nothing published it, and the reason given for not publishing it
+    was that `docs/runs/persistence_funding.json` **cannot reproduce its own
+    coverage interval**. It carries `metrics.interval_coverage` and
+    `folds.count` and no per-origin anything, and a block resample of 1685 ones
+    and 395 zeros depends on their *arrangement* -- which is exactly the
+    clustering of coverage failures a calibration statement is about. The
+    strongest statement available from the record as it stands was a bracketing
+    between the scattered and contiguous arrangements, and that bracketing
+    should not have had to be the strongest one available.
+
+    `backtest_document` now carries the statement, so the *next* record is
+    reproducible. This class is what says it is.
+
+    The trap
+    --------
+
+    The cheap version of this block publishes `realized_coverage`,
+    `declared_probability`, `block_length`, `seed`, `replications` and the fold
+    count, and looks complete. **Those six numbers are what the record carries
+    today plus labels.** A resample of them cannot be run: the mean and the
+    length do not determine the series. A document carrying them and calling
+    itself reproducible would make a stronger claim than the current record
+    makes and be no more true.
+
+    So the criterion is a **round trip and not a field census**:
+    `calibration_from_document` never reads the endpoints the record states. It
+    decodes the series, resamples it at the parameters the record declares, and
+    the acceptance test asserts the result equals both the run's own
+    `IntervalCalibration` and the record's stated endpoints. A reader that
+    returned the stated numbers would pass a census and fail this.
+
+    `test_two_documents_agreeing_on_every_summary_field_still_state_different_intervals`
+    is the trap made executable rather than argued. Two fixtures miss at four of
+    twenty-four origins, one clustered and one scattered. Every summary field
+    is identical -- the same realized coverage, the same length, the same block
+    length, the same seed, the same replications, the same level -- and the
+    recomputed intervals are `(0.667, 0.958)` and `(0.750, 0.917)`. The
+    clustered arrangement is the wider one, which is the dependence the block
+    bootstrap exists to carry, and no function of the six summary fields could
+    have told them apart.
+
+    Decisions
+    ---------
+
+    **The series is carried run-length encoded, and the choice is not about
+    size.** `_encode_indicator_runs` holds the measurement: at 2080 origins the
+    raw list is 6,240 bytes of JSON and the pairs run from 30 bytes on one
+    contiguous block of failures to 16,640 on a series alternating at every
+    origin -- so the encoding is a large win when failures cluster, a small one
+    at random, and a 2.7x *loss* in the pathological case. It is chosen because
+    the pairs show the clustering in the JSON, which is the property the
+    statement is about, and because the cost is bounded at `2 * n` integers.
+    `test_the_encoded_series_is_bounded_by_two_integers_per_origin` holds that
+    bound so the claim cannot decay into an assurance.
+
+    **One bit per origin is not a forecast row.** `PairedComparisonTests`
+    records keeping intermediates off a publication as a deliberate decision and
+    that decision stands: nothing added here publishes a prediction, a quantile
+    or an actual. What is published is whether each origin's actual fell inside
+    its own interval, which is the whole of what a coverage statement is over,
+    and it is the least a record can carry and still be resampled.
+
+    **The declared length is redundant and checked anyway.** The runs sum to it,
+    so it derives nothing -- and that is the reason it is compared rather than
+    trusted: a truncated `runs` array decodes into a shorter series perfectly
+    happily and resamples to a different interval with no sign anything is
+    wrong. See `test_a_declared_length_that_disagrees_with_the_runs_is_refused`.
+
+    **Absent rather than defaulted, on a run that declared no grid.**
+    `interval_calibration` refuses a report with fewer than two quantile levels
+    because the probability a coverage is calibrated against is the run's own
+    declaration. That refusal must not become `backtest_document`'s, so the
+    field is omitted from such a document -- `backtest_document`'s standing rule,
+    and the reason `RunProvenanceTests`' hand-built report still publishes.
+
+    What this block did **not** do
+    -----------------------------
+
+    It did not regenerate `docs/runs/persistence_funding.json`. The frozen panel
+    is gitignored and not in this worktree, the existing record is a record of a
+    run that happened, and `scripts/` and `README.md` are `HUMAN_ONLY`. So
+    `IntervalCalibrationTests`' record-reading test still describes the
+    published record correctly, including its assertion that the record carries
+    no `forecasts` -- and it will keep describing it until a human re-runs the
+    backtest. That is the block report's business, not an assertion's.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, never the mount, built from `git ls-files`
+    plus `.claude/` -- which `CLAUDE.md`'s copy list has named since `c42a86c`.
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, `__pycache__` cleared before
+    every run, mutation reverted after each. Unmutated control **green before
+    and after**: 713 tests, `OK`, zero `expectedFailure`. Exception types
+    recorded, not counts. Python 3.9.6 -- the lower of the two interpreters
+    `pyproject.toml` admits.
+
+    The copy skips two tests the mount runs, because it is not a git checkout
+    and the record's git-state tests say so. Skip counts vary by checkout and
+    mean nothing; the zero `expectedFailure` is the load-bearing half.
+
+      1. **The series stripped, the six summary fields left** -- the mutation
+         this block's brief names, and the one the criterion exists to survive.
+         `_calibration_document` returns `realized_coverage`,
+         `declared_probability` and the whole `coverage_interval` object --
+         endpoints, level, method, block length, replications and seed -- and no
+         `coverage_series`. Every summary field a reader could want is present
+         and the record is no longer reproducible.
+
+         **Eight tests go red and only three of them are the finding.** The
+         count is the reason `CLAUDE.md` asks for exception types: five of the
+         eight are `KeyError: 'coverage_series'` raised by a test's own
+         subscript of the document, before `calibration_from_document` is
+         reached at all. Those five are the fixture noticing the field is gone,
+         not a guard firing. The three that are the finding all die inside the
+         reader:
+
+           * `test_a_calibration_statement_read_back_from_the_document_reproduces_the_interval`,
+             `ValueError: the record's interval_calibration carries no
+             'coverage_series', so no calibration statement can be recomputed
+             from it`. **This is the acceptance criterion and the mutation
+             target, and they did not come apart.**
+           * `test_two_documents_agreeing_on_every_summary_field_still_state_different_intervals`,
+             the same `ValueError` -- and that is the right way for it to die:
+             with no series there is nothing left for two documents to disagree
+             about.
+           * `test_a_record_whose_stated_endpoints_do_not_match_its_series_is_not_believed`,
+             the same `ValueError`.
+
+         The five incidental ones, recorded so nobody reads eight as strength:
+         `test_a_declared_length_that_disagrees_with_the_runs_is_refused`,
+         `test_a_document_carrying_every_summary_field_and_no_series_is_refused`,
+         `test_an_encoding_this_reader_does_not_implement_is_refused_not_guessed`,
+         `test_the_encoded_series_is_bounded_by_two_integers_per_origin` and
+         `test_the_published_statement_shows_the_arrangement_and_not_only_its_mean`,
+         each `KeyError: 'coverage_series'`.
+
+         That the refusal is a `ValueError` rather than a wrong number is the
+         point: `calibration_from_document` refuses a record it cannot resample
+         rather than answering from the summary fields, because an interval
+         derived from a mean and a length would be a number nobody computed.
+
+      2. **The declared length trusted instead of compared** --
+         `_decode_indicator_runs` returns the decoded series without checking it
+         against `length`. Kills exactly 1,
+         `test_a_declared_length_that_disagrees_with_the_runs_is_refused`,
+         `AssertionError: ValueError not raised`.
+
+         **The acceptance criterion survives this**, and it survives for a
+         reason worth stating plainly: on any document this repository wrote the
+         runs and the declared length always agree, so a round trip cannot see
+         the check at all. The guard is reachable only from a record somebody
+         edited or truncated, which is the case it exists for and not a case a
+         round trip constructs.
+
+      3. **The reader returns the record's stated endpoints** instead of
+         resampling the decoded series -- `coverage_interval` read out of the
+         document, the bootstrap call dropped, everything else left alone. This
+         is the field census wearing the round trip's name, and it is the defect
+         the criterion's *shape* was chosen to exclude.
+
+         **It survives the acceptance criterion, and that is the sharpest thing
+         in this record.** On any document `_calibration_document` wrote, the
+         stated endpoints *are* the recomputed endpoints, so equality holds and
+         the criterion passes a reader that recomputes nothing. Killed instead
+         by exactly 1 --
+         `test_a_record_whose_stated_endpoints_do_not_match_its_series_is_not_believed`,
+         `AssertionError: Tuples differ: (0.1, 0.2) != (0.75,
+         0.9166666666666666)` -- on a document whose stated endpoints have been
+         overwritten with numbers no resample of its series produces.
+
+         That test was written for this mutation, and the honest reading is that
+         **the criterion checks that the document round-trips and nothing in it
+         checks that the reader did the resampling.** Same shape as
+         `IntervalCalibrationTests`' mutation 3, one layer out.
+
+      4. **The indicator bounds opened at one end** --
+         `_coverage_indicators` scoring `lower <= actual < upper` rather than
+         closed on both sides. Run because this block *moved* that code: the
+         list comprehension was extracted out of `interval_calibration`, and
+         `IntervalCalibrationTests`' mutation 6 names it. The standing rule is
+         to re-run a mutation whose fixture this block touched; a function it
+         relocated is the same case.
+
+         Kills exactly 1, in the other class --
+         `test_an_actual_on_its_own_bound_is_covered_as_the_backtest_counts_it`,
+         `AssertionError: 0.5 != 1.0`. The earlier record stands; the extraction
+         did not blunt it.
+
+         Nothing in `CalibrationDocumentTests` kills it, and that is expected
+         rather than a gap: this class's fixtures put their actuals strictly
+         inside or strictly outside their intervals, so no origin of theirs sits
+         on a bound. The guard for the boundary belongs where it already is.
+    """
+
+    #: The gap this fixture's run declares. Two days, and pinned rather than
+    #: defaulted only because `_report_seed` reads it: a seed derived from a
+    #: field nobody stated is a seed nobody can recompute.
+    PURGE = 2
+
+    #: Half-width of every fixture interval, in basis points. The interval is
+    #: centred on the *actual*, so whether an origin is covered is a property of
+    #: how this fixture is written and not of any fit -- the same trick
+    #: `IntervalCalibrationTests._forecasts` uses, and for the same reason.
+    HALF_WIDTH = 5.0
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+        # Neither file is parsed by a record -- a record identifies them by the
+        # digest of the bytes the run read -- so both are as small as that claim
+        # allows. `RunProvenanceTests` makes the same argument at length.
+        self.panel = self.root / "panel.csv"
+        self.panel.write_text("date,spread_bps\n2026-03-02,1.0\n", encoding="utf-8")
+        self.registry = self.root / "sources.json"
+        self.registry.write_text(
+            json.dumps({"sources": {}}, indent=2) + "\n", encoding="utf-8"
+        )
+
+    def _forecasts(self, misses):
+        """One `Forecast` per origin, with `misses` pushed outside its interval."""
+
+        built = []
+        for position in range(CALIBRATION_DOCUMENT_ORIGINS):
+            actual = 10.0 + position
+            lower = actual - self.HALF_WIDTH
+            upper = actual + self.HALF_WIDTH
+            observed = (
+                actual + 2.0 * self.HALF_WIDTH if position in misses else actual
+            )
+            span = upper - lower
+            built.append(
+                Forecast(
+                    observed,
+                    actual,
+                    lower,
+                    upper,
+                    (lower, lower + span / 4.0, actual, upper - span / 4.0, upper),
+                )
+            )
+        return built
+
+    def _folds(self, count):
+        start = date(2026, 3, 2)
+        return tuple(
+            ScoredFold(
+                train_start=start,
+                train_end=start + timedelta(days=index),
+                train_rows=20 + index,
+                feature_date=start + timedelta(days=index),
+                scored_date=start
+                + timedelta(days=index + CALIBRATION_HORIZON_DAYS),
+            )
+            for index in range(count)
+        )
+
+    def _report(self, misses, levels=QUANTILE_LEVELS):
+        """A report a record can be built from, with a stated arrangement.
+
+        Every field `backtest_document` and `_report_seed` read is present and
+        derived from the fixture. `interval_coverage` is computed the way
+        `rolling_persistence_backtest` computes it, so the fixture is one story
+        rather than a report whose parts disagree.
+        """
+
+        forecasts = self._forecasts(misses)
+        covered = sum(
+            item.lower_bps <= item.actual_bps <= item.upper_bps
+            for item in forecasts
+        )
+        return BacktestReport(
+            forecasts=forecasts,
+            mae_bps=sum(
+                abs(item.actual_bps - item.predicted_bps) for item in forecasts
+            )
+            / len(forecasts),
+            interval_coverage=covered / len(forecasts),
+            folds=self._folds(len(forecasts)),
+            quantile_levels=tuple(levels),
+            features=FEATURES,
+            sources=("fred_macro_latest_vintage",),
+            field_sources=(("fred_macro_latest_vintage", "DGS10"),),
+            purge_days=self.PURGE,
+            decision_time=DECISION_TIME,
+            panel_rows=len(forecasts),
+            panel_first_date=date(2026, 3, 2),
+            panel_last_date=date(2026, 3, 2) + timedelta(days=len(forecasts)),
+        )
+
+    def _seed(self, report):
+        """The seed the record will state, derived as `backtest_document` derives it.
+
+        Recomputed here from the panel bytes and the declaration rather than read
+        back out of the document, so the reference call this class compares
+        against does not take its seed from the artifact under test.
+        """
+
+        return baseline._report_seed(
+            report, hashlib.sha256(self.panel.read_bytes()).hexdigest()
+        )
+
+    def _document(self, report):
+        """The record, through JSON and back.
+
+        Serialised and reparsed rather than passed as a live dict, because "a
+        record can reproduce its own interval" is a claim about a *file*: a
+        tuple that survives in memory and becomes a list on disk, or a float
+        that does not round-trip, would be a defect this class exists to catch
+        and an in-memory dict would hide it.
+        """
+
+        return json.loads(
+            json.dumps(
+                backtest_document(
+                    report,
+                    panel_path=self.panel,
+                    registry_path=self.registry,
+                    model="persistence",
+                )
+            )
+        )
+
+    def test_a_calibration_statement_read_back_from_the_document_reproduces_the_interval(
+        self,
+    ):
+        """The acceptance criterion, and the mutation target.
+
+        A report, its document, and then the calibration recomputed from the
+        document **only** -- the report is deleted from this scope before the
+        reader is called, so nothing but the parsed JSON is available to it. No
+        panel is read, no forecast is in scope, and the interval comes back
+        equal to the run's own to the endpoint, at the same seed.
+
+        Three assertions, and the second is the one that makes this a round trip
+        rather than a census: the recomputed endpoints equal the endpoints the
+        record *states*, which the reader never read. The third pins the
+        arrangement itself -- the recomputed object carries the same series, in
+        the same order, which is the thing the mean and the length could not
+        determine.
+
+        **What this criterion does not reach: mutations 2 and 3 in the class
+        docstring.** A reader that returned the record's stated endpoints
+        survives it, because on a document this repository wrote the stated and
+        the recomputed endpoints are the same numbers.
+        """
+
+        report = self._report(CLUSTERED_MISSES)
+        seed = self._seed(report)
+        expected = interval_calibration(report, seed=seed)
+        document = self._document(report)
+        stated = document["metrics"]["interval_calibration"]["coverage_interval"]
+
+        # Nothing but `document` and `expected` survives into the recomputation.
+        del report
+
+        recomputed = calibration_from_document(document)
+
+        self.assertEqual(recomputed, expected)
+        self.assertEqual(
+            recomputed.coverage_interval, (stated["lower"], stated["upper"])
+        )
+        self.assertEqual(
+            recomputed.coverage_series,
+            tuple(
+                0.0 if position in CLUSTERED_MISSES else 1.0
+                for position in range(CALIBRATION_DOCUMENT_ORIGINS)
+            ),
+        )
+
+    def test_two_documents_agreeing_on_every_summary_field_still_state_different_intervals(
+        self,
+    ):
+        """The trap, executable. Six summary fields cannot tell these apart.
+
+        Four misses of twenty-four in both fixtures, clustered in one and
+        scattered in the other. The realized coverage, the length, the block
+        length, the seed, the replications and the level are identical -- the
+        seed because it is derived from the panel and the declaration, which the
+        two runs share -- and the recomputed intervals differ. The clustered
+        arrangement is the wider one, which is the horizon dependence the block
+        bootstrap exists to carry.
+
+        This is why a record carrying the summary fields and calling itself
+        reproducible would be making a claim no arithmetic supports.
+        """
+
+        clustered = self._document(self._report(CLUSTERED_MISSES))
+        scattered = self._document(self._report(SCATTERED_MISSES))
+
+        first = calibration_from_document(clustered)
+        second = calibration_from_document(scattered)
+
+        for name in ("realized_coverage", "block_length", "seed", "replications", "level"):
+            self.assertEqual(
+                getattr(first, name),
+                getattr(second, name),
+                msg=f"the fixtures were built to agree on {name}",
+            )
+        self.assertEqual(
+            len(first.coverage_series), len(second.coverage_series)
+        )
+
+        self.assertNotEqual(first.coverage_series, second.coverage_series)
+        self.assertNotEqual(first.coverage_interval, second.coverage_interval)
+        # The clustered arrangement is the wider interval, at both ends.
+        self.assertLess(first.coverage_interval[0], second.coverage_interval[0])
+        self.assertGreater(first.coverage_interval[1], second.coverage_interval[1])
+
+    def test_a_document_carrying_every_summary_field_and_no_series_is_refused(self):
+        """A record that cannot be resampled is refused, not answered.
+
+        The document with `coverage_series` removed and everything else left
+        intact -- realized coverage, declared probability, both endpoints, the
+        level, the method, the block length, the replications and the seed. That
+        is more than `docs/runs/persistence_funding.json` carries today, and it
+        is still not enough, so the reader raises rather than returning an
+        interval derived from a mean and a length.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        statement = document["metrics"]["interval_calibration"]
+        del statement["coverage_series"]
+
+        self.assertIn("realized_coverage", statement)
+        self.assertIn("declared_probability", statement)
+        self.assertEqual(
+            set(statement["coverage_interval"]),
+            {
+                "lower",
+                "upper",
+                "level",
+                "method",
+                "block_length",
+                "replications",
+                "seed",
+            },
+        )
+
+        with self.assertRaises(ValueError):
+            calibration_from_document(document)
+
+    def test_a_record_whose_stated_endpoints_do_not_match_its_series_is_not_believed(
+        self,
+    ):
+        """The reader resamples the series; it never reads the stated endpoints.
+
+        Added in response to mutation 3, which is a reader that returns the
+        record's own `lower` and `upper`. Those are overwritten here with numbers
+        no resample of this series produces, and the recomputed interval is
+        unmoved -- so the stated endpoints are demonstrably not an input.
+        """
+
+        document = self._document(self._report(SCATTERED_MISSES))
+        honest = calibration_from_document(document).coverage_interval
+
+        interval = document["metrics"]["interval_calibration"]["coverage_interval"]
+        interval["lower"] = 0.1
+        interval["upper"] = 0.2
+
+        self.assertEqual(calibration_from_document(document).coverage_interval, honest)
+
+    def test_a_declared_length_that_disagrees_with_the_runs_is_refused(self):
+        """A truncated series decodes happily and resamples to the wrong interval.
+
+        The last run dropped, the declared `length` left alone. Without the
+        comparison the reader would return an interval over 18 origins and call
+        it a statement about 24.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        series = document["metrics"]["interval_calibration"]["coverage_series"]
+        self.assertEqual(series["length"], CALIBRATION_DOCUMENT_ORIGINS)
+        series["runs"] = series["runs"][:-1]
+
+        with self.assertRaises(ValueError):
+            calibration_from_document(document)
+
+    def test_an_encoding_this_reader_does_not_implement_is_refused_not_guessed(self):
+        """The record names its encoding, and an unknown one stops the reader.
+
+        A list of two-element arrays is also what a summarised series would look
+        like. Guessing between them would be guessing at the arrangement an
+        interval depends on, so the name is carried in the record and checked.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        series = document["metrics"]["interval_calibration"]["coverage_series"]
+        self.assertEqual(series["encoding"], baseline._COVERAGE_SERIES_ENCODING)
+        series["encoding"] = "sparse_failures"
+
+        with self.assertRaises(ValueError):
+            calibration_from_document(document)
+
+    def test_the_published_statement_shows_the_arrangement_and_not_only_its_mean(self):
+        """What a human opening the JSON sees: runs of coverage, broken by failures.
+
+        The clustered fixture's twenty-four origins encode as five runs, and the
+        three consecutive failures at origins 6, 7 and 8 appear as a single
+        `[0, 3]`. The expected value comes from how the fixture is written and
+        never from a run.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        series = document["metrics"]["interval_calibration"]["coverage_series"]
+
+        self.assertEqual(
+            series["runs"], [[1, 6], [0, 3], [1, 8], [0, 1], [1, 6]]
+        )
+        self.assertEqual(series["length"], CALIBRATION_DOCUMENT_ORIGINS)
+        self.assertEqual(
+            sum(count for _, count in series["runs"]),
+            CALIBRATION_DOCUMENT_ORIGINS,
+        )
+
+    def test_the_encoded_series_is_bounded_by_two_integers_per_origin(self):
+        """The size claim, as an assertion rather than an assurance.
+
+        `_encode_indicator_runs`' docstring states the cost of this shape and
+        states that its worst case -- a series alternating at every origin -- is
+        one run per origin. That bound is what makes the shape safe to put in a
+        record beside a 1.5 MB one, so it is held here, on the alternating series
+        itself and on both fixtures.
+        """
+
+        alternating = [float(position % 2) for position in range(200)]
+        runs = baseline._encode_indicator_runs(alternating)
+        self.assertEqual(len(runs), len(alternating))
+
+        for misses in (CLUSTERED_MISSES, SCATTERED_MISSES):
+            series = self._document(self._report(misses))["metrics"][
+                "interval_calibration"
+            ]["coverage_series"]
+            self.assertLessEqual(len(series["runs"]), series["length"])
+
+    def test_a_run_that_declared_no_quantile_grid_publishes_no_calibration_statement(
+        self,
+    ):
+        """Absent, not defaulted. `backtest_document`'s standing rule.
+
+        `interval_calibration` refuses a report declaring fewer than two levels,
+        because the probability a coverage is calibrated against is the run's own
+        declaration and substituting this checkout's grid would report a claim
+        the run never made. That refusal must not become `backtest_document`'s:
+        a report with no grid still publishes a record, and the record simply
+        does not carry a statement it cannot make.
+        """
+
+        bare = self._report(CLUSTERED_MISSES, levels=())
+        document = self._document(bare)
+
+        self.assertNotIn("interval_calibration", document["metrics"])
+        self.assertIn("interval_coverage", document["metrics"])
+        with self.assertRaises(ValueError):
+            calibration_from_document(document)
+
+    def test_the_record_states_one_block_length_for_both_of_its_intervals(self):
+        """Two intervals over one run's origins, measured once.
+
+        `backtest_document` hands the block length it measured for the MAE
+        interval to `interval_calibration` rather than letting it measure the
+        same `_maximum_horizon_overlap` over the same folds again. Two
+        derivations of one number agree today and drift after one of them is
+        touched, and a record stating two different block lengths for two
+        resamples of the same origins would be unreadable.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        metrics = document["metrics"]
+
+        self.assertEqual(
+            metrics["interval_calibration"]["coverage_interval"]["block_length"],
+            metrics["mae_bps_interval"]["block_length"],
+        )
+        self.assertEqual(
+            metrics["interval_calibration"]["coverage_interval"]["seed"],
+            metrics["mae_bps_interval"]["seed"],
+        )
+
+    def test_the_statement_relates_the_realized_coverage_to_what_the_run_declared(self):
+        """Both halves in one object, and neither read off a module constant.
+
+        The record's `interval_probability` is `INTERVAL_PROBABILITY`, which is
+        what *this checkout* declares. The statement's `declared_probability` is
+        read off the report's own grid. They agree here because the fixture
+        declares the contract's grid, and the assertion that matters is the
+        second: a run at a narrower grid states the narrower probability, which
+        `IntervalCalibrationTests` covers on the object and this covers on the
+        record.
+        """
+
+        document = self._document(self._report(CLUSTERED_MISSES))
+        statement = document["metrics"]["interval_calibration"]
+
+        self.assertEqual(statement["declared_probability"], INTERVAL_PROBABILITY)
+        self.assertEqual(
+            statement["realized_coverage"], document["metrics"]["interval_coverage"]
+        )
+
+        narrow = self._document(
+            self._report(CLUSTERED_MISSES, levels=(0.10, 0.30, 0.50, 0.70, 0.90))
+        )
+        self.assertAlmostEqual(
+            narrow["metrics"]["interval_calibration"]["declared_probability"], 0.80
+        )
 
 
 if __name__ == "__main__":
