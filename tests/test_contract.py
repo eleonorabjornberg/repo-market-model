@@ -904,7 +904,18 @@ class SourceRegistryTests(unittest.TestCase):
                 self.assertTrue(machine_fields)
                 for field in machine_fields:
                     self.assertIsInstance(field, str)
-                    self.assertRegex(field, re.compile(r"^[A-Za-z][A-Za-z0-9_]*$"))
+                    # A hyphen is admitted, a space is not. The rule this
+                    # encodes is `tests/test_registry_interface.py`'s -- a
+                    # field name must not read as prose -- and the NY Fed
+                    # Primary Dealer Statistics series IDs are hyphenated in
+                    # the source's own vocabulary (`PDPOSGST-TOT`). Spelling
+                    # them with underscores here would make the registry name
+                    # something the export does not, and put a translation
+                    # table between the two, which is the duplicated-fact
+                    # failure this file exists to catch. Everything the
+                    # previous pattern rejected it still rejects: prose
+                    # carries spaces.
+                    self.assertRegex(field, re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$"))
                 fields = set(machine_fields)
                 for identity in source["identities"]:
                     declared_identities += 1

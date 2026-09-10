@@ -15,12 +15,16 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model.data import (
     DERIVED_ABSENCE_DECLARED_ZERO,
     DERIVED_ABSENCE_UNDECLARED,
+    IDENTITY_HELD,
+    IDENTITY_HELD_WHERE_EVALUABLE,
     declared_coverage_floor,
     load_point_in_time_panel,
+    validate_accounting_identities,
 )
 from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
+    FR2004_SOURCE_ID,
     NMFP_DERIVED_FROM_MATCH,
     NMFP_INVESTMENT_CATEGORY_ERAS,
     REFUSAL_ABSENT_FIELDS,
@@ -2749,6 +2753,354 @@ class CoverageEraTests(unittest.TestCase):
         )
 
 
+class FR2004DealerPositionTests(unittest.TestCase):
+    """The FR 2004 adapter for `PDPOSGST-TOT` and the thirteen terms that sum to it.
+
+    Anchored on the tracked export
+    ------------------------------
+
+    `tests/fixtures/snapshots/nyfed-primary-dealer/latest.csv` is a real
+    download, not a hand-built row. `PDPOSGST-TOT` appears in it exactly once,
+    at 2026-08-26, value 477607 millions, and that figure equals the sum of
+    thirteen named series to the last million. The export also mixes five as-of
+    dates -- 2026-07-31, -08-13, -08-18, -08-20 and -08-26 -- so a parser that
+    read one date for the file would misdate 441 of its 1540 rows, and nothing
+    in the file itself would say so.
+
+    Named terms, never a glob
+    -------------------------
+
+    The thirteen are `PDPOSGS-B`, `PDPOSGS-BFRN`, the seven `PDPOSGSC-` maturity
+    buckets and the four `PDPOSTIPS-` buckets. A glob over the two prefixes also
+    matches the C-suffixed series in the same buckets (`PDPOSGSC-L2C` and its
+    siblings) and sums to 492637 rather than 477607 millions at that date. The
+    registry therefore names all thirteen and the mutation record below applies
+    the glob's error directly.
+
+    What a suppression can and cannot be recorded as
+    ------------------------------------------------
+
+    `*` marks a value the New York Fed withheld. It yields no observation.
+    Asked whether the tree already distinguishes a suppression from a series the
+    export does not carry: **it does not.** The two absence records that exist --
+    `CrossSectionCoverage.absent_fields` and its `unmatched_derived_fields` --
+    both hang off a cross-sectional assembly with a declared `entity_unit` and a
+    coverage floor, and FR 2004 is a weekly time series with neither. Recording
+    a suppression distinctly would mean inventing both, which is its own block.
+    So this adapter stops at "no observation", and the distinction it can make
+    is the identity's: a week with a suppressed term is `not_evaluable`, naming
+    the term, rather than `violated` against a fabricated zero.
+
+    Why the suppressed week is a second week
+    ----------------------------------------
+
+    `validate_accounting_identities` raises `DataContractError` -- "has no
+    complete reference date" -- when *no* reference date has every declared
+    term. The tracked export carries one week, so suppressing a term in place
+    would take the identity down that raising path instead of the
+    `not_evaluable` one, and the verdict this block is about would never be
+    reached. The copy below therefore carries the real week and a synthetic
+    earlier one, and only the synthetic week is suppressed. That the single-week
+    case raises rather than recording `not_evaluable` is a finding about
+    `validate_accounting_identities`, not about this adapter; it is reported and
+    left alone, because changing it would move a shared guard that `sec_nmfp`
+    also depends on.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files -z --cached --others
+    --exclude-standard`, `python3 -B` with `PYTHONDONTWRITEBYTECODE=1`, Python
+    3.9.6. Each mutation was applied to a freshly restored copy and each
+    replacement was confirmed present in the file before the run.
+
+    **The control is not green, and that is this block's finding.** Exactly one
+    failure, before the mutations and after them:
+    `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_reaches_at_least_one_panel_column`,
+    because `nyfed_fr2004` is ingested here and no panel column draws on it yet.
+    What is outstanding is a human edit to `src/repo_model/contract.py`: moving
+    `dealer_treasury_position` out of `UNSOURCED_FEATURES` and declaring it in
+    `FEATURE_FIELDS` as `nyfed_fr2004.PDPOSGST-TOT`. No track may make it --
+    `contract.py` is `HUMAN_ONLY` -- so the failure stands until that move
+    lands. The guard is not the thing that is wrong here; it is reporting a tree
+    that is one human edit short of complete. It is constant across every case
+    below and is excluded from the kill counts; nothing else fails unmutated.
+
+    1. `release_lag.days` 6 -> 0 in `metadata/sources.json`. Kills
+       `test_the_fr2004_dealer_total_is_its_components_on_its_release_date`,
+       `AssertionError`, on the availability instant -- 2026-08-26 16:30 where
+       2026-09-03 16:30 is asserted. Also kills
+       `test_each_row_is_dated_by_its_own_as_of_date`. Total 2.
+
+       `AvailableAtDerivationTests` does **not** kill it, and the reason is
+       worth keeping: that test recomputes its expectation from the same
+       declaration the adapter reads, so a mutated `days` moves both sides
+       together and the equality still holds. It catches an adapter that has
+       drifted from the registry; it cannot catch a registry that is wrong.
+       Only a literal instant can, which is why this test asserts one.
+    2. The unit conversion dropped -- `value=value` in place of
+       `value=value / FR2004_MILLIONS_PER_BILLION`. Kills the acceptance test,
+       `AssertionError: 477607.0 != 477.607 within 9 places`. Total 1.
+    3. `*` parsed as 0.0 -- the `FR2004_SUPPRESSED` branch rewrites the value to
+       `"0"` instead of yielding no observation. Kills the acceptance test,
+       `AssertionError`, at the `assertNotIn`: the suppressed week now carries a
+       `PDPOSTIPS-G11` observation of 0.0. Had that assertion not been there the
+       identity would have gone on to report `violated` by exactly the
+       suppressed term, which is the second half of the same kill. Total 1.
+    4. `PDPOSGSC-L2C` added to the identity's `right` terms, and to `fields` and
+       `field_frequencies` with it -- `tests/test_contract.py` requires the
+       terms to be a subset of `fields`, so the glob's error cannot be applied
+       to the identity alone. Kills the acceptance test, `AssertionError`, on
+       the parsed series set, and kills
+       `test_a_series_the_registry_does_not_declare_is_ignored` with it. Total 2.
+    5. The non-numeric refusal made a no-op -- `except ValueError: continue`.
+       Kills the acceptance test, `AssertionError: ValueError not raised`.
+       Total 1.
+    6. The missing-as-of-date refusal made a no-op, the same way. Kills the
+       acceptance test, `AssertionError: ValueError not raised`. Total 1.
+
+    Each refusal is asserted by the phrase only its own message carries, and
+    each mutated copy carries exactly one defect, so neither refusal can stand
+    in for the other: 5 and 6 both report `ValueError not raised` because each
+    removed the only refusal its own case reaches.
+    """
+
+    FIXTURE = (
+        Path(__file__).parents[1]
+        / "tests"
+        / "fixtures"
+        / "snapshots"
+        / "nyfed-primary-dealer"
+        / "latest.csv"
+    )
+
+    #: The as-of date `PDPOSGST-TOT` appears at, and the only one in the export
+    #: that carries the identity's terms.
+    REF_DATE = date(2026, 8, 26)
+
+    #: A second week, present in no download. It exists so the identity has a
+    #: complete reference date to be evaluable on while another week is not.
+    SUPPRESSED_REF_DATE = date(2026, 8, 19)
+
+    TOTAL_SERIES = "PDPOSGST-TOT"
+
+    COMPONENTS = (
+        "PDPOSGS-B",
+        "PDPOSGS-BFRN",
+        "PDPOSGSC-L2",
+        "PDPOSGSC-G2L3",
+        "PDPOSGSC-G3L6",
+        "PDPOSGSC-G6L7",
+        "PDPOSGSC-G7L11",
+        "PDPOSGSC-G11L21",
+        "PDPOSGSC-G21",
+        "PDPOSTIPS-L2",
+        "PDPOSTIPS-G2",
+        "PDPOSTIPS-G6L11",
+        "PDPOSTIPS-G11",
+    )
+
+    def registry(self):
+        return json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+
+    def fr2004_registry(self, registry=None):
+        """Only the source under test, the way `build_daily_panel` restricts it.
+
+        `validate_accounting_identities` evaluates every identity in whatever
+        registry it is handed, and raises on one with no complete reference
+        date. Handing it the whole registry would make this test fail on
+        `sec_nmfp`'s balance sheet, which these observations say nothing about.
+        """
+
+        registry = registry or self.registry()
+        return {"nyfed_fr2004": registry["nyfed_fr2004"]}
+
+    def snapshot(self, text, registry=None):
+        """One `SnapshotArtifact` over `text`, written to a temporary file."""
+
+        payload = text.encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "latest.csv"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id="nyfed_fr2004",
+            path=path,
+            retrieved_at="2026-09-10T00:00:00+00:00",
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=(
+                "https://www.newyorkfed.org/markets/counterparties/"
+                "primary-dealers-statistics"
+            ),
+            byte_count=len(payload),
+        )
+
+    def fixture_text(self):
+        return self.FIXTURE.read_text(encoding="utf-8")
+
+    def parse(self, text, registry=None):
+        registry = registry or self.registry()
+        return list(
+            parse_snapshots([self.snapshot(text)], registry=registry).rows
+        )
+
+    def by_series(self, rows, ref_date):
+        return {
+            row.series_id: row for row in rows if row.ref_date == ref_date
+        }
+
+    def with_suppressed_week(self, suppressed):
+        """The tracked export plus a synthetic earlier week with one term withheld.
+
+        The added rows repeat the real week's values so the only thing that
+        distinguishes the two weeks is the `*`. The total is carried across
+        unchanged, which is what makes the case sharp: a parser that read `*` as
+        0.0 would evaluate the identity and find it violated by exactly the
+        suppressed term.
+        """
+
+        lines = [self.fixture_text().rstrip("\n")]
+        values = self.by_series(self.parse(self.fixture_text()), self.REF_DATE)
+        for series_id in (self.TOTAL_SERIES, *self.COMPONENTS):
+            if series_id == suppressed:
+                raw = "*"
+            else:
+                raw = str(round(values[series_id].value * 1000))
+            lines.append(
+                f'"{self.SUPPRESSED_REF_DATE.isoformat()}","{series_id}","{raw}"'
+            )
+        return "\n".join(lines) + "\n"
+
+    def test_the_fr2004_dealer_total_is_its_components_on_its_release_date(self):
+        registry = self.registry()
+        rows = self.parse(self.fixture_text(), registry)
+
+        # -- the value, and the unit it is in -----------------------------
+        observed = self.by_series(rows, self.REF_DATE)
+        self.assertEqual(
+            sorted(observed), sorted([self.TOTAL_SERIES, *self.COMPONENTS])
+        )
+        self.assertAlmostEqual(observed[self.TOTAL_SERIES].value, 477.607, places=9)
+
+        # -- availability, from the registry and not from the file --------
+        self.assertEqual(
+            observed[self.TOTAL_SERIES].available_at,
+            datetime(2026, 9, 3, 16, 30, tzinfo=ZoneInfo("America/New_York")),
+        )
+        # Read from the declaration on every parse rather than compiled in: a
+        # registry that declares one more business day moves the adapter with
+        # it. An equality against the literal above alone would pass just as
+        # well over a hard-coded constant.
+        drifted = self.registry()
+        drifted["nyfed_fr2004"]["release_lag"]["days"] += 1
+        # `contract.validate_release_lag` holds `worst_case_calendar_days` at
+        # or above `days + 5`, and the adapter fails closed on a non-empty
+        # result from it, so the drifted declaration has to stay well formed or
+        # this leg would pass on a refusal rather than on a moved availability.
+        drifted["nyfed_fr2004"]["release_lag"]["worst_case_calendar_days"] += 1
+        moved = self.by_series(self.parse(self.fixture_text(), drifted), self.REF_DATE)
+        self.assertEqual(
+            moved[self.TOTAL_SERIES].available_at,
+            datetime(2026, 9, 4, 16, 30, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+        # -- the declared identity, on the week it can be evaluated on ----
+        held = validate_accounting_identities(rows, self.fr2004_registry(registry))[
+            "nyfed_fr2004:dealer_treasury_total_is_its_declared_components"
+        ]
+        self.assertEqual(held.verdict, IDENTITY_HELD)
+        self.assertEqual(held.evaluated_ref_dates, 1)
+        self.assertEqual(held.violations, ())
+
+        # -- a suppressed term: no observation, and not_evaluable ---------
+        suppressed_series = "PDPOSTIPS-G11"
+        suppressed_rows = self.parse(
+            self.with_suppressed_week(suppressed_series), registry
+        )
+        withheld_week = self.by_series(suppressed_rows, self.SUPPRESSED_REF_DATE)
+        self.assertNotIn(suppressed_series, withheld_week)
+        self.assertEqual(
+            sorted(withheld_week),
+            sorted(
+                series
+                for series in (self.TOTAL_SERIES, *self.COMPONENTS)
+                if series != suppressed_series
+            ),
+        )
+        evaluation = validate_accounting_identities(
+            suppressed_rows, self.fr2004_registry(registry)
+        )["nyfed_fr2004:dealer_treasury_total_is_its_declared_components"]
+        self.assertEqual(evaluation.violations, ())
+        self.assertEqual(len(evaluation.unevaluated), 1)
+        unevaluated = evaluation.unevaluated[0]
+        self.assertEqual(unevaluated.ref_date, self.SUPPRESSED_REF_DATE)
+        self.assertEqual(unevaluated.absent_fields, (suppressed_series,))
+        self.assertEqual(evaluation.verdict, IDENTITY_HELD_WHERE_EVALUABLE)
+
+        # -- the two refusals, each by the phrase only its message carries -
+        non_numeric = self.fixture_text().replace(
+            '"2026-08-26","PDPOSGST-TOT","477607"',
+            '"2026-08-26","PDPOSGST-TOT","n/a"',
+        )
+        self.assertNotEqual(non_numeric, self.fixture_text())
+        with self.assertRaisesRegex(
+            ValueError, r"only '\*' marks a suppressed value"
+        ):
+            self.parse(non_numeric, registry)
+
+        undated = self.fixture_text().replace(
+            '"2026-08-26","PDPOSGST-TOT","477607"',
+            '"","PDPOSGST-TOT","477607"',
+        )
+        self.assertNotEqual(undated, self.fixture_text())
+        with self.assertRaisesRegex(ValueError, r"has no valid As Of Date"):
+            self.parse(undated, registry)
+
+    def test_a_series_the_registry_does_not_declare_is_ignored(self):
+        """The export carries over two hundred series; this adapter claims fourteen.
+
+        Including the C-suffixed siblings of the identity's own terms, which is
+        why "ignored" has to be checked rather than assumed: `PDPOSGSC-L2C` is
+        in the file, at the same as-of date, and it is not in the registry.
+        """
+
+        rows = self.parse(self.fixture_text())
+        declared = set(self.registry()["nyfed_fr2004"]["fields"])
+        self.assertEqual({row.series_id for row in rows}, declared)
+        self.assertIn(
+            '"2026-08-26","PDPOSGSC-L2C"', self.fixture_text(),
+        )
+        self.assertNotIn("PDPOSGSC-L2C", {row.series_id for row in rows})
+
+    def test_each_row_is_dated_by_its_own_as_of_date(self):
+        """Five as-of dates in one file, and none of the fourteen may borrow another's."""
+
+        text = self.fixture_text()
+        moved = text.replace(
+            '"2026-08-26","PDPOSGS-B","69687"',
+            '"2026-08-20","PDPOSGS-B","69687"',
+        )
+        self.assertNotEqual(moved, text)
+        rows = self.parse(moved)
+        dates = {row.series_id: row.ref_date for row in rows}
+        self.assertEqual(dates["PDPOSGS-B"], date(2026, 8, 20))
+        self.assertEqual(dates[self.TOTAL_SERIES], self.REF_DATE)
+        self.assertEqual(
+            {row.available_at for row in rows if row.series_id == "PDPOSGS-B"},
+            {datetime(2026, 8, 28, 16, 30, tzinfo=ZoneInfo("America/New_York"))},
+        )
+
+    def test_an_undeclared_source_is_refused_rather_than_parsed_with_a_default(self):
+        """No fallback lag. A registry without the entry cannot yield an availability."""
+
+        registry = self.registry()
+        del registry["nyfed_fr2004"]
+        with self.assertRaisesRegex(
+            ValueError, r"is not declared in the source registry"
+        ):
+            self.parse(self.fixture_text(), registry)
+
+
 class AvailableAtDerivationTests(unittest.TestCase):
     """The adapter's `available_at` must be the registry's declaration, not a twin of it.
 
@@ -2761,9 +3113,17 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
     This is the failure the contract keeps naming -- a value stated twice with nothing
     checking that the statements match -- caught here rather than at the next merge.
-    The duplication is not removed; it is made detectable. Removing it means threading
-    the registry into the row parsers, which changes the adapters and belongs in its
-    own block.
+    The duplication is not removed for `_nyfed_rows`; it is made detectable.
+
+    `nyfed_fr2004` is the first source where it is removed. `_fr2004_rows` takes the
+    registry as an argument and reads `days`, `available_time` and `timezone` off it
+    on every call, so for that source the two statements are one and this test cannot
+    fail by disagreement. What it still does there is name the source as covered, so
+    a fourth `ref_date` source cannot be added without a case. Note the limit, which
+    `FR2004DealerPositionTests` records in full: an expectation recomputed from the
+    declaration moves with the declaration, so this test cannot see a registry whose
+    `days` is simply wrong. Only an assertion against a literal instant can, and that
+    one lives with the adapter's own acceptance test.
 
     See `RealSnapshotPublicationGapTests` in `tests/test_data.py` for why this test,
     and not the publication-gap bound, is the one with teeth for these sources.
@@ -2774,6 +3134,39 @@ class AvailableAtDerivationTests(unittest.TestCase):
             encoding="utf-8"
         )
     )
+
+    def fr2004_snapshot(self, ref_date, retrieved):
+        """One FR 2004 row, in the export's own CSV shape.
+
+        A separate builder because the source shares the `nyfed_` prefix and
+        nothing else: the reference-rate sources are JSON from the markets API
+        and this one is a three-column CSV of Primary Dealer Statistics.
+        """
+
+        payload = (
+            '"As Of Date","Time Series","Value (millions)"\n'
+            f'"{ref_date}","PDPOSGST-TOT","477607"\n'
+        ).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "latest.csv"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=FR2004_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=(
+                "https://www.newyorkfed.org/markets/counterparties/"
+                "primary-dealers-statistics"
+            ),
+            byte_count=len(payload),
+        )
+
+    def source_snapshot(self, source_id, ref_date, retrieved):
+        if source_id == FR2004_SOURCE_ID:
+            return self.fr2004_snapshot(ref_date, retrieved)
+        return self.nyfed_snapshot(source_id, ref_date, retrieved)
 
     def nyfed_snapshot(self, source_id, ref_date, retrieved):
         rate_name = source_id.split("_", 1)[1]
@@ -2832,7 +3225,8 @@ class AvailableAtDerivationTests(unittest.TestCase):
         """A source added to the registry without a case here would go unchecked."""
 
         self.assertEqual(
-            self.ref_date_sources(), ["nyfed_bgcr", "nyfed_sofr", "nyfed_tgcr"]
+            self.ref_date_sources(),
+            ["nyfed_bgcr", "nyfed_fr2004", "nyfed_sofr", "nyfed_tgcr"],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
@@ -2842,7 +3236,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
             # calendar gap differs from its business-day lag.
             for ref_date in (date(2026, 1, 6), date(2026, 1, 9)):
                 with self.subTest(source=source_id, ref_date=ref_date):
-                    snapshot = self.nyfed_snapshot(
+                    snapshot = self.source_snapshot(
                         source_id,
                         ref_date.isoformat(),
                         # Retrieved long after, so the min() against retrieval time
@@ -2864,7 +3258,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         source_id = "nyfed_sofr"
         ref_date = date(2026, 1, 6)
-        snapshot = self.nyfed_snapshot(
+        snapshot = self.source_snapshot(
             source_id, ref_date.isoformat(), "2026-06-01T00:00:00+00:00"
         )
         rows = list(observations_from_snapshots([snapshot]))

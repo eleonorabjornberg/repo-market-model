@@ -1718,6 +1718,30 @@ def _priceable_columns(
     return built, refusals
 
 
+def _source_supplied_anything(
+    source: Mapping[str, object], supplied_series: set[str]
+) -> bool:
+    """Did this source contribute any observation this build can see?
+
+    Keyed on the source's declared `fields` -- the series it says it carries --
+    checked against the `series_id`s in the visible rows. Not keyed on the terms
+    of the identity being checked, which are a subset of those fields: a source
+    that supplied a field its identity does not name still supplied something,
+    and its identity is then answerable in the ordinary way rather than exempt.
+
+    A source that declares no `fields` returns `True`, and is evaluated exactly
+    as before. "Supplied nothing" is a claim about a declared vocabulary, and a
+    source that declares none gives no ground to make it from; reading the
+    absent list as the empty list would exempt every such source instead of
+    none of them. See `build_daily_panel` rule 5.
+    """
+
+    declared = source.get("fields")
+    if not isinstance(declared, list):
+        return True
+    return any(str(field) in supplied_series for field in declared)
+
+
 def build_daily_panel(
     observations: Iterable[PointInTimeObservation],
     registry: Mapping[str, Mapping[str, object]],
@@ -1792,6 +1816,18 @@ def build_daily_panel(
     supplied a column that was built. See `docs/DATA_QUALITY_DECISIONS.md`,
     "Whether a source may abort a build it contributes nothing to".
 
+    Scoped on the columns *and* on the supply, because the first half alone keys
+    on what the panel declares rather than on what arrived. A source whose
+    column is priceable and whose file this build holds none of was still
+    evaluated -- over zero observations, which is neither `held` nor `violated`
+    but `no complete reference date`, raised as a contract error. That is a
+    source that supplied nothing failing a build, which is the thing this rule
+    exists to stop, reaching it through the one channel the scoping did not
+    cover. A source is checked when the panel built a column from it *and* it
+    supplied at least one of its declared series. A source that supplied some of
+    them but never enough to complete a reference date is not exempt: that is a
+    finding about the data, and it still raises.
+
     This is a scoping and not a loosening, and the second half is what keeps it
     honest: a violated identity in a source the panel *does* contain still stops
     the panel, and never by dropping the offending rows.
@@ -1857,10 +1893,27 @@ def build_daily_panel(
     built_sources = {
         str(source_id) for column in built for source_id, _field in FEATURE_FIELDS[column]
     }
+    # ...and only the sources that supplied something. A column can be priceable
+    # and built from a source this build holds no file of -- `funding_inputs/`
+    # carries no FR 2004 export -- and the restriction above admits it anyway,
+    # because it keys on the built columns and not on what arrived. Rule 5 then
+    # evaluated an identity over zero observations, and the evaluator raised
+    # `no complete reference date`: a source that supplied nothing failing the
+    # build, through exactly the channel the paragraph above says it should not
+    # be able to use.
+    #
+    # Keyed on the source's declared series; see `_source_supplied_anything`.
+    # Keying it on whether the identity has a complete reference date would be a
+    # different rule wearing the same clothes -- that one also skips a source
+    # whose terms were observed but never together on one date, and that case
+    # must still raise. `sec_nmfp` reaches its unevaluable dates through it.
+    supplied_series = {str(row.series_id) for row in visible}
     depended_on = {
         source_id: source
         for source_id, source in registry.items()
-        if source_id in built_sources and source.get("identities")
+        if source_id in built_sources
+        and source.get("identities")
+        and _source_supplied_anything(source, supplied_series)
     }
     if depended_on:
         for evaluation in sorted(

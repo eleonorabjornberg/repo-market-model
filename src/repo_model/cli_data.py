@@ -22,6 +22,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 from .data import (
+    PANEL_COLUMNS,
     REQUIRED_FIELDS,
     audit_panel,
     build_daily_panel,
@@ -131,6 +132,59 @@ def _backfill_nmfp(args: argparse.Namespace) -> int:
     return 0
 
 
+def _requested_columns(requested: list[str]) -> tuple[str, ...]:
+    """Turn what `--column` was given into the column list a build declares.
+
+    Two jobs, and the second is the one worth writing down.
+
+    It refuses a request it cannot honour *as asked*: a column named twice, and
+    a column that is not a panel column at all. Both are refusals rather than
+    quiet repairs, and the ordering below is exactly why they have to be. The
+    return keys on a set and walks `PANEL_COLUMNS`, so with either check gone
+    the wrong request does not fail -- it is repaired into a different one and
+    built. `--column sofr --column sofr` becomes a one-column panel, and so
+    does `--column sofr --column sofr_rate`: the unknown name is simply not in
+    `PANEL_COLUMNS` to be emitted. Both would exit 0 with a digest over a panel
+    nobody asked for, which is worse than either mistake, because a build that
+    refuses is a build a reader retypes and a build that succeeds is one they
+    publish. (Passed through unnormalised the duplicate reaches
+    `build_daily_panel`, which builds `sofr` twice and has `write_daily_panel`
+    write the header `date,sofr,sofr` without complaint; that is the shape the
+    check is named after and is not the shape this function would produce.)
+
+    Then it returns the requested columns **in `PANEL_COLUMNS` order, not in
+    argument order.** `build_daily_panel` builds the columns in the order it is
+    given them and `write_daily_panel` writes its header from that order, so
+    passing the flags straight through would make the panel's bytes -- and so
+    the digest a manifest pins -- a function of the order the flags were typed.
+    `metadata/funding_panel_manifest.json` records its `built_columns` in
+    `PANEL_COLUMNS` order, so the manifest-order case would pass either way;
+    that is exactly why the ordering is done here and asserted separately.
+    Normalised, the digest is a function of the set of columns and nothing else.
+
+    A column that is a panel column but that this build cannot price is not
+    caught here -- pricing is `build_daily_panel`'s answer, and `_build`
+    refuses on its `refusals` once it has one.
+    """
+
+    seen = set()
+    for column in requested:
+        if column in seen:
+            raise ValueError(
+                f"--column names {column!r} more than once; a column may be "
+                "asked for at most once, and the panel carries each named "
+                "column exactly once"
+            )
+        seen.add(column)
+    for column in requested:
+        if column not in PANEL_COLUMNS:
+            raise ValueError(
+                f"--column names {column!r}, which is not a panel column; "
+                f"choose from: {', '.join(PANEL_COLUMNS)}"
+            )
+    return tuple(column for column in PANEL_COLUMNS if column in seen)
+
+
 def _build(args: argparse.Namespace) -> int:
     """Build the wide daily panel from the raw snapshots on disk.
 
@@ -147,7 +201,24 @@ def _build(args: argparse.Namespace) -> int:
     `--decision-time` is passed straight through to the pricing function, which
     is the only thing that reads it. It does not move a value: the join does
     not subtract the release lag, the purge does.
+
+    `--column` is *not* passed straight through; see `_requested_columns`. It
+    pins the build to a stated set of columns, so that a source joining the
+    registry -- which widens `PANEL_COLUMNS`' priceable subset and so widens the
+    default build -- does not move a published panel's bytes. A panel built for
+    `metadata/funding_panel_manifest.json`'s digest is built with `--column` per
+    that manifest's `built_columns`; the default, with no `--column`, remains
+    every declared column, refusals recorded rather than raised.
+
+    Asked for by name, a column must arrive or the command must fail. Without
+    the refusal below, `--column on_rrp` would exit 0 with a panel that has no
+    `on_rrp` in it and the reason buried in the manifest -- the digest would be
+    a true digest of the wrong panel. So when `--column` was given, any refusal
+    is fatal; with no `--column`, refusals are the ordinary record of what
+    latest vintage cannot carry and are reported, not raised.
     """
+
+    columns = _requested_columns(args.column) if args.column else PANEL_COLUMNS
 
     manifests = sorted(args.raw_root.glob("*/*.manifest.json"))
     if args.source:
@@ -169,7 +240,15 @@ def _build(args: argparse.Namespace) -> int:
         load_source_registry(args.registry),
         build_cutoff=datetime.fromisoformat(args.build_cutoff.replace("Z", "+00:00")),
         decision_time=time.fromisoformat(args.decision_time),
+        columns=columns,
     )
+    if args.column and build.refusals:
+        raise ValueError(
+            "--column asked for a column this build cannot price: "
+            + "; ".join(
+                f"{name}: {reason}" for name, reason in sorted(build.refusals.items())
+            )
+        )
     manifest_path = write_daily_panel(
         build, args.output, source_shas=snapshot.source_shas
     )
@@ -263,6 +342,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         metavar="SOURCE_ID",
         help="build from this raw source only, repeatable; default is every "
         "source with a snapshot on disk",
+    )
+    build.add_argument(
+        "--column",
+        action="append",
+        metavar="COLUMN",
+        help="build this panel column only, repeatable; the panel carries the "
+        "named columns in PANEL_COLUMNS order whatever order the flags are "
+        "given in, and a column this build cannot price is refused rather "
+        "than left out. Default is every declared column, with the ones "
+        "latest vintage cannot carry recorded as refusals",
     )
     build.add_argument(
         "--build-cutoff",

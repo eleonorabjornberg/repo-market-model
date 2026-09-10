@@ -861,6 +861,117 @@ def _nyfed_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
+#: The FR 2004 Primary Dealer Statistics source. Named once so the parser, the
+#: dispatch in `parse_snapshots` and the registry lookup cannot drift apart.
+FR2004_SOURCE_ID = "nyfed_fr2004"
+
+#: The three columns the export carries. Checked as a subset rather than an
+#: equality: a column this adapter does not read is not a reason to refuse a
+#: file, and a column it does read going missing is.
+FR2004_COLUMNS = ("As Of Date", "Time Series", "Value (millions)")
+
+#: What the New York Fed writes in place of a figure withheld for
+#: confidentiality. It is neither zero nor a failed read, and the difference is
+#: the whole of the handling below: it yields no observation at all, so the
+#: identity that names the suppressed series comes back `not_evaluable` for that
+#: week instead of `violated` against a fabricated zero.
+FR2004_SUPPRESSED = "*"
+
+#: The export is denominated in USD millions and `DATA.md` denominates the panel
+#: in USD billions.
+FR2004_MILLIONS_PER_BILLION = 1000.0
+
+
+def _fr2004_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+    """Parse one FR 2004 Primary Dealer Statistics export.
+
+    Three things this does not do, each of which is a way the same file has been
+    read wrongly elsewhere:
+
+    * It never takes a reference date from the file. Every row carries its own
+      `As Of Date` and the tracked fixture mixes five of them, so a single date
+      read once and applied to the whole export would misdate 441 of its 1540
+      rows.
+    * It never hard-codes availability. `days`, `available_time` and `timezone`
+      come from the registry's `release_lag` on every call, which is what
+      `AvailableAtDerivationTests` then holds the adapter to.
+    * It never globs a series name. The declared `fields` are matched exactly,
+      so `PDPOSGSC-L2C` is not read as `PDPOSGSC-L2`'s bucket and the identity
+      keeps the thirteen terms it declares.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .contract import validate_release_lag
+    from .data import PointInTimeObservation
+
+    source = registry.get(FR2004_SOURCE_ID) if isinstance(registry, Mapping) else None
+    if not isinstance(source, Mapping):
+        raise ValueError(
+            f"{FR2004_SOURCE_ID} is not declared in the source registry; the "
+            f"adapter reads its fields and its release lag from there"
+        )
+    declared_fields = {str(field) for field in source.get("fields", ())}
+    release_lag = source.get("release_lag")
+    problems = validate_release_lag(FR2004_SOURCE_ID, release_lag)
+    if problems:
+        raise ValueError("; ".join(problems))
+    if release_lag["basis"] != "ref_date":
+        raise ValueError(
+            f"{FR2004_SOURCE_ID}: availability is derived from the as-of date, so "
+            f"the declared basis must be 'ref_date', got {release_lag['basis']!r}"
+        )
+    lag_days = int(release_lag["days"])
+    available_time = time.fromisoformat(release_lag["available_time"])
+    zone = ZoneInfo(release_lag["timezone"])
+
+    reader = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")))
+    if not reader.fieldnames or not set(FR2004_COLUMNS).issubset(reader.fieldnames):
+        raise ValueError(
+            "FR 2004 snapshot is not the expected CSV format; it must carry "
+            f"the columns {list(FR2004_COLUMNS)}"
+        )
+
+    rows = []
+    for record_number, record in enumerate(reader, start=2):
+        series_id = (record.get("Time Series") or "").strip()
+        # A series the registry does not declare is ignored, not parsed. The
+        # export carries over 200 of them and this adapter makes no claim about
+        # any but its fourteen.
+        if series_id not in declared_fields:
+            continue
+        raw_ref_date = (record.get("As Of Date") or "").strip()
+        try:
+            ref_date = date.fromisoformat(raw_ref_date)
+        except ValueError as exc:
+            raise ValueError(
+                f"FR 2004 row {record_number} has no valid As Of Date; each row "
+                f"carries its own reference date and none may be taken from the file"
+            ) from exc
+        raw_value = (record.get("Value (millions)") or "").strip()
+        if raw_value == FR2004_SUPPRESSED:
+            continue
+        try:
+            value = float(raw_value.replace(",", ""))
+        except ValueError as exc:
+            raise ValueError(
+                f"FR 2004 {series_id} is not numeric in row {record_number}; "
+                f"only {FR2004_SUPPRESSED!r} marks a suppressed value"
+            ) from exc
+        rows.append(
+            PointInTimeObservation(
+                series_id=series_id,
+                ref_date=ref_date,
+                available_at=datetime.combine(
+                    _next_weekday(ref_date, lag_days), available_time, tzinfo=zone
+                ),
+                value=value / FR2004_MILLIONS_PER_BILLION,
+                vintage_id=artifact.retrieved_at,
+                source_sha=artifact.sha256,
+            )
+        )
+    return rows
+
+
 def _fred_csv_payloads(payload: bytes) -> Iterable[bytes]:
     if not payload.startswith(b"PK"):
         return (payload,)
@@ -2200,7 +2311,11 @@ def parse_snapshots(
             nmfp.append(artifact)
             continue
         payload = _artifact_payload(artifact)
-        if artifact.source_id.startswith("nyfed_"):
+        if artifact.source_id == FR2004_SOURCE_ID:
+            # Before the `nyfed_` prefix test below, which would otherwise send
+            # a CSV export to the reference-rate JSON parser.
+            parsed_rows = _fr2004_rows(artifact, payload, registry)
+        elif artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload)
         elif artifact.source_id == "fred_macro_latest_vintage":
             parsed_rows = _fred_rows(artifact, payload)
