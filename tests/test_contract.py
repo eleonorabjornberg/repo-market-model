@@ -213,10 +213,12 @@ from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     FittedArx,
     FittedPersistence,
+    FittedRollingResidualLaw,
     FittedThreshold,
     _quantile,
     fit,
     fit_arx,
+    fit_rolling_residual_law,
     fit_threshold,
     predict,
     predict_stress,
@@ -1585,6 +1587,47 @@ class ThresholdForecastInterfaceTests(ForecastInterfaceConformance, unittest.Tes
             train_frame,
             CONFORMANCE_REGRESSORS,
             "on_rrp",
+            cutoff=cutoff,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+
+class RollingResidualLawForecastInterfaceTests(
+    ForecastInterfaceConformance, unittest.TestCase
+):
+    """The conformance suite against `FittedRollingResidualLaw`, on the same rows.
+
+    The fourth implementer, and the first whose difference from another one is
+    *which rows the law was read from* rather than what the centre is. Its point
+    forecast is persistence's, character for character, so every assertion here
+    that would have passed on persistence passes for free -- and that is the
+    case worth having in a conformance suite rather than a reason to skip it:
+    the one thing this model changes is the sample behind `residuals`, and
+    `residuals` is what `predict` and `predict_stress` both read. A windowing
+    bug that left the two disagreeing would land on
+    `test_predict_stress_agrees_with_the_quantiles_predict_reports` here and
+    nowhere else in this file.
+
+    `WINDOW` is declared at the call site because the fitter requires it and
+    nothing in the repository declares one -- the same stopgap, and the same
+    reason, as `CONFORMANCE_REGRESSORS` above. It is comfortably inside the
+    residuals the shared fixture carries, including on the shortened frame
+    `test_a_fitted_model_carries_the_cutoff_it_was_fitted_at` fits on; a window
+    the frame could not fill is refused, and that refusal is this model's own
+    test in `tests/test_baseline.py` rather than a conformance concern.
+    """
+
+    #: Trailing residuals the law is read from. Any value in range works: this
+    #: suite asserts interface properties, and the windowed law's *content* is
+    #: `tests/test_baseline.py::RollingResidualLawTests`.
+    WINDOW = 20
+
+    MODEL_CLASS = FittedRollingResidualLaw
+
+    def fit_model(self, train_frame, cutoff=None):
+        return fit_rolling_residual_law(
+            train_frame,
+            self.WINDOW,
             cutoff=cutoff,
             minimum_history=self.MINIMUM_HISTORY,
         )

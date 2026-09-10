@@ -930,6 +930,245 @@ def fit(
     return FittedPersistence(residuals, declared, levels)
 
 
+class FittedRollingResidualLaw:
+    """Persistence's point rule with its residual law cut to a trailing window.
+
+    `PLAN.md` Phase 2 lists "rolling mean/quantiles" among the four benchmarks
+    and no rolling anything existed. This is the quantile half of that line, and
+    it is aimed at the one thing persistence is measurably bad at: it wins on
+    accuracy and **under-covers its own nominal interval**, so the interval is
+    what a challenger has to fix, and the interval is the residual law.
+
+    The point forecast is `FittedPersistence`'s, unchanged -- the last observed
+    spread. What differs is the sample the predictive distribution is read off:
+    the **last `window` one-step residuals before the cutoff, in time order**,
+    rather than every residual in the training frame. A frame of `n` rows
+    carries `n - 1` one-step residuals and this law is the final `window` of
+    them. Under an expanding training window persistence's law grows at every
+    origin and so averages over regimes it has left; this one does not.
+
+    Fitted state is the residual vector, the cutoff and `window`. `window` is
+    carried for the reason `FittedArx.regressors` is: a fitted object that
+    cannot say which law it used cannot be audited, and a trailing-window law
+    and a full-sample law fitted on a short frame are otherwise the same object.
+
+    **Not a subclass of `FittedPersistence`**, though the point rule is
+    identical and inheritance would save a dozen lines. Three tests in
+    `tests/test_baseline.py` assert `isinstance(report.model, FittedPersistence)`
+    to pin that the default fitter is the benchmark and not a challenger; a
+    subclass satisfies all three, so the blunting would land on exactly the
+    assertions that keep a challenger from being published as the baseline.
+    `FittedForecastModel`'s own docstring gives the general form of the argument
+    -- the models here share an interface and no implementation.
+
+    **`window` is declared, never chosen from data.** There is no search over
+    window lengths and no default. A length picked by scoring windows against
+    the panel is a hyperparameter fitted outside `fit`, which the contract
+    forbids in those words, and neither track can see the panel to pick one
+    honestly in any case.
+
+    Raises: see `fit_rolling_residual_law`, which is the only thing that builds
+    one of these.
+    """
+
+    __slots__ = ("_residuals", "cutoff", "levels", "window")
+
+    def __init__(
+        self,
+        residuals: Sequence[float],
+        cutoff: date,
+        window: int,
+        levels: Sequence[float] = QUANTILE_LEVELS,
+    ) -> None:
+        #: Sorted here, as in every other fitted model in this module, because
+        #: `_quantile` and `_exceedance_from_residuals` read order statistics and
+        #: the inversion between them is only exact over one ordering. The
+        #: **selection** of which residuals these are happened before this call,
+        #: in time order, in `fit_rolling_residual_law`. Sorting and selecting
+        #: are two steps and their order is the whole content of this model:
+        #: sorting first and taking the tail yields the `window` largest
+        #: residuals, which is a plausible-looking sample, biased upward, and
+        #: not a trailing window of anything.
+        self._residuals: Tuple[float, ...] = tuple(sorted(float(r) for r in residuals))
+        self.cutoff: date = cutoff
+        self.window: int = int(window)
+        self.levels: Tuple[float, ...] = _validate_levels(levels)
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostic only
+        return (
+            f"FittedRollingResidualLaw(cutoff={self.cutoff.isoformat()}, "
+            f"window={self.window}, residuals={len(self._residuals)})"
+        )
+
+    @property
+    def residuals(self) -> Tuple[float, ...]:
+        """The fitted residual sample, ascending. A copy-free read-only view."""
+
+        return self._residuals
+
+    @property
+    def features_read(self) -> Tuple[str, ...]:
+        """`spread_bps`, and nothing else.
+
+        The same claim `FittedPersistence.features_read` makes, and true for the
+        same reason: the point rule reads the spread and the law is built from
+        differences of it. Narrowing the law to a trailing window changes how
+        many rows are read, never which columns, so the purge this model is
+        sized against is persistence's purge.
+        """
+
+        return ("spread_bps",)
+
+    def trained_beyond(self, feature_row: DailyObservation) -> bool:
+        """Was this model fitted on rows dated after `feature_row`?
+
+        Same question, same answer, same reason as `FittedPersistence`. The
+        window narrows which rows the *law* came from and does not move the
+        cutoff: a model whose residuals all predate the feature row can still
+        have been fitted on a frame that did not, and the cutoff is what says so.
+        """
+
+        return feature_row.date < self.cutoff
+
+    def point_forecast(self, feature_row: DailyObservation) -> float:
+        """The last observed spread. Persistence's point rule, by construction.
+
+        This model is the residual law and nothing else; if this returned
+        anything other than the spread it would be a different challenger and
+        the interval finding it was built for would no longer be what moved.
+        """
+
+        return feature_row.spread_bps
+
+    def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        """One predicted spread quantile per declared level, in declared order.
+
+        The persistence point forecast shifted by the windowed residual quantile
+        at each level, through the same `_quantile` every other model here reads
+        its grid with.
+        """
+
+        anchor = self.point_forecast(feature_row)
+        return tuple(anchor + _quantile(self._residuals, level) for level in self.levels)
+
+    def predict_stress(
+        self,
+        feature_row: DailyObservation,
+        taus: Optional[Sequence[float]] = None,
+    ) -> Tuple[float, ...]:
+        """`P(spread > tau)` per tau, derived from the law `predict` reports.
+
+        The same derivation as the other three models, over this model's own
+        residual vector: `_exceedance_from_residuals` inverts `_quantile`, so
+        `predict_stress` at `predict`'s `Q(q)` returns `1 - q` here too. Nothing
+        in this object was fitted to a label, and the windowing happens before
+        either output exists rather than between them -- a law that `predict`
+        and `predict_stress` disagreed about would be two laws.
+        """
+
+        family = _validate_taus_bp(
+            load_stress_thresholds()["taus_bp"] if taus is None else taus
+        )
+        anchor = self.point_forecast(feature_row)
+        return tuple(
+            _exceedance_from_residuals(self._residuals, tau - anchor) for tau in family
+        )
+
+
+def fit_rolling_residual_law(
+    train_frame: Sequence[DailyObservation],
+    window: int,
+    cutoff: Optional[date] = None,
+    minimum_history: int = 20,
+    levels: Sequence[float] = QUANTILE_LEVELS,
+) -> FittedRollingResidualLaw:
+    """Fit the trailing-window residual law on `train_frame`.
+
+    The one-step residuals are formed in the frame's own order, and the law is
+    the **last `window` of them**, the ones nearest the cutoff. The selection is
+    made here, on the time-ordered sequence, before anything is sorted: the
+    fitted object sorts what it is handed, so a caller that handed it a sorted
+    vector's tail would be handing over the `window` largest residuals under
+    this function's name.
+
+    Args:
+        train_frame: the training rows, strictly ascending by date. Residuals
+            are the one-step differences within this frame and nothing else,
+            exactly as in `fit`.
+        window: how many trailing residuals the law is read from. **Required,
+            with no default**, for the reason `fit_arx` refuses a default
+            regressor list and `--model` refuses a default model: a default is a
+            decision nobody made, and this one decides how much history the
+            reported interval is a statement about. It must be at least 2 -- a
+            one-residual law makes `_quantile` constant and every declared level
+            the same number -- and no larger than the residuals the frame
+            carries, which is `len(train_frame) - 1`.
+        cutoff: the last date the model was allowed to see. Defaults to the
+            frame's own last date, and is checked against it rather than
+            trusted, as in `fit`.
+        minimum_history: the shortest frame that may produce a fitted law.
+            Checked against the frame, not against `window`: the two are
+            different statements, and the backtest passes this at every origin.
+        levels: the quantile grid, defaulting to the declared one.
+
+    Returns:
+        A `FittedRollingResidualLaw` carrying the trailing residuals, the
+        cutoff and the window it used.
+
+    Raises:
+        LookAheadError: if any training row is dated after `cutoff`.
+        SplitError: if the frame is not strictly ascending by date.
+        ValueError: if the frame is shorter than `minimum_history`, if `window`
+            is below 2, or if `window` exceeds the residuals the frame carries.
+            A window longer than the history is not silently truncated to the
+            full sample: that is this model collapsing back into persistence
+            while still being reported as a challenger.
+    """
+
+    requested = int(window)
+    if requested < 2:
+        raise ValueError(
+            f"window must be at least 2, got {requested}; a law read from one "
+            f"residual is a point mass and every declared quantile level would "
+            f"report the same number"
+        )
+
+    rows = list(train_frame)
+    if len(rows) < minimum_history:
+        raise ValueError(
+            f"rolling residual law needs at least {minimum_history} training "
+            f"rows, got {len(rows)}; a residual quantile from fewer is not a "
+            f"fitted law"
+        )
+
+    dates = [row.date for row in rows]
+    ensure_strictly_ascending(dates, label="training frame dates")
+
+    declared = dates[-1] if cutoff is None else cutoff
+    if dates[-1] > declared:
+        raise LookAheadError(
+            f"training frame reaches {dates[-1]}, past its cutoff {declared}; "
+            f"a fitted model may not contain a row it was not allowed to see"
+        )
+
+    # In time order, and kept that way until the slice below has been taken.
+    ordered = [
+        rows[index].spread_bps - rows[index - 1].spread_bps
+        for index in range(1, len(rows))
+    ]
+    if requested > len(ordered):
+        raise ValueError(
+            f"window {requested} exceeds the {len(ordered)} one-step residuals "
+            f"a {len(rows)}-row frame carries; truncating it to the frame would "
+            f"make this the persistence law under another model's name, which "
+            f"is the comparison this model exists to be one side of"
+        )
+
+    return FittedRollingResidualLaw(
+        ordered[-requested:], declared, requested, levels
+    )
+
+
 def _solve(matrix: Sequence[Sequence[float]], rhs: Sequence[float]) -> Tuple[float, ...]:
     """Gaussian elimination with partial pivoting. Stdlib, and deliberately dull.
 

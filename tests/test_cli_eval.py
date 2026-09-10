@@ -119,6 +119,7 @@ from repo_model.baseline import (
     Forecast,
     backtest_document,
     fit_arx,
+    fit_rolling_residual_law,
     fit_threshold,
     rolling_persistence_backtest,
 )
@@ -1125,6 +1126,7 @@ class RollingBacktestHarness(unittest.TestCase):
         panel=None,
         model=None,
         regime_variable=None,
+        residual_window=None,
     ):
         """Run the command. `report` names the artifact; one is always written.
 
@@ -1157,6 +1159,8 @@ class RollingBacktestHarness(unittest.TestCase):
         ]
         if regime_variable is not None:
             argv += ["--regime-variable", regime_variable]
+        if residual_window is not None:
+            argv += ["--residual-window", str(residual_window)]
         for feature in features:
             argv += ["--feature", feature]
         out, err = io.StringIO(), io.StringIO()
@@ -2420,6 +2424,138 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
         self.assertNotIn("no-such-panel", err)
         self.assertFalse(report.exists())
 
+    #: Trailing residuals `--model rolling-residual` is run at here. Comfortably
+    #: inside the 24 residuals a 25-row minimum frame carries, so the first
+    #: origin can fill it; a window the first fold cannot fill is
+    #: `fit_rolling_residual_law`'s refusal and is tested there.
+    RESIDUAL_WINDOW = 10
+
+    def test_the_windowed_model_is_reachable_by_name_and_the_record_says_so(self):
+        """`--model rolling-residual` runs, and carries its own law's numbers.
+
+        The same wiring claim the test above makes for the other three, and it
+        is made separately because this model **cannot join that test's final
+        assertion**: its point forecast is persistence's, character for
+        character, so its MAE equals persistence's exactly and the "three MAEs
+        are distinct" check would fail on a correct implementation. That is not
+        a weakness of the fixture. It is the model -- it changes the residual
+        law and nothing else, which is why the interval is where it has to be
+        read.
+
+        So the pairing is asserted where it exists: the MAE equal to
+        persistence's, the **interval coverage not**, and both metrics equal to
+        what `fitted_elsewhere` produces from `baseline` directly without going
+        through `FITTER_FACTORIES`. A selector that ignored `--residual-window`
+        and ran the full-sample law would match the MAE and miss the coverage.
+        """
+
+        record = self.published(
+            FEATURE, model="rolling-residual", residual_window=self.RESIDUAL_WINDOW
+        )
+
+        self.assertEqual(record["declaration"]["model"], "rolling-residual")
+
+        expected = self.fitted_elsewhere(
+            functools.partial(
+                fit_rolling_residual_law, window=self.RESIDUAL_WINDOW
+            ),
+            (FEATURE,),
+        )
+        self.assertEqual(record["metrics"]["mae_bps"], expected.mae_bps)
+        self.assertEqual(
+            record["metrics"]["interval_coverage"], expected.interval_coverage
+        )
+
+        # The centre is persistence's and the interval is not. Both halves are
+        # asserted against a persistence run of the same command, so neither is
+        # a literal that a mutation could move along with the code.
+        persistence = self.published(FEATURE, model="persistence")
+        self.assertEqual(
+            record["metrics"]["mae_bps"], persistence["metrics"]["mae_bps"]
+        )
+        self.assertNotEqual(
+            record["metrics"]["interval_coverage"],
+            persistence["metrics"]["interval_coverage"],
+            msg="the windowed law produced persistence's interval as well as "
+            "its centre, so either the window did not reach the fitter or this "
+            "panel cannot tell the two laws apart",
+        )
+
+    def test_the_residual_window_is_required_for_the_model_that_reads_one(self):
+        """Required where it is read, refused where it is not, both before the run.
+
+        The two-sided rule `--regime-variable` follows, and the refusal matters
+        as much as the requirement: a `--residual-window` accepted by
+        `--model persistence` is a caller who believes they published a windowed
+        interval and a record that reports a full-sample one, with no field in
+        it disagreeing.
+
+        Asserted against a panel path that does not exist, so a message naming
+        the missing file would mean the command read the panel before validating
+        its arguments -- and a refused run must leave no artifact behind.
+        """
+
+        missing = self.tmp / "no-such-panel.csv"
+
+        report = self.tmp / "no-window.json"
+        code, _, err = self.run_backtest(
+            FEATURE, model="rolling-residual", panel=missing, report=report
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--residual-window", err)
+        self.assertNotIn("no-such-panel", err)
+        self.assertFalse(report.exists())
+
+        for name in ("persistence", "arx"):
+            report = self.tmp / f"unwanted-window-{name}.json"
+            code, _, err = self.run_backtest(
+                *self.FEATURES,
+                model=name,
+                residual_window=self.RESIDUAL_WINDOW,
+                panel=missing,
+                report=report,
+            )
+            self.assertEqual(code, 2)
+            self.assertIn("--residual-window", err)
+            self.assertNotIn("no-such-panel", err)
+            self.assertFalse(report.exists())
+
+    def test_the_window_flag_is_not_spelled_the_way_event_holdout_spells_its_own(self):
+        """`--window` means a declared event window, and only that.
+
+        `event-holdout --window NAME` selects one of Track A's declared crisis
+        windows. A `--window N` on `backtest` meaning a count of residuals would
+        be the fifth same-name-different-meaning collision `AGENT_CONTRACT.md`
+        records -- the class of failure that costs this project a round each
+        time it happens, and the first one here that is avoidable by reading a
+        parser rather than by merging two branches.
+
+        Asserted on the parsers rather than on a help string, so a flag added to
+        the wrong command fails this instead of reading plausibly.
+        """
+
+        parsers = {}
+        parser = argparse.ArgumentParser()
+        cli_eval.register(parser.add_subparsers())
+        for action in parser._subparsers._group_actions[0].choices.items():
+            parsers[action[0]] = action[1]
+
+        backtest_flags = {
+            option
+            for action in parsers["backtest"]._actions
+            for option in action.option_strings
+        }
+        holdout_flags = {
+            option
+            for action in parsers["event-holdout"]._actions
+            for option in action.option_strings
+        }
+
+        self.assertIn("--residual-window", backtest_flags)
+        self.assertNotIn("--window", backtest_flags)
+        self.assertIn("--window", holdout_flags)
+        self.assertNotIn("--residual-window", holdout_flags)
+
     def test_every_selectable_name_is_a_fitter_from_baseline(self):
         """One mapping, and everything in it is `baseline`'s, not a local lambda.
 
@@ -2438,6 +2574,7 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
                     "persistence": baseline.fit,
                     "arx": baseline.fit_arx,
                     "threshold": baseline.fit_threshold,
+                    "rolling-residual": baseline.fit_rolling_residual_law,
                 }[name],
             )
 
