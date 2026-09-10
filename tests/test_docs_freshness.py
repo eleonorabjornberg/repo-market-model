@@ -829,6 +829,49 @@ def _part_of_the_cli_is_unpublished():
     return bool(cli_subcommands() - set(published_subcommands()))
 
 
+def _nmfp_absence_is_indistinguishable_from_parse_failure():
+    """No source declares a structural zero, and nothing in the package reads one.
+
+    `7b8f0c9` corrected both pages about `mmf_on_rrp` -- the field is derived and
+    it produces the facility -- and left one half standing: an absent value and a
+    parse failure still have the same representation, so "money funds held no Fed
+    ON RRP" and "we never found it" are the same row, which is nothing.
+
+    **Two clauses, and the second is the load-bearing one.** A predicate over
+    `structural_zeros` alone would let one entry in `metadata/sources.json` -- a
+    track's file -- silently repair a limitation about the software, which is the
+    hazard `_part_of_the_cli_is_unpublished` refuses two screens up. A declaration
+    nothing reads cannot distinguish anything. So the limitation holds until the
+    package actually reads the declaration, and no edit to the registry alone can
+    end it. Track A's block 4b is what makes it end.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, `-B` with `PYTHONDONTWRITEBYTECODE=1`, control
+    green before and after (702, on 3.10.12), each applied to a restored copy.
+
+    1. The published sentence deleted from `docs/PROJECT_STATUS.md`. Kills
+       `test_every_limitation_that_still_holds_is_still_published`,
+       `AssertionError`, naming the limitation and the document.
+    2. A structural zero added to the registry and nothing else. Kills nothing,
+       **as intended**: the field is declared and still unread, so the software
+       has not changed and neither has the limitation. This is the mutation that
+       proves the second clause is doing work rather than decorating the first.
+    3. The same registry entry plus a reader of `structural_zeros` in
+       `src/repo_model/`. Kills `test_no_published_limitation_outlives_its_repair`,
+       `AssertionError` -- the limitation is repaired and the page still
+       publishes it, which is the stop-and-report this table exists to force.
+    """
+
+    declared = any(source.get("structural_zeros") for source in registry().values())
+    read = any(
+        "structural_zeros" in path.read_text(encoding="utf-8")
+        for path in sorted((REPO_ROOT / "src" / "repo_model").glob("*.py"))
+    )
+    return not (declared and read)
+
+
 def _identity_tolerance_is_a_single_absolute():
     """Every declared identity tolerance is an absolute bound and nothing else."""
     identities = registry()["sec_nmfp"]["identities"]
@@ -878,6 +921,15 @@ LIMITATIONS = (
         "docs/PROJECT_STATUS.md",
         ("**Part of the command line is unpublished.**",),
         _part_of_the_cli_is_unpublished,
+    ),
+    (
+        "nmfp_absence_indistinguishable",
+        "docs/PROJECT_STATUS.md",
+        # The trailing comma is part of the published token: the matcher is a
+        # word stream and "representation" is not "representation,". The same
+        # punctuation trap failed the corrected bullet at 2ced98e.
+        ("an absent value and a parse failure still have the same representation,",),
+        _nmfp_absence_is_indistinguishable_from_parse_failure,
     ),
 )
 
