@@ -133,22 +133,35 @@ a commit message:
   metrics are implemented and tested.
 
 These facts show that the research harness operates. They do not establish
-forecast skill. The reason is no longer that the sample is synthetic -- the
-benchmark's numbers are now measured on a fetched panel. It is that skill is a
-*comparison*, and no challenger has been scored against that benchmark on the
-panel.
+forecast skill -- but the reason has changed twice. It is no longer that the
+sample is synthetic, and it is no longer that no challenger has been scored: two
+have, against the persistence benchmark on the fetched panel, at the same purged
+rolling origins under the same registry-derived gap. Both lost. Skill is a
+*comparison*, and the comparison this repository can now make is one the
+benchmark wins. The figures are in `docs/runs/`, not here.
 
 ## Known gaps in the evidence
 
 Stated explicitly, because each is easy to mistake for something stronger.
 
-- **No *model comparison* rests on real data.** This gap has narrowed and not
-  closed. The persistence benchmark has now been measured on a fetched panel of
-  2104 rows, so its numbers are about the market rather than about the harness.
-  The ARX comparison has not: the head-to-head that persistence wins is still the
-  two-dozen-row synthetic sample with one constant regressor, and it remains
-  evidence about the harness. A challenger measured on the frozen panel is Phase
-  2's first job.
+- **The model comparison rests on real data now, and it did not go the way a
+  challenger needs it to.** This gap is closed as a gap in evidence and replaced
+  by a finding. Two ARX challengers were scored against persistence on the
+  fetched panel at paired origins -- one reading SOFR volume, one reading the
+  p25/p75 dispersion -- and persistence carried the smaller absolute error in
+  both, with neither 90% interval on the paired difference including zero.
+  `docs/runs/compare_persistence_vs_arx_volume.json` and
+  `docs/runs/compare_persistence_vs_arx_dispersion.json` carry the figures, the
+  origins and the seeds; none of them is transcribed here. **What this does not
+  establish is that nothing beats persistence.** Two ARX specifications are two
+  points in one family, both constrained to regressors that price the same purge
+  gap, because a different gap is a different set of origins and losses at
+  different origins are not paired. PLAN.md's Phase 2 also names rolling
+  quantiles, gradient-boosted quantiles and regime models, none of which exist
+  yet. It also makes the interval-coverage finding harder rather than easier: the
+  model that under-covers its own nominal interval is the one that wins on
+  accuracy, so the coverage gap is not a defect of a strawman about to be
+  replaced.
 - **Part of the command line is unpublished.** `build`, `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a

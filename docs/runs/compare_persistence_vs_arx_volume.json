@@ -1,0 +1,107 @@
+{
+  "comparison": {
+    "loss": "absolute_error_bps",
+    "mean_difference_bps": -1.3828326500982446,
+    "mean_difference_interval": {
+      "block_length": 5,
+      "level": 0.9,
+      "lower": -1.6565612533780203,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1658165599,
+      "upper": -1.112512939197102
+    },
+    "model_a": {
+      "mae_bps": 3.1427884615384616,
+      "model": "persistence"
+    },
+    "model_b": {
+      "mae_bps": 4.525621111636721,
+      "model": "arx"
+    },
+    "origin_count": 2080,
+    "sign_convention": "difference = absolute_error_bps(model_a=persistence) - absolute_error_bps(model_b=arx) at each scored origin; a positive mean difference means model_a=persistence carried the larger loss over these origins, so model_b=arx was the more accurate of the two on them"
+  },
+  "declaration": {
+    "decision_time": "16:00",
+    "minimum_history": 20,
+    "model_a": {
+      "features": [
+        "sofr_volume",
+        "spread_bps"
+      ],
+      "model": "persistence"
+    },
+    "model_b": {
+      "features": [
+        "sofr_volume",
+        "spread_bps"
+      ],
+      "model": "arx"
+    }
+  },
+  "derived": {
+    "model_a": {
+      "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR",
+        "nyfed_sofr.SOFR_volume"
+      ],
+      "sources": [
+        "fred_macro_latest_vintage",
+        "nyfed_sofr"
+      ]
+    },
+    "model_b": {
+      "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR",
+        "nyfed_sofr.SOFR_volume"
+      ],
+      "sources": [
+        "fred_macro_latest_vintage",
+        "nyfed_sofr"
+      ]
+    },
+    "purge_days": 6
+  },
+  "folds": {
+    "count": 2080,
+    "first": {
+      "feature_date": "2018-04-30",
+      "scored_date": "2018-05-07",
+      "train_end": "2018-04-30",
+      "train_rows": 20,
+      "train_start": "2018-04-03"
+    },
+    "last": {
+      "feature_date": "2026-08-27",
+      "scored_date": "2026-09-03",
+      "train_end": "2026-08-27",
+      "train_rows": 2099,
+      "train_start": "2018-04-03"
+    }
+  },
+  "panel": {
+    "first_date": "2018-04-03",
+    "last_date": "2026-09-03",
+    "path": "data/processed/funding_panel.csv",
+    "row_count": 2104,
+    "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec"
+  },
+  "provenance": {
+    "code": {
+      "commit": "3bec1bbde3f4df37e2bd1fff506a14f2f9f39937",
+      "tree_modified": false,
+      "untracked_files_present": false
+    },
+    "inputs": {
+      "source_registry": {
+        "path": "metadata/sources.json",
+        "sha256": "fda2bce887299b65ac8697514903c05d22af3d63b24f60bdadf3aa0f1f446e17"
+      }
+    }
+  }
+}
