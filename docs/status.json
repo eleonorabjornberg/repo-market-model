@@ -1,5 +1,5 @@
 {
-  "commit": "84354f3",
+  "commit": "7b8f0c9",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -7,7 +7,7 @@
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
   },
-  "generated_at": "2026-09-09",
+  "generated_at": "2026-09-10",
   "next": {
     "exit": "a model that beats persistence out of sample and remains calibrated in the tails",
     "name": "Forecasting benchmarks and probabilistic ML",
