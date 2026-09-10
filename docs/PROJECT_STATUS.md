@@ -149,16 +149,20 @@ Stated explicitly, because each is easy to mistake for something stronger.
   by a finding. Two ARX challengers were scored against persistence on the
   fetched panel at paired origins -- one reading SOFR volume, one reading the
   p25/p75 dispersion -- and persistence carried the smaller absolute error in
-  both, with neither 90% interval on the paired difference including zero.
+  both, with neither 90% interval on the paired difference including zero. Both
+  records were scored under the absolute-error loss, which reads only the centre
+  of each forecast; `compare --loss crps` now scores the whole law, and neither
+  comparison has been re-run under it.
   `docs/runs/compare_persistence_vs_arx_volume.json` and
   `docs/runs/compare_persistence_vs_arx_dispersion.json` carry the figures, the
   origins and the seeds; none of them is transcribed here. **What this does not
   establish is that nothing beats persistence.** Two ARX specifications are two
   points in one family, both constrained to regressors that price the same purge
   gap, because a different gap is a different set of origins and losses at
-  different origins are not paired. PLAN.md's Phase 2 also names rolling
-  quantiles, gradient-boosted quantiles and regime models, none of which exist
-  yet. It also makes the interval-coverage finding harder rather than easier: the
+  different origins are not paired. Of the other models PLAN.md's Phase 2
+  names, a trailing-window residual law (`--model rolling-residual`) now exists
+  and has not been scored on the fetched panel; gradient-boosted quantiles and
+  regime models do not exist yet. It also makes the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.

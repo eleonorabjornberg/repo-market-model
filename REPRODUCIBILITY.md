@@ -88,6 +88,12 @@ sanity check. Its record states the sign convention as a sentence, because a
 signed difference with no statement of direction is a number half its readers
 read as the opposite result.
 
+The paired loss is `--loss absolute-error` unless `--loss crps` is given, and the
+record names which. Absolute error reads only each side's centre, so two models
+that share a point rule and differ in their intervals score a difference of exactly
+zero under it -- the same degenerate shape, reached honestly. `--loss crps` scores
+each side's quantile forecast and separates them.
+
 `--feature-b sofr_volume` is not decoration. `iorb` is constant across these
 twenty-five rows, and an ARX declared over it is refused for a rank-deficient
 design -- correctly, and it is the first thing a reader who swaps the regressor
