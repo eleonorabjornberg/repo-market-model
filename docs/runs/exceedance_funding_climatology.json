@@ -43551,13 +43551,14 @@
   },
   "provenance": {
     "code": {
-      "commit": "568c9baa4727e7ba27a249cca9f4927a384e4af0",
-      "tree_modified": true
+      "commit": "0a88e70f262e9e9a2d9194058a33ce9eddf5366a",
+      "tree_modified": false,
+      "untracked_files_present": false
     },
     "inputs": {
       "source_registry": {
         "path": "metadata/sources.json",
-        "sha256": "c3caec95e28ccbd29e3d2730c6c80295e50d41cd1ddc3fa8b850e1d281a7d7bf"
+        "sha256": "fda2bce887299b65ac8697514903c05d22af3d63b24f60bdadf3aa0f1f446e17"
       },
       "stress_thresholds": {
         "path": "metadata/stress_thresholds.json",

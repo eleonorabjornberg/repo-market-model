@@ -62,7 +62,7 @@ on the previous business day.
 **Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `b6af33bb7c64`.
 
 **Evaluation.** Purged rolling origin, 6-day purge, **2080 forecast origins**,
-first scored 2018-05-07, last scored 2026-09-03. Run at `568c9ba`.
+first scored 2018-05-07, last scored 2026-09-03. Run at `0a88e70`.
 
 | Measure | Benchmark | Value | 90% interval |
 |---|---|---|---|
