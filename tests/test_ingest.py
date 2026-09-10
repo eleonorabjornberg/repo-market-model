@@ -12,10 +12,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model.data import declared_coverage_floor, load_point_in_time_panel
+from repo_model.data import (
+    DERIVED_ABSENCE_DECLARED_ZERO,
+    DERIVED_ABSENCE_UNDECLARED,
+    declared_coverage_floor,
+    load_point_in_time_panel,
+)
 from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
+    NMFP_DERIVED_FROM_MATCH,
     NMFP_INVESTMENT_CATEGORY_ERAS,
     REFUSAL_ABSENT_FIELDS,
     REFUSAL_UNREADABLE,
@@ -76,6 +82,23 @@ def registry_with_nmfp_coverage_floor(directory: Path, floor: int) -> Path:
 #: and 2024-06..2026-07 eras, which is every era the fixtures date themselves
 #: into.
 FIXTURE_TREASURY_CATEGORY = "U.S. Treasury Debt"
+
+#: The three counterparty columns a repo holding files, and what every fixture
+#: has always put in them: a Federal Reserve counterparty, which the `mmf_on_rrp`
+#: derivation matches. Named here so a fixture can file a repo row the derivation
+#: does *not* match without restating the columns, and so the default stays one
+#: literal rather than one per call site.
+FIXTURE_FED_COUNTERPARTY = ("Federal Reserve Bank of New York", "Reverse repo", "")
+
+#: A repo counterparty with no `FEDERAL RESERVE` anywhere in any of the three
+#: joined columns. A dealer name, because that is what the other 9,000-odd repo
+#: rows in the real extract carry; the point of the fixture is that the row is
+#: entirely ordinary and simply is not the facility.
+FIXTURE_DEALER_COUNTERPARTY = (
+    "Barclays Capital Inc.",
+    "Tri-party repurchase agreement",
+    "Collateralized by U.S. Treasuries",
+)
 FIXTURE_REPO_CATEGORY = (
     "U.S. Treasury Repurchase Agreement, if collateralized only by "
     "U.S. Treasuries (including Strips) and cash"
@@ -108,6 +131,16 @@ def nmfp_archive(
     collected yet. It leaves the table out rather than writing an empty one --
     an empty table is a claim that nothing was reported, and these archives make
     no such claim.
+
+    A submission may also override `repo_counterparty`, the
+    `(NAMEOFISSUER, TITLEOFISSUER, BRIEFDESCRIPTION)` triple its repo holding
+    files, which is what the `mmf_on_rrp` derivation matches `FEDERAL RESERVE`
+    against. It defaults to `FIXTURE_FED_COUNTERPARTY`, the literal every fixture
+    has always filed, so absent the key the row is byte-for-byte what it always
+    was and no existing fixture moves -- the same posture `other_assets` takes one
+    field up. It exists because every fixture in this module matched the facility,
+    so the case where a repo row is present and readable and simply is not the Fed
+    was unreachable.
     """
 
     submission_rows = [
@@ -153,9 +186,12 @@ def nmfp_archive(
             f"{entry['accession']}\t{treasury_category}\t{net // 2}\t"
             "United States Treasury\tBill\t"
         )
+        issuer, title, brief = entry.get(
+            "repo_counterparty", FIXTURE_FED_COUNTERPARTY
+        )
         holding_rows.append(
             f"{entry['accession']}\t{repo_category}\t{net // 4}\t"
-            "Federal Reserve Bank of New York\tReverse repo\t"
+            f"{issuer}\t{title}\t{brief}"
         )
 
     tables = {
@@ -1949,6 +1985,396 @@ class CrossSectionCoverageTests(unittest.TestCase):
         )
         self.assertEqual(report["warnings"], [])
 
+
+
+class DerivedFieldAbsenceTests(unittest.TestCase):
+    """A derived field that matched nothing in a table it read is absent, not missing.
+
+    Two kinds of absence were already recorded and neither is this one.
+    `REFUSAL_ABSENT_FIELDS` says the table is not in the archive, so every panel
+    field that table supplies has no observation.
+    `CrossSectionCoverage.absent_fields` says the archive could supply no
+    observation of a field for a cross-section -- the table is absent, or the
+    report month has no declared `INVESTMENTCATEGORY` vocabulary to read it with.
+
+    `mmf_on_rrp` has a third way to be absent that neither covers.
+    `NMFP_SCHPORTFOLIOSECURITIES.tsv` is present, readable and parsed; its
+    repo-category rows produce `mmf_repo_holdings` for the cross-section; and the
+    counterparty match finds no `FEDERAL RESERVE` in any of them. No row is
+    emitted, and until this class nothing recorded that the derivation had run, so
+    a month in which money funds lent nothing to the facility read exactly like a
+    month the adapter never looked at. In the declared archive set that is 33 repo
+    months, 32 of which precede the facility and one -- 2026-07-31, sitting on the
+    `n_mfp3` era bound, the month after one reporting 6.8 bn -- does not.
+
+    **The zero is the trap, not the gap.** Coercing the absent field to `0.0`
+    would close the recording gap in the one direction that makes the panel worse:
+    an emitted zero is an observation, every downstream check accepts it, and the
+    distinction the structural-zero declaration exists to preserve is destroyed
+    at the point of ingest. So `unmatched_derived_fields` records that the
+    derivation ran and matched nothing, and the rows stay as they were: absent.
+
+    **This class does not decide which kind of absence any month is.** That is a
+    review, recorded by a human in `metadata/sources.json` under
+    `structural_zeros` with `structural_zeros_reviewed`. What the code decides is
+    the disposition: whether the registry declares the field a structural zero at
+    all, which is the difference between "these funds held none" and "we never
+    found it". `test_a_declared_structural_zero_changes_the_disposition` is what
+    makes that read load-bearing rather than decorative -- it is the first thing
+    in this package to read `structural_zeros`, which was declared, shape-checked
+    and never consulted.
+
+    `when` is carried verbatim and not compared against a reference date: the
+    registry declares no grammar for it, only that it be a non-empty string, so
+    the disposition says "declared at all" and not "declared for this month".
+    Narrowing that needs a `when` grammar in the registry, which is a shared
+    schema change and is not this block.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME` -- never in the mount -- built by
+    copying the whole tree minus `.git`, which is a strict superset of the list
+    `CLAUDE.md` names (`data/`, `.github/`, `.claude/`, `metadata/`,
+    `.gitignore`, the root Markdown, `docs/PROJECT_STATUS.md`) and so cannot be
+    short again the way that list was for three rounds. `python3 -B` with
+    `PYTHONDONTWRITEBYTECODE=1`, on **3.9.6**. Unmutated control green before and
+    after all five -- 702 tests OK zero expectedFailure before this class, 708
+    after it -- and each mutation applied to a freshly restored copy rather than
+    on top of the last. Every kill below is an `AssertionError`; no mutation
+    produced an incidental exception, and none produced an error rather than a
+    failure.
+
+    Recorded as run, not as predicted: the draft of this record guessed the kills
+    and was wrong about three of the five. 1 and 2 each kill more than the one
+    test claimed for them, and 5 kills a test in a different class from the one
+    named. The measured results are below.
+
+    1. **The zero written instead of the record.** An
+       `add(accession, "mmf_on_rrp", section, 0.0, ...)` in the `else` of the
+       `FEDERAL RESERVE` match -- the trap this block exists to refuse,
+       implemented. Kills **three**, all `AssertionError`:
+       `test_a_derived_field_with_no_match_in_a_read_table_is_recorded_absent_not_omitted`
+       (the acceptance test and the mutation target) on
+       `'mmf_on_rrp' unexpectedly found in {...}`, and both
+       `test_a_declared_structural_zero_changes_the_disposition` and
+       `test_an_excluded_cross_section_still_carries_the_record` on
+       `() != (('mmf_on_rrp', ...),)`. The last two are the informative part: an
+       emitted zero does not merely add a row, it *erases the record*, because a
+       field that is observed is by definition not one the derivation missed. The
+       zero and the record cannot coexist, which is the strongest available
+       statement that this block closed the gap in the right direction.
+    2. **The input condition dropped**: `base not in observed` removed from
+       `_nmfp_unmatched_derived_fields`. Kills **two**, both `AssertionError`:
+       `test_an_absent_table_is_not_an_unmatched_derivation` on
+       `(('mmf_on_rrp', 'no_declaration'),) != ()` and
+       `test_an_undeclared_era_is_not_an_unmatched_derivation` on
+       `'mmf_on_rrp' unexpectedly found in ['mmf_on_rrp']`. Both of the first two
+       kinds of absence start reporting themselves as the third one, which is
+       what makes this the mutation that proves the three are disjoint by
+       construction rather than by a rule someone has to remember.
+    3. **The output condition dropped**: `derived in observed` removed, so a
+       cross-section that *did* match the facility is recorded as having matched
+       nothing beside the row proving it did. Kills
+       `test_a_matched_derivation_records_no_absence`, `AssertionError`,
+       `(('mmf_on_rrp', 'no_declaration'),) != ()`.
+    4. **The registry read discarded**: `declared_structural_zeros` still called
+       and its result replaced with `{}` at the call site, so every disposition is
+       `no_declaration`. Kills
+       `test_a_declared_structural_zero_changes_the_disposition`,
+       `AssertionError`,
+       `(('mmf_on_rrp', 'no_declaration'),) != (('mmf_on_rrp', 'declared_structural_zero'),)`.
+       This is the mutation that proves the declaration is *read* rather than
+       mentioned, which is the second clause of the published limitation's
+       predicate and the only clause an agent can satisfy -- see the sixth run
+       below.
+    5. **The era case collapsed**: the `undeclared` branch in
+       `_nmfp_archive_scan` made to fall through instead of costing
+       `NMFP_CATEGORY_FIELDS`. Kills **two**, both `AssertionError`:
+       `test_an_undeclared_era_is_not_an_unmatched_derivation` on
+       `'mmf_on_rrp' not found in ()`, and
+       `PerTableRefusalTests::test_a_report_month_in_no_declared_era_costs_only_the_holdings_fields`
+       on the three holdings fields vanishing from `absent_fields`. That second
+       one is not the test the draft predicted and it is the better witness: the
+       fourth trap in the brief is that a vocabulary which does not declare the
+       category is not a vocabulary that declares it and matched nothing, and the
+       pre-existing guard on the era case fires alongside the new one rather than
+       being replaced by it.
+
+    A sixth run, which is a finding rather than a mutation of this block's code.
+    A structural zero for `mmf_on_rrp` added to `metadata/sources.json` with
+    `structural_zeros_reviewed` left `false`, to establish what it takes to
+    satisfy the *first* clause of `nmfp_absence_indistinguishable`. Three
+    failures: `test_source_registry_declares_identities_and_structural_zeros`
+    twice (the subTest and the outer test), because
+    `tests/test_contract.py` requires an unreviewed source's `structural_zeros` to
+    be `[]`, and `test_no_published_limitation_outlives_its_repair`. So the first
+    clause cannot be landed without `structural_zeros_reviewed: true`, which is a
+    human's field and a stop-and-report for this block -- and the limitation guard
+    fires the moment a reviewer lands it, on the strength of the read this block
+    added. See the report for the consequence: this block does **not** turn the
+    suite red, contrary to the brief that asked for it.
+    """
+
+    #: Three filers over the floor, none of whose repo rows is the facility. The
+    #: month is otherwise entirely ordinary: the holdings table is present, both
+    #: categories parse, and `mmf_repo_holdings` is observed from the very rows
+    #: the derivation matches over and misses.
+    #:
+    #: The flow rows are there so the fixture is a month and not the minimum the
+    #: parser accepts: `build_point_in_time_snapshot` refuses a panel on which a
+    #: declared identity has no complete reference date, so without them the
+    #: record could not be followed as far as the published quality report, which
+    #: is where a reader actually meets it.
+    DEALER_ONLY = tuple(
+        {
+            "accession": f"D{index}",
+            "series": f"S{index}",
+            "report": "31-JUL-2026",
+            "net_assets": 4_000_000_000,
+            "repo_counterparty": FIXTURE_DEALER_COUNTERPARTY,
+            "flows": ((f"0{index}-JUL-2026", 100_000_000 * index, 40_000_000 * index),),
+        }
+        for index in (1, 2, 3)
+    )
+
+    FLOOR = 3
+    REF_DATE = date(2026, 7, 31)
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    def archive(self, submissions, **kwargs):
+        """One fetched fixture artifact, named so each test reads as its own case."""
+
+        return fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/fixture.zip",
+            lambda url: nmfp_archive(submissions, **kwargs),
+        )[0]
+
+    def registry(self, *, structural_zeros=()):
+        """The real registry with the floors lowered and `structural_zeros` stated.
+
+        The declarations go in a temporary copy and never in
+        `metadata/sources.json`. Which months are structurally zero is a review a
+        human records there, with `structural_zeros_reviewed`; what a fixture needs
+        is a source that declares one so the disposition can be *observed*, which
+        is a different thing from asserting that any real month is one.
+
+        **`sec_nmfp`'s declarations are overwritten either way, including with the
+        empty list.** `registry_with_nmfp_coverage_floor` copies the real registry,
+        so a declaration landed in `metadata/sources.json` -- which is exactly what
+        the pending review of the 33 absent repo months would land -- would
+        otherwise reach these fixtures and flip the disposition under every test
+        here that asserts the undeclared one. A test that changes verdict because
+        someone recorded a review is testing the review, which is the defect that
+        helper's own docstring refuses one field over. So the premise is written
+        down rather than inherited.
+
+        `structural_zeros_reviewed` is set to match, because
+        `tests/test_contract.py` requires an unreviewed source's declarations to be
+        empty -- and that coupling is the reason no agent can satisfy the published
+        limitation's first clause on its own.
+        """
+
+        path = registry_with_nmfp_coverage_floor(self.output_root, self.FLOOR)
+        registry = json.loads(path.read_text(encoding="utf-8"))
+        registry["sec_nmfp"]["structural_zeros"] = list(structural_zeros)
+        registry["sec_nmfp"]["structural_zeros_reviewed"] = bool(structural_zeros)
+        if structural_zeros:
+            registry["sec_nmfp"]["reviewed_note"] = "fixture declaration"
+        path.write_text(
+            json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8"
+        )
+        return registry
+
+    def coverage_for(self, parsed, ref_date):
+        records = [item for item in parsed.coverage if item.ref_date == ref_date]
+        self.assertEqual(
+            len(records), 1, msg=f"expected exactly one coverage record for {ref_date}"
+        )
+        return records[0]
+
+    def test_a_derived_field_with_no_match_in_a_read_table_is_recorded_absent_not_omitted(self):
+        artifact = self.archive(self.DEALER_ONLY)
+        parsed = parse_snapshots([artifact], registry=self.registry())
+        record = self.coverage_for(parsed, self.REF_DATE)
+
+        # The premise: the table was read and its repo rows were counted. Without
+        # this the rest of the test would pass on a cross-section nobody parsed.
+        self.assertTrue(record.admitted)
+        observed = {row.series_id for row in parsed.rows if row.ref_date == self.REF_DATE}
+        self.assertIn("mmf_repo_holdings", observed)
+
+        # The finding: no row for the derived field. Not a zero one -- a zero is
+        # an observation, and coercing the absent field to one is the trap.
+        self.assertNotIn("mmf_on_rrp", observed)
+        self.assertEqual(
+            [row.value for row in parsed.rows if row.series_id == "mmf_on_rrp"],
+            [],
+            msg="a 0.0 row was emitted for a derived field that matched nothing",
+        )
+
+        # The record, and the disposition: declared nowhere, so "we never found
+        # it" and not "they held none".
+        self.assertEqual(
+            record.unmatched_derived_fields,
+            (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+        )
+
+        # Distinguishable from the second kind: `absent_fields` is what the
+        # archive could supply no observation of, and this archive could have --
+        # it read the table and the rows.
+        self.assertNotIn("mmf_on_rrp", record.absent_fields)
+
+        # Distinguishable from the first kind: the schema refusal path reports no
+        # absent table, because the table is present. Read from the payload rather
+        # than restated, so a fixture that stopped writing the table would fail
+        # here instead of quietly agreeing.
+        refusals = nmfp_schema_refusals(artifact.path.read_bytes())
+        self.assertEqual(
+            [item for item in refusals if item.kind == REFUSAL_ABSENT_FIELDS], []
+        )
+
+        # And it survives the round trip into the published quality report, which
+        # is where a reader meets it.
+        panel_path = self.output_root / "panel.csv"
+        build_point_in_time_snapshot(
+            [artifact],
+            panel_path,
+            registry_path=self.output_root / "sources.json",
+        )
+        self.assertEqual(
+            [row for row in panel_path.read_text(encoding="utf-8").splitlines()
+             if "mmf_on_rrp" in row],
+            [],
+            msg="the panel carries an mmf_on_rrp row for a month that matched nothing",
+        )
+
+    def test_a_matched_derivation_records_no_absence(self):
+        """A cross-section that found the facility has an observation, not a record."""
+
+        matched = tuple(dict(entry) for entry in self.DEALER_ONLY)
+        for entry in matched:
+            del entry["repo_counterparty"]
+        parsed = parse_snapshots([self.archive(matched)], registry=self.registry())
+        record = self.coverage_for(parsed, self.REF_DATE)
+
+        self.assertEqual(record.unmatched_derived_fields, ())
+        self.assertIn(
+            "mmf_on_rrp",
+            {row.series_id for row in parsed.rows if row.ref_date == self.REF_DATE},
+        )
+
+    def test_an_absent_table_is_not_an_unmatched_derivation(self):
+        """The first kind stays the first kind: no rows to match means no record.
+
+        The holdings table is gone, so `mmf_on_rrp` has no observation *and* no
+        derivation ran. Recording it as an unmatched derivation would claim the
+        adapter looked at rows that are not in the archive.
+        """
+
+        artifact = self.archive(
+            self.DEALER_ONLY, omit=("NMFP_SCHPORTFOLIOSECURITIES.tsv",)
+        )
+        parsed = parse_snapshots([artifact], registry=self.registry())
+        record = self.coverage_for(parsed, self.REF_DATE)
+
+        self.assertIn("mmf_on_rrp", record.absent_fields)
+        self.assertIn("mmf_repo_holdings", record.absent_fields)
+        self.assertEqual(record.unmatched_derived_fields, ())
+
+    def test_an_undeclared_era_is_not_an_unmatched_derivation(self):
+        """The fourth trap: no declared vocabulary is not a vocabulary that missed.
+
+        A report month in no declared `INVESTMENTCATEGORY` era costs
+        `NMFP_CATEGORY_FIELDS` and reads no holdings row at all. The category the
+        derivation needs is not declared for that month, so "it matched nothing"
+        would be a claim about a match that never ran.
+        """
+
+        before_any_declared_era = tuple(
+            dict(entry, report="31-JUL-2010", accession=f"E{index}")
+            for index, entry in enumerate(self.DEALER_ONLY, start=1)
+        )
+        parsed = parse_snapshots(
+            [self.archive(before_any_declared_era)], registry=self.registry()
+        )
+        record = self.coverage_for(parsed, date(2010, 7, 31))
+
+        for field in NMFP_DERIVED_FROM_MATCH:
+            self.assertIn(field, record.absent_fields)
+            self.assertNotIn(
+                field,
+                [name for name, _disposition in record.unmatched_derived_fields],
+            )
+
+    def test_a_declared_structural_zero_changes_the_disposition(self):
+        """The registry declaration is read, and it is the only thing that decides.
+
+        Same archive, same rows, same absent row in the panel. The one thing that
+        differs is that the source declares `mmf_on_rrp` a structural zero, and
+        the record says so -- which is the second clause of the published
+        limitation's predicate and the reason a declaration nothing reads was not
+        a repair.
+        """
+
+        artifact = self.archive(self.DEALER_ONLY)
+        declared = self.registry(
+            structural_zeros=(
+                {
+                    "field": "mmf_on_rrp",
+                    "when": "months in which no reporting series lent to the facility",
+                },
+            )
+        )
+        record = self.coverage_for(
+            parse_snapshots([artifact], registry=declared), self.REF_DATE
+        )
+
+        self.assertEqual(
+            record.unmatched_derived_fields,
+            (("mmf_on_rrp", DERIVED_ABSENCE_DECLARED_ZERO),),
+        )
+
+        # Declared does not mean observed. A reviewer saying the true value is
+        # zero still does not put a row in the panel, because there was no
+        # observation to put there.
+        self.assertEqual(
+            [row for row in parse_snapshots([artifact], registry=declared).rows
+             if row.series_id == "mmf_on_rrp"],
+            [],
+            msg="a declared structural zero was materialised as a 0.0 observation",
+        )
+
+    def test_an_excluded_cross_section_still_carries_the_record(self):
+        """The record is about the archive, not about the panel.
+
+        A cross-section the coverage floor drops is not in the panel, and the
+        question the brief asks is whether it should carry an absence record
+        anyway. It should: the record states what the adapter observed in the
+        archive -- the table was read, the rows were there, the match found
+        nothing -- and none of that stops being true because the month was too
+        thin to admit. `CrossSectionCoverage` already exists for excluded
+        cross-sections and already carries `absent_fields` on them; making this
+        one field behave differently would mean an absence record changed meaning
+        depending on a coverage decision it has nothing to do with. A dropped
+        month is also the one a reader is most likely to re-examine.
+        """
+
+        one_filer = ({**self.DEALER_ONLY[0], "accession": "X1", "series": "X1"},)
+        parsed = parse_snapshots([self.archive(one_filer)], registry=self.registry())
+        record = self.coverage_for(parsed, self.REF_DATE)
+
+        self.assertFalse(record.admitted)
+        self.assertEqual(
+            record.unmatched_derived_fields,
+            (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+        )
+        self.assertEqual(parsed.rows, ())
 
 
 class CoverageEraTests(unittest.TestCase):
