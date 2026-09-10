@@ -17,9 +17,11 @@ re-run from their own `declaration` blocks; no script re-checks them yet.
 
 ## Environment
 
-- Python 3.9 or Python 3.10, declared as a range in `pyproject.toml` and stated
-  nowhere else that is not checked against it. Both were run whole before the
-  range was widened to admit them. 3.11 rejects the package at import.
+- Python 3.9, Python 3.10 or Python 3.11, declared as a range in `pyproject.toml`
+  and stated nowhere else that is not checked against it. Each was run whole before
+  the range admitted it. 3.12 runs everything except the exact reproduction of the
+  published record: its `sum()` rounds floats differently, and the figures move in
+  their last digits.
 - no third-party Python packages for any published record; the optional `ml` extra
   (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`
 - commands run from the repository root

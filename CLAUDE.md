@@ -119,14 +119,12 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
   optional `ml` extra (numpy, scikit-learn) -- `AGENT_CONTRACT.md`, working rules, and
   `tests/test_dependency_boundary.py`. A new package is the human's decision. Where a
   worktree has a `.venv/`, run the suite with `.venv/bin/python` in place of `python3`.
-- **Python 3.9 or Python 3.10**, which is what
-  `pyproject.toml` declares -- `requires-python = ">=3.9,<3.11"`. This line said "Python
-  3.10" alone for several rounds, which is narrower than the declaration and made a track
-  running 3.9.6 look out of contract. Measured on `7b8f0c9`: 3.9.23 and 3.10.20 both run
-  the whole suite green, 3.11 fails at import on a `mappingproxy` default in
-  `baseline.py`, and 3.12 and 3.13 run everything and fail only the guard that enforces
-  this declaration. So the upper bound is right about 3.11 and wrong about 3.12; widening
-  it waits on the `baseline.py` fix and is not something to fix inside another block.
+- **Python 3.9, 3.10 or 3.11**, which is what
+  `pyproject.toml` declares -- `requires-python = ">=3.9,<3.12"`. Measured 10 Sep: 3.9.23,
+  3.10 and 3.11.15 run the whole suite green; 3.12 and 3.13 fail the exact Milestone A
+  reproduction, because 3.12's `sum()` rounds floats differently. That ceiling is a
+  decision about exact versus tolerant reproduction, and not something to change inside
+  a block.
 - Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
 - **The frozen funding panel is gitignored and is not in your worktree.** No block may
   depend on reading it. Fixtures only.
