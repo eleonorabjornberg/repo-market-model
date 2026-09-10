@@ -100,14 +100,52 @@ DAY_MONTH_YEAR = re.compile(
 MONTH_YEAR = re.compile(r"\b(" + "|".join(MONTHS) + r")\s+(\d{4})\b")
 
 
-def published_markdown():
-    """Every Markdown file a clone of this repository would contain."""
+def ignored_by_git(root):
+    """What git would leave out of a clone of `root`, or None if git cannot say.
+
+    Untracked, ignored entries, with an ignored directory reported once as
+    `dir/` rather than file by file. None when `root` is not a git work tree --
+    a disposable mutation copy is not one -- and the caller then reads what it
+    always read: the walk, less `EXCLUDED_PREFIXES`.
+    """
+    try:
+        listed = subprocess.run(
+            [
+                "git", "-C", str(root), "ls-files", "-z", "--others",
+                "--ignored", "--exclude-standard", "--directory",
+            ],
+            capture_output=True,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return tuple(
+        entry for entry in listed.decode("utf-8", "surrogateescape").split("\0")
+        if entry
+    )
+
+
+def published_markdown(root=REPO_ROOT):
+    """Every Markdown file a clone of this repository would contain.
+
+    The walk alone answers a different question -- every Markdown file on this
+    disk -- and the two came apart when a worktree grew a `.venv/`: this guard
+    then read the READMEs of installed packages as published pages, and a
+    package's release date or its own test count would have failed the suite of
+    a repository that never shipped it. See `PublishedScopeTests`.
+    """
+    ignored = ignored_by_git(root) or ()
     found = []
-    for path in sorted(REPO_ROOT.rglob("*.md")):
-        relative = path.relative_to(REPO_ROOT).as_posix()
+    for path in sorted(root.rglob("*.md")):
+        relative = path.relative_to(root).as_posix()
         if relative.startswith(".git/") or "/.git/" in f"/{relative}":
             continue
         if relative.startswith(EXCLUDED_PREFIXES):
+            continue
+        if any(
+            relative == entry or (entry.endswith("/") and relative.startswith(entry))
+            for entry in ignored
+        ):
             continue
         found.append((relative, path))
     return found
@@ -419,6 +457,55 @@ def python_version_admitted(requirement, version):
             return False
     return True
 
+
+
+class PublishedScopeTests(unittest.TestCase):
+    """Scope is what a clone receives, and a gitignored directory is not in it.
+
+    **The defect.** `published_markdown()` walked the disk. A worktree that grew
+    a `.venv/` -- which the optional `ml` extra requires -- put every installed
+    package's Markdown in scope. Shown red on `1bef17a` by planting
+    `.venv/lib/python3.9/site-packages/fakepkg/README.md` carrying a release
+    date years ahead and a four-digit test count: two failures, both
+    `AssertionError`, from `test_no_document_is_dated_in_the_future` and
+    `test_no_document_transcribes_a_test_count`, each naming the planted path.
+    The same plant also turned `tests/test_metrics.py`'s fixed-bin ECE scan red
+    (`UnicodeDecodeError` on a latin-1 `.py`); that scanner is Track B's and is
+    not changed here. Track B found the metrics case on a real virtualenv; this
+    one it did not name, because no Markdown in that virtualenv happened to
+    carry a date or a count. Latent is not absent.
+
+    **The repair.** Git says what it would leave out; paths under an ignored
+    entry are dropped. Where git cannot answer (a copy that is not a work
+    tree), the walk is what it was, so the repair narrows no existing scope.
+
+    **Mutation, recorded on `1bef17a`, Python 3.10.12.** Filter removed from
+    `published_markdown` (the `any(...)` clause reduced to `False`): kills
+    `test_a_directory_git_ignores_is_not_published` alone, `AssertionError`
+    naming the planted README. Unmutated control green before and after. The
+    in-repo plant under that mutation reproduces the two failures above.
+    """
+
+    def test_a_directory_git_ignores_is_not_published(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            try:
+                subprocess.run(
+                    ["git", "init", "-q", str(root)], check=True, capture_output=True
+                )
+            except (OSError, subprocess.CalledProcessError):
+                self.skipTest("git is not available to say what it ignores")
+            (root / ".gitignore").write_text(".venv/\n")
+            package = root / ".venv" / "lib" / "python3.9" / "site-packages" / "pkg"
+            package.mkdir(parents=True)
+            (package / "README.md").write_text("# pkg\n")
+            (root / "NOTES.md").write_text("# notes\n")
+            found = [relative for relative, _ in published_markdown(root)]
+            # The anchor: a scope that reads nothing would also exclude the plant.
+            self.assertIn("NOTES.md", found)
+            self.assertNotIn(".venv/lib/python3.9/site-packages/pkg/README.md", found)
 
 
 class PublishedDocumentTests(unittest.TestCase):

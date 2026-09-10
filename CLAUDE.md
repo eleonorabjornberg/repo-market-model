@@ -71,12 +71,20 @@ One block, then stop and report. Never two.
 Every new guard gets a recorded mutation.
 
 - Run it in a **disposable copy under `$HOME`**, never in the mount.
-- Copy `data/`, `.github/`, `.claude/`, `metadata/`, `.gitignore`, the root Markdown and
-  `docs/PROJECT_STATUS.md` into that copy. The docs-freshness guard reads the last three
-  and their absence is a kill that looks real and is not. **`.claude/` was missing from
-  this list for three rounds**, and its absence costs seven errors in an otherwise green
-  control -- a red control that looks like a finding and is a missing directory. Both
-  tracks reported it and worked around it; the list is the thing that was wrong.
+- Make the copy from **git's own file list**, not from a list of directories:
+
+  ```
+  COPY="$HOME/mutation-copy"; rm -rf "$COPY"; mkdir -p "$COPY"
+  git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - | tar -xf - -C "$COPY"
+  ```
+
+  That is every tracked file as your working tree has it, plus your new untracked files,
+  and nothing gitignored -- no `.venv/`, no frozen panel. A hand-kept list of directories
+  here was short twice: first `.claude/` (seven errors in an otherwise green control),
+  then `notebooks/`, `examples/` and `pyproject.toml`. Every omission was a red control
+  that looked like a finding and was a missing path, and both tracks reported and worked
+  around each one. The copy is not a git work tree; guards that ask git skip or fall back
+  there, which is why the copy has to be right by construction.
 - `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`. **Unmutated control green before and
   after.**
 - Record the **exception type**, not just that something went red. A mutation that kills
