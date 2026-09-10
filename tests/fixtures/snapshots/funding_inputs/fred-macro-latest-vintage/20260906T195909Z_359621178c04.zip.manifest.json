@@ -1,6 +1,6 @@
 {
   "byte_count": 122380,
-  "path": "data/raw/fred-macro-latest-vintage/20260906T195909Z_359621178c04.zip",
+  "path": "tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage/20260906T195909Z_359621178c04.zip",
   "retrieved_at": "2026-09-06T19:59:09.410571+00:00",
   "sha256": "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
   "source_id": "fred-macro-latest-vintage",

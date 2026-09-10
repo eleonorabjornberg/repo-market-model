@@ -85,7 +85,7 @@ bid-ask proxies.
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
 
-## Milestone A — the first observable result (published, not yet reproducible)
+## Milestone A — the first observable result (published and reproducible)
 
 **Was the single highest-value thing outstanding, ahead of the remainder of Phase 1.**
 Until it landed, every backtest, every purge gap, every leakage guard and every
@@ -126,7 +126,13 @@ spanning 2018-04-03 to 2026-09-03, with the build manifest and source digests be
 them. No figure from it is transcribed into any Markdown page in this repository, which
 was the harder half to hold and it held.
 
-**Reproduction: not met.** The panel is `data/processed/funding_panel.csv` and is
+**Reproduction: met.** `scripts/reproduce_milestone_a.py` rebuilds the panel from the
+tracked inputs, passes `verify-panel` against the published digest byte for byte, and
+re-derives every figure in the record exactly; `tests/test_generated_results.py` runs it
+on every suite run, so the clause stays met only while it stays true. It closed on a
+defect the check itself surfaced: the tracked inputs' sidecars still named `data/raw/`,
+so a rebuild from them had only ever worked in the checkout that also held the
+originals. How it got here: the panel is `data/processed/funding_panel.csv` and is
 gitignored, and re-running a download is not guaranteed to return an earlier byte
 stream -- the FRED adapter acquires the latest revised vintage rather than the
 historical one -- so the fetch a reader performs is not the fetch that produced the
@@ -135,9 +141,8 @@ record. The raw inputs the record was built from are therefore tracked under
 binds each of them, and the panel, by digest; `repo_model.data.verify_daily_panel`
 checks a panel's bytes against that digest and refuses a manifest whose digest is
 missing or is not 64 lowercase hex characters.
-What is still open is the rebuild: one command that builds the panel from those inputs,
-verifies it and re-scores it against the record. The clause is met when that
-reproduces, and not before.
+The last piece was the rebuild: one command that builds the panel from those inputs,
+verifies it and re-scores it against the record.
 
 **This criterion was briefly rewritten to say it had been met**, on 9 September, by
 pointing at `REPRODUCIBILITY.md`'s command list instead of naming the figures — and the
@@ -275,10 +280,8 @@ work blocks: a plan's "next steps" section is the part that goes stale first, an
 listing blocks here guarantees it. Block-level sequencing lives in the session handoff
 and in the block briefs; what belongs here is the order of the milestones and why.
 
-1. **Milestone A — the first observable result.** Publication met; **reproduction not
-   met** -- see above. Every guard now protects an observable quantity. The raw inputs
-   are committed and the published digest has a verifier; the clause closes when a
-   rebuild from those inputs passes it and re-scores to the record.
+1. **Milestone A — the first observable result.** **Met**, both clauses -- see above.
+   Every guard now protects an observable quantity, and the reproduction is a test.
 2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
    The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
    bound was argued from three orders of magnitude of scale, and the coverage floor and

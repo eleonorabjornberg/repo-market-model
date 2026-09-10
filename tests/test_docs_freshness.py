@@ -334,22 +334,19 @@ CLI_PUBLICATION = {
         "recipe whose first outcome is a refusal"
     ),
     "backtest": PUBLISHED,
-    "build": (
-        "reads data/raw/, which is gitignored. Run as written in a clone it "
-        "exits with 'no raw snapshot manifests under data/raw'. This is "
-        "Milestone A's open reproduction clause seen from the command line: "
-        "what would make it publishable is committing the inputs or a digest, "
-        "not a differently worded invocation"
-    ),
+    "build": PUBLISHED,
     "compare": PUBLISHED,
     "event-holdout": (
         "the declared event windows are 2019 and 2020 and the shipped fixture "
         "is 2026, so on the only panel a clone receives it exits with 'no "
         "training row clears a 6-day gap before 2019-09-16'. A runnable "
-        "invocation needs the frozen panel, which is gitignored"
+        "invocation needs the frozen panel, which is gitignored but which a "
+        "clone can now rebuild with the published build; it also appends to an "
+        "evaluation journal, and publishing that write is a decision not yet made"
     ),
     "exceedance-backtest": PUBLISHED,
     "fetch": PUBLISHED,
+    "verify-panel": PUBLISHED,
 }
 
 # A stated interpreter version in prose: "Python 3.10". Two components only --
@@ -1016,6 +1013,13 @@ def _a_clone_does_not_receive_the_frozen_panel():
     filesystem would answer the wrong question. Returns True while a clone
     would not receive it, and therefore while the limitation is blocked rather
     than merely open.
+
+    **Weakened since the reproduction landed, and recorded rather than
+    re-shaped.** `build` is now published against the tracked inputs, so a clone
+    can rebuild the panel it does not receive. This still returns True, because
+    the file is still untracked, but for `event-holdout` -- the command it now
+    stands for -- it is no longer the whole reason. Replacing it is a human
+    decision about the journal write, not a predicate edit.
     """
     try:
         listed = subprocess.run(

@@ -170,15 +170,16 @@ Stated explicitly, because each is easy to mistake for something stronger.
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
-- **Part of the command line is unpublished.** `build`, `backfill-nmfp` and
+- **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
   published command still parses; it validated in the direction its own defect
   ran, and the complement -- a command published nowhere at all -- is outside
   the set it reads. `compare` and `exceedance-backtest` were in that complement
-  until they were published against the shipped fixture; the three that remain
-  each exit on something a clone does not have, and `build`'s is the same
-  missing thing as Milestone A's open reproduction clause.
+  until they were published against the shipped fixture, and `build` until the
+  reproduction published it against the tracked inputs. `backfill-nmfp` needs a
+  route to the SEC; `event-holdout` needs the full panel, which a clone can now
+  rebuild, so what keeps it unpublished is its journal write, not a missing file.
 
 - **The daily panel has been built and run.** `data/processed/` is no longer
   empty. What the run exposed is that `build` had been writing a panel `backtest`

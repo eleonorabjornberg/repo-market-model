@@ -160,3 +160,68 @@ class GeneratedResultsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def load_reproduction():
+    path = REPO_ROOT / "scripts/reproduce_milestone_a.py"
+    spec = importlib.util.spec_from_file_location("reproduce_milestone_a", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class MilestoneAReproductionTests(unittest.TestCase):
+    """Milestone A's reproduction clause, held true on every run of the suite.
+
+    `PLAN.md` may call the clause met only while this passes. It runs
+    `scripts/reproduce_milestone_a.py`'s own `reproduce` -- `build` from the
+    tracked inputs, `verify-panel` against `metadata/funding_panel_manifest.json`,
+    `backtest` under the record's declaration -- in a temporary directory, and
+    asserts that no figure the record publishes disagrees. Nothing it reads is
+    gitignored, so a clone runs exactly this.
+
+    It is also what keeps a published figure from moving silently: a change to
+    the scoring path that alters what the persistence run produces turns this
+    red, and the answer is a report and a re-scored record, not a tolerance.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, `-B` with `PYTHONDONTWRITEBYTECODE=1`,
+    control green before and after, each applied to a restored copy.
+
+    1. `metrics.mae_bps` in `docs/runs/persistence_funding.json` moved by
+       `1e-12`. Kills this test, `AssertionError` naming `metrics.mae_bps`
+       with both values.
+    2. One tracked input's bytes changed (a trailing newline appended to the
+       `nyfed-sofr-rate` JSON). Kills this test, `AssertionError` "the
+       reproduction did not run": `build` exits 2, refusing the snapshot
+       against its own sidecar before any panel exists.
+    3. `sha256` in `metadata/funding_panel_manifest.json` replaced by 64
+       zeros. Kills this test at `verify-panel`, whose exit-2 message names
+       both digests. The panel was rebuilt byte-identical; only the claim moved.
+
+    **The control was red the first time**, and that was the finding. The
+    tracked inputs' sidecars still named `data/raw/...` as the file to read, so
+    `build` from the tracked inputs had only ever worked in the integration
+    checkout, which also holds the originals. In the disposable copy -- which,
+    like a clone, has no `data/raw/` -- it exited on a missing file. The
+    sidecars now name their tracked location, and
+    `scripts/track_funding_inputs.py` writes them that way.
+    """
+
+    def test_the_published_persistence_run_reproduces_from_tracked_inputs(self):
+        import tempfile
+
+        script = load_reproduction()
+        with tempfile.TemporaryDirectory() as workdir:
+            try:
+                found = script.reproduce(workdir)
+            except script.ReproductionError as exc:
+                self.fail(f"the reproduction did not run: {exc}")
+        self.assertEqual(
+            [],
+            found,
+            "docs/runs/persistence_funding.json does not reproduce from the "
+            "tracked inputs:\n  " + "\n  ".join(found),
+        )

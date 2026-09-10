@@ -69,11 +69,10 @@ came from.
   `DATA_QUALITY_DECISIONS.md` rather than resolved. One of them — a group of fund
   filings that report cash twice — was found by checking an accounting identity
   the pipeline enforces, which is the system working, and it is still open.
-- **A full rebuild from a clean clone is not yet possible.** The raw inputs of the
-  published persistence run are committed and bound by digest, but the command that
-  rebuilds the panel from them and checks it against the record is not yet
-  published, so an outside reader can reproduce the code paths but not yet every
-  published figure.
+- **Only the benchmark's figures are reproduced end to end.** One command rebuilds the
+  panel from the committed inputs, checks it against the published digest and
+  re-derives the persistence benchmark exactly; the challenger records are re-run by
+  hand from what each one declares.
 - Nothing here is investment advice, a trading system, or a risk-management
   control. It is an academic and portfolio project.
 

@@ -27,6 +27,7 @@ from .data import (
     build_daily_panel,
     load_daily_panel,
     load_point_in_time_panel,
+    verify_daily_panel,
     write_daily_panel,
 )
 from .ingest import (
@@ -202,6 +203,33 @@ def _build(args: argparse.Namespace) -> int:
     return 0
 
 
+def _verify_panel(args: argparse.Namespace) -> int:
+    """Check a built panel's bytes against the digest a manifest records.
+
+    The command-line face of `verify_daily_panel`, so that the rebuild step of
+    the published reproduction is something a reader types rather than a
+    function they have to import. It prints the digest both sides agreed on and
+    exits 0; a disagreement, or a manifest with no usable digest, is a
+    `DataContractError`, which the dispatcher prints and exits 2 on.
+
+    `--manifest` is required and has no default. The panel's own
+    `<panel>.manifest.json` was written by the same build that wrote the panel,
+    so checking a panel against it proves only that one build agrees with
+    itself; the published claim is `metadata/funding_panel_manifest.json`, and
+    the reader has to name the claim they are checking against.
+    """
+
+    digest = verify_daily_panel(args.path, args.manifest)
+    print(
+        json.dumps(
+            {"panel": str(args.path), "manifest": str(args.manifest), "sha256": digest},
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the data layer's subcommands to the shared parser."""
 
@@ -251,6 +279,21 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "which columns latest vintage may carry; it never moves a value",
     )
     build.set_defaults(handler=_build)
+
+    verify = subparsers.add_parser(
+        "verify-panel",
+        help="check a built panel's bytes against the SHA-256 a manifest records",
+    )
+    verify.add_argument("path", type=Path)
+    verify.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="the manifest whose sha256 is the claim, e.g. "
+        "metadata/funding_panel_manifest.json; no default, because the panel's "
+        "own manifest was written by the build being checked",
+    )
+    verify.set_defaults(handler=_verify_panel)
 
 
     backfill = subparsers.add_parser(
