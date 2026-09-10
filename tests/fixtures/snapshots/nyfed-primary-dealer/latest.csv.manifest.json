@@ -1,0 +1,10 @@
+{
+  "byte_count": 57725,
+  "note": "NY Fed Primary Dealer Statistics 'latest' CSV, downloaded by the user and uploaded to the integration session on 2026-09-10. Exact retrieval time and URL were not recorded. One row per series at that series' own latest as-of date (weekly Wednesday, other weekly schedules and month-end rows mixed); '*' marks a suppressed value.",
+  "path": "tests/fixtures/snapshots/nyfed-primary-dealer/latest.csv",
+  "retrieved_at": null,
+  "retrieved_on": "2026-09-10",
+  "sha256": "8dac742c501d541b2a3abffd3301405050fc6bf472715ca87d6c0b7a505fc982",
+  "source_id": "nyfed-primary-dealer",
+  "url": null
+}
