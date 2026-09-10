@@ -2718,6 +2718,301 @@ class FittedThresholdTests(unittest.TestCase):
         self.assertAlmostEqual(far.interval_coverage, 0.5, places=12)
 
 
+#: The user's threshold specification, 10 September: a SETAR -- the regime read
+#: off `spread_bps`, the same series the model is autoregressive in -- with
+#: `sofr_volume` as the one exogenous regressor. Written out here because the
+#: whole point of the case is that the regime variable is *not* one of
+#: `regime_frame`'s panel columns: `DailyObservation` computes `spread_bps` from
+#: `sofr` and `iorb`, and `row.values` has never carried the key.
+SETAR_REGRESSORS = ("sofr_volume",)
+SETAR_VARIABLE = "spread_bps"
+
+#: The split handed to `fit_threshold` rather than searched for. A searched
+#: threshold is chosen to minimise in-sample error, so the regime a given origin
+#: row lands in is a fact about the fit and not about the frame -- and a test
+#: that constructs rows on known sides of a known line cannot then let the line
+#: move. `threshold_estimated` records which of the two happened, and the test
+#: asserts it is `False`.
+SETAR_THRESHOLD_BPS = 5.0
+
+
+def setar_frame(count=24):
+    """Rows whose spread crosses `SETAR_THRESHOLD_BPS` between every pair.
+
+    Three properties, each load-bearing and none incidental:
+
+    * **Consecutive spreads straddle the threshold.** Every origin row sits on
+      the opposite side from the row it forecasts, so assigning an origin its
+      *successor's* regime -- the look-ahead this block's acceptance test is
+      built to catch -- puts every row in the other regime rather than in the
+      same one by luck.
+    * **The first row is low and the last is high.** The origins are
+      `rows[:-1]` and the successors `rows[1:]`; the two sequences differ by
+      exactly those two rows, so this is what makes `regime_rows` itself differ
+      between the correct fit and the leaked one (12/11 against 11/12) rather
+      than merely relabelling two equal blocks.
+    * **The spread and the volume both move within each regime.** A regime
+      whose spread column were constant would be collinear with the intercept
+      and `fit_threshold` would raise `SingularDesignError` before any of the
+      above could be checked.
+
+    `count` must be even, for the second property.
+    """
+
+    if count % 2:
+        raise ValueError("setar_frame needs an even count; see its docstring")
+
+    low_bps = (1.0, 2.5, 3.25, 4.0, 1.75, 2.0)
+    high_bps = (9.0, 6.5, 8.25, 7.0, 6.0, 8.75)
+
+    rows = []
+    state = 20260910
+    for index in range(count):
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        family = low_bps if index % 2 == 0 else high_bps
+        bps = family[(index // 2) % len(family)]
+        rows.append(
+            DailyObservation(
+                date(2026, 3, 2) + timedelta(days=index),
+                {
+                    "sofr": 4.30 + bps / 100.0,
+                    "iorb": 4.30,
+                    "sofr_volume": 2100.0 + (state % 1301) / 3.0,
+                },
+            )
+        )
+    return rows
+
+
+def setar_regime_of(row, threshold=SETAR_THRESHOLD_BPS):
+    """`"low"` or `"high"` for `row`, from the property and nothing else.
+
+    The same `<=` the fit and the forecast make, rebuilt off
+    `DailyObservation.spread_bps` so the expectations below are computed from
+    the panel rather than from the module under test.
+    """
+
+    return "low" if row.spread_bps <= threshold else "high"
+
+
+class ThresholdOnTheAutoregressiveTermTests(unittest.TestCase):
+    """A regime read off `spread_bps`: the SETAR the user specified.
+
+    `FittedThreshold` reached this block able to read a regime off any panel
+    column and unable to read one off the spread, which is the variable the
+    user named. `_threshold_value` went through `row.values[name]`, and no
+    ingest writes a `spread_bps` key -- `DailyObservation` computes it from
+    `sofr` and `iorb` -- so every such fit died on its first training row with
+    `MissingRegressorError`. The CLI had accepted `--regime-variable spread_bps`
+    since the flag existed, stripped the spread out of the regressors as the
+    autoregressive term, and handed the fitter a name it could not resolve.
+
+    The message was wrong as well as the read: it said the model "was fitted on
+    that regressor", which is false of any threshold variable -- nothing is
+    fitted on one; it selects which fit applies -- and doubly false here, where
+    the columns actually read are `sofr` and `iorb` and neither is declared.
+    `_raw_regressor` now takes the role it was read in.
+
+    **The trap this test exists for.** `fit_threshold` builds `design`,
+    `targets` and `selectors` in one loop over `rows[1:]`, where the design and
+    the selector come from `rows[index - 1]` and the target from `rows[index]`.
+    A selector taken from `rows[index]` instead is a look-ahead of exactly the
+    shape `LookAheadError` was written for and of exactly the shape no guard
+    catches: the regime of each training origin would be chosen by the value
+    being forecast, the model would fit, run, and score *better* than the honest
+    one, and `predict` could not show it -- `predict` sees only the feature row,
+    so the leak lives entirely in the fit. `setar_frame` is built so that the
+    leaked assignment is the mirror of the honest one, and
+    `test_a_regime_read_off_spread_bps_is_the_feature_rows_spread` compares
+    `regime_rows` and both coefficient vectors against the frame.
+
+    Mutation record, the regime read off the spread (10 September 2026)
+    -------------------------------------------------------------------
+
+    Run in a disposable copy of the tree under `$HOME`, built from
+    `git ls-files --cached --others --exclude-standard` at the branch and commit
+    under test, never in the mount. Stdlib only, `python3 -B` with
+    `PYTHONDONTWRITEBYTECODE=1`. Unmutated control green before and after every
+    mutation, zero `expectedFailure`.
+
+    Acceptance test and mutation target are the same test:
+    `ThresholdOnTheAutoregressiveTermTests::test_a_regime_read_off_spread_bps_is_the_feature_rows_spread`.
+
+    1. **The selector read off the successor.** In `fit_threshold`, the loop's
+       `selectors.append(_threshold_value(origin, ...))` changed to
+       `_threshold_value(rows[index], ...)` -- the look-ahead above.
+       Killed by this test: `AssertionError` on `regime_rows`,
+       `mappingproxy({'low': 11, 'high': 12}) != {'low': 12, 'high': 11}`, the
+       mirror the frame was built to produce.
+
+       **A negative result, recorded because it is one.** This mutation was
+       *already* caught, by `FittedThresholdTests` --
+       `test_the_threshold_is_estimated_from_the_origin_rows_alone` and
+       `test_the_residual_law_is_leave_one_out_within_each_regime`, both
+       `AssertionError`, three failures in the run altogether. So the trap the
+       brief names was not open on the tree; it was open only for a regime
+       variable those two tests could not construct, which is exactly the one
+       this block adds. The mutation is recorded as killed by the acceptance
+       test, and the record says it was not killed *only* by it.
+    2. **The unobserved branch removed.** The `if observed is None: raise` in
+       `_spread_threshold_value` deleted, so `row.spread_bps` is reached with a
+       `None` component. Killed by this test alone -- one error in the whole
+       suite -- as `TypeError`, `float() argument must be a string or a number,
+       not 'NoneType'`, raised inside `DailyObservation.spread_bps`. That is
+       precisely the failure the assertion names: a gap read as a number rather
+       than refused.
+    3. **The property bypassed by name.** `_spread_threshold_value`'s body
+       replaced by `return _raw_regressor(row, SPREAD_VARIABLE, where)`, the
+       pre-block read. Killed by this test alone, as `MissingRegressorError`
+       on the first training row (`training row for 2026-03-02 carries no
+       'spread_bps'`) -- the defect itself, reproduced.
+
+    Re-run of the mutation records this block's fixtures touch: none.
+    `setar_frame` is new and no existing record names it; `regime_frame` and
+    `FittedThresholdTests` are untouched.
+    """
+
+    def fit(self, rows, threshold=SETAR_THRESHOLD_BPS):
+        """The SETAR under test, with the threshold declared rather than searched."""
+
+        return fit_threshold(
+            rows,
+            SETAR_REGRESSORS,
+            SETAR_VARIABLE,
+            threshold=threshold,
+            minimum_history=len(rows),
+        )
+
+    def by_hand(self, rows, threshold=SETAR_THRESHOLD_BPS):
+        """`{regime: (design, targets)}`, rebuilt from the frame alone.
+
+        Longhand for the reason `design_and_targets` is written longhand: the
+        expectation has to come from the definition of the model, not from the
+        helper the model itself calls. The regime comes off the *origin* row,
+        which is the whole assertion.
+        """
+
+        imputations = window_means(rows, SETAR_REGRESSORS)
+        parts = {"low": ([], []), "high": ([], [])}
+        for index in range(1, len(rows)):
+            origin = rows[index - 1]
+            design = [1.0, origin.spread_bps]
+            for name in SETAR_REGRESSORS:
+                raw = origin.values[name]
+                design.append(imputations[name] if raw is None else float(raw))
+            regime = setar_regime_of(origin, threshold)
+            parts[regime][0].append(design)
+            parts[regime][1].append(rows[index].spread_bps)
+        return parts
+
+    def test_a_regime_read_off_spread_bps_is_the_feature_rows_spread(self):
+        """The SETAR fits, and every regime it reports is the row's own.
+
+        Four assertions, one per way this could be wrong: the fit cannot resolve
+        the variable at all; the fit resolves it but off the wrong row; a gap in
+        a component is imputed into a regime; a gap in a component is reported
+        as a gap in a column the panel does not have.
+        """
+
+        rows = setar_frame()
+        model = self.fit(rows)
+
+        # 1. It fits, and the spread is reported once -- it is the
+        #    autoregressive term and the regime variable at the same time, and
+        #    `features_read` is what the purge is sized over.
+        self.assertEqual(model.threshold_variable, SETAR_VARIABLE)
+        self.assertFalse(model.threshold_estimated)
+        self.assertEqual(model.threshold, SETAR_THRESHOLD_BPS)
+        self.assertEqual(model.features_read.count(SETAR_VARIABLE), 1)
+        self.assertEqual(model.features_read, (SETAR_VARIABLE,) + SETAR_REGRESSORS)
+
+        # 2. The regimes are the origins' own, not their successors'. The frame
+        #    straddles the threshold between every pair, so a fit that read the
+        #    selector off `rows[index]` would report the mirror of this.
+        parts = self.by_hand(rows)
+        expected_rows = {regime: len(targets) for regime, (_, targets) in parts.items()}
+        self.assertEqual(expected_rows, {"low": 12, "high": 11})
+        self.assertEqual(model.regime_rows, expected_rows)
+
+        for regime, (design, targets) in parts.items():
+            expected = _least_squares(design, targets)
+            for index, coefficient in enumerate(expected):
+                self.assertAlmostEqual(
+                    model.coefficients[regime][index],
+                    coefficient,
+                    places=9,
+                    msg=(
+                        f"the {regime!r} regime's coefficient {index} was not "
+                        f"fitted on the rows whose own spread selects it"
+                    ),
+                )
+
+        # ... and `predict` reads the feature row's own spread. One row per
+        # side, each scored by hand under both coefficient vectors.
+        for feature_row in (rows[-2], rows[-1]):
+            regime = setar_regime_of(feature_row)
+            other = "high" if regime == "low" else "low"
+            self.assertEqual(model.regime_for(feature_row), regime)
+
+            design = [1.0, feature_row.spread_bps]
+            design.extend(
+                float(feature_row.values[name]) for name in SETAR_REGRESSORS
+            )
+            self.assertEqual(model.design_row(feature_row), tuple(design))
+            self.assertAlmostEqual(
+                model.point_forecast(feature_row),
+                _dot(model.coefficients[regime], tuple(design)),
+                places=9,
+            )
+            self.assertNotAlmostEqual(
+                model.point_forecast(feature_row),
+                _dot(model.coefficients[other], tuple(design)),
+                places=6,
+                msg=(
+                    "both regimes score this row the same; the regime read "
+                    "cannot be shown to have chosen anything"
+                ),
+            )
+        self.assertEqual(
+            {setar_regime_of(rows[-2]), setar_regime_of(rows[-1])},
+            {"low", "high"},
+            "the two feature rows scored above are on the same side",
+        )
+
+        # 3. A component carried as None makes the spread unobserved, and an
+        #    unobserved regime variable is refused rather than imputed. Not a
+        #    `TypeError` out of `float(None)` inside the property: the refusal
+        #    is the model declining to choose a model, and it has to read as
+        #    that.
+        for component in ("sofr", "iorb"):
+            unobserved = dict(rows[-2].values)
+            unobserved[component] = None
+            row = DailyObservation(rows[-2].date, unobserved)
+            with self.assertRaises(UnobservedThresholdError) as caught:
+                model.regime_for(row)
+            self.assertIn(
+                "a regime is a choice between two fitted models and cannot be "
+                "made from an unobserved value",
+                str(caught.exception),
+            )
+            self.assertIn(repr(component), str(caught.exception))
+
+        # 4. An absent component is a different fact and names a different
+        #    column. `spread_bps` is not a panel column, so reporting it as the
+        #    absent one would send a reader looking for a key no ingest writes.
+        absent = {
+            name: value
+            for name, value in rows[-2].values.items()
+            if name != "sofr"
+        }
+        with self.assertRaises(MissingRegressorError) as caught:
+            model.regime_for(DailyObservation(rows[-2].date, absent))
+        message = str(caught.exception)
+        self.assertIn("carries no 'sofr'", message)
+        self.assertNotIn(f"carries no {SETAR_VARIABLE!r}", message)
+        self.assertNotIsInstance(caught.exception, UnobservedThresholdError)
+
+
 # --------------------------------------------------------------------------
 # The exceedance-predictor interface
 # --------------------------------------------------------------------------
