@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 import json
+from dataclasses import fields
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -2693,3 +2694,265 @@ class IdentityToleranceScaleTests(unittest.TestCase):
         self.assertEqual(
             self._violated_dates(absolute_only), [self.SMALL, self.LARGE]
         )
+
+
+class SourceSuppliedNothingTests(unittest.TestCase):
+    """A source that supplied nothing cannot fail a build, by any channel.
+
+    `build_daily_panel` rule 5 restricts the registry it checks to the sources
+    behind the columns the build made, and its own comment says why: "a source
+    that supplied nothing should not be able to fail this build through any
+    channel, including a malformed declaration of its own." The restriction
+    keyed on the built columns, which is what the panel *declares*, and not on
+    what arrived. Those come apart the moment a column is priceable from a
+    source whose file the build holds none of -- which is what happens to
+    `dealer_treasury_position` and `nyfed_fr2004` the moment the column gains a
+    source, because `funding_inputs/` carries no FR 2004 export. Rule 5 then
+    evaluated an identity over zero observations, and
+    `validate_accounting_identities` raised
+
+        nyfed_fr2004: identity dealer_treasury_total_is_its_declared_components
+        has no complete reference date
+
+    out of a build of eight columns that have nothing to do with FR 2004. The
+    channel is not the violation branch, which is why the existing scoping did
+    not cover it: it is the *malformed-declaration* channel that the comment
+    above already names, arriving at a declaration that is not malformed at all.
+
+    **What the skip is keyed on: the source's declared `fields`.** A source is
+    checked when the panel built a column from it and at least one of its
+    declared series appears among the rows the build can see. Not keyed on the
+    identity having a complete reference date, which is the near-miss this class
+    exists to separate: that rule passes the empty case and also swallows the
+    partial one, where terms were observed but never together on one date. That
+    case is a finding about data a source published and must still raise --
+    `sec_nmfp` reaches its unevaluable dates through it. A source that declares
+    no `fields` is checked as before; "supplied nothing" is a claim about a
+    declared vocabulary, and reading an absent list as an empty one would exempt
+    every source that declares none. `IdentityVerdictTests`' fixture registry
+    declares no fields and is unaffected, which is the property that keeps the
+    two halves of the scoping independent.
+
+    **The build records no identity verdict, and there is none to record.**
+    `DailyPanelBuild` carries the observations, the built columns, the refusals,
+    the holes and the two times; no field of it is a verdict, and the acceptance
+    test pins that rather than assuming it. Nor could one be recorded elsewhere
+    for the empty case: asked directly, `validate_accounting_identities` raises
+    for a source with nothing to evaluate rather than returning a verdict. The
+    verdict channel is the quality report at the ingest hop, over the archive
+    that source actually supplied. So the empty column is recorded as what it
+    is -- a hole count -- and the identity is not answered, because on zero
+    observations there is no answer to give.
+
+    Mutation record, 10 September 2026, python3 3.9.6. Every mutation applied in
+    a disposable copy under `$HOME`, built from `git ls-files -z --cached
+    --others --exclude-standard` so the copy is every tracked file plus the
+    untracked ones and nothing gitignored. `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`. Each mutation was reverted before the next. The unmutated
+    control was red on exactly one test before the first mutation and again
+    after the last -- `test_contract.FeatureSourceMapCoverageTests.test_every_
+    registry_source_reaches_at_least_one_panel_column`, which is constant while
+    the human's move of `dealer_treasury_position` into `FEATURE_FIELDS` is
+    pending and is excluded from every kill list below.
+
+    1. **The acceptance mutation.** The supply half of rule 5's restriction
+       removed -- `_source_supplied_anything` no longer consulted, so the
+       registry is restricted on the built columns alone, which is the behaviour
+       before this block. Killed by exactly one test:
+
+       * `test_a_built_column_whose_source_supplied_nothing_builds_empty` --
+         `repo_model.data.DataContractError: sec_nmfp: identity
+         series_assets_reconcile_to_liabilities_and_net_assets has no complete
+         reference date`, raised out of the build that must succeed. The
+         exception reaching the test rather than an `AssertionError` is the
+         point: the empty case does not fail an assertion, it aborts.
+
+    2. **The trap, keyed on complete dates instead of on supply.**
+       `_source_supplied_anything` replaced by a test of whether the identity's
+       declared terms share a reference date -- skip when they do not. It passes
+       the empty case, which is why it is worth running. Killed by exactly one
+       test, through the partial phrase:
+
+       * `test_a_built_column_whose_source_supplied_nothing_builds_empty` --
+         `AssertionError: DataContractError not raised`, from the phrase where
+         `mmf_cash` and `mmf_net_assets` are each observed and never on the same
+         date.
+
+    3. **The skip applied to every source regardless of supply.**
+       `_source_supplied_anything` replaced by `return False`, so every source
+       is exempt and rule 5 checks nothing at all. Killed by two tests:
+
+       * `test_a_built_column_whose_source_supplied_nothing_builds_empty` --
+         `AssertionError: DataContractError not raised`, from the violated
+         phrase.
+       * `IdentityVerdictTests.test_a_violation_stops_a_panel_that_uses_the_
+         source_and_not_one_that_does_not` -- `AssertionError:
+         DataContractError not raised`. The second half of the previous block's
+         criterion, which is the guard that says this scoping is not a
+         loosening; it firing here is the evidence that this block did not blunt
+         it.
+
+    Rule 5's code changed under an existing mutation record, so
+    `IdentityVerdictTests`' first two mutations were re-run on this tree rather
+    than taken on trust -- CLAUDE.md, "if you change a fixture that an existing
+    mutation record names". Both still kill the test they name, with the
+    exception each records: rule 5 deleted outright gives `AssertionError:
+    DataContractError not raised`, and the check widened to every source with an
+    identity gives `repo_model.data.DataContractError: sec_nmfp: identity
+    series_assets_reconcile_to_liabilities_and_net_assets is violated on 1
+    reference date(s)` out of the build that must succeed. Each now also kills
+    the acceptance test above, which is the two halves of the scoping being the
+    same restriction seen from two sides.
+    """
+
+    #: A `ref_date`-basis lag in the shape `metadata/sources.json` declares, so
+    #: both fixture columns are priceable and the test turns on rule 5 rather
+    #: than on a refusal. The same shape `IdentityVerdictTests` uses.
+    LAG = {
+        "basis": "ref_date",
+        "unit": "business_days",
+        "days": 1,
+        "worst_case_calendar_days": 6,
+        "available_time": "15:00",
+        "timezone": "America/New_York",
+        "note": "fixture",
+    }
+
+    #: `sec_nmfp`'s declared series, named as `metadata/sources.json` names them.
+    #: This is the list the skip is keyed on, and it is deliberately wider than
+    #: the identity's terms are: the two are the same set here, and the docstring
+    #: of `_source_supplied_anything` says which one is consulted.
+    FIELDS = [
+        "mmf_cash",
+        "mmf_portfolio_securities",
+        "mmf_other_assets",
+        "mmf_liabilities",
+        "mmf_net_assets",
+    ]
+
+    IDENTITY = {
+        "name": "series_assets_reconcile_to_liabilities_and_net_assets",
+        "left": ["mmf_cash", "mmf_portfolio_securities", "mmf_other_assets"],
+        "right": ["mmf_liabilities", "mmf_net_assets"],
+        "tolerance": {"absolute": 0.5, "unit": "USD billions"},
+    }
+
+    FIRST = date(2026, 1, 5)
+    SECOND = date(2026, 1, 12)
+
+    def registry(self):
+        """Two sources, both declaring their fields, one carrying an identity."""
+
+        return {
+            "nyfed_sofr": {"release_lag": dict(self.LAG), "fields": ["SOFR"]},
+            "sec_nmfp": {
+                "release_lag": dict(self.LAG),
+                "fields": list(self.FIELDS),
+                "identities": [dict(self.IDENTITY)],
+            },
+        }
+
+    def observation(self, series_id, ref_date, value):
+        return PointInTimeObservation(
+            series_id=series_id,
+            ref_date=ref_date,
+            available_at=datetime.combine(
+                ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+            ),
+            value=value,
+            vintage_id=f"{series_id}-{ref_date.isoformat()}",
+            source_sha="a" * 64,
+        )
+
+    def sofr_rows(self):
+        """The clean source alone. `sofr` is the only REQUIRED_FIELDS column."""
+
+        return [
+            self.observation("SOFR", self.FIRST, 4.30),
+            self.observation("SOFR", self.SECOND, 4.31),
+        ]
+
+    def balance_sheet(self, ref_date, *, residual=0.0):
+        """Every declared term on one date. `residual` overstates the left side."""
+
+        return [
+            self.observation("mmf_cash", ref_date, 100.0),
+            self.observation("mmf_portfolio_securities", ref_date, 8850.0),
+            self.observation("mmf_other_assets", ref_date, 100.0 + residual),
+            self.observation("mmf_liabilities", ref_date, 50.0),
+            self.observation("mmf_net_assets", ref_date, 9000.0),
+        ]
+
+    def build(self, rows):
+        return build_daily_panel(
+            rows,
+            self.registry(),
+            build_cutoff=datetime(2026, 6, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=("sofr", "mmf_assets"),
+        )
+
+    def test_a_built_column_whose_source_supplied_nothing_builds_empty(self):
+        """The acceptance criterion. One fixture, three phrases, and all three matter.
+
+        `mmf_assets` resolves to `sec_nmfp.mmf_net_assets` and is priceable
+        under this registry, so the build prices it and rule 5 reaches the
+        source behind it. What varies between the phrases is only what that
+        source supplied.
+        """
+
+        # Phrase one. The source supplied none of its declared series. The build
+        # succeeds; the column is present and empty, and empty is recorded as a
+        # hole count rather than as a zero or a missing column.
+        rows = self.sofr_rows()
+        build = self.build(rows)
+        self.assertEqual(build.built_columns, ("sofr", "mmf_assets"))
+        self.assertEqual(build.refusals, {})
+        self.assertEqual(
+            [row.date for row in build.observations], [self.FIRST, self.SECOND]
+        )
+        self.assertEqual(
+            [row.values["mmf_assets"] for row in build.observations], [None, None]
+        )
+        self.assertEqual(build.holes["mmf_assets"], 2)
+        self.assertEqual(build.holes["sofr"], 0)
+
+        # The build records no identity verdict for that source, and there is
+        # none to record: `DailyPanelBuild` has no verdict field, and the
+        # evaluator asked directly refuses rather than returning one, because on
+        # zero observations there is no verdict to give. Pinned rather than
+        # assumed -- a build that grows one has to say here what it says.
+        self.assertEqual(
+            [field.name for field in fields(build) if "identit" in field.name], []
+        )
+        with self.assertRaises(DataContractError) as caught:
+            validate_accounting_identities(rows, self.registry())
+        self.assertIn("no complete reference date", str(caught.exception))
+
+        # Phrase two. The same source, supplying its balance sheet, with a
+        # violation on a date this build can see: it still stops the build. Rule
+        # 5 is scoped on supply, not loosened.
+        violating = (
+            self.sofr_rows()
+            + self.balance_sheet(self.FIRST)
+            + self.balance_sheet(self.SECOND, residual=2.0)
+        )
+        with self.assertRaises(DataContractError) as caught:
+            self.build(violating)
+        message = str(caught.exception)
+        self.assertIn("sec_nmfp", message)
+        self.assertIn(self.IDENTITY["name"], message)
+        self.assertIn(self.SECOND.isoformat(), message)
+        self.assertIn("mmf_assets", message)
+
+        # Phrase three. Terms observed, but never together on one reference
+        # date. The source supplied something, so it is not exempt, and the
+        # unevaluable path still raises -- this is the path `sec_nmfp` relies on
+        # and the trap that a skip keyed on complete dates would swallow.
+        partial = self.sofr_rows() + [
+            self.observation("mmf_cash", self.FIRST, 100.0),
+            self.observation("mmf_net_assets", self.SECOND, 9000.0),
+        ]
+        with self.assertRaises(DataContractError) as caught:
+            self.build(partial)
+        self.assertIn("no complete reference date", str(caught.exception))

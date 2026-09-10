@@ -2814,13 +2814,17 @@ class FR2004DealerPositionTests(unittest.TestCase):
     3.9.6. Each mutation was applied to a freshly restored copy and each
     replacement was confirmed present in the file before the run.
 
-    **The control is not green, and that is this block's finding.** 759 tests,
-    one failure, before the mutations and after them:
+    **The control is not green, and that is this block's finding.** Exactly one
+    failure, before the mutations and after them:
     `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_reaches_at_least_one_panel_column`,
-    because `nyfed_fr2004` is now ingested and `contract.py` still keeps
-    `dealer_treasury_position` in `UNSOURCED_FEATURES`. That failure is constant
-    across every case below and is excluded from the kill counts; nothing else
-    fails unmutated.
+    because `nyfed_fr2004` is ingested here and no panel column draws on it yet.
+    What is outstanding is a human edit to `src/repo_model/contract.py`: moving
+    `dealer_treasury_position` out of `UNSOURCED_FEATURES` and declaring it in
+    `FEATURE_FIELDS` as `nyfed_fr2004.PDPOSGST-TOT`. No track may make it --
+    `contract.py` is `HUMAN_ONLY` -- so the failure stands until that move
+    lands. The guard is not the thing that is wrong here; it is reporting a tree
+    that is one human edit short of complete. It is constant across every case
+    below and is excluded from the kill counts; nothing else fails unmutated.
 
     1. `release_lag.days` 6 -> 0 in `metadata/sources.json`. Kills
        `test_the_fr2004_dealer_total_is_its_components_on_its_release_date`,
