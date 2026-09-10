@@ -230,9 +230,10 @@ Stated explicitly, because each is easy to mistake for something stronger.
   on 2022-12-31 -- 76.4% of `mmf_repo_holdings`. This page stated the opposite on
   evidence from the single archive then held: `FEDERAL RESERVE` occurs 18,119 times
   across the 87 of 97 archives held now, and never once in the description field the
-  derivation was said to search. What remains true is the half this page did not lead
-  with -- an absent value and a parse failure still have the same representation, and
-  the series now names the month where that matters (2026-07-31).
+  derivation was said to search. The half this page did not lead with is now
+  declared: a month through 2013-08 with no row is a reviewed structural zero, and
+  2026-07-31, after the facility opened, stays an undeclared absence -- two records,
+  not one representation.
 - **The N-MFP identity tolerance is a single absolute bound** and after
   calibration it stays one. That is now a decision rather than a deferral
   (`febba6d`), and two claims this page previously made about it were measured

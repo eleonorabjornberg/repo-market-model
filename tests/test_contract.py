@@ -846,7 +846,23 @@ class SourceRegistryTests(unittest.TestCase):
     """Conformance tests for the machine-readable source registry."""
 
     def test_source_registry_declares_identities_and_structural_zeros(self):
-        """Contract tests 4 and 5 require explicit, machine-readable metadata."""
+        """Contract tests 4 and 5 require explicit, machine-readable metadata.
+
+        The `through` assertion landed with the first reviewed structural zero
+        (`sec_nmfp`, `mmf_on_rrp`, through 2013-08-31). Mutation record,
+        disposable copy under `$HOME`, `-B`, control green before and after:
+
+        1. `through` deleted from that registry entry. Kills this test,
+           `AssertionError` naming the source, the field and `'through'`.
+           Without the assertion the same mutation is caught only as
+           collateral: the `test_ingest.py` cases that parse with the real
+           registry error with `DataContractError` from `data.py`'s reader,
+           and nothing fails as a registry-shape defect.
+        2. `through` written `"2013-08"`. Kills this test, `AssertionError`
+           from the regex.
+        3. `"from": "2014-01-01"` added. Kills this test, `AssertionError` from
+           `assertLessEqual`.
+        """
 
         registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
         self.assertIsInstance(registry, dict)
@@ -914,6 +930,28 @@ class SourceRegistryTests(unittest.TestCase):
                     self.assertIn(declaration.get("field"), fields)
                     self.assertIsInstance(declaration.get("when"), str)
                     self.assertTrue(declaration["when"])
+                    # A declaration with no last covered month annexes every
+                    # month the source has not reached yet. The reader in
+                    # data.py refuses that at ingest; this refuses it at the
+                    # seam, on the registry a clone receives, without going
+                    # through the reader it would otherwise be anchored to.
+                    bounds = {}
+                    for key in ("from", "through"):
+                        raw = declaration.get(key)
+                        if raw is None and key == "from":
+                            continue
+                        self.assertIsInstance(
+                            raw, str,
+                            msg=f"{source_id}: structural zero for "
+                            f"{declaration.get('field')!r} has no {key!r}",
+                        )
+                        self.assertRegex(raw, r"^\d{4}-\d{2}-\d{2}$")
+                        try:
+                            bounds[key] = date.fromisoformat(raw)
+                        except ValueError:
+                            self.fail(f"{source_id}: {key} {raw!r} is not a date")
+                    if "from" in bounds:
+                        self.assertLessEqual(bounds["from"], bounds["through"])
 
         self.assertGreater(
             declared_identities,

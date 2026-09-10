@@ -445,9 +445,10 @@ that a missing ON RRP leg would silently do so. The leg is present, so it does n
 size of the error the warning described is now measurable rather than hypothetical: it
 would have peaked at the same 2,273.8 bn.
 
-**What survives is the sharper half.** Absence is still indistinguishable from a parse
-failure. `structural_zeros` is empty and `structural_zeros_reviewed` is `false`, and the
-series now supplies the instance that argument always lacked. Thirty-three repo report
+**What survived was the sharper half, and the review now answers it.** Absence was
+indistinguishable from a parse failure while `structural_zeros` was empty and
+`structural_zeros_reviewed` was `false`, and the series supplied the instance that
+argument always lacked. Thirty-three repo report
 months carry no `mmf_on_rrp` row, and they are two different things wearing one
 representation: thirty-two run 2010-11 to 2013-08 and precede the facility, so their true
 value is zero for a reason a reviewer could state, while one is 2026-07-31, a month in
@@ -463,10 +464,13 @@ this suite can see `data/raw/`**, so every claim this repository makes about the
 prose, and prose does not decay-check. The sentence was true when written, and nobody
 re-measured it when ninety-six more archives arrived.
 
-**Still required:** make an absent declared field recordable without coercing it to `0.0`,
-which would destroy the very distinction the structural-zero declaration exists to
-preserve; and review the structural zeros the series now makes reviewable. An unqualified
-`structural_zeros_reviewed: true` justified by a near-zero period is still not a resolution.
+**Reviewed (human, 10 Sep):** `sec_nmfp` declares `mmf_on_rrp` a structural zero with no
+`from` and `through` 2013-08-31. It covers absent cross-sections only, so the thirty-two
+pre-facility months are recorded as `declared_structural_zero` and 2026-07-31 as an
+undeclared absence; the two observed pre-facility months stay observations and are still
+unexplained. The review is qualified, not blanket: `reviewed_note` says it covers this
+one field, and that the other ten declaring nothing is not a finding that they have no
+structural zeros.
 
 ## Dealer Treasury positions: `PDPOSGST-TOT`
 

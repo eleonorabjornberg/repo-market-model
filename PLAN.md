@@ -283,8 +283,8 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
    bound was argued from three orders of magnitude of scale, and the coverage floor and
    monthly assembly left a 2.9x range, over which scale explains almost none of the
-   residual. What remains on N-MFP is the `sec_nmfp`
-   structural-zero review, a human's field. The Treasury-settlement aggregation is half done: the limitation
+   residual. The `sec_nmfp` structural-zero review is recorded: `mmf_on_rrp` is a
+   declared zero through 2013-08-31, before the facility. The Treasury-settlement aggregation is half done: the limitation
    states what was combined, and the split into bill, coupon and SOMA components, from
    fields already in the snapshot, is next. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.

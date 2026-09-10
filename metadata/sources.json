@@ -253,9 +253,15 @@
       "basis": "snapshot_retrieved_at",
       "note": "The bulk extract is a monthly compilation of as-filed submissions; rows inherit the immutable extract retrieval timestamp rather than the filing deadline or report date."
     },
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed across the Form N-MFP tables and filing variants; the empty declaration is not a finding.",
+    "structural_zeros": [
+      {
+        "field": "mmf_on_rrp",
+        "through": "2013-08-31",
+        "when": "mmf_on_rrp is the Fund's reverse repo lent to the Federal Reserve through the overnight reverse repurchase facility, which opened in September 2013; a report month through 2013-08 that carries no mmf_on_rrp row held none, because there was no facility to lend to. The declaration covers absent cross-sections only: the two pre-facility months the archive does report (2011-03-31, 1.2 USD billions; 2012-11-30, 0.8) stay observations, and are not explained here. It is bounded at 2013-08-31 so that it cannot reach 2026-07-31, the one month after the facility opened with no row, which stays an undeclared absence."
+      }
+    ],
+    "structural_zeros_reviewed": true,
+    "reviewed_note": "Reviewed for mmf_on_rrp alone, the one field whose absence the archive made reviewable (docs/DATA_QUALITY_DECISIONS.md, 'the ON RRP leg'). The other ten fields declare no structural zero and that is not a finding that they have none: the three shareholder-flow fields have no observation before Form N-MFP3 because the table did not exist, which metadata/sec_nmfp_archives.json records as absent_fields refusals -- an absence with a reason, not a zero.",
     "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
   },
   "treasury_auctions": {
