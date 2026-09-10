@@ -41,11 +41,6 @@ a commit message:
 - **The administered leg is spliced.** IORB begins 2021-07-29; IOER, which it
   replaced, supplies everything before. Without the splice the panel begins in
   July 2021 and contains no stress episode at all.
-- **IOER's never-revised declaration is not vintage-verified.** No route to
-  ALFRED was available from either machine on the day. The claim rests on the
-  administrative argument and on the series being closed, and it is weaker than
-  the IORB declaration beside it. Every run record built on this panel inherits
-  that, and `metadata/sources.json` says so in the entry itself.
 - **The panel is funding-only by construction, not by choice.** `tgcr`, `bgcr`
   and `treasury_settlement` are built columns with no observations, because
   their sources were not part of this freeze.
