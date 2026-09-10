@@ -75,12 +75,11 @@ rule. Low-frequency series are joined as-of; values are not backfilled into date
 which they were not yet known.
 
 Ingested so far: the SOFR, TGCR and BGCR families; the FRED macro block; Treasury
-settlement; and SEC Form N-MFP, whose declared archive set, per-table refusal rule and
+settlement; SEC Form N-MFP, whose declared archive set, per-table refusal rule and
 per-era category vocabulary are recorded in `metadata/sec_nmfp_archives.json` and
-`metadata/sources.json`. Not yet ingested: primary-dealer positions — declared in
-`contract.UNSOURCED_FEATURES` precisely so that using one raises rather than resolving
-to an empty source set — bill yields, basis proxies, and the volatility, depth and
-bid-ask proxies.
+`metadata/sources.json`; and the FR 2004 primary-dealer Treasury total (`nyfed_fr2004`,
+`PDPOSGST-TOT`, from 2013-04-03). Not yet ingested: bill yields, basis proxies, and the
+volatility, depth and bid-ask proxies.
 
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
@@ -291,9 +290,9 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    states what was combined, and the split into bill, coupon and SOMA components, from
    fields already in the snapshot, is next. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.
-3. **Then widen Phase 1**: primary-dealer positions first, since a declared-but-unsourced
-   column is the one gap the contract already raises on, then bill yields and the
-   liquidity proxies.
+3. **Then widen Phase 1**: primary-dealer positions are sourced; bill yields and the
+   liquidity proxies are next. The published Milestone A panel stays pinned to its
+   manifest's columns, so a new source does not move it.
 4. **Phase 2 to its exit criterion**: a conditional model scored against climatology on
    the declared knowledge holdouts, and a benchmark that beats persistence out of sample
    while staying calibrated in the tails.

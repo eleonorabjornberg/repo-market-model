@@ -207,11 +207,13 @@ import unittest
 from datetime import date, datetime, time, timedelta, timezone
 from functools import partial
 from pathlib import Path
+from types import MappingProxyType
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 import repo_model
-from repo_model import baseline, cli
+from repo_model import baseline, cli, contract
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
     FittedArx,
@@ -1760,10 +1762,10 @@ def _package_modules(package):
     fact about Python packaging and not a list of models.
 
     Consequence, for any module this walk will reach: it must import on the core
-    job. `src/repo_model/ml.py` will therefore have to import scikit-learn
-    inside the functions that use it, never at module level -- a module-level
-    optional import would turn this walk into an ImportError on every checkout
-    without the `ml` extra.
+    job. `src/repo_model/ml.py` therefore imports scikit-learn inside the
+    functions that use it, never at module level -- a module-level optional
+    import would turn this walk into an ImportError on every checkout without
+    the `ml` extra.
     """
 
     modules = []
@@ -2470,10 +2472,10 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         return block
 
     def test_every_declared_feature_field_exists_in_its_source(self):
-        """The field-level version of `dealer_treasury_position`.
+        """The field-level version of what `dealer_treasury_position` taught.
 
-        A column can be declared in four places and ingested by none;
-        declaration is not provenance. A field named here that the source does
+        That column was declared in four places and ingested by none until the
+        FR 2004 adapter; declaration is not provenance. A field named here that the source does
         not carry would resolve to a lag nobody can look up, and would read as
         though it had one.
         """
@@ -2594,14 +2596,36 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         )
 
     def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):
-        """Two walks, one classification. They must refuse the same names."""
+        """Two walks, one classification. They must refuse the same names.
 
-        for names in (("no_such_column",), ("dealer_treasury_position",)):
-            with self.subTest(names=names):
-                with self.assertRaises(UndeclaredFeatureError):
-                    sources_for_features(names)
-                with self.assertRaises(UndeclaredFeatureError):
-                    field_sources_for_features(names)
+        `UNSOURCED_FEATURES` is empty in the tree, so the declared-but-unsourced
+        name is planted; see `_planted_unsourced_feature`.
+        """
+
+        with _planted_unsourced_feature():
+            for names in (("no_such_column",), (PLANTED_UNSOURCED,)):
+                with self.subTest(names=names):
+                    with self.assertRaises(UndeclaredFeatureError):
+                        sources_for_features(names)
+                    with self.assertRaises(UndeclaredFeatureError):
+                        field_sources_for_features(names)
+
+
+#: A name planted in `contract.UNSOURCED_FEATURES` for one test's duration.
+#: The mapping has been empty since `dealer_treasury_position` gained its FR 2004
+#: source, and a test that loops over an empty mapping passes on no names.
+PLANTED_UNSOURCED = "planted_unsourced_column"
+PLANTED_REASON = "planted by tests/test_contract.py: no source, on purpose"
+
+
+def _planted_unsourced_feature():
+    return mock.patch.object(
+        contract,
+        "UNSOURCED_FEATURES",
+        MappingProxyType(
+            {**contract.UNSOURCED_FEATURES, PLANTED_UNSOURCED: PLANTED_REASON}
+        ),
+    )
 
 
 class FeatureSourceMapCoverageTests(unittest.TestCase):
@@ -2837,20 +2861,31 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
             sources_for_features(["not_a_panel_column"])
 
     def test_a_declared_but_unsourced_feature_raises_with_its_reason(self):
-        """`dealer_treasury_position` is declared in four places and ingested by none.
+        """A declared column with no source raises, and says why, in both walks.
 
-        It is in OPTIONAL_NUMERIC_FIELDS, DATA.md, the sample panel header and
-        two tests, and nothing in metadata/sources.json produces it. Declaring
-        a column is not the same as having provenance for it, and using one
-        must say so rather than purge zero days.
+        `dealer_treasury_position` was this case until the FR 2004 adapter:
+        declared in four places, ingested by none. Declaring a column is not
+        provenance, and using one must say so rather than purge zero days. The
+        real mapping is empty, so one entry is planted beside whatever it holds.
+
+        Mutations, 2026-09-10, python3 3.10.12, copy from `git ls-files`: the
+        `UNSOURCED_FEATURES` branch dropped from `sources_for_features`, then
+        from `field_sources_for_features` -- each killed, `AssertionError`: the
+        planted name falls through to the unclassified refusal, whose message
+        does not carry the reason. The same test looping over the unpatched
+        mapping kills neither.
         """
 
-        for feature, reason in UNSOURCED_FEATURES.items():
-            with self.subTest(feature=feature):
-                self.assertTrue(reason.strip())
-                with self.assertRaises(UndeclaredFeatureError) as caught:
-                    sources_for_features([feature])
-                self.assertIn(reason, str(caught.exception))
+        with _planted_unsourced_feature():
+            entries = dict(contract.UNSOURCED_FEATURES)
+            self.assertIn(PLANTED_UNSOURCED, entries)
+            for feature, reason in entries.items():
+                with self.subTest(feature=feature):
+                    self.assertTrue(reason.strip())
+                    for resolve in (sources_for_features, field_sources_for_features):
+                        with self.assertRaises(UndeclaredFeatureError) as caught:
+                            resolve([feature])
+                        self.assertIn(reason, str(caught.exception))
 
 
 class IdentityToleranceTests(unittest.TestCase):

@@ -161,6 +161,9 @@ was built from, the build cutoff, the columns built and refused, the holes and t
 count of reported dates that are not rows. The raw snapshots behind the published
 persistence run are tracked under `tests/fixtures/snapshots/funding_inputs/`, and
 `metadata/funding_panel_manifest.json` binds them, and the panel's own bytes, by digest.
+A run scored on a panel whose manifest carries that digest binds its record to the
+manifest by it (`build_manifest_binding.kind` is `digest`); the published records predate
+the digest and bind by extent.
 
 **No figure from those runs is transcribed here, or into any Markdown page in this
 repository.** The record files are the publication. A number typed into a document
@@ -187,7 +190,9 @@ PYTHONPATH=src python3 -m repo_model.cli build \
   --raw-root tests/fixtures/snapshots/funding_inputs \
   --output /tmp/funding_panel.csv \
   --build-cutoff 2026-09-08T21:31:42+00:00 \
-  --decision-time 16:00:00
+  --decision-time 16:00:00 \
+  --column sofr --column iorb --column sofr_volume --column sofr_p25 \
+  --column sofr_p75 --column tgcr --column bgcr --column treasury_settlement
 PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv \
   --manifest metadata/funding_panel_manifest.json
 PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
@@ -199,8 +204,12 @@ PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
   --report /tmp/persistence_funding.json
 ```
 
-The build cutoff and decision time are the ones `metadata/funding_panel_manifest.json`
-records. `verify-panel` has no default manifest on purpose: the panel's own
+The build cutoff, decision time and columns are the ones
+`metadata/funding_panel_manifest.json` records, and the columns are the load-bearing one:
+a source joining the registry adds a column to a build that names none, and that panel is
+different bytes. Flag order does not matter; the panel carries columns in declared order.
+The record's refused columns are not compared, since they describe what the original build
+was asked for rather than what the panel holds. `verify-panel` has no default manifest on purpose: the panel's own
 `.manifest.json` was written by the build being checked, so agreeing with it proves only
 that one build agrees with itself.
 

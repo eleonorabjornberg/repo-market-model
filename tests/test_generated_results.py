@@ -201,6 +201,20 @@ class MilestoneAReproductionTests(unittest.TestCase):
        zeros. Kills this test at `verify-panel`, whose exit-2 message names
        both digests. The panel was rebuilt byte-identical; only the claim moved.
 
+    When `dealer_treasury_position` gained its FR 2004 source (10 Sep), a
+    default `build` gained a ninth, empty column and different bytes. The
+    script now passes one `--column` per `built_columns` and does not compare
+    `refused_columns` (see `_without_path`). Python 3.10.12, same recipe:
+
+    4. The `--column` loop emptied. Kills this test, `AssertionError` "the
+       reproduction did not run": `verify-panel` exits 2 on the digest.
+    5. `refused_columns` compared again. Kills this test, `AssertionError`
+       listing `panel.build_manifest.refused_columns.*`, present on one side
+       only: the published build refused seven columns, a pinned one none.
+    6. `built_columns` deleted from `metadata/funding_panel_manifest.json`.
+       Kills this test, `AssertionError` "the reproduction did not run", the
+       script's own refusal to fall back to a default build.
+
     **The control was red the first time**, and that was the finding. The
     tracked inputs' sidecars still named `data/raw/...` as the file to read, so
     `build` from the tracked inputs had only ever worked in the integration

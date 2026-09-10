@@ -1538,7 +1538,7 @@ class PurgedBacktestTests(unittest.TestCase):
         def never(*args, **kwargs):
             raise AssertionError("a fold was built before the feature set resolved")
 
-        for feature in ("no_such_column", "dealer_treasury_position"):
+        for feature in ("no_such_column",):
             with self.subTest(feature=feature):
                 with self.assertRaises(UndeclaredFeatureError):
                     rolling_persistence_backtest(

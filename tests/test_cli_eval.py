@@ -1291,13 +1291,6 @@ class RollingBacktestCommandTests(RollingBacktestHarness):
         self.assertIn("no_such_column", err)
         self.assertEqual(out, "", msg="the run produced output before refusing")
 
-        # A declared column with no ingesting source is refused with its reason,
-        # rather than purging zero days over an empty source set.
-        code, out, err = self.run_backtest("dealer_treasury_position")
-        self.assertEqual(code, 2)
-        self.assertIn("dealer_treasury_position", err)
-        self.assertEqual(out, "")
-
     def test_there_is_no_source_flag(self):
         """Sources are derived, never supplied. The absence is the guard.
 

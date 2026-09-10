@@ -12,8 +12,11 @@ passing run is evidence about the published commands and not about a private
 code path:
 
 1. `build` the daily panel from the raw inputs tracked under
-   `tests/fixtures/snapshots/funding_inputs/`, with the build cutoff and
-   decision time `metadata/funding_panel_manifest.json` records;
+   `tests/fixtures/snapshots/funding_inputs/`, with the build cutoff,
+   decision time and columns `metadata/funding_panel_manifest.json` records
+   -- one `--column` per `built_columns` entry. The columns are the
+   load-bearing one: a source joining the registry adds a column to a default
+   build, and a default build would no longer be these bytes;
 2. `verify-panel` the result against that manifest's `sha256` -- the bytes,
    not the extent;
 3. `backtest` it under the record's own `declaration`, and compare the new
@@ -21,7 +24,8 @@ code path:
 
 What is compared is everything the record says about the run -- `declaration`,
 `derived`, `folds`, `metrics`, and the panel's digest, extent and build
-manifest -- and nothing about where or when it ran: `provenance` and the
+manifest less its refusals (see `_without_path`) -- and nothing about where or
+when it ran: `provenance` and the
 paths are expected to differ, and a comparison that included them could never
 pass. Floats are compared exactly. The run is deterministic, and the bootstrap
 carries its seed; a tolerance here would be a second, unstated criterion.
@@ -78,14 +82,25 @@ def _cli(*args):
     return done.stdout
 
 
+# Build-manifest keys that describe the invocation or the path, not the panel.
+UNCOMPARED_MANIFEST = ("path", "sha256", "refused_columns")
+
+
 def _without_path(mapping):
-    """A build manifest minus where it was written and its own digest.
+    """A build manifest minus where it was written, its digest and its refusals.
 
     `sha256` is dropped here because it is compared once, as `panel.sha256`,
     and a manifest written before the digest landed -- the frozen panel's is
     one -- carries no copy of it to compare.
+
+    `refused_columns` is dropped because it records what that invocation was
+    asked for and could not build, not what the panel holds. The published
+    build asked for every declared column and refused seven; this script asks
+    for `built_columns` only, and a build given `--column` refuses nothing or
+    exits. The panel's content is still held twice: `built_columns` is
+    compared here, and the bytes are compared by digest.
     """
-    return {key: value for key, value in mapping.items() if key not in ("path", "sha256")}
+    return {key: value for key, value in mapping.items() if key not in UNCOMPARED_MANIFEST}
 
 
 def _differences(published, rebuilt, prefix=""):
@@ -116,15 +131,24 @@ def reproduce(workdir):
             % ", ".join(sorted(unknown))
         )
 
+    columns = manifest.get("built_columns")
+    if not columns:
+        raise ReproductionError(
+            "%s records no built_columns; a default build is not pinned to the "
+            "published panel's columns" % MANIFEST.relative_to(ROOT)
+        )
     panel = Path(workdir) / "funding_panel.csv"
-    _cli(
+    build = [
         "build",
         "--raw-root", str(INPUTS),
         "--registry", str(REGISTRY),
         "--output", str(panel),
         "--build-cutoff", manifest["build_cutoff"],
         "--decision-time", manifest["decision_time"],
-    )
+    ]
+    for column in columns:
+        build += ["--column", column]
+    _cli(*build)
     _cli("verify-panel", str(panel), "--manifest", str(MANIFEST))
 
     report = Path(workdir) / "persistence_funding.json"

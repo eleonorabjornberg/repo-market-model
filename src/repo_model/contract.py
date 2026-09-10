@@ -291,6 +291,9 @@ FEATURE_FIELDS = MappingProxyType(
         "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
         "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
         "mmf_assets": (("sec_nmfp", "mmf_net_assets"),),
+        # The FR 2004 Treasury total. The adapter checks it against its thirteen
+        # current-era components and converts millions to billions.
+        "dealer_treasury_position": (("nyfed_fr2004", "PDPOSGST-TOT"),),
     }
 )
 
@@ -324,17 +327,11 @@ DERIVED_FEATURES = MappingProxyType(
 CALENDAR_FEATURES = frozenset({"quarter_end", "tax_date"})
 
 # Declared panel columns with no ingesting source. Using one raises, with the
-# reason, rather than resolving to an empty source set.
-UNSOURCED_FEATURES = MappingProxyType(
-    {
-        "dealer_treasury_position": (
-            "no ingesting source is declared in metadata/sources.json; the "
-            "column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of "
-            "the sample panel. Sizing a purge over it would purge zero days "
-            "for a weekly FR 2004 series."
-        ),
-    }
-)
+# reason, rather than resolving to an empty source set. Empty since the FR 2004
+# adapter gave `dealer_treasury_position` its source; the mechanism stays, and
+# `tests/test_contract.py` exercises it with a planted entry rather than letting
+# the loop over this mapping pass vacuously.
+UNSOURCED_FEATURES = MappingProxyType({})
 
 
 def sources_for_features(names):

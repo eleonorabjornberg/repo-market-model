@@ -77,7 +77,11 @@ supplies no column to the wide panel — and a violated identity in it still hal
 build, including builds of the eight columns that have nothing to do with it.
 
 **Decided: the identity verdict is always recorded in the quality report; the build aborts
-only for a source that actually supplies a column it built.** This is a scoping of the
+only for a source that actually supplies a column it built** — one that supplied at least
+one of its declared `fields` among the rows the build can see. A source that supplied none,
+such as `nyfed_fr2004` in a build with no FR 2004 snapshot, is not evaluated over nothing;
+one whose terms are observed but never together on one date still raises, because that is
+a finding about the data. This is a scoping of the
 guard and not a loosening of it. A violated identity in a source the panel depends on
 still stops the panel; a violated identity in a source the panel does not contain is a
 finding about that source, reported where findings go. Silently skipping the evaluation
@@ -523,11 +527,11 @@ the tracked extract (the total and every non-`C` component, lines copied byte fo
 made and re-checked by `scripts/extract_fr2004.py`, whose sidecar records the export's
 digest and the three eras.
 
-Not yet wired. `contract.py` keeps the column in `UNSOURCED_FEATURES` until the FR 2004
-adapter declares its source; the mapping lands with it. Two properties of the export the
-adapter has to respect: each series carries its own as-of date, so no date may be taken
-from the file as a whole; and `*` marks a value suppressed for confidentiality, which is
-neither zero nor a failed read.
+Wired: the `nyfed_fr2004` adapter supplies the column through `contract.FEATURE_FIELDS`,
+millions converted to billions. It dates each series by its own as-of date, never the
+file's, and reads `*` (suppressed for confidentiality) as neither zero nor a failed read.
+The published Milestone A panel does not carry the column; it is pinned to its manifest's
+`built_columns`.
 
 ## Decision rule
 

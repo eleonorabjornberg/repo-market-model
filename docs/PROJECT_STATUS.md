@@ -356,7 +356,8 @@ it. The panel itself stays gitignored under `data/processed/`; the manifest is
 the committable half, and it reached nobody while it sat beside the panel. That
 manifest predates the panel digest. The one that carries it, beside the tracked
 inputs, is `metadata/funding_panel_manifest.json`; `verify_daily_panel` checks a panel
-against it and refuses the older one, or a malformed digest, rather than passing it.
+against it and refuses the older one, or a malformed digest, rather than passing it. So
+the published records bind their manifest by extent, and a re-run binds by digest.
 
 `docs/runs/` was chosen over `metadata/panels/` -- which would have followed the
 N-MFP archive-manifest precedent -- because `metadata/` is Track A's and a human
