@@ -8,19 +8,20 @@ This repository separates two kinds of reproducibility:
    immutable raw snapshots, their manifests, the panel build configuration, the
    Git revision, and the evaluation journal.
 
-The first is available now. The second is **partly** available: `docs/runs/` holds
-three generated run records and the frozen panel's build manifest, so the figures and
-the digests of the snapshots behind them are published. What is not available is the
-rebuild — the panel itself is gitignored, and the caveat below about re-running a
-download applies to any attempt to regenerate it. A reader can therefore read the
-numbers and check what they were computed from, and cannot yet independently reproduce
-them.
+The first is available now. The second is available for the persistence benchmark:
+its raw inputs are tracked, and one command rebuilds the panel from them, checks the
+bytes against the published digest and re-derives every figure in
+`docs/runs/persistence_funding.json` exactly — see "Reproduce the published persistence
+run" below. The other records in `docs/runs/` were scored on the same panel and are
+re-run from their own `declaration` blocks; no script re-checks them yet.
 
 ## Environment
 
-- Python 3.9 or Python 3.10, declared as a range in `pyproject.toml` and stated
-  nowhere else that is not checked against it. Both were run whole before the
-  range was widened to admit them. 3.11 rejects the package at import.
+- Python 3.9, Python 3.10 or Python 3.11, declared as a range in `pyproject.toml`
+  and stated nowhere else that is not checked against it. Each was run whole before
+  the range admitted it. 3.12 runs everything except the exact reproduction of the
+  published record: its `sum()` rounds floats differently, and the figures move in
+  their last digits.
 - no third-party Python packages for any published record; the optional `ml` extra
   (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`
 - commands run from the repository root
@@ -164,10 +165,44 @@ persistence run are tracked under `tests/fixtures/snapshots/funding_inputs/`, an
 **No figure from those runs is transcribed here, or into any Markdown page in this
 repository.** The record files are the publication. A number typed into a document
 is the same drift as a hand-written date, and `tests/test_docs_freshness.py`
-refuses both. To see the numbers, read the JSON. To reproduce them, rebuild the
-panel from those snapshots, check it against `metadata/funding_panel_manifest.json` with
-`repo_model.data.verify_daily_panel`, and re-run the command each record's
-`declaration` block states. A single reproduction command is not yet published.
+refuses both. To see the numbers, read the JSON. To reproduce them, follow the next
+section.
+
+## Reproduce the published persistence run
+
+From a clean clone, with no network and no gitignored file:
+
+```bash
+python3 scripts/reproduce_milestone_a.py
+```
+
+It exits 0 only if every figure the record publishes is re-derived exactly, and
+otherwise names each one that moved. It writes nothing into the checkout.
+`tests/test_generated_results.py` runs the same function, so the suite goes red the
+day a change to the scoring path moves a published figure. The three steps it runs
+are the published commands, and can be typed by hand:
+
+```bash
+PYTHONPATH=src python3 -m repo_model.cli build \
+  --raw-root tests/fixtures/snapshots/funding_inputs \
+  --output /tmp/funding_panel.csv \
+  --build-cutoff 2026-09-08T21:31:42+00:00 \
+  --decision-time 16:00:00
+PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv \
+  --manifest metadata/funding_panel_manifest.json
+PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
+  --registry metadata/sources.json \
+  --feature spread_bps \
+  --decision-time 16:00 \
+  --model persistence \
+  --minimum-history 20 \
+  --report /tmp/persistence_funding.json
+```
+
+The build cutoff and decision time are the ones `metadata/funding_panel_manifest.json`
+records. `verify-panel` has no default manifest on purpose: the panel's own
+`.manifest.json` was written by the build being checked, so agreeing with it proves only
+that one build agrees with itself.
 
 Generated panels, journals, and model artifacts belong under `data/processed/` or
 `artifacts/`; both paths are ignored by Git. Publish compact derived tables and

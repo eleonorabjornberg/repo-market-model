@@ -72,7 +72,21 @@ def main() -> int:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
         sidecar = source.with_name(source.name + SIDECAR)
-        shutil.copyfile(sidecar, target.with_name(target.name + SIDECAR))
+        # The sidecar's `path` is where `load_snapshot_manifest` reads the bytes
+        # from. Copied verbatim it still names data/raw/, which a clone does not
+        # have, so `build --raw-root tests/fixtures/snapshots/funding_inputs`
+        # worked only in the checkout that also held the originals. It names the
+        # tracked copy instead; nothing else in the sidecar changes.
+        retrieval_text = sidecar.read_text(encoding="utf-8")
+        original = '"path": "%s"' % source.relative_to(ROOT).as_posix()
+        if retrieval_text.count(original) != 1:
+            sys.exit(f"refusing: {sidecar} does not name {source.relative_to(ROOT)} once")
+        target.with_name(target.name + SIDECAR).write_text(
+            retrieval_text.replace(
+                original, '"path": "%s"' % target.relative_to(ROOT).as_posix()
+            ),
+            encoding="utf-8",
+        )
         if sha256(target) != source_digest:
             sys.exit(f"refusing: the copy at {target} does not hash to {source_digest}")
         retrieval = json.loads(sidecar.read_text(encoding="utf-8"))

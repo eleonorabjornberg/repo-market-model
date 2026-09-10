@@ -15,11 +15,15 @@ authors = [{name = "Eleonora Bjornberg"}]
 # specifier, so the declaration can say what is supported instead of whatever a
 # substring search could match.
 #
-# Measured, not asserted. 3.9 and 3.10 each run the whole suite green. 3.11
-# rejects the package at import: baseline.py carries a mappingproxy default on a
-# frozen dataclass field, which 3.11 refuses as a mutable default. Raise the
-# ceiling when that is repaired, and not before -- the ceiling is the finding.
-requires-python = ">=3.9,<3.11"
+# Measured, not asserted. 3.9.23, 3.10 and 3.11.15 each run the whole suite
+# green (10 Sep, after 9a38a0c repaired the mappingproxy default that made 3.11
+# refuse baseline.py at import). 3.12 and 3.13 import and run everything, and
+# fail the Milestone A reproduction: 3.12's built-in sum() compensates float
+# rounding, so every published figure moves in its last digits and the exact
+# comparison refuses it. The ceiling is that finding. Raising it means deciding
+# whether a record reproduces to the bit or to a stated tolerance -- not a
+# version bump.
+requires-python = ">=3.9,<3.12"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "License :: OSI Approved :: MIT License",

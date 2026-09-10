@@ -21,15 +21,16 @@ jobs:
     # and no CI run had ever exercised 3.9 at all. A matrix is also the honest
     # answer to "should both tracks run the same interpreter": measured on
     # 7b8f0c9, 3.9.23 and 3.10.20 are green and identical, so parity by decree
-    # was never the check -- this is.
+    # was never the check -- this is. 3.11 joined on 10 Sep, when the range
+    # widened to <3.12; 3.12 is still out, on the exact reproduction.
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "${{ matrix.python-version }}"
 
@@ -63,9 +64,9 @@ jobs:
     name: unit tests with the ml extra (3.9)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.9"
 
@@ -84,13 +85,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Full history: the check diffs against the merge base, which a
           # shallow clone does not have.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 

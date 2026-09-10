@@ -41,11 +41,6 @@ a commit message:
 - **The administered leg is spliced.** IORB begins 2021-07-29; IOER, which it
   replaced, supplies everything before. Without the splice the panel begins in
   July 2021 and contains no stress episode at all.
-- **IOER's never-revised declaration is not vintage-verified.** No route to
-  ALFRED was available from either machine on the day. The claim rests on the
-  administrative argument and on the series being closed, and it is weaker than
-  the IORB declaration beside it. Every run record built on this panel inherits
-  that, and `metadata/sources.json` says so in the entry itself.
 - **The panel is funding-only by construction, not by choice.** `tgcr`, `bgcr`
   and `treasury_settlement` are built columns with no observations, because
   their sources were not part of this freeze.
@@ -56,8 +51,9 @@ a commit message:
   How many tests that is belongs to CI, not to this page.
 - The `fit` / `predict` / `predict_stress` interface and the `ExceedancePredictor`
   interface beside it each have several implementers, discovered by the tests
-  rather than listed here: the forecast implementers in every module of the package,
-  the exceedance ones, for now, in `baseline` alone. Both sets of conformance tests are parametrized over
+  rather than listed here, in every module of the package, through one walk; the
+  exceedance marker reads the return annotation as a type, so a module without
+  `from __future__ import annotations` is not missed. Both sets of conformance tests are parametrized over
   implementations, so each assertion runs once per implementer rather than once in
   total; that multiplication, not the file diff, is what makes each an interface
   rather than a description of one model. A coverage guard asserts that the set of
@@ -170,15 +166,16 @@ Stated explicitly, because each is easy to mistake for something stronger.
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
-- **Part of the command line is unpublished.** `build`, `backfill-nmfp` and
+- **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
   published command still parses; it validated in the direction its own defect
   ran, and the complement -- a command published nowhere at all -- is outside
   the set it reads. `compare` and `exceedance-backtest` were in that complement
-  until they were published against the shipped fixture; the three that remain
-  each exit on something a clone does not have, and `build`'s is the same
-  missing thing as Milestone A's open reproduction clause.
+  until they were published against the shipped fixture, and `build` until the
+  reproduction published it against the tracked inputs. `backfill-nmfp` needs a
+  route to the SEC; `event-holdout` needs the full panel, which a clone can now
+  rebuild, so what keeps it unpublished is its journal write, not a missing file.
 
 - **The daily panel has been built and run.** `data/processed/` is no longer
   empty. What the run exposed is that `build` had been writing a panel `backtest`
@@ -230,9 +227,10 @@ Stated explicitly, because each is easy to mistake for something stronger.
   on 2022-12-31 -- 76.4% of `mmf_repo_holdings`. This page stated the opposite on
   evidence from the single archive then held: `FEDERAL RESERVE` occurs 18,119 times
   across the 87 of 97 archives held now, and never once in the description field the
-  derivation was said to search. What remains true is the half this page did not lead
-  with -- an absent value and a parse failure still have the same representation, and
-  the series now names the month where that matters (2026-07-31).
+  derivation was said to search. The half this page did not lead with is now
+  declared: a month through 2013-08 with no row is a reviewed structural zero, and
+  2026-07-31, after the facility opened, stays an undeclared absence -- two records,
+  not one representation.
 - **The N-MFP identity tolerance is a single absolute bound** and after
   calibration it stays one. That is now a decision rather than a deferral
   (`febba6d`), and two claims this page previously made about it were measured
@@ -259,10 +257,15 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `metadata/sources.json`'s `tolerance_note` carries the derivation and
   `DATA_QUALITY_DECISIONS.md` records the decision.
 - **The Treasury settlement series aggregates decisions it does not implement.**
-  Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
-  limitation now says so, and names the fields that are present in the snapshot and
-  unread, so the split needs no new download. The split itself is not done, and
-  nothing yet tests whether the simplification affects conclusions.
+  Security type and tenor are summed into one series, and the Fed's SOMA leg is
+  absent from it -- this page said SOMA add-ons were summed in until the check the split
+  waited on found `offering_amt` excludes them. The components are now defined in
+  `src/repo_model/contract.py`; the adapter does not emit them yet, and nothing tests
+  whether the simplification affects conclusions.
+- **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
+  index is licensed, and the Treasury cash-futures basis needs licensed futures prices;
+  this repository takes public sources only (human decision, 10 Sep). A public proxy
+  for each is open, and neither blocks a block.
 - **The never-revised claim is prose.** The field-level release lag is licensed by
   a `revision_evidence` string. The comparison behind it was done outside the
   repository, so if a future vintage restated an observation, nothing here would go

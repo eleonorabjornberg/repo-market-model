@@ -145,13 +145,16 @@ No mutation was planted in the ARX, the threshold model, the bootstrap or the
 quantile machinery; the runs say nothing about them.
 """
 
+import contextlib
 import hashlib
+import importlib
 import inspect
 import json
 import math
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from datetime import date, time, timedelta
 from functools import partial
@@ -159,6 +162,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+import repo_model
 from repo_model import baseline, cli_eval, event_eval
 from repo_model.baseline import (
     INTERVAL_PROBABILITY,
@@ -206,6 +210,14 @@ from repo_model.contract import (
 from repo_model.data import DailyObservation, load_daily_panel
 from repo_model.registry import RegistryContractError
 from repo_model.splits import LookAheadError, SplitError, rolling_origin
+
+# The package walk `ForecastInterfaceCoverageTests` already discovers through,
+# imported rather than written a second time: two walks would be two definitions
+# of "every module of the package", and the one that drifted would be the one
+# nobody was reading. `tests/test_contract.py` imports no test module, so this
+# direction is acyclic, and a test module importing another is how
+# `tests/test_event_eval.py` already reaches this one's fixtures.
+from test_contract import _package_modules
 
 SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
@@ -2727,8 +2739,8 @@ class ExceedancePredictorConformance:
     `climatology_exceedance` wearing an interface's name.
 
     Subclasses supply `make_predictor`. Everything else is shared, and
-    `ExceedancePredictorCoverageTests` fails if an implementer arrives in
-    `repo_model.baseline` without a case here.
+    `ExceedancePredictorCoverageTests` fails if an implementer arrives in any
+    module of the `repo_model` package without a case here.
     """
 
     MINIMUM_HISTORY = 20
@@ -3814,26 +3826,67 @@ def _reads_nothing_but(features):
     return fit_predict
 
 
-def _exceedance_implementations():
-    """Exceedance-predictor factories in `repo_model.baseline`, by name.
+def _returns_exceedance_predictor(function):
+    """Does `function` declare an `ExceedancePredictor` as its return type?
+
+    The marker is the declared return annotation, because that is what an author
+    writes deliberately: a factory that returns an `ExceedancePredictor` and says
+    so is in, and a helper that happens to return a callable is not.
+
+    What the annotation *is* depends on a statement in the module that defines
+    it. Under `from __future__ import annotations` it is the string
+    `"ExceedancePredictor"`; without that import it is the object the name was
+    bound to when the `def` was executed -- `baseline.ExceedancePredictor`
+    itself, which is a `Callable[...]` alias and not a class. Every module of
+    `repo_model` carries the future import today, so a marker that compared the
+    string alone was right about every module that exists and would have been
+    silently wrong about the first one that does not. That failure is the one
+    walking the package was supposed to close: `ml.py` arrives with an
+    exceedance factory, the walk reaches its module, the annotation is an object
+    rather than a string, nothing matches, and a module the walk read produces
+    exactly what a module the walk never reached produces.
+
+    So the string is resolved through the defining module's globals and both
+    branches end at the same comparison. Resolving rather than name-matching is
+    also the stronger rule: a return annotation that resolves to some other type
+    is not this interface, whatever it is spelled.
+    """
+
+    annotation = getattr(function, "__annotations__", {}).get("return")
+    if isinstance(annotation, str):
+        module = sys.modules.get(getattr(function, "__module__", None) or "")
+        annotation = getattr(module, annotation, annotation)
+    return annotation == baseline.ExceedancePredictor
+
+
+def _exceedance_implementations(package=repo_model):
+    """Exceedance-predictor factories across the `repo_model` package, by name.
+
+    Keyed by qualified name, `module.factory`. Bare names would collide: two
+    modules may define the same factory name, and the later would silently
+    replace the earlier in the dict -- one implementer lost, and lost exactly
+    where a second predictor of the same shape is most likely to appear.
 
     Discovered, not listed, for the reason `_forecast_implementations` in
     `tests/test_contract.py` is: a list that has to be kept up to date would be
     updated in the same commit that added the implementer it was meant to catch.
+    Discovered from every module of the package rather than from `baseline`
+    alone, for the reason that discovery walks the package: the next
+    implementer is expected to arrive in `src/repo_model/ml.py`, and a factory
+    there would have been outside the only module this ever read.
 
-    The marker is the declared return annotation. `baseline` has
-    `from __future__ import annotations`, so annotations are strings and the
-    comparison is against the name as written -- which is also the thing an
-    author writes deliberately. A factory that returns an `ExceedancePredictor`
-    and says so is in; a helper that happens to return a callable is not.
+    A factory imported into a second module is counted once, under the module
+    that defines it: `__module__` is where a function was defined, not where a
+    name was bound, and `cli_eval` binds every one of these.
     """
 
     found = {}
-    for name, obj in vars(baseline).items():
-        if not inspect.isfunction(obj) or obj.__module__ != baseline.__name__:
-            continue
-        if getattr(obj, "__annotations__", {}).get("return") == "ExceedancePredictor":
-            found[name] = obj
+    for module in _package_modules(package):
+        for name, obj in vars(module).items():
+            if not inspect.isfunction(obj) or obj.__module__ != module.__name__:
+                continue
+            if _returns_exceedance_predictor(obj):
+                found[f"{module.__name__}.{name}"] = obj
     return found
 
 
@@ -3873,17 +3926,232 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
     conditional model scored against climatology, had no path. A fourth
     implementer the CLI cannot run now fails this existing guard rather than
     going unnoticed, which is the whole reason this class exists.
+
+    Discovery reads the whole package, not `baseline` alone, and it reads the
+    return annotation as a *type* rather than as a string. It did neither until
+    this block, and both halves close the same door: the gradient-boosted model
+    ships an exceedance factory in `src/repo_model/ml.py`, and that factory
+    would have been missed twice over -- once because the discovery never
+    reached the module, and once more, had only the walk been added, because
+    `ml.py` need not carry `from __future__ import annotations` and its
+    annotation would then be the `Callable[...]` alias rather than the string
+    the marker compared. A walk that reaches a module and recognises nothing in
+    it fails exactly like a walk that never reached it, and it fails while
+    looking fixed. Closed before the model that would use it exists.
+
+    Mutations, all four against
+    `test_an_exceedance_factory_in_any_package_module_is_discovered`, run in a
+    disposable copy under `$HOME` built from `git ls-files`, on CPython 3.9.6.
+    Unmutated control green before and after; each target confirmed to appear
+    exactly once before it was applied.
+
+    ==============================  ==============  ===========================
+    Mutation                        Exception       Killed
+    ==============================  ==============  ===========================
+    `for module in                  AssertionError  the planted factory outside
+    _package_modules(package)` ->                   `baseline` is not
+    `for module in [baseline]`                      discovered
+    `obj.__module__ != module.      AssertionError  the module that only
+    __name__` guard dropped                         imports a factory is
+                                                    credited with defining it
+    `found[f"{module.__name__}.     AssertionError  no qualified key exists to
+    {name}"]` -> `found[name]`                      look up, and the twin has
+                                                    overwritten the first: two
+                                                    modules, one factory name,
+                                                    one entry, one predictor
+                                                    lost
+    the marker back to string-only  AssertionError  the factory in the module
+    (`__annotations__["return"]                     without
+    == "ExceedancePredictor"`)                      `from __future__ import
+                                                    annotations` is missed by a
+                                                    walk that read its module
+    ==============================  ==============  ===========================
+
+    The neighbouring reachability test needed no change: it compares factory
+    *objects* against `cli_eval.MODEL_FACTORIES`, so it followed the widened
+    discovery on its own. Only the sentences naming `baseline` as the place
+    implementers live were corrected.
     """
+
+    #: A package planted on disk for the discovery to walk. Every module is a
+    #: case: a factory outside `baseline`; a second module defining the *same
+    #: factory name*; a module that only imports a `baseline` factory; and --
+    #: the one a walk alone does not catch -- a module with no
+    #: `from __future__ import annotations`, whose annotation is therefore the
+    #: alias object and not the string. Named nothing a list would have
+    #: anticipated, which is the point: it stands for the module that does not
+    #: exist yet.
+    PLANTED_PACKAGE = {
+        "__init__.py": "",
+        "river_law.py": """
+            from __future__ import annotations
+
+            from repo_model.baseline import ExceedancePredictor
+
+
+            def oxbow_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
+                def fit_predict(train_rows, feature_rows, taus):
+                    raise NotImplementedError
+
+                return fit_predict
+        """,
+        "twin_law.py": """
+            from __future__ import annotations
+
+            from repo_model.baseline import ExceedancePredictor
+
+
+            def oxbow_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
+                def fit_predict(train_rows, feature_rows, taus):
+                    raise NotImplementedError
+
+                return fit_predict
+        """,
+        "importer.py": """
+            from repo_model.baseline import climatology_exceedance
+        """,
+        # No `from __future__ import annotations`, deliberately. This is what
+        # `ml.py` may well look like, and the annotation below is the
+        # `Callable[...]` alias itself rather than the string `baseline` yields.
+        "eager_law.py": """
+            from repo_model.baseline import ExceedancePredictor
+
+
+            def eager_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
+                def fit_predict(train_rows, feature_rows, taus):
+                    raise NotImplementedError
+
+                return fit_predict
+        """,
+    }
+
+    PLANTED_NAME = "oxbow_pkg"
+
+    @contextlib.contextmanager
+    def _planted_package(self):
+        """`PLANTED_PACKAGE` written to a temporary directory and imported.
+
+        A real package on a real path, not a `types.ModuleType` stand-in: what
+        is under test is a `pkgutil` walk over `__path__` and an annotation
+        whose form is decided by a `__future__` statement compiled into the
+        module -- a hand-built module object would skip both mechanisms.
+        `sys.path` and `sys.modules` are put back on the way out so the walk
+        leaves no residue for the rest of the suite.
+        """
+
+        with tempfile.TemporaryDirectory() as root:
+            package_dir = Path(root) / self.PLANTED_NAME
+            package_dir.mkdir()
+            for filename, source in self.PLANTED_PACKAGE.items():
+                (package_dir / filename).write_text(textwrap.dedent(source))
+            sys.path.insert(0, root)
+            try:
+                yield importlib.import_module(self.PLANTED_NAME)
+            finally:
+                sys.path.remove(root)
+                for name in [
+                    name
+                    for name in sys.modules
+                    if name == self.PLANTED_NAME
+                    or name.startswith(self.PLANTED_NAME + ".")
+                ]:
+                    del sys.modules[name]
+
+    def test_an_exceedance_factory_in_any_package_module_is_discovered(self):
+        """A factory outside `baseline` is found -- including the annotated one.
+
+        The door this closes: an exceedance factory defined in
+        `src/repo_model/ml.py` is selectable, is scored, publishes a record, and
+        never runs the conformance assertions, because the discovery that was
+        supposed to demand a case for it read one module and matched one string.
+        """
+
+        with self._planted_package() as package:
+            discovered = _exceedance_implementations(package)
+
+            self.assertIn(
+                "oxbow_pkg.river_law.oxbow_exceedance",
+                discovered,
+                msg=(
+                    "an exceedance factory outside repo_model.baseline was not "
+                    "discovered; the walk is still reading one module, and a "
+                    "factory added in any other module of the package would "
+                    "never run the conformance suite"
+                ),
+            )
+
+            # The trap, and the reason the walk alone is not enough. This module
+            # has no `from __future__ import annotations`, so its return
+            # annotation is the ExceedancePredictor alias and not the string
+            # `baseline` yields. A marker that compares the string reaches this
+            # module, reads this function, and reports nothing -- indistinguish-
+            # able from never having walked here at all.
+            self.assertIn(
+                "oxbow_pkg.eager_law.eager_exceedance",
+                discovered,
+                msg=(
+                    "a factory in a module without `from __future__ import "
+                    "annotations` was missed: its return annotation is the "
+                    "ExceedancePredictor alias object, not the string, and the "
+                    "marker only recognises one of the two forms"
+                ),
+            )
+
+            # Two modules defining one factory name are two implementers. Keyed
+            # by bare name the later would silently replace the earlier, and the
+            # one lost is exactly the second predictor of the same shape.
+            self.assertIn("oxbow_pkg.twin_law.oxbow_exceedance", discovered)
+            self.assertIsNot(
+                discovered["oxbow_pkg.river_law.oxbow_exceedance"],
+                discovered["oxbow_pkg.twin_law.oxbow_exceedance"],
+                msg="two modules defining one factory name collapsed to one entry",
+            )
+
+            # A factory imported into a second module is counted once, under the
+            # module that defines it. The `__module__` rule, now across modules:
+            # `cli_eval` imports every factory in `baseline` and the walk
+            # reaches both, so a bound name would otherwise be found twice and
+            # the copy would have no conformance case naming it.
+            self.assertNotIn(
+                "oxbow_pkg.importer.climatology_exceedance",
+                discovered,
+                msg=(
+                    "a factory imported into a second module was counted "
+                    "twice; __module__ is where a function was defined, not "
+                    "where it was bound"
+                ),
+            )
+
+            self.assertEqual(
+                sorted(discovered),
+                [
+                    "oxbow_pkg.eager_law.eager_exceedance",
+                    "oxbow_pkg.river_law.oxbow_exceedance",
+                    "oxbow_pkg.twin_law.oxbow_exceedance",
+                ],
+            )
+
+        # The anchor. The negative assertion above is satisfied by a discovery
+        # that finds nothing at all, so one assertion has to be that the real
+        # package still comes back populated.
+        self.assertIn(
+            "repo_model.baseline.climatology_exceedance",
+            _exceedance_implementations(),
+            msg=(
+                "discovery over the real package found no climatology; a walk "
+                "that finds nothing passes every negative assertion here"
+            ),
+        )
 
     def test_every_exceedance_predictor_in_baseline_runs_the_conformance_suite(self):
         implementations = _exceedance_implementations()
         self.assertIn(
-            "climatology_exceedance",
+            "repo_model.baseline.climatology_exceedance",
             implementations,
             msg="discovery found no climatology; the discovery is broken, not "
-            "the module",
+            "the package",
         )
-        self.assertIn("arx_exceedance", implementations)
+        self.assertIn("repo_model.baseline.arx_exceedance", implementations)
 
         cases = _exceedance_cases()
         uncovered = sorted(
@@ -3895,8 +4163,8 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
             uncovered,
             [],
             msg=(
-                f"{uncovered} return an ExceedancePredictor from "
-                f"repo_model.baseline and no conformance case runs the "
+                f"{uncovered} return an ExceedancePredictor from a module of "
+                f"the repo_model package and no conformance case runs the "
                 f"interface's assertions against them. Add an "
                 f"ExceedancePredictorConformance subclass rather than a bespoke "
                 f"test class: a predictor with its own tests and no conformance "
@@ -3930,8 +4198,8 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
 
         `cli_eval.MODEL_FACTORIES` is the single name-to-factory mapping the
         `event-holdout` command selects through. This asserts the set of
-        factories it can reach equals the set discovered in `baseline` -- both
-        directions, because both failures are real. An implementer missing from
+        factories it can reach equals the set discovered across the package --
+        both directions, because both failures are real. An implementer missing from
         the mapping is a model nobody outside this suite can run, which is the
         state the whole exceedance interface was in until the selector landed.
         A name in the mapping that no longer names a discovered implementer is a
@@ -3955,8 +4223,8 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
             unreachable,
             [],
             msg=(
-                f"{unreachable} return an ExceedancePredictor from "
-                f"repo_model.baseline and no --model name reaches them. A "
+                f"{unreachable} return an ExceedancePredictor from a module "
+                f"of the repo_model package and no --model name reaches them. A "
                 f"predictor the command line cannot construct is one only this "
                 f"suite can run, and the conditional models sat in exactly "
                 f"that state while the evaluator ran the null model"
@@ -3974,7 +4242,7 @@ class ExceedancePredictorCoverageTests(unittest.TestCase):
             [],
             msg=(
                 f"--model {dangling} names something that is not a discovered "
-                f"ExceedancePredictor in repo_model.baseline"
+                f"ExceedancePredictor in the repo_model package"
             ),
         )
 

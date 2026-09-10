@@ -306,10 +306,29 @@ model fitting. If a single aggregate is retained for the first empirical version
 the source limitation must explicitly state what was combined and the model report
 must test whether the simplification affects conclusions.
 
-**Half done.** The `limitation` now states what was combined: all security types
-aggregated, SOMA add-ons included, tenor and the private-versus-Fed split not
-represented, and `security_type`, `security_term` and `soma_accepted` present in the
-snapshot and unread, so the split needs no new download. It also retires the note it
+**Half done.** The `limitation` states what was combined: all security types
+aggregated, tenor not represented, and `security_type`, `security_term` and
+`soma_accepted` present in the snapshot and unread, so the split needs no new download.
+
+**Corrected before the split was defined (human, 10 Sep): `offering_amt` excludes SOMA.**
+This page and the limitation said the aggregate included SOMA add-ons. It does not: the
+Federal Reserve's rollover bids are noncompetitive tenders treated as add-ons to the
+announced auction size, and Treasury increases the total issue by the SOMA award
+(Federal Reserve Bank of New York, "FAQs: Treasury Rollovers"). The aggregate is
+therefore already the public leg, and the claim below that it overstates the private
+drain was the wrong way round.
+
+**The split, contract side.** `src/repo_model/contract.py` defines three columns in USD
+billions: `treasury_settlement_bill` and `treasury_settlement_coupon`, each a sum of
+`offering_amt` over a declared `security_type` set (bills `Bill`, `CMB`; coupons `Note`,
+`Bond`, `TIPS`, `FRN`), and `treasury_settlement_soma`, a sum of `soma_accepted`. The
+identity is `treasury_settlement` = bill + coupon at an absolute `1e-9`, since both sides
+sum the same values; SOMA sits outside it. A `security_type` in neither set raises --
+never a coupon by default, which is the residual trap one level down. The sets follow
+Treasury's bills-versus-coupons convention and are not yet enumerated from a fixture;
+the adapter block does that, and a value not listed is a report. `soma_accepted` is an
+auction result where `offering_amt` is announced, so it may not be dated available
+before results are published. It also retires the note it
 replaced, which said announcement and result vintages must be separated to avoid using
 auction outcomes too early. That risk is avoided by construction — `record_date` drives
 `available_at` and the adapter reads `offering_amt` alone, never `total_accepted`,
@@ -320,8 +339,7 @@ Still open: the split itself, and the model report's test of whether the simplif
 affects conclusions. Both matter to this project specifically. Bill and coupon
 settlements have different collateral and reserve-drain profiles and bill supply is
 close to the centre of the 2018–19 episode; SOMA add-ons do not drain private cash, so
-the aggregate overstates the private-sector drain exactly when the Fed is rolling over
-most heavily.
+the Fed's leg belongs beside the public one as its own series, not inside it.
 
 ## N-MFP series length: one archive yields one usable month
 
@@ -445,9 +463,10 @@ that a missing ON RRP leg would silently do so. The leg is present, so it does n
 size of the error the warning described is now measurable rather than hypothetical: it
 would have peaked at the same 2,273.8 bn.
 
-**What survives is the sharper half.** Absence is still indistinguishable from a parse
-failure. `structural_zeros` is empty and `structural_zeros_reviewed` is `false`, and the
-series now supplies the instance that argument always lacked. Thirty-three repo report
+**What survived was the sharper half, and the review now answers it.** Absence was
+indistinguishable from a parse failure while `structural_zeros` was empty and
+`structural_zeros_reviewed` was `false`, and the series supplied the instance that
+argument always lacked. Thirty-three repo report
 months carry no `mmf_on_rrp` row, and they are two different things wearing one
 representation: thirty-two run 2010-11 to 2013-08 and precede the facility, so their true
 value is zero for a reason a reviewer could state, while one is 2026-07-31, a month in
@@ -463,10 +482,13 @@ this suite can see `data/raw/`**, so every claim this repository makes about the
 prose, and prose does not decay-check. The sentence was true when written, and nobody
 re-measured it when ninety-six more archives arrived.
 
-**Still required:** make an absent declared field recordable without coercing it to `0.0`,
-which would destroy the very distinction the structural-zero declaration exists to
-preserve; and review the structural zeros the series now makes reviewable. An unqualified
-`structural_zeros_reviewed: true` justified by a near-zero period is still not a resolution.
+**Reviewed (human, 10 Sep):** `sec_nmfp` declares `mmf_on_rrp` a structural zero with no
+`from` and `through` 2013-08-31. It covers absent cross-sections only, so the thirty-two
+pre-facility months are recorded as `declared_structural_zero` and 2026-07-31 as an
+undeclared absence; the two observed pre-facility months stay observations and are still
+unexplained. The review is qualified, not blanket: `reviewed_note` says it covers this
+one field, and that the other ten declaring nothing is not a finding that they have no
+structural zeros.
 
 ## Dealer Treasury positions: `PDPOSGST-TOT`
 
@@ -483,6 +505,23 @@ What "total" covers was checked rather than read off the label. In the tracked f
 them up and overshoots the total. So the column includes TIPS and
 FRNs; a reader who wants nominal coupons alone, or wants to separate bill from coupon
 inventory as the settlement split does, needs the components, not the total.
+
+**The history, checked per era (human, 10 Sep).** The all-series export runs from
+1998-01-28, but `PDPOSGST-TOT` begins **2013-04-03**. The earlier report used other
+vocabularies (`PDPUSGTNOP` and its components from 2001-07-04, another before), which end
+on 2013-03-27, so no week carries both and a splice could not be checked against an
+overlap. **Decided (10 Sep): the earlier report is not mapped; the column begins
+2013-04-03.** The panel it feeds begins 2018-04-03, bound by SOFR, so nothing reads the
+earlier weeks. A panel reaching before 2013 would reopen this, from the New York Fed's own
+concordance rather than by matching series names. From 2013-04-03 the total equals its components exactly on every weekly as-of
+date, in three eras whose component sets differ: no FRN bucket until 2015-01-07, and one
+`PDPOSGSC-G11` bucket until 2021-12-29, split into `-G11L21` and `-G21` from 2022-01-05.
+So the thirteen components are the current era's; an identity declared over those
+thirteen alone is not evaluable before 2022. The export stays gitignored under
+`data/raw/fr2004/`; `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` is
+the tracked extract (the total and every non-`C` component, lines copied byte for byte),
+made and re-checked by `scripts/extract_fr2004.py`, whose sidecar records the export's
+digest and the three eras.
 
 Not yet wired. `contract.py` keeps the column in `UNSOURCED_FEATURES` until the FR 2004
 adapter declares its source; the mapping lands with it. Two properties of the export the

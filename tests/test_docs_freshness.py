@@ -334,22 +334,19 @@ CLI_PUBLICATION = {
         "recipe whose first outcome is a refusal"
     ),
     "backtest": PUBLISHED,
-    "build": (
-        "reads data/raw/, which is gitignored. Run as written in a clone it "
-        "exits with 'no raw snapshot manifests under data/raw'. This is "
-        "Milestone A's open reproduction clause seen from the command line: "
-        "what would make it publishable is committing the inputs or a digest, "
-        "not a differently worded invocation"
-    ),
+    "build": PUBLISHED,
     "compare": PUBLISHED,
     "event-holdout": (
         "the declared event windows are 2019 and 2020 and the shipped fixture "
         "is 2026, so on the only panel a clone receives it exits with 'no "
         "training row clears a 6-day gap before 2019-09-16'. A runnable "
-        "invocation needs the frozen panel, which is gitignored"
+        "invocation needs the frozen panel, which is gitignored but which a "
+        "clone can now rebuild with the published build; it also appends to an "
+        "evaluation journal, and publishing that write is a decision not yet made"
     ),
     "exceedance-backtest": PUBLISHED,
     "fetch": PUBLISHED,
+    "verify-panel": PUBLISHED,
 }
 
 # A stated interpreter version in prose: "Python 3.10". Two components only --
@@ -1016,6 +1013,13 @@ def _a_clone_does_not_receive_the_frozen_panel():
     filesystem would answer the wrong question. Returns True while a clone
     would not receive it, and therefore while the limitation is blocked rather
     than merely open.
+
+    **Weakened since the reproduction landed, and recorded rather than
+    re-shaped.** `build` is now published against the tracked inputs, so a clone
+    can rebuild the panel it does not receive. This still returns True, because
+    the file is still untracked, but for `event-holdout` -- the command it now
+    stands for -- it is no longer the whole reason. Replacing it is a human
+    decision about the journal write, not a predicate edit.
     """
     try:
         listed = subprocess.run(
@@ -1041,14 +1045,50 @@ def _a_clone_does_not_receive_the_frozen_panel():
 #:                   repaired in metadata/, which is Track A's
 #:   `documentation` the software is fine and nothing published says so;
 #:                   repaired on a HUMAN_ONLY page, so no track can close it
-KINDS = ("software", "declaration", "documentation")
+#:   `data`          the input is not one this repository may take; closed
+#:                   only by a human deciding to admit it or a public proxy
+KINDS = ("software", "declaration", "documentation", "data")
 
 #: Each entry: a name, its kind, the document that discloses it, the sentences
 #: it is published in, a predicate that is true while the limitation holds, and
 #: a predicate that is true while a *stated blocker* still blocks -- or None
 #: where nothing is claimed to block it, which is itself a claim: a limitation
 #: with no blocker is one nobody has an excuse for leaving open.
+def _no_feature_is(name):
+    """True while no panel column of that name is declared in the contract."""
+    from repo_model.contract import FEATURE_FIELDS
+
+    return lambda: name not in FEATURE_FIELDS
+
+
+def _every_source_is_public():
+    """The user's rule, 10 Sep: public sources only, so licensed data waits.
+
+    The blocker for the MOVE and futures-basis rows. It clears the moment the
+    registry admits a source whose `access` is anything but `public`, and then
+    `test_no_published_limitation_claims_a_blocker_that_has_cleared` makes the
+    page say whether that source is the one these rows were waiting for.
+    """
+    return all(source.get("access") == "public" for source in registry().values())
+
+
 LIMITATIONS = (
+    (
+        "move_index_absent",
+        "data",
+        "docs/PROJECT_STATUS.md",
+        ("**Rates volatility and the cash-futures basis are not in the panel.**",),
+        _no_feature_is("move_index"),
+        _every_source_is_public,
+    ),
+    (
+        "futures_basis_absent",
+        "data",
+        "docs/PROJECT_STATUS.md",
+        ("the Treasury cash-futures basis needs licensed futures prices;",),
+        _no_feature_is("futures_basis"),
+        _every_source_is_public,
+    ),
     (
         "nmfp_per_era_floor",
         "declaration",
@@ -1081,8 +1121,8 @@ LIMITATIONS = (
         "declaration",
         "docs/PROJECT_STATUS.md",
         (
-            "aggregates decisions it does not implement.** Security type, tenor, and "
-            "Fed SOMA add-ons are summed into one series.",
+            "aggregates decisions it does not implement.** Security type and tenor "
+            "are summed into one series,",
         ),
         _treasury_settlement_is_one_aggregate,
         None,
@@ -1274,6 +1314,16 @@ class PublishedLimitationTests(unittest.TestCase):
        the same mutation -- all six sources flipped -- killed nothing: a review
        could land and the page would go on saying the gap was the software's.
        Control green before and after, 721 tests on 3.10.12, disposable copy.
+
+    10. **Licensed data admitted** (added with the MOVE and futures-basis rows,
+        kind `data`): `treasury_auctions`' `access` set to `"licensed"`. Killed
+        `test_no_published_limitation_claims_a_blocker_that_has_cleared`,
+        `AssertionError` naming both rows, one test in the whole suite. The
+        futures-basis sentence deleted from `docs/PROJECT_STATUS.md` killed
+        `test_every_limitation_that_still_holds_is_still_published`, naming
+        `futures_basis_absent` alone -- each row has its own sentence, so one
+        can be repaired without the other. Disposable copy, control green
+        before and after, 3.10.12.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):
@@ -1544,6 +1594,15 @@ def _collapsed(text):
     return " ".join(text.split())
 
 
+def _still_quotes(quoted, value):
+    """True when `value` still says `quoted`, whitespace aside.
+
+    The one comparison `test_every_quoted_registry_claim_is_still_in_the_registry`
+    makes, named so it can be exercised on the input it exists for.
+    """
+    return _collapsed(quoted) in _collapsed(value)
+
+
 class RegistryQuotationTests(unittest.TestCase):
     """A document that quotes the registry must still be quoting it.
 
@@ -1598,12 +1657,33 @@ class RegistryQuotationTests(unittest.TestCase):
        a newline and **no current input exercises it**. Not wrong; unexercised,
        which in this repository is a thing worth saying out loud rather than a
        thing to leave looking tested.
+
+       **Closed 10 Sep.** The comparison is now `_still_quotes`, and
+       `test_whitespace_is_not_part_of_a_quotation` feeds it the input the
+       helper is for: a registry value wrapped with a newline and a double
+       space. Re-run on 3.10.12, disposable copy, control green: `_collapsed`
+       as the identity kills that test alone, `AssertionError`.
     """
+
+    def test_whitespace_is_not_part_of_a_quotation(self):
+        """A registry value re-wrapped by an editor still says what it said."""
+        self.assertTrue(
+            _still_quotes(
+                "fails on a majority of the population it checks",
+                "currently fails on a majority\nof  the population it checks",
+            )
+        )
+        self.assertFalse(
+            _still_quotes(
+                "fails on a majority of the population it checks",
+                "currently fails on most of the population it checks",
+            )
+        )
 
     def test_every_quoted_registry_claim_is_still_in_the_registry(self):
         wrong = []
         for name, document, _published, quoted, field in QUOTATIONS:
-            if _collapsed(quoted) not in _collapsed(field()):
+            if not _still_quotes(quoted, field()):
                 wrong.append(f"{name}: {document} attributes to the registry: {quoted!r}")
         self.assertEqual(
             [],

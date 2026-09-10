@@ -1,0 +1,125 @@
+{
+  "generator": "scripts/extract_fr2004.py",
+  "identity_eras": [
+    {
+      "components": [
+        "PDPOSGS-B",
+        "PDPOSGSC-G11",
+        "PDPOSGSC-G2L3",
+        "PDPOSGSC-G3L6",
+        "PDPOSGSC-G6L7",
+        "PDPOSGSC-G7L11",
+        "PDPOSGSC-L2",
+        "PDPOSTIPS-G11",
+        "PDPOSTIPS-G2",
+        "PDPOSTIPS-G6L11",
+        "PDPOSTIPS-L2"
+      ],
+      "first": "2013-04-03",
+      "last": "2014-12-31"
+    },
+    {
+      "components": [
+        "PDPOSGS-B",
+        "PDPOSGS-BFRN",
+        "PDPOSGSC-G11",
+        "PDPOSGSC-G2L3",
+        "PDPOSGSC-G3L6",
+        "PDPOSGSC-G6L7",
+        "PDPOSGSC-G7L11",
+        "PDPOSGSC-L2",
+        "PDPOSTIPS-G11",
+        "PDPOSTIPS-G2",
+        "PDPOSTIPS-G6L11",
+        "PDPOSTIPS-L2"
+      ],
+      "first": "2015-01-07",
+      "last": "2021-12-29"
+    },
+    {
+      "components": [
+        "PDPOSGS-B",
+        "PDPOSGS-BFRN",
+        "PDPOSGSC-G11L21",
+        "PDPOSGSC-G21",
+        "PDPOSGSC-G2L3",
+        "PDPOSGSC-G3L6",
+        "PDPOSGSC-G6L7",
+        "PDPOSGSC-G7L11",
+        "PDPOSGSC-L2",
+        "PDPOSTIPS-G11",
+        "PDPOSTIPS-G2",
+        "PDPOSTIPS-G6L11",
+        "PDPOSTIPS-L2"
+      ],
+      "first": "2022-01-05",
+      "last": "2026-08-26"
+    }
+  ],
+  "series": {
+    "PDPOSGS-B": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGS-BFRN": {
+      "first": "2015-01-07",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G11": {
+      "first": "2013-04-03",
+      "last": "2021-12-29"
+    },
+    "PDPOSGSC-G11L21": {
+      "first": "2022-01-05",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G21": {
+      "first": "2022-01-05",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G2L3": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G3L6": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G6L7": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-G7L11": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGSC-L2": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSGST-TOT": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSTIPS-G11": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSTIPS-G2": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSTIPS-G6L11": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    },
+    "PDPOSTIPS-L2": {
+      "first": "2013-04-03",
+      "last": "2026-08-26"
+    }
+  },
+  "sha256": "7fe22e08a96d786cbab25351ddc677e622321e0399069ff05c03e32cc9cf81da",
+  "source": "data/raw/fr2004/fr2004_pd_positions_historical.csv",
+  "source_byte_count": 26689107,
+  "source_sha256": "8fa89e7b0dc894f58b2ac96b6e810cce2ac7e9888d26599a7a057507715b905d"
+}
