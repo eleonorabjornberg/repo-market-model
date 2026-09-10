@@ -1045,14 +1045,50 @@ def _a_clone_does_not_receive_the_frozen_panel():
 #:                   repaired in metadata/, which is Track A's
 #:   `documentation` the software is fine and nothing published says so;
 #:                   repaired on a HUMAN_ONLY page, so no track can close it
-KINDS = ("software", "declaration", "documentation")
+#:   `data`          the input is not one this repository may take; closed
+#:                   only by a human deciding to admit it or a public proxy
+KINDS = ("software", "declaration", "documentation", "data")
 
 #: Each entry: a name, its kind, the document that discloses it, the sentences
 #: it is published in, a predicate that is true while the limitation holds, and
 #: a predicate that is true while a *stated blocker* still blocks -- or None
 #: where nothing is claimed to block it, which is itself a claim: a limitation
 #: with no blocker is one nobody has an excuse for leaving open.
+def _no_feature_is(name):
+    """True while no panel column of that name is declared in the contract."""
+    from repo_model.contract import FEATURE_FIELDS
+
+    return lambda: name not in FEATURE_FIELDS
+
+
+def _every_source_is_public():
+    """The user's rule, 10 Sep: public sources only, so licensed data waits.
+
+    The blocker for the MOVE and futures-basis rows. It clears the moment the
+    registry admits a source whose `access` is anything but `public`, and then
+    `test_no_published_limitation_claims_a_blocker_that_has_cleared` makes the
+    page say whether that source is the one these rows were waiting for.
+    """
+    return all(source.get("access") == "public" for source in registry().values())
+
+
 LIMITATIONS = (
+    (
+        "move_index_absent",
+        "data",
+        "docs/PROJECT_STATUS.md",
+        ("**Rates volatility and the cash-futures basis are not in the panel.**",),
+        _no_feature_is("move_index"),
+        _every_source_is_public,
+    ),
+    (
+        "futures_basis_absent",
+        "data",
+        "docs/PROJECT_STATUS.md",
+        ("the Treasury cash-futures basis needs licensed futures prices;",),
+        _no_feature_is("futures_basis"),
+        _every_source_is_public,
+    ),
     (
         "nmfp_per_era_floor",
         "declaration",
@@ -1278,6 +1314,16 @@ class PublishedLimitationTests(unittest.TestCase):
        the same mutation -- all six sources flipped -- killed nothing: a review
        could land and the page would go on saying the gap was the software's.
        Control green before and after, 721 tests on 3.10.12, disposable copy.
+
+    10. **Licensed data admitted** (added with the MOVE and futures-basis rows,
+        kind `data`): `treasury_auctions`' `access` set to `"licensed"`. Killed
+        `test_no_published_limitation_claims_a_blocker_that_has_cleared`,
+        `AssertionError` naming both rows, one test in the whole suite. The
+        futures-basis sentence deleted from `docs/PROJECT_STATUS.md` killed
+        `test_every_limitation_that_still_holds_is_still_published`, naming
+        `futures_basis_absent` alone -- each row has its own sentence, so one
+        can be repaired without the other. Disposable copy, control green
+        before and after, 3.10.12.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):

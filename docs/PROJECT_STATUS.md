@@ -266,6 +266,10 @@ Stated explicitly, because each is easy to mistake for something stronger.
   waited on found `offering_amt` excludes them. The components are now defined in
   `src/repo_model/contract.py`; the adapter does not emit them yet, and nothing tests
   whether the simplification affects conclusions.
+- **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
+  index is licensed, and the Treasury cash-futures basis needs licensed futures prices;
+  this repository takes public sources only (human decision, 10 Sep). A public proxy
+  for each is open, and neither blocks a block.
 - **The never-revised claim is prose.** The field-level release lag is licensed by
   a `revision_evidence` string. The comparison behind it was done outside the
   repository, so if a future vintage restated an observation, nothing here would go
