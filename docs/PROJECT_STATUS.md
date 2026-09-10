@@ -54,14 +54,13 @@ a commit message:
 
 - The standard-library suite completes successfully, with no expected failures.
   How many tests that is belongs to CI, not to this page.
-- The `fit` / `predict` / `predict_stress` interface has **three** implementers — a
-  persistence benchmark, an autoregressive model with exogenous regressors, and a
-  two-regime threshold model. The `ExceedancePredictor` interface beside it has
-  three as well. Both sets of conformance tests are parametrized over
+- The `fit` / `predict` / `predict_stress` interface and the `ExceedancePredictor`
+  interface beside it each have several implementers, discovered by the tests
+  rather than listed here. Both sets of conformance tests are parametrized over
   implementations, so each assertion runs once per implementer rather than once in
   total; that multiplication, not the file diff, is what makes each an interface
   rather than a description of one model. A coverage guard asserts that the set of
-  implementers and the set of covered ones are the same set, so a fourth cannot
+  implementers and the set of covered ones are the same set, so a new model cannot
   arrive with a bespoke test class and quietly skip the shared assertions.
 - Stress probabilities are derived from the predictive distribution, and a
   conformance test asserts the derivation: at a declared level `q`, the exceedance
