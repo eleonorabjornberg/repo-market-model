@@ -2106,6 +2106,69 @@ class ContinuousModelHarness(RollingBacktestHarness):
             fit_model=fit_model,
         )
 
+    def run_compare(
+        self,
+        *,
+        model_a="persistence",
+        features_a=None,
+        model_b="arx",
+        features_b=None,
+        regime_variable_a=None,
+        regime_variable_b=None,
+        residual_window_a=None,
+        residual_window_b=None,
+        loss=None,
+        report=None,
+        registry=None,
+    ):
+        """Run `compare`. `--report` is required, so every caller supplies one.
+
+        On the harness rather than on `PairedComparisonCommandTests`, for the
+        reason `RollingBacktestHarness` was split out of its own command tests:
+        `tests/test_ml.py::GradientBoostedCompareTests` needs this fixture and
+        this invocation, and inheriting the *tests* to get them would run them
+        a second time under a second name. A second spelling of the argv would
+        be worse: the property that block asserts is that `compare` reaches
+        `gbm` through the same flags and the same mapping as every other model,
+        and a helper that assembled them differently could not say that.
+        """
+
+        features_a = self.FEATURES if features_a is None else features_a
+        features_b = self.FEATURES if features_b is None else features_b
+        self.last_report = Path(
+            report or self.tmp / f"compare-{model_a}-vs-{model_b}.json"
+        )
+        argv = [
+            "compare", str(self.PANEL),
+            "--minimum-history", self.MINIMUM_HISTORY,
+            "--registry", str(registry or self.registry),
+            "--decision-time", DECISION_TIME,
+            "--model-a", model_a,
+            "--model-b", model_b,
+            "--report", str(self.last_report),
+        ]
+        for feature in features_a:
+            argv += ["--feature-a", feature]
+        for feature in features_b:
+            argv += ["--feature-b", feature]
+        if regime_variable_a is not None:
+            argv += ["--regime-variable-a", regime_variable_a]
+        if regime_variable_b is not None:
+            argv += ["--regime-variable-b", regime_variable_b]
+        if residual_window_a is not None:
+            argv += ["--residual-window-a", str(residual_window_a)]
+        if residual_window_b is not None:
+            argv += ["--residual-window-b", str(residual_window_b)]
+        # Omitted rather than passed as the default, so that a run that does
+        # not name a loss exercises the parser's default rather than this
+        # helper's copy of it.
+        if loss is not None:
+            argv += ["--loss", loss]
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
 
 class ContinuousModelSelectorTests(ContinuousModelHarness):
     """Which continuous model ran, and whether the record says so.
@@ -2590,15 +2653,23 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
         self.assertIn("--window", holdout_flags)
         self.assertNotIn("--residual-window", holdout_flags)
 
-    def test_every_selectable_name_is_a_fitter_from_baseline(self):
-        """One mapping, and everything in it is `baseline`'s, not a local lambda.
+    def test_every_selectable_name_is_a_fitter_this_package_exports(self):
+        """One mapping, and everything in it is a package fitter, not a local lambda.
 
         `MODEL_FACTORIES` is not touched by this: the two interfaces are
         different -- a `ModelFitter` is not an `ExceedancePredictor` -- so one
         mapping per interface is right and one mapping for both would be a lie
         about the types. What must not happen is a *second* mapping for this
         interface, so this pins that everything selectable here is a fitter
-        `baseline` exports under that name.
+        this package exports under that name.
+
+        Renamed from `..._is_a_fitter_from_baseline` when `gbm` arrived: four
+        of these are `baseline`'s and one is `repo_model.ml`'s, and a test name
+        that said `baseline` while the table held an `ml` entry would be read
+        as the rule rather than as the stale half of it. `gbm` is reached
+        through `choice.factory`, which resolves `_DeferredFactory` -- so this
+        also pins that resolving costs nothing on a checkout without the extra,
+        because `repo_model.ml` imports there and only a *fit* needs numpy.
         """
 
         for name, choice in cli_eval.FITTER_FACTORIES.items():
@@ -2609,13 +2680,28 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
                     "arx": baseline.fit_arx,
                     "threshold": baseline.fit_threshold,
                     "rolling-residual": baseline.fit_rolling_residual_law,
+                    "gbm": importlib.import_module(
+                        "repo_model.ml"
+                    ).fit_gradient_boosted_quantiles,
                 }[name],
             )
+
+        # Exactly the entries that live in `repo_model.ml` say they need the
+        # extra, and it is derived from how they are declared rather than from
+        # a second list beside them.
+        self.assertEqual(
+            {
+                name
+                for name, choice in cli_eval.FITTER_FACTORIES.items()
+                if choice.needs_ml_extra
+            },
+            {"gbm"},
+        )
 
         # The two mappings stay apart, and neither leaks a name into the other.
         self.assertEqual(
             set(cli_eval.FITTER_FACTORIES) & set(cli_eval.MODEL_FACTORIES),
-            {"arx", "threshold"},
+            {"arx", "gbm", "threshold"},
             msg="the two interfaces share names by coincidence of vocabulary; "
             "they must not share a table",
         )
@@ -3318,59 +3404,6 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         `pyproject.toml` are also required, or the control is red for reasons
         that have nothing to do with the mutation.
     """
-
-    def run_compare(
-        self,
-        *,
-        model_a="persistence",
-        features_a=None,
-        model_b="arx",
-        features_b=None,
-        regime_variable_a=None,
-        regime_variable_b=None,
-        residual_window_a=None,
-        residual_window_b=None,
-        loss=None,
-        report=None,
-        registry=None,
-    ):
-        """Run the command. `--report` is required, so every caller supplies one."""
-
-        features_a = self.FEATURES if features_a is None else features_a
-        features_b = self.FEATURES if features_b is None else features_b
-        self.last_report = Path(
-            report or self.tmp / f"compare-{model_a}-vs-{model_b}.json"
-        )
-        argv = [
-            "compare", str(self.PANEL),
-            "--minimum-history", self.MINIMUM_HISTORY,
-            "--registry", str(registry or self.registry),
-            "--decision-time", DECISION_TIME,
-            "--model-a", model_a,
-            "--model-b", model_b,
-            "--report", str(self.last_report),
-        ]
-        for feature in features_a:
-            argv += ["--feature-a", feature]
-        for feature in features_b:
-            argv += ["--feature-b", feature]
-        if regime_variable_a is not None:
-            argv += ["--regime-variable-a", regime_variable_a]
-        if regime_variable_b is not None:
-            argv += ["--regime-variable-b", regime_variable_b]
-        if residual_window_a is not None:
-            argv += ["--residual-window-a", str(residual_window_a)]
-        if residual_window_b is not None:
-            argv += ["--residual-window-b", str(residual_window_b)]
-        # Omitted rather than passed as the default, so that a run that does
-        # not name a loss exercises the parser's default rather than this
-        # helper's copy of it.
-        if loss is not None:
-            argv += ["--loss", loss]
-        out, err = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = cli.main(argv)
-        return code, out.getvalue(), err.getvalue()
 
     def _compare_parser(self):
         parser = cli.build_parser()

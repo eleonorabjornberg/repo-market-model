@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import time
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 from .baseline import (
     ExceedancePredictor,
@@ -77,7 +77,7 @@ _AUTOREGRESSIVE_TERM = "spread_bps"
 
 @dataclass(frozen=True)
 class _DeferredFactory:
-    """An exceedance factory in `repo_model.ml`, named rather than imported.
+    """A factory in `repo_model.ml`, named rather than imported.
 
     `tests/test_dependency_boundary.py` fails this module for a *module-level*
     `from .ml import ...`: the core must import on an interpreter that has no
@@ -95,11 +95,22 @@ class _DeferredFactory:
     object. `repo_model.ml` itself imports on an interpreter without the extra
     -- that is what its own boundary test requires of it -- so resolving costs
     nothing until a fit is actually run.
+
+    **Both mappings reach `repo_model.ml` through this one class.** `--model
+    gbm` on the exceedance path names `gbm_exceedance` here and `--model-a/-b
+    gbm` on the continuous path names `fit_gradient_boosted_quantiles`; a
+    second deferral mechanism written for the second mapping would be a second
+    answer to when the extra is imported and what happens when it is absent,
+    and the two would agree until one of them was edited. The refusal a caller
+    without the extra sees is therefore the same one on both paths:
+    `ml.MissingMLExtraError`, raised from inside the fit, which is a
+    `ValueError` and so is printed by the dispatcher as exit 2 rather than
+    surfacing as an `ImportError` traceback.
     """
 
     attribute: str
 
-    def resolve(self) -> Callable[..., ExceedancePredictor]:
+    def resolve(self) -> Callable[..., Any]:
         from . import ml
 
         return getattr(ml, self.attribute)
@@ -415,16 +426,22 @@ class _FitterChoice:
     covering both would have to hold a value that is sometimes one and
     sometimes the other, and the type would stop saying which.
 
-    The four fitters have different signatures -- `fit(train_frame)`,
+    The fitters have different signatures -- `fit(train_frame)`,
     `fit_arx(train_frame, regressors)`,
     `fit_threshold(train_frame, regressors, threshold_variable)`,
-    `fit_rolling_residual_law(train_frame, window)` -- so `build` carries
-    construction, and what it constructs is a `functools.partial`, which is the
-    shape `baseline.ModelFitter`'s own docstring names.
+    `fit_rolling_residual_law(train_frame, window)`,
+    `fit_gradient_boosted_quantiles(train_frame, regressors)` -- so `build`
+    carries construction, and what it constructs is a `functools.partial`,
+    which is the shape `baseline.ModelFitter`'s own docstring names.
 
-    `factory` is the `baseline` fitter itself and `build` is handed that same
-    object rather than closing over one of its own, for the reason
-    `_ModelChoice` gives: the two cannot then name different models.
+    `factory` is the fitter itself and `build` is handed that same object
+    rather than closing over one of its own, for the reason `_ModelChoice`
+    gives: the two cannot then name different models.
+
+    `declared` is the field and `factory` is the property, for the reason
+    `_ModelChoice` splits the same pair: one entry lives in `repo_model.ml` and
+    may not be imported at module level. Every other entry stores the function
+    directly and the property hands it straight back. See `_DeferredFactory`.
 
     `needs_window` is `needs_regime_variable`'s counterpart for the trailing
     residual window, and it is a separate flag rather than a shared "takes an
@@ -435,10 +452,29 @@ class _FitterChoice:
     effect.
     """
 
-    factory: Callable[..., FittedForecastModel]
+    declared: Union[Callable[..., FittedForecastModel], _DeferredFactory]
     build: Callable[..., ModelFitter]
     needs_regime_variable: bool
     needs_window: bool = False
+
+    @property
+    def factory(self) -> Callable[..., FittedForecastModel]:
+        if isinstance(self.declared, _DeferredFactory):
+            return self.declared.resolve()
+        return self.declared
+
+    @property
+    def needs_ml_extra(self) -> bool:
+        """Does running this name require the optional `ml` extra?
+
+        `_ModelChoice.needs_ml_extra`'s counterpart, derived the same way and
+        for the same reason: a second list of which models need the extra would
+        be updated in the same commit that added the model it was meant to
+        cover. Read by the tests that run every selectable name end to end and
+        must skip the ones a core checkout cannot fit.
+        """
+
+        return isinstance(self.declared, _DeferredFactory)
 
     def construct(
         self,
@@ -461,7 +497,7 @@ class _FitterChoice:
 FITTER_FACTORIES = MappingProxyType(
     {
         "persistence": _FitterChoice(
-            factory=fit,
+            declared=fit,
             # Nothing to bind: `fit` already has the `ModelFitter` shape. The
             # entry exists so that persistence is a *name* a caller selects
             # rather than what happens when nobody says.
@@ -469,14 +505,14 @@ FITTER_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
         ),
         "arx": _FitterChoice(
-            factory=fit_arx,
+            declared=fit_arx,
             build=lambda factory, regressors, regime, window: functools.partial(
                 factory, regressors=regressors
             ),
             needs_regime_variable=False,
         ),
         "threshold": _FitterChoice(
-            factory=fit_threshold,
+            declared=fit_threshold,
             build=lambda factory, regressors, regime, window: functools.partial(
                 factory, regressors=regressors, threshold_variable=regime
             ),
@@ -488,12 +524,33 @@ FITTER_FACTORIES = MappingProxyType(
         # can run, and this one exists to be one side of a published comparison
         # against the persistence entry two lines up.
         "rolling-residual": _FitterChoice(
-            factory=fit_rolling_residual_law,
+            declared=fit_rolling_residual_law,
             build=lambda factory, regressors, regime, window: functools.partial(
                 factory, window=window
             ),
             needs_regime_variable=False,
             needs_window=True,
+        ),
+        # The one entry the core cannot import, and the first model on this
+        # path that is not `baseline`'s; see `_DeferredFactory`. Its
+        # construction signature is the ARX's -- `regressors` bound here, and
+        # `minimum_history` left for the fold loop to pass at every origin --
+        # because it reads the same declared feature set: the autoregressive
+        # term the fitter supplies itself, plus whatever `--feature` named.
+        #
+        # `fit_gradient_boosted_quantiles` is named directly rather than
+        # wrapped, so what `compare` scores under `--loss crps` is the model's
+        # **own** law -- `_crps_at` reads `fitted.predict`, and this model's
+        # `predict` is five fits rearranged, not a median with a residual
+        # sample laid around it. An adapter here that produced the second thing
+        # would run, would put `gbm` in the record, and would publish a CRPS
+        # that is not this model's.
+        "gbm": _FitterChoice(
+            declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
+            build=lambda factory, regressors, regime, window: functools.partial(
+                factory, regressors=regressors
+            ),
+            needs_regime_variable=False,
         ),
     }
 )

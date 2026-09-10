@@ -22,8 +22,15 @@ way.
 What is covered here
 --------------------
 
-* `GradientBoostedQuantileTests` -- the block's acceptance criterion: the
-  rearrangement, reproducibility, and the two refusals.
+* `GradientBoostedQuantileTests` -- the model's own criterion: the
+  rearrangement, reproducibility, and the two refusals. What the *law* is.
+* `GradientBoostedCompareTests` -- the wiring criterion: `compare --model-b
+  gbm --loss crps` through the command line, scoring that law and not another
+  one. What the *command* does with it. The division is load-bearing and is
+  demonstrated by a mutation, not asserted: a defect inside `predict` moves
+  this file's expectation with the run and only the first class sees it, and a
+  defect in what `FITTER_FACTORIES` registers leaves `predict` alone and only
+  the second class sees it.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -119,19 +126,24 @@ restored before the next.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import sys
 import unittest
 from datetime import date, timedelta
+from unittest import mock
 
-from repo_model import ml
+from repo_model import baseline, cli_eval, ml
 from repo_model.contract import QUANTILE_LEVELS
-from repo_model.data import DailyObservation
+from repo_model.data import DailyObservation, load_daily_panel
+from repo_model.metrics import crps_from_quantiles
 
 from test_baseline import (
     EXCEEDANCE_TAUS,
     ExceedancePredictorConformance,
     REGRESSORS,
 )
+from test_cli_eval import ContinuousModelHarness
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 
 #: The variable a job that exists to exercise the extra sets. See the module
@@ -231,7 +243,13 @@ FIXTURE_MIN_SAMPLES_LEAF = 3
 
 
 class GradientBoostedQuantileTests(unittest.TestCase):
-    """The block's acceptance criterion, and the mutation target."""
+    """What the law is: block 9's acceptance criterion, and its mutation target.
+
+    Paired with `GradientBoostedCompareTests`, which is a later block's and
+    covers what the command does with this law rather than what the law is.
+    Neither subsumes the other; the mutation record on that class says so with
+    a mutation each of them sees alone.
+    """
 
     REGRESSORS = ("sofr_volume", "on_rrp")
     MINIMUM_HISTORY = 20
@@ -422,6 +440,321 @@ class GbmExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
             1,
             msg="every scored day got the same curve; nothing was conditioned on",
         )
+
+
+class GradientBoostedCompareTests(ContinuousModelHarness):
+    """`compare --model-b gbm --loss crps`: the one ML model reaching the criterion.
+
+    **What was missing.** `gbm` was in `cli_eval.MODEL_FACTORIES` and not in
+    `cli_eval.FITTER_FACTORIES`, so the exceedance path could run it and
+    `backtest` and `compare` could not construct it at all --
+    `compare ... --model-b gbm` exited 2 with *"unknown --model-b 'gbm'; this
+    command can run arx, persistence, rolling-residual, threshold"*. The
+    criterion `PLAN.md`'s Phase 2 states is *"a model that beats persistence
+    out of sample"*, and `compare` is the command that answers it, so the one
+    model this repository builds with the `ml` extra had no route to the
+    question it was built for.
+
+    **The fixture is `ContinuousModelHarness`', not a new one**, and the
+    invocation is its `run_compare`. Both were already there for the ARX and
+    the trailing-window law; a panel and an argv written again here would make
+    a difference between this model's run and theirs indistinguishable from a
+    difference between two fixtures. `run_compare` moved down onto the harness
+    in this block for that reason and is otherwise unchanged.
+
+    **A finding: the earliest folds are unconditional, and there the trap is
+    invisible.** `FITTER_FACTORIES` binds no `min_samples_leaf` -- there is no
+    flag for it and tuning is not this block's -- so a run uses scikit-learn's
+    default of 20. The first fold here trains on `--minimum-history` rows,
+    which leaves 24 design rows, and at that size every level fit is a single
+    leaf: the predicted vector is the same on every feature row, and the
+    model's own law is then *bit for bit* the same as its median wrapped in its
+    own residual sample. Measured, not reasoned about -- the two CRPS values at
+    the first origin are equal to the last digit. So an origin there satisfies
+    the equality below under the defect as well as under the fix, and the
+    origins chosen are the middle one and the last, where the fits do split and
+    the two laws differ. What this says about a run on the frozen panel is that
+    its early folds are a gradient-boosted climatology; it is not a defect in
+    the wiring, and it is the reason `--minimum-history` matters more to this
+    model than to persistence.
+
+    **Why the report object and not only the artifact.** The record carries
+    each side's *mean* loss and its first and last fold; it does not carry the
+    per-origin series, deliberately -- `paired_comparison_document` publishes
+    what a reader interprets and `PairedComparisonReport` holds what the run
+    computed. The claim below is per origin, so the run's own
+    `PairedComparisonReport` is captured on its way into the document by
+    wrapping the name `cli_eval` calls. Nothing about the run changes: the
+    command is entered through `cli.main`, the document is built by the real
+    function, and the file is written. What is read is the run's own object
+    rather than a second comparison built beside it.
+
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, taken from `git ls-files -z --cached
+    --others --exclude-standard` at the per-branch, per-commit path
+    `CLAUDE.md` now names, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` and
+    `REPO_MODEL_REQUIRE_ML=1`, on CPython 3.9.6 with numpy 2.0.2 and
+    scikit-learn 1.6.1. Unmutated control green before and after, zero
+    `expectedFailure` throughout; each mutation confirmed applied by grep and
+    restored before the next.
+
+      * **gbm's law replaced by a residual law.** `FITTER_FACTORIES["gbm"]`
+        wrapped so the fitted model's `predict` returns its own median plus its
+        own residual sample, everything else -- the name in the record, the
+        features read, the folds, the digest -- unchanged. This is the trap the
+        criterion exists for: the run completes, the record says `gbm`, and the
+        CRPS it publishes is not gbm's. Kills the acceptance test at **both**
+        chosen origins, `AssertionError`, on the per-origin equality. It also
+        kills
+        `test_contract.ForecastInterfaceCoverageTests::test_every_implementation_in_baseline_runs_the_conformance_suite`,
+        `AssertionError`, because the wrapper is a new predictive-law class in
+        the package and block 9's walk discovers it -- collateral from how this
+        mutation had to be written, and the walk doing its job.
+      * **The same law swap written inside the model instead.**
+        `FittedGradientBoostedQuantiles.predict` returns the residual law
+        directly. **The acceptance test survives**, and that is the finding
+        rather than a gap: this test's expectation *is* a directly fitted
+        model's `predict`, so a defect inside `predict` moves the run and the
+        expectation together. What kills it is
+        `GradientBoostedQuantileTests::test_the_quantiles_are_ordered_and_reproducible_at_every_contract_level`,
+        on every row of `crossing_frame`. The two classes divide the claim:
+        that the law is the law, and that the command scores it.
+      * **Each refusal a no-op**, run separately. The `--regime-variable{side}`
+        branch in `cli_eval._regressors_and_regime` made `pass`: kills this
+        test's `flag='regime_variable_b'` subtest with `AssertionError: 0 != 2`,
+        alongside the two single-model tests that already covered the same rule
+        on their own commands. The `--residual-window{side}` refusal in
+        `cli_eval._residual_window` deleted: kills `flag='residual_window_b'`
+        the same way, alongside
+        `ContinuousModelSelectorTests::test_the_residual_window_is_required_for_the_model_that_reads_one`.
+        Both refusals are shared with `backtest`, which is why neither kill is
+        this test's alone -- and why the subtests assert the message names
+        `--model-b`, which is the half only `compare` can get wrong.
+      * **The deferred import bypassed.** The `try/except ImportError ->
+        MissingMLExtraError` in `ml._estimator_class` reduced to a bare `from
+        sklearn.ensemble import ...`. Kills the acceptance test as an **error**
+        and not a failure: `ModuleNotFoundError: import of sklearn.ensemble
+        halted; None in sys.modules`, out of the fit and through `cli.main`
+        uncaught. Recorded as an error deliberately -- the defect is precisely
+        that a caller without the extra gets a traceback instead of exit 2 and
+        a sentence, so the shape of the kill is the claim.
+      * **A second deferral mechanism**, expected to survive here and to be
+        killed elsewhere: the `gbm` entry declared as a module-level function
+        that imports `repo_model.ml` inside itself, instead of
+        `_DeferredFactory`. This test stays **green** -- the refusal still
+        names the extra, because it still comes from `ml` -- and
+        `test_cli_eval.ContinuousModelSelectorTests::test_every_selectable_name_is_a_fitter_this_package_exports`
+        kills it on identity. That pair is what "through the one deferred
+        mechanism, not a second one" means mechanically: this file cannot see
+        the difference and the mapping's own guard can.
+      * **Re-run, because this block moved a fixture an existing record
+        names.** `run_compare` moved from `PairedComparisonCommandTests` onto
+        `ContinuousModelHarness`, so that record's `--loss` mutation was run
+        again over the moved helper: `loss=args.loss` dropped from `_compare`'s
+        `paired_model_comparison` call. Still kills
+        `test_the_loss_flag_reaches_the_record_and_defaults_to_the_point_loss`,
+        `AssertionError: 'absolute_error_bps' != 'crps_bps'`, and now kills
+        this test too, on the same assertion.
+
+    Cost, reported and not asserted
+    -------------------------------
+
+    On this fixture -- 61 origins, training windows of 25 to 89 rows -- a
+    `compare` run with `gbm` on one side takes about 0.21 seconds per origin,
+    of which a single five-level fit is nearly all. The cost grows with the
+    training window, roughly `0.2 + 0.002 * rows` seconds per fit measured out
+    to 2 100 rows. The published `compare` records under `docs/runs/` carry
+    2 080 origins over an expanding window that reaches 2 099 rows, which puts
+    a real run at something over an hour of wall clock on eight cores. It fits
+    in an evening; it does not fit in a test.
+
+    """
+
+    def setUp(self):
+        require_extra(self)
+        super().setUp()
+
+    def declared_regressors(self, features):
+        """`--feature-b` minus the term the fitter supplies itself.
+
+        Derived through `cli_eval._AUTOREGRESSIVE_TERM` rather than spelled, so
+        the expectation below is built from the same rule the command applies
+        and not from a copy of it that agrees until one of them is edited.
+        """
+
+        return tuple(
+            column
+            for column in sorted(features)
+            if column != cli_eval._AUTOREGRESSIVE_TERM
+        )
+
+    def run_gbm_compare(self, **overrides):
+        """Run `compare` with `gbm` on side b; return the run's own report too.
+
+        See the class docstring on why the report object is captured. The
+        wrapper calls the real `paired_comparison_document` and returns its
+        value, so a run that reaches this point still writes the artifact it
+        would have written.
+        """
+
+        captured = []
+        publish = cli_eval.paired_comparison_document
+
+        def spy(comparison, **kwargs):
+            captured.append(comparison)
+            return publish(comparison, **kwargs)
+
+        options = {"model_b": "gbm", "loss": "crps"}
+        options.update(overrides)
+        with mock.patch.object(cli_eval, "paired_comparison_document", spy):
+            code, out, err = self.run_compare(**options)
+        return code, out, err, (captured[0] if captured else None)
+
+    def fitted_directly(self, fold, features):
+        """A gbm fitted on one fold's own training window, outside the command.
+
+        The window is rebuilt from the fold the run recorded -- `train_start`
+        through `train_end` inclusive -- so the frame is the one the run fitted
+        on rather than one reconstructed from the purge arithmetic a second
+        time. Every other argument is the fitter's own default, which is what
+        `FITTER_FACTORIES` binds: `random_state` and `early_stopping=False`
+        make the two fits identical bit for bit, which is why the assertion
+        below is an equality and not a tolerance.
+        """
+
+        rows = load_daily_panel(self.PANEL)
+        window = [
+            row for row in rows if fold.train_start <= row.date <= fold.train_end
+        ]
+        return ml.fit_gradient_boosted_quantiles(
+            window,
+            self.declared_regressors(features),
+            minimum_history=int(self.MINIMUM_HISTORY),
+        )
+
+    def test_compare_scores_gbm_against_persistence_under_crps_from_its_own_law(self):
+        """Four claims about one command, and they hold together or not at all.
+
+        A run that exits 0 and names `gbm` while scoring somebody else's law is
+        the defect this test exists for, so the naming claim and the arithmetic
+        claim cannot be separated; and a model reachable by name that quietly
+        accepted flags it does not read, or that failed with an `ImportError`
+        on a checkout without the extra, would be reachable in the sense that
+        matters to a table and not in the sense that matters to a caller.
+        """
+
+        code, out, err, comparison = self.run_gbm_compare()
+
+        # 1. The command runs, and the record says which model produced the
+        #    challenger's numbers and under which loss. The heading is read
+        #    too: a mean CRPS published under `mae_bps` parses, reads correctly
+        #    and means something else.
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+        record = json.loads(self.last_report.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration"]["model_b"]["model"], "gbm")
+        self.assertEqual(record["comparison"]["model_b"]["model"], "gbm")
+        self.assertEqual(record["comparison"]["loss"], "crps_bps")
+        self.assertIn("crps_bps", record["comparison"]["model_b"])
+        self.assertEqual(json.loads(out)["model_b"], "gbm")
+
+        # 2. The published loss is **this model's own law**. At each chosen
+        #    origin the run's per-origin CRPS equals the CRPS of the quantile
+        #    vector a gbm fitted directly on that origin's training window
+        #    reports -- and, so the equality is not vacuous, differs from what
+        #    the same model's median wrapped in its own residual sample would
+        #    have scored. That second law is what a point prediction registered
+        #    under persistence's construction produces: it runs, it names gbm,
+        #    and it publishes a CRPS that is not gbm's.
+        rows = {row.date: row for row in load_daily_panel(self.PANEL)}
+        self.assertTrue(comparison.folds, msg="the run scored no origins")
+        # The middle origin and the last, and **not the first**; see
+        # `EARLY_FOLDS_ARE_UNCONDITIONAL` in this class's docstring for why an
+        # origin there cannot tell the two laws apart.
+        chosen = sorted({len(comparison.folds) // 2, len(comparison.folds) - 1})
+        for index in chosen:
+            fold = comparison.folds[index]
+            with self.subTest(origin=fold.scored_date):
+                model = self.fitted_directly(fold, self.FEATURES)
+                feature_row = rows[fold.feature_date]
+                actual = rows[fold.scored_date].spread_bps
+                own_law = crps_from_quantiles(
+                    QUANTILE_LEVELS, model.predict(feature_row), actual
+                )
+                self.assertEqual(
+                    comparison.losses_b[index],
+                    own_law,
+                    msg=(
+                        f"the run's CRPS at {fold.scored_date} is not the CRPS "
+                        f"of the law a gbm fitted on "
+                        f"{fold.train_start}..{fold.train_end} reports"
+                    ),
+                )
+
+                centre = model.point_forecast(feature_row)
+                residual_law = tuple(
+                    centre + baseline._quantile(model.residuals, level)
+                    for level in QUANTILE_LEVELS
+                )
+                self.assertNotAlmostEqual(
+                    crps_from_quantiles(QUANTILE_LEVELS, residual_law, actual),
+                    own_law,
+                    places=6,
+                    msg=(
+                        "this model's own conditional law and its median "
+                        "wrapped in its residual sample score the same at "
+                        f"{fold.scored_date}, so the equality above cannot "
+                        "tell them apart on this fixture"
+                    ),
+                )
+
+        # 3. The two flags this model does not read are refused, on the side
+        #    they were given on, before anything is fitted -- so each refusal
+        #    also leaves no artifact behind.
+        for flag, value, phrase in (
+            (
+                "regime_variable_b",
+                self.REGIME_VARIABLE,
+                "--model-b gbm reads no regime variable",
+            ),
+            (
+                "residual_window_b",
+                5,
+                "--model-b gbm reads its residual law from the whole training "
+                "frame",
+            ),
+        ):
+            with self.subTest(flag=flag):
+                refused = self.tmp / f"refused-{flag}.json"
+                code, _, err = self.run_compare(
+                    model_b="gbm", loss="crps", report=refused, **{flag: value}
+                )
+                self.assertEqual(code, 2, msg=f"{flag} was accepted")
+                self.assertIn(phrase, " ".join(err.split()))
+                self.assertFalse(
+                    refused.exists(),
+                    msg="a refused run wrote a report",
+                )
+
+        # 4. Without the extra the refusal is this repository's sentence and
+        #    exit 2, not an `ImportError` out of a fit four frames down. The
+        #    deferred import is `ml._estimator_class`', reached through the
+        #    same `_DeferredFactory` `MODEL_FACTORIES` uses; blocking
+        #    `sklearn` in `sys.modules` is how an interpreter without the extra
+        #    is simulated on one that has it.
+        blocked = self.tmp / "compare-without-the-extra.json"
+        with mock.patch.dict(
+            sys.modules, {"sklearn": None, "sklearn.ensemble": None}
+        ):
+            code, _, err = self.run_compare(
+                model_b="gbm", loss="crps", report=blocked
+            )
+        self.assertEqual(code, 2, msg="the missing extra did not refuse")
+        self.assertIn("'ml' extra", err)
+        self.assertNotIn("Traceback", err)
+        self.assertFalse(blocked.exists())
 
 
 if __name__ == "__main__":
