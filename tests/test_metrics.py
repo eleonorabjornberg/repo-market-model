@@ -11,9 +11,11 @@ produces plausible-looking components that no longer add up.
 
 The **prohibitions**. The contract forbids fixed-bin ECE and prefers
 precision-recall to ROC. A prohibition with no test is a comment, so
-`FixedBinECEProhibitionTests` scans every Python source in the repository and
-fails the build if the thing reappears -- and has a positive control, because a
-scanner that cannot fail is worse than no scanner.
+`FixedBinECEProhibitionTests` scans every Python source a clone of this
+repository would contain -- not every one on the disk, which in a worktree with
+a `.venv/` is somebody else's code -- and fails the build if the thing
+reappears. It has a positive control too, because a scanner that cannot fail is
+worse than no scanner.
 
 The **required arguments**. `climatology`, `block_length` and `seed` have no
 defaults, for the same reason `purge` has none in `repo_model.splits`: each has
@@ -31,7 +33,9 @@ import io
 import math
 import random
 import re
+import subprocess
 import sys
+import tempfile
 import tokenize
 import unittest
 from pathlib import Path
@@ -845,6 +849,36 @@ FORBIDDEN = tuple(re.compile(pattern) for pattern in FORBIDDEN_IDENTIFIERS)
 SCANNER = Path(__file__).resolve()
 
 
+def git_ignored(root):
+    """What git would leave out of a clone of `root`, or None if git cannot say.
+
+    Untracked ignored entries, with an ignored directory reported once as
+    `dir/` rather than file by file. `None` when `root` is not a git work tree
+    -- a disposable mutation copy is not one -- and the caller then reads the
+    whole walk, which is what it read before this existed.
+
+    Asking git rather than keeping a list of directories is the whole point.
+    A list that named `.venv/` would pass today and let the next ignored
+    directory back in: `build/`, `.tox/`, a virtualenv someone called `env`.
+    """
+
+    try:
+        listed = subprocess.run(
+            [
+                "git", "-C", str(root), "ls-files", "-z", "--others",
+                "--ignored", "--exclude-standard", "--directory",
+            ],
+            capture_output=True,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return tuple(
+        entry for entry in listed.decode("utf-8", "surrogateescape").split("\0")
+        if entry
+    )
+
+
 def identifiers_in(source):
     """Every identifier in `source`, ignoring strings and comments.
 
@@ -885,11 +919,53 @@ class FixedBinECEProhibitionTests(unittest.TestCase):
     exceedance rates for 20bp and 50bp most bins hold a handful of points or
     none. `repo_model.metrics` reports the CORP decomposition instead, whose
     partition is chosen by the pool-adjacent violators algorithm.
+
+    **Scope, and the defect it fixes.** `python_sources` walked the whole disk
+    under `REPO_ROOT`. A worktree that grows a `.venv/` -- which the optional
+    `ml` extra requires -- then put every installed package's source in scope,
+    and two things followed. The visible one: the suite went red with
+    `UnicodeDecodeError` on a latin-1 `.py` inside joblib, reproduced on
+    `80c4311` by running this class in a worktree with a real virtualenv. The
+    one that matters more: the prohibition is a claim about *this* repository,
+    and a walk of the disk held it responsible for any fixed-bin ECE some
+    third-party package happens to define. `tests/test_docs_freshness.py`
+    found the same defect in its own scope one file over and repaired it at
+    `d316bce`; the shape here is the same and the helper is not shared, because
+    a guard whose implementation lives in another track's module cannot be the
+    target of this track's mutation.
+
+    **The repair.** Scope is what a clone receives: `git_ignored` asks git what
+    it would leave out and paths under those entries are dropped. No exclusion
+    list names a directory, so the next ignored directory is covered without an
+    edit. Where git cannot answer -- a mutation copy is not a work tree -- the
+    walk is what it always was, so nothing that was in scope leaves it.
+
+    **Mutation, recorded on `80c4311`, Python 3.9.6, in a copy made by
+    `CLAUDE.md`'s `git ls-files` recipe.** The ignore filter removed from
+    `python_sources` (the `any(...)` clause reduced to `False`): kills
+    `test_the_scan_reads_only_what_a_clone_would_contain` alone,
+    `AssertionError` naming the planted path. Unmutated control green before
+    and after, zero `expectedFailure`. The mutation is invisible to the other
+    tests in this class because the copy contains nothing git ignores, which
+    is exactly why the acceptance test plants its own tree.
     """
 
-    def python_sources(self):
-        for path in sorted(REPO_ROOT.rglob("*.py")):
+    def python_sources(self, root=REPO_ROOT):
+        """Every Python source a clone of `root` would contain.
+
+        `root` is a parameter so the scope rule can be exercised on a planted
+        tree instead of on this one.
+        """
+
+        ignored = git_ignored(root) or ()
+        for path in sorted(root.rglob("*.py")):
             if ".git" in path.parts or path.resolve() == SCANNER:
+                continue
+            relative = path.relative_to(root).as_posix()
+            if any(
+                relative == entry or (entry.endswith("/") and relative.startswith(entry))
+                for entry in ignored
+            ):
                 continue
             yield path
 
@@ -907,6 +983,53 @@ class FixedBinECEProhibitionTests(unittest.TestCase):
             + ". The contract prohibits it; use corp_decomposition, whose "
             "partition has nothing to tune.",
         )
+
+    def test_the_scan_reads_only_what_a_clone_would_contain(self):
+        """A gitignored directory is not this repository's code to answer for.
+
+        The planted directory is named nothing an exclusion list would have
+        anticipated, on purpose: if this passed only for `.venv/` it would say
+        nothing about `build/`, `.tox/` or a virtualenv called `env`. The
+        planted file is both undecodable as UTF-8 and a fixed-bin ECE
+        implementation, because those are the two ways an out-of-scope file
+        broke this guard -- an error the suite showed, and an accusation it
+        would have made.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            try:
+                subprocess.run(
+                    ["git", "init", "-q", str(root)], check=True, capture_output=True
+                )
+            except (OSError, subprocess.CalledProcessError):
+                self.skipTest("git is not available to say what it ignores")
+            (root / ".gitignore").write_text("pergamon-scratch/\n")
+            vendored = root / "pergamon-scratch" / "site-packages" / "pkg"
+            vendored.mkdir(parents=True)
+            (vendored / "calibration.py").write_bytes(
+                b"def expected_calibration_error(p, o, n_bins=10):\n"
+                b"    edges = [i / n_bins for i in range(n_bins + 1)]  # \xa4\xe9\n"
+                b"    return sum(edges)\n"
+            )
+            (root / "kept.py").write_text("value = 1\n")
+
+            scanned = {
+                path.relative_to(root).as_posix()
+                for path in self.python_sources(root)
+            }
+            # The anchor: a scan that reads nothing would also exclude the plant.
+            self.assertIn("kept.py", scanned)
+            self.assertNotIn("pergamon-scratch/site-packages/pkg/calibration.py", scanned)
+
+            # And the guard's own loop over that tree neither raises on the
+            # plant nor reports it as this repository's fixed-bin ECE.
+            offenders = {}
+            for path in self.python_sources(root):
+                found = scan_for_fixed_bin_ece(path.read_text(encoding="utf-8"))
+                if found:
+                    offenders[path.relative_to(root).as_posix()] = found
+            self.assertEqual(offenders, {})
 
     def test_the_scan_actually_covers_the_metrics_module(self):
         """A scanner that silently covered nothing would always pass."""
