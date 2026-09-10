@@ -56,8 +56,9 @@ a commit message:
   How many tests that is belongs to CI, not to this page.
 - The `fit` / `predict` / `predict_stress` interface and the `ExceedancePredictor`
   interface beside it each have several implementers, discovered by the tests
-  rather than listed here: the forecast implementers in every module of the package,
-  the exceedance ones, for now, in `baseline` alone. Both sets of conformance tests are parametrized over
+  rather than listed here, in every module of the package, through one walk; the
+  exceedance marker reads the return annotation as a type, so a module without
+  `from __future__ import annotations` is not missed. Both sets of conformance tests are parametrized over
   implementations, so each assertion runs once per implementer rather than once in
   total; that multiplication, not the file diff, is what makes each an interface
   rather than a description of one model. A coverage guard asserts that the set of
