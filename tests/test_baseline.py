@@ -170,6 +170,7 @@ from repo_model.baseline import (
     Forecast,
     MissingRegressorError,
     ProvenanceMismatchError,
+    ScoredFold,
     SingularDesignError,
     UnobservedThresholdError,
     _dot,
@@ -184,6 +185,7 @@ from repo_model.baseline import (
     comparison_seed,
     fit_arx,
     fit_threshold,
+    interval_calibration,
     paired_comparison_document,
     paired_model_comparison,
     rolling_exceedance_backtest,
@@ -4644,6 +4646,506 @@ class PairedComparisonTests(unittest.TestCase):
                 decision_time=DECISION_TIME,
             ),
         )
+
+
+
+CALIBRATION_SEED = 20260910
+
+#: The fixture horizon, in calendar days, and the number `_maximum_horizon_overlap`
+#: must return from folds built at it. Origins step one day at a time and each
+#: forecast covers `(feature_date, scored_date]`, three days, so three horizons
+#: are live on the busiest day. Written here once because the acceptance test
+#: asserts it: it is a property of how the fixture is built and not a number
+#: read off a run.
+CALIBRATION_HORIZON_DAYS = 3
+CALIBRATION_BLOCK_LENGTH = 3
+
+
+class IntervalCalibrationTests(unittest.TestCase):
+    """Two numbers in one published object, related by no code until now.
+
+    **The finding.** `PLAN.md`'s Phase 2 exit criterion is two clauses -- *"a
+    model that beats persistence out of sample **and remains calibrated in the
+    tails**"*. `PairedComparisonTests` above instruments the first.
+    `docs/runs/persistence_funding.json` carries the raw material of the second
+    and nothing else:
+
+        "interval_coverage":    0.8100961538461539
+        "interval_probability": 0.8999999999999999
+
+    Adjacent keys in one object, over 2080 folds, and **no code in this
+    repository subtracted, compared, or put an interval on the difference.**
+    That is the defect `paired_model_comparison` closed one layer over: the
+    repository published the ingredients of a comparison and left the
+    comparison to the reader, and the comparison a reader makes unaided is the
+    wrong one. Here the unaided reader does the subtraction in their head, gets
+    nine points, and then has to guess whether nine points is sampling noise at
+    that fold count or the benchmark's intervals being wrong.
+
+    Decisions
+    ---------
+
+    **A bootstrap and not a binomial, for `paired_model_comparison`'s reason.**
+    A Wald, Wilson or Clopper-Pearson interval on a proportion assumes the
+    origins are independent. They are not: the folds overlap in horizon, which
+    is the entire argument behind `_maximum_horizon_overlap` and the reason the
+    contract fixes the stationary block bootstrap as the only interval this
+    project reports. An independence-assuming interval here would be too narrow
+    for the same structural reason that resampling two models apart was too
+    narrow there.
+
+    **The centre and the interval come from one series.** `realized_coverage`
+    is the mean of the same indicator list the bootstrap resamples, not a read
+    of `report.interval_coverage`. They are equal by construction on anything
+    `rolling_persistence_backtest` produced -- it computes the same mean from
+    the same forecasts -- and deriving them in two places is how a centre and
+    an interval come to disagree after one of them is touched.
+
+    **The declared probability is read off the report.** Not off
+    `INTERVAL_PROBABILITY`, which is what *this checkout* declares, and not off
+    a literal `0.90`, which is a transcribed number in the one place it must
+    not be. A report that declares fewer than two levels is refused rather than
+    handed the contract's grid, which is `backtest_document`'s rule -- a field
+    that cannot be computed is absent, never assumed.
+
+    **No verdict is asserted on the published number.** The record-reading test
+    checks that both halves of the statement are present and that the statement
+    can be formed from what the record carries. Whether 0.810 against 0.900 is
+    a miscalibration is a research finding and it belongs in a report, not in
+    an assertion this suite would then have to keep true.
+
+    **What the record does not carry, and why this block does not add it.** The
+    interval on realized coverage is a function of the *indicator series*, not
+    of its mean and its length: a block resample of 1685 ones and 395 zeros
+    depends on their arrangement, and the arrangement is exactly what
+    clustering of coverage failures is. `docs/runs/persistence_funding.json`
+    publishes `metrics.interval_coverage` and `folds.count` and no per-origin
+    forecasts, so **the published record cannot reproduce its own coverage
+    interval**, and the frozen panel that could is gitignored. That is reported
+    rather than fixed: adding per-origin rows to the record would turn a
+    publication into an intermediate, which `PairedComparisonTests` records as
+    a deliberate decision, and this block may not change a published record's
+    shape.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME`, never the mount, built from `git ls-files`
+    plus `.claude/`. `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`,
+    `__pycache__` cleared before every run, mutation reverted after each.
+    Unmutated control **green before and after**: 697 tests, `OK`, zero
+    `expectedFailure`. Exception types recorded, not counts. Python 3.9.6 --
+    the lower of the two interpreters `pyproject.toml` admits.
+
+    `.claude/` is copied because the ownership hook lives there and its test
+    contributes seven errors to an otherwise green control without it.
+    `CLAUDE.md`'s copy list predates the hook and does not name it; that page
+    is `HUMAN_ONLY`, so this is reported and not edited -- the same note
+    `PairedComparisonTests` carries, still outstanding.
+
+      1. **The independence assumption, everywhere** -- `block` fixed at `1`
+         rather than measured off the folds, which is a resample at block
+         length 1 wearing the block bootstrap's name and is the defect this
+         block exists to exclude. Kills exactly 2:
+
+           * `test_a_fixture_covered_at_every_origin_has_a_degenerate_coverage_interval`,
+             `AssertionError: 1 != 3`. **This is the acceptance criterion and
+             the mutation target, and they did not come apart.**
+           * `test_a_declared_block_length_overrides_the_one_measured_off_the_folds`,
+             `AssertionError: (0.5, 1.0) == (0.5, 1.0)` -- the default and the
+             explicit `block_length=1` call now agree, which is the same fact
+             seen from the other side.
+
+         **Note what the kill is on.** It is on the block length the object
+         *reports*, not on the endpoints. At zero variance every resample
+         structure returns `(1.0, 1.0)`, so the degenerate endpoints cannot see
+         a block length at all -- see mutation 3, and see the "trap" note
+         below. Writing this kill up as "the interval moved" would read
+         stronger and be false.
+
+      2. **A Wald interval on the proportion**, substituted for the bootstrap
+         call, with the block length still measured and still reported.
+
+         **The brief predicted this would survive the acceptance criterion, and
+         it did.** At `p̂ = 1` the Wald standard error is
+         `sqrt(p(1-p)/n) = 0`, so it also returns `(1.0, 1.0)`, and the
+         degenerate fixture cannot tell it from the bootstrap. The criterion is
+         blind to it and no assertion was added to the criterion to pretend
+         otherwise.
+
+         It is killed, twice, by other tests in this class, and the two kills
+         are not worth the same:
+
+           * `test_a_declared_block_length_overrides_the_one_measured_off_the_folds`,
+             `AssertionError: (0.4981842445251663, 1.0018157554748337) ==
+             (0.4981842445251663, 1.0018157554748337)`. **This kill is
+             structural.** A Wald interval is not a function of the block
+             length at all, so the default call and the `block_length=1` call
+             return the identical interval, and that is true at every fold
+             count.
+           * `test_a_partly_covered_fixture_reports_the_indicator_mean_and_a_live_interval`,
+             `AssertionError: 1.0018157554748337 not less than or equal to
+             1.0`. **This kill is an accident of `n = 8`** and is recorded so
+             nobody relies on it. The upper endpoint leaves `[0, 1]` only
+             because the fixture is small; at the published run's 2080 folds
+             the same substitution returns `(0.7960, 0.8242)`, entirely inside
+             `[0, 1]`, and this assertion would not fire.
+
+         **The brief's first option was checked and is unavailable.** It asks
+         whether a second assertion *in the acceptance test* could separate a
+         block resample from an independence assumption. It cannot, and the
+         reason is the same property that makes the criterion sharp: on the
+         covered-everywhere fixture `interval_calibration(report)` and
+         `interval_calibration(report, block_length=1)` both return
+         `(1.0, 1.0)`, so no comparison between them can distinguish anything.
+         The zero-variance series is exactly the series on which every resample
+         structure agrees. So the separation lives in a sibling test, on a
+         fixture with variance, and **the acceptance criterion does not reach
+         the Wald defect.** That is reported, not papered over.
+
+      3. **The block length reported but not used** -- `_maximum_horizon_overlap`
+         still measured and still returned on the object, while the bootstrap
+         is called at `block_length=1`. The label and the arithmetic pulled
+         apart. Kills exactly 1 --
+         `test_a_declared_block_length_overrides_the_one_measured_off_the_folds`,
+         `AssertionError: (0.5, 1.0) == (0.5, 1.0)`.
+
+         **The acceptance criterion survives this**, for mutation 1's reason,
+         and this is the sharpest statement of what the criterion does and does
+         not reach: it checks that the block length was *measured*, and nothing
+         in it checks that it was *used*.
+
+      4. **The declared probability taken from `INTERVAL_PROBABILITY`** instead
+         of from `report.quantile_levels` -- the module constant, which is what
+         this checkout declares, standing in for what the run declared. Kills
+         exactly 1 --
+         `test_the_declared_probability_is_read_off_the_report_not_off_the_contract`,
+         `AssertionError: 0.8999999999999999 != 0.8 within 7 places`.
+
+      5. **The centre read off `report.interval_coverage`** instead of being
+         the mean of the resampled series. **This survived the first time it
+         was run**, against the seven tests this block originally added, and it
+         survived for a reason worth stating: on anything
+         `rolling_persistence_backtest` produced the two are equal by
+         construction, so no honest fixture separates them, and the "one
+         series, one derivation" decision above was a design decision the suite
+         did not enforce. `test_the_centre_comes_from_the_resampled_series_not_from_the_reports_field`
+         was added in response -- a hand-built report carrying a stale
+         `interval_coverage` beside live forecasts -- and the mutation now
+         kills exactly 1, `AssertionError: 0.0 != 1.0`.
+
+      6. **Strict inequality on both ends of the indicator** --
+         `lower < actual < upper` for `lower <= actual <= upper`. **Also
+         survived the first time**, because every fixture in this class put its
+         actuals strictly inside their intervals, the acceptance criterion
+         most of all. That is a defect the suite would not have caught while
+         the docstring claimed the closed interval, and the closed interval is
+         not a preference: it is the definition
+         `rolling_persistence_backtest` computed the published
+         `interval_coverage` under, so a strict indicator would calibrate a
+         different quantity than the one being calibrated.
+         `test_an_actual_on_its_own_bound_is_covered_as_the_backtest_counts_it`
+         was added, and the mutation now kills exactly 1,
+         `AssertionError: 0.0 != 1.0`.
+
+    Mutations 5 and 6 are recorded as the survivals they were, rather than
+    presented as guards that were there all along.
+    """
+
+    def _forecasts(self, actuals, half_width, misses=()):
+        """One `Forecast` per actual, with `half_width` either side of it.
+
+        `misses` names positions whose actual is pushed outside its own
+        interval instead. The interval is centred on the actual rather than on
+        the prediction, so whether an origin is covered is a property of how
+        this fixture is written and not of any fit -- which is what lets the
+        acceptance test state its expected value from construction.
+        """
+
+        built = []
+        for position, actual in enumerate(actuals):
+            centre = actual
+            lower = centre - half_width
+            upper = centre + half_width
+            observed = actual + 2.0 * half_width if position in misses else actual
+            span = upper - lower
+            built.append(
+                Forecast(
+                    observed,
+                    centre,
+                    lower,
+                    upper,
+                    (lower, lower + span / 4.0, centre, upper - span / 4.0, upper),
+                )
+            )
+        return built
+
+    def _folds(self, count, horizon_days=CALIBRATION_HORIZON_DAYS):
+        start = date(2026, 3, 2)
+        return tuple(
+            ScoredFold(
+                train_start=start,
+                train_end=start + timedelta(days=index),
+                train_rows=20 + index,
+                feature_date=start + timedelta(days=index),
+                scored_date=start + timedelta(days=index + horizon_days),
+            )
+            for index in range(count)
+        )
+
+    def _report(self, forecasts, levels=QUANTILE_LEVELS, horizon_days=CALIBRATION_HORIZON_DAYS):
+        covered = sum(
+            item.lower_bps <= item.actual_bps <= item.upper_bps for item in forecasts
+        )
+        return BacktestReport(
+            forecasts=forecasts,
+            mae_bps=sum(
+                abs(item.actual_bps - item.predicted_bps) for item in forecasts
+            )
+            / max(1, len(forecasts)),
+            interval_coverage=covered / max(1, len(forecasts)),
+            folds=self._folds(len(forecasts), horizon_days),
+            quantile_levels=tuple(levels),
+        )
+
+    def test_a_fixture_covered_at_every_origin_has_a_degenerate_coverage_interval(self):
+        """The acceptance criterion, and the mutation target.
+
+        Every actual falls strictly inside its own interval, so every indicator
+        is `1`, the series has zero variance, **any** resample of it returns
+        `1.0`, and the interval collapses to `(1.0, 1.0)` at both endpoints.
+        The expected value comes from how the fixture is built and never from a
+        run.
+
+        **This is `PairedComparisonTests`' trick a second time and is not new
+        here.** It is the right one for the same reason: a numeric interval
+        pinned from a run agrees with any mutation that moves the run and the
+        literal together, and a degenerate case does not.
+
+        The second assertion is the block length. A resample at block length 1
+        *is* the independence assumption wearing the bootstrap's name, and the
+        degenerate endpoints cannot see it -- at zero variance every block
+        length returns `1.0`. Three is what folds stepping one day at a time
+        with three-day horizons put live at the busiest point, which is a fact
+        about `_folds` above and not about any run.
+
+        **What this criterion does not reach: see the class docstring's
+        mutation 3.** A Wald interval survives both assertions.
+        """
+
+        report = self._report(self._forecasts([10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0], 5.0))
+
+        calibration = interval_calibration(report, seed=CALIBRATION_SEED)
+
+        self.assertEqual(calibration.realized_coverage, 1.0)
+        self.assertEqual(calibration.coverage_interval, (1.0, 1.0))
+        self.assertEqual(calibration.block_length, CALIBRATION_BLOCK_LENGTH)
+
+    def test_the_declared_probability_is_read_off_the_report_not_off_the_contract(self):
+        """A run at a narrower grid declares a narrower probability.
+
+        `INTERVAL_PROBABILITY` is `0.95 - 0.05` because that is what
+        `contract.QUANTILE_LEVELS` says *here*. A report is a record of what a
+        run declared, and the two are the same number only for as long as
+        nobody changes the grid. A report at `(0.10, ..., 0.90)` declares
+        `0.80`, and a calibration statement that answered `0.90` for it would
+        be comparing a realized coverage to a probability the run never
+        claimed.
+        """
+
+        narrow = self._report(
+            self._forecasts([10.0, 11.0, 12.0, 13.0], 5.0),
+            levels=(0.10, 0.30, 0.50, 0.70, 0.90),
+        )
+        contractual = self._report(self._forecasts([10.0, 11.0, 12.0, 13.0], 5.0))
+
+        self.assertAlmostEqual(
+            interval_calibration(narrow, seed=CALIBRATION_SEED).declared_probability,
+            0.80,
+        )
+        self.assertEqual(
+            interval_calibration(contractual, seed=CALIBRATION_SEED).declared_probability,
+            INTERVAL_PROBABILITY,
+        )
+
+    def test_a_report_declaring_no_grid_is_refused_rather_than_given_the_contracts(self):
+        """`BacktestReport.quantile_levels` defaults empty; a default here would lie.
+
+        Reports are constructed by hand elsewhere in this suite to exercise a
+        reporter, and those carry no grid. Substituting `QUANTILE_LEVELS` would
+        report a declaration the run did not make, so the refusal is a
+        `ValueError` and not a fallback.
+        """
+
+        bare = BacktestReport(
+            forecasts=self._forecasts([10.0, 11.0], 5.0),
+            mae_bps=0.0,
+            interval_coverage=1.0,
+        )
+
+        with self.assertRaises(ValueError):
+            interval_calibration(bare, seed=CALIBRATION_SEED)
+
+    def test_a_report_with_no_forecasts_has_no_calibration(self):
+        empty = BacktestReport(
+            forecasts=[],
+            mae_bps=0.0,
+            interval_coverage=0.0,
+            quantile_levels=tuple(QUANTILE_LEVELS),
+        )
+
+        with self.assertRaises(ValueError):
+            interval_calibration(empty, seed=CALIBRATION_SEED)
+
+    def test_a_partly_covered_fixture_reports_the_indicator_mean_and_a_live_interval(self):
+        """Six of eight covered: the centre is `0.75` by construction.
+
+        The contrast with the acceptance criterion is the point. A series with
+        variance produces endpoints that differ, so the degenerate case above
+        is a property of the zero-variance series and not something this
+        function does to every input.
+        """
+
+        report = self._report(
+            self._forecasts(
+                [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0], 5.0, misses=(2, 6)
+            )
+        )
+
+        calibration = interval_calibration(report, seed=CALIBRATION_SEED)
+        lower, upper = calibration.coverage_interval
+
+        self.assertEqual(calibration.realized_coverage, 0.75)
+        self.assertEqual(calibration.realized_coverage, report.interval_coverage)
+        self.assertLess(lower, upper)
+        self.assertGreaterEqual(lower, 0.0)
+        self.assertLessEqual(upper, 1.0)
+
+    def test_a_declared_block_length_overrides_the_one_measured_off_the_folds(self):
+        """`mae_bootstrap_interval`'s argument, with `mae_bootstrap_interval`'s meaning.
+
+        Carried so a caller can ask what an independence assumption would have
+        produced -- block length 1 -- rather than being unable to state the
+        contrast at all.
+        """
+
+        report = self._report(
+            self._forecasts(
+                [10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0], 5.0, misses=(2, 6)
+            )
+        )
+
+        self.assertEqual(
+            interval_calibration(report, seed=CALIBRATION_SEED, block_length=1).block_length,
+            1,
+        )
+        self.assertNotEqual(
+            interval_calibration(report, seed=CALIBRATION_SEED, block_length=1).coverage_interval,
+            interval_calibration(report, seed=CALIBRATION_SEED).coverage_interval,
+        )
+
+    def test_an_actual_on_its_own_bound_is_covered_as_the_backtest_counts_it(self):
+        """`lower <= actual <= upper`, both ends closed, as `rolling_persistence_backtest` does.
+
+        Added after mutation 6 survived: no other fixture in this class puts an
+        actual *on* a bound, and the acceptance criterion is built from actuals
+        strictly inside, so a strict-inequality indicator was indistinguishable
+        from the closed one. The closed interval is not a preference here -- it
+        is the definition the published `interval_coverage` was computed under,
+        and a calibration statement counting coverage differently from the
+        number it is calibrating would be relating two different quantities.
+        """
+
+        on_the_bound = [
+            Forecast(5.0, 10.0, 5.0, 15.0, (5.0, 7.5, 10.0, 12.5, 15.0)),
+            Forecast(15.0, 10.0, 5.0, 15.0, (5.0, 7.5, 10.0, 12.5, 15.0)),
+        ]
+        report = BacktestReport(
+            forecasts=on_the_bound,
+            mae_bps=5.0,
+            interval_coverage=1.0,
+            folds=self._folds(2),
+            quantile_levels=tuple(QUANTILE_LEVELS),
+        )
+
+        calibration = interval_calibration(report, seed=CALIBRATION_SEED)
+
+        self.assertEqual(calibration.realized_coverage, 1.0)
+        self.assertEqual(calibration.coverage_interval, (1.0, 1.0))
+
+    def test_the_centre_comes_from_the_resampled_series_not_from_the_reports_field(self):
+        """A report whose stated coverage disagrees with its own forecasts.
+
+        Added after mutation 5 survived. On anything
+        `rolling_persistence_backtest` produced the two agree by construction,
+        so no honest fixture separates them -- which is precisely why the
+        decision to derive the centre from the resampled series was invisible
+        to the suite. `BacktestReport` is constructed by hand elsewhere in this
+        file, so a report carrying a stale `interval_coverage` beside live
+        forecasts is a thing that can exist, and the calibration statement must
+        describe the series its interval was drawn from.
+        """
+
+        inconsistent = BacktestReport(
+            forecasts=self._forecasts([10.0, 11.0, 12.0, 13.0], 5.0),
+            mae_bps=0.0,
+            interval_coverage=0.0,
+            folds=self._folds(4),
+            quantile_levels=tuple(QUANTILE_LEVELS),
+        )
+
+        calibration = interval_calibration(inconsistent, seed=CALIBRATION_SEED)
+
+        self.assertEqual(calibration.realized_coverage, 1.0)
+        self.assertNotEqual(calibration.realized_coverage, inconsistent.interval_coverage)
+
+    def test_the_published_persistence_record_carries_both_halves_of_the_statement(self):
+        """The record is read, never written, and no verdict is asserted on it.
+
+        `docs/runs/` holds records of runs that happened, at `568c9ba`. This
+        asserts only that the two fields this block relates are both present
+        and well formed, and that a calibration statement -- a realized
+        coverage, a declared probability, and the fold count they are over --
+        can be formed from what the record carries.
+
+        It deliberately does **not** assert that `0.810` is below `0.900`.
+        That is a research finding, it is reported in the block report, and an
+        assertion here would be this suite promising to keep a measurement
+        true.
+        """
+
+        record = json.loads(
+            (
+                Path(__file__).parents[1] / "docs" / "runs" / "persistence_funding.json"
+            ).read_text(encoding="utf-8")
+        )
+        metrics = record["metrics"]
+
+        self.assertIn("interval_coverage", metrics)
+        self.assertIn("interval_probability", metrics)
+
+        realized = metrics["interval_coverage"]
+        declared = metrics["interval_probability"]
+        origins = record["folds"]["count"]
+
+        for value in (realized, declared):
+            self.assertIsInstance(value, float)
+            self.assertTrue(math.isfinite(value))
+            self.assertGreaterEqual(value, 0.0)
+            self.assertLessEqual(value, 1.0)
+        self.assertIsInstance(origins, int)
+        self.assertGreater(origins, 0)
+
+        # The fold count the statement is over is stated twice in the record
+        # and the two must agree, or the statement has no unambiguous `n`.
+        self.assertEqual(metrics["forecast_count"], origins)
+
+        # What the record cannot supply: the interval. It is a function of the
+        # indicator *series*, and the record publishes the series' mean and its
+        # length and no per-origin rows. Asserted as the absence it is, so that
+        # a later block which publishes them has to come back here and say so.
+        self.assertNotIn("forecasts", record)
+        self.assertEqual(set(record["folds"]), {"count", "first", "last"})
 
 
 if __name__ == "__main__":
