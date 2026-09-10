@@ -2677,6 +2677,159 @@ def mae_bootstrap_interval(
     return lower, upper, block
 
 
+@dataclass(frozen=True)
+class IntervalCalibration:
+    """A run's realized interval coverage, beside the probability it declared.
+
+    **A dataclass and not a tuple, unlike `mae_bootstrap_interval`.** That
+    function returns three values and a reader can hold three positions in
+    their head. This one carries seven, and a seven-tuple is a shape where a
+    caller who transposes `seed` and `replications` gets no error and a
+    different interval. `PairedComparisonReport` made the same call for the
+    same reason.
+
+    **Every field is required**, for `PairedComparisonReport`'s reason:
+    nothing constructs this by hand. It exists only as
+    `interval_calibration`'s return value, and an optional field here would be
+    a place a calibration statement could quietly fail to say what it was run
+    at.
+    """
+
+    #: The mean of the coverage indicator series -- the fraction of scored
+    #: origins whose actual fell inside its own interval. Computed from the
+    #: same series the interval below is resampled from, deliberately, rather
+    #: than read off `report.interval_coverage`: a centre and an interval
+    #: derived from two different places can agree today and drift later, and
+    #: the identity that the interval surrounds *this* number is the one thing
+    #: a reader of a calibration statement must not have to take on trust.
+    #: `rolling_persistence_backtest` computes the same mean from the same
+    #: forecasts, so the two agree by construction on any report it produced.
+    realized_coverage: float
+    #: The probability the run's own declared quantile grid spans, from
+    #: `report.quantile_levels` -- the outermost declared pair -- and not from
+    #: the module constant and not from a literal. See `interval_calibration`.
+    declared_probability: float
+    #: The interval on `realized_coverage`, and the resample structure behind
+    #: it. The block length is carried beside the endpoints for
+    #: `mae_bootstrap_interval`'s reason -- an interval whose resample
+    #: structure is unstated cannot be reproduced -- and it matters more here:
+    #: a block length of 1 *is* the independence assumption, and a reader who
+    #: cannot see the block length cannot tell which of the two was run.
+    coverage_interval: Tuple[float, float]
+    block_length: int
+    seed: int
+    replications: int
+    level: float
+
+
+def interval_calibration(
+    report: BacktestReport, *, seed: int, block_length: Optional[int] = None
+) -> IntervalCalibration:
+    """Relate a run's realized interval coverage to the probability it declared.
+
+    `PLAN.md`'s Phase 2 exit criterion is two clauses -- a model that beats
+    persistence out of sample *and remains calibrated in the tails*.
+    `paired_model_comparison` instruments the first. Until this function the
+    second had nothing at all: `docs/runs/persistence_funding.json` carries
+    `interval_coverage` and `interval_probability` adjacent in one object, over
+    2080 folds, and **no code in this repository related them.** Nothing
+    subtracted, compared, or put an interval on the difference, so a reader was
+    left to do the arithmetic unaided and then to guess whether the gap was
+    sampling noise at that fold count or the benchmark's intervals being wrong.
+
+    The quantity is the **coverage indicator series**: one value per scored
+    origin, `1` if `lower_bps <= actual_bps <= upper_bps` and `0` otherwise,
+    read off `report.forecasts`, which already carries all three per origin.
+    Its mean is what the backtest publishes as `interval_coverage`.
+
+    **It is a bootstrap and not a binomial, and the reason is
+    `paired_model_comparison`'s reason.** A binomial or normal-approximation
+    interval on a proportion assumes the origins are independent. They are not:
+    the folds overlap in horizon -- that is the whole argument behind
+    `_maximum_horizon_overlap` -- so an independence-assuming interval here
+    would be too narrow for the same structural reason that resampling two
+    models apart was too narrow there. Every interval this project reports
+    comes through `metrics.stationary_bootstrap_interval`, and this one does
+    too.
+
+    **The declared probability comes from the report, not from a literal and
+    not from the module constant.** `INTERVAL_PROBABILITY` is derived from
+    `contract.QUANTILE_LEVELS`, which is what *this checkout* declares; a
+    report is a record of what *a run* declared. They are equal for every
+    report `rolling_persistence_backtest` produced, because that function
+    refuses a model whose levels disagree with the contract -- but reading the
+    report keeps the statement true across a change to the grid, and a
+    calibration statement that hard-codes `0.90` is a transcribed number in the
+    one place it must not be.
+
+    A report that cannot say which levels it ran at is **refused rather than
+    defaulted** to the contract's, for `backtest_document`'s reason: a field
+    that cannot be computed is absent, never assumed.
+
+    Args:
+        report: a report from `rolling_persistence_backtest`, or any report
+            carrying forecasts and the quantile grid they were drawn at.
+        seed: required, as the metric requires it. See `_report_seed`.
+        block_length: mean block length. `None`, the default, measures it off
+            the report's own folds via `_maximum_horizon_overlap`, exactly as
+            `mae_bootstrap_interval` does.
+
+    Returns:
+        An `IntervalCalibration`.
+
+    Raises:
+        ValueError: if the report carries no forecasts, or fewer than two
+            quantile levels, from which no declared probability can be formed.
+    """
+
+    forecasts = list(report.forecasts)
+    if not forecasts:
+        raise ValueError("a report with no forecasts has no coverage to calibrate")
+    levels = tuple(report.quantile_levels)
+    if len(levels) < 2:
+        raise ValueError(
+            f"the report declares {len(levels)} quantile level(s), so it states "
+            "no interval and no probability for one to span; a calibration "
+            "statement cannot be formed from it, and substituting the "
+            "contract's grid would report a declaration the run did not make"
+        )
+    declared = levels[-1] - levels[0]
+    block = (
+        _maximum_horizon_overlap(report.folds)
+        if block_length is None
+        else int(block_length)
+    )
+    # Floats, not bools: `stationary_bootstrap_interval` refuses a non-finite
+    # statistic and a mean over ints would still be a float, but the series is
+    # what a reader is being asked to believe is resampled, and 1.0/0.0 is the
+    # series the mean is of.
+    covered = [
+        1.0 if item.lower_bps <= item.actual_bps <= item.upper_bps else 0.0
+        for item in forecasts
+    ]
+
+    def coverage(indices: Sequence[int]) -> float:
+        return sum(covered[i] for i in indices) / len(indices)
+
+    lower, upper = stationary_bootstrap_interval(
+        coverage,
+        len(covered),
+        block_length=block,
+        seed=seed,
+        replications=BOOTSTRAP_REPLICATIONS,
+        level=BOOTSTRAP_LEVEL,
+    )
+    return IntervalCalibration(
+        realized_coverage=sum(covered) / len(covered),
+        declared_probability=declared,
+        coverage_interval=(lower, upper),
+        block_length=block,
+        seed=seed,
+        replications=BOOTSTRAP_REPLICATIONS,
+        level=BOOTSTRAP_LEVEL,
+    )
+
+
 #: The repository whose commit a record names. Resolved from this module's own
 #: location rather than from the process's working directory: the commit a
 #: record must identify is the one the *code that ran* was read from, and a
