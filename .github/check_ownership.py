@@ -81,6 +81,20 @@ HUMAN_ONLY = (
     # is not.
     "scripts/",
     "docs/status.json",
+    # The recruiter-facing path and everything generated into it. Added 10 Sep
+    # with the results block: README.md was already here, and a page whose
+    # figures are generated is only as reserved as the generator and the guard
+    # beside it. Same argument as docs/status.json and scripts/ above -- a
+    # reserved page whose source is not reserved is a page anyone can rewrite
+    # one level down.
+    "docs/EXECUTIVE_SUMMARY.md",
+    "docs/figures/",
+    "examples/",
+    "notebooks/",
+    # The guard that holds the generated blocks to their generator. Same
+    # reasoning as tests/test_docs_freshness.py: it checks human-owned pages, so
+    # it is human-owned too.
+    "tests/test_generated_results.py",
 )
 
 # Owned by neither track. Allowed, but always surfaced for human review.

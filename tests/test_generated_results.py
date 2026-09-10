@@ -1,0 +1,162 @@
+"""The published results block, the figure and the notebook are generated.
+
+`README.md` now carries a results table, a status sentence and a figure. Every
+figure in them comes out of `docs/runs/` and `docs/status.json`; none of it is
+typed. That is not a style preference. Three documents in this repository once
+published a test count that had been true months earlier, `REPRODUCIBILITY.md`
+published a command that had not run for four commits, and Milestone A's exit
+criterion was that no figure from a run record is transcribed into any Markdown
+page. A results table is the most decay-prone claim a repository can publish: it
+is stale the next time anything is scored.
+
+So `scripts/emit_results.py` renders those artifacts and this module asserts that
+what is committed is what it renders **now**, from the records as they stand. A
+record that moves without the page moving is a red suite rather than a page
+nobody re-read.
+
+The notebook is here for the same reason. `notebooks/01_portfolio_walkthrough.ipynb`
+is generated from `examples/walkthrough.py`'s own cells: a notebook committed
+beside a script is a second copy of it, and the copy nobody executes is the one
+that rots.
+
+Mutation record
+---------------
+
+Run in a disposable copy under `$HOME`, `-B` with `PYTHONDONTWRITEBYTECODE=1`,
+control green before and after all four (693 tests, OK). Every mutation was
+confirmed present in the file before its result was read, and each was applied to
+a restored copy rather than on top of the last, because two of them touch the
+same file and stacking them would have credited a kill to the wrong edit.
+
+1. One digit changed by hand inside the README's generated block, the mean
+   absolute error, `3.14 bp` -> `3.15 bp`. Kills
+   `test_every_generated_artifact_is_what_the_generator_renders` --
+   `AssertionError: Lists differ: [] != ['README.md']`, and nothing else. This is
+   the historical failure replayed: an edited number in a published table.
+2. One `# %%` cell marker deleted from `examples/walkthrough.py`. Kills the same
+   assertion, naming `notebooks/01_portfolio_walkthrough.ipynb` and **not**
+   `README.md` -- `AssertionError`. The two artifacts fail independently, which
+   is what makes the message worth reading.
+3. `--feature` misspelled as `--features` in the walkthrough's `backtest`
+   invocation. Kills `test_every_command_the_walkthrough_runs_parses` --
+   `AssertionError`, naming the invocation -- and also the render-match
+   assertion, because the notebook is generated from the same file. Two
+   failures, one edit; the parse assertion is the one that names the defect.
+   Recorded because the caught type and the failing type differ: argparse exits
+   with `SystemExit(2)` rather than raising something a test can assert on, so
+   the assertion converts it, and a test that forgot to convert would pass by
+   never running.
+4. An `outputs` entry and an `execution_count` added to a notebook code cell.
+   Kills `test_the_notebook_stores_no_outputs` --
+   `AssertionError: Lists differ: [] != [1]` -- and the render-match assertion
+   with it.
+
+**Known-soft, and recorded rather than dressed up.** Mutation 4 shows that the
+third assertion is currently *carried* by the first: the generator never emits an
+output, so any notebook carrying one already differs from the render, and no
+input reaches the no-outputs assertion without tripping render-match first. It is
+not wrong and it is not independent. It becomes independent the day the notebook
+stops being generated from the script, which is exactly the day someone would
+start committing outputs into it.
+
+One mutation was considered and deliberately not run: retyping the generated
+table by hand, byte for byte. It cannot fail, because what is checked is that the
+committed bytes match the rendered bytes and not that a human did not type them.
+That is the stated limit of this guard rather than a kill it can claim.
+"""
+
+from __future__ import annotations
+
+import ast
+import importlib.util
+import json
+import unittest
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def load_generator():
+    path = REPO_ROOT / "scripts/emit_results.py"
+    spec = importlib.util.spec_from_file_location("emit_results", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def walkthrough_invocations():
+    """Every `run(...)` call in the walkthrough, as an argv list.
+
+    Read out of the source rather than by executing it: the point is that the
+    published commands parse, and executing them to find out would make this a
+    slow integration test that also happens to check argument spelling.
+    """
+
+    source = (REPO_ROOT / "examples/walkthrough.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    invocations = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "run":
+            continue
+        argv = []
+        for argument in node.args:
+            if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                argv.append(argument.value)
+            else:
+                # A computed argument -- a report path under a temporary
+                # directory. Its value cannot matter to whether the command
+                # parses, and substituting a placeholder keeps the check on the
+                # flags, which is where the rot was last time.
+                argv.append("PLACEHOLDER")
+        invocations.append(argv)
+    return invocations
+
+
+class GeneratedResultsTests(unittest.TestCase):
+    def test_every_generated_artifact_is_what_the_generator_renders(self):
+        generator = load_generator()
+        artifacts = generator.rendered(
+            generator.load(generator.PERSISTENCE),
+            generator.load(generator.EXCEEDANCE),
+        )
+        stale = []
+        for path, text in sorted(artifacts.items()):
+            current = path.read_text(encoding="utf-8") if path.exists() else None
+            if current != text:
+                stale.append(str(path.relative_to(REPO_ROOT)))
+        self.assertEqual(
+            [], stale,
+            "these are committed with content the generator no longer renders; "
+            "run: python3 scripts/emit_results.py")
+
+    def test_every_command_the_walkthrough_runs_parses(self):
+        from repo_model.cli import build_parser
+
+        invocations = walkthrough_invocations()
+        self.assertGreater(len(invocations), 0,
+                           "the walkthrough runs no commands; this guard would "
+                           "pass by having nothing to check")
+        broken = []
+        for argv in invocations:
+            try:
+                build_parser().parse_args(argv)
+            except SystemExit:
+                broken.append(" ".join(argv))
+        self.assertEqual([], broken,
+                         "examples/walkthrough.py runs commands the parser refuses")
+
+    def test_the_notebook_stores_no_outputs(self):
+        generator = load_generator()
+        document = json.loads(generator.NOTEBOOK.read_text(encoding="utf-8"))
+        carrying = [
+            index for index, cell in enumerate(document["cells"])
+            if cell.get("outputs") or cell.get("execution_count") is not None
+        ]
+        self.assertEqual([], carrying,
+                         "a committed notebook output is a result nobody re-ran")
+
+
+if __name__ == "__main__":
+    unittest.main()
