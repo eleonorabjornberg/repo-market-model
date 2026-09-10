@@ -1,3 +1,4 @@
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -1459,6 +1460,148 @@ class DailyPanelJoinTests(unittest.TestCase):
         self.assertIn("iorb", manifest["refused_columns"])
         self.assertEqual(manifest["row_count"], 2)
         self.assertEqual(manifest["source_shas"], ["c" * 64])
+
+
+class PanelDigestTests(unittest.TestCase):
+    """The manifest carries the digest of the panel bytes it describes.
+
+    Until this class, `write_daily_panel` recorded the panel's `"path"` and its
+    extent and no digest, so a manifest found beside a panel was a claim about
+    a *name*. `baseline._bind_build_manifest` could therefore bind a run record
+    to a manifest only on `row_count`, `start_date` and `end_date`, and said so
+    in the artifact as `build_manifest_binding.kind = "extent"` -- evidence that
+    two files describe the same span, not that either describes the other. Its
+    docstring names the gap as this writer's. This closes it: the manifest
+    carries `sha256`, lowercase hex, over the panel bytes as written, which is
+    the convention the run records already use. Comparing it in the binding is
+    Track B's and is not here.
+
+    The acceptance criterion is
+    `test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk`, and it is
+    also the mutation target. Its oracle shares no code path with `data.py`:
+    the test opens the written panel with `path.read_bytes()` and hashes those
+    bytes itself. That is the whole point of the test rather than an incidental
+    style. The available shortcut is to hash a second rendering of the panel --
+    the joined lines, the observations, the CSV re-emitted -- and on this
+    filesystem such a digest agrees with the bytes on disk by coincidence. A
+    second rendering can drift from the first without either being wrong, and a
+    digest over the string that was never the file is green through exactly the
+    drift a digest exists to catch.
+
+    Mutation record, 10 September 2026, CPython 3.9.6 on darwin. Applied in a
+    disposable copy under `$HOME`, never in the mount, carrying `data/`,
+    `.github/`, `.claude/`, `metadata/`, `.gitignore`, the root Markdown and
+    `docs/PROJECT_STATUS.md` -- `tests/test_docs_freshness.py` reads the last
+    three and `tests/test_ownership_hook.py` reads `.claude/`, and their absence
+    is a red control that looks like a finding. `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`. Unmutated control green in the copy before the first mutation
+    and again after the last was reverted; each was reverted before the next was
+    applied, and the branch carries none of them.
+
+    1. **The acceptance mutation, the one the brief required.** In
+       `write_daily_panel`, take the digest over the rendered text without its
+       trailing newline --
+       `hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()` instead of
+       `hashlib.sha256(path.read_bytes()).hexdigest()`. The panel is written
+       unchanged, the manifest is well formed, the digest is 64 lowercase hex
+       characters, and it is the digest of a string that is not the file.
+       Killed by exactly one test, `AssertionError`:
+       `test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk`, on the
+       first assertion, comparing the two hex digests. The criterion and the
+       mutation target did not come apart.
+
+    2. **The key never reaches the manifest.** Drop `"sha256": digest` from the
+       manifest dict and leave the digest computed. Killed by the same one
+       test, `KeyError: 'sha256'` -- an error rather than a failure, which is
+       the honest report: a manifest without the key is not a manifest making a
+       wrong claim, it is the state this block exists to leave behind.
+
+    **The finding, and it is the same one both mutations report: nothing else in
+    the suite noticed either.** Not `test_the_written_panel_records_its_cutoff_and_its_refusals`,
+    which reads this manifest and asserts five of its keys; not
+    `tests/test_baseline.py`, whose `_bind_build_manifest` is the function the
+    digest exists for. That is expected and is the reason this block is queued
+    before Track B's: the binding compares extent today and cannot compare a
+    digest it was never given. Until that lands, the only thing asserting the
+    manifest describes *these* bytes is the test above. A single-test kill list
+    is a thin guard, and saying so is worth more than a longer list would be.
+
+    Deliberately absent: a count of tests run. The kill lists name tests; a
+    total would be a transcribed number with nothing asserting it, which is the
+    drift `tests/test_docs_freshness.py` refuses in Markdown and no more
+    defensible here.
+    """
+
+    #: The same `ref_date` fixture source the join tests use, at one declared
+    #: lag. This class varies nothing about the registry; it needs a panel that
+    #: builds, not a panel that argues.
+    REGISTRY = {
+        "nyfed_sofr": {
+            "release_lag": {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 1,
+                "worst_case_calendar_days": 6,
+                "available_time": "15:00",
+                "timezone": "America/New_York",
+                "note": "fixture",
+            }
+        }
+    }
+
+    def observation(self, ref_date: date, value: float):
+        return PointInTimeObservation(
+            series_id="SOFR",
+            ref_date=ref_date,
+            available_at=datetime.combine(
+                ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+            ),
+            value=value,
+            vintage_id=f"v{ref_date.isoformat()}",
+            source_sha="a" * 64,
+        )
+
+    def written_panel(self):
+        """Build a small panel, write it, and return `(panel_path, manifest)`."""
+
+        days = [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)]
+        build = build_daily_panel(
+            [self.observation(day, 4.30 + index / 100) for index, day in enumerate(days)],
+            self.REGISTRY,
+            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=("sofr",),
+        )
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "panel.csv"
+        manifest_path = write_daily_panel(build, path, source_shas=("c" * 64,))
+        return path, json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    def test_the_manifest_digest_is_the_digest_of_the_bytes_on_disk(self):
+        """The acceptance criterion, and the mutation target. See the class docstring.
+
+        The oracle is the file: `path.read_bytes()` and `hashlib` in this test,
+        with nothing from `data.py` between them. A manifest whose `sha256` is
+        the digest of anything else -- the rendered text, that text without its
+        trailing newline, a re-emission of the same observations -- describes a
+        panel that was never written, however close the two happen to be.
+        """
+
+        path, manifest = self.written_panel()
+
+        on_disk = path.read_bytes()
+        self.assertEqual(
+            manifest["sha256"],
+            hashlib.sha256(on_disk).hexdigest(),
+            "the manifest must carry the digest of the bytes that reached disk",
+        )
+        self.assertEqual(
+            manifest["sha256"],
+            manifest["sha256"].lower(),
+            "the run records write lowercase hex and the manifest joins them",
+        )
+        self.assertEqual(len(manifest["sha256"]), 64)
 
 
 class IdentityVerdictTests(unittest.TestCase):
