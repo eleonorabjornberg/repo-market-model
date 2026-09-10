@@ -2157,13 +2157,23 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
        (`last = date.max`) instead of raising `DataContractError`. Kills
        **nothing**: 743 tests OK. So the three refusals the grammar added to
        `declared_structural_zeros` -- no `through`, an unparseable bound,
-       `from` later than `through` -- are unguarded. They are real refusals and
-       they run, but no test asserts any of them, and the first is exactly the
-       declaration that would silently annex every month the source has not
-       reached. Recorded here rather than repaired: a test for them is a second
-       acceptance criterion, which is a block and not a patch. It belongs with
-       `declared_structural_zeros` in `tests/test_data.py`, which today tests
-       nothing about structural zeros at all.
+       `from` later than `through` -- were unguarded when this was run. They
+       are real refusals and they run, but no test asserted any of them, and
+       the first is exactly the declaration that would silently annex every
+       month the source has not reached. Recorded here rather than repaired: a
+       test for them is a second acceptance criterion, which is a block and
+       not a patch.
+
+       **Repaired at the block after next**, where it belonged: with
+       `declared_structural_zeros` in `tests/test_data.py`, which at the time
+       of this run tested nothing about structural zeros at all.
+       `StructuralZeroPeriodGrammarTests` there now asserts each of the three
+       against the phrase only that refusal writes, and its own record carries
+       the three mutations. This one is the reason the guard had to be written
+       that way: with the `through` requirement made a no-op, the entry is
+       still refused by `_structural_zero_bound` behind it, so the refusal is
+       killable only by its message and never by "DataContractError not
+       raised".
     """
 
     #: Three filers over the floor, none of whose repo rows is the facility. The
