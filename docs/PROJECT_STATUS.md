@@ -203,13 +203,15 @@ Stated explicitly, because each is easy to mistake for something stronger.
   thirds of the current one -- was weak in the eras it was not calibrated on.
   Each era entry is calibrated from an observed complete month, assembled by
   `346d4ff`'s cross-section rule rather than by report date.
-- **A declared field has never produced data.** `mmf_on_rrp` is declared in the
-  source registry and has emitted no row against any real archive. Its derivation
-  searches security-description text for a counterparty name. For the period held
-  the true value is probably near zero, which is precisely why that period cannot
-  distinguish a working derivation from a broken one. `mmf_repo_holdings` is
-  affected wherever this is, since private-sector repo is the difference between
-  the two series.
+- **A declared field was reported as never producing data, and it produces the
+  facility.** `mmf_on_rrp` emits 200 rows over 156 reference dates, carries nothing
+  until the first month-end after the ON RRP facility opened, and peaks at 2,273.8 bn
+  on 2022-12-31 -- 76.4% of `mmf_repo_holdings`. This page stated the opposite on
+  evidence from the single archive then held: `FEDERAL RESERVE` occurs 18,119 times
+  across the 87 of 97 archives held now, and never once in the description field the
+  derivation was said to search. What remains true is the half this page did not lead
+  with -- an absent value and a parse failure still have the same representation, and
+  the series now names the month where that matters (2026-07-31).
 - **The N-MFP identity tolerance is a single absolute bound** and after
   calibration it stays one. That is now a decision rather than a deferral
   (`febba6d`), and two claims this page previously made about it were measured
@@ -262,10 +264,10 @@ where they left off.
    assembled as one cross-section (`346d4ff`) and the coverage floor is declared per
    era (`94bf2db`). What is not yet done is recalibrating the identity tolerance (item
    5) against the cross-sections this unlocks.
-4. Establish whether `mmf_on_rrp` is derived correctly, against a period in which
-   money funds held Fed reverse repo at scale, and make an absent declared field
-   distinguishable from a parsing failure. The backfill supplies the evidence this
-   needs; it does not fix the derivation.
+4. ~~Establish whether `mmf_on_rrp` is derived correctly~~ -- done: it is, against
+   2022-12-31, when money funds held 2,273.8 bn of Fed reverse repo, 76.4% of their repo
+   book (`scripts/nmfp_on_rrp_channel.py`). What is not done is making an absent declared
+   field distinguishable from a parsing failure, which is now the whole of this item.
 5. Calibrate the N-MFP identity tolerance -- after item 3, not before -- and split
    the Treasury-settlement aggregate into its bill, coupon and SOMA components.
    Both decisions are recorded in `DATA_QUALITY_DECISIONS.md`.

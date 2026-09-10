@@ -397,38 +397,68 @@ on data nobody has seen, and a differently formatted extract should fail loudly 
 than parse plausibly. That is the posture of refusing an unreadable header, applied to a
 value rather than to a column name.
 
-## The ON RRP channel is declared, empty, and unverified
+## The ON RRP channel is derived, and this page was wrong about it
 
-`mmf_on_rrp` is a declared field of the source registry that has never produced a single
-row against real data. It is derived by testing three security-**description** fields of
-a repo holding for the substring `FEDERAL RESERVE`; the string occurs zero times in the
-holdings table of the archive held. The one test covering the branch asserts a value
-against a fixture written for the purpose, which demonstrates that the match operator
-works, not that the data keeps the counterparty where the adapter looks for it.
+**Superseded, and the correction is the finding.** This section previously read *"The ON
+RRP channel is declared, empty, and unverified"*, and stated that `mmf_on_rrp` "has never
+produced a single row against real data" and that `FEDERAL RESERVE` "occurs zero times in
+the holdings table of the archive held". Both sentences were true of the single archive
+held when they were written. Ninety-seven archives are held now and both are false.
 
-Two consequences:
+**The derivation is a command, not prose.** `scripts/nmfp_on_rrp_channel.py` counts the
+occurrences per field without importing the adapter, and under `--series` prints the series
+the adapter itself produces. Every number below comes from one run of it.
 
-- Absence is currently **indistinguishable from a parse failure**. No row is emitted,
-  `structural_zeros` is empty and `structural_zeros_reviewed` is `false`, so "money funds
-  held no Fed ON RRP" and "we never found it" have the same representation.
-- `mmf_repo_holdings` is affected wherever this is. The Fed leg is added to both series,
-  so private-sector money-fund repo is the difference between them. A missing ON RRP leg
-  does not merely blank one series; it silently reclassifies Fed exposure as private repo
-  in the other.
+**Where Form N-MFP records repurchase-agreement counterparty identity: in `NAMEOFISSUER`.**
+That was this section's first required resolution and it is answered. For a repurchase
+agreement the counterparty *is* the issuer, so there is no counterparty table to look for.
+`NMFP_COLLATERALISSUERS` is the repo-specific table and it carries collateral issuers,
+which is a different fact -- and carries one occurrence of the string across all
+ninety-seven archives. The join in `src/repo_model/ingest.py` names its variable
+`counterparty`, and the name is accurate.
 
-For the reference date currently held the true value is very likely near zero, since the
-Fed's own ON RRP series runs under one billion daily over the same period. **That is not
-evidence the derivation works.** Where the true value is near zero, a correct matcher and
-a broken one are observationally identical. Only a period in which money funds held ON
-RRP at scale distinguishes them.
+- `FEDERAL RESERVE` occurs **18,119 times** in the three joined fields, in **87 of the 97**
+  archives: 9,137 in `NAMEOFISSUER`, 8,982 in `TITLEOFISSUER`, and **none at all** in
+  `BRIEFDESCRIPTION`. Calling the derivation a search of "security-description text" -- as
+  this page and `PROJECT_STATUS.md` both did -- named the one field of the three that
+  contributes nothing.
+- Those matches fall on 9,175 holdings rows, of which **9,161 are repo-category**. The
+  census reaches that by a deliberately loose criterion, any `INVESTMENTCATEGORY`
+  containing "Repurchase Agreement", while the adapter matches a closed set per era. Two
+  criteria that could disagree do not.
+- The adapter emits **200 `mmf_on_rrp` rows over 156 reference dates**, and the series is
+  the facility: nothing until 2013-09-30, the first month-end after the ON RRP facility
+  opened, at 48.6 bn; a peak of **2,273.8 bn on 2022-12-31, 76.4% of `mmf_repo_holdings`**
+  at that reference date; 6.8 bn at 2026-06-30. Two observations precede the facility --
+  1.2 bn at 2011-03-31 and 0.8 bn at 2012-11-30 -- and are not explained here.
 
-**Required resolution:** establish where Form N-MFP records repurchase-agreement
-counterparty identity; make an absent declared field recordable without coercing it to
-`0.0`, which would destroy the very distinction the structural-zero declaration exists to
-preserve; and either demonstrate the derivation against a period of material ON RRP usage
-or declare the field unverified rather than declared. An unqualified
-`structural_zeros_reviewed: true` justified only by a near-zero period is not a
-resolution.
+**`mmf_repo_holdings` is not reclassifying Fed exposure as private repo.** This page warned
+that a missing ON RRP leg would silently do so. The leg is present, so it does not, and the
+size of the error the warning described is now measurable rather than hypothetical: it
+would have peaked at the same 2,273.8 bn.
+
+**What survives is the sharper half.** Absence is still indistinguishable from a parse
+failure. `structural_zeros` is empty and `structural_zeros_reviewed` is `false`, and the
+series now supplies the instance that argument always lacked. Thirty-three repo report
+months carry no `mmf_on_rrp` row, and they are two different things wearing one
+representation: thirty-two run 2010-11 to 2013-08 and precede the facility, so their true
+value is zero for a reason a reviewer could state, while one is 2026-07-31, a month in
+which the facility existed and the month before it reported 6.8 bn. Nothing in the panel
+tells them apart, and a field that cannot say "zero, and here is why" cannot say it for
+either.
+
+**How this stayed wrong after it was known.** The counts above were derived two days before
+this correction, into a track memo that `.gitignore` excludes, and never transcribed. The
+brief that queued the question afterwards was written from this page and spent a block
+re-deriving an answer that already existed. The mechanism is not carelessness: **no test in
+this suite can see `data/raw/`**, so every claim this repository makes about the archives is
+prose, and prose does not decay-check. The sentence was true when written, and nobody
+re-measured it when ninety-six more archives arrived.
+
+**Still required:** make an absent declared field recordable without coercing it to `0.0`,
+which would destroy the very distinction the structural-zero declaration exists to
+preserve; and review the structural zeros the series now makes reviewable. An unqualified
+`structural_zeros_reviewed: true` justified by a near-zero period is still not a resolution.
 
 ## Decision rule
 
