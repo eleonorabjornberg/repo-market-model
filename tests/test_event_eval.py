@@ -1013,7 +1013,7 @@ class RegimeDeclarationTests(EvaluatorHarness):
     `tests/test_baseline.py::ExceedancePredictorCoverageTests` is the
     counterpart and it landed already, discovering factories by their
     `-> ExceedancePredictor` annotation exactly as `_forecast_implementations`
-    discovers implementers by subclass. It fired on the first run of this block,
+    discovers implementers by the pair of methods they offer. It fired on the first run of this block,
     before any test was written -- `['threshold_exceedance'] != []` -- which is
     the guard doing its job and is why `ThresholdExceedanceTests` exists. No
     guard was built here; a conformance case was added because the guard that

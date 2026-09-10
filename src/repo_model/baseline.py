@@ -363,7 +363,7 @@ class FittedForecastModel(Protocol):
 
     Structural, not nominal: nothing declares that it implements this, and
     `tests/test_contract.py::ForecastInterfaceCoverageTests` discovers the
-    implementations in this module rather than reading a list.
+    implementations by walking the package rather than reading a list.
     """
 
     cutoff: date
