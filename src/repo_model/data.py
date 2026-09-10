@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 import re
@@ -1856,6 +1857,21 @@ def write_daily_panel(
     The manifest is the committable half, as with the N-MFP archive set: the
     panel bytes are derived from gitignored raw snapshots and are not tracked.
     Returns the manifest path.
+
+    The manifest carries `sha256`, the lowercase hex SHA-256 of the panel bytes
+    as written -- the same convention the run records use. It is read back off
+    disk with `path.read_bytes()` rather than taken over the text this function
+    just rendered. The two agree here and would agree on most inputs, which is
+    exactly why the distinction has to be made deliberately: a digest over a
+    second rendering is a claim about a string that was never the file, and it
+    stays green while the encoding, the line terminator or the write itself
+    drifts away from it. `path` is what a later reader will hash, so `path` is
+    what this hashes.
+
+    Without it a manifest was a claim about a *name*: `baseline._bind_build_manifest`
+    could bind a run record to it only by extent -- row count and end dates --
+    and said so in the artifact as `build_manifest_binding.kind = "extent"`.
+    Comparing the digest there is that function's to add, not this one's.
     """
 
     header = ["date", *build.built_columns]
@@ -1867,6 +1883,8 @@ def write_daily_panel(
             cells.append("" if value is None else format(value, ".15g"))
         lines.append(",".join(cells))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # The bytes on disk, not the text above: see the docstring.
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
 
     dates = [observation.date for observation in build.observations]
     manifest_path = path.with_suffix(path.suffix + ".manifest.json")
@@ -1875,6 +1893,7 @@ def write_daily_panel(
         "build_cutoff": build.build_cutoff.isoformat(),
         "decision_time": str(build.decision_time),
         "row_count": len(build.observations),
+        "sha256": digest,
         "start_date": dates[0].isoformat(),
         "end_date": dates[-1].isoformat(),
         "built_columns": list(build.built_columns),
