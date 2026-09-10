@@ -468,6 +468,25 @@ which would destroy the very distinction the structural-zero declaration exists 
 preserve; and review the structural zeros the series now makes reviewable. An unqualified
 `structural_zeros_reviewed: true` justified by a near-zero period is still not a resolution.
 
+## Dealer Treasury positions: `PDPOSGST-TOT`
+
+**Decided by the human:** `dealer_treasury_position` maps to the NY Fed Primary Dealer
+Statistics series `PDPOSGST-TOT`, net outright positions in Treasury securities, total.
+
+What "total" covers was checked rather than read off the label. In the tracked fixture
+`tests/fixtures/snapshots/nyfed-primary-dealer/latest.csv`, at its weekly as-of date,
+`PDPOSGST-TOT` equals the sum of bills (`PDPOSGS-B`), floating-rate notes
+(`PDPOSGS-BFRN`), nominal coupons across every maturity bucket (`PDPOSGSC-*`) and TIPS
+across every maturity bucket (`PDPOSTIPS-*`), exactly. So the column includes TIPS and
+FRNs; a reader who wants nominal coupons alone, or wants to separate bill from coupon
+inventory as the settlement split does, needs the components, not the total.
+
+Not yet wired. `contract.py` keeps the column in `UNSOURCED_FEATURES` until the FR 2004
+adapter declares its source; the mapping lands with it. Two properties of the export the
+adapter has to respect: each series carries its own as-of date, so no date may be taken
+from the file as a whole; and `*` marks a value suppressed for confidentiality, which is
+neither zero nor a failed read.
+
 ## Decision rule
 
 These are data-modeling decisions, not formatting cleanup. Each resolution requires:
