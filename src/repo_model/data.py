@@ -128,6 +128,34 @@ class CrossSectionCoverage:
     is no less complete for it. Recording it is what keeps "we have no
     observation" from being read off the panel as "we observed nothing", which
     is the same absent-is-not-zero distinction one level up from the rows.
+
+    `unmatched_derived_fields` is a **third** kind of absence, not more entries
+    in `absent_fields`, and that is why it is a separate field. `absent_fields`
+    says the archive could supply no observation: the table is not there, or the
+    report month has no declared vocabulary to read it with. This says the
+    opposite about the input and the same thing about the output -- the table was
+    present, readable and parsed, the field this one derives from *was* observed
+    for this cross-section, and the derivation ran over those very rows and
+    matched none of them. Folding the two together would lose the distinction
+    that makes the second worth recording: "we could not look" and "we looked and
+    found nothing" are different facts, and only the second is evidence about the
+    market.
+
+    Each entry is a `(field, disposition)` pair, the same shape as
+    `submission_types` above, where `disposition` is one of
+    `DERIVED_ABSENCE_DECLARED_ZERO` or `DERIVED_ABSENCE_UNDECLARED` -- whether
+    the source registry declares that field a structural zero at all. That is
+    the difference between "these funds held no Fed ON RRP" and "we never found
+    it", which is the sentence the published limitation says this repository
+    cannot currently write. It is recorded and never resolved: no `0.0` row is
+    emitted either way, because coercing an absent declared field to zero
+    destroys the distinction the structural-zero declaration exists to preserve.
+
+    Like `absent_fields` it does not affect `admitted`, and it is recorded for
+    excluded cross-sections as well as admitted ones. The record is a fact about
+    what the adapter observed in the archive, not a claim about what the panel
+    contains -- and a cross-section the floor dropped is precisely the one a
+    reader may want to re-examine.
     """
 
     source_id: str
@@ -140,6 +168,7 @@ class CrossSectionCoverage:
     submission_types: tuple = ()
     absent_fields: tuple = ()
     era_id: Optional[str] = None
+    unmatched_derived_fields: tuple = ()
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -154,6 +183,14 @@ class CrossSectionCoverage:
                 str(name): int(count) for name, count in self.submission_types
             },
             "absent_fields": list(self.absent_fields),
+            # Its own key, for the same reason it is its own field: a reader who
+            # cannot tell "the table was not there" from "the table was there and
+            # the derivation matched nothing" will read the second as the first,
+            # and the second is the one that carries information.
+            "unmatched_derived_fields": [
+                {"field": str(field), "disposition": str(disposition)}
+                for field, disposition in self.unmatched_derived_fields
+            ],
             "reason": self.reason,
         }
 
@@ -1043,6 +1080,94 @@ def declared_coverage_floor(
         entity_unit=entity_unit.strip(),
         eras=validate_coverage_eras(source_id, declaration["eras"]),
     )
+
+
+# The two readings of a derived field that ran and matched nothing. They are the
+# two halves of the sentence the published limitation says this repository cannot
+# write, and the only thing that separates them is whether the registry declares
+# the field a structural zero -- which is a reviewer's judgement recorded in
+# `metadata/sources.json`, not something a parser can conclude from an empty
+# match.
+#
+# Neither one is a zero. A declared structural zero means a reviewer has said the
+# true value is zero for a stateable reason; it still does not license this
+# adapter to write a `0.0` row, because a row is an observation and there was
+# none. The declaration is what lets a *reader* treat the gap as a zero, at the
+# point where they can also see who said so and on what grounds.
+DERIVED_ABSENCE_DECLARED_ZERO = "declared_structural_zero"
+DERIVED_ABSENCE_UNDECLARED = "no_declaration"
+
+
+def declared_structural_zeros(
+    source_id: str,
+    source: Mapping[str, object],
+) -> Mapping[str, str]:
+    """Read one source's declared structural zeros, each field to the `when` it names.
+
+    This is the registry declaration nothing in this package used to read. It was
+    declared, shape-checked by `tests/test_contract.py`, and never consulted --
+    and a declaration nothing reads cannot distinguish anything, which is why a
+    field nobody observed and a derivation that found nothing had the same
+    representation: no row, and no way to tell which had happened.
+
+    Fails open, unlike `declared_coverage_floor` next door, and the asymmetry is
+    deliberate. A missing coverage floor means a counted quantity nothing acts
+    on, so refusing is the only safe answer. An empty `structural_zeros` is the
+    honest state of a source nobody has reviewed yet -- `AGENT_CONTRACT.md` says
+    in as many words that an empty `structural_zeros` is not a finding -- so
+    raising on one would make every unreviewed source unreadable and would push a
+    reviewer towards declaring something to make the build pass, which is the one
+    outcome this field must never reward.
+
+    `when` is carried through verbatim and is **not** compared against a
+    reference date, because the registry declares no grammar for it: it is
+    free-form prose that `tests/test_contract.py` requires only to be a non-empty
+    string. So this answers "is this field declared a structural zero at all",
+    which is the question that separates "they held none" from "we never found
+    it". It does not answer "is it declared for *this* month", and a
+    `DERIVED_ABSENCE_DECLARED_ZERO` must not be read as a period assertion.
+    Narrowing it would take a declared `when` grammar in the registry, which is a
+    change to a shared schema and not this function's to invent.
+
+    `structural_zeros_reviewed` is deliberately not re-checked here.
+    `tests/test_contract.py` already requires an unreviewed source's
+    `structural_zeros` to be empty, so a non-empty declaration is reviewed by
+    construction; restating that rule here would be the second copy of a rule
+    that `tests/test_contract.py` names as how one field came to be called
+    `calendar` on one side and `unit` on the other.
+    """
+
+    declarations = source.get("structural_zeros")
+    if not isinstance(declarations, Sequence) or isinstance(declarations, (str, bytes)):
+        raise DataContractError(
+            f"{source_id}: structural_zeros must be a list of declarations"
+        )
+    found: Dict[str, str] = {}
+    for declaration in declarations:
+        if not isinstance(declaration, Mapping):
+            raise DataContractError(
+                f"{source_id}: each structural_zeros entry must be an object"
+            )
+        field = declaration.get("field")
+        when = declaration.get("when")
+        if not isinstance(field, str) or not field.strip():
+            raise DataContractError(
+                f"{source_id}: a structural_zeros entry names no field"
+            )
+        if not isinstance(when, str) or not when.strip():
+            raise DataContractError(
+                f"{source_id}: structural_zeros entry for {field!r} states no "
+                "'when'; a structural zero nobody bounded is not reviewable"
+            )
+        # Two declarations for one field would make the disposition depend on
+        # iteration order, and the answer here is one disposition per field.
+        # Refusing costs less than picking one.
+        if field.strip() in found:
+            raise DataContractError(
+                f"{source_id}: structural_zeros declares {field.strip()!r} twice"
+            )
+        found[field.strip()] = when.strip()
+    return found
 
 
 def validate_publication_gaps(

@@ -1035,6 +1035,36 @@ NMFP_TABLE_FIELDS = {
 #: fields it is short.
 NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
 
+#: Panel fields this adapter derives by matching a *value inside a row it has
+#: already counted into another field*, mapped to the field whose observation is
+#: the derivation's input.
+#:
+#: `mmf_on_rrp` is the only one, and it is the reason this declaration exists.
+#: Every other panel field is absent for a reason the archive states: the table
+#: is not there, or the report month has no declared `INVESTMENTCATEGORY`
+#: vocabulary, and both are recorded in `CrossSectionCoverage.absent_fields`. A
+#: derived field has a third way to be absent that neither of those covers and
+#: that the panel could not previously represent -- the table was present,
+#: readable and parsed, its rows produced `mmf_repo_holdings` for the very same
+#: cross-section, and the counterparty match found no `FEDERAL RESERVE` in any of
+#: them. No row is emitted and, until this declaration, nothing recorded that the
+#: derivation had run at all, so a month in which money funds lent nothing to the
+#: facility was indistinguishable from a month the adapter never looked at.
+#:
+#: The mapping is *from* the derived field *to* its input, and the input is what
+#: makes the record safe to state. "The derivation matched nothing" is only a
+#: fact about the market when the rows it matches over were observed; if
+#: `mmf_repo_holdings` is itself unobserved for the cross-section there were no
+#: repo rows to find a counterparty in, and the derived field's absence is
+#: inherited rather than measured. That case is deliberately *not* recorded here.
+#:
+#: Declared rather than inferred from the parser, for the same reason
+#: `InvestmentCategoryEra` declares its vocabulary: "this field is derived by a
+#: match" is a claim about what the number means, and a reader must be able to
+#: find it stated rather than reconstruct it from a substring test 300 lines
+#: down.
+NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
+
 
 @dataclass(frozen=True)
 class InvestmentCategoryEra:
@@ -1711,6 +1741,54 @@ class ParsedSnapshots:
     coverage: tuple
 
 
+def _nmfp_unmatched_derived_fields(observed, structural_zeros):
+    """Derived fields whose input was observed and which matched nothing.
+
+    `observed` is the set of panel field names this cross-section supplies;
+    `structural_zeros` maps a field to the `when` the registry declares for it,
+    as `declared_structural_zeros` reads it. Returns `(field, disposition)` pairs
+    in field order, for `CrossSectionCoverage.unmatched_derived_fields`.
+
+    Both halves of the condition matter and they fail in opposite directions:
+
+    * The **input must be observed.** Without it there were no rows to match
+      over, so the derived field is absent because its source is, which
+      `absent_fields` already records once and must not record twice under a
+      second name. This is also what keeps the third kind of absence disjoint
+      from the first two by construction rather than by a rule someone has to
+      remember -- a cross-section whose holdings table is missing, or whose
+      report month has no declared `INVESTMENTCATEGORY` era, contributes no repo
+      rows at all, so its input is unobserved and it can never appear here.
+    * The **derived field must not be observed.** A cross-section with even one
+      matching row has an observation, and the value it carries is the answer;
+      there is nothing absent to record.
+
+    The disposition is read off the registry and nothing else. This function does
+    not decide *why* the derivation matched nothing -- whether the facility did
+    not exist yet, or existed and these funds did not use it -- because that is a
+    review, recorded by a human in `metadata/sources.json` under
+    `structural_zeros` with `structural_zeros_reviewed`. What it records is that
+    the derivation ran and came back empty, which is the fact the review needs
+    and the one nothing was keeping.
+    """
+
+    from .data import DERIVED_ABSENCE_DECLARED_ZERO, DERIVED_ABSENCE_UNDECLARED
+
+    found = []
+    for derived, base in sorted(NMFP_DERIVED_FROM_MATCH.items()):
+        if base not in observed or derived in observed:
+            continue
+        found.append(
+            (
+                derived,
+                DERIVED_ABSENCE_DECLARED_ZERO
+                if derived in structural_zeros
+                else DERIVED_ABSENCE_UNDECLARED,
+            )
+        )
+    return tuple(found)
+
+
 def _assemble_sec_nmfp(
     artifacts: Sequence[SnapshotArtifact],
     registry: Mapping[str, Mapping[str, object]],
@@ -1720,7 +1798,10 @@ def _assemble_sec_nmfp(
     Returns `(candidates, coverage)`: `(retrieved_at, observation)` pairs for the
     revision logic, and one `CrossSectionCoverage` per archive that files into a
     calendar month, recording the *assembled* state of that cross-section as of
-    that archive.
+    that archive -- including, per `NMFP_DERIVED_FROM_MATCH`, any derived field
+    whose input was observed for that cross-section and which matched none of the
+    rows it was derived over. No row is emitted for such a field: it has no
+    observation, and a `0.0` would be one.
 
     A cross-section is a calendar month, not a report date and not an archive.
     Both corrections were made against the same original claim -- that a
@@ -1791,7 +1872,12 @@ def _assemble_sec_nmfp(
     filings for a report date to every archive's filings for a calendar month.
     """
 
-    from .data import CrossSectionCoverage, PointInTimeObservation, declared_coverage_floor
+    from .data import (
+        CrossSectionCoverage,
+        PointInTimeObservation,
+        declared_coverage_floor,
+        declared_structural_zeros,
+    )
 
     ordered = sorted(artifacts, key=lambda item: item.retrieved_at)
     if not ordered:
@@ -1806,6 +1892,11 @@ def _assemble_sec_nmfp(
         ) from exc
     floors = declared_coverage_floor(source_id, source)
     entity_unit = floors.entity_unit
+    # Read once per source rather than once per cross-section: it is a
+    # declaration about the source, and re-reading it per month would invite a
+    # reader to think it varies by month, which is exactly the thing the
+    # free-form `when` cannot currently say.
+    structural_zeros = declared_structural_zeros(source_id, source)
 
     submissions = {}          # accession -> (series_id, report_date, filing_date)
     submission_types = {}     # accession -> SUBMISSIONTYPE
@@ -2026,6 +2117,14 @@ def _assemble_sec_nmfp(
                 for cell in contributions.get(accession, ())
             }
             era = floors.era_for(section_ref_dates[section])
+            # Taken from `surviving`, so it is a statement about the *assembled*
+            # cross-section as of this archive: a derived field is recorded
+            # unmatched only when no submission surviving supersession, in any
+            # archive retrieved so far, produced a value for it. Deciding it per
+            # archive instead would record an absence that the next archive in
+            # the same month refutes, and the record would then contradict the
+            # panel beside it.
+            observed = {series_id for series_id, _ref_date in surviving}
             coverage.append(
                 CrossSectionCoverage(
                     source_id=source_id,
@@ -2040,6 +2139,9 @@ def _assemble_sec_nmfp(
                     row_count=len(surviving),
                     submission_types=tuple(sorted(mix.items())),
                     absent_fields=tuple(sorted(absent.get(section, ()))),
+                    unmatched_derived_fields=_nmfp_unmatched_derived_fields(
+                        observed, structural_zeros
+                    ),
                 )
             )
     return candidates, coverage
