@@ -156,8 +156,8 @@ Implemented:
 Still in progress:
 
 - validating complete SEC Form N-MFP monthly cross-sections;
-- scoring the threshold and gradient-boosted challengers, and the ARX pair under
-  CRPS, against persistence on the frozen panel; and
+- scoring the threshold and gradient-boosted challengers against persistence on the
+  frozen panel (both run in `compare`; the runs have not been made); and
 - producing genuine out-of-sample and event-window results.
 
 See
