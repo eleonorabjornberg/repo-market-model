@@ -896,8 +896,8 @@ def _fr2004_rows(artifact: SnapshotArtifact, payload: bytes, registry):
       come from the registry's `release_lag` on every call, which is what
       `AvailableAtDerivationTests` then holds the adapter to.
     * It never globs a series name. The declared `fields` are matched exactly,
-      so `PDPOSGSC-L2C` is not read as `PDPOSGSC-L2`'s bucket and the identity
-      keeps the thirteen terms it declares.
+      so `PDPOSGSC-L2C` is not read as `PDPOSGSC-L2`'s bucket and each era of
+      the identity keeps exactly the terms it declares.
     """
 
     from zoneinfo import ZoneInfo
@@ -936,7 +936,9 @@ def _fr2004_rows(artifact: SnapshotArtifact, payload: bytes, registry):
         series_id = (record.get("Time Series") or "").strip()
         # A series the registry does not declare is ignored, not parsed. The
         # export carries over 200 of them and this adapter makes no claim about
-        # any but its fourteen.
+        # any but its fifteen -- the fourteen current series and `PDPOSGSC-G11`,
+        # the over-eleven-year bucket retired in 2022, which the identity's
+        # earlier eras are checked against and which no current export carries.
         if series_id not in declared_fields:
             continue
         raw_ref_date = (record.get("As Of Date") or "").strip()

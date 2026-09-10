@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import unittest.mock
 import json
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import date, datetime, time, timedelta, timezone
 from types import MappingProxyType
 from zoneinfo import ZoneInfo
@@ -15,6 +15,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
+    IDENTITY_HELD,
+    IDENTITY_HELD_WHERE_EVALUABLE,
     build_daily_panel,
     write_daily_panel,
     DataContractError,
@@ -2752,17 +2754,21 @@ class SourceSuppliedNothingTests(unittest.TestCase):
     a disposable copy under `$HOME`, built from `git ls-files -z --cached
     --others --exclude-standard` so the copy is every tracked file plus the
     untracked ones and nothing gitignored. `PYTHONDONTWRITEBYTECODE=1` and
-    `python3 -B`. Each mutation was reverted before the next. The unmutated
-    control was red on exactly one test before the first mutation and again
-    after the last -- `test_contract.FeatureSourceMapCoverageTests.test_every_
-    registry_source_reaches_at_least_one_panel_column`, which is constant while
-    the human's move of `dealer_treasury_position` into `FEATURE_FIELDS` is
-    pending and is excluded from every kill list below.
+    `python3 -B`. Each mutation was reverted before the next. When this record
+    was written the unmutated control was red on exactly one test, before the
+    first mutation and again after the last --
+    `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_
+    reaches_at_least_one_panel_column` -- and it was excluded from every kill
+    list below. **Re-run 10 September 2026 at block A14, python3 3.9.6, after
+    the human's move of `dealer_treasury_position` into `contract.FEATURE_FIELDS`
+    landed: the control is green, that exclusion no longer applies to anything,
+    and mutation 1 now kills two tests rather than one.** Mutations 2 and 3 kill
+    exactly what they killed.
 
     1. **The acceptance mutation.** The supply half of rule 5's restriction
        removed -- `_source_supplied_anything` no longer consulted, so the
        registry is restricted on the built columns alone, which is the behaviour
-       before this block. Killed by exactly one test:
+       before this block. Killed by two tests:
 
        * `test_a_built_column_whose_source_supplied_nothing_builds_empty` --
          `repo_model.data.DataContractError: sec_nmfp: identity
@@ -2770,6 +2776,15 @@ class SourceSuppliedNothingTests(unittest.TestCase):
          reference date`, raised out of the build that must succeed. The
          exception reaching the test rather than an `AssertionError` is the
          point: the empty case does not fail an assertion, it aborts.
+       * `RequestedColumnsBuildTests.test_a_build_given_the_manifests_columns_
+         reproduces_its_digest_after_a_source_joins` -- `AssertionError: 2 != 0`,
+         the CLI's exit code, carrying `nyfed_fr2004: identity
+         dealer_treasury_total_is_its_declared_components has no complete
+         reference date`. This is the second kill the move brought with it, and
+         it is the case this class's docstring describes in prose: a column
+         priceable from a source whose export the build holds none of. It could
+         not fire while the move was pending, because no build then depended on
+         `nyfed_fr2004`.
 
     2. **The trap, keyed on complete dates instead of on supply.**
        `_source_supplied_anything` replaced by a test of whether the identity's
@@ -3011,12 +3026,13 @@ class RequestedColumnsBuildTests(unittest.TestCase):
     control was green before the first and after the last -- see the report for
     the one pre-existing red this tree carries.
 
-    Every mutation below also leaves the one pre-existing red this tree carries,
-    `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_
-    reaches_at_least_one_panel_column`, which is constant while the human's move
-    of `dealer_treasury_position` into `FEATURE_FIELDS` is pending and is
-    excluded from every kill list. It is the same constant red
-    `SourceSuppliedNothingTests` records.
+    When this record was written every mutation below also left one
+    pre-existing red, `test_contract.FeatureSourceMapCoverageTests.test_every_
+    registry_source_reaches_at_least_one_panel_column`, excluded from every kill
+    list -- the same constant red `SourceSuppliedNothingTests` records. **The
+    human's move of `dealer_treasury_position` into `contract.FEATURE_FIELDS`
+    has landed and the control is green; the exclusion applies to nothing.** The
+    kill lists below are unchanged by it.
 
     1. **`--column` ignored.** Both the sites that read `args.column` in
        `cli_data._build` disabled: `columns = _requested_columns(...) if ...`
@@ -3077,8 +3093,13 @@ class RequestedColumnsBuildTests(unittest.TestCase):
          assertion exists for.
     """
 
-    #: The FR 2004 move's `contract.py` hunk, and nothing else. A no-op once the
-    #: human's move lands.
+    #: The FR 2004 move's `contract.py` hunk, and nothing else. The human's
+    #: move has landed, so this is now a no-op: each name is set to what
+    #: `contract.py` already holds. Kept rather than deleted, because what it
+    #: guards is not the move -- it is that this test states its own premise
+    #: instead of inheriting it. A later change to `FEATURE_FIELDS` that took
+    #: `dealer_treasury_position` back out would make the criterion vacuous, and
+    #: with the patch in place it stays exactly as sharp as it is today.
     MOVED_FEATURE = "dealer_treasury_position"
     MOVED_PAIRS = (("nyfed_fr2004", "PDPOSGST-TOT"),)
 
@@ -3199,3 +3220,366 @@ class RequestedColumnsBuildTests(unittest.TestCase):
             self.assertEqual(code, 2, text)
             self.assertIn("cannot price", text)
             self.assertIn("on_rrp", text)
+
+
+class FR2004EraIdentityTests(unittest.TestCase):
+    """`PDPOSGST-TOT`'s identity is checked on every week, against its own era's terms.
+
+    The defect this closes
+    ----------------------
+
+    `metadata/sources.json` declared one identity over the thirteen components
+    the New York Fed publishes today. The tracked extract
+    `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` carries 700
+    weekly as-of dates from 2013-04-03, and only 243 of them -- 2022-01-05
+    onwards -- carry all thirteen. On the other 457 the identity came back
+    `not_evaluable`, which is honest and is also five sixths of the history
+    behind a guard that could not fail. The source's vocabulary has a history:
+    there is no floating-rate-note bucket (`PDPOSGS-BFRN`) before 2015-01-07, and
+    the over-eleven-year nominal coupon bucket is one series (`PDPOSGSC-G11`)
+    until 2021-12-29 and two (`PDPOSGSC-G11L21`, `PDPOSGSC-G21`) from 2022-01-05.
+    `docs/DATA_QUALITY_DECISIONS.md`, "Dealer Treasury positions", records the
+    three eras; the extract's sidecar records them as `identity_eras`.
+
+    Why not one identity over the union
+    -----------------------------------
+
+    The repair that suggests itself is to declare all fifteen terms once and let
+    the absent ones fall out. It does not work, and the way it fails is the
+    reason `not_evaluable` exists. Over the union, an early week is missing the
+    later era's terms, so the union identity is `not_evaluable` on *every* date
+    rather than on 457 of them -- strictly worse. Make it evaluate by reading an
+    absent term as `0.0` and it `holds` on every date instead, because the
+    missing buckets are on the right-hand side and contribute nothing to a sum
+    that already balances. That is a guard that passes 700 times while checking
+    nothing, and it turns an absence into a measured value, which
+    `docs/DATA_QUALITY_DECISIONS.md` forbids outright (a `*` suppression is not
+    a zero either). So the test below does not stop at "every week holds": it
+    plants a week missing one of *its own era's* terms and requires
+    `not_evaluable` naming that term. A union-with-zeros implementation passes
+    the first assertion and dies on that one.
+
+    The three refusals
+    ------------------
+
+    An era declaration is a piece of this repository's own writing, so a
+    malformed one raises `DataContractError` rather than being recorded as a
+    finding about the data -- the same split `validate_accounting_identities`
+    already makes. Two overlapping windows would make a date's term set depend
+    on which era is consulted first, and a term set chosen by list order is not
+    a declaration. An era whose `from` is after its `through` covers no date at
+    all, so every date it was written for would quietly become undeclared. And a
+    date covered by no era is recorded `not_evaluable` with
+    `undeclared_ref_date` set rather than skipped, because a date the
+    declaration is silent about is not a date the identity held on -- the same
+    finding `CrossSectionCoverage` records as "ref_date falls in no declared
+    coverage era", one hop down.
+
+    Contiguity, and what an era window claims
+    -----------------------------------------
+
+    The declared windows abut -- `2015-01-06`/`2015-01-07` and
+    `2022-01-04`/`2022-01-05` -- rather than ending on each era's last observed
+    as-of date (2014-12-31 and 2021-12-29). An era window is a claim about which
+    vocabulary was in force, not a claim that an as-of date exists inside it, and
+    ending on the last observed date would leave the turn-of-year weeks declared
+    by nobody: a date arriving there later would be recorded `not_evaluable`
+    instead of checked. Before 2013-04-03 there is deliberately no era, because
+    the earlier report used other vocabularies, ends 2013-03-27, and is not
+    mapped.
+
+    Mutation record
+    ---------------
+
+    Every mutation applied in a disposable copy under `$HOME`, built from
+    `git ls-files -z --cached --others --exclude-standard` so the copy is every
+    tracked file plus the untracked ones and nothing gitignored, at the per
+    branch and per commit path `CLAUDE.md` now specifies.
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, Python 3.9.6. Each mutation was
+    reverted before the next, and the unmutated control was green before the
+    first and after the last -- the pre-existing red that
+    `SourceSuppliedNothingTests` and `FR2004DealerPositionTests` both record as
+    constant is gone, because the human's move of `dealer_treasury_position`
+    into `contract.FEATURE_FIELDS` has landed. Every kill below is an
+    `AssertionError` unless the entry says otherwise.
+
+    1. **Era windows ignored -- the defect itself.** `declared_identity_eras`
+       reads `declared = None` in place of `identity.get("eras")`, so every
+       identity gets the single unbounded era of its top-level terms and the
+       declaration's `eras` are inert. Killed by exactly one test:
+
+       * this one -- `AssertionError: 'held_where_evaluable' != 'held'`. The 457
+         pre-2022 weeks go back to `not_evaluable`, which is the tree as it
+         stood before this block.
+
+    2. **The overlap refusal a no-op.** The `if` guarding the overlap raise in
+       `declared_identity_eras` replaced by `if False:`. Killed by exactly one
+       test:
+
+       * this one -- `AssertionError: DataContractError not raised`, at the
+         phrase that widens the first era's `through` onto the second era's
+         `from`.
+
+    3. **The order refusal a no-op.** The `if` guarding the `from`-after-
+       `through` raise replaced by `if False:`, the same way. Killed by exactly
+       one test:
+
+       * this one -- `AssertionError: DataContractError not raised`, at the
+         phrase that swaps the middle era's two bounds. 2 and 3 both report
+         `DataContractError not raised` because each removed the only refusal
+         its own phrase reaches, and each mutated copy carried one defect.
+
+    4. **The restatement refusal a no-op.** The `if` comparing the most recent
+       era's terms with the identity's top-level ones replaced by `if False:`.
+       Killed by exactly one test:
+
+       * this one -- `AssertionError: DataContractError not raised`, at the
+         phrase that drops `PDPOSTIPS-G11` from the top level only.
+
+    5. **An absent term read as zero.** `_identity_verdict`'s `absent` tuple
+       replaced by `()` and both sums by `float(values[field] or 0.0)`, so no
+       date is ever `not_evaluable` and a missing term contributes nothing.
+       Killed by four tests:
+
+       * this one -- `AssertionError: 'violated' != 'held_where_evaluable'`, at
+         the planted week: the withheld term is on the right-hand side, so the
+         sum comes up short by exactly it and the week reads as a violation
+         rather than as unevaluable;
+       * `PointInTimeDataContractTests.test_an_identity_with_an_unobserved_term_
+         is_recorded_unevaluated_not_satisfied` -- `AssertionError: True is not
+         false`;
+       * `SourceSuppliedNothingTests.test_a_built_column_whose_source_supplied_
+         nothing_builds_empty` -- `AssertionError`, on the phrase that expects
+         "no complete reference date" and gets `sec_nmfp`'s identity violated
+         instead;
+       * `FR2004DealerPositionTests.test_the_fr2004_dealer_total_is_its_
+         components_on_its_release_date` -- `AssertionError`, on a
+         `ViolatedIdentity` where `()` is asserted.
+
+    6. **The trap, applied whole: one identity over the union, with zeros.**
+       Mutation 5's two hunks, plus mutation 1's, plus `PDPOSGSC-G11` inserted
+       into the identity's top-level `right` in `metadata/sources.json` -- so
+       the declaration really is a single identity over all fifteen terms and an
+       absent term really is a zero. This is the shape worth running because it
+       is the one that looks correct: **it passes the 700-week block.** Every
+       week reports `held`, because the terms missing from a week are on the
+       right-hand side and contribute nothing to a sum that already balances, so
+       an implementation that checks nothing agrees with one that checks
+       everything on the assertion a reader would think of first. Killed by the
+       same four tests as mutation 5 and by the same messages; on this test it
+       is again the planted week and not the 700-week block that fails --
+       `AssertionError: 'violated' != 'held_where_evaluable'`. The planted-
+       absence phrase is therefore the only thing standing between this suite
+       and a guard that passes 700 times while checking nothing, which is why
+       it is in the acceptance test and not in a separate one.
+    """
+
+    EXTRACT = (
+        Path(__file__).parents[1]
+        / "tests"
+        / "fixtures"
+        / "snapshots"
+        / "fr2004"
+        / "pdposgst_tot_and_components.csv"
+    )
+    REGISTRY_PATH = Path(__file__).parents[1] / "metadata" / "sources.json"
+
+    KEY = "nyfed_fr2004:dealer_treasury_total_is_its_declared_components"
+
+    #: The bucket the New York Fed retired at the 2022-01-05 report. Declared in
+    #: `fields` for the two earlier eras and carried by no current export.
+    RETIRED = "PDPOSGSC-G11"
+
+    #: One week inside each era, and the term this test withholds from it. Each
+    #: term belongs to that era and to at most one other, so a verdict that
+    #: turned on the union rather than on the era could not produce these.
+    ERA_WEEKS = (
+        ("no_frn_combined_over_11", date(2013, 4, 3), RETIRED),
+        ("frn_combined_over_11", date(2016, 6, 1), "PDPOSGS-BFRN"),
+        ("frn_split_over_11", date(2024, 10, 2), "PDPOSGSC-G21"),
+    )
+
+    #: A week before `PDPOSGST-TOT`'s first as-of date, and therefore inside no
+    #: declared era. 2013-03-27 is the last as-of date of the earlier, unmapped
+    #: vocabulary, so it is the date a splice would have reached for.
+    UNDECLARED_WEEK = date(2013, 3, 27)
+
+    def registry(self):
+        """Only the source under test, the way `build_daily_panel` restricts it.
+
+        `validate_accounting_identities` evaluates every identity in whatever
+        registry it is handed and raises on one with no complete reference date.
+        The whole registry would fail here on `sec_nmfp`'s balance sheet, which
+        these observations say nothing about.
+        """
+
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        return {"nyfed_fr2004": registry["nyfed_fr2004"]}
+
+    def identity(self, registry):
+        return registry["nyfed_fr2004"]["identities"][0]
+
+    def extract_rows(self):
+        """The tracked extract, parsed by the adapter and not by this test.
+
+        Through `parse_snapshots` rather than by reading the CSV here, so the
+        unit conversion, the per-row as-of date and the `*` handling are the
+        ones the adapter actually performs. A second reader in this file would
+        be a second thing to keep in step with the export's layout.
+        """
+
+        from repo_model.ingest import SnapshotArtifact, parse_snapshots
+
+        payload = self.EXTRACT.read_bytes()
+        artifact = SnapshotArtifact(
+            source_id="nyfed_fr2004",
+            path=self.EXTRACT,
+            retrieved_at="2026-09-10T00:00:00+00:00",
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=None,
+            byte_count=len(payload),
+        )
+        return list(parse_snapshots([artifact], registry=self.registry()).rows)
+
+    def evaluate(self, rows, registry=None):
+        return validate_accounting_identities(rows, registry or self.registry())[
+            self.KEY
+        ]
+
+    def test_every_fr2004_week_is_checked_against_its_own_eras_components(self):
+        registry = self.registry()
+        rows = self.extract_rows()
+        weeks = {row.ref_date for row in rows}
+
+        # -- the premise: the extract really does span the three eras --------
+        # Without this the acceptance assertion below could pass over a fixture
+        # that happened to carry only the current era, which is the shape of the
+        # defect and not of its repair.
+        self.assertEqual(len(weeks), 700)
+        self.assertEqual(min(weeks), date(2013, 4, 3))
+        self.assertEqual(
+            len({row.ref_date for row in rows if row.series_id == self.RETIRED}),
+            457,
+        )
+
+        # -- every week holds, and none is unchecked -------------------------
+        evaluation = self.evaluate(rows, registry)
+        self.assertEqual(evaluation.verdict, IDENTITY_HELD)
+        self.assertEqual(evaluation.unevaluated, ())
+        self.assertEqual(evaluation.violations, ())
+        self.assertEqual(evaluation.evaluated_ref_dates, len(weeks))
+        self.assertLess(evaluation.maximum_residual, 1e-6)
+
+        # -- each era against exactly its own component set -------------------
+        # The trap this kills is one identity over the union of all fifteen
+        # terms with an absent term read as 0.0: it passes the block above on
+        # every one of the 700 weeks and fails here, because a term withheld
+        # from its own era's set must leave the identity with no residual to
+        # compare rather than with a fabricated zero.
+        for era_id, week, term in self.ERA_WEEKS:
+            self.assertIn(week, weeks)
+            withheld = [
+                row for row in rows
+                if not (row.ref_date == week and row.series_id == term)
+            ]
+            self.assertEqual(len(withheld), len(rows) - 1)
+            planted = self.evaluate(withheld, registry)
+            self.assertEqual(planted.verdict, IDENTITY_HELD_WHERE_EVALUABLE)
+            self.assertEqual(len(planted.unevaluated), 1)
+            record = planted.unevaluated[0]
+            self.assertEqual(record.ref_date, week)
+            self.assertEqual(record.absent_fields, (term,))
+            self.assertEqual(record.era_id, era_id)
+            self.assertFalse(record.undeclared_ref_date)
+            self.assertEqual(planted.evaluated_ref_dates, len(weeks) - 1)
+
+        # A term that belongs to another era is not this era's business. The
+        # retired bucket is absent from every week from 2022-01-05 on and the
+        # split pair is absent from every week before it; if either were being
+        # looked for outside its own era, the 700-week verdict above could not
+        # have been `held`.
+        split = {"PDPOSGSC-G11L21", "PDPOSGSC-G21"}
+        current = {
+            row.ref_date for row in rows if row.series_id in split
+        }
+        retired = {row.ref_date for row in rows if row.series_id == self.RETIRED}
+        self.assertEqual(current & retired, set())
+        self.assertEqual(current | retired, weeks)
+
+        # -- a date in no declared era is recorded, not skipped ---------------
+        era_one = [
+            era
+            for era in self.identity(registry)["eras"]
+            if era["id"] == "no_frn_combined_over_11"
+        ][0]
+        first_week = {
+            row.series_id: row for row in rows if row.ref_date == date(2013, 4, 3)
+        }
+        before = list(rows) + [
+            replace_observation(first_week[term], self.UNDECLARED_WEEK)
+            for term in (*era_one["left"], *era_one["right"])
+        ]
+        undeclared = self.evaluate(before, registry)
+        # Every term of the neighbouring era is present on that week, so a
+        # verdict driven by the terms alone would have said `held`. It is the
+        # window that refuses it.
+        self.assertEqual(undeclared.verdict, IDENTITY_HELD_WHERE_EVALUABLE)
+        self.assertEqual(undeclared.undeclared_ref_dates, (self.UNDECLARED_WEEK,))
+        self.assertEqual(undeclared.evaluated_ref_dates, len(weeks))
+        gap = undeclared.unevaluated[0]
+        self.assertEqual(gap.ref_date, self.UNDECLARED_WEEK)
+        self.assertTrue(gap.undeclared_ref_date)
+        self.assertIsNone(gap.era_id)
+        self.assertEqual(gap.absent_fields, ())
+        self.assertIn("falls in no declared era", gap.as_dict()["reason"])
+
+        # -- two overlapping windows are refused ------------------------------
+        overlapped = self.registry()
+        eras = self.identity(overlapped)["eras"]
+        self.assertEqual(eras[1]["from"], "2015-01-07")
+        eras[0]["through"] = "2015-01-07"
+        with self.assertRaisesRegex(DataContractError, r"overlap"):
+            self.evaluate(rows, overlapped)
+
+        # -- an era whose `from` is after its `through` is refused ------------
+        reversed_window = self.registry()
+        era = self.identity(reversed_window)["eras"][1]
+        era["from"], era["through"] = era["through"], era["from"]
+        with self.assertRaisesRegex(
+            DataContractError, r"covers no reference date"
+        ):
+            self.evaluate(rows, reversed_window)
+
+        # -- the top-level terms must restate the most recent era -------------
+        # `tests/test_contract.py` reads an identity's top-level `left` and
+        # `right` as the shape both tracks build against, and it is human-owned,
+        # so the declaration cannot simply move into the eras. Left unchecked
+        # beside them it would be a second statement of the current component
+        # set with nothing holding the two together -- the duplicated-fact
+        # failure this repository keeps meeting, and the one an era'd identity
+        # invites, because the copy that drifts is the one nothing evaluates.
+        drifted = self.registry()
+        identity = self.identity(drifted)
+        self.assertEqual(identity["right"][-1], "PDPOSTIPS-G11")
+        identity["right"] = identity["right"][:-1]
+        with self.assertRaisesRegex(
+            DataContractError, r"must restate its most recent era"
+        ):
+            self.evaluate(rows, drifted)
+
+
+def replace_observation(observation, ref_date):
+    """One observation moved to another reference date, availability with it.
+
+    `available_at` is moved by the same number of days rather than recomputed,
+    so the moved row keeps the lag the adapter derived from the registry and
+    `validate_publication_gaps` would still accept it. Only the identity's
+    date arithmetic is under test here, not the lag's.
+    """
+
+    shift = ref_date - observation.ref_date
+    return replace(
+        observation,
+        ref_date=ref_date,
+        available_at=observation.available_at + shift,
+    )

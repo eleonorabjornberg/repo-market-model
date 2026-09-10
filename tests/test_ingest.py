@@ -1,3 +1,4 @@
+import csv
 import hashlib
 from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
@@ -2814,17 +2815,23 @@ class FR2004DealerPositionTests(unittest.TestCase):
     3.9.6. Each mutation was applied to a freshly restored copy and each
     replacement was confirmed present in the file before the run.
 
-    **The control is not green, and that is this block's finding.** Exactly one
-    failure, before the mutations and after them:
+    **The control was not green when this record was written, and that was this
+    block's finding.** Exactly one failure, before the mutations and after them:
     `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_reaches_at_least_one_panel_column`,
-    because `nyfed_fr2004` is ingested here and no panel column draws on it yet.
-    What is outstanding is a human edit to `src/repo_model/contract.py`: moving
-    `dealer_treasury_position` out of `UNSOURCED_FEATURES` and declaring it in
-    `FEATURE_FIELDS` as `nyfed_fr2004.PDPOSGST-TOT`. No track may make it --
-    `contract.py` is `HUMAN_ONLY` -- so the failure stands until that move
-    lands. The guard is not the thing that is wrong here; it is reporting a tree
-    that is one human edit short of complete. It is constant across every case
-    below and is excluded from the kill counts; nothing else fails unmutated.
+    because `nyfed_fr2004` was ingested here and no panel column drew on it. What
+    was outstanding was a human edit to `src/repo_model/contract.py`, which no
+    track may make: moving `dealer_treasury_position` out of
+    `UNSOURCED_FEATURES` and declaring it in `FEATURE_FIELDS` as
+    `nyfed_fr2004.PDPOSGST-TOT`. **That move landed on 10 September 2026 and the
+    control is green**, so the exclusion below applies to nothing. The guard was
+    not the thing that was wrong; it was reporting a tree one human edit short
+    of complete, and the edit arrived.
+
+    **Re-run 10 September 2026 at block A14, python3 3.9.6**, because that block
+    changed `metadata/sources.json` -- which mutations 1 and 4 both name -- by
+    declaring the identity's three eras and the retired `PDPOSGSC-G11` bucket
+    with them. Every mutation below still kills what it killed. One count moved:
+    mutation 4 now kills three tests rather than two.
 
     1. `release_lag.days` 6 -> 0 in `metadata/sources.json`. Kills
        `test_the_fr2004_dealer_total_is_its_components_on_its_release_date`,
@@ -2852,7 +2859,12 @@ class FR2004DealerPositionTests(unittest.TestCase):
        terms to be a subset of `fields`, so the glob's error cannot be applied
        to the identity alone. Kills the acceptance test, `AssertionError`, on
        the parsed series set, and kills
-       `test_a_series_the_registry_does_not_declare_is_ignored` with it. Total 2.
+       `test_a_series_the_registry_does_not_declare_is_ignored` with it. Since
+       A14 it also kills
+       `test_data.FR2004EraIdentityTests.test_every_fr2004_week_is_checked_against_its_own_eras_components`
+       -- and by an *exception*, `repo_model.data.DataContractError`, not an
+       assertion: the top-level terms no longer restate the most recent era, so
+       the declaration is refused before any week is evaluated. Total 3.
     5. The non-numeric refusal made a no-op -- `except ValueError: continue`.
        Kills the acceptance test, `AssertionError: ValueError not raised`.
        Total 1.
@@ -3057,16 +3069,32 @@ class FR2004DealerPositionTests(unittest.TestCase):
             self.parse(undated, registry)
 
     def test_a_series_the_registry_does_not_declare_is_ignored(self):
-        """The export carries over two hundred series; this adapter claims fourteen.
+        """The export carries over two hundred series; this adapter claims fifteen.
 
         Including the C-suffixed siblings of the identity's own terms, which is
         why "ignored" has to be checked rather than assumed: `PDPOSGSC-L2C` is
         in the file, at the same as-of date, and it is not in the registry.
+
+        The equality is against the declared fields *this export carries*, not
+        against the declared fields outright, and the difference is one series.
+        `PDPOSGSC-G11` is the over-eleven-year nominal coupon bucket the New York
+        Fed retired at the 2022-01-05 report; it is declared because the
+        identity's two earlier eras are checked against it, and this fixture is
+        a current-era download, so no row of it can be parsed. Weakening the
+        equality to a subset would have covered the same case and would also
+        have stopped noticing a declared series the adapter never parses, which
+        is what this test is for -- so what the file carries is computed from
+        the file, and equality is kept.
         """
 
         rows = self.parse(self.fixture_text())
         declared = set(self.registry()["nyfed_fr2004"]["fields"])
-        self.assertEqual({row.series_id for row in rows}, declared)
+        carried = {
+            record["Time Series"].strip()
+            for record in csv.DictReader(io.StringIO(self.fixture_text()))
+        }
+        self.assertEqual({row.series_id for row in rows}, declared & carried)
+        self.assertEqual(declared - carried, {"PDPOSGSC-G11"})
         self.assertIn(
             '"2026-08-26","PDPOSGSC-L2C"', self.fixture_text(),
         )
