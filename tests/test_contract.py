@@ -960,6 +960,68 @@ class SourceRegistryTests(unittest.TestCase):
         )
 
 
+class TreasurySettlementSplitTests(unittest.TestCase):
+    """H3: the bill / coupon / SOMA split is defined before the adapter emits it.
+
+    The adapter block (A10) is checked against these definitions, so they are
+    asserted here, on the seam, rather than inside that block's criterion.
+
+    Mutation record, disposable copy under `$HOME`, `-B`, control green before
+    and after:
+
+    1. `"FRN"` moved into `TREASURY_BILL_SECURITY_TYPES` as well. Kills
+       `test_bills_and_coupons_are_disjoint`, `AssertionError`.
+    2. `treasury_settlement_component`'s final `raise` replaced by
+       `return "treasury_settlement_coupon"` -- the residual trap. Kills
+       `test_an_undeclared_security_type_is_refused`, `AssertionError`
+       ("ValueError not raised").
+    3. `"treasury_settlement_soma"` added to the identity's `right`. Kills
+       `test_soma_is_outside_the_identity`, `AssertionError`.
+    """
+
+    def test_bills_and_coupons_are_disjoint(self):
+        from repo_model.contract import (
+            TREASURY_BILL_SECURITY_TYPES,
+            TREASURY_COUPON_SECURITY_TYPES,
+        )
+
+        self.assertFalse(TREASURY_BILL_SECURITY_TYPES & TREASURY_COUPON_SECURITY_TYPES)
+        self.assertTrue(TREASURY_BILL_SECURITY_TYPES)
+        self.assertTrue(TREASURY_COUPON_SECURITY_TYPES)
+
+    def test_an_undeclared_security_type_is_refused(self):
+        from repo_model.contract import treasury_settlement_component
+
+        self.assertEqual(treasury_settlement_component("Bill"), "treasury_settlement_bill")
+        self.assertEqual(treasury_settlement_component("Note"), "treasury_settlement_coupon")
+        with self.assertRaisesRegex(ValueError, "neither a declared bill"):
+            treasury_settlement_component("Perpetual")
+
+    def test_soma_is_outside_the_identity(self):
+        """`offering_amt` excludes SOMA add-ons, so the public parts sum to the whole."""
+        from repo_model.contract import (
+            TREASURY_SETTLEMENT_COMPONENTS,
+            TREASURY_SETTLEMENT_IDENTITY,
+        )
+
+        right = set(TREASURY_SETTLEMENT_IDENTITY["right"])
+        in_aggregate = {
+            name for name, (_f, _t, inside) in TREASURY_SETTLEMENT_COMPONENTS.items()
+            if inside
+        }
+        self.assertEqual(right, in_aggregate)
+        self.assertNotIn("treasury_settlement_soma", right)
+        self.assertEqual(
+            TREASURY_SETTLEMENT_COMPONENTS["treasury_settlement_soma"][0], "soma_accepted"
+        )
+        problems = validate_identity_tolerance(
+            "treasury_auctions",
+            TREASURY_SETTLEMENT_IDENTITY["name"],
+            dict(TREASURY_SETTLEMENT_IDENTITY["tolerance"]),
+        )
+        self.assertEqual(problems, [], msg="; ".join(problems))
+
+
 class PointInTimePanelTests(unittest.TestCase):
     """Conformance tests for the canonical long-form point-in-time panel."""
 

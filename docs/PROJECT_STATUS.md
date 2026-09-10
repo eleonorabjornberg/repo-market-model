@@ -261,10 +261,11 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `metadata/sources.json`'s `tolerance_note` carries the derivation and
   `DATA_QUALITY_DECISIONS.md` records the decision.
 - **The Treasury settlement series aggregates decisions it does not implement.**
-  Security type, tenor, and Fed SOMA add-ons are summed into one series. The source
-  limitation now says so, and names the fields that are present in the snapshot and
-  unread, so the split needs no new download. The split itself is not done, and
-  nothing yet tests whether the simplification affects conclusions.
+  Security type and tenor are summed into one series, and the Fed's SOMA leg is
+  absent from it -- this page said SOMA add-ons were summed in until the check the split
+  waited on found `offering_amt` excludes them. The components are now defined in
+  `src/repo_model/contract.py`; the adapter does not emit them yet, and nothing tests
+  whether the simplification affects conclusions.
 - **The never-revised claim is prose.** The field-level release lag is licensed by
   a `revision_evidence` string. The comparison behind it was done outside the
   repository, so if a future vintage restated an observation, nothing here would go

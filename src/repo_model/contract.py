@@ -58,6 +58,11 @@ __all__ = [
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "sources_for_features",
+    "TREASURY_BILL_SECURITY_TYPES",
+    "TREASURY_COUPON_SECURITY_TYPES",
+    "TREASURY_SETTLEMENT_COMPONENTS",
+    "TREASURY_SETTLEMENT_IDENTITY",
+    "treasury_settlement_component",
     "field_sources_for_features",
 ]
 
@@ -800,3 +805,85 @@ def validate_event_windows_document(payload: object) -> list[str]:
             )
 
     return problems
+
+
+# --- Treasury settlement components ----------------------------------------
+#
+# The bill / coupon / SOMA split of `treasury_settlement` (human decision,
+# 10 Sep; docs/DATA_QUALITY_DECISIONS.md, "Treasury-settlement aggregation").
+# Defined here, before the adapter block (A10) that emits them, because the
+# split is a shape the data layer produces and the model layer reads: which
+# security types count as bills, what "SOMA" means, and how tightly the parts
+# must sum to the whole are decisions, and a track that picked them alone would
+# be picking the definition its own criterion is checked against.
+#
+# What was checked before "private" was defined: `offering_amt` does NOT
+# include SOMA. The Federal Reserve's rollover bids are noncompetitive tenders
+# treated as add-ons to the announced auction size, and Treasury increases the
+# total issue by the SOMA award (Federal Reserve Bank of New York, "FAQs:
+# Treasury Rollovers"). So the existing aggregate is already the public leg,
+# and the SOMA component sits OUTSIDE the identity rather than being the part
+# subtracted to reach "private". Defining it as aggregate minus the public
+# parts would be a residual, and a residual absorbs every error upstream.
+
+#: Treasury's own bills-versus-coupons split, by the auction record's
+#: `security_type`. Enumerated from that convention, not yet from a fixture:
+#: the adapter block enumerates the values its fixture carries, and a value in
+#: neither set is a refusal and a report -- never a third bucket, and never
+#: "everything that is not a bill".
+TREASURY_BILL_SECURITY_TYPES = frozenset({"Bill", "CMB"})
+TREASURY_COUPON_SECURITY_TYPES = frozenset({"Note", "Bond", "TIPS", "FRN"})
+
+#: Panel column -> (auction-record field it sums, security types it admits,
+#: whether it is part of `treasury_settlement`). Units are USD billions, as for
+#: the aggregate. `soma_accepted` is an auction RESULT, unlike `offering_amt`,
+#: which is announced: the SOMA component may not be dated available before
+#: the auction's results are published, and an adapter that dates it by the
+#: announcement's `record_date` reads an outcome early.
+TREASURY_SETTLEMENT_COMPONENTS = MappingProxyType(
+    {
+        "treasury_settlement_bill": (
+            "offering_amt", TREASURY_BILL_SECURITY_TYPES, True,
+        ),
+        "treasury_settlement_coupon": (
+            "offering_amt", TREASURY_COUPON_SECURITY_TYPES, True,
+        ),
+        "treasury_settlement_soma": (
+            "soma_accepted",
+            TREASURY_BILL_SECURITY_TYPES | TREASURY_COUPON_SECURITY_TYPES,
+            False,
+        ),
+    }
+)
+
+#: The identity the split must satisfy, in the registry's identity shape.
+#: The parts are sums of the same `offering_amt` values the aggregate sums, so
+#: the only admissible disagreement is float summation order. 1e-9 USD
+#: billions is one dollar: far above that, and far below any real record.
+TREASURY_SETTLEMENT_IDENTITY = MappingProxyType(
+    {
+        "name": "treasury_settlement_is_bills_plus_coupons",
+        "left": ("treasury_settlement",),
+        "right": ("treasury_settlement_bill", "treasury_settlement_coupon"),
+        "tolerance": MappingProxyType({"absolute": 1e-9, "unit": "USD billions"}),
+    }
+)
+
+
+def treasury_settlement_component(security_type: str) -> str:
+    """The public component an auction of this `security_type` settles into.
+
+    Raises `ValueError` for a type in neither declared set. Classifying the
+    unknown as a coupon is the residual trap one level down: a new instrument
+    would be silently priced as a note.
+    """
+    if security_type in TREASURY_BILL_SECURITY_TYPES:
+        return "treasury_settlement_bill"
+    if security_type in TREASURY_COUPON_SECURITY_TYPES:
+        return "treasury_settlement_coupon"
+    raise ValueError(
+        f"Treasury security_type {security_type!r} is neither a declared bill "
+        f"type {sorted(TREASURY_BILL_SECURITY_TYPES)} nor a declared coupon type "
+        f"{sorted(TREASURY_COUPON_SECURITY_TYPES)}; extending either set is a "
+        "change to src/repo_model/contract.py"
+    )

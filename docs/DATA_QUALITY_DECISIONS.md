@@ -306,10 +306,29 @@ model fitting. If a single aggregate is retained for the first empirical version
 the source limitation must explicitly state what was combined and the model report
 must test whether the simplification affects conclusions.
 
-**Half done.** The `limitation` now states what was combined: all security types
-aggregated, SOMA add-ons included, tenor and the private-versus-Fed split not
-represented, and `security_type`, `security_term` and `soma_accepted` present in the
-snapshot and unread, so the split needs no new download. It also retires the note it
+**Half done.** The `limitation` states what was combined: all security types
+aggregated, tenor not represented, and `security_type`, `security_term` and
+`soma_accepted` present in the snapshot and unread, so the split needs no new download.
+
+**Corrected before the split was defined (human, 10 Sep): `offering_amt` excludes SOMA.**
+This page and the limitation said the aggregate included SOMA add-ons. It does not: the
+Federal Reserve's rollover bids are noncompetitive tenders treated as add-ons to the
+announced auction size, and Treasury increases the total issue by the SOMA award
+(Federal Reserve Bank of New York, "FAQs: Treasury Rollovers"). The aggregate is
+therefore already the public leg, and the claim below that it overstates the private
+drain was the wrong way round.
+
+**The split, contract side.** `src/repo_model/contract.py` defines three columns in USD
+billions: `treasury_settlement_bill` and `treasury_settlement_coupon`, each a sum of
+`offering_amt` over a declared `security_type` set (bills `Bill`, `CMB`; coupons `Note`,
+`Bond`, `TIPS`, `FRN`), and `treasury_settlement_soma`, a sum of `soma_accepted`. The
+identity is `treasury_settlement` = bill + coupon at an absolute `1e-9`, since both sides
+sum the same values; SOMA sits outside it. A `security_type` in neither set raises --
+never a coupon by default, which is the residual trap one level down. The sets follow
+Treasury's bills-versus-coupons convention and are not yet enumerated from a fixture;
+the adapter block does that, and a value not listed is a report. `soma_accepted` is an
+auction result where `offering_amt` is announced, so it may not be dated available
+before results are published. It also retires the note it
 replaced, which said announcement and result vintages must be separated to avoid using
 auction outcomes too early. That risk is avoided by construction — `record_date` drives
 `available_at` and the adapter reads `offering_amt` alone, never `total_accepted`,
@@ -320,8 +339,7 @@ Still open: the split itself, and the model report's test of whether the simplif
 affects conclusions. Both matter to this project specifically. Bill and coupon
 settlements have different collateral and reserve-drain profiles and bill supply is
 close to the centre of the 2018–19 episode; SOMA add-ons do not drain private cash, so
-the aggregate overstates the private-sector drain exactly when the Fed is rolling over
-most heavily.
+the Fed's leg belongs beside the public one as its own series, not inside it.
 
 ## N-MFP series length: one archive yields one usable month
 

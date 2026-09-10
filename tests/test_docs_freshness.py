@@ -1085,8 +1085,8 @@ LIMITATIONS = (
         "declaration",
         "docs/PROJECT_STATUS.md",
         (
-            "aggregates decisions it does not implement.** Security type, tenor, and "
-            "Fed SOMA add-ons are summed into one series.",
+            "aggregates decisions it does not implement.** Security type and tenor "
+            "are summed into one series,",
         ),
         _treasury_settlement_is_one_aggregate,
         None,
