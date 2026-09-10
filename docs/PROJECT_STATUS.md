@@ -56,7 +56,8 @@ a commit message:
   How many tests that is belongs to CI, not to this page.
 - The `fit` / `predict` / `predict_stress` interface and the `ExceedancePredictor`
   interface beside it each have several implementers, discovered by the tests
-  rather than listed here. Both sets of conformance tests are parametrized over
+  rather than listed here: the forecast implementers in every module of the package,
+  the exceedance ones, for now, in `baseline` alone. Both sets of conformance tests are parametrized over
   implementations, so each assertion runs once per implementer rather than once in
   total; that multiplication, not the file diff, is what makes each an interface
   rather than a description of one model. A coverage guard asserts that the set of
@@ -319,7 +320,7 @@ responsibility for any of them.
 
 The repository may accurately be described as a leakage-safe, point-in-time
 financial research pipeline with a tested probabilistic evaluation harness, a
-model interface with three implementers, purged rolling-origin evaluation of them,
+model interface with several implementers, purged rolling-origin evaluation of them,
 and a benchmark that publishes a reproducible record of its own run. It should
 not yet be described as a successful machine-learning forecast of repo stress. A
 frozen funding panel now exists and the persistence benchmark has been measured
@@ -350,7 +351,7 @@ it. The panel itself stays gitignored under `data/processed/`; the manifest is
 the committable half, and it reached nobody while it sat beside the panel. That
 manifest predates the panel digest. The one that carries it, beside the tracked
 inputs, is `metadata/funding_panel_manifest.json`; `verify_daily_panel` checks a panel
-against it and refuses the older one rather than passing it.
+against it and refuses the older one, or a malformed digest, rather than passing it.
 
 `docs/runs/` was chosen over `metadata/panels/` -- which would have followed the
 N-MFP archive-manifest precedent -- because `metadata/` is Track A's and a human

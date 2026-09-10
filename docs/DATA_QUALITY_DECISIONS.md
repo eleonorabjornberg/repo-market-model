@@ -476,8 +476,11 @@ Statistics series `PDPOSGST-TOT`, net outright positions in Treasury securities,
 What "total" covers was checked rather than read off the label. In the tracked fixture
 `tests/fixtures/snapshots/nyfed-primary-dealer/latest.csv`, at its weekly as-of date,
 `PDPOSGST-TOT` equals the sum of bills (`PDPOSGS-B`), floating-rate notes
-(`PDPOSGS-BFRN`), nominal coupons across every maturity bucket (`PDPOSGSC-*`) and TIPS
-across every maturity bucket (`PDPOSTIPS-*`), exactly. So the column includes TIPS and
+(`PDPOSGS-BFRN`), nominal coupons in every maturity bucket (`PDPOSGSC-L2`, `-G2L3`,
+`-G3L6`, `-G6L7`, `-G7L11`, `-G11L21`, `-G21`) and TIPS in every bucket (`PDPOSTIPS-L2`,
+`-G2`, `-G6L11`, `-G11`), exactly. The `C`-suffixed series in the same buckets
+(`PDPOSGSC-L2C` and its siblings) are not in the sum: a glob over the two prefixes picks
+them up and overshoots the total. So the column includes TIPS and
 FRNs; a reader who wants nominal coupons alone, or wants to separate bill from coupon
 inventory as the settlement split does, needs the components, not the total.
 

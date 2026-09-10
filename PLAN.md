@@ -133,7 +133,8 @@ historical one -- so the fetch a reader performs is not the fetch that produced 
 record. The raw inputs the record was built from are therefore tracked under
 `tests/fixtures/snapshots/funding_inputs/`, and `metadata/funding_panel_manifest.json`
 binds each of them, and the panel, by digest; `repo_model.data.verify_daily_panel`
-checks a panel's bytes against that digest and refuses a manifest that carries none.
+checks a panel's bytes against that digest and refuses a manifest whose digest is
+missing or is not 64 lowercase hex characters.
 What is still open is the rebuild: one command that builds the panel from those inputs,
 verifies it and re-scores it against the record. The clause is met when that
 reproduces, and not before.
@@ -282,8 +283,8 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
    bound was argued from three orders of magnitude of scale, and the coverage floor and
    monthly assembly left a 2.9x range, over which scale explains almost none of the
-   residual. What remains on N-MFP is the structural-zero period and the `sec_nmfp`
-   review it gates. The Treasury-settlement aggregation is half done: the limitation
+   residual. What remains on N-MFP is the `sec_nmfp`
+   structural-zero review, a human's field. The Treasury-settlement aggregation is half done: the limitation
    states what was combined, and the split into bill, coupon and SOMA components, from
    fields already in the snapshot, is next. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.

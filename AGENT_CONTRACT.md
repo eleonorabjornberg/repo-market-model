@@ -180,7 +180,9 @@ written before either track starts producing models.
   `tests/test_dependency_boundary.py` enforces both halves. `tests/test_ml.py`
   skips when the extra is absent and **fails instead when
   `REPO_MODEL_REQUIRE_ML=1`**, which the CI `ml` job sets: a skip nothing can
-  see is not a test.
+  see is not a test. `ml.py` imports its third-party packages inside functions as
+  well: the conformance discovery imports every module of the package, so a
+  module-level import there would fail the core suite without the extra.
 - Raw and processed data stay out of git. Code and metadata are committed.
 - A model that does not beat persistence out of sample is reported as such
   and kept in the results. Failed specifications are published, per
