@@ -382,18 +382,34 @@ class IngestTests(unittest.TestCase):
             build_point_in_time_snapshot(artifacts, self.output_root / "panel.csv")
 
     def test_treasury_panel_rows_aggregate_settlements_in_billions(self):
+        """The aggregate, its two public legs and SOMA, through the whole hop.
+
+        The records carry `auction_date` and `security_type` because the
+        adapter now requires them: an unclassifiable record would otherwise
+        reach the aggregate and no component, and the identity would fail
+        somewhere far from the record that broke it. `record_date` before
+        `issue_date` is the announcement-dated shape, which the real snapshot
+        does not have, so it is kept here.
+        """
+
         payload = json.dumps(
             {
                 "data": [
                     {
                         "issue_date": "2026-01-15",
                         "record_date": "2026-01-10",
+                        "auction_date": "2026-01-08",
+                        "security_type": "Bill",
                         "offering_amt": "50000000000",
+                        "soma_accepted": "1000000000",
                     },
                     {
                         "issue_date": "2026-01-15",
                         "record_date": "2026-01-10",
+                        "auction_date": "2026-01-08",
+                        "security_type": "Note",
                         "offering_amt": "25000000000",
+                        "soma_accepted": "0",
                     },
                 ]
             }
@@ -404,10 +420,19 @@ class IngestTests(unittest.TestCase):
         panel_path = self.output_root / "treasury.csv"
         build_point_in_time_snapshot(artifacts, panel_path)
         rows = load_point_in_time_panel(panel_path)
-        self.assertEqual(len(rows), 1)
+        values = {row.series_id: row.value for row in rows}
+        self.assertEqual(
+            values,
+            {
+                "treasury_settlement": 75.0,
+                "treasury_settlement_bill": 50.0,
+                "treasury_settlement_coupon": 25.0,
+                "treasury_settlement_soma": 1.0,
+            },
+        )
         self.assertEqual(rows[0].series_id, "treasury_settlement")
-        self.assertEqual(rows[0].value, 75.0)
-        self.assertLess(rows[0].available_at.date(), rows[0].ref_date)
+        for row in rows:
+            self.assertLess(row.available_at.date(), row.ref_date)
 
     def test_changed_snapshot_appends_revision_but_unchanged_value_does_not(self):
         first = fetch_fred_macro(
@@ -3844,6 +3869,258 @@ class MonthCrossSectionTests(unittest.TestCase):
         section = self._section(parsed, date(2016, 5, 31))
         self.assertEqual(section.entity_count, 3)
         self.assertEqual(section.declared_floor, 3)
+
+
+class TreasurySettlementSplitTests(unittest.TestCase):
+    """A10: the adapter emits the split `contract.py` defines, on the tracked snapshot.
+
+    Anchored on a real download
+    ---------------------------
+
+    `tests/fixtures/snapshots/treasury_auctions/auctions_2018_present.json` is
+    Fiscal Data's `auctions_query`, fetched 10 September 2026: one page, meta
+    `total-count` 3562 equal to its row count, issue dates 2018-01-02 through
+    2026-09-30. There is no manifest beside it -- writing one is a human step --
+    so the test builds a `SnapshotArtifact` with a declared `retrieved_at`.
+
+    What the snapshot exercises, and what it does not
+    -------------------------------------------------
+
+    `security_type` takes three values in it: `Bill` (2641), `Note` (719) and
+    `Bond` (202). `CMB`, `TIPS` and `FRN` are declared in `contract.py` and are
+    not exercised here -- cash-management bills arrive as `Bill` with a
+    day-count term, e.g. the 2018-01-19 "6-Day". Nothing in the file is
+    unlisted, so there is nothing to report as a missing declaration; the
+    `Perpetual` record below is planted precisely because the snapshot has no
+    natural undeclared type.
+
+    `record_date` equals `issue_date` on every one of the 3562 rows, and is
+    greater than or equal to `auction_date` on every one (equal on exactly one,
+    the 2018-01-19 cash-management bill). So `record_date` is the settlement
+    date, not a publication date -- see the corrected `treasury_auctions`
+    limitation in `metadata/sources.json`. The consequence for this test is
+    that the fourth assertion has nothing natural to fire on and its record is
+    planted too.
+
+    The trap, and which assertion kills it
+    --------------------------------------
+
+    Fiscal Data reports an auction result it does not have yet as the JSON
+    **string** `"null"`. Five rows carry it: the auctions of 14-17 September
+    2026, unheld at retrieval, settling 17-30 September. Read as `0.0`, the
+    SOMA leg of an unheld auction publishes as a real award of nothing; skipped
+    instead, the key's remaining records publish a partial award wearing the
+    face of a complete one. Both readings are the union-identity trap A14 found
+    in the FR 2004 identity, one source over. The third assertion refuses both:
+    the three affected settlement dates -- 17, 18 and 30 September 2026 -- get
+    no `treasury_settlement_soma` observation at all. A genuine zero award is a
+    different thing and survives: 1093 records carry `soma_accepted` `"0"`.
+
+    Why an absent leg is absent and not zero
+    ----------------------------------------
+
+    801 of the 1088 settlement dates have no coupon auction and 204 have no
+    bill. Those keys get no observation for the missing leg. A `0.0` there
+    would be arithmetically true and operationally unreadable: it is exactly
+    what a classification failure also produces, and the panel would have no
+    way to tell the two apart. The identity is therefore checked over the legs
+    that are present, with the tolerance read from
+    `TREASURY_SETTLEMENT_IDENTITY` rather than restated.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, Python
+    3.9.6. Each mutation was applied to a freshly restored copy, and each
+    replacement was confirmed present in the file before the run.
+
+    **The control is not green, and that is this block's second finding.**
+    Exactly one failure, identical before the mutations and after them:
+    `test_docs_freshness.PublishedLimitationTests.test_no_published_limitation_outlives_its_repair`,
+    naming `treasury_settlement_aggregate` at `docs/PROJECT_STATUS.md:262`.
+    That guard's predicate reads `treasury_auctions`' declared `fields` and
+    fails the moment any `treasury_settlement_` component appears beside the
+    aggregate -- it was wired for this block before this block existed. The page
+    still says the adapter does not emit the components. It does now, and
+    `docs/PROJECT_STATUS.md` is `HUMAN_ONLY`, so the repair is a human edit,
+    reported rather than made. That failure is excluded from "control" for that
+    reason and no other; the mutations below are each scored as tests failing
+    beyond it.
+
+    1. **`"null"` read as zero.** `_treasury_amount`'s withheld branch returns
+       `0.0` instead of `None`. Killed this test, `AssertionError` -- "a
+       withheld SOMA award was published as a number", naming all three unheld
+       settlement dates. One test beyond the control.
+    2. **The unknown type defaulted to coupon.** The call to
+       `treasury_settlement_component` replaced by an inline
+       `"treasury_settlement_bill" if security_type in ("Bill", "CMB") else
+       "treasury_settlement_coupon"`. Killed this test, `AssertionError`
+       ("ValueError not raised"). This is the mutation that shows the
+       classification really goes through the contract's function rather than a
+       copy of its sets: the inline version classifies every fixture record
+       identically and differs only on the planted `Perpetual`. One test beyond
+       the control.
+    3. **The date guard removed.** The `record_date < auction_date` `raise`
+       deleted. Killed this test, `AssertionError` ("ValueError not raised").
+       One test beyond the control.
+    4. **The tolerance hard-coded tighter, and it did not kill.** The identity
+       tolerance read replaced by a literal `0.0` in this test. The test still
+       passes, and that is the honest result rather than a fourth kill. On this
+       snapshot the aggregate equals bill plus coupon **exactly**, to the bit,
+       on all 1088 settlement dates, and reversing the order the components are
+       summed in does not change that. Every `offering_amt` is a whole number of
+       millions taking one of two residues modulo a billion, 0 or 25000000, and
+       the largest key aggregate is 531.0 USD billions, whose ulp is 1.1e-13.
+       So the widest summation-order disagreement this fixture can produce is
+       four orders of magnitude inside the declared 1e-9, and every tolerance
+       from 0.0 up to 1e-9 returns the same verdict on every key. The declared
+       tolerance is **not exercisable here**, and no mutation of it can be
+       recorded as killing this test. It is read from
+       `TREASURY_SETTLEMENT_IDENTITY` anyway: a literal would be a second
+       definition of a number `contract.py` already owns, and a later snapshot
+       -- odd-million cash-management bills, or aggregates large enough to move
+       the exponent -- would exercise it. What guards the declared number today
+       is `test_contract.TreasurySettlementSplitTests.test_soma_is_outside_the_identity`,
+       which checks the declaration rather than a sum.
+
+    Re-run of an existing record
+    ----------------------------
+
+    This block edits `treasury_auctions` in `metadata/sources.json`, which
+    mutation 10 of `test_docs_freshness.PublishedLimitationTests` names. Re-run
+    on this tree: `access` set to `"licensed"` still kills
+    `test_no_published_limitation_claims_a_blocker_that_has_cleared`,
+    `AssertionError`. It had not gone quiet under the rewritten limitation.
+    """
+
+    FIXTURE = (
+        REPO_ROOT
+        / "tests"
+        / "fixtures"
+        / "snapshots"
+        / "treasury_auctions"
+        / "auctions_2018_present.json"
+    )
+    RETRIEVED_AT = "2026-09-10T19:10:00+00:00"
+
+    def _artifact(self):
+        payload = self.FIXTURE.read_bytes()
+        return (
+            SnapshotArtifact(
+                source_id="treasury_auctions",
+                path=self.FIXTURE,
+                retrieved_at=self.RETRIEVED_AT,
+                sha256=hashlib.sha256(payload).hexdigest(),
+                url="https://api.fiscaldata.treasury.gov/services/api/fiscal_service/"
+                "v1/accounting/od/auctions_query",
+                byte_count=len(payload),
+            ),
+            payload,
+        )
+
+    def _planted(self, payload, **overrides):
+        """The snapshot with one extra record, copied from a real one."""
+
+        parsed = json.loads(payload)
+        record = dict(parsed["data"][0])
+        record.update(overrides)
+        parsed["data"] = list(parsed["data"]) + [record]
+        return json.dumps(parsed).encode()
+
+    def test_every_auction_settles_into_one_declared_component_and_the_parts_sum_to_the_aggregate(
+        self,
+    ):
+        from repo_model.contract import (
+            TREASURY_SETTLEMENT_COMPONENTS,
+            TREASURY_SETTLEMENT_IDENTITY,
+        )
+        from repo_model.ingest import _treasury_rows
+
+        artifact, payload = self._artifact()
+        rows = _treasury_rows(artifact, payload)
+
+        by_key = {}
+        for row in rows:
+            by_key.setdefault((row.ref_date, row.available_at), {})[
+                row.series_id
+            ] = row.value
+
+        # The components exist at all, which is what A10 was about.
+        emitted = {row.series_id for row in rows}
+        self.assertEqual(
+            emitted,
+            {"treasury_settlement"} | set(TREASURY_SETTLEMENT_COMPONENTS),
+            msg="the adapter emits the aggregate alone, unsplit",
+        )
+
+        # The identity, over the legs that are present, at the declared
+        # tolerance. An absent leg is absent: no key carries a component whose
+        # value is exactly the zero an absent one would have been given.
+        tolerance = float(TREASURY_SETTLEMENT_IDENTITY["tolerance"]["absolute"])
+        right = tuple(TREASURY_SETTLEMENT_IDENTITY["right"])
+        keys_missing_a_leg = 0
+        for key, values in by_key.items():
+            left = values["treasury_settlement"]
+            present = [values[name] for name in right if name in values]
+            self.assertTrue(present, msg=f"{key} settles into no declared component")
+            if len(present) < len(right):
+                keys_missing_a_leg += 1
+            self.assertLessEqual(
+                abs(left - sum(present)),
+                tolerance,
+                msg=(
+                    f"{key}: aggregate {left!r} is not the sum of its present "
+                    f"components {present!r} within {tolerance}"
+                ),
+            )
+        self.assertGreater(
+            keys_missing_a_leg,
+            0,
+            msg="no key is missing a leg, so absence is not being exercised",
+        )
+
+        # Classification goes through the contract's function, so an undeclared
+        # security type is a refusal and not a third bucket.
+        with self.assertRaisesRegex(ValueError, "neither a declared bill"):
+            _treasury_rows(
+                artifact, self._planted(payload, security_type="Perpetual")
+            )
+
+        # A withheld result takes its whole key's component with it. The three
+        # settlement dates whose auctions were unheld at retrieval carry no
+        # SOMA value -- not a zero, and not the sum of their held siblings.
+        soma_keys = {
+            key for key, values in by_key.items() if "treasury_settlement_soma" in values
+        }
+        unheld = {date(2026, 9, 17), date(2026, 9, 18), date(2026, 9, 30)}
+        self.assertEqual(
+            {key[0] for key in by_key} & unheld,
+            unheld,
+            msg="the fixture no longer carries the unheld auctions",
+        )
+        self.assertEqual(
+            {key[0] for key in soma_keys} & unheld,
+            set(),
+            msg="a withheld SOMA award was published as a number",
+        )
+        seventeenth = next(key for key in by_key if key[0] == date(2026, 9, 17))
+        self.assertNotIn("treasury_settlement_soma", by_key[seventeenth])
+
+        # A result dated before the auction that produced it is refused. The
+        # snapshot has none, so this one is planted.
+        with self.assertRaisesRegex(ValueError, "a result dated before its auction"):
+            _treasury_rows(
+                artifact,
+                self._planted(
+                    payload,
+                    auction_date="2026-09-15",
+                    record_date="2026-09-14",
+                    issue_date="2026-09-14",
+                    soma_accepted="1000000000",
+                ),
+            )
+
 
 
 if __name__ == "__main__":
