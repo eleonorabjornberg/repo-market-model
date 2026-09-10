@@ -941,10 +941,13 @@ def _nmfp_absence_is_indistinguishable_from_parse_failure():
     `structural_zeros` entry while `structural_zeros_reviewed` is false, so no
     block can land the first clause without a review nobody has done. The row is
     therefore a `declaration` row now, not a `software` one, and it names the
-    review as its blocker. A review recorded before a declaration's `when` has a
-    grammar would let one period's zero stand for every month, 2026-07-31
-    included -- the reader answers "declared at all", not "declared for this
-    month".
+    review as its blocker. The period grammar landed with Track A block 7
+    (`3e1efeb`): a declaration covers `from`..`through` against the
+    cross-section's own `ref_date`, so a review no longer lets one period's zero
+    stand for every month. The review itself is still the blocker. The grammar's
+    refusals are not yet guarded -- the `through`-required refusal mutated to a
+    no-op kills nothing, measured at its merge -- and that guard is queued to
+    land before the review.
 
     Mutation record
     ---------------
