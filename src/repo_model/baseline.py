@@ -3130,26 +3130,46 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 _BUILD_MANIFEST_SUFFIX = ".manifest.json"
 
 #: The manifest fields a record can check against the panel it actually scored,
-#: as `(manifest key, record key)`. Three, because `write_daily_panel` records
-#: no digest of the panel it describes, so extent is the whole of the available
-#: evidence -- see `_bind_build_manifest`. Both keys of each pair are already
-#: computed: the manifest claims one side and the emitted `panel` object
-#: carries the other, so the comparison derives nothing new.
+#: as `(manifest key, record key)`. Three of extent, and they are checked on
+#: every manifest whether or not it also carries a digest: extent is the
+#: cheaper claim and it is the one a partial rebuild breaks first. Both keys of
+#: each pair are already computed -- the manifest claims one side and the
+#: emitted `panel` object carries the other -- so the comparison derives
+#: nothing new. See `_bind_build_manifest`.
 _MANIFEST_EXTENT = (
     ("row_count", "row_count"),
     ("start_date", "first_date"),
     ("end_date", "last_date"),
 )
 
+#: The identity claim, as `(manifest key, record key)` like the extent pairs
+#: above, and kept apart from them because it is **optional on the manifest
+#: side**. `write_daily_panel` records a top-level `sha256` of the panel it
+#: describes; a manifest written before it did carries none, and there is one
+#: such manifest published in `docs/runs/`. Optional on the manifest, required
+#: on the record: a manifest that claims a digest and a report that cannot
+#: produce one to compare it against is a check that cannot be made, not a
+#: check that passed.
+_MANIFEST_DIGEST = ("sha256", "sha256")
+
 #: What `panel.build_manifest_binding` says the binding was, and what it was
 #: not. Stated in the artifact rather than left to a reader who finds a
 #: manifest embedded beside a digest and assumes the two were checked against
 #: each other.
 _EXTENT_BINDING_NOTE = (
-    "the build manifest carries no digest of the panel it describes, so this "
-    "binds it to the panel by extent and not by bytes: a manifest is a claim "
-    "about a path, and the bytes under that path may have changed since it was "
-    "written"
+    "this manifest carries no digest of the panel it describes, so this binds "
+    "it to the panel by extent and not by bytes: a manifest is a claim about a "
+    "path, and the bytes under that path may have changed since it was written"
+)
+
+#: The same field when the manifest does carry a digest. Said in the artifact
+#: for the same reason the sentence above is: the two bindings are different
+#: strengths of evidence and a reader must not have to infer which one a
+#: record was given from the presence of a key.
+_DIGEST_BINDING_NOTE = (
+    "this manifest carries a digest of the panel it describes and it is the "
+    "digest of the bytes this run scored, so the manifest is bound to the "
+    "panel by bytes; the extent is checked beside it and agrees"
 )
 
 
@@ -3245,26 +3265,48 @@ def _code_provenance() -> Optional[dict]:
 def _bind_build_manifest(panel: dict, manifest: dict) -> dict:
     """Check a build manifest against the panel that was scored, or refuse.
 
-    The manifest records `"path": str(path)` and **no digest of the panel it
-    describes**, so a manifest found beside a panel is a claim about a *name*,
-    and the bytes under that name may have changed since. Binding on the path
-    alone is therefore no check at all: it is green on every well-formed input,
-    including a manifest carried over from an entirely different build.
+    A manifest records `"path": str(path)`, so a manifest found beside a panel
+    is at minimum a claim about a *name*, and the bytes under that name may
+    have changed since. Binding on the path alone is therefore no check at all:
+    it is green on every well-formed input, including a manifest carried over
+    from an entirely different build.
 
-    What can be checked is what the manifest does carry and the record already
-    knows -- `row_count`, `start_date` and `end_date`, against the emitted
-    panel's `row_count`, `first_date` and `last_date`. Neither side is a new
-    derivation: the manifest claims one and the run that produced the record
-    computed the other.
+    **Two strengths of evidence, and the binding names which one it had.**
 
-    That is evidence of extent, not of identity, and the returned binding says
-    so in the artifact. The digest gap is `write_daily_panel`'s and is Track
-    A's to close; this function is written so that closing it is an addition
-    here rather than a correction.
+    Extent, always. `row_count`, `start_date` and `end_date` against the
+    emitted panel's `row_count`, `first_date` and `last_date`. Neither side is
+    a new derivation: the manifest claims one and the run that produced the
+    record computed the other.
+
+    Identity, when the manifest carries it. `write_daily_panel` now records a
+    top-level `sha256` of the panel it describes -- the gap this function's
+    docstring used to call Track A's to close, closed in their A6 -- and where
+    it is present it is compared against the record's own `panel["sha256"]`,
+    the digest of the bytes this run actually read. Extent is still checked
+    beside it, so a digest binding is strictly the stronger of the two and
+    never the narrower.
+
+    The comparison is against the **record's** digest and not a fresh hash of
+    the path. Re-hashing here would read the file a second time, and a binder
+    whose two reads straddle a rewrite would compare a manifest against bytes
+    that were never scored -- reintroducing, one level down, exactly the
+    path-is-not-bytes decay this function exists to refuse.
+
+    A manifest with no `sha256` binds by extent as before and the returned
+    note says that is what happened, so a reader can tell a record that was
+    checked by bytes from one that could not be.
+
+    Returns:
+        The `build_manifest_binding` object: `kind` -- `"digest"` when the
+        digests were compared and `"extent"` when the manifest offered none --
+        the record keys `compared`, and the `note` that says what was not
+        checked.
 
     Raises:
-        ProvenanceMismatchError: if any of the three disagrees, or if either
-            side does not carry one of them. A record that cannot bind a
+        ProvenanceMismatchError: if any compared pair disagrees; if the
+            manifest omits one of the extent fields or the record omits its
+            counterpart; or if the manifest claims a digest and the record
+            carries none to compare it against. A record that cannot bind a
             manifest it found must not publish it, and must not quietly drop
             it either.
     """
@@ -3297,7 +3339,35 @@ def _bind_build_manifest(panel: dict, manifest: dict) -> dict:
             )
         compared.append(record_key)
 
-    return {"kind": "extent", "compared": compared, "note": _EXTENT_BINDING_NOTE}
+    manifest_key, record_key = _MANIFEST_DIGEST
+    if manifest_key not in manifest:
+        return {
+            "kind": "extent",
+            "compared": compared,
+            "note": _EXTENT_BINDING_NOTE,
+        }
+
+    if record_key not in panel:
+        raise ProvenanceMismatchError(
+            f"the build manifest beside {panel['path']} carries a "
+            f"{manifest_key!r} of the panel it describes, but this report does "
+            f"not carry the scored panel's {record_key!r}, so the two digests "
+            "cannot be compared; a manifest that cannot be checked must not be "
+            "published as provenance"
+        )
+    claimed = manifest[manifest_key]
+    scored = panel[record_key]
+    if claimed != scored:
+        raise ProvenanceMismatchError(
+            f"the build manifest beside {panel['path']} describes a panel with "
+            f"{manifest_key}={claimed!r}, but the panel this run scored has "
+            f"{record_key}={scored!r}; the manifest describes different bytes "
+            "and publishing it would attribute these numbers to a build that "
+            "did not produce them"
+        )
+    compared.append(record_key)
+
+    return {"kind": "digest", "compared": compared, "note": _DIGEST_BINDING_NOTE}
 
 
 def _run_provenance(
@@ -3321,10 +3391,11 @@ def _run_provenance(
 
     None of that was unrecorded. `data.write_daily_panel` writes every built
     panel with a `<panel>.manifest.json` beside it, carrying the build cutoff,
-    the decision time, the extent, the built and refused columns, the holes and
-    `source_shas` -- the raw snapshot digests. Nothing read it. A manifest
-    nobody reads is a file, not a record, and this function is the line that
-    crosses the gap.
+    the decision time, the extent, the built and refused columns, the holes,
+    `source_shas` -- the raw snapshot digests -- and, since Track A's A6, a
+    top-level `sha256` of the panel itself. Nothing read it. A manifest nobody
+    reads is a file, not a record, and this function is the line that crosses
+    the gap.
 
     **One builder, two documents.** Both records grow the same section from
     here rather than each spelling it. Two evaluators now publish records, and
@@ -3349,7 +3420,10 @@ def _run_provenance(
 
     Args:
         panel: the record's `panel` object, already carrying path, digest and
-            -- when the report knows them -- the extent. **Grown in place**
+            -- when the report knows them -- the extent. The digest is what a
+            manifest's own `sha256` is bound against, which is why it is taken
+            once by the caller and read here rather than recomputed.
+            **Grown in place**
             with `build_manifest` and `build_manifest_binding` when a manifest
             is found, because a manifest describes the panel and belongs under
             it, while the code and the input digests describe the run.
@@ -3368,7 +3442,10 @@ def _run_provenance(
 
     Raises:
         ProvenanceMismatchError: via `_bind_build_manifest`, when a manifest
-            beside the panel does not describe the panel that was scored.
+            beside the panel does not describe the panel that was scored --
+            by digest where the manifest carries one, by extent otherwise --
+            or when it carries a claim this record has nothing to check
+            against.
     """
 
     manifest_path = Path(str(panel_path) + _BUILD_MANIFEST_SUFFIX)

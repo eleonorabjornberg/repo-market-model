@@ -4270,9 +4270,10 @@ class RunProvenanceTests(unittest.TestCase):
 
     None of the rest was unrecorded. `data.write_daily_panel` writes every
     built panel with a `<panel>.manifest.json` beside it, carrying the build
-    cutoff, the extent, the built and refused columns, the holes and
-    `source_shas` -- the raw snapshot digests the panel was built from. Nothing
-    read it. `grep -c manifest` returned nothing in every one of this track's
+    cutoff, the extent, the built and refused columns, the holes,
+    `source_shas` -- the raw snapshot digests the panel was built from -- and,
+    since Track A's A6, a top-level `sha256` of the panel itself. Nothing read
+    it. `grep -c manifest` returned nothing in every one of this track's
     modules. **A manifest nobody reads is a file, not a record.**
 
     Every fixture here is built in a temporary directory. Nothing under
@@ -4283,20 +4284,32 @@ class RunProvenanceTests(unittest.TestCase):
     Why the criterion is a mismatch and not a fields-are-present case
     ================================================================
 
-    The build manifest records `"path": str(path)` and **no digest of the panel
-    it describes**. So a manifest found beside a panel is a claim about a
-    *name*, and the bytes under that name may have changed since -- the decay
-    `backtest_document`'s own docstring rejects, in this repository, about this
-    file. Binding on that path is what a reasonable person writes first and it
-    is green on every well-formed input, including a manifest belonging to an
-    entirely different build. A test asserting only that the section exists
-    passes just as happily on provenance belonging to another panel.
+    A build manifest records `"path": str(path)`. So a manifest found beside a
+    panel is at minimum a claim about a *name*, and the bytes under that name
+    may have changed since -- the decay `backtest_document`'s own docstring
+    rejects, in this repository, about this file. Binding on that path is what
+    a reasonable person writes first and it is green on every well-formed
+    input, including a manifest belonging to an entirely different build. A
+    test asserting only that the section exists passes just as happily on
+    provenance belonging to another panel.
 
-    So the record binds by what the manifest does carry and the record already
-    knows -- `row_count`, `start_date`, `end_date` -- and says in the artifact
-    that the binding is by extent rather than by digest. The digest gap is
-    `write_daily_panel`'s, it is Track A's to close, and it is reported rather
-    than reached for.
+    So the record binds by what the manifest carries and the record already
+    knows, and says in the artifact which of the two it got:
+
+      * **extent**, always -- `row_count`, `start_date`, `end_date` against the
+        emitted panel's `row_count`, `first_date`, `last_date`;
+      * **digest**, where the manifest carries one. `write_daily_panel` records
+        a top-level `sha256` of the panel it describes as of Track A's A6. Up
+        to that point this class's docstring said the digest gap was Track A's
+        to close and was reported rather than reached for; it is closed, and
+        `_bind_build_manifest` compares it against the record's own
+        `panel["sha256"]` -- the digest of the bytes this run read, not a
+        second hash of the path.
+
+    The same shape of criterion applies to the second binding as to the first:
+    reporting `kind` from the presence of the key, without comparing anything,
+    is green on every well-formed input. Only the mismatch half refuses it,
+    which is why the digest criterion below is also a mismatch case.
 
     Mutation record
     ===============
@@ -4319,6 +4332,43 @@ class RunProvenanceTests(unittest.TestCase):
     `tests/test_cli_eval.py`,
     `test_a_manifest_that_does_not_describe_the_panel_leaves_no_report_behind`,
     dies the same way -- the command exits 0 and writes the artifact.
+
+    Mutation record: the digest binding
+    ===================================
+
+    Same discipline, and one addition to it. The disposable copy was taken at
+    `$HOME/mutation-copy`, the path this repository's standing rules name, and
+    a **concurrently running track rebuilt that same path mid-run** -- the
+    second mutation was scored against the other branch's tree, which showed
+    four unrelated `test_contract` failures and one silently reverted module.
+    The copy is now taken at a path unique to the block. A shared literal path
+    under `$HOME` is a shared mutable resource between two agents told to use
+    it, and it fails exactly as one: quietly, and looking like a finding.
+
+    All three mutations killed
+    `test_a_manifest_whose_digest_is_not_the_scored_panel_is_refused`, which is
+    both the acceptance criterion and the target:
+
+      * **the digest comparison removed**, the `claimed != scored` refusal
+        deleted while the key check and `kind: "digest"` stay. This is the trap
+        the criterion exists for: the matching case still passes and the
+        binding still reports `digest`. `AssertionError: ProvenanceMismatchError
+        not raised`, on both records.
+      * **`kind` hardcoded**, the extent return relabelled `"digest"`.
+        `AssertionError: 'digest' != 'extent'`, on both records, and it also
+        kills `test_the_build_manifest_is_carried_whole_and_bound_by_extent` --
+        the pre-A6 manifest published in `docs/runs/` is the case that binding
+        would misdescribe.
+      * **the missing-record-digest refusal a no-op**, the `record_key not in
+        panel` branch deleted. `KeyError: 'sha256'` -- an error, not a failure,
+        and named here because a refusal replaced by an unhandled lookup is a
+        different fact from a refusal that still refuses.
+
+    That third case is asserted against `_bind_build_manifest` directly. Both
+    public builders write `panel["sha256"]` unconditionally, so neither can
+    reach it; a test that waited for one of them to is a test that would never
+    run.
+
     """
 
     #: The gap the fixture run is purged at. One day, because this class is
@@ -4524,6 +4574,85 @@ class RunProvenanceTests(unittest.TestCase):
                         ])
                         with self.assertRaises(ProvenanceMismatchError):
                             build()
+
+    def test_a_manifest_whose_digest_is_not_the_scored_panel_is_refused(self):
+        """The digest binding, and the three ways it is not a green light.
+
+        The acceptance criterion for the block that closed the digest gap.
+        `write_daily_panel` now records a top-level `sha256` of the panel it
+        describes, so a manifest that carries one can be bound to the scored
+        panel by bytes rather than by extent -- and the whole value of that is
+        in the half that refuses.
+
+        Four cases, each by its own assertion, because "reports `digest`" and
+        "compared the digests" are different claims and only one of them is
+        worth publishing:
+
+          * a manifest whose `sha256` is not the scored panel's is refused.
+            This is the case that kills a binder which reads the key and
+            reports `kind` from its presence without comparing anything.
+          * a matching `sha256` binds, says `digest`, and names `sha256` among
+            what it compared. The control: without it a binder that refused
+            every digest-bearing manifest would pass the case above.
+          * a manifest carrying no `sha256` still binds by extent and still
+            says so, because one such manifest is published in `docs/runs/`
+            and a stricter rule would retroactively refuse it.
+          * a manifest that claims a digest against a report carrying none is
+            refused rather than bound. A check that cannot be made is not a
+            check that passed, and this is the only case the two public
+            builders cannot reach -- both always record the panel's digest --
+            so it is asserted against the binder directly.
+
+        The compared digest is the record's own `panel["sha256"]`, taken once
+        from the bytes the run read. A binder that re-hashed the path here
+        would read the file twice, and two reads straddling a rewrite compare a
+        manifest against bytes nobody scored.
+        """
+
+        scored = hashlib.sha256(self.panel.read_bytes()).hexdigest()
+        wrong = hashlib.sha256(b"a panel this run did not score").hexdigest()
+        self.assertNotEqual(scored, wrong)
+
+        for name, build in self.builders():
+            with self.subTest(document=name):
+                # A digest that is not this panel's, with every extent field
+                # correct, so nothing but the digest comparison can refuse it.
+                self.write_manifest(sha256=wrong)
+                with self.assertRaisesRegex(
+                    ProvenanceMismatchError, "describes different bytes"
+                ):
+                    build()
+
+                # The matching digest publishes, and says what it checked.
+                self.write_manifest(sha256=scored)
+                binding = build()["panel"]["build_manifest_binding"]
+                self.assertEqual(binding["kind"], "digest")
+                self.assertIn("sha256", binding["compared"])
+                # The extent is checked beside it, never instead of it.
+                for record_key in ("row_count", "first_date", "last_date"):
+                    self.assertIn(record_key, binding["compared"])
+
+                # A manifest from before the digest existed binds as it did.
+                self.write_manifest()
+                binding = build()["panel"]["build_manifest_binding"]
+                self.assertEqual(binding["kind"], "extent")
+                self.assertNotIn("sha256", binding["compared"])
+
+        # A claim with nothing to check it against. Neither builder can emit a
+        # record without the panel's digest, so the binder is asked directly.
+        recordless = {
+            "path": str(self.panel),
+            "row_count": len(self.rows),
+            "first_date": self.rows[0].date.isoformat(),
+            "last_date": self.rows[-1].date.isoformat(),
+        }
+        self.assertNotIn("sha256", recordless)
+        with self.assertRaisesRegex(
+            ProvenanceMismatchError, "cannot be compared"
+        ):
+            baseline._bind_build_manifest(
+                recordless, self.write_manifest(sha256=scored)
+            )
 
     def test_the_build_manifest_is_carried_whole_and_bound_by_extent(self):
         """The manifest is embedded as it is, and the binding names its limit.
