@@ -1099,11 +1099,74 @@ DERIVED_ABSENCE_DECLARED_ZERO = "declared_structural_zero"
 DERIVED_ABSENCE_UNDECLARED = "no_declaration"
 
 
+@dataclass(frozen=True)
+class StructuralZeroPeriod:
+    """One declared structural zero: the reviewer's grounds and the months it covers.
+
+    `start` carries the registry's `from`, which cannot be spelled as an
+    attribute name, and `None` means unbounded below. `through` is the
+    registry's `through`. Both bounds are inclusive.
+
+    The asymmetry -- `through` required, `from` optional -- is the point of
+    the grammar rather than a corner cut. A structural zero is almost always
+    a statement about a period that ended: the facility did not exist yet,
+    the instrument was not eligible, the table did not carry the category. A
+    declaration left open at the top annexes every month the source has not
+    reached, including months no reviewer has seen, and it does so silently
+    because nothing about it looks unbounded. Left open at the bottom it
+    annexes only the past, which is finite and already reviewed, and it
+    spares a reviewer inventing a start date for something that was true
+    before the series began.
+
+    `when` is still required and still the reviewer's prose. The period does
+    not replace it: the dates say *which* cross-sections a declaration covers
+    and `when` says on what grounds, which is the half no date can carry and
+    the half a reader needs in order to disagree with it.
+    """
+
+    when: str
+    through: date
+    start: Optional[date] = None
+
+    def covers(self, ref_date: date) -> bool:
+        """True when a cross-section dated `ref_date` falls inside the declaration."""
+
+        if ref_date > self.through:
+            return False
+        return self.start is None or ref_date >= self.start
+
+
+def _structural_zero_bound(
+    source_id: str, field: str, key: str, raw: object
+) -> date:
+    """One inclusive ISO bound of a structural-zero declaration, or a refusal.
+
+    Refusing an unparseable bound rather than dropping the declaration is the
+    same ruling `validate_coverage_eras` makes one screen up: a declaration
+    that silently stops declaring is worse than one that fails loudly,
+    because the disposition it produces -- `DERIVED_ABSENCE_UNDECLARED` --
+    is a real answer that a reader has no way to tell from a typo.
+    """
+
+    if not isinstance(raw, str) or not raw.strip():
+        raise DataContractError(
+            f"{source_id}: structural_zeros entry for {field!r} has a {key} "
+            f"of {raw!r}; bounds are inclusive ISO YYYY-MM-DD dates"
+        )
+    try:
+        return date.fromisoformat(raw.strip())
+    except ValueError as exc:
+        raise DataContractError(
+            f"{source_id}: structural_zeros entry for {field!r} has a {key} "
+            f"of {raw!r}, which is not an ISO YYYY-MM-DD date"
+        ) from exc
+
+
 def declared_structural_zeros(
     source_id: str,
     source: Mapping[str, object],
-) -> Mapping[str, str]:
-    """Read one source's declared structural zeros, each field to the `when` it names.
+) -> Mapping[str, StructuralZeroPeriod]:
+    """Read one source's declared structural zeros, each field to the period it covers.
 
     This is the registry declaration nothing in this package used to read. It was
     declared, shape-checked by `tests/test_contract.py`, and never consulted --
@@ -1120,15 +1183,30 @@ def declared_structural_zeros(
     reviewer towards declaring something to make the build pass, which is the one
     outcome this field must never reward.
 
-    `when` is carried through verbatim and is **not** compared against a
-    reference date, because the registry declares no grammar for it: it is
-    free-form prose that `tests/test_contract.py` requires only to be a non-empty
-    string. So this answers "is this field declared a structural zero at all",
-    which is the question that separates "they held none" from "we never found
-    it". It does not answer "is it declared for *this* month", and a
-    `DERIVED_ABSENCE_DECLARED_ZERO` must not be read as a period assertion.
-    Narrowing it would take a declared `when` grammar in the registry, which is a
-    change to a shared schema and not this function's to invent.
+    Returns the declared **period** per field, not the prose, and that is the
+    difference between two questions this used to conflate. `when` is
+    free-form prose that `tests/test_contract.py` requires only to be a
+    non-empty string, so a reader holding only `when` can answer "is this
+    field declared a structural zero at all" -- which separates "they held
+    none" from "we never found it" -- and can never answer "is it declared
+    for *this* month".
+
+    For `sec_nmfp` those two questions have different answers, which is why
+    the second one had to become askable. Thirty-three repo months record a
+    derivation that ran and matched nothing; thirty-two of them (2010-11 to
+    2013-08) precede the facility, and one, 2026-07-31, is a month the
+    facility existed and these funds did not use it. A single declaration
+    answering "declared at all" makes both read
+    `DERIVED_ABSENCE_DECLARED_ZERO` and so erases the one month that is the
+    entire reason to look -- a reviewer's statement about the pre-facility
+    era, silently extended over a month nobody reviewed.
+
+    `through` is required for that reason and not out of tidiness: an
+    optional upper bound would leave the unbounded declaration expressible,
+    and the unbounded declaration is precisely the one that gets this case
+    wrong. `DERIVED_ABSENCE_DECLARED_ZERO` is now a period assertion, and
+    `_nmfp_unmatched_derived_fields` decides it against the cross-section's
+    own ref_date.
 
     `structural_zeros_reviewed` is deliberately not re-checked here.
     `tests/test_contract.py` already requires an unreviewed source's
@@ -1143,7 +1221,7 @@ def declared_structural_zeros(
         raise DataContractError(
             f"{source_id}: structural_zeros must be a list of declarations"
         )
-    found: Dict[str, str] = {}
+    found: Dict[str, StructuralZeroPeriod] = {}
     for declaration in declarations:
         if not isinstance(declaration, Mapping):
             raise DataContractError(
@@ -1160,14 +1238,39 @@ def declared_structural_zeros(
                 f"{source_id}: structural_zeros entry for {field!r} states no "
                 "'when'; a structural zero nobody bounded is not reviewable"
             )
+        through = declaration.get("through")
+        if through is None:
+            raise DataContractError(
+                f"{source_id}: structural_zeros entry for {field!r} states no "
+                "'through'; a declaration with no last covered cross-section "
+                "covers every month the source has not reached yet"
+            )
+        last = _structural_zero_bound(source_id, field, "through", through)
+        # Absent -- or an explicit null, which is how JSON writes absent --
+        # means unbounded below. Anything else is parsed and must parse.
+        first = None
+        if declaration.get("from") is not None:
+            first = _structural_zero_bound(
+                source_id, field, "from", declaration["from"]
+            )
+            if first > last:
+                raise DataContractError(
+                    f"{source_id}: structural_zeros entry for {field!r} runs "
+                    f"from {first.isoformat()} through {last.isoformat()}, "
+                    "which declares no cross-sections at all"
+                )
         # Two declarations for one field would make the disposition depend on
         # iteration order, and the answer here is one disposition per field.
-        # Refusing costs less than picking one.
+        # Refusing costs less than picking one. Two periods for one field are
+        # the same defect wearing a grammar: the union of two declared spans
+        # is a third declaration nobody wrote.
         if field.strip() in found:
             raise DataContractError(
                 f"{source_id}: structural_zeros declares {field.strip()!r} twice"
             )
-        found[field.strip()] = when.strip()
+        found[field.strip()] = StructuralZeroPeriod(
+            when=when.strip(), through=last, start=first
+        )
     return found
 
 
