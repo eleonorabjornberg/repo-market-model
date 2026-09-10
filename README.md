@@ -62,13 +62,13 @@ on the previous business day.
 **Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `b6af33bb7c64`.
 
 **Evaluation.** Purged rolling origin, 6-day purge, **2080 forecast origins**,
-first scored 2018-05-07, last scored 2026-09-03. Run at `0a88e70`.
+first scored 2018-05-07, last scored 2026-09-03. Run at `04527a7`.
 
 | Measure | Benchmark | Value | 90% interval |
 |---|---|---|---|
 | Mean absolute error | persistence | 3.14 bp | 2.60 to 3.79 bp |
 | CRPS | persistence | 2.56 bp | not intervalled |
-| Interval coverage | nominal 90% | **81.0%** | see below |
+| Interval coverage | nominal 90% | **81.0%** | 78.3% to 83.6% |
 | Pinball loss, quantile 0.05 | persistence | 0.95 bp | not intervalled |
 | Pinball loss, quantile 0.25 | persistence | 1.46 bp | not intervalled |
 | Pinball loss, quantile 0.50 | persistence | 1.58 bp | not intervalled |
@@ -77,7 +77,7 @@ first scored 2018-05-07, last scored 2026-09-03. Run at `0a88e70`.
 
 The interval is a stationary bootstrap, block length 5, 2000 replications, on the errors themselves; the folds overlap in horizon, so a formula assuming independent draws would report a narrower interval than the data supports.
 
-**The coverage line is the honest one, and it is now a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. That gap is not sampling noise: intervalling the realised coverage at the record's own block length, under both of the fold arrangements the record admits, excludes the nominal probability under each. What it is instead — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite. The bracketing does not yet appear in a published record, which is why its numbers are not quoted here.
+**The coverage line is the honest one, and it is a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. Intervalled the same way as the error above (stationary bootstrap, block length 5, 2000 replications, seed 1755593764), the realised coverage lies between 78.3% and 83.6%, which excludes the nominal probability. What the gap is — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 

@@ -124,6 +124,8 @@ def key_findings(persistence, exceedance):
     folds = require(persistence, "folds")
     metrics = require(persistence, "metrics")
     interval = require(metrics, "mae_bps_interval")
+    coverage = require(metrics, "interval_calibration", "coverage_interval")
+    nominal = require(metrics, "interval_calibration", "declared_probability")
     pinball = require(metrics, "pinball_loss")
     taus = require(exceedance, "metrics", "by_tau")
     commit = require(persistence, "provenance", "code", "commit")[:7]
@@ -160,8 +162,9 @@ def key_findings(persistence, exceedance):
     add("| Mean absolute error | persistence | %s bp | %s to %s bp |" % (
         bp(metrics["mae_bps"]), bp(interval["lower"]), bp(interval["upper"])))
     add("| CRPS | persistence | %s bp | not intervalled |" % bp(metrics["crps_bps"]))
-    add("| Interval coverage | nominal %s | **%s** | see below |" % (
-        pct(metrics["interval_probability"], 0), pct(metrics["interval_coverage"])))
+    add("| Interval coverage | nominal %s | **%s** | %s to %s |" % (
+        pct(metrics["interval_probability"], 0), pct(metrics["interval_coverage"]),
+        pct(coverage["lower"]), pct(coverage["upper"])))
     for level in levels:
         add("| Pinball loss, quantile %s | persistence | %s bp | not intervalled |" % (
             level, bp(pinball[level])))
@@ -171,16 +174,24 @@ def key_findings(persistence, exceedance):
         "independent draws would report a narrower interval than the data supports."
         % (interval["block_length"], interval["replications"]))
     add("")
-    add("**The coverage line is the honest one, and it is now a finding.** A nominal %s "
-        "interval covered %s of %d realised outcomes. That gap is not sampling noise: "
-        "intervalling the realised coverage at the record's own block length, under both "
-        "of the fold arrangements the record admits, excludes the nominal probability "
-        "under each. What it is instead — a miscalibrated benchmark, or one a challenger "
-        "will improve on — is open, and no verdict is asserted in the suite. The "
-        "bracketing does not yet appear in a published record, which is why its numbers "
-        "are not quoted here."
-        % (pct(metrics["interval_probability"], 0),
-           pct(metrics["interval_coverage"]), folds["count"]))
+    # The verdict is computed from the record, not written: if a re-run ever
+    # brackets the nominal probability, the paragraph says so instead.
+    excludes = not (coverage["lower"] <= nominal <= coverage["upper"])
+    add("**The coverage line is the honest one, and it is %s.** A nominal %s "
+        "interval covered %s of %d realised outcomes. Intervalled the same way as the "
+        "error above (stationary bootstrap, block length %d, %d replications, seed %d), "
+        "the realised coverage lies between %s and %s, which %s the nominal "
+        "probability. %s"
+        % ("a finding" if excludes else "not yet a finding",
+           pct(metrics["interval_probability"], 0),
+           pct(metrics["interval_coverage"]), folds["count"],
+           coverage["block_length"], coverage["replications"], coverage["seed"],
+           pct(coverage["lower"]), pct(coverage["upper"]),
+           "excludes" if excludes else "includes",
+           "What the gap is — a miscalibrated benchmark, or one a challenger will "
+           "improve on — is open, and no verdict is asserted in the suite."
+           if excludes else
+           "The gap is within what resampling the same history produces."))
     add("")
     add("**The control that licenses every future skill number.** A climatology scored "
         "against climatology must show no skill. Over the same %d origins its Brier "
