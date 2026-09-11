@@ -138,7 +138,9 @@ large and because provider terms still apply.
 
 Network responses can be revised or republished. Re-running a download later is
 therefore not guaranteed to reproduce an earlier byte stream. Exact empirical
-reproduction requires the original snapshot and its manifest. In particular, the
+reproduction requires the original snapshot and its manifest; a manifest's URL
+records the request and does not always reproduce the bytes (the Treasury auctions
+request has no upper date bound). In particular, the
 FRED adapter currently acquires the latest revised vintage rather than a complete
 historical-vintage archive.
 
@@ -151,7 +153,8 @@ A result is reportable only when its run record identifies:
 - the source-registry and stress-threshold versions;
 - the point-in-time panel build and quality report;
 - the feature set and decision cutoff;
-- the model configuration and random seed, where applicable;
+- the model configuration and random seed, where applicable, and for a model
+  fitted with the `ml` extra the numpy and scikit-learn versions it fitted with;
 - the rolling-origin split and registry-derived purge gap; and
 - any event-window checksum and append-only evaluation-journal entry.
 

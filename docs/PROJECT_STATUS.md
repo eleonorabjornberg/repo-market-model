@@ -124,7 +124,11 @@ a commit message:
 - September 2019 and March 2020 event windows are frozen and checksummed, and the
   scoring and knowledge holdouts are kept distinct in code and in reporting.
 - Public-source downloads are stored immutably with retrieval timestamps, request
-  URLs, byte counts and SHA-256 digests.
+  URLs, byte counts and SHA-256 digests. The tracked Treasury fixtures are the
+  exception: their manifests record a ceiling (the time the file was first
+  committed) in place of a measured retrieval time, the auctions URL records the
+  request but cannot reproduce the bytes, and the 2026 bill-rate file has no
+  manifest at all.
 - Forecast-distribution, exceedance, calibration, and dependence-aware uncertainty
   metrics are implemented and tested.
 
@@ -167,13 +171,18 @@ Stated explicitly, because each is easy to mistake for something stronger.
   were scored the same way, in `docs/runs/compare_persistence_vs_gbm_mh61_crps.json`,
   and the 90% interval on its mean paired difference also excludes zero in its
   favour, around a mean difference an order of magnitude larger than
-  rolling-residual's. That record does not carry its numpy and scikit-learn
-  versions; read off the environment after the run, they were numpy 2.0.2 and
+  rolling-residual's. That record predates `provenance.ml_libraries`, which any
+  `compare`, `backtest` or `exceedance-backtest` record with a gbm side now carries,
+  read at the fit; read off the environment after its run, they were numpy 2.0.2 and
   scikit-learn 1.6.1. These are several challengers against one benchmark at the 90% level,
-  on a daily panel scored with an expanding window and a purge, and no published
-  record yet says which days a win or a loss comes from: `compare` now writes each
-  origin's losses under `comparison.per_origin`, and these records predate it. The threshold ARX
-  (`--model threshold`) has not been scored. The rolling-residual result also makes
+  on a daily panel scored with an expanding window and a purge. The threshold ARX
+  (`--model threshold`) with its regime on `sofr_volume` is scored in
+  `docs/runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`, and there
+  persistence carries the smaller loss: the 90% interval on the mean difference
+  excludes zero in persistence's favour, though only just. It is the only record here
+  that says which days a win or a loss comes from (`comparison.per_origin`); the
+  others predate it. The same model with its regime on `spread_bps` has not been
+  scored. The rolling-residual result also makes
   the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
