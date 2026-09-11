@@ -26,6 +26,16 @@ from typing import Callable, Iterable, List, Mapping, Optional, Sequence
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
+from .data import (
+    ABSENCE_BLANK,
+    ABSENCE_DOT,
+    ABSENCE_NA,
+    ABSENCE_NULL,
+    ABSENCE_REASONS,
+    ABSENCE_SUPPRESSED,
+    AbsentCell,
+)
+
 
 USER_AGENT = (
     "repo-market-model/0.1 "
@@ -782,7 +792,77 @@ def _next_weekday(value: date, days: int) -> date:
     return current
 
 
-def _nyfed_rows(artifact: SnapshotArtifact, payload: bytes):
+def _read_cell(
+    raw: object,
+    tokens: Mapping[str, str],
+    absent_cells: Optional[List[AbsentCell]],
+    *,
+    source_id: str,
+    source_sha: str,
+    field: str,
+    ref_date: Optional[date],
+    fold_case: bool = False,
+) -> Optional[str]:
+    """One source cell's text, or `None` with the absence recorded and its reason.
+
+    The one place a token becomes an absence, called by every adapter that
+    accepts one, so no adapter drops a cell without saying why. `tokens` is the
+    adapter's own table, mapping each token it accepts to a reason in
+    `ABSENCE_REASONS`; a token not in it is returned as text, for the adapter's
+    numeric parse to read or refuse. `fold_case` compares upper-cased, as the
+    New York Fed and N-MFP adapters always have. `None` -- a JSON null, or a
+    delimited row that stops short of its header -- is the empty cell, as every
+    adapter already read it, and so is `blank`.
+
+    A reason outside the vocabulary is refused whether or not the caller
+    collects records: the quality report would otherwise carry a reason no
+    reader has a definition for.
+
+    `absent_cells` is `None` only for a caller reading without a report -- a
+    bare `_nmfp_number` call, or a test of one adapter's arithmetic.
+    `parse_snapshots` always passes a list.
+    """
+
+    text = "" if raw is None else str(raw).strip()
+    reason = tokens.get(text.upper() if fold_case else text)
+    if reason is None:
+        return text
+    if reason not in ABSENCE_REASONS:
+        raise ValueError(
+            f"{source_id} {field}: absence reason {reason!r} is outside the "
+            f"vocabulary {list(ABSENCE_REASONS)}"
+        )
+    if absent_cells is not None:
+        absent_cells.append(
+            AbsentCell(
+                source_id=source_id,
+                field=field,
+                ref_date=ref_date,
+                reason=reason,
+                source_sha=source_sha,
+            )
+        )
+    return None
+
+
+#: What the New York Fed reference-rate API writes in place of a figure, read
+#: upper-cased. Each adapter has its own table because each publisher writes its
+#: own tokens, and a token one accepts is a refusal to another: `NA` here, and
+#: not in FRED's.
+NYFED_ABSENT_TOKENS = {
+    "": ABSENCE_BLANK,
+    "NA": ABSENCE_NA,
+    "N/A": ABSENCE_NA,
+    ".": ABSENCE_DOT,
+}
+
+
+def _nyfed_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     from zoneinfo import ZoneInfo
     from .data import PointInTimeObservation
 
@@ -838,9 +918,22 @@ def _nyfed_rows(artifact: SnapshotArtifact, payload: bytes):
         available_at = min(declared_available_at, retrieved)
         revision = str(record.get("revisionIndicator", "unknown")).strip() or "unknown"
         for raw_field, series_id in field_map.items():
-            raw_value = record.get(raw_field)
-            normalized = str(raw_value).strip() if raw_value is not None else ""
-            if normalized.upper() in {"", "NA", "N/A", "."}:
+            # A key the record does not carry is not a cell. The API has used
+            # two spellings of each percentile and a response carries one, so
+            # the other spelling is absent from every record by construction.
+            if raw_field not in record:
+                continue
+            normalized = _read_cell(
+                record[raw_field],
+                NYFED_ABSENT_TOKENS,
+                absent_cells,
+                source_id=artifact.source_id,
+                source_sha=artifact.sha256,
+                field=series_id,
+                ref_date=ref_date,
+                fold_case=True,
+            )
+            if normalized is None:
                 continue
             try:
                 value = float(normalized.replace(",", ""))
@@ -872,17 +965,28 @@ FR2004_COLUMNS = ("As Of Date", "Time Series", "Value (millions)")
 
 #: What the New York Fed writes in place of a figure withheld for
 #: confidentiality. It is neither zero nor a failed read, and the difference is
-#: the whole of the handling below: it yields no observation at all, so the
-#: identity that names the suppressed series comes back `not_evaluable` for that
-#: week instead of `violated` against a fabricated zero.
+#: the whole of the handling below: it yields no observation, and the cell is
+#: recorded as `suppressed` in the quality report, so the identity that names
+#: the suppressed series comes back `not_evaluable` for that week instead of
+#: `violated` against a fabricated zero, and the report says why.
 FR2004_SUPPRESSED = "*"
+
+#: The only token the FR 2004 export writes in place of a figure. A blank value
+#: is not in it, and is refused like any other non-number.
+FR2004_ABSENT_TOKENS = {FR2004_SUPPRESSED: ABSENCE_SUPPRESSED}
 
 #: The export is denominated in USD millions and `DATA.md` denominates the panel
 #: in USD billions.
 FR2004_MILLIONS_PER_BILLION = 1000.0
 
 
-def _fr2004_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+def _fr2004_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    registry,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """Parse one FR 2004 Primary Dealer Statistics export.
 
     Three things this does not do, each of which is a way the same file has been
@@ -949,8 +1053,16 @@ def _fr2004_rows(artifact: SnapshotArtifact, payload: bytes, registry):
                 f"FR 2004 row {record_number} has no valid As Of Date; each row "
                 f"carries its own reference date and none may be taken from the file"
             ) from exc
-        raw_value = (record.get("Value (millions)") or "").strip()
-        if raw_value == FR2004_SUPPRESSED:
+        raw_value = _read_cell(
+            record.get("Value (millions)"),
+            FR2004_ABSENT_TOKENS,
+            absent_cells,
+            source_id=FR2004_SOURCE_ID,
+            source_sha=artifact.sha256,
+            field=series_id,
+            ref_date=ref_date,
+        )
+        if raw_value is None:
             continue
         try:
             value = float(raw_value.replace(",", ""))
@@ -982,7 +1094,17 @@ def _fred_csv_payloads(payload: bytes) -> Iterable[bytes]:
         return tuple(archive.read(name) for name in names)
 
 
-def _fred_rows(artifact: SnapshotArtifact, payload: bytes):
+#: FRED's CSV writes `.` for a missing observation, and a blank where a row is
+#: shorter than the series around it.
+FRED_ABSENT_TOKENS = {"": ABSENCE_BLANK, ".": ABSENCE_DOT}
+
+
+def _fred_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     from .data import PointInTimeObservation
 
     available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
@@ -999,8 +1121,16 @@ def _fred_rows(artifact: SnapshotArtifact, payload: bytes):
             for series_id in reader.fieldnames:
                 if series_id == "observation_date":
                     continue
-                raw_value = (record.get(series_id) or "").strip()
-                if raw_value in {"", "."}:
+                raw_value = _read_cell(
+                    record.get(series_id),
+                    FRED_ABSENT_TOKENS,
+                    absent_cells,
+                    source_id=artifact.source_id,
+                    source_sha=artifact.sha256,
+                    field=series_id,
+                    ref_date=ref_date,
+                )
+                if raw_value is None:
                     continue
                 try:
                     value = float(raw_value)
@@ -1021,25 +1151,47 @@ def _fred_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
-def _treasury_amount(record, field, record_number):
+#: Fiscal Data's string `"null"` -- a result not yet published -- and a blank.
+#: Compared as written: `"NULL"` is not in it, and is refused.
+TREASURY_ABSENT_TOKENS = {"": ABSENCE_BLANK, "null": ABSENCE_NULL}
+
+
+def _treasury_amount(
+    record,
+    field,
+    record_number,
+    *,
+    series: str,
+    ref_date: date,
+    artifact: SnapshotArtifact,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """One Fiscal Data money field in USD billions, or `None` where withheld.
 
     Fiscal Data reports a field it does not yet have as the JSON **string**
     `"null"`, not as JSON null, so `float()` is the only thing that separates
     it from a figure and `record.get(field) is None` never fires. An auction
     that has not been held carries its results that way. Returning `0.0` there
-    would publish an award nobody has made; returning nothing at all leaves the
-    caller to decide what an absent leg means, which is the caller's decision
-    to make and not this helper's.
+    would publish an award nobody has made. This returns `None`, with the cell
+    recorded against `series` and `ref_date` as `null` (or `blank`), and leaves
+    the caller to decide what an absent leg means, which is the caller's
+    decision to make and not this helper's.
 
     A field the payload does not carry at all is a different thing -- a renamed
     or dropped column -- and is refused by the caller rather than read as
     withheld.
     """
 
-    raw = record.get(field)
-    raw = "" if raw is None else str(raw).strip()
-    if raw in {"", "null"}:
+    raw = _read_cell(
+        record.get(field),
+        TREASURY_ABSENT_TOKENS,
+        absent_cells,
+        source_id=artifact.source_id,
+        source_sha=artifact.sha256,
+        field=series,
+        ref_date=ref_date,
+    )
+    if raw is None:
         return None
     try:
         return float(raw.replace(",", "")) / 1_000_000_000
@@ -1049,7 +1201,12 @@ def _treasury_amount(record, field, record_number):
         ) from exc
 
 
-def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
+def _treasury_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """Auction records to `treasury_settlement` and its declared components.
 
     The split -- which `security_type` settles into which component, which
@@ -1069,7 +1226,8 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
     * **A result not yet awarded.** `soma_accepted` is `"null"` until the
       auction is held. The whole key loses `treasury_settlement_soma`, not
       just the unheld record's share: summing the rest publishes a partial
-      award under the face of a complete one.
+      award under the face of a complete one. The withheld cell is recorded
+      as `null`, dated by its `issue_date`.
     * **A genuine zero award.** 1093 fixture records have `soma_accepted`
       `"0"`, and those are real. They sum like any other figure.
     """
@@ -1126,7 +1284,15 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
                 f"Treasury record {record_number} does not carry {public_field}, "
                 f"which {public_leg} sums"
             )
-        public_amount = _treasury_amount(record, public_field, record_number)
+        public_amount = _treasury_amount(
+            record,
+            public_field,
+            record_number,
+            series=public_leg,
+            ref_date=ref_date,
+            artifact=artifact,
+            absent_cells=absent_cells,
+        )
         if public_amount is None:
             raise ValueError(
                 f"Treasury record {record_number} withholds {public_field}: an "
@@ -1142,7 +1308,15 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
                     f"Treasury record {record_number} does not carry {field}, "
                     f"which {series} sums"
                 )
-            value = _treasury_amount(record, field, record_number)
+            value = _treasury_amount(
+                record,
+                field,
+                record_number,
+                series=series,
+                ref_date=ref_date,
+                artifact=artifact,
+                absent_cells=absent_cells,
+            )
             if value is None:
                 withheld.add((key, series))
                 continue
@@ -1187,6 +1361,9 @@ TREASURY_BILL_RATE_COLUMN = re.compile(r"(\d+) WEEKS (BANK DISCOUNT|COUPON EQUIV
 TREASURY_BILL_RATE_DATE = re.compile(r"(\d{2})/(\d{2})/(\d{4})")
 TREASURY_BILL_RATE_VALUE = re.compile(r"-?\d+(?:\.\d+)?")
 
+#: A blank, and nothing else: a tenor not yet auctioned on that date.
+TREASURY_BILL_RATE_ABSENT_TOKENS = {"": ABSENCE_BLANK}
+
 
 def _treasury_bill_rate_field(column: str) -> Optional[str]:
     match = TREASURY_BILL_RATE_COLUMN.fullmatch(column.strip())
@@ -1196,7 +1373,13 @@ def _treasury_bill_rate_field(column: str) -> Optional[str]:
     return f"tbill_{int(tenor)}w_{basis.lower().replace(' ', '_')}"
 
 
-def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+def _treasury_bill_rate_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    registry,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """One year of Treasury's daily bill rates, read by that file's own header.
 
     The header is not stable across years: 2018-2021 carry 4, 8, 13, 26 and 52
@@ -1217,8 +1400,9 @@ def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registr
       the header is a row that no longer lines up with its column names, so its
       other cells cannot be trusted to either.
     * A blank cell is a tenor not yet auctioned on that date -- the new tenor's
-      first months of the year it appears. It yields no observation; `0.0`
-      would publish a rate on a bill that did not exist.
+      first months of the year it appears. It yields no observation and is
+      recorded as `blank`; `0.0` would publish a rate on a bill that did not
+      exist.
     * A cell that is neither blank nor a plain decimal is refused. Negative
       rates are decimals and are real: eight cells of March 2020 carry them.
     * `days`, `available_time` and `timezone` come from the registry's
@@ -1298,8 +1482,16 @@ def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registr
             ) from exc
         available_at = datetime.combine(quote_date + lag, available_time, tzinfo=zone)
         for position, field in columns:
-            raw = record[position].strip()
-            if not raw:
+            raw = _read_cell(
+                record[position],
+                TREASURY_BILL_RATE_ABSENT_TOKENS,
+                absent_cells,
+                source_id=source_id,
+                source_sha=artifact.sha256,
+                field=field,
+                ref_date=quote_date,
+            )
+            if raw is None:
                 continue
             if TREASURY_BILL_RATE_VALUE.fullmatch(raw) is None:
                 raise ValueError(
@@ -1694,9 +1886,43 @@ def _nmfp_table_if_present(archive: zipfile.ZipFile, name: str):
     return _nmfp_table(archive, name)
 
 
-def _nmfp_number(raw: object, field: str) -> Optional[float]:
-    normalized = str(raw).strip() if raw is not None else ""
-    if normalized.upper() in {"", "NA", "N/A", "."}:
+#: What an N-MFP value cell may carry in place of a number, read upper-cased.
+#: The SEC's data-set readme marks fields nullable and defines no token, so
+#: these are the tokens the archives carry, not ones the publisher documents.
+NMFP_ABSENT_TOKENS = {
+    "": ABSENCE_BLANK,
+    "NA": ABSENCE_NA,
+    "N/A": ABSENCE_NA,
+    ".": ABSENCE_DOT,
+}
+
+
+def _nmfp_number(
+    raw: object,
+    field: str,
+    absent_cells: Optional[List[AbsentCell]] = None,
+    *,
+    series_id: str = "",
+    ref_date: Optional[date] = None,
+    source_sha: str = "",
+) -> Optional[float]:
+    """One N-MFP value cell, or `None` where it is an absent token.
+
+    `field` is the column, named in a refusal. An absent cell is recorded in
+    `absent_cells` against `series_id` and `ref_date`, with its reason.
+    """
+
+    normalized = _read_cell(
+        raw,
+        NMFP_ABSENT_TOKENS,
+        absent_cells,
+        source_id="sec_nmfp",
+        source_sha=source_sha,
+        field=series_id,
+        ref_date=ref_date,
+        fold_case=True,
+    )
+    if normalized is None:
         return None
     try:
         return float(normalized.replace(",", ""))
@@ -1795,7 +2021,12 @@ def _resolve_nmfp_submissions(submissions):
     return kept, frozenset(submissions) - kept
 
 
-def _nmfp_archive_scan(payload: bytes):
+def _nmfp_archive_scan(
+    payload: bytes,
+    *,
+    source_sha: str = "",
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """Read one archive into per-accession contributions, resolving nothing.
 
     Returns `(submissions, submission_types, contributions, absent)`.
@@ -1809,6 +2040,13 @@ def _nmfp_archive_scan(payload: bytes):
     could supply no observation of, because the table that carries them is not
     in the archive or because the report month has no declared
     `INVESTMENTCATEGORY` vocabulary. Absent, never zero.
+
+    A table that is present can still carry a value cell with no number in it.
+    That cell is appended to `absent_cells` with its reason, dated by its
+    submission's `REPORTDATE` or, for a flow cell, its flow date. It is
+    recorded as read, before supersession and the coverage floor: a filing
+    later amended, or a cross-section later excluded, was still read with that
+    token.
 
     Supersession is deliberately *not* applied here, and that is the whole point
     of the split. An amendment is resolved per `(SERIESID, REPORTDATE)` across
@@ -1882,7 +2120,14 @@ def _nmfp_archive_scan(payload: bytes):
                     )
                 section = submissions[accession][1]
                 for raw_field, series_id in NMFP_BALANCE_FIELDS.items():
-                    value = _nmfp_number(record.get(raw_field), raw_field)
+                    value = _nmfp_number(
+                        record.get(raw_field),
+                        raw_field,
+                        absent_cells,
+                        series_id=series_id,
+                        ref_date=section,
+                        source_sha=source_sha,
+                    )
                     if value is not None:
                         add(
                             accession,
@@ -1922,7 +2167,14 @@ def _nmfp_archive_scan(payload: bytes):
                 )
                 values = {}
                 for raw_field, series_id in NMFP_FLOW_FIELDS.items():
-                    value = _nmfp_number(record.get(raw_field), raw_field)
+                    value = _nmfp_number(
+                        record.get(raw_field),
+                        raw_field,
+                        absent_cells,
+                        series_id=series_id,
+                        ref_date=ref_date,
+                        source_sha=source_sha,
+                    )
                     if value is not None:
                         values[series_id] = value / 1_000_000_000
                         add(
@@ -1978,6 +2230,10 @@ def _nmfp_archive_scan(payload: bytes):
                 value = _nmfp_number(
                     record.get("INCLUDINGVALUEOFANYSPONSORSUPP"),
                     "INCLUDINGVALUEOFANYSPONSORSUPP",
+                    absent_cells,
+                    series_id=field,
+                    ref_date=section,
+                    source_sha=source_sha,
                 )
                 if value is None:
                     continue
@@ -2009,7 +2265,12 @@ def _nmfp_archive_scan(payload: bytes):
     return submissions, submission_types, contributions, absent
 
 
-def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
+def _sec_nmfp_rows(
+    artifact: SnapshotArtifact,
+    payload: bytes,
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
+):
     """Aggregate one SEC bulk extract read in isolation, without inventing rows.
 
     Returns `(rows, entity_counts, submission_types, absent_fields)` -- the shape
@@ -2048,7 +2309,9 @@ def _sec_nmfp_rows(artifact: SnapshotArtifact, payload: bytes):
     from .data import PointInTimeObservation
 
     available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
-    submissions, submission_types, contributions, absent = _nmfp_archive_scan(payload)
+    submissions, submission_types, contributions, absent = _nmfp_archive_scan(
+        payload, source_sha=artifact.sha256, absent_cells=absent_cells
+    )
     kept_accessions, _superseded = _resolve_nmfp_submissions(submissions)
 
     totals = {}
@@ -2109,10 +2372,15 @@ class ParsedSnapshots:
     can report the exclusions rather than infer them from what is absent. An
     exclusion that leaves no trace is the silent drop this guard exists to
     replace.
+
+    `absent_cells` holds one `AbsentCell` per source cell an adapter read as
+    absent, with its reason -- the same refusal of a silent drop, one level
+    down, at the cell.
     """
 
     rows: tuple
     coverage: tuple
+    absent_cells: tuple = ()
 
 
 def _nmfp_unmatched_derived_fields(observed, structural_zeros, ref_date):
@@ -2180,6 +2448,8 @@ def _nmfp_unmatched_derived_fields(observed, structural_zeros, ref_date):
 def _assemble_sec_nmfp(
     artifacts: Sequence[SnapshotArtifact],
     registry: Mapping[str, Mapping[str, object]],
+    *,
+    absent_cells: Optional[List[AbsentCell]] = None,
 ):
     """Assemble every `sec_nmfp` archive into cross-sections, then admit them.
 
@@ -2300,7 +2570,9 @@ def _assemble_sec_nmfp(
 
     for artifact in ordered:
         payload = _artifact_payload(artifact)
-        scanned, types, cells, missing = _nmfp_archive_scan(payload)
+        scanned, types, cells, missing = _nmfp_archive_scan(
+            payload, source_sha=artifact.sha256, absent_cells=absent_cells
+        )
         for accession, entry in scanned.items():
             if accession in submissions and submissions[accession] != entry:
                 # Accessions are unique across the whole of EDGAR, so one that
@@ -2555,6 +2827,11 @@ def parse_snapshots(
     see `_assemble_sec_nmfp`. A report date it carries is one cross-section
     however many archives filed into it, and both supersession and the coverage
     floor are decided on that assembled unit.
+
+    Every source cell an adapter reads as absent -- blank, `NA`, `.`, `"null"`,
+    `*`, whichever that adapter accepts -- is in `absent_cells`, with the reason
+    it was read under. It yields no observation either way; the record is what
+    lets the quality report say why the panel has a hole there.
     """
 
     from .data import declared_coverage_floor
@@ -2564,6 +2841,7 @@ def parse_snapshots(
 
     candidates = []
     coverage = []
+    absent_cells = []
     nmfp = []
     for artifact in artifacts:
         artifact = replace(
@@ -2577,15 +2855,19 @@ def parse_snapshots(
         if artifact.source_id == FR2004_SOURCE_ID:
             # Before the `nyfed_` prefix test below, which would otherwise send
             # a CSV export to the reference-rate JSON parser.
-            parsed_rows = _fr2004_rows(artifact, payload, registry)
+            parsed_rows = _fr2004_rows(
+                artifact, payload, registry, absent_cells=absent_cells
+            )
         elif artifact.source_id.startswith("nyfed_"):
-            parsed_rows = _nyfed_rows(artifact, payload)
+            parsed_rows = _nyfed_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "fred_macro_latest_vintage":
-            parsed_rows = _fred_rows(artifact, payload)
+            parsed_rows = _fred_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "treasury_auctions":
-            parsed_rows = _treasury_rows(artifact, payload)
+            parsed_rows = _treasury_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == TREASURY_BILL_RATES_SOURCE_ID:
-            parsed_rows = _treasury_bill_rate_rows(artifact, payload, registry)
+            parsed_rows = _treasury_bill_rate_rows(
+                artifact, payload, registry, absent_cells=absent_cells
+            )
         else:
             raise ValueError(f"no point-in-time parser for {artifact.source_id}")
         retrieved_at = datetime.fromisoformat(
@@ -2595,7 +2877,9 @@ def parse_snapshots(
 
     if nmfp:
         _check_declared_entity_unit("sec_nmfp", registry, NMFP_ENTITY_UNIT)
-        nmfp_candidates, nmfp_coverage = _assemble_sec_nmfp(nmfp, registry)
+        nmfp_candidates, nmfp_coverage = _assemble_sec_nmfp(
+            nmfp, registry, absent_cells=absent_cells
+        )
         candidates.extend(nmfp_candidates)
         coverage.extend(nmfp_coverage)
 
@@ -2624,7 +2908,11 @@ def parse_snapshots(
         rows.append(row)
         prior[key] = row
     rows.sort(key=lambda row: (row.available_at, row.series_id, row.ref_date, row.vintage_id))
-    return ParsedSnapshots(rows=tuple(rows), coverage=tuple(coverage))
+    return ParsedSnapshots(
+        rows=tuple(rows),
+        coverage=tuple(coverage),
+        absent_cells=tuple(absent_cells),
+    )
 
 
 def _check_declared_entity_unit(
@@ -2767,6 +3055,7 @@ def build_point_in_time_snapshot(
         ],
         unevaluated_identities=unevaluated_identities,
         violated_identities=violated_identities,
+        absent_cells=parsed.absent_cells,
     )
     quality_report_sha256 = hashlib.sha256(quality_report_path.read_bytes()).hexdigest()
     artifact = PanelArtifact(

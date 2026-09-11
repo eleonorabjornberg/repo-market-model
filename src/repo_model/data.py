@@ -221,6 +221,64 @@ class CrossSectionCoverage:
         return f"admitted against the declared floor for era {self.era_id}"
 
 
+# Why a source cell yielded no observation: the closed vocabulary every adapter
+# in `repo_model.ingest` records an absent cell under. Each reason names the
+# token the cell carried, never a guess at what the publisher meant by it -- the
+# SEC's N-MFP readme defines no missing-value token at all, so `dot` there says
+# what was in the file and nothing more. See `docs/DATA_QUALITY_DECISIONS.md`,
+# "An absent value keeps its reason".
+#
+#   blank       an empty cell, or none at all where a row stops short
+#   na          `NA` or `N/A`
+#   dot         `.` -- FRED's documented missing observation
+#   null        Fiscal Data's string `"null"`, a result not yet published
+#   suppressed  FR 2004's `*`, a figure withheld for confidentiality
+ABSENCE_BLANK = "blank"
+ABSENCE_NA = "na"
+ABSENCE_DOT = "dot"
+ABSENCE_NULL = "null"
+ABSENCE_SUPPRESSED = "suppressed"
+ABSENCE_REASONS = (
+    ABSENCE_BLANK,
+    ABSENCE_NA,
+    ABSENCE_DOT,
+    ABSENCE_NULL,
+    ABSENCE_SUPPRESSED,
+)
+
+
+@dataclass(frozen=True)
+class AbsentCell:
+    """One source cell that yielded no observation, and the reason it was read as absent.
+
+    Recorded by the adapter at the moment it reads the token, because that is
+    the only moment the token is known. A hole in the panel never knew whether
+    its cell was blank, `.`, not yet published or suppressed, so a reason
+    reconstructed from the panel afterwards would be a guess.
+
+    `field` is the panel series the cell would have supplied. `ref_date` is the
+    date that observation would have carried as read -- the as-of, observation
+    or quote date, or for a Form N-MFP balance-sheet or holdings cell the
+    `REPORTDATE` it was filed under. `source_sha` names the snapshot, so the
+    same cell read from two retrievals is two records and not one counted twice.
+    """
+
+    source_id: str
+    field: str
+    ref_date: date
+    reason: str
+    source_sha: str
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "source_id": self.source_id,
+            "field": self.field,
+            "ref_date": self.ref_date.isoformat(),
+            "reason": self.reason,
+            "source_sha": self.source_sha,
+        }
+
+
 # The three answers a declared identity can give about one `ref_date`. There
 # used to be two, and the missing one was not "violated" -- it was this:
 #
@@ -454,8 +512,12 @@ class PointInTimeAuditReport:
     excluded_cross_sections: Sequence[CrossSectionCoverage] = ()
     unevaluated_identities: Sequence[UnevaluatedIdentity] = ()
     violated_identities: Sequence[ViolatedIdentity] = ()
+    absent_cells: Sequence[AbsentCell] = ()
 
     def as_dict(self) -> Mapping[str, object]:
+        counts = {reason: 0 for reason in ABSENCE_REASONS}
+        for cell in self.absent_cells:
+            counts[cell.reason] += 1
         return {
             "rows": self.row_count,
             "reference_dates": self.reference_date_count,
@@ -514,6 +576,27 @@ class PointInTimeAuditReport:
                     key=lambda item: (item.source_id, item.identity, item.ref_date),
                 )
             ],
+            # Every source cell that yielded no observation, with the reason it
+            # was read as absent, and a count per reason -- every reason in the
+            # vocabulary, so a zero is stated rather than left to be inferred.
+            # Its own key, never folded into `missing_reference_dates`: that
+            # counts holes in the panel, and a hole does not know its token.
+            "absent_cells": {
+                "counts": counts,
+                "cells": [
+                    cell.as_dict()
+                    for cell in sorted(
+                        self.absent_cells,
+                        key=lambda item: (
+                            item.source_id,
+                            item.field,
+                            item.ref_date,
+                            item.reason,
+                            item.source_sha,
+                        ),
+                    )
+                ],
+            },
             "warnings": list(self.warnings),
         }
 
@@ -680,6 +763,7 @@ def audit_point_in_time_panel(
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
     violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
+    absent_cells: Optional[Iterable[AbsentCell]] = None,
 ) -> PointInTimeAuditReport:
     """Summarize coverage and revisions without treating a revision as coverage.
 
@@ -765,6 +849,7 @@ def audit_point_in_time_panel(
         excluded_cross_sections=tuple(excluded_cross_sections or ()),
         unevaluated_identities=tuple(unevaluated_identities or ()),
         violated_identities=tuple(violated_identities or ()),
+        absent_cells=tuple(absent_cells or ()),
     )
 
 
@@ -844,6 +929,7 @@ def write_point_in_time_audit_report(
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
     violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
+    absent_cells: Optional[Iterable[AbsentCell]] = None,
 ) -> PointInTimeAuditReport:
     """Write a deterministic JSON missingness/revision report."""
 
@@ -853,6 +939,7 @@ def write_point_in_time_audit_report(
         excluded_cross_sections=excluded_cross_sections,
         unevaluated_identities=unevaluated_identities,
         violated_identities=violated_identities,
+        absent_cells=absent_cells,
     )
     payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
