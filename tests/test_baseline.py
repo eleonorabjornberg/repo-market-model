@@ -152,6 +152,7 @@ import importlib
 import inspect
 import json
 import math
+import random
 import subprocess
 import sys
 import tempfile
@@ -183,7 +184,9 @@ from repo_model.baseline import (
     _dot,
     _feature_index,
     _least_squares,
+    _leave_one_out_residuals,
     _quantile,
+    _solve,
     arx_exceedance,
     backtest_document,
     calibration_from_document,
@@ -1122,6 +1125,247 @@ class FittedArxTests(unittest.TestCase):
             fit_arx(rows, ("mmf_assets",), minimum_history=10)
         with self.assertRaisesRegex(ValueError, "more than once"):
             fit_arx(rows, ("on_rrp", "on_rrp"), minimum_history=10)
+
+
+def mixed_magnitude_design(count, seed, regressors):
+    """A design shaped like `_solve`'s warning: levels in the thousands beside bps.
+
+    Columns, in order: the intercept, a spread in basis points, reserves near
+    3200, a volume near 2300, an ON RRP level near 100 and a rate near 4.3 --
+    the first `regressors` of the last five. Targets follow an AR(1) in the
+    spread with a small load on each level and noise, so every fold solves a
+    system whose Gram entries run from tens to several hundred million.
+    """
+
+    rng = random.Random(seed)
+    design = []
+    targets = []
+    spread = rng.uniform(-8.0, 8.0)
+    for _ in range(count):
+        levels = [
+            spread,
+            3200.0 + rng.gauss(0.0, 150.0),
+            2100.0 + rng.uniform(0.0, 430.0),
+            90.0 + rng.uniform(0.0, 21.0),
+            4.30 + 0.0001 * rng.randint(0, 9973),
+        ][:regressors]
+        design.append([1.0] + levels)
+        spread = (
+            0.4
+            + 0.6 * spread
+            + 0.001 * (levels[-1] - levels[0])
+            + rng.gauss(0.0, 2.0)
+        )
+        targets.append(spread)
+    return design, targets
+
+
+def refit_without_each_row(design, targets):
+    """The leave-one-out law as `_leave_one_out_residuals` computed it before B27.
+
+    Verbatim, conversion included: for each row, drop it, `_least_squares` on
+    the rest, score the held-out row.
+    """
+
+    residuals = []
+    for index in range(len(design)):
+        reduced_design = list(design[:index]) + list(design[index + 1 :])
+        reduced_targets = list(targets[:index]) + list(targets[index + 1 :])
+        try:
+            coefficients = _least_squares(reduced_design, reduced_targets)
+        except SingularDesignError as error:
+            raise SingularDesignError(
+                f"the design is rank deficient with row {index} held out, though "
+                f"it is identified on the full window; one row is carrying a "
+                f"coefficient. Declare fewer regressors or fit on more history"
+            ) from error
+        residuals.append(targets[index] - _dot(coefficients, design[index]))
+    return residuals
+
+
+class LeaveOneOutResidualTests(unittest.TestCase):
+    """B27: the leave-one-out law made faster without moving one float.
+
+    `_leave_one_out_residuals` feeds `fit_arx` and each regime of
+    `fit_threshold`, and it cost the square of the rows twice over: every held-out
+    row rebuilt the design lists and recomputed every product for a full Gram.
+    The human's decision (11 Sep 2026): **results stay bit-identical; linear
+    time is not the goal.** So the new law computes each product once, keeps
+    one list per Gram entry with the held-out row missing, sums one triangle
+    and mirrors it -- and hands `_solve` the float it received before.
+
+    The reference in `refit_without_each_row` is the old function verbatim, so
+    this pins the law to `_least_squares` as well as to its old self: a change
+    to `_least_squares` that the law did not follow would fail here.
+
+    **Negative result: a linear-time law cannot be bit-identical here.** A
+    held-out Gram entry is a left fold, `((0 + p_0) + p_1) + ...`, over the
+    other rows' products in row order, and float addition is not associative,
+    so the result depends on every partial sum along the way. Two held-out
+    rows `h < h'` give folds that agree up to row `h` and share no partial sum
+    after it -- the one entering row `h + 1` holds `p_h` in one fold and not
+    in the other -- so each held-out fit owes its own additions from its hole
+    onwards, which is quadratic in total. Anything that does less work -- the
+    closed form `e_i / (1 - h_ii)` off the full `(X'X)^-1`, a downdate
+    `X'X - x_h x_h'`, a Sherman-Morrison update -- reaches the same number
+    through different operations, and its floats agree with these to about
+    1e-15, not with `==`. A re-run of every published ARX and threshold record
+    would move in its last digits. The control subtest shows that on this
+    fixture reordering the sum alone already moves a residual.
+
+    The shared prefix is not taken either. The partial sums before the hole
+    are common to every later held-out row, and restarting `sum()` from them
+    would halve the additions -- but only while `sum()` is a plain left fold.
+    CPython 3.12's `sum()` carries a compensation term a restarted sum does
+    not, so that saving would tie bit-identity to the interpreter as well as
+    to the arithmetic. One `sum()` over the whole held-out list agrees with the
+    old generator on any interpreter, because both feed it the same values in
+    the same order.
+
+    **The witness.** With each Gram entry summed over the kept rows in reverse,
+    residuals move on every design in `DESIGNS` -- nearly all of them, and
+    always by rounding. Row 0 of each: `2.3224003218984732` becomes
+    `2.3224003218985594`, `0.9716031188445853` becomes `0.9716031188445933`,
+    and `0.547726839320424` becomes `0.5477268393203716`. Close enough that
+    `assertAlmostEqual` at nine places would pass every one, which is why
+    the comparison is `==` and `float.hex`.
+
+    Mutation record (B27)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` (the worktree's `.venv`: CPython
+    3.9.6, numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src` (checked to
+    resolve to each sub-copy), `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`,
+    whole suite per run. Unmutated control green before and after, zero
+    `expectedFailure`; each anchor found exactly once in the copy's
+    `baseline.py` and confirmed applied by diff. **Every mutation killed this
+    test**, and every failure below is `AssertionError`.
+
+      * **The held-out Gram summed in reverse row order** -- `sum(reversed(
+        terms))` for the triangle's entries, the moment left in order. Every
+        subtest but the control: each design's residuals (by rounding -- row 0
+        of the first design reads `2.3224003218985594`), the refusal's
+        `__cause__` message (its tolerance `repr` moves in the last digit, so
+        even the refusal carries the arithmetic), and `fit_arx`'s sorted
+        residuals. Beyond this test, only
+        `FittedThresholdTests.test_the_residual_law_is_leave_one_out_within_each_regime`,
+        which compares the pooled law with `==` and so already held the
+        threshold path to its old floats.
+      * **The held-out row left in its own fit** -- the reduced lists start
+        as whole copies, so moving the hole writes a value over itself and
+        every fit sees every row: the in-sample law. Every subtest but the
+        control, the refusal as `SingularDesignError not raised`. Beyond this
+        test, the four existing ARX and threshold tests that say the law is
+        not in-sample: `FittedArxTests.test_the_residual_law_excludes_residuals_the_coefficients_were_fitted_to`
+        and `test_the_reported_interval_is_wider_than_the_in_sample_law_would_give`,
+        `FittedThresholdTests.test_the_residual_law_is_leave_one_out_within_each_regime`
+        and `test_the_arx_reports_the_numbers_it_reported_before_a_third_model_existed`.
+      * **The per-row `SingularDesignError` conversion removed** -- `_solve`'s
+        own refusal escapes. The refusal subtest alone, on the message: `_solve`'s
+        "the normal equations are rank deficient at column" where "the design is
+        rank deficient with row 3 held out" was expected. This test and nothing
+        else: the type is the same, and the conversion's message is asserted
+        nowhere else.
+      * **The mirrored triangle transposed wrongly** -- `gram[i][j] = gram[i -
+        1][j]`, each lower entry read from the row above rather than from its
+        transpose. Each design's residuals and `fit_arx`'s. The refusal subtest
+        survives it, correctly: the dummy's column is zero in the upper
+        triangle, so `_solve` meets the same zero pivot under the same scale.
+        Beyond this test, the same existing tests as the in-sample mutation
+        less the interval-width one.
+    """
+
+    #: (rows, regressors, seed): three designs, five to six coefficients each.
+    DESIGNS = ((48, 4, 20260911), (61, 5, 1127), (37, 4, 16))
+
+    def test_the_leave_one_out_law_is_bit_identical_to_refitting_without_each_row(self):
+        """B27's acceptance criterion and its mutation target."""
+
+        for count, regressors, seed in self.DESIGNS:
+            design, targets = mixed_magnitude_design(count, seed, regressors)
+            with self.subTest("bit-identical to the refit", rows=count, seed=seed):
+                expected = refit_without_each_row(design, targets)
+                actual = _leave_one_out_residuals(design, targets)
+                self.assertEqual(actual, expected)
+                self.assertEqual(
+                    [value.hex() for value in actual],
+                    [value.hex() for value in expected],
+                )
+
+            with self.subTest("the fixture sees the order of the sum", rows=count, seed=seed):
+                # The control: the refit with each Gram entry summed over the
+                # kept rows in reverse. If no residual moved, `==` above could
+                # not tell an order-preserving law from any other.
+                reordered = []
+                for index in range(len(design)):
+                    kept = design[:index] + design[index + 1 :]
+                    kept_targets = targets[:index] + targets[index + 1 :]
+                    columns = len(kept[0])
+                    gram = [
+                        [sum(row[i] * row[j] for row in reversed(kept)) for j in range(columns)]
+                        for i in range(columns)
+                    ]
+                    moment = [
+                        sum(row[i] * target for row, target in zip(kept, kept_targets))
+                        for i in range(columns)
+                    ]
+                    coefficients = _solve(gram, moment)
+                    reordered.append(targets[index] - _dot(coefficients, design[index]))
+                witnesses = [
+                    (index, left, right)
+                    for index, (left, right) in enumerate(zip(expected, reordered))
+                    if left != right
+                ]
+                self.assertTrue(
+                    witnesses,
+                    msg=(
+                        "summing the Gram in reverse moved no residual on this "
+                        "fixture, so bit-identity to the refit cannot show that "
+                        "the row order was kept"
+                    ),
+                )
+                # Rounding, not a different model: every moved residual is
+                # within a hair of the original.
+                for index, left, right in witnesses:
+                    self.assertAlmostEqual(left, right, delta=1e-9 * max(1.0, abs(left)))
+
+        with self.subTest("the rank-deficient refusal is unchanged"):
+            # Identified on the full window, not with row 3 held out: the last
+            # column is a dummy that is nonzero on row 3 alone.
+            design, targets = mixed_magnitude_design(24, 3, 3)
+            for index, row in enumerate(design):
+                row.append(1.0 if index == 3 else 0.0)
+            _least_squares(design, targets)
+
+            with self.assertRaises(SingularDesignError) as reference:
+                refit_without_each_row(design, targets)
+            with self.assertRaises(SingularDesignError) as caught:
+                _leave_one_out_residuals(design, targets)
+
+            self.assertIs(type(caught.exception), SingularDesignError)
+            self.assertEqual(
+                str(caught.exception),
+                "the design is rank deficient with row 3 held out, though it is "
+                "identified on the full window; one row is carrying a "
+                "coefficient. Declare fewer regressors or fit on more history",
+            )
+            self.assertEqual(str(caught.exception), str(reference.exception))
+            cause = caught.exception.__cause__
+            self.assertIs(type(cause), SingularDesignError)
+            self.assertEqual(str(cause), str(reference.exception.__cause__))
+
+        with self.subTest("fit_arx's residuals through the public fitter"):
+            rows = regressor_frame(count=60, seed=20260911, unobserved=(4, 11))
+            model = fit_arx(rows, REGRESSORS, minimum_history=20)
+            design, targets = design_and_targets(rows, REGRESSORS, model.imputations)
+            expected = sorted(refit_without_each_row(design, targets))
+            self.assertEqual(list(model.residuals), expected)
+            self.assertEqual(
+                [value.hex() for value in model.residuals],
+                [value.hex() for value in expected],
+            )
 
 
 class RollingBacktestTests(unittest.TestCase):
