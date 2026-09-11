@@ -1639,6 +1639,8 @@ def fit_arx(
     cutoff: Optional[date] = None,
     minimum_history: int = 20,
     levels: Sequence[float] = QUANTILE_LEVELS,
+    *,
+    origins: Optional[Sequence[int]] = None,
 ) -> FittedArx:
     """Fit the ARX on `train_frame` over `regressors` and return the fitted model.
 
@@ -1658,7 +1660,17 @@ def fit_arx(
         cutoff: the last date the model was allowed to see. Defaults to the
             frame's own last date.
         minimum_history: the shortest frame that may produce a fitted law.
+            Under `origins`, the fewest rows those pairs may read.
         levels: the quantile grid, defaulting to the declared one.
+        origins: the frame positions `p` whose one-step pair `(p, p + 1)`
+            trains, strictly ascending. `None`, the default and every call
+            before B26, is every row with a successor. Keyword-only, for gbm's
+            `arx_feature` under `calibration="cross_conformal"`: an excluding
+            model trains on the rows either side of its held-out block, and
+            handing this function those rows as one frame would regress the
+            first row after the block on the last row before it -- a pair
+            weeks apart, read as one step. Given the pairs instead, it is this
+            fitter on exactly those pairs rather than a second fitter beside it.
 
     Returns:
         A `FittedArx` carrying its coefficients, its regressor names, its fitted
@@ -1673,8 +1685,9 @@ def fit_arx(
             coefficients on this window.
         ValueError: if no regressors are declared, if one is declared twice, if
             the frame is shorter than `minimum_history`, if the design has too
-            few rows to leave one out, or if a regressor is unobserved on every
-            row of the training window.
+            few rows to leave one out, if a regressor is unobserved on every
+            row of the training window, or if `origins` is not strictly
+            ascending positions that each have a successor in the frame.
     """
 
     names = tuple(str(name) for name in regressors)
@@ -1693,9 +1706,24 @@ def fit_arx(
         )
 
     rows = list(train_frame)
-    if len(rows) < minimum_history:
+    if origins is None:
+        positions: Sequence[int] = range(len(rows) - 1)
+        read = len(rows)
+    else:
+        positions = tuple(origins)
+        if any(
+            isinstance(p, bool) or not isinstance(p, int) or not 0 <= p < len(rows) - 1
+            for p in positions
+        ) or any(later <= earlier for earlier, later in zip(positions, positions[1:])):
+            raise ValueError(
+                f"origins must be strictly ascending positions of the "
+                f"{len(rows)}-row frame that each have a successor in it, got "
+                f"{list(positions)}"
+            )
+        read = len({p for origin in positions for p in (origin, origin + 1)})
+    if read < minimum_history:
         raise ValueError(
-            f"arx needs at least {minimum_history} training rows, got {len(rows)}; "
+            f"arx needs at least {minimum_history} training rows, got {read}; "
             f"a coefficient and a residual law from fewer is not a fitted model"
         )
 
@@ -1709,10 +1737,11 @@ def fit_arx(
             f"a fitted model may not contain a row it was not allowed to see"
         )
 
-    # The origins: every row that has a successor in the frame. These, and only
-    # these, are the rows the transform below is fitted on -- which is what
-    # contract test 3 means by "recomputed on a training window alone".
-    origins = rows[:-1]
+    # The origins: every row that has a successor in the frame, or the ones
+    # named. These, and only these, are the rows the transform below is fitted
+    # on -- which is what contract test 3 means by "recomputed on a training
+    # window alone".
+    origins = [rows[p] for p in positions]
     observed: Mapping[str, List[float]] = {name: [] for name in names}
     for row in origins:
         for name in names:
@@ -1735,14 +1764,14 @@ def fit_arx(
 
     design = []
     targets = []
-    for index in range(1, len(rows)):
-        origin = rows[index - 1]
+    for position in positions:
+        origin = rows[position]
         row = [1.0, origin.spread_bps]
         for name in names:
             value = _raw_regressor(origin, name, "training row")
             row.append(imputations[name] if value is None else value)
         design.append(row)
-        targets.append(rows[index].spread_bps)
+        targets.append(rows[position + 1].spread_bps)
 
     columns = len(names) + 2
     if len(design) - 1 < columns + 1:

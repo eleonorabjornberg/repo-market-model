@@ -465,6 +465,8 @@ class _FitterChoice:
     takes_spread_change_lags: bool = False
     #: Does this model take `--volatility-feature`? The same rule again.
     takes_volatility_feature: bool = False
+    #: Does this model take `--arx-feature`? The same rule again.
+    takes_arx_feature: bool = False
 
     @property
     def factory(self) -> Callable[..., FittedForecastModel]:
@@ -563,8 +565,8 @@ FITTER_FACTORIES = MappingProxyType(
         # published gbm record was produced with, and the fitter's own
         # defaults decide the rest. The gap between the fit and calibration
         # slices is not bound here: the fold loop derives it and hands it over.
-        # `--spread-change-lags` and `--volatility-feature` by the same rule:
-        # bound only when given.
+        # `--spread-change-lags`, `--volatility-feature` and `--arx-feature` by
+        # the same rule: bound only when given.
         "gbm": _FitterChoice(
             declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
             build=lambda factory, regressors, regime, window, settings: functools.partial(
@@ -574,6 +576,7 @@ FITTER_FACTORIES = MappingProxyType(
             takes_calibration=True,
             takes_spread_change_lags=True,
             takes_volatility_feature=True,
+            takes_arx_feature=True,
         ),
     }
 )
@@ -635,6 +638,7 @@ def _select_fitter(
     settings.update(
         _volatility_feature(args, name, choice.takes_volatility_feature, side=side)
     )
+    settings.update(_arx_feature(args, name, choice.takes_arx_feature, side=side))
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
@@ -749,6 +753,35 @@ def _volatility_feature(
             "variance"
         )
     return {"volatility_feature": feature}
+
+
+def _arx_feature(
+    args: argparse.Namespace,
+    name: str,
+    takes_feature: bool,
+    *,
+    side: str = "",
+) -> Mapping[str, Any]:
+    """Resolve `--arx-feature`, or refuse. `_volatility_feature`'s shape and rule.
+
+    Optional for gbm and refused for every other model -- `--model arx`
+    included, which *is* the ARX and has no forecast of its own to add to
+    itself; returned only when given. An unknown value is not refused here:
+    `ml.fit_gradient_boosted_quantiles` refuses it, and this module cannot
+    import that one's list of names.
+    """
+
+    feature = args.arx_feature
+    if feature is None:
+        return {}
+    if not takes_feature:
+        raise SplitError(
+            f"--arx-feature{side} {feature} was given, but --model{side} {name} "
+            f"reads no ARX forecast as a feature; only gbm does. A flag that is "
+            "accepted and ignored is read by the next person as a setting that "
+            "took effect -- here, as a model that saw an ARX's forecast"
+        )
+    return {"arx_feature": feature}
 
 
 def _registry(args: argparse.Namespace) -> dict:
@@ -925,7 +958,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
     `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
     `--calibration-share-a`, `--calibration-folds-a`, `--spread-change-lags-a`,
-    `--volatility-feature-a`, and the same nine for `b` --
+    `--volatility-feature-a`, `--arx-feature-a`, and the same ten for `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -957,6 +990,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         calibration_folds=getattr(args, f"calibration_folds_{side}"),
         spread_change_lags=getattr(args, f"spread_change_lags_{side}"),
         volatility_feature=getattr(args, f"volatility_feature_{side}"),
+        arx_feature=getattr(args, f"arx_feature_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1506,6 +1540,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "published gbm record was produced with. Refused for every model but gbm",
     )
     backtest.add_argument(
+        "--arx-feature",
+        metavar="NAME",
+        default=None,
+        help="add an ARX's one-step point forecast to gbm's design: declared, "
+        "the ARX --model arx fits on the same --feature columns, fitted on each "
+        "fold's own fit rows; none when not given, which is the model every "
+        "published gbm record was produced with. Refused for every model but gbm",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -1608,6 +1651,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             help=f"add the {side} model's volatility regressor to gbm's design: "
             f"garch11, fitted per fold on the fit rows; none when not given; "
             f"refused for --model-{side} other than gbm",
+        )
+        compare.add_argument(
+            f"--arx-feature-{side}",
+            metavar="NAME",
+            default=None,
+            help=f"add an ARX's one-step forecast to the {side} model's gbm "
+            f"design: declared, the ARX on --feature-{side}, fitted per fold on "
+            f"the fit rows; none when not given; refused for --model-{side} "
+            f"other than gbm",
         )
     compare.add_argument(
         "--loss",

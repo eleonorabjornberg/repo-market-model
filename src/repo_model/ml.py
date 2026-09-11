@@ -185,6 +185,38 @@ change, fitted inside the one training frame a fold hands over.
 
 Absent is the default and is today's gbm, bit for bit.
 
+**An ARX one-step forecast, opt-in (B26).** `arx_feature="declared"` adds one
+regressor, `arx_forecast`: the point forecast of `baseline.fit_arx` -- the
+repository's one ARX fitter, the model `--model arx` runs -- fitted on gbm's
+own declared regressors, exactly the columns `--model arx` gets from the same
+`--feature` flags. `declared` is the only value: no new column enters a
+declaration, and the purge is already sized over every column the ARX reads.
+
+* **Per fold, on the fit rows only.** The ARX is fitted inside the one training
+  frame a fold hands over, on the rows the gbm's own estimators are fitted on:
+  the frame under `none`, the fit rows under `conformal`. Two folds with
+  different training ends fit two ARXs; nothing is fitted on the panel.
+* **The feature at row `t` is the ARX's forecast from `t`.** `FittedArx.
+  point_forecast` reads row `t`'s spread and declared regressors and nothing
+  else, so the column reads no row after `t`; for a training row that means its
+  successor, its target, is never an input. What a training row does share
+  with its target is the coefficients, fitted on pairs that include it -- the
+  in-sample property the GARCH parameters and every imputation mean here
+  already have. A calibration row's forecast is its feature row's, from the fit
+  rows' ARX, never refitted; so is a forecast's.
+* **Under `cross_conformal`**, each block's excluding model fits its own ARX on
+  the one-step pairs whose two rows it may train on -- every pair outside its
+  block and the purge gaps around it -- through `fit_arx`'s `origins`, so no
+  pair spans the block. Its training rows, its held-out scores and its read of
+  a forecast all use that ARX; the full fit's is never lent to it.
+* **Refused, never substituted.** The ARX's own refusals are its own: too few
+  rows for `fit_arx`'s default minimum, a singular design, a regressor
+  unobserved on every row. They propagate as `fit_arx` raises them, and a
+  forecast column is never filled in when the fit fails. Integration order
+  `d = 0`: the target is a spread level, and the ARX is fitted on levels.
+
+Absent is the default and is today's gbm, bit for bit.
+
 Stdlib plus the `ml` extra, inside functions.
 """
 
@@ -201,9 +233,11 @@ from .baseline import (
     SPREAD_COMPONENTS,
     ExceedanceCurves,
     ExceedancePredictor,
+    FittedArx,
     _feature_index,
     _raw_regressor,
     _validate_taus_bp,
+    fit_arx,
 )
 from .contract import QUANTILE_LEVELS
 from .data import DailyObservation, load_stress_thresholds
@@ -216,6 +250,7 @@ from .splits import (
 )
 
 __all__ = [
+    "ARX_FEATURES",
     "CALIBRATIONS",
     "DEFAULT_CALIBRATION_FOLDS",
     "DEFAULT_CALIBRATION_SHARE",
@@ -274,6 +309,13 @@ VOLATILITY_FEATURES = ("garch11",)
 
 #: The design name of the `garch11` column.
 _GARCH_COLUMN = "garch11_variance"
+
+#: The ARX features gbm can be built with. See the module docstring: the ARX is
+#: fitted on the model's own declared regressors, and nothing else is offered.
+ARX_FEATURES = ("declared",)
+
+#: The design name of the ARX forecast column.
+_ARX_COLUMN = "arx_forecast"
 
 #: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
 #: fitted from: ten per fitted parameter. Below it the three parameters are
@@ -556,15 +598,17 @@ def _design(
     label: str,
     changes: Sequence[Optional[float]] = (),
     variance: Optional[float] = None,
+    arx: Optional[FittedArx] = None,
 ) -> List[float]:
-    """One row as the design reads it: the spread, each regressor, each lag, the variance.
+    """One row as the design reads it: the spread, each regressor, each lag, the variance, the ARX.
 
     A regressor carried as `None` gets its fitted imputation; one missing from
     the row is `_raw_regressor`'s refusal. A missing spread change gets its
     lag's imputation, by the same rule. The GARCH variance, when there is one,
     is never missing: `_garch_variances` carries a hole forward by its
-    expectation. The one spelling the fit, the calibration scores and
-    `FittedGradientBoostedQuantiles.design_row` share.
+    expectation. The ARX forecast is `arx.point_forecast(row)`, off this row
+    alone, under the ARX's own imputations. The one spelling the fit, the
+    calibration scores and `FittedGradientBoostedQuantiles.design_row` share.
     """
 
     values = [float(row.spread_bps)]
@@ -575,6 +619,8 @@ def _design(
         values.append(imputations[name] if change is None else change)
     if variance is not None:
         values.append(variance)
+    if arx is not None:
+        values.append(arx.point_forecast(row))
     return values
 
 
@@ -625,8 +671,9 @@ class _ExcludingModel:
     """One cross-conformal block: the model fitted without it, and its scores.
 
     * `estimators`, `imputations`, `garch_parameters`,
-      `garch_initial_variance` --- the fit on the rows outside the block and its
-      purge gaps, in `FittedGradientBoostedQuantiles`' own fields' meaning.
+      `garch_initial_variance`, `arx` --- the fit on the rows outside the block
+      and its purge gaps, in `FittedGradientBoostedQuantiles`' own fields'
+      meaning.
     * `held_out_start`, `held_out_end` --- the block's first and last dates.
     * `training_dates` --- every row a design pair of this fit read, as an
       origin or as a target, ascending. Carried so the purge can be checked
@@ -636,6 +683,7 @@ class _ExcludingModel:
     """
 
     __slots__ = (
+        "arx",
         "estimators",
         "garch_initial_variance",
         "garch_parameters",
@@ -659,7 +707,9 @@ class _ExcludingModel:
         training_dates: Sequence[date],
         scored_dates: Sequence[date],
         scores: Sequence[float],
+        arx: Optional[FittedArx] = None,
     ) -> None:
+        self.arx: Optional[FittedArx] = arx
         self.estimators: Tuple[Any, ...] = tuple(estimators)
         self.imputations: Mapping[str, float] = MappingProxyType(dict(imputations))
         self.garch_parameters = garch_parameters
@@ -781,6 +831,9 @@ class FittedGradientBoostedQuantiles:
       rows' mean squared observed change the recursion starts from. A feature
       row's variance is filtered through the same frame rows its lags are read
       from.
+    * `arx_feature`, `arx` --- the ARX feature the design carries (`None` when
+      it carries none) and the `baseline.FittedArx` fitted on the fit rows,
+      whose point forecast from a feature row is that row's column.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -805,6 +858,8 @@ class FittedGradientBoostedQuantiles:
         "_history_dates",
         "_history_spreads",
         "_residuals",
+        "arx",
+        "arx_feature",
         "calibration",
         "calibration_blocks",
         "calibration_end",
@@ -849,7 +904,11 @@ class FittedGradientBoostedQuantiles:
         garch_initial_variance: Optional[float] = None,
         calibration_folds: Optional[int] = None,
         calibration_blocks: Sequence[_ExcludingModel] = (),
+        arx_feature: Optional[str] = None,
+        arx: Optional[FittedArx] = None,
     ) -> None:
+        self.arx_feature: Optional[str] = arx_feature
+        self.arx: Optional[FittedArx] = arx
         self.calibration_folds: Optional[int] = calibration_folds
         self.calibration_blocks: Tuple[_ExcludingModel, ...] = tuple(calibration_blocks)
         self.volatility_feature: Optional[str] = volatility_feature
@@ -904,8 +963,8 @@ class FittedGradientBoostedQuantiles:
         a column the model does not read would put `features_read` --- which is
         derived from this --- out of step with the fit.
 
-        The lag columns come after the regressors, lag 1 first, and the GARCH
-        variance last.
+        The lag columns come after the regressors, lag 1 first, then the GARCH
+        variance, and the ARX forecast last.
         """
 
         return (
@@ -913,6 +972,7 @@ class FittedGradientBoostedQuantiles:
             + self.regressors
             + _spread_change_names(self.spread_change_lags or 0)
             + ((_GARCH_COLUMN,) if self.volatility_feature is not None else ())
+            + ((_ARX_COLUMN,) if self.arx_feature is not None else ())
         )
 
     @property
@@ -930,11 +990,12 @@ class FittedGradientBoostedQuantiles:
         `design_names` order, so anything that column order gains this answer
         gains too.
 
-        **Except the lag columns and the GARCH variance, which are not panel
-        columns.** Each is read off `spread_bps` on rows at or before the feature
-        row, and `spread_bps` is already here. Naming `spread_change_lag_1` or
-        `garch11_variance` would ask the purge check to find a source for a
-        column no source ingests.
+        **Except the lag columns, the GARCH variance and the ARX forecast, which
+        are not panel columns.** Each is read off `spread_bps` -- the ARX
+        forecast off `spread_bps` and the declared regressors -- on rows at or
+        before the feature row, and every one of those is already here. Naming
+        `spread_change_lag_1`, `garch11_variance` or `arx_forecast` would ask
+        the purge check to find a source for a column no source ingests.
         """
 
         return self.design_names[: 1 + len(self.regressors)]
@@ -947,8 +1008,8 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags` and `volatility_feature` by the same rule: named
-        when set, absent when not. Each calibration names its own setting and
+        `spread_change_lags`, `volatility_feature` and `arx_feature` by the
+        same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal`, `calibration_folds`
         for `cross_conformal`.
         """
@@ -964,6 +1025,8 @@ class FittedGradientBoostedQuantiles:
             settings["spread_change_lags"] = self.spread_change_lags
         if self.volatility_feature is not None:
             settings["volatility_feature"] = self.volatility_feature
+        if self.arx_feature is not None:
+            settings["arx_feature"] = self.arx_feature
         return MappingProxyType(settings)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
@@ -983,6 +1046,9 @@ class FittedGradientBoostedQuantiles:
         The GARCH variance by the same rule: the recursion is run with the
         fitted parameters through the frame's rows before `feature_row` and
         then `feature_row`'s own spread, and its last value is the column.
+
+        The ARX forecast is the fitted ARX's point forecast from `feature_row`,
+        which reads that row and no other.
         """
 
         return self._design_row(
@@ -990,6 +1056,7 @@ class FittedGradientBoostedQuantiles:
             self.imputations,
             self.garch_parameters,
             self.garch_initial_variance,
+            self.arx,
         )
 
     def _design_row(
@@ -998,8 +1065,9 @@ class FittedGradientBoostedQuantiles:
         imputations: Mapping[str, float],
         garch_parameters: Optional[Tuple[float, float, float]],
         garch_initial_variance: Optional[float],
+        arx: Optional[FittedArx] = None,
     ) -> Tuple[float, ...]:
-        """`design_row` under one fit's imputations and GARCH parameters.
+        """`design_row` under one fit's imputations, GARCH parameters and ARX.
 
         The full fit's, or an excluding model's: the frame's rows are the
         history either way, because a forecast's inputs are every row at or
@@ -1044,6 +1112,7 @@ class FittedGradientBoostedQuantiles:
                 "feature row",
                 changes,
                 variance,
+                arx,
             )
         )
 
@@ -1099,6 +1168,7 @@ class FittedGradientBoostedQuantiles:
                             block.imputations,
                             block.garch_parameters,
                             block.garch_initial_variance,
+                            block.arx,
                         )
                     ],
                 )[0]
@@ -1248,6 +1318,9 @@ def _training_design(
     lags: int,
     volatility_feature: Optional[str],
     label: str,
+    arx_feature: Optional[str] = None,
+    arx_frame: Sequence[DailyObservation] = (),
+    arx_origins: Optional[Sequence[int]] = None,
 ) -> Tuple[
     Mapping[str, float],
     Optional[Tuple[float, float, float]],
@@ -1255,20 +1328,23 @@ def _training_design(
     List[List[float]],
     List[float],
     List[float],
+    Optional[FittedArx],
 ]:
-    """One fit's imputations, GARCH, design and targets, over the pairs at `origins`.
+    """One fit's imputations, GARCH, ARX, design and targets, over the pairs at `origins`.
 
     `origins` are frame positions `p` whose one-step pair `(p, p + 1)` trains;
     every one is at least `lags`. `spreads` is what the training lags and
     variances are read off -- the frame's own, or, for an excluding model, the
     frame's with every row it may not train on made a hole -- and
-    `garch_spreads` what the GARCH is fitted on. The one spelling the full fit,
+    `garch_spreads` what the GARCH is fitted on. The ARX is `fit_arx` on
+    `arx_frame`, at `arx_origins` when given. The one spelling the full fit,
     the split-conformal fit and every excluding model share: two spellings of
     one design is how two models stop being comparable.
 
     Returns `(imputations, garch_parameters, garch_initial_variance, design,
-    targets, variances)`, `variances` being the recursion filtered over
-    `spreads` (empty without the volatility feature).
+    targets, variances, arx)`, `variances` being the recursion filtered over
+    `spreads` (empty without the volatility feature) and `arx` `None` without
+    the ARX feature.
     """
 
     change_names = _spread_change_names(lags)
@@ -1323,11 +1399,19 @@ def _training_design(
         seen = observed[name]
         imputations[name] = sum(seen) / len(seen)
 
+    # The ARX, by `baseline.fit_arx` and no second fitter, on the declared
+    # regressors and the rows this fit trains on. Its own minimum and its own
+    # refusals: the defaults, not gbm's `minimum_history`, which is a statement
+    # about the frame rather than about the rows the ARX is handed.
+    arx: Optional[FittedArx] = None
+    if arx_feature is not None:
+        arx = fit_arx(arx_frame, names, origins=arx_origins)
+
     design = []
     targets = []
     for position, row_changes in zip(origins, changes):
-        # The origin's variance, `position`: the target row's would read the
-        # change into the target.
+        # The origin's variance and ARX forecast, `position`: the target row's
+        # would read the target.
         design.append(
             _design(
                 rows[position],
@@ -1336,10 +1420,11 @@ def _training_design(
                 "training row",
                 row_changes,
                 variances[position] if variances else None,
+                arx,
             )
         )
         targets.append(float(rows[position + 1].spread_bps))
-    return imputations, garch, initial, design, targets, variances
+    return imputations, garch, initial, design, targets, variances, arx
 
 
 def _fitted_levels(
@@ -1384,6 +1469,7 @@ def fit_gradient_boosted_quantiles(
     spread_change_lags: Optional[int] = None,
     volatility_feature: Optional[str] = None,
     calibration_folds: Optional[int] = None,
+    arx_feature: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -1437,6 +1523,11 @@ def fit_gradient_boosted_quantiles(
             only value the other calibrations accept, for `calibration_share`'s
             reason; `calibration_share` is refused under `cross_conformal` by
             the same rule.
+        arx_feature: one of `ARX_FEATURES`, or `None`, the default, which
+            carries no ARX column and is the model every published gbm record
+            was produced with. `"declared"` fits `baseline.fit_arx` on the fit
+            rows over `regressors` and adds its one-step point forecast. See
+            the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -1476,7 +1567,10 @@ def fit_gradient_boosted_quantiles(
             volatility feature, if `volatility_feature` is not one of
             `VOLATILITY_FEATURES`, if the fit rows carry fewer than
             `GARCH_MINIMUM_CHANGES` observed spread changes, or if the GARCH
-            fit does not converge.
+            fit does not converge; and, for the ARX feature, if `arx_feature`
+            is not one of `ARX_FEATURES`. Whatever `baseline.fit_arx` raises
+            on the rows it is handed -- fewer than its default minimum, a
+            singular design -- propagates as it raised it.
     """
 
     grid = _validate_levels(levels)
@@ -1576,6 +1670,15 @@ def fit_gradient_boosted_quantiles(
             f"model"
         )
 
+    if arx_feature is not None and arx_feature not in ARX_FEATURES:
+        raise ValueError(
+            f"unknown arx_feature {arx_feature!r}; this model can be built with "
+            f"{', '.join(ARX_FEATURES)} -- the ARX fitted on this model's own "
+            f"declared regressors -- or with none by leaving the setting out. A "
+            f"misspelt feature fitted without one would publish today's gbm "
+            f"under a declaration naming an ARX"
+        )
+
     names = tuple(str(name) for name in regressors)
     if not names:
         raise ValueError(
@@ -1653,7 +1756,9 @@ def fit_gradient_boosted_quantiles(
     # the first `lags`, whose changes would reach before the frame. The GARCH is
     # fitted on the fit rows' spreads and filtered over the whole frame, so the
     # calibration rows are run through the recursion, never fitted on.
-    imputations, garch, initial, design, targets, variances = _training_design(
+    # The ARX is fitted on the fit rows as one frame, which is what
+    # `--model arx` fits on the same rows.
+    imputations, garch, initial, design, targets, variances, arx = _training_design(
         rows,
         dates,
         spreads,
@@ -1663,6 +1768,8 @@ def fit_gradient_boosted_quantiles(
         lags,
         volatility_feature,
         "fit rows",
+        arx_feature,
+        fit_rows,
     )
 
     # The cross-conformal blocks, planned and designed before anything is
@@ -1708,6 +1815,15 @@ def fit_gradient_boosted_quantiles(
                 spread if keep else None for spread, keep in zip(spreads, kept)
             ]
             label = f"training rows of cross-conformal block {number + 1} of {folds}"
+            # Its ARX trains on every one-step pair whose two rows it may train
+            # on, from the frame's first row -- the full fit's ARX reads every
+            # pair of its rows, not only those past the lags -- and never on a
+            # pair that spans the block.
+            arx_origins = [
+                position
+                for position in range(len(rows) - 1)
+                if kept[position] and kept[position + 1]
+            ]
             (
                 block_imputations,
                 block_garch,
@@ -1715,8 +1831,20 @@ def fit_gradient_boosted_quantiles(
                 block_design,
                 block_targets,
                 _,
+                block_arx,
             ) = _training_design(
-                rows, dates, masked, masked, origins, names, lags, volatility_feature, label
+                rows,
+                dates,
+                masked,
+                masked,
+                origins,
+                names,
+                lags,
+                volatility_feature,
+                label,
+                arx_feature,
+                rows,
+                arx_origins,
             )
             # Its scored rows' inputs are every row at or before their feature
             # row, as a forecast's are; only what the model learned is its own.
@@ -1752,6 +1880,7 @@ def fit_gradient_boosted_quantiles(
                                 f"held-out feature row for {dates[position]}",
                             ),
                             filtered[position] if filtered else None,
+                            block_arx,
                         ),
                         float(rows[index].spread_bps),
                         dates[index],
@@ -1765,6 +1894,7 @@ def fit_gradient_boosted_quantiles(
                     block_imputations,
                     block_garch,
                     block_initial,
+                    block_arx,
                     block_design,
                     block_targets,
                     held_out,
@@ -1835,6 +1965,8 @@ def fit_gradient_boosted_quantiles(
                             f"calibration feature row for {dates[position]}",
                         ),
                         variances[position] if variances else None,
+                        # The fit rows' ARX, never refitted on these rows.
+                        arx,
                     ),
                     float(rows[index].spread_bps),
                 )
@@ -1857,6 +1989,7 @@ def fit_gradient_boosted_quantiles(
         block_imputations,
         block_garch,
         block_initial,
+        block_arx,
         block_design,
         block_targets,
         held_out,
@@ -1880,6 +2013,7 @@ def fit_gradient_boosted_quantiles(
                 imputations=block_imputations,
                 garch_parameters=block_garch,
                 garch_initial_variance=block_initial,
+                arx=block_arx,
                 held_out_start=dates[start],
                 held_out_end=dates[stop - 1],
                 training_dates=sorted(
@@ -1923,6 +2057,8 @@ def fit_gradient_boosted_quantiles(
         garch_initial_variance=initial,
         calibration_folds=folds,
         calibration_blocks=blocks,
+        arx_feature=arx_feature,
+        arx=arx,
     )
 
 
