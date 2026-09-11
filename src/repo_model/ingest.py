@@ -1632,7 +1632,11 @@ NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
 #: fact about the market when the rows it matches over were observed; if
 #: `mmf_repo_holdings` is itself unobserved for the cross-section there were no
 #: repo rows to find a counterparty in, and the derived field's absence is
-#: inherited rather than measured. That case is deliberately *not* recorded here.
+#: inherited rather than measured. That case is not recorded *here*, because it
+#: is recorded where its input's absence is: as `absent_fields` when the table is
+#: missing or the category era undeclared, and -- when the table was read in a
+#: declared era and supplied no repo holding at all -- as the exclusion of the
+#: whole cross-section, see `NMFP_REQUIRED_CATEGORY_FIELD`.
 #:
 #: Declared rather than inferred from the parser, for the same reason
 #: `InvestmentCategoryEra` declares its vocabulary: "this field is derived by a
@@ -1640,6 +1644,29 @@ NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
 #: find it stated rather than reconstruct it from a substring test 300 lines
 #: down.
 NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
+
+#: The holdings field a cross-section is not admitted without, once the archive
+#: could have supplied it. Decided 11 Sep -- `docs/DATA_QUALITY_DECISIONS.md`, "An
+#: empty repo cross-section is excluded, with its reason".
+#:
+#: The fund industry always holds repo. A cross-section that cleared its floor,
+#: whose holdings table was read in a declared `INVESTMENTCATEGORY` era, and
+#: which produced no `mmf_repo_holdings` observation is therefore a vocabulary
+#: failure until shown otherwise, and admitting it would put a month in the panel
+#: whose repo hole reads exactly like a quiet month. It is excluded whole --
+#: balance sheet and flows with it, as the floor excludes -- and recorded with
+#: `exclusion_reason` `no_repo_rows`. No row is written for it, and never a zero.
+#:
+#: Only `mmf_repo_holdings`, and only when it is not already in `absent_fields`.
+#: A missing holdings table or an undeclared category era is an archive the
+#: adapter could not look at, which stays a recorded absence on an admitted
+#: cross-section. And `mmf_on_rrp` matching nothing is a fact about the market,
+#: not about the vocabulary: its own record is `unmatched_derived_fields`.
+#:
+#: A repo row whose value cell is absent supplies no observation either -- the
+#: cell is in `absent_cells` with its token -- so a month of nothing else is
+#: excluded under the same reason. "No repo rows" means none the panel could use.
+NMFP_REQUIRED_CATEGORY_FIELD = "mmf_repo_holdings"
 
 
 @dataclass(frozen=True)
@@ -2542,9 +2569,21 @@ def _assemble_sec_nmfp(
     The floor's value is untouched, and so is the unit it counts -- distinct
     `SERIESID`. Only the population it counts over changed, from one archive's
     filings for a report date to every archive's filings for a calendar month.
+
+    A cross-section that clears the floor must also carry a repo holding, per
+    `NMFP_REQUIRED_CATEGORY_FIELD`, and that too is judged progressively: on the
+    submissions surviving supersession in the archives retrieved so far, and
+    against the fields those same archives could not supply. Taking the absence
+    from every archive instead would let a later archive that carries the
+    holdings table refuse an earlier vintage that did not. The floor is judged
+    first, so a thin cohort with no repo rows reads `below_floor`. Admission is
+    not retracted by either rule: a month once admitted keeps the vintages it was
+    emitted with, for the reason a moved reference date keeps them.
     """
 
     from .data import (
+        EXCLUSION_BELOW_FLOOR,
+        EXCLUSION_NO_REPO_ROWS,
         CrossSectionCoverage,
         PointInTimeObservation,
         declared_coverage_floor,
@@ -2581,6 +2620,7 @@ def _assemble_sec_nmfp(
 
     scanned_sections = []     # per archive, the months it files into
     scanned_accessions = []   # per archive, the accessions it carries
+    scanned_absent = []       # per archive, month -> fields it could not supply
 
     for artifact in ordered:
         payload = _artifact_payload(artifact)
@@ -2634,6 +2674,11 @@ def _assemble_sec_nmfp(
                 absent[section] = fields
         scanned_sections.append(sorted(archive_absent))
         scanned_accessions.append(frozenset(scanned))
+        # Copied: the sets above are shared with `absent` and narrowed in place
+        # by the archives that follow.
+        scanned_absent.append(
+            {section: frozenset(fields) for section, fields in archive_absent.items()}
+        )
 
     active = set()
     assembled = {}
@@ -2642,6 +2687,7 @@ def _assemble_sec_nmfp(
     known = set()
     admitted = set()
     section_ref_dates = {}    # month -> greatest report date observed so far
+    absent_so_far = {}        # month -> fields no archive retrieved so far supplies
 
     def panel_cell(cell):
         """Where a contributed cell lands in the panel, given today's assembly.
@@ -2678,6 +2724,12 @@ def _assemble_sec_nmfp(
         )
         sections = scanned_sections[index]
         known |= scanned_accessions[index]
+        for section, fields in scanned_absent[index].items():
+            absent_so_far[section] = (
+                absent_so_far[section] & fields
+                if section in absent_so_far
+                else fields
+            )
         # The greatest report date observed *so far* in each month. Taking it
         # over every archive instead would date a cross-section by a report date
         # that no archive had yet filed, which is the same look-ahead the count
@@ -2728,14 +2780,33 @@ def _assemble_sec_nmfp(
             section: len({submissions[accession][0] for accession in found})
             for section, found in members.items()
         }
+        # The panel fields each month's surviving submissions supply, as of this
+        # archive. The same set the coverage record's derived-field check reads.
+        observed_fields = {
+            section: {
+                cell[0]
+                for accession in members[section] & kept
+                for cell in contributions.get(accession, ())
+            }
+            for section in sections
+        }
+        refused = {}
         for section in sections:
             # The floor is the one declared for the era the cross-section's own
             # reference date falls in. A section in no declared era is refused:
             # there is no floor to clear, and admitting it on the nearest era's
             # floor would judge it against a universe it is not part of.
             era = floors.era_for(section_ref_dates[section])
-            if era is not None and counts[section] >= era.minimum_reporting_entities:
-                admitted.add(section)
+            if era is None or counts[section] < era.minimum_reporting_entities:
+                refused[section] = EXCLUSION_BELOW_FLOOR
+                continue
+            if (
+                NMFP_REQUIRED_CATEGORY_FIELD not in observed_fields[section]
+                and NMFP_REQUIRED_CATEGORY_FIELD not in absent_so_far.get(section, ())
+            ):
+                refused[section] = EXCLUSION_NO_REPO_ROWS
+                continue
+            admitted.add(section)
         wanted = {
             accession
             for accession in kept
@@ -2799,7 +2870,7 @@ def _assemble_sec_nmfp(
             # archive instead would record an absence that the next archive in
             # the same month refutes, and the record would then contradict the
             # panel beside it.
-            observed = {series_id for series_id, _ref_date in surviving}
+            observed = observed_fields[section]
             coverage.append(
                 CrossSectionCoverage(
                     source_id=source_id,
@@ -2816,6 +2887,9 @@ def _assemble_sec_nmfp(
                     absent_fields=tuple(sorted(absent.get(section, ()))),
                     unmatched_derived_fields=_nmfp_unmatched_derived_fields(
                         observed, structural_zeros, section_ref_dates[section]
+                    ),
+                    exclusion_reason=(
+                        None if section in admitted else refused[section]
                     ),
                 )
             )
