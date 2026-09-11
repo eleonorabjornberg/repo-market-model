@@ -1,0 +1,9 @@
+{
+  "byte_count": 12053683,
+  "note": "retrieved_at is the committer time of 62899d7, the commit that first tracked this file. It is a ceiling on when the file was retrieved, not a measurement of it. url records the request that was made and cannot reproduce these bytes: its filter on issue_date has no upper bound, so the same request returns every auction added since.",
+  "path": "tests/fixtures/snapshots/treasury_auctions/auctions_2018_present.json",
+  "retrieved_at": "2026-09-10T19:22:46Z",
+  "sha256": "8da8af050b04654d9094ce1315ad157f2f28d23a2d8451f0783cae6c4c392065",
+  "source_id": "treasury_auctions",
+  "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?page[size]=10000&filter=issue_date:gte:2018-01-01"
+}
