@@ -3568,6 +3568,323 @@ class FR2004EraIdentityTests(unittest.TestCase):
             self.evaluate(rows, drifted)
 
 
+class TreasurySettlementZeroTests(unittest.TestCase):
+    """A business day with no Treasury settlement reads 0.0, inside coverage only.
+
+    Human decision, 11 September 2026 (`docs/DATA_QUALITY_DECISIONS.md`, "Panel
+    columns (human, 11 Sep)"): the auction record lists every settlement, so a
+    business day with none settled nothing, and `treasury_settlement_bills`,
+    `_coupons`, `_soma` and the aggregate read `0.0` -- but only up to the
+    snapshot's retrieval date, and a day the snapshot cannot speak to stays a
+    hole. `data.build_daily_panel` rule 8; the declaration is
+    `data.SETTLEMENT_ZERO_COLUMNS`. Before this block every such day was a
+    hole: the adapter emits nothing for an absent leg, and still does.
+
+    The acceptance criterion and the mutation target are the one test,
+    `test_a_business_day_with_no_settlement_reads_zero_inside_the_snapshot_coverage_only`.
+
+    The fixture is a fortnight of January 2026. SOFR prints on nine weekdays,
+    so those are the grid; 10 and 11 January are inside coverage and off it.
+    The snapshot's first settlement is 6 January. It was retrieved at
+    03:00 UTC on 14 January, which is 13 January on the Eastern calendar
+    Treasury's issue dates are written in, so 13 January is the last covered
+    day and 14 January the first uncovered one. 7 and 13 January settle
+    nothing; 8 January settles a coupon and no bill; 6 and 9 January a bill
+    and no coupon, and 9 January's SOMA award is withheld (the adapter emits
+    that day's public legs and no SOMA leg); 12 January settles both and a
+    genuine SOMA zero.
+
+    Mutation record, 11 September 2026, python3 3.9.6. Every mutation applied to
+    `src/repo_model/data.py` in a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, confirmed applied
+    (the replaced text occurs exactly once before and the file differs after),
+    reverted and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time. Unmutated control green before the first and after the
+    last, no expected failure. Every mutation was killed by this test and by
+    nothing else in the suite, each subtest failing with `AssertionError`:
+
+    1. **The retrieval bound removed**: each snapshot's coverage runs to
+       `date.max` (the retrieval timestamp still read, so the refusal stands).
+       Killed "a grid date after the retrieval date is a hole" --
+       `0.0 is not None : 2026-01-14 treasury_settlement`.
+    2. **Every optional column zero-filled**: the fill writes `0.0` into any
+       `OPTIONAL_NUMERIC_FIELDS` column on any date some declared column took a
+       zero. Killed "a withheld SOMA leg is a hole" and "an undeclared optional
+       column is still a hole on the same dates" (`0.0 is not None : 2026-01-06`).
+    3. **The aggregate left a hole on zero days**: `treasury_settlement` taken
+       out of `SETTLEMENT_ZERO_COLUMNS`. Killed "a covered grid date with
+       neither" (`None != 0.0 : 2026-01-07 treasury_settlement`) and "the
+       identity holds on every zero day" (`unexpectedly None : 2026-01-07`).
+    4. **The withheld SOMA leg zero-filled**: the SOMA leg declared `leg`
+       rather than `day`. Killed "a withheld SOMA leg is a hole" alone.
+    5. **Each refusal removed.** (a) The missing-timestamp `raise` replaced by
+       `return date.max`, an unbounded fill: killed the refusal subtest "a
+       snapshot with no retrieval timestamp", `DataContractError not raised`.
+       (b) The source check's condition replaced by `False`: killed "a declared
+       column not drawn from the auction snapshot", `DataContractError not
+       raised`.
+    6. **The retrieval instant read on the UTC calendar** (`parsed.date()`),
+       which puts 14 January inside coverage. Killed "a grid date after the
+       retrieval date is a hole", `0.0 is not None : 2026-01-14
+       treasury_settlement`.
+    7. **A zero counted as a hole.** Killed "holes count the empty cells, not
+       the zeros": `treasury_settlement_bills` 6 against 3.
+
+    What rebuilding the real snapshots showed, for the record (no page carries
+    it): only the four settlement columns moved, every other column's bytes
+    unchanged, and the holes left in them are the two grid dates before the
+    snapshot's first settlement. The retrieval bound does not bind on that
+    snapshot -- its last settlement and the panel's last grid date coincide,
+    days before its retrieval date -- and no SOMA result was withheld on a grid
+    date, so on today's data mutations 1, 4 and 6 would move nothing. This
+    test is what holds them.
+    """
+
+    SOFR_SHA = "a" * 64
+    AUCTION_SHA = "b" * 64
+    RETRIEVED_AT = "2026-01-14T03:00:00+00:00"
+
+    GRID = (
+        date(2026, 1, 5),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 8),
+        date(2026, 1, 9),
+        date(2026, 1, 12),
+        date(2026, 1, 13),
+        date(2026, 1, 14),
+        date(2026, 1, 15),
+    )
+
+    #: The adapter's series, as `ingest._treasury_rows` names them, per
+    #: settlement date. A leg not named has no observation that day.
+    SETTLEMENTS = {
+        date(2026, 1, 6): {
+            "treasury_settlement": 50.0,
+            "treasury_settlement_bill": 50.0,
+            "treasury_settlement_soma": 2.0,
+        },
+        date(2026, 1, 8): {
+            "treasury_settlement": 30.0,
+            "treasury_settlement_coupon": 30.0,
+            "treasury_settlement_soma": 1.0,
+        },
+        # Withheld: an auction not yet held, so no SOMA leg for the day.
+        date(2026, 1, 9): {
+            "treasury_settlement": 40.0,
+            "treasury_settlement_bill": 40.0,
+        },
+        date(2026, 1, 12): {
+            "treasury_settlement": 30.0,
+            "treasury_settlement_bill": 20.0,
+            "treasury_settlement_coupon": 10.0,
+            "treasury_settlement_soma": 0.0,
+        },
+    }
+    TGCR = {date(2026, 1, 5): 4.29, date(2026, 1, 8): 4.30, date(2026, 1, 12): 4.31}
+
+    SETTLEMENT_COLUMNS = (
+        "treasury_settlement",
+        "treasury_settlement_bills",
+        "treasury_settlement_coupons",
+        "treasury_settlement_soma",
+    )
+    COLUMNS = ("sofr", "tgcr") + SETTLEMENT_COLUMNS
+
+    LAG = {
+        "basis": "ref_date",
+        "unit": "business_days",
+        "days": 1,
+        "worst_case_calendar_days": 6,
+        "available_time": "15:00",
+        "timezone": "America/New_York",
+        "note": "fixture",
+    }
+
+    def registry(self):
+        """The auction source's lag as `metadata/sources.json` declares it."""
+
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {
+            "nyfed_sofr": {"release_lag": dict(self.LAG)},
+            "nyfed_tgcr": {"release_lag": dict(self.LAG)},
+            "treasury_auctions": {
+                "release_lag": dict(real["treasury_auctions"]["release_lag"])
+            },
+        }
+
+    def rows(self):
+        new_york = ZoneInfo("America/New_York")
+        rows = []
+        for index, ref_date in enumerate(self.GRID):
+            rows.append(
+                PointInTimeObservation(
+                    series_id="SOFR",
+                    ref_date=ref_date,
+                    available_at=datetime.combine(
+                        ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                    ),
+                    value=4.30 + index / 100,
+                    vintage_id=f"SOFR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+        for ref_date, value in self.TGCR.items():
+            rows.append(
+                PointInTimeObservation(
+                    series_id="TGCR",
+                    ref_date=ref_date,
+                    available_at=datetime.combine(
+                        ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                    ),
+                    value=value,
+                    vintage_id=f"TGCR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+        for ref_date, legs in self.SETTLEMENTS.items():
+            for series_id, value in legs.items():
+                rows.append(
+                    PointInTimeObservation(
+                        series_id=series_id,
+                        ref_date=ref_date,
+                        available_at=datetime.combine(
+                            ref_date, time(23, 59), tzinfo=new_york
+                        ),
+                        value=value,
+                        vintage_id=f"{ref_date.isoformat()}:{self.RETRIEVED_AT}",
+                        source_sha=self.AUCTION_SHA,
+                    )
+                )
+        return rows
+
+    def build(self, *, retrieved_at=None):
+        return build_daily_panel(
+            self.rows(),
+            self.registry(),
+            build_cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("16:00"),
+            columns=self.COLUMNS,
+            snapshot_retrieved_at=(
+                {self.AUCTION_SHA: self.RETRIEVED_AT}
+                if retrieved_at is None
+                else retrieved_at
+            ),
+        )
+
+    def test_a_business_day_with_no_settlement_reads_zero_inside_the_snapshot_coverage_only(
+        self,
+    ):
+        """The acceptance criterion and the mutation target. See the class docstring."""
+
+        build = self.build()
+        self.assertEqual(build.built_columns, self.COLUMNS)
+        panel = {row.date: row.values for row in build.observations}
+
+        with self.subTest("a covered grid date with no bill auction"):
+            coupon_only = panel[date(2026, 1, 8)]
+            self.assertEqual(coupon_only["treasury_settlement_bills"], 0.0)
+            self.assertEqual(coupon_only["treasury_settlement_coupons"], 30.0)
+            self.assertEqual(
+                coupon_only["treasury_settlement"],
+                coupon_only["treasury_settlement_coupons"],
+            )
+
+        with self.subTest("a covered grid date with neither: every leg and the aggregate"):
+            for day in (date(2026, 1, 7), date(2026, 1, 13)):
+                for column in self.SETTLEMENT_COLUMNS:
+                    self.assertEqual(panel[day][column], 0.0, f"{day} {column}")
+
+        # Every date on which rule 8 wrote a zero into some column, stated
+        # rather than derived, so a mutation that stops writing one cannot
+        # empty the set the identity is checked over.
+        zero_days = (
+            date(2026, 1, 6),
+            date(2026, 1, 7),
+            date(2026, 1, 8),
+            date(2026, 1, 9),
+            date(2026, 1, 13),
+        )
+        with self.subTest("the identity holds on every zero day"):
+            for day in zero_days:
+                values = panel[day]
+                parts = (
+                    values["treasury_settlement_bills"],
+                    values["treasury_settlement_coupons"],
+                )
+                self.assertIsNotNone(values["treasury_settlement"], day)
+                self.assertNotIn(None, parts, day)
+                self.assertAlmostEqual(
+                    values["treasury_settlement"], sum(parts), delta=1e-9, msg=day
+                )
+
+        with self.subTest("a grid date after the retrieval date is a hole"):
+            # 14 January is the retrieval instant's UTC date and not its
+            # Eastern one; 15 January is past both.
+            for day in (date(2026, 1, 14), date(2026, 1, 15)):
+                for column in self.SETTLEMENT_COLUMNS:
+                    self.assertIsNone(panel[day][column], f"{day} {column}")
+
+        with self.subTest("a grid date before the snapshot's first settlement is a hole"):
+            for column in self.SETTLEMENT_COLUMNS:
+                self.assertIsNone(panel[date(2026, 1, 5)][column], column)
+
+        with self.subTest("a withheld SOMA leg is a hole"):
+            withheld = panel[date(2026, 1, 9)]
+            self.assertEqual(withheld["treasury_settlement"], 40.0)
+            self.assertIsNone(withheld["treasury_settlement_soma"])
+            # ...and a genuine zero award is the observation, not the fill.
+            self.assertEqual(panel[date(2026, 1, 12)]["treasury_settlement_soma"], 0.0)
+
+        with self.subTest("an undeclared optional column is still a hole on the same dates"):
+            for day in zero_days:
+                if day not in self.TGCR:
+                    self.assertIsNone(panel[day]["tgcr"], day)
+
+        with self.subTest("no row for a date off the grid"):
+            self.assertEqual(tuple(panel), self.GRID)
+            self.assertNotIn(date(2026, 1, 10), panel)
+            self.assertNotIn(date(2026, 1, 11), panel)
+
+        with self.subTest("holes count the empty cells, not the zeros"):
+            self.assertEqual(
+                dict(build.holes),
+                {
+                    column: sum(1 for values in panel.values() if values[column] is None)
+                    for column in self.COLUMNS
+                },
+            )
+
+        with self.subTest(refusal="a snapshot with no retrieval timestamp"):
+            for retrieved_at in (
+                {},
+                {self.AUCTION_SHA: ""},
+                {self.AUCTION_SHA: "2026-01-14T03:00:00"},
+            ):
+                with self.assertRaisesRegex(
+                    DataContractError, r"no usable retrieval timestamp"
+                ):
+                    self.build(retrieved_at=retrieved_at)
+
+        with self.subTest(refusal="a declared column not drawn from the auction snapshot"):
+            from repo_model import data
+
+            declared = dict(data.SETTLEMENT_ZERO_COLUMNS)
+            declared["tgcr"] = data.SETTLEMENT_ZERO_LEG
+            with unittest.mock.patch.object(
+                data, "SETTLEMENT_ZERO_COLUMNS", MappingProxyType(declared)
+            ):
+                with self.assertRaisesRegex(
+                    DataContractError, r"not the auction snapshot"
+                ):
+                    self.build()
+
+
 def replace_observation(observation, ref_date):
     """One observation moved to another reference date, availability with it.
 

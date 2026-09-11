@@ -1225,14 +1225,19 @@ def _treasury_rows(
     here would be a second definition, and the adapter would then be checked
     against its own copy.
 
-    Three things a key can be missing, and only one of them is a zero:
+    Three things a key can be missing. Two of them read `0.0` in the panel and
+    one never does, and none of them is a `0.0` this adapter emits:
 
     * **No auction of a kind.** 801 of the fixture's 1088 settlement dates
-      have no coupon and 204 have no bill. That key gets no observation for
-      the absent leg. A `0.0` would claim Treasury settled nothing of that
-      kind that day, which is true, and would also be indistinguishable from
-      a day the adapter failed to classify -- and it is the second reading
-      the panel would have to trust.
+      have no coupon and 204 have no bill. Treasury settled nothing of that
+      kind that day, and the panel reads `0.0` for the leg -- and, on a day
+      with no auction at all, for every leg and the aggregate. The zero is
+      written by `data.build_daily_panel` rule 8, not here, because it needs
+      two things this adapter does not have: the panel's grid, which is what
+      says a date is a business day, and the bound of what the snapshot can
+      speak to, its first settlement date to its retrieval date. Emitted here
+      it would land on weekends and past the retrieval date. The key still
+      gets no observation for the absent leg.
     * **A result not yet awarded.** `soma_accepted` is `"null"` until the
       auction is held. The whole key loses `treasury_settlement_soma`, not
       just the unheld record's share: summing the rest publishes a partial

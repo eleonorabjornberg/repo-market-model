@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
+from types import MappingProxyType
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence
 
 from repo_model.contract import (
@@ -2238,6 +2239,39 @@ PANEL_COLUMNS = tuple(
     field for field in REQUIRED_FIELDS if field != "date"
 ) + OPTIONAL_NUMERIC_FIELDS
 
+# A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
+# 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See
+# `build_daily_panel` rule 8. This is the one place the exception to rule 4 is
+# declared: a column not named here keeps its holes.
+#
+#: The auction snapshot: the one source a settlement zero may be read from. The
+#: zero is a claim about what its record lists, so a column drawn from any other
+#: source cannot take it.
+SETTLEMENT_ZERO_SOURCE = "treasury_auctions"
+
+#: What "nothing settled" is judged on, per declared column.
+#:
+#:   leg  the column's own series has no observation that day: no auction of
+#:        that kind settled
+#:   day  no series of the snapshot has an observation that day: nothing settled
+#:        at all. For the SOMA leg, which the adapter withholds whole on a day
+#:        whose auction was not yet held while the public legs of that day stay
+#:        observed -- so its own absence alone is not a zero.
+SETTLEMENT_ZERO_LEG = "leg"
+SETTLEMENT_ZERO_DAY = "day"
+SETTLEMENT_ZERO_COLUMNS = MappingProxyType(
+    {
+        "treasury_settlement": SETTLEMENT_ZERO_LEG,
+        "treasury_settlement_bills": SETTLEMENT_ZERO_LEG,
+        "treasury_settlement_coupons": SETTLEMENT_ZERO_LEG,
+        "treasury_settlement_soma": SETTLEMENT_ZERO_DAY,
+    }
+)
+
+#: Treasury's issue dates are Eastern calendar dates, so a retrieval instant is
+#: read on that calendar before it bounds them.
+SETTLEMENT_CALENDAR = "America/New_York"
+
 
 @dataclass(frozen=True)
 class DailyPanelBuild:
@@ -2250,8 +2284,9 @@ class DailyPanelBuild:
     does not have to re-derive it.
 
     `holes` counts, per built column, the `ref_date`s in the panel that carry
-    no observation for it. A hole is not a zero and is not the previous day's
-    value; it is recorded and left empty. It is counted over the grid the panel
+    no value for it. A hole is not a zero and is not the previous day's value;
+    it is recorded and left empty. A settlement zero (`build_daily_panel` rule
+    8) is a value and is not counted. It is counted over the grid the panel
     actually carries -- see `incomplete_dates`.
 
     `incomplete_dates` counts the `ref_date`s that the union of the sources
@@ -2332,6 +2367,111 @@ def _source_supplied_anything(
     return any(str(field) in supplied_series for field in declared)
 
 
+def _settlement_retrieval_date(
+    source_sha: str, snapshot_retrieved_at: Optional[Mapping[str, str]]
+) -> date:
+    """The Eastern calendar date a settlement snapshot was retrieved on, or a refusal.
+
+    The retrieval date is the upper bound of what the snapshot can speak to.
+    Without it a zero has no bound, and the only fill left is up to the panel's
+    last date -- which writes "nothing settled" on days the record was never
+    asked about. So a snapshot with no retrieval timestamp, a blank one, one that
+    does not parse, or one with no UTC offset is refused rather than filled.
+    """
+
+    from zoneinfo import ZoneInfo
+
+    raw = (snapshot_retrieved_at or {}).get(source_sha)
+    parsed = None
+    if raw is not None and str(raw).strip():
+        try:
+            parsed = datetime.fromisoformat(str(raw).strip().replace("Z", "+00:00"))
+        except ValueError:
+            parsed = None
+    if parsed is None or parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise DataContractError(
+            f"{SETTLEMENT_ZERO_SOURCE} snapshot {source_sha} supplied settlement "
+            f"observations but carries no usable retrieval timestamp ({raw!r}); a "
+            "business day with no settlement reads 0.0 only up to the snapshot's "
+            "retrieval date, and is never zero-filled without that bound"
+        )
+    return parsed.astimezone(ZoneInfo(SETTLEMENT_CALENDAR)).date()
+
+
+def _settlement_zero_dates(
+    visible: Sequence[PointInTimeObservation],
+    built: Sequence[str],
+    grid: Sequence[date],
+    snapshot_retrieved_at: Optional[Mapping[str, str]],
+) -> Dict[str, frozenset]:
+    """Rule 8: per declared built column, the grid dates that read 0.0.
+
+    See `build_daily_panel` rule 8. Returns only columns in
+    `SETTLEMENT_ZERO_COLUMNS`; a column absent from the result keeps rule 4.
+    """
+
+    from .contract import FEATURE_FIELDS
+
+    for column in SETTLEMENT_ZERO_COLUMNS:
+        pairs = FEATURE_FIELDS.get(column) or ()
+        sources = sorted({str(source_id) for source_id, _field in pairs})
+        if sources != [SETTLEMENT_ZERO_SOURCE]:
+            raise DataContractError(
+                f"column {column!r} is declared to read 0.0 on a day with no "
+                f"settlement, but it is drawn from {sources or 'no source'}, not "
+                f"the auction snapshot {SETTLEMENT_ZERO_SOURCE!r}; a settlement "
+                "zero is a claim about what the auction record lists, and no "
+                "other source can make it"
+            )
+
+    declared = [column for column in built if column in SETTLEMENT_ZERO_COLUMNS]
+    if not declared:
+        return {}
+
+    # Every series the snapshot supplies to any panel column, not only to the
+    # declared or built ones: "nothing settled that day" is a fact about the
+    # whole record, and a narrower build must not see a withheld SOMA day as
+    # an empty one because the aggregate was not asked for.
+    snapshot_series = {
+        str(field)
+        for pairs in FEATURE_FIELDS.values()
+        for source_id, field in pairs
+        if str(source_id) == SETTLEMENT_ZERO_SOURCE
+    }
+    settlements = [row for row in visible if row.series_id in snapshot_series]
+    if not settlements:
+        return {}
+
+    first_by_snapshot: Dict[str, date] = {}
+    observed: Dict[str, set] = {}
+    for row in settlements:
+        first = first_by_snapshot.get(row.source_sha)
+        if first is None or row.ref_date < first:
+            first_by_snapshot[row.source_sha] = row.ref_date
+        observed.setdefault(row.series_id, set()).add(row.ref_date)
+    coverage = [
+        (first, _settlement_retrieval_date(source_sha, snapshot_retrieved_at))
+        for source_sha, first in sorted(first_by_snapshot.items())
+    ]
+    covered = [
+        ref_date
+        for ref_date in grid
+        if any(first <= ref_date <= last for first, last in coverage)
+    ]
+    settled_any = set().union(*observed.values())
+
+    zeros: Dict[str, frozenset] = {}
+    for column in declared:
+        if SETTLEMENT_ZERO_COLUMNS[column] == SETTLEMENT_ZERO_DAY:
+            settled = settled_any
+        else:
+            settled = set().union(
+                *(observed.get(str(field), set()) for _s, field in FEATURE_FIELDS[column])
+            )
+        zeros[column] = frozenset(ref_date for ref_date in covered if ref_date not in settled)
+    return zeros
+
+
 def build_daily_panel(
     observations: Iterable[PointInTimeObservation],
     registry: Mapping[str, Mapping[str, object]],
@@ -2339,6 +2479,7 @@ def build_daily_panel(
     build_cutoff: datetime,
     decision_time,
     columns: Sequence[str] = PANEL_COLUMNS,
+    snapshot_retrieved_at: Optional[Mapping[str, str]] = None,
 ) -> DailyPanelBuild:
     """Join long point-in-time observations into the wide daily panel.
 
@@ -2369,6 +2510,7 @@ def build_daily_panel(
 
     **4. No forward fill.** A `ref_date` with no observation for a built column
     gets `None`, counted in `holes`. Absent is not zero and is not yesterday.
+    Rule 8 is the one declared exception, and only for the columns it names.
 
     **6. The grid is the dates the panel is readable on.** The union of every
     source's `ref_date`s is not a panel: an administered rate that prints every
@@ -2427,8 +2569,47 @@ def build_daily_panel(
     exist for this build, and neither does a violation only that vintage
     reveals.
 
+    **8. A business day with no Treasury settlement reads 0.0, inside the
+    snapshot's coverage only** (human decision, 11 Sep 2026;
+    `docs/DATA_QUALITY_DECISIONS.md`, "Panel columns"). The auction record lists
+    every settlement, so a day it lists none of settled nothing: a true zero, not
+    a fill. The columns that take it are `SETTLEMENT_ZERO_COLUMNS`, declared in
+    this module; every other column keeps rule 4. Four conditions, all of them:
+
+    * the date is on the grid rule 6 retained. No row is made for a date off
+      it, and there is no holiday calendar and no `weekday()` here: the grid is
+      the panel's own statement of which days are business days;
+    * the date is inside a supplying snapshot's coverage: from that snapshot's
+      first settlement date to the Eastern calendar date of its retrieval
+      timestamp, taken from `snapshot_retrieved_at` (source SHA-256 to the
+      manifest's `retrieved_at`), both inclusive. A day the snapshot cannot
+      speak to -- before its first settlement, or after it was retrieved --
+      stays a hole. A snapshot that supplied settlement rows and has no usable
+      retrieval timestamp raises `DataContractError`: never a zero without its
+      bound;
+    * the declared column's own series has no visible observation that day
+      (`leg`), or, for the SOMA leg, no series of the snapshot has one (`day`).
+      The adapter withholds the SOMA leg whole on a day an auction was not yet
+      held, while that day's public legs stay observed, so a SOMA absence beside
+      a settlement is a withheld result and stays a hole;
+    * the column is drawn from `SETTLEMENT_ZERO_SOURCE` alone. A declaration
+      naming a column from any other source raises `DataContractError`.
+
+    The aggregate `treasury_settlement` is declared with its components, so on
+    every zero day `treasury_settlement = bills + coupons` still holds rather
+    than meeting a hole on its left. A zero is a value, so it is not counted in
+    `holes`. The fill happens here, at the build; `load_daily_panel` reads what
+    the build wrote and decides nothing.
+
+    Not separately bounded by `build_cutoff`. A settlement row is available at
+    23:59 Eastern on its own settlement date; on a build that carries `sofr`, a
+    grid date needs it, and it is published the next business day, so a
+    settlement on any grid date would already be visible at the cutoff. That is
+    a property of the registry's declared lags, not of this rule, and a build
+    carrying no required column has no such guarantee -- recorded, not closed.
+
     Raises `DataContractError` if the cutoff is naive, if no declared column
-    survives pricing, if nothing is left to index, or under rule 5.
+    survives pricing, if nothing is left to index, under rule 5, or under rule 8.
     """
 
     from .contract import FEATURE_FIELDS
@@ -2566,13 +2747,20 @@ def build_daily_panel(
             + f"); {incomplete_dates} date(s) were reported and none is a row"
         )
 
+    # Rule 8, over the retained grid and nothing wider.
+    settlement_zeros = _settlement_zero_dates(
+        visible, built, retained, snapshot_retrieved_at
+    )
+
     rows: List[DailyObservation] = []
     holes: Dict[str, int] = {column: 0 for column in built}
     for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
             row = latest.get((column, ref_date))
-            if row is None:
+            if row is None and ref_date in settlement_zeros.get(column, ()):
+                values[column] = 0.0
+            elif row is None:
                 holes[column] += 1
                 values[column] = None
             else:
