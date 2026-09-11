@@ -22,7 +22,7 @@ from pathlib import Path
 # Imported by name, not as a module: `datetime.time` above already holds that
 # name, and `import time` would shadow it.
 from time import sleep as _sleep
-from typing import Callable, Iterable, List, Mapping, Optional, Sequence
+from typing import Callable, Iterable, List, Mapping, Optional, Sequence, Union
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
@@ -34,7 +34,13 @@ from .data import (
     ABSENCE_REASONS,
     ABSENCE_SUPPRESSED,
     AbsentCell,
+    AbsentCellRecorder,
 )
+
+#: Where an adapter records what it read: a plain list collects the absent
+#: cells, and an `AbsentCellRecorder` also sees every value, so it can end a
+#: run. `parse_snapshots` always passes a recorder.
+AbsentCellSink = Union[List[AbsentCell], AbsentCellRecorder]
 
 
 USER_AGENT = (
@@ -795,7 +801,7 @@ def _next_weekday(value: date, days: int) -> date:
 def _read_cell(
     raw: object,
     tokens: Mapping[str, str],
-    absent_cells: Optional[List[AbsentCell]],
+    absent_cells: Optional[AbsentCellSink],
     *,
     source_id: str,
     source_sha: str,
@@ -820,12 +826,16 @@ def _read_cell(
 
     `absent_cells` is `None` only for a caller reading without a report -- a
     bare `_nmfp_number` call, or a test of one adapter's arithmetic.
-    `parse_snapshots` always passes a list.
+    `parse_snapshots` always passes an `AbsentCellRecorder`, and a cell that
+    carries a value is reported to it as well: a run of absent cells ends at
+    the row that has one, and nothing but this read knows that row was there.
     """
 
     text = "" if raw is None else str(raw).strip()
     reason = tokens.get(text.upper() if fold_case else text)
     if reason is None:
+        if isinstance(absent_cells, AbsentCellRecorder):
+            absent_cells.value(source_id, source_sha, field, ref_date)
         return text
     if reason not in ABSENCE_REASONS:
         raise ValueError(
@@ -861,7 +871,7 @@ def _nyfed_rows(
     artifact: SnapshotArtifact,
     payload: bytes,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     from zoneinfo import ZoneInfo
     from .data import PointInTimeObservation
@@ -985,7 +995,7 @@ def _fr2004_rows(
     payload: bytes,
     registry,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """Parse one FR 2004 Primary Dealer Statistics export.
 
@@ -1103,7 +1113,7 @@ def _fred_rows(
     artifact: SnapshotArtifact,
     payload: bytes,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     from .data import PointInTimeObservation
 
@@ -1164,7 +1174,7 @@ def _treasury_amount(
     series: str,
     ref_date: date,
     artifact: SnapshotArtifact,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """One Fiscal Data money field in USD billions, or `None` where withheld.
 
@@ -1205,7 +1215,7 @@ def _treasury_rows(
     artifact: SnapshotArtifact,
     payload: bytes,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """Auction records to `treasury_settlement` and its declared components.
 
@@ -1378,7 +1388,7 @@ def _treasury_bill_rate_rows(
     payload: bytes,
     registry,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """One year of Treasury's daily bill rates, read by that file's own header.
 
@@ -1900,7 +1910,7 @@ NMFP_ABSENT_TOKENS = {
 def _nmfp_number(
     raw: object,
     field: str,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
     *,
     series_id: str = "",
     ref_date: Optional[date] = None,
@@ -2025,7 +2035,7 @@ def _nmfp_archive_scan(
     payload: bytes,
     *,
     source_sha: str = "",
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """Read one archive into per-accession contributions, resolving nothing.
 
@@ -2269,7 +2279,7 @@ def _sec_nmfp_rows(
     artifact: SnapshotArtifact,
     payload: bytes,
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """Aggregate one SEC bulk extract read in isolation, without inventing rows.
 
@@ -2375,12 +2385,16 @@ class ParsedSnapshots:
 
     `absent_cells` holds one `AbsentCell` per source cell an adapter read as
     absent, with its reason -- the same refusal of a silent drop, one level
-    down, at the cell.
+    down, at the cell. `absent_cell_runs` is the same cells collapsed into the
+    runs the quality report writes, and `absent_cell_row_dates` is every
+    field's row sequence, kept only when asked for, which expands them back.
     """
 
     rows: tuple
     coverage: tuple
     absent_cells: tuple = ()
+    absent_cell_runs: tuple = ()
+    absent_cell_row_dates: Optional[Mapping[tuple, Sequence[date]]] = None
 
 
 def _nmfp_unmatched_derived_fields(observed, structural_zeros, ref_date):
@@ -2449,7 +2463,7 @@ def _assemble_sec_nmfp(
     artifacts: Sequence[SnapshotArtifact],
     registry: Mapping[str, Mapping[str, object]],
     *,
-    absent_cells: Optional[List[AbsentCell]] = None,
+    absent_cells: Optional[AbsentCellSink] = None,
 ):
     """Assemble every `sec_nmfp` archive into cross-sections, then admit them.
 
@@ -2813,6 +2827,7 @@ def parse_snapshots(
     *,
     registry: Optional[Mapping[str, Mapping[str, object]]] = None,
     registry_path: Path = DEFAULT_SOURCE_REGISTRY,
+    keep_row_dates: bool = False,
 ) -> ParsedSnapshots:
     """Parse immutable snapshots, applying each source's declared coverage floor.
 
@@ -2831,7 +2846,9 @@ def parse_snapshots(
     Every source cell an adapter reads as absent -- blank, `NA`, `.`, `"null"`,
     `*`, whichever that adapter accepts -- is in `absent_cells`, with the reason
     it was read under. It yields no observation either way; the record is what
-    lets the quality report say why the panel has a hole there.
+    lets the quality report say why the panel has a hole there. The report
+    writes them as `absent_cell_runs`; `keep_row_dates` keeps the row sequences
+    that `data.absent_cells_from_quality_report` expands those runs over.
     """
 
     from .data import declared_coverage_floor
@@ -2841,7 +2858,7 @@ def parse_snapshots(
 
     candidates = []
     coverage = []
-    absent_cells = []
+    absent_cells = AbsentCellRecorder(keep_row_dates=keep_row_dates)
     nmfp = []
     for artifact in artifacts:
         artifact = replace(
@@ -2911,7 +2928,9 @@ def parse_snapshots(
     return ParsedSnapshots(
         rows=tuple(rows),
         coverage=tuple(coverage),
-        absent_cells=tuple(absent_cells),
+        absent_cells=tuple(absent_cells.cells),
+        absent_cell_runs=absent_cells.runs(),
+        absent_cell_row_dates=absent_cells.row_dates,
     )
 
 
@@ -3055,7 +3074,7 @@ def build_point_in_time_snapshot(
         ],
         unevaluated_identities=unevaluated_identities,
         violated_identities=violated_identities,
-        absent_cells=parsed.absent_cells,
+        absent_cell_runs=parsed.absent_cell_runs,
     )
     quality_report_sha256 = hashlib.sha256(quality_report_path.read_bytes()).hexdigest()
     artifact = PanelArtifact(

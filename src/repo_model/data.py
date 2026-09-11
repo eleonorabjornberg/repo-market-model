@@ -279,6 +279,170 @@ class AbsentCell:
         }
 
 
+@dataclass(frozen=True)
+class AbsentCellRun:
+    """A maximal stretch of absent cells, as the quality report records them.
+
+    One run per snapshot (`source_sha`), field and reason, over consecutive rows
+    of that field in the adapter's own row sequence: the rows it read the field
+    at, in the order it read them. A row that carried a value ends the run, and
+    so does a row absent for another reason. A date the source never wrote a
+    row for -- a weekend or a holiday in a business-daily file -- is not a row,
+    so it neither ends a run nor counts in one.
+
+    `count` is rows, never calendar days. `first` and `last` are the dates of
+    the run's first and last rows in that same order, so a file read newest
+    first, as Treasury's bill rates are, has `first` after `last`. `row` is the
+    position of the first row in its field's row sequence, counted from zero
+    within the snapshot. The dates alone cannot place a run: Form N-MFP reads
+    one row per filer, many filers share a `REPORTDATE`, and filer order is not
+    date order, so the same first date, last date and count can name different
+    rows. `absent_cells_from_quality_report` expands a run back into its cells.
+    """
+
+    source_id: str
+    source_sha: str
+    field: str
+    reason: str
+    first: date
+    last: date
+    count: int
+    row: int
+
+    def as_dict(self) -> Mapping[str, object]:
+        return {
+            "source_id": self.source_id,
+            "source_sha": self.source_sha,
+            "field": self.field,
+            "reason": self.reason,
+            "first": self.first.isoformat(),
+            "last": self.last.isoformat(),
+            "count": self.count,
+            "row": self.row,
+        }
+
+
+class AbsentCellRecorder:
+    """Every cell an adapter reads, collapsed into `AbsentCellRun`s as it is read.
+
+    `append` takes an absent cell -- the call a plain list of `AbsentCell`
+    answers too -- and `value` takes a cell that carried a value, which is the
+    only thing that tells a run it has ended. `cells` keeps every absent cell,
+    one record each. With `keep_row_dates`, `row_dates` maps each
+    `(source_id, source_sha, field)` to the date of every row read, in order,
+    which is what expanding a run needs; a build does not keep them.
+    """
+
+    def __init__(self, *, keep_row_dates: bool = False):
+        self.cells: List[AbsentCell] = []
+        self.row_dates: Optional[Dict[tuple, List[date]]] = (
+            {} if keep_row_dates else None
+        )
+        self._closed: List[AbsentCellRun] = []
+        self._open: Dict[tuple, list] = {}
+        self._rows: Dict[tuple, int] = {}
+
+    def append(self, cell: AbsentCell) -> None:
+        self.cells.append(cell)
+        self._read(
+            cell.source_id, cell.source_sha, cell.field, cell.ref_date, cell.reason
+        )
+
+    def value(
+        self, source_id: str, source_sha: str, field: str, ref_date: date
+    ) -> None:
+        self._read(source_id, source_sha, field, ref_date, None)
+
+    def _read(self, source_id, source_sha, field, ref_date, reason) -> None:
+        rows = (source_id, source_sha, field)
+        row = self._rows.get(rows, 0)
+        self._rows[rows] = row + 1
+        if self.row_dates is not None:
+            self.row_dates.setdefault(rows, []).append(ref_date)
+        # What a run may extend across: one field of one snapshot. The same
+        # field read from another retrieval starts a run of its own.
+        key = (source_id, source_sha, field)
+        run = self._open.get(key)
+        if run is not None and run[0] == reason:
+            run[2] = ref_date
+            run[3] += 1
+            return
+        if run is not None:
+            self._close(key)
+        if reason is not None:
+            self._open[key] = [reason, ref_date, ref_date, 1, row, source_sha]
+
+    def _close(self, key) -> None:
+        self._closed.append(_absent_cell_run(key, self._open.pop(key)))
+
+    def runs(self) -> tuple:
+        """Every run, closed or still open, in report order."""
+
+        pending = [_absent_cell_run(key, state) for key, state in self._open.items()]
+        return tuple(sorted(self._closed + pending, key=_absent_cell_run_order))
+
+
+def _absent_cell_run(key: tuple, state: list) -> AbsentCellRun:
+    reason, first, last, count, row, source_sha = state
+    return AbsentCellRun(
+        source_id=key[0],
+        source_sha=source_sha,
+        field=key[-1],
+        reason=reason,
+        first=first,
+        last=last,
+        count=count,
+        row=row,
+    )
+
+
+def _absent_cell_run_order(run: AbsentCellRun):
+    return (run.source_id, run.source_sha, run.field, run.row)
+
+
+def absent_cells_from_quality_report(
+    report: Mapping[str, object],
+    row_dates: Mapping[tuple, Sequence[date]],
+) -> tuple:
+    """Read a quality report's absent-cell runs back into one `AbsentCell` per cell.
+
+    `row_dates` is the snapshots' row sequences, as `AbsentCellRecorder` keeps
+    them -- a run records where its rows are, not what they are dated, so the
+    snapshot it was read from is what expands it. A run is refused when its
+    `count` rows, taken from `row`, do not run from `first` to `last`: a count
+    that disagrees with the stretch it names -- calendar days for rows, say --
+    expands to cells nobody read.
+    """
+
+    cells = []
+    for run in report["absent_cells"]["runs"]:
+        key = (run["source_id"], run["source_sha"], run["field"])
+        first = date.fromisoformat(run["first"])
+        last = date.fromisoformat(run["last"])
+        count = run["count"]
+        row = run["row"]
+        expanded = list(row_dates.get(key, ())[row : row + count])
+        if len(expanded) != count or expanded[0] != first or expanded[-1] != last:
+            raise ValueError(
+                f"absent-cell run {run['source_id']} {run['field']} "
+                f"{run['reason']} at row {row} records {count} rows from "
+                f"{first} to {last}, and its snapshot's rows from row {row} "
+                f"do not: {len(expanded)} rows"
+                + (f" from {expanded[0]} to {expanded[-1]}" if expanded else "")
+            )
+        cells.extend(
+            AbsentCell(
+                source_id=run["source_id"],
+                field=run["field"],
+                ref_date=ref_date,
+                reason=run["reason"],
+                source_sha=run["source_sha"],
+            )
+            for ref_date in expanded
+        )
+    return tuple(cells)
+
+
 # The three answers a declared identity can give about one `ref_date`. There
 # used to be two, and the missing one was not "violated" -- it was this:
 #
@@ -512,12 +676,12 @@ class PointInTimeAuditReport:
     excluded_cross_sections: Sequence[CrossSectionCoverage] = ()
     unevaluated_identities: Sequence[UnevaluatedIdentity] = ()
     violated_identities: Sequence[ViolatedIdentity] = ()
-    absent_cells: Sequence[AbsentCell] = ()
+    absent_cell_runs: Sequence[AbsentCellRun] = ()
 
     def as_dict(self) -> Mapping[str, object]:
         counts = {reason: 0 for reason in ABSENCE_REASONS}
-        for cell in self.absent_cells:
-            counts[cell.reason] += 1
+        for run in self.absent_cell_runs:
+            counts[run.reason] += run.count
         return {
             "rows": self.row_count,
             "reference_dates": self.reference_date_count,
@@ -581,19 +745,15 @@ class PointInTimeAuditReport:
             # vocabulary, so a zero is stated rather than left to be inferred.
             # Its own key, never folded into `missing_reference_dates`: that
             # counts holes in the panel, and a hole does not know its token.
+            # The cells are written as runs of consecutive rows, which expand
+            # back to one record per cell; one record per cell made a FRED
+            # graph CSV's pre-inception blanks twelve megabytes of report.
             "absent_cells": {
                 "counts": counts,
-                "cells": [
-                    cell.as_dict()
-                    for cell in sorted(
-                        self.absent_cells,
-                        key=lambda item: (
-                            item.source_id,
-                            item.field,
-                            item.ref_date,
-                            item.reason,
-                            item.source_sha,
-                        ),
+                "runs": [
+                    run.as_dict()
+                    for run in sorted(
+                        self.absent_cell_runs, key=_absent_cell_run_order
                     )
                 ],
             },
@@ -763,7 +923,7 @@ def audit_point_in_time_panel(
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
     violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
-    absent_cells: Optional[Iterable[AbsentCell]] = None,
+    absent_cell_runs: Optional[Iterable[AbsentCellRun]] = None,
 ) -> PointInTimeAuditReport:
     """Summarize coverage and revisions without treating a revision as coverage.
 
@@ -849,7 +1009,7 @@ def audit_point_in_time_panel(
         excluded_cross_sections=tuple(excluded_cross_sections or ()),
         unevaluated_identities=tuple(unevaluated_identities or ()),
         violated_identities=tuple(violated_identities or ()),
-        absent_cells=tuple(absent_cells or ()),
+        absent_cell_runs=tuple(absent_cell_runs or ()),
     )
 
 
@@ -929,7 +1089,7 @@ def write_point_in_time_audit_report(
     excluded_cross_sections: Optional[Iterable[CrossSectionCoverage]] = None,
     unevaluated_identities: Optional[Iterable[UnevaluatedIdentity]] = None,
     violated_identities: Optional[Iterable[ViolatedIdentity]] = None,
-    absent_cells: Optional[Iterable[AbsentCell]] = None,
+    absent_cell_runs: Optional[Iterable[AbsentCellRun]] = None,
 ) -> PointInTimeAuditReport:
     """Write a deterministic JSON missingness/revision report."""
 
@@ -939,7 +1099,7 @@ def write_point_in_time_audit_report(
         excluded_cross_sections=excluded_cross_sections,
         unevaluated_identities=unevaluated_identities,
         violated_identities=violated_identities,
-        absent_cells=absent_cells,
+        absent_cell_runs=absent_cell_runs,
     )
     payload = json.dumps(report.as_dict(), indent=2, sort_keys=True) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
