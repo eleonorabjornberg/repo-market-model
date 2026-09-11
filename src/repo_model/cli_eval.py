@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import time
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Mapping, Optional, Tuple, Union
 
 from .baseline import (
     ExceedancePredictor,
@@ -456,6 +456,10 @@ class _FitterChoice:
     build: Callable[..., ModelFitter]
     needs_regime_variable: bool
     needs_window: bool = False
+    #: Does this model take `--calibration` and `--calibration-share`? Optional
+    #: for the model that takes them and refused for the rest, by the rule
+    #: `needs_window` follows for the refusal half. See `_calibration`.
+    takes_calibration: bool = False
 
     @property
     def factory(self) -> Callable[..., FittedForecastModel]:
@@ -482,8 +486,11 @@ class _FitterChoice:
         regressors: Tuple[str, ...],
         regime_variable: Optional[str],
         window: Optional[int] = None,
+        calibration: Optional[Mapping[str, Any]] = None,
     ) -> ModelFitter:
-        return self.build(self.factory, regressors, regime_variable, window)
+        return self.build(
+            self.factory, regressors, regime_variable, window, dict(calibration or {})
+        )
 
 
 #: `--model NAME` -> the continuous fitter it names. **One mapping, in one
@@ -501,19 +508,19 @@ FITTER_FACTORIES = MappingProxyType(
             # Nothing to bind: `fit` already has the `ModelFitter` shape. The
             # entry exists so that persistence is a *name* a caller selects
             # rather than what happens when nobody says.
-            build=lambda factory, regressors, regime, window: factory,
+            build=lambda factory, regressors, regime, window, calibration: factory,
             needs_regime_variable=False,
         ),
         "arx": _FitterChoice(
             declared=fit_arx,
-            build=lambda factory, regressors, regime, window: functools.partial(
+            build=lambda factory, regressors, regime, window, calibration: functools.partial(
                 factory, regressors=regressors
             ),
             needs_regime_variable=False,
         ),
         "threshold": _FitterChoice(
             declared=fit_threshold,
-            build=lambda factory, regressors, regime, window: functools.partial(
+            build=lambda factory, regressors, regime, window, calibration: functools.partial(
                 factory, regressors=regressors, threshold_variable=regime
             ),
             needs_regime_variable=True,
@@ -525,7 +532,7 @@ FITTER_FACTORIES = MappingProxyType(
         # against the persistence entry two lines up.
         "rolling-residual": _FitterChoice(
             declared=fit_rolling_residual_law,
-            build=lambda factory, regressors, regime, window: functools.partial(
+            build=lambda factory, regressors, regime, window, calibration: functools.partial(
                 factory, window=window
             ),
             needs_regime_variable=False,
@@ -545,12 +552,19 @@ FITTER_FACTORIES = MappingProxyType(
         # sample laid around it. An adapter here that produced the second thing
         # would run, would put `gbm` in the record, and would publish a CRPS
         # that is not this model's.
+        #
+        # `--calibration` and `--calibration-share` are bound only when given,
+        # so a run that names neither builds exactly the partial every
+        # published gbm record was produced with, and the fitter's own
+        # defaults decide the rest. The gap between the fit and calibration
+        # slices is not bound here: the fold loop derives it and hands it over.
         "gbm": _FitterChoice(
             declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
-            build=lambda factory, regressors, regime, window: functools.partial(
-                factory, regressors=regressors
+            build=lambda factory, regressors, regime, window, calibration: functools.partial(
+                factory, regressors=regressors, **calibration
             ),
             needs_regime_variable=False,
+            takes_calibration=True,
         ),
     }
 )
@@ -605,9 +619,60 @@ def _select_fitter(
         args, name, choice.needs_regime_variable, side=side
     )
     window = _residual_window(args, name, choice.needs_window, side=side)
+    calibration = _calibration(args, name, choice.takes_calibration, side=side)
     return name, choice.construct(
-        regressors=regressors, regime_variable=regime_variable, window=window
+        regressors=regressors,
+        regime_variable=regime_variable,
+        window=window,
+        calibration=calibration,
     )
+
+
+def _calibration(
+    args: argparse.Namespace,
+    name: str,
+    takes_calibration: bool,
+    *,
+    side: str = "",
+) -> Mapping[str, Any]:
+    """Resolve `--calibration` and `--calibration-share`, or refuse. `_residual_window`'s shape.
+
+    Refused for a model that takes no calibration, by the rule every flag here
+    follows: accepted and ignored, it is read by the next person as a setting
+    that took effect -- here, as a persistence interval somebody calibrated.
+
+    **Optional, not required, for the model that takes them**, and that is the
+    one way this differs from `--residual-window`. `calibration="none"` is not a
+    decision nobody made: it is the model every published gbm record was
+    produced with, and the flag is how a run asks for something else.
+
+    Returns only the flags that were given, keyed as the fitter names them, so
+    a run naming neither binds nothing and the fitter's defaults decide. The
+    *values* are not checked here -- an unknown name, a share outside `(0, 1)`,
+    a share given to `none` -- because `ml.fit_gradient_boosted_quantiles`
+    refuses each, and checking them here too would put one rule in two places,
+    one of which cannot import the other.
+    """
+
+    given = {
+        key: value
+        for key, value in (
+            ("calibration", args.calibration),
+            ("calibration_share", args.calibration_share),
+        )
+        if value is not None
+    }
+    if given and not takes_calibration:
+        flags = " and ".join(
+            f"--{key.replace('_', '-')}{side} {value}" for key, value in given.items()
+        )
+        raise SplitError(
+            f"{flags} was given, but --model{side} {name} takes no band "
+            "calibration; only gbm does. A flag that is accepted and ignored is "
+            "read by the next person as a setting that took effect -- here, as "
+            "an interval somebody calibrated"
+        )
+    return given
 
 
 def _registry(args: argparse.Namespace) -> dict:
@@ -782,7 +847,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     """One side of `compare`, in the shape `_select_fitter` already reads.
 
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
-    `--regime-variable-a`, `--residual-window-a`, and the same four for `b` --
+    `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
+    `--calibration-share-a`, and the same six for `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -809,6 +875,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         feature=getattr(args, f"feature_{side}"),
         regime_variable=getattr(args, f"regime_variable_{side}"),
         residual_window=getattr(args, f"residual_window_{side}"),
+        calibration=getattr(args, f"calibration_{side}"),
+        calibration_share=getattr(args, f"calibration_share_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1309,6 +1377,25 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "window on event-holdout",
     )
     backtest.add_argument(
+        "--calibration",
+        metavar="NAME",
+        default=None,
+        help="how the gbm band is calibrated: none, the default and the model "
+        "every published gbm record was produced with, or conformal, which "
+        "fits on the earlier rows of each fold's training frame and widens the "
+        "0.05-0.95 band by the conformal score of its most recent rows. "
+        "Refused for every model but gbm",
+    )
+    backtest.add_argument(
+        "--calibration-share",
+        type=float,
+        metavar="FRACTION",
+        default=None,
+        help="the share of each training frame --calibration conformal holds "
+        "out as calibration rows, strictly inside (0, 1); 0.25 when not given. "
+        "Refused for every model but gbm, and for --calibration none",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -1369,6 +1456,21 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             f"law is read from; required for --model-{side} rolling-residual, "
             f"refused for the others. Per side, because a window against the "
             f"full sample is the comparison this model exists for",
+        )
+        compare.add_argument(
+            f"--calibration-{side}",
+            metavar="NAME",
+            default=None,
+            help=f"how the {side} model's gbm band is calibrated: none, the "
+            f"default, or conformal; refused for --model-{side} other than gbm",
+        )
+        compare.add_argument(
+            f"--calibration-share-{side}",
+            type=float,
+            metavar="FRACTION",
+            default=None,
+            help=f"the share of each training frame --calibration-{side} "
+            f"conformal holds out, strictly inside (0, 1); 0.25 when not given",
         )
     compare.add_argument(
         "--loss",

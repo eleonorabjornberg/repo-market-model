@@ -53,28 +53,70 @@ published record produced that way cannot be re-scored. Both are therefore set
 explicitly here --- `early_stopping=False` and a fixed `random_state` --- rather
 than left at a default that changes behaviour with the size of the panel.
 
+**The band's calibration, opt-in (B22).** Every level is fitted in-sample, and a
+boosted quantile fit is tight on the rows it was fitted on, so the outer
+`0.05`-`0.95` band under-covers out of sample: the published backtest at
+`--minimum-history 61` puts its nominal 90% at well under that. `calibration=
+"conformal"` is conformalized quantile regression (Romano, Patterson and Candes,
+2019), done causally inside the one training frame a fold hands over:
+
+* the frame is split by date. The most recent `calibration_share` of its rows
+  are **calibration rows**; the **fit rows** are the earlier rows that clear the
+  registry-derived purge gap before the first calibration row, by
+  `splits.clears_purge` -- the splitter's own comparison, so no fit row's value,
+  and so no fit row's target, is one the forecaster could not have had when the
+  calibration slice opens;
+* every level is fitted on the fit rows **only**, and never refitted on the
+  union afterwards: a refit scores the calibration rows with a model that has
+  seen them, which is the in-sample residual tail again and voids the
+  finite-sample guarantee;
+* each calibration row is scored `s = max(Q_lo - y, y - Q_hi)` off the
+  rearranged vector, its feature row chosen by `baseline._feature_index` -- the
+  rule a scored day's feature row is chosen by, so a calibration score is at the
+  horizon the backtest scores at -- and the `ceil((1 - alpha)(n + 1))`-th
+  smallest score is the **widening**, with `1 - alpha` the declared band's own
+  span. `Q_lo` moves down and `Q_hi` up by it, and it may be negative. The
+  interior levels are untouched; an outer level that a negative widening would
+  carry past its neighbour stops at the neighbour, so the vector stays
+  non-decreasing; and the two outer knots `predict_stress` reads move with the
+  band.
+
+`calibration="none"` is the default and is the model every published record was
+produced with: no split, no widening, and no float operation on a reported
+vector that the uncalibrated model did not already perform.
+
 Stdlib plus the `ml` extra, inside functions.
 """
 
 from __future__ import annotations
 
+import math
 from bisect import bisect_right
 from datetime import date
+from fractions import Fraction
 from types import MappingProxyType
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
 from .baseline import (
     ExceedanceCurves,
     ExceedancePredictor,
+    _feature_index,
     _raw_regressor,
     _validate_taus_bp,
 )
 from .contract import QUANTILE_LEVELS
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import _validate_levels
-from .splits import LookAheadError, ensure_strictly_ascending
+from .splits import (
+    LookAheadError,
+    clears_purge,
+    ensure_strictly_ascending,
+    require_purge_days,
+)
 
 __all__ = [
+    "CALIBRATIONS",
+    "DEFAULT_CALIBRATION_SHARE",
     "MissingMLExtraError",
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
@@ -106,6 +148,78 @@ _TAIL_SHARE = 0.2
 #: the last bit. Positive so the knot set is still increasing; small enough
 #: that it is not a distribution anybody would read as informative.
 _MINIMUM_TAIL = 1e-9
+
+#: The band calibrations a fit can be asked for. `none` first: it is the
+#: default, and the model every published record was produced with. See the
+#: module docstring for `conformal`.
+CALIBRATIONS = ("none", "conformal")
+
+#: The share of a training frame held out as calibration rows when
+#: `calibration="conformal"` names none. A quarter: at `--minimum-history 61`
+#: the first fold still has more calibration rows than the conformal quantile
+#: needs to be finite, and three quarters of the frame are left to fit on.
+DEFAULT_CALIBRATION_SHARE = 0.25
+
+
+def _band_probability(levels: Sequence[float]) -> Fraction:
+    """The declared band's span, exactly: `Fraction` of the outer two levels.
+
+    Exact because it feeds a ceiling. `0.95 - 0.05` is `0.8999999999999999` in
+    floating point, and a rank computed as `ceil(q * (n + 1))` from a `q` one
+    representable step off can land one position away from the rank the
+    guarantee is stated for.
+    """
+
+    return Fraction(repr(float(levels[-1]))) - Fraction(repr(float(levels[0])))
+
+
+def _minimum_calibration_rows(levels: Sequence[float]) -> int:
+    """The fewest calibration scores at which the conformal quantile is finite.
+
+    The rank is `ceil(q (n + 1))` for band probability `q`, and it names a
+    score only while it is at most `n`, which holds exactly when
+    `n >= q / (1 - q)`. Nine for the declared `0.05`-`0.95` band. Below it the
+    honest widening is infinite, and a finite one would be a band claiming a
+    coverage its calibration cannot support.
+    """
+
+    q = _band_probability(levels)
+    return math.ceil(q / (1 - q))
+
+
+def _design(
+    row: DailyObservation,
+    regressors: Sequence[str],
+    imputations: Mapping[str, float],
+    label: str,
+) -> List[float]:
+    """One row as the design reads it: the spread, then each regressor.
+
+    A regressor carried as `None` gets its fitted imputation; one missing from
+    the row is `_raw_regressor`'s refusal. The one spelling the fit, the
+    calibration scores and `FittedGradientBoostedQuantiles.design_row` share.
+    """
+
+    values = [float(row.spread_bps)]
+    for name in regressors:
+        observed = _raw_regressor(row, name, label)
+        values.append(imputations[name] if observed is None else observed)
+    return values
+
+
+def _calibrated(vector: Sequence[float], widening: float) -> Tuple[float, ...]:
+    """The rearranged vector with its outer two levels moved by `widening`.
+
+    Down at the bottom, up at the top, interior untouched. A negative widening
+    narrows the band, and an outer level it would carry past its neighbour
+    stops at that neighbour: the vector stays non-decreasing without re-sorting,
+    which would move a calibrated value onto an interior level.
+    """
+
+    values = list(vector)
+    values[0] = min(values[0] - widening, values[1])
+    values[-1] = max(values[-1] + widening, values[-2])
+    return tuple(values)
 
 
 class MissingMLExtraError(ValueError):
@@ -194,6 +308,15 @@ class FittedGradientBoostedQuantiles:
       publishes names those versions under `provenance.ml_libraries` --- see
       `baseline._ml_libraries` and `baseline._run_provenance`. A model built
       without them would publish a record that silently lost that key.
+    * `calibration`, `calibration_share`, `widening` --- which band calibration
+      this model was built with, the share of its frame held out for it
+      (`None` under `none`), and the amount the outer two levels were moved
+      by (`0.0` under `none`). See the module docstring.
+    * `fit_end`, `calibration_start`, `calibration_end` --- the last row the
+      estimators were fitted on, and the first and last calibration rows
+      (`None` under `none`, where the fit rows are the whole frame). Carried
+      so a reader can check the purge between the two slices against a
+      calendar rather than take it on trust.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -216,12 +339,18 @@ class FittedGradientBoostedQuantiles:
     __slots__ = (
         "_estimators",
         "_residuals",
+        "calibration",
+        "calibration_end",
+        "calibration_share",
+        "calibration_start",
         "cutoff",
+        "fit_end",
         "imputations",
         "levels",
         "ml_libraries",
         "random_state",
         "regressors",
+        "widening",
     )
 
     def __init__(
@@ -235,8 +364,20 @@ class FittedGradientBoostedQuantiles:
         random_state: int = DEFAULT_RANDOM_STATE,
         *,
         ml_libraries: Mapping[str, str],
+        calibration: str = "none",
+        calibration_share: Optional[float] = None,
+        widening: float = 0.0,
+        fit_end: Optional[date] = None,
+        calibration_start: Optional[date] = None,
+        calibration_end: Optional[date] = None,
     ) -> None:
         self.ml_libraries: Mapping[str, str] = MappingProxyType(dict(ml_libraries))
+        self.calibration: str = calibration
+        self.calibration_share: Optional[float] = calibration_share
+        self.widening: float = float(widening)
+        self.fit_end: date = cutoff if fit_end is None else fit_end
+        self.calibration_start: Optional[date] = calibration_start
+        self.calibration_end: Optional[date] = calibration_end
         self.regressors: Tuple[str, ...] = tuple(regressors)
         self._estimators: Tuple[Any, ...] = tuple(estimators)
         self.imputations: Mapping[str, float] = MappingProxyType(
@@ -289,6 +430,25 @@ class FittedGradientBoostedQuantiles:
 
         return self.design_names
 
+    @property
+    def model_settings(self) -> Mapping[str, Any]:
+        """The calibration settings a record names, keyed as the command line spells them.
+
+        Read by `baseline._model_settings`, which cannot import this module and
+        so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
+        not `"none"` -- so a record of the uncalibrated model declares exactly
+        what every gbm record published before calibration existed declares.
+        """
+
+        if self.calibration == "none":
+            return MappingProxyType({})
+        return MappingProxyType(
+            {
+                "calibration": self.calibration,
+                "calibration_share": self.calibration_share,
+            }
+        )
+
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
         """Was this model fitted on rows dated after `feature_row`?"""
 
@@ -297,11 +457,9 @@ class FittedGradientBoostedQuantiles:
     def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
         """The feature row as this model reads it, in `design_names` order."""
 
-        values = [float(feature_row.spread_bps)]
-        for name in self.regressors:
-            observed = _raw_regressor(feature_row, name, "feature row")
-            values.append(self.imputations[name] if observed is None else observed)
-        return tuple(values)
+        return tuple(
+            _design(feature_row, self.regressors, self.imputations, "feature row")
+        )
 
     def _quantile_vector(self, design_row: Sequence[float]) -> Tuple[float, ...]:
         """One design row's rearranged quantile vector. See `_rearranged`."""
@@ -322,10 +480,16 @@ class FittedGradientBoostedQuantiles:
     def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
         """One predicted spread quantile per declared level, in declared order.
 
-        Non-decreasing by construction: `_quantile_vector` sorts.
+        Non-decreasing by construction: `_quantile_vector` sorts, and
+        `_calibrated` stops an outer level at its neighbour. A zero widening --
+        every uncalibrated model -- touches nothing, so no reported value moves
+        by so much as the sign of a zero.
         """
 
-        return self._quantile_vector(self.design_row(feature_row))
+        vector = self._quantile_vector(self.design_row(feature_row))
+        if not self.widening:
+            return vector
+        return _calibrated(vector, self.widening)
 
     def _law(self, feature_row: DailyObservation) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
         """The predictive law for one row, as `(values, levels)` knots.
@@ -346,6 +510,10 @@ class FittedGradientBoostedQuantiles:
         band wider than the residual range is the model saying this row is
         unusual, which is not something to clip away. `_TAIL_SHARE` of the
         band's own width is the width used then.
+
+        Under a calibration the residual range moves out with the band, by the
+        same widening, so the tail knots stay where the calibrated band puts the
+        law's edges rather than where the in-sample fit did.
         """
 
         interior = self.predict(feature_row)
@@ -353,6 +521,9 @@ class FittedGradientBoostedQuantiles:
         pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
         bottom = anchor + self._residuals[0]
         top = anchor + self._residuals[-1]
+        if self.widening:
+            bottom -= self.widening
+            top += self.widening
         low = bottom if bottom < interior[0] else interior[0] - pad
         high = top if top > interior[-1] else interior[-1] + pad
         return (low,) + interior + (high,), (0.0,) + self.levels + (1.0,)
@@ -455,6 +626,9 @@ def fit_gradient_boosted_quantiles(
     levels: Sequence[float] = QUANTILE_LEVELS,
     random_state: int = DEFAULT_RANDOM_STATE,
     min_samples_leaf: int = 20,
+    calibration: str = "none",
+    calibration_share: Optional[float] = None,
+    purge_days: Optional[int] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -475,16 +649,35 @@ def fit_gradient_boosted_quantiles(
         min_samples_leaf: passed straight to the estimator. Present because a
             fixture-sized frame cannot be split at scikit-learn's default at
             all, not as a tuned value --- tuning is not this block's.
+        calibration: one of `CALIBRATIONS`. `"none"`, the default, fits every
+            row and reports the band as fitted; `"conformal"` holds out the
+            most recent rows and widens the band by their conformal score. See
+            the module docstring.
+        calibration_share: the share of the frame held out as calibration rows,
+            strictly inside `(0, 1)`. `None` means `DEFAULT_CALIBRATION_SHARE`
+            under `conformal`, and is the only value `none` accepts: a share
+            handed to a model that holds nothing out would be read as a setting
+            that took effect.
+        purge_days: the registry-derived gap, in calendar days, between the
+            last fit row and the first calibration row. Passed by the fold loop
+            (`baseline._fit_at_origin`), which sized it from the declaration,
+            and never chosen here. Required under `conformal`, by
+            `splits.require_purge_days`: a calibration split with a defaulted
+            gap is the silent zero the splitter exists to refuse. Read by
+            nothing under `none`, which splits nothing.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
-        regressor names, its fitted imputation means, its sorted residuals and
-        its cutoff.
+        regressor names, its fitted imputation means, its sorted residuals, its
+        cutoff, and its calibration: the settings, the widening and the dates
+        of both slices.
 
     Raises:
         MissingMLExtraError: if the optional `ml` extra is not installed.
         LookAheadError: if any training row is dated after `cutoff`.
-        SplitError: if the frame is not strictly ascending by date.
+        SplitError: if the frame is not strictly ascending by date, or if
+            `calibration="conformal"` is given no `purge_days` (or a
+            `purge_days` that is not a non-negative int).
         MissingRegressorError: if a training row does not carry a declared
             regressor.
         MetricError: if a declared level is outside `(0, 1)`, or the grid is not
@@ -493,8 +686,12 @@ def fit_gradient_boosted_quantiles(
             level may be, not a second one here.
         ValueError: if no regressors are declared, if one is declared twice, if
             the grid does not carry `0.50`, if the frame is shorter than
-            `minimum_history`, or if a regressor is unobserved on every row of
-            the training window.
+            `minimum_history`, if a regressor is unobserved on every row of
+            the training window; and, for the calibration, if `calibration`
+            is not one of `CALIBRATIONS`, if `calibration_share` is outside
+            `(0, 1)` or is given to `none`, if the calibration slice holds
+            fewer rows than the conformal quantile needs to be finite, or if
+            the purge leaves fewer than two fit rows.
     """
 
     grid = _validate_levels(levels)
@@ -505,6 +702,44 @@ def fit_gradient_boosted_quantiles(
             f"substitute for it -- an average of the two levels straddling the "
             f"middle is a centre no fit produced"
         )
+
+    # The calibration's own arguments, before anything about the frame: each is
+    # a statement about what the caller asked for, owed whether or not the
+    # frame would have fitted.
+    if calibration not in CALIBRATIONS:
+        raise ValueError(
+            f"unknown calibration {calibration!r}; this model can be built with "
+            f"{', '.join(CALIBRATIONS)}. A misspelt calibration fitted as 'none' "
+            f"would publish the in-sample band under a record that asked for "
+            f"another"
+        )
+    if calibration == "none":
+        if calibration_share is not None:
+            raise ValueError(
+                f"calibration_share {calibration_share} was given, but "
+                f"calibration 'none' holds no rows out. A setting that is "
+                f"accepted and ignored is read by the next person as a setting "
+                f"that took effect"
+            )
+        share: Optional[float] = None
+    else:
+        share = (
+            DEFAULT_CALIBRATION_SHARE
+            if calibration_share is None
+            else calibration_share
+        )
+        if (
+            isinstance(share, bool)
+            or not isinstance(share, (int, float))
+            or not 0.0 < share < 1.0
+        ):
+            raise ValueError(
+                f"calibration_share must be a number strictly inside (0, 1), "
+                f"got {share!r}; a share of 0 holds nothing out to calibrate "
+                f"on, and a share of 1 leaves nothing to fit"
+            )
+        share = float(share)
+        require_purge_days(purge_days)
 
     names = tuple(str(name) for name in regressors)
     if not names:
@@ -538,10 +773,41 @@ def fit_gradient_boosted_quantiles(
             f"a fitted model may not contain a row it was not allowed to see"
         )
 
-    # The origins: every row that has a successor in the frame. These, and only
-    # these, are what the imputation is fitted on -- contract test 3's
+    # The calibration split, by date. The calibration rows are the most recent
+    # share of the frame; the fit rows are the earlier rows that clear the purge
+    # before the first of them, by the splitter's own comparison. Under `none`
+    # the fit rows are the frame.
+    fit_rows = rows
+    calibration_rows: List[DailyObservation] = []
+    if share is not None:
+        count = int(Fraction(repr(share)) * len(rows))
+        needed = _minimum_calibration_rows(grid)
+        if count < needed:
+            raise ValueError(
+                f"conformal calibration needs at least {needed} calibration "
+                f"rows, got {count} ({share} of {len(rows)} training rows); "
+                f"below {needed} the conformal quantile of a "
+                f"{float(_band_probability(grid))} band is infinite, and a "
+                f"finite widening there would claim a coverage the "
+                f"calibration cannot support"
+            )
+        first = len(rows) - count
+        opens = dates[first]
+        calibration_rows = rows[first:]
+        fit_rows = [
+            row for row in rows[:first] if clears_purge(row.date, opens, purge_days)
+        ]
+        if len(fit_rows) < 2:
+            raise ValueError(
+                f"a {purge_days}-day purge before the calibration rows opening "
+                f"{opens} leaves {len(fit_rows)} fit row(s) of {len(rows)}; the "
+                f"design needs at least one origin and its successor"
+            )
+
+    # The origins: every fit row that has a successor among the fit rows. These,
+    # and only these, are what the imputation is fitted on -- contract test 3's
     # "recomputed on a training window alone", the same rows `fit_arx` uses.
-    origins = rows[:-1]
+    origins = fit_rows[:-1]
     observed: Mapping[str, List[float]] = {name: [] for name in names}
     for row in origins:
         for name in names:
@@ -563,14 +829,11 @@ def fit_gradient_boosted_quantiles(
 
     design = []
     targets = []
-    for index in range(1, len(rows)):
-        origin = rows[index - 1]
-        row = [float(origin.spread_bps)]
-        for name in names:
-            value = _raw_regressor(origin, name, "training row")
-            row.append(imputations[name] if value is None else value)
-        design.append(row)
-        targets.append(float(rows[index].spread_bps))
+    for index in range(1, len(fit_rows)):
+        design.append(
+            _design(fit_rows[index - 1], names, imputations, "training row")
+        )
+        targets.append(float(fit_rows[index].spread_bps))
 
     # Imported here rather than at the top of the function: every refusal
     # above is a statement about the arguments and is owed to a caller whether
@@ -605,6 +868,36 @@ def fit_gradient_boosted_quantiles(
         target - vector[centre]
         for vector, target in zip(_rearranged(estimators, design), targets)
     ]
+
+    # The widening: every calibration row scored by the estimators fitted
+    # above -- not refitted, and never on a fit row -- from the feature row the
+    # backtest's own rule would choose for it, then the conformal rank.
+    widening = 0.0
+    if calibration_rows:
+        first = len(rows) - len(calibration_rows)
+        scored = []
+        for index in range(first, len(rows)):
+            # `_feature_index` scans back from the end of the indices it is
+            # handed, and dates ascend strictly, so the row `purge_days + 1`
+            # positions back already clears the gap: handing it only that tail
+            # returns the same row as handing it the whole prefix, without a
+            # frame-length copy per calibration row per fold.
+            tail = range(max(0, index - purge_days - 1), index)
+            feature = rows[_feature_index(dates, tail, index, purge_days)]
+            scored.append(
+                (
+                    _design(feature, names, imputations, "calibration row"),
+                    float(rows[index].spread_bps),
+                )
+            )
+        vectors = _rearranged(estimators, [features for features, _ in scored])
+        scores = sorted(
+            max(vector[0] - target, target - vector[-1])
+            for vector, (_, target) in zip(vectors, scored)
+        )
+        rank = math.ceil(_band_probability(grid) * (len(scores) + 1))
+        widening = scores[rank - 1]
+
     return FittedGradientBoostedQuantiles(
         estimators,
         names,
@@ -614,6 +907,12 @@ def fit_gradient_boosted_quantiles(
         grid,
         random_state,
         ml_libraries=versions,
+        calibration=calibration,
+        calibration_share=share,
+        widening=widening,
+        fit_end=fit_rows[-1].date,
+        calibration_start=calibration_rows[0].date if calibration_rows else None,
+        calibration_end=calibration_rows[-1].date if calibration_rows else None,
     )
 
 

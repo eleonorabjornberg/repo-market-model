@@ -146,6 +146,7 @@ record, and those are exactly the parts that must not disagree.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import subprocess
@@ -267,6 +268,12 @@ def _model_settings(fitted: Any) -> Mapping[str, Any]:
     them apart. A declaration now names every setting its command took; what
     the code fixes itself -- a fitted threshold, the gbm's hyperparameters --
     is identified by `provenance.code`, not by the declaration.
+
+    A fitted model this module cannot import -- `repo_model.ml`'s, whose
+    `calibration` and `calibration_share` are settings in exactly this sense
+    since B22 -- reports its own through a `model_settings` attribute, read
+    here the way `_ml_libraries` reads `ml_libraries`: off the fit, and only
+    the keys the model has.
     """
 
     if isinstance(fitted, ExceedanceCurves):
@@ -276,6 +283,7 @@ def _model_settings(fitted: Any) -> Mapping[str, Any]:
         settings["regime_variable"] = fitted.threshold_variable
     if isinstance(fitted, FittedRollingResidualLaw):
         settings["residual_window"] = fitted.window
+    settings.update(getattr(fitted, "model_settings", None) or {})
     return MappingProxyType(settings)
 
 
@@ -2538,6 +2546,52 @@ def predict_stress(
 ModelFitter = Callable[..., FittedForecastModel]
 
 
+def _reads_purge_days(fitter: ModelFitter) -> bool:
+    """Does this fitter name a `purge_days` parameter the fold loop must fill?
+
+    A fitter that splits its own training frame -- gbm under
+    `calibration="conformal"` holds out its latest rows -- needs the gap
+    between its slices, and that gap is the one this module derived from the
+    declaration. It is not bound on the command line: `cli_eval` never holds
+    the number, and a gap bound there would be a second place it came from.
+    So the fold loop hands it over, and only to a fitter whose signature names
+    it; every other fitter is called exactly as it always was.
+
+    Asked once per run, not once per origin: the fitter is one callable
+    throughout.
+    """
+
+    try:
+        parameters = inspect.signature(fitter).parameters
+    except (TypeError, ValueError):
+        return False
+    parameter = parameters.get("purge_days")
+    return parameter is not None and parameter.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    )
+
+
+def _fit_at_origin(
+    fitter: ModelFitter,
+    train_frame: Sequence[DailyObservation],
+    *,
+    minimum_history: int,
+    purge: int,
+    reads_purge: bool,
+) -> FittedForecastModel:
+    """One origin's fit, with the derived gap for a fitter that reads it.
+
+    The one call both fold loops make, so `rolling_persistence_backtest` and
+    `paired_model_comparison` cannot hand a calibrating fitter different gaps.
+    `reads_purge` is `_reads_purge_days(fitter)`, computed by the caller once.
+    """
+
+    if reads_purge:
+        return fitter(train_frame, minimum_history=minimum_history, purge_days=purge)
+    return fitter(train_frame, minimum_history=minimum_history)
+
+
 def _feature_index(
     dates: Sequence[date],
     train_indices: Sequence[int],
@@ -2862,6 +2916,7 @@ def rolling_persistence_backtest(
         raise ValueError("not enough observations for requested minimum history")
 
     fitter: ModelFitter = fit if fit_model is None else fit_model
+    reads_purge = _reads_purge_days(fitter)
 
     forecasts: List[Forecast] = []
     folds: List[ScoredFold] = []
@@ -2883,7 +2938,13 @@ def rolling_persistence_backtest(
         # `fit` derives from it is the last date the forecaster was allowed to
         # see -- not the day before the scored day, which under a purge is a
         # date whose value had not been published yet.
-        fitted = fitter([rows[i] for i in train_indices], minimum_history=minimum_history)
+        fitted = _fit_at_origin(
+            fitter,
+            [rows[i] for i in train_indices],
+            minimum_history=minimum_history,
+            purge=purge,
+            reads_purge=reads_purge,
+        )
         if model is None:
             # After the first fit, and only the first: the fitter is the same
             # callable at every origin, so a model that stayed inside the
@@ -4692,6 +4753,8 @@ def paired_model_comparison(
     settings_a: Mapping[str, Any] = MappingProxyType({})
     settings_b: Mapping[str, Any] = MappingProxyType({})
     checked = False
+    reads_purge_a = _reads_purge_days(fit_a)
+    reads_purge_b = _reads_purge_days(fit_b)
 
     # `step=1`, the origin-by-origin shape `rolling_persistence_backtest` has,
     # and one loop rather than two calls to it: the whole property this
@@ -4703,8 +4766,20 @@ def paired_model_comparison(
     ):
         index = test_indices[0]
         train_frame = [rows[i] for i in train_indices]
-        fitted_a = fit_a(train_frame, minimum_history=minimum_history)
-        fitted_b = fit_b(train_frame, minimum_history=minimum_history)
+        fitted_a = _fit_at_origin(
+            fit_a,
+            train_frame,
+            minimum_history=minimum_history,
+            purge=purge,
+            reads_purge=reads_purge_a,
+        )
+        fitted_b = _fit_at_origin(
+            fit_b,
+            train_frame,
+            minimum_history=minimum_history,
+            purge=purge,
+            reads_purge=reads_purge_b,
+        )
         if not checked:
             # After the first fit and only the first, as the single-model path
             # does, and once per side against that side's own declaration: the
@@ -4838,13 +4913,17 @@ def comparison_seed(
     The material is the panel bytes, both model names and both feature sets in
     the order the sign convention reads them, and the decision time. **That is
     not the whole declaration.** Since B21 a declaration also names each side's
-    `regime_variable` or `residual_window`, and those are not in the material:
-    adding them would move the interval of every published record that has
-    one, which is a re-score for the human to queue, not an edit. Two runs that
-    differ only in a setting therefore share a resample stream -- the two
-    published threshold records, regime `sofr_volume` and regime `spread_bps`,
-    are such a pair -- which is the sharing the paragraph below says should not
-    happen. Not the derived gap: it is a function of the feature sets,
+    `regime_variable` or `residual_window` -- and, since B22, a gbm side's
+    `calibration` and `calibration_share` -- and those are not in the
+    material. **That is decided.** The human ruled on 11 Sep 2026 to keep the
+    seed as it is, and `REPRODUCIBILITY.md` records it: records that differ
+    only in a setting share a resample stream by decision, not by oversight.
+    The two published threshold records, regime `sofr_volume` and regime
+    `spread_bps`, are such a pair, and so is a calibrated gbm comparison and
+    its uncalibrated twin. Adding the settings would move the interval of
+    every published record that has one. The paragraph below concerns records
+    that differ in what they *compare*; a setting is not that. Not the derived
+    gap: it is a function of the feature sets,
     the registry and the decision time, so including it would add nothing a
     reader could not already recompute, and it is not known until the run has
     started while this must be known before it.
