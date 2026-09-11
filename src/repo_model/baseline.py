@@ -233,6 +233,50 @@ class ExceedanceCurves:
     #: anywhere but off the fit would be a claim about some other code. See
     #: `_ml_libraries`.
     ml_libraries: Optional[Mapping[str, str]] = None
+    #: The settings the fit behind these curves was built with, read off the
+    #: fitted model by `_model_settings` and keyed as the command line spells
+    #: them. Empty from a predictor whose model takes no setting. Carried here
+    #: for `ml_libraries`' reason: the fitted model stays inside the closure.
+    model_settings: Mapping[str, Any] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+
+
+def _model_settings(fitted: Any) -> Mapping[str, Any]:
+    """The settings one side of a run was built with, as the record names them.
+
+    `regime_variable` for a threshold model and `residual_window` for the
+    trailing-window residual law, and no key at all for a model that takes
+    neither -- absent, never `None`. A record in which every side carried both
+    keys, most of them null, would read as a run in which somebody declined to
+    choose a regime variable for persistence.
+
+    **Read off the fit, not off the command line.** `cli_eval` binds these into
+    a `functools.partial` before any fold exists, and a record that re-read
+    them from argv would be a second statement of the setting that could
+    disagree with the one the model was built with -- the `features_read`
+    argument, applied to a setting instead of a column. Each side's first fit
+    is every fit's answer, for the reason `_ml_libraries` gives.
+
+    `fitted` is a fitted model, or the `ExceedanceCurves` a predictor returned,
+    which carries its model's answer because the model itself stays inside the
+    predictor.
+
+    Before B21 two threshold runs over one feature set with different regime
+    variables published identical declarations, and only the filename told
+    them apart. A declaration now names every setting its command took; what
+    the code fixes itself -- a fitted threshold, the gbm's hyperparameters --
+    is identified by `provenance.code`, not by the declaration.
+    """
+
+    if isinstance(fitted, ExceedanceCurves):
+        return fitted.model_settings
+    settings: dict = {}
+    if isinstance(fitted, FittedThreshold):
+        settings["regime_variable"] = fitted.threshold_variable
+    if isinstance(fitted, FittedRollingResidualLaw):
+        settings["residual_window"] = fitted.window
+    return MappingProxyType(settings)
 
 
 def _ml_libraries(*fitted: Any) -> Optional[Mapping[str, str]]:
@@ -702,6 +746,14 @@ class BacktestReport:
     #: `_ml_libraries`; published by `_run_provenance`, which omits the key
     #: when this is `None`.
     ml_libraries: Optional[Mapping[str, str]] = None
+    #: The settings the fitted model was built with -- `regime_variable`,
+    #: `residual_window` -- read off the first fit by `_model_settings`, and
+    #: empty for a model that takes none. Carried beside `features` for the
+    #: reason `features` is: `backtest_document` publishes them in the
+    #: declaration from here rather than from anything the caller restated.
+    model_settings: Mapping[str, Any] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -2815,6 +2867,7 @@ def rolling_persistence_backtest(
     folds: List[ScoredFold] = []
     model: Optional[FittedForecastModel] = None
     ml_libraries: Optional[Mapping[str, str]] = None
+    model_settings: Mapping[str, Any] = MappingProxyType({})
     dates = [row.date for row in rows]
 
     # `step=1` is the origin-by-origin shape this function has always had: one
@@ -2842,6 +2895,7 @@ def rolling_persistence_backtest(
                 fitted.features_read, declared, sources, purge
             )
             ml_libraries = _ml_libraries(fitted)
+            model_settings = _model_settings(fitted)
         model = fitted
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
@@ -2924,6 +2978,7 @@ def rolling_persistence_backtest(
         pinball_loss=losses,
         crps_bps=crps,
         ml_libraries=ml_libraries,
+        model_settings=model_settings,
     )
 
 
@@ -3942,9 +3997,14 @@ def backtest_document(
     came out.
 
     * `declaration` -- the model, the feature set, the decision time, the
-      minimum history. The two things the caller chose, plus the two settings
-      that shape what follows from them. Everything else in the run is a
-      consequence of these. `model` is the name the caller selected and never a
+      minimum history, and every setting the model was built with:
+      `regime_variable` for a threshold model, `residual_window` for the
+      trailing-window residual law, and neither key for a model that takes no
+      such setting. Until B21 the settings were missing, and two threshold
+      runs over one feature set with different regime variables published
+      identical declarations. They come from `report.model_settings`, which
+      was read off the fit, never from the command line. `model` is the name
+      the caller selected and never a
       re-derivation from `report.model`: this function is handed a fitted
       object, several fitters produce the same class, and a name reconstructed
       from one would agree with the request only for as long as that mapping
@@ -4048,6 +4108,8 @@ def backtest_document(
     lower, upper, block = mae_bootstrap_interval(report, seed=seed)
 
     declaration: dict = {"model": model, "features": sorted(report.features)}
+    # Only the keys the fitted model has; see `_model_settings`.
+    declaration.update(report.model_settings)
     if report.decision_time is not None:
         declaration["decision_time"] = report.decision_time.isoformat(
             timespec="minutes"
@@ -4423,6 +4485,11 @@ class PairedComparisonReport:
     #: is a computed answer, read off the first fit of both sides by
     #: `_ml_libraries`, and `_run_provenance` omits the key for it.
     ml_libraries: Optional[Mapping[str, str]]
+    #: The settings each side was built with, read off that side's first fit
+    #: by `_model_settings`: `regime_variable`, `residual_window`, or nothing.
+    #: Required like every field here; an empty mapping is a computed answer.
+    settings_a: Mapping[str, Any]
+    settings_b: Mapping[str, Any]
 
     @property
     def loss_name(self) -> str:
@@ -4622,6 +4689,8 @@ def paired_model_comparison(
     losses_b: List[float] = []
     differences: List[float] = []
     ml_libraries: Optional[Mapping[str, str]] = None
+    settings_a: Mapping[str, Any] = MappingProxyType({})
+    settings_b: Mapping[str, Any] = MappingProxyType({})
     checked = False
 
     # `step=1`, the origin-by-origin shape `rolling_persistence_backtest` has,
@@ -4649,6 +4718,8 @@ def paired_model_comparison(
                 fitted_b.features_read, declared_b, sources_b, purge
             )
             ml_libraries = _ml_libraries(fitted_a, fitted_b)
+            settings_a = _model_settings(fitted_a)
+            settings_b = _model_settings(fitted_b)
             checked = True
 
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
@@ -4724,6 +4795,8 @@ def paired_model_comparison(
         panel_first_date=rows[0].date,
         panel_last_date=rows[-1].date,
         ml_libraries=ml_libraries,
+        settings_a=settings_a,
+        settings_b=settings_b,
     )
 
 
@@ -4762,9 +4835,16 @@ def comparison_seed(
     not, or two records that agree about what they scored could still disagree
     about how a seed was derived from it.
 
-    The material is the run's declaration -- the panel bytes, both model names
-    and both feature sets in the order the sign convention reads them, and the
-    decision time. Not the derived gap: it is a function of the feature sets,
+    The material is the panel bytes, both model names and both feature sets in
+    the order the sign convention reads them, and the decision time. **That is
+    not the whole declaration.** Since B21 a declaration also names each side's
+    `regime_variable` or `residual_window`, and those are not in the material:
+    adding them would move the interval of every published record that has
+    one, which is a re-score for the human to queue, not an edit. Two runs that
+    differ only in a setting therefore share a resample stream -- the two
+    published threshold records, regime `sofr_volume` and regime `spread_bps`,
+    are such a pair -- which is the sharing the paragraph below says should not
+    happen. Not the derived gap: it is a function of the feature sets,
     the registry and the decision time, so including it would add nothing a
     reader could not already recompute, and it is not known until the run has
     started while this must be known before it.
@@ -4892,13 +4972,17 @@ def paired_comparison_document(
 
     return {
         "declaration": {
+            # Each side names the settings its model was built with, off the
+            # report and only where the model has one; see `_model_settings`.
             "model_a": {
                 "model": comparison.model_a,
                 "features": sorted(comparison.features_a),
+                **comparison.settings_a,
             },
             "model_b": {
                 "model": comparison.model_b,
                 "features": sorted(comparison.features_b),
+                **comparison.settings_b,
             },
             "decision_time": comparison.decision_time.isoformat(
                 timespec="minutes"
@@ -5249,6 +5333,8 @@ def threshold_exceedance(
         return ExceedanceCurves(
             tuple(model.predict_stress(row, taus) for row in feature_rows),
             model.features_read,
+            # Off the fitted model, for the reason `features_read` is.
+            model_settings=_model_settings(model),
         )
 
     return fit_predict
@@ -5437,6 +5523,11 @@ class ExceedanceBacktestReport:
     #: or `None` when it reached none. Read off the first fold's curves by
     #: `_ml_libraries`; `_run_provenance` omits the key for `None`.
     ml_libraries: Optional[Mapping[str, str]] = None
+    #: The settings the scored predictor's model was built with, read off the
+    #: first fold's curves by `_model_settings`; empty when it takes none.
+    model_settings: Mapping[str, Any] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -5647,6 +5738,7 @@ def rolling_exceedance_backtest(
     forecast: List[Tuple[float, ...]] = []
     reference: List[Tuple[float, ...]] = []
     ml_libraries: Optional[Mapping[str, str]] = None
+    model_settings: Mapping[str, Any] = MappingProxyType({})
     checked = False
 
     for train_indices, test_indices in rolling_origin(
@@ -5679,6 +5771,9 @@ def rolling_exceedance_backtest(
                 referenced.features_read, declared, sources, purge
             )
             ml_libraries = _ml_libraries(predicted, referenced)
+            # The scored predictor's only: the reference is the climatology,
+            # which takes no setting, and is not what `declaration.model` names.
+            model_settings = _model_settings(predicted)
             checked = True
 
         forecast.append(_validate_prediction(predicted, 1, tau_family)[0])
@@ -5749,6 +5844,7 @@ def rolling_exceedance_backtest(
         twcrps=twcrps,
         twcrps_unavailable=twcrps_unavailable,
         ml_libraries=ml_libraries,
+        model_settings=model_settings,
     )
 
 
@@ -6019,6 +6115,8 @@ def exceedance_backtest_document(
         "taus_bp": list(report.taus),
         "twcrps_weights": list(report.twcrps_weights),
     }
+    # The rule `backtest_document` follows: only the keys the model has.
+    declaration.update(report.model_settings)
     if report.decision_time is not None:
         declaration["decision_time"] = report.decision_time.isoformat(
             timespec="minutes"
