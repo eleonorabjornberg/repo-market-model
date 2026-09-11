@@ -1650,6 +1650,36 @@ NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
 #: down.
 NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
 
+#: Why a derived field writes no row in a vintage that would otherwise have
+#: re-totalled it to `0.0`, per field. Values are from
+#: `data.WITHHELD_FIELD_REASONS`, which is where the vocabulary is declared and
+#: where a reason outside it is refused; this maps a field of *this adapter* onto
+#: one of them. Decided 11 Sep -- `docs/DATA_QUALITY_DECISIONS.md`, "An empty
+#: repo cross-section is excluded, with its reason", option (b) of the case A21
+#: left open.
+#:
+#: The case: an amendment that keeps the cross-section's repo rows -- so the
+#: month is rightly admitted and `NMFP_REQUIRED_CATEGORY_FIELD` has nothing to
+#: refuse -- and files a dealer counterparty where the original filed the Federal
+#: Reserve. Every submission that supplied `mmf_on_rrp` is superseded, the panel
+#: cell is dirtied by their withdrawal, and re-totalling it over what is left
+#: gives `0.0`. That zero is an observation of nothing, and `sec_nmfp` declares
+#: `mmf_on_rrp` a structural zero only through 2013-08-31, so for any later month
+#: nothing declares it: the coverage record reads the derived field unmatched
+#: with no declaration, which is the pipeline saying the zero has no reason
+#: behind it. A field that cannot say "zero, and here is why" may not say it at
+#: all, so the vintage writes no row and records `no_fed_counterparty` in
+#: `CrossSectionCoverage.withheld_fields` -- the same shape as `no_repo_rows`,
+#: one level down, and never a zero.
+#:
+#: Keyed by derived field rather than applied to every field that loses its last
+#: contributor, because the reason names a cause and this adapter can only state
+#: the cause for a field whose derivation it declares. `mmf_on_rrp`'s cause is
+#: the counterparty match in `_nmfp_archive_scan`; a field with no declared
+#: derivation has no sentence to write here, and a shared one would say only
+#: "the rows went away", which is the mechanism and not the reason.
+NMFP_WITHHELD_DERIVED_REASONS = {"mmf_on_rrp": "no_fed_counterparty"}
+
 #: The holdings field a cross-section is not admitted without, once the archive
 #: could have supplied it. Decided 11 Sep -- `docs/DATA_QUALITY_DECISIONS.md`, "An
 #: empty repo cross-section is excluded, with its reason".
@@ -2599,6 +2629,19 @@ def _assemble_sec_nmfp(
     date keeps them, and a later archive that restores the repo rows re-admits
     the month. The floor is not re-judged that way: the count it reads only
     grows, so a month once over its floor stays over it.
+
+    A derived field can lose every submission that supplied it while the
+    cross-section around it stays rightly admitted -- an amendment that keeps the
+    repo rows and files a dealer counterparty where the original filed the
+    Federal Reserve. Re-totalling that cell over what is left writes `0.0` for a
+    field nothing observed, which is the same zero the per-vintage exclusion
+    declines for a whole month and which that exclusion cannot reach, because
+    there is nothing to exclude. Such a cell writes no row for that vintage and
+    its cause goes in the record's `withheld_fields`; see
+    `NMFP_WITHHELD_DERIVED_REASONS`. The earlier vintage keeps its row, a later
+    archive that files the Fed counterparty again re-emits the field, and
+    `unmatched_derived_fields` reads the same either way -- the derivation ran
+    over rows that were there and matched none of them.
     """
 
     from .data import (
@@ -2859,14 +2902,34 @@ def _assemble_sec_nmfp(
         for accession in changed | restated:
             for cell in contributions.get(accession, ()):
                 dirty.add(panel_cell(cell))
+        # Per month, the `(field, reason)` pairs this archive declined to write
+        # a row for. See `NMFP_WITHHELD_DERIVED_REASONS`.
+        withheld = {}
+        emitted = set()
         for target in dirty:
             total = 0.0
+            supplied = False
             for cell in sorted(contributing_cells(target)):
                 for accession in sorted(cell_accessions.get(cell, ())):
                     if accession in active:
                         total += contributions[accession][cell]
+                        supplied = True
+            # A dirty cell no active submission supplies is a cell whose
+            # contributors all went away, and its total is `0.0` by arithmetic
+            # rather than by observation -- the same zero the `withdrawn` set
+            # above declines to write for an excluded month, reached one field at
+            # a time in a month that is rightly admitted. Where this adapter can
+            # name the cause it writes no row and records it; where it cannot,
+            # the row still goes out as it always has, which is a defect of the
+            # same family and not this one.
+            if not supplied and target[0] in NMFP_WITHHELD_DERIVED_REASONS:
+                withheld.setdefault(_nmfp_cross_section(target[1]), set()).add(
+                    (target[0], NMFP_WITHHELD_DERIVED_REASONS[target[0]])
+                )
+                continue
             assembled[target] = total
-        for series_id, ref_date in sorted(dirty):
+            emitted.add(target)
+        for series_id, ref_date in sorted(emitted):
             candidates.append(
                 (
                     retrieved_at,
@@ -2921,6 +2984,7 @@ def _assemble_sec_nmfp(
                     exclusion_reason=(
                         None if section in admitted else refused[section]
                     ),
+                    withheld_fields=tuple(sorted(withheld.get(section, ()))),
                 )
             )
     return candidates, coverage

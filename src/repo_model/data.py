@@ -117,6 +117,25 @@ EXCLUSION_NO_REPO_ROWS = "no_repo_rows"
 EXCLUSION_REASONS = (EXCLUSION_BELOW_FLOOR, EXCLUSION_NO_REPO_ROWS)
 
 
+# Why one field of an admitted cross-section wrote no row in a vintage that
+# would otherwise have re-totalled it: the closed vocabulary
+# `CrossSectionCoverage.withheld_fields` records a reason under. The sibling of
+# `EXCLUSION_REASONS` one level down -- that one says why a whole cross-section
+# wrote nothing, this one says why a single field of an admitted cross-section
+# did -- and it exists for the same reason: never a hole that looks like a quiet
+# month, and never a zero. See `docs/DATA_QUALITY_DECISIONS.md`, "An empty repo
+# cross-section is excluded, with its reason", and "The ON RRP channel is
+# derived".
+#
+#   no_fed_counterparty  the cross-section's repo rows survived the amendment
+#                        and none of the surviving submissions filed a Federal
+#                        Reserve counterparty among them, so the derivation that
+#                        supplies `mmf_on_rrp` had inputs and matched none of
+#                        them
+WITHHELD_NO_FED_COUNTERPARTY = "no_fed_counterparty"
+WITHHELD_FIELD_REASONS = (WITHHELD_NO_FED_COUNTERPARTY,)
+
+
 @dataclass(frozen=True)
 class CrossSectionCoverage:
     """Reporting-entity coverage of one cross-section of a cross-sectional source.
@@ -197,6 +216,27 @@ class CrossSectionCoverage:
     stays a recorded absence on an admitted cross-section, as it was. An unknown
     reason raises `ValueError`: a record whose reason nobody declared is a reason
     nobody can read.
+
+    `withheld_fields` is `exclusion_reason` one level down, and the level is the
+    whole of the difference. An amendment can leave a cross-section rightly
+    admitted -- its repo rows are all still there -- while removing every
+    submission that supplied one *derived* field of it. Re-totalling that field
+    over the submissions that are left writes `0.0`: the never-a-zero trap
+    reached through supersession by way of the derived field rather than the
+    required one, which the per-vintage exclusion does not reach because there is
+    nothing to exclude. Such a field writes no row for that vintage and names its
+    cause here, as `(field, reason)` pairs from the closed vocabulary
+    `WITHHELD_FIELD_REASONS`, with an unknown reason refused by `ValueError`
+    exactly as `exclusion_reason` refuses one.
+
+    It is recorded on the vintage that withheld the row and on no other: it says
+    what this archive did to a cell an earlier vintage carried, not a standing
+    property of the cross-section. That is what keeps it from restating
+    `unmatched_derived_fields` under a second name -- that one says the
+    derivation ran over observed inputs and matched none of them, which is true
+    of every vintage in which it holds, whether or not a row was ever written. A
+    first vintage that never matched the Fed records that one and not this one:
+    nothing was withheld, because nothing was going to be written.
     """
 
     source_id: str
@@ -211,6 +251,7 @@ class CrossSectionCoverage:
     era_id: Optional[str] = None
     unmatched_derived_fields: tuple = ()
     exclusion_reason: Optional[str] = None
+    withheld_fields: tuple = ()
 
     def __post_init__(self) -> None:
         if (
@@ -222,6 +263,13 @@ class CrossSectionCoverage:
                 f"exclusion reason {self.exclusion_reason!r} is not one of "
                 f"{', '.join(EXCLUSION_REASONS)}"
             )
+        for field, reason in self.withheld_fields:
+            if reason not in WITHHELD_FIELD_REASONS:
+                raise ValueError(
+                    f"{self.source_id} {self.ref_date.isoformat()}: withheld "
+                    f"field {field!r} reason {reason!r} is not one of "
+                    f"{', '.join(WITHHELD_FIELD_REASONS)}"
+                )
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -245,6 +293,14 @@ class CrossSectionCoverage:
                 for field, disposition in self.unmatched_derived_fields
             ],
             "exclusion_reason": self.exclusion_reason,
+            # Its own key, beside `unmatched_derived_fields` rather than inside
+            # it: "the derivation matched nothing" and "this vintage withheld a
+            # row an earlier vintage carried" are different facts, and only the
+            # second says a `0.0` was declined here.
+            "withheld_fields": [
+                {"field": str(field), "reason": str(reason)}
+                for field, reason in self.withheld_fields
+            ],
             "reason": self.reason,
         }
 
