@@ -32,6 +32,7 @@ from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
     FR2004_SOURCE_ID,
+    NMFP_CATEGORY_FIELDS,
     NMFP_DERIVED_FROM_MATCH,
     NMFP_INVESTMENT_CATEGORY_ERAS,
     REFUSAL_ABSENT_FIELDS,
@@ -2623,7 +2624,9 @@ class EmptyRepoCrossSectionTests(unittest.TestCase):
        rule is judged as of each retrieval by construction and by nothing else.
        The same shape shows that `absent_fields` on a coverage record is taken
        from every archive, not from those retrieved so far -- older than this
-       block, and a statement in the record rather than in the rows.
+       block, and a statement in the record rather than in the rows. **Closed by
+       A21**: both now read the archives retrieved so far, and this mutation
+       kills `AmendedRepoVintageTests`.
     7. **An amended-away repo month writes zeros, before this block and after
        it.** Reproduced by scratch on this tree: three filers admitted with repo
        rows, then a later archive whose `N-MFP3/A` amendments for all three file
@@ -2633,6 +2636,8 @@ class EmptyRepoCrossSectionTests(unittest.TestCase):
        `_assemble_sec_nmfp` re-totals a dirty cell over active submissions that
        no longer supply it. It is the never-a-zero trap reached through
        supersession, and this rule, judged at admission, does not reach it.
+       **Closed by A21**: the rule is judged per vintage, see
+       `AmendedRepoVintageTests`.
     """
 
     FLOOR = 3
@@ -2822,6 +2827,271 @@ class EmptyRepoCrossSectionTests(unittest.TestCase):
                 CrossSectionCoverage(**fields, exclusion_reason="quiet_month")
             self.assertIs(type(refused.exception), ValueError)
             self.assertIn("'quiet_month'", str(refused.exception))
+
+
+class AmendedRepoVintageTests(unittest.TestCase):
+    """An amendment that removes every repo row of an admitted month writes no zero.
+
+    A21, closing the two findings `EmptyRepoCrossSectionTests` recorded. Before
+    it, `no_repo_rows` was judged once, at admission, and admission was never
+    retracted. A later archive whose `N-MFP3/A` amendments filed no repo category
+    for an admitted month re-totalled that month's repo cells over submissions
+    that no longer supplied them, and emitted `mmf_repo_holdings` and
+    `mmf_on_rrp` as `0.0` -- the never-a-zero trap reached through supersession
+    -- while the vintage's coverage record read admitted with no reason.
+
+    **The rule now.** `no_repo_rows` is judged at every archive that files into
+    the month. An amended vintage with no repo holding contributes no rows, for
+    any field, and its coverage record reads `no_repo_rows`. The vintage before it
+    keeps its rows and its record: what was known before the amendment stays
+    known, and an as-of query between the two retrievals reads exactly what it
+    read before this block. A later archive that restores repo rows re-admits the
+    month with the new value.
+
+    **"Archives retrieved so far", stated.** A field is in a coverage record's
+    `absent_fields` when no archive retrieved up to and including that record's
+    own supplies it for the month -- the intersection of their absences, never a
+    later archive's. `no_repo_rows` reads that same set: it fires when the
+    surviving submissions as of that archive supply no `mmf_repo_holdings` and
+    the field is not in that set. So a month whose first archive lacks
+    `NMFP_SCHPORTFOLIOSECURITIES.tsv` is admitted with the holdings fields absent,
+    and an amendment carrying the table and no repo category excludes the
+    amendment's vintage and not the first. Before this block the record's
+    `absent_fields` was taken from every archive, so the first vintage's record
+    denied an absence its own rows showed.
+
+    The traps: dropping the amended vintage's coverage record, which fails the
+    unpacking of the month's two records before any subtest; excluding the
+    earlier vintage too, which rewrites history and fails the second subtest;
+    and a `NaN` row, which is still a row and fails the first.
+
+    **On the archives, 11 Sep.** Over all 97 declared archives in
+    `data/raw/sec_nmfp/`, the `sec_nmfp` rows parsed (digest `5eeff385...`), the
+    coverage records (`37770994...`), and the rebuilt
+    `data/processed/point_in_time.csv` (`77983873...`) and
+    `daily_panel_point_in_time.csv` (`18d06799...`) are byte-identical before and
+    after this block; no record reads `no_repo_rows` and no repo row is `0.0`.
+    No declared archive is the first, for its month, to lack a table a later
+    archive carries -- or `absent_fields` would have moved. Both rules are guards
+    on a future amendment, not corrections of a month in the panel.
+
+    **Finding, recorded rather than repaired (a second criterion).** An amendment
+    that *keeps* every repo row but files a dealer counterparty where the original
+    filed the Federal Reserve still writes `mmf_on_rrp` `0.0` in its vintage, on
+    this tree and before it, beside a record whose `unmatched_derived_fields`
+    says the derivation matched nothing. Same mechanism -- a dirty cell
+    re-totalled over submissions that no longer supply it -- reached through the
+    derived field rather than the required one; the month is rightly admitted,
+    so the per-vintage exclusion does not reach it.
+
+    Mutation record
+    ---------------
+
+    Disposable copies under `$HOME` built from `git ls-files --cached --others
+    --exclude-standard`, `python3 -B` with `PYTHONDONTWRITEBYTECODE=1`,
+    `OMP_NUM_THREADS=1`, each mutation applied to a fresh copy and confirmed
+    applied by grep before the run. Unmutated control green before and after,
+    zero `expectedFailure`. Each run is the whole suite, and every kill is in
+    this test alone, every one an `AssertionError`.
+
+    1. **The per-vintage check removed** -- `admitted.discard(section)` deleted,
+       which is the behaviour before this block. Four subtests: the amended
+       vintage, `Lists differ: [0.0] != []` on its `mmf_on_rrp` row; its record,
+       `True is not false` at `assertFalse(later.admitted)`; the restoring
+       amendment, the excluded vintage's zero rows at
+       `rows_from(again, amended)`; and the two-archive fixture, `True is not
+       false` at `assertFalse(second.admitted)`.
+    2. **The earlier vintage excluded as well**: on a `no_repo_rows` refusal the
+       month's earlier candidates are dropped and its earlier records rewritten
+       to excluded. Three subtests: `Tuples differ` at
+       `assertEqual(alone.coverage, (earlier,))`, where the earlier record reads
+       `admitted=False`; and `False is not true` at `assertTrue(first.admitted)`
+       in both two-archive subtests. The first subtest survives it, rightly --
+       the amended vintage still writes nothing.
+    3. **A `0.0` written for `mmf_on_rrp` only**: the withdrawn submissions'
+       `mmf_on_rrp` cells dirtied and re-totalled. Three subtests: `Lists
+       differ: [0.0] != []` on the amended vintage's `mmf_on_rrp`; `Tuples
+       differ` at `assertEqual(parsed.rows, alone.rows)`, one row longer; and
+       the extra row at `rows_from(again, amended)`.
+    4. **A20 probe 6**: the repo rule reads absence from every archive, the
+       intersection over all of `scanned_absent`, instead of `absent_so_far`.
+       Two subtests, both `False is not true` at `assertTrue(first.admitted)`:
+       the earlier, tableless vintage is refused over a table no archive had
+       yet carried. It survived the whole suite at A20.
+
+    A first run had a fifth kill under mutation 2, `0.0 unexpectedly found`,
+    in the restoring amendment: with its prior rows dropped, the fixture's
+    genuine `CASH` of 0 was re-emitted. That was an incidental zero, not the
+    defect, so the subtest now pins the repo fields' exact values, and all
+    four mutations were re-run against the test as it stands.
+    """
+
+    FLOOR = 3
+    MONTH = date(2026, 7, 31)
+    REPORT = "31-JUL-2026"
+    NON_REPO_CATEGORY = "Certificate of Deposit"
+    REPO_FIELDS = ("mmf_on_rrp", "mmf_repo_holdings")
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.fetched = 0
+
+    def filers(self, prefix, series=(1, 2, 3), *, amended=False, net_assets=4_000_000_000):
+        """One submission per series for July 2026; an amendment files later."""
+
+        return tuple(
+            {
+                "accession": f"{prefix}{index}",
+                "series": f"S{index}",
+                "report": self.REPORT,
+                "filing": "20-AUG-2026" if amended else "05-AUG-2026",
+                "submission_type": "N-MFP3/A" if amended else "N-MFP3",
+                "net_assets": net_assets,
+                "flows": ((f"0{index}-JUL-2026", 100_000_000 * index, 40_000_000 * index),),
+            }
+            for index in series
+        )
+
+    def archive(self, submissions, **kwargs):
+        self.fetched += 1
+        return fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/"
+            f"amended-{self.fetched}.zip",
+            lambda url: nmfp_archive(submissions, **kwargs),
+        )[0]
+
+    def registry(self):
+        path = registry_with_nmfp_coverage_floor(self.output_root, self.FLOOR)
+        registry = json.loads(path.read_text(encoding="utf-8"))
+        registry["sec_nmfp"]["structural_zeros"] = []
+        registry["sec_nmfp"]["structural_zeros_reviewed"] = False
+        return registry
+
+    def records(self, parsed):
+        """The month's coverage records, one per archive, in retrieval order."""
+
+        return [item for item in parsed.coverage if item.ref_date == self.MONTH]
+
+    @staticmethod
+    def rows_from(parsed, artifact):
+        return [row for row in parsed.rows if row.source_sha == artifact.sha256]
+
+    @staticmethod
+    def values(rows, series_id):
+        return [row.value for row in rows if row.series_id == series_id]
+
+    def test_an_amendment_that_removes_every_repo_row_writes_no_zero(self):
+        registry = self.registry()
+        original = self.archive(self.filers("O"))
+        amended = self.archive(
+            self.filers("R", amended=True), repo_category=self.NON_REPO_CATEGORY
+        )
+        alone = parse_snapshots([original], registry=registry)
+        parsed = parse_snapshots([original, amended], registry=registry)
+        earlier, later = self.records(parsed)
+
+        with self.subTest("the amended vintage emits no repo row and no 0.0 at all"):
+            # The premise: the amendments superseded all three originals, and the
+            # holdings table they carry was read.
+            self.assertEqual(later.submission_types, (("N-MFP3", 3), ("N-MFP3/A", 3)))
+            self.assertNotIn("mmf_repo_holdings", later.absent_fields)
+            self.assertEqual(self.values(alone.rows, "mmf_repo_holdings"), [3.0])
+
+            amended_rows = self.rows_from(parsed, amended)
+            for field in self.REPO_FIELDS:
+                self.assertEqual(self.values(amended_rows, field), [], msg=field)
+            self.assertNotIn(0.0, [row.value for row in amended_rows])
+            self.assertEqual(amended_rows, [])
+            self.assertEqual(
+                [row for row in parsed.rows if row.vintage_id == amended.retrieved_at], []
+            )
+
+        with self.subTest("its record reads no_repo_rows; the earlier vintage is unchanged"):
+            self.assertFalse(later.admitted)
+            self.assertEqual(later.exclusion_reason, EXCLUSION_NO_REPO_ROWS)
+            self.assertIn("no repo holding", later.reason)
+            self.assertGreater(later.row_count, 0)
+
+            self.assertEqual(alone.coverage, (earlier,))
+            self.assertTrue(earlier.admitted)
+            self.assertIsNone(earlier.exclusion_reason)
+            self.assertEqual(self.rows_from(parsed, original), list(alone.rows))
+            self.assertEqual(parsed.rows, alone.rows)
+
+        with self.subTest("an amendment that keeps some repo rows is admitted with its new value"):
+            # S2 and S3 amend to no repo; S1's original repo row survives.
+            partial = self.archive(
+                self.filers("P", (2, 3), amended=True),
+                repo_category=self.NON_REPO_CATEGORY,
+            )
+            kept = parse_snapshots([original, partial], registry=registry)
+            record = self.records(kept)[-1]
+            partial_rows = self.rows_from(kept, partial)
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
+            # Exact values, not "no 0.0 anywhere": the fixture files CASH and
+            # liabilities as a real 0, which is an observation.
+            self.assertEqual(self.values(partial_rows, "mmf_repo_holdings"), [1.0])
+            self.assertEqual(self.values(partial_rows, "mmf_on_rrp"), [1.0])
+
+            # And after an excluded vintage, a restoring amendment re-admits the
+            # month with its new value rather than leaving it excluded.
+            restored = self.archive(
+                self.filers("T", (1,), amended=True, net_assets=8_000_000_000)
+            )
+            again = parse_snapshots([original, amended, restored], registry=registry)
+            record = self.records(again)[-1]
+            restored_rows = self.rows_from(again, restored)
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
+            self.assertEqual(self.values(restored_rows, "mmf_repo_holdings"), [2.0])
+            self.assertEqual(self.values(restored_rows, "mmf_on_rrp"), [2.0])
+            self.assertEqual(self.rows_from(again, amended), [])
+
+        # The two-archive fixture: the earlier archive has no holdings table,
+        # the later carries it and files no repo category.
+        tableless = self.archive(
+            self.filers("E"), omit=("NMFP_SCHPORTFOLIOSECURITIES.tsv",)
+        )
+        tabled = self.archive(
+            self.filers("F", amended=True), repo_category=self.NON_REPO_CATEGORY
+        )
+        first_alone = parse_snapshots([tableless], registry=registry)
+        both = parse_snapshots([tableless, tabled], registry=registry)
+        first, second = self.records(both)
+
+        with self.subTest(
+            "absent_fields and no_repo_rows are judged on the archives retrieved so far"
+        ):
+            holdings = set(NMFP_CATEGORY_FIELDS)
+            self.assertTrue(holdings <= set(first.absent_fields), first.absent_fields)
+            self.assertTrue(first.admitted)
+            self.assertIsNone(first.exclusion_reason)
+            self.assertEqual(first_alone.coverage, (first,))
+
+            self.assertEqual(holdings & set(second.absent_fields), set())
+            self.assertFalse(second.admitted)
+            self.assertEqual(second.exclusion_reason, EXCLUSION_NO_REPO_ROWS)
+            self.assertEqual(self.rows_from(both, tabled), [])
+            self.assertEqual(both.rows, first_alone.rows)
+
+        with self.subTest("the every-archive reading would refuse the earlier vintage"):
+            # This fixture is the shape that separates the two readings. Across
+            # every archive the holdings fields are not absent, and the earlier
+            # vintage supplies no repo row -- so reading absence from every
+            # archive would exclude a vintage over a table not yet retrieved.
+            every_archive = set(first.absent_fields) & set(second.absent_fields)
+            self.assertNotIn("mmf_repo_holdings", every_archive)
+            self.assertEqual(
+                self.values(self.rows_from(both, tableless), "mmf_repo_holdings"), []
+            )
+            self.assertTrue(first.admitted)
+            self.assertEqual(
+                self.values(self.rows_from(both, tableless), "mmf_net_assets"), [12.0]
+            )
 
 
 class CoverageEraTests(unittest.TestCase):

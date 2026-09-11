@@ -147,7 +147,9 @@ class CrossSectionCoverage:
     shareholder-flow table because the data did not exist, and its balance sheet
     is no less complete for it. Recording it is what keeps "we have no
     observation" from being read off the panel as "we observed nothing", which
-    is the same absent-is-not-zero distinction one level up from the rows.
+    is the same absent-is-not-zero distinction one level up from the rows. For an
+    assembled source it is judged on the archives retrieved up to this record's
+    own, never on a later one.
 
     `unmatched_derived_fields` is a **third** kind of absence, not more entries
     in `absent_fields`, and that is why it is a separate field. `absent_fields`
@@ -187,7 +189,9 @@ class CrossSectionCoverage:
     industry always holds repo, so a month with none is a vocabulary failure
     until shown otherwise: it is excluded whole, every row with it, rather than
     admitted with a hole beside its balance sheet that reads as a quiet month --
-    and never admitted with a zero. It is not `absent_fields`. A missing table or
+    and never admitted with a zero. It is judged per vintage, so a later record
+    of a month admitted earlier can read `no_repo_rows` beside the earlier
+    record that reads `None`. It is not `absent_fields`. A missing table or
     an undeclared category era means the archive could not be looked at, and that
     stays a recorded absence on an admitted cross-section, as it was. An unknown
     reason raises `ValueError`: a record whose reason nobody declared is a reason
