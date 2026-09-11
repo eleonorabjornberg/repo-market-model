@@ -339,11 +339,22 @@ both at settlement puts each after its auction, and the adapter refuses a result
 `record_date` precedes its `auction_date`. It never reads `total_accepted`,
 `high_yield` or `bid_to_cover`.
 
-Still open: the component panel columns, and the model report's test of whether the
-simplification affects conclusions. Both matter to this project specifically. Bill and coupon
-settlements have different collateral and reserve-drain profiles and bill supply is
-close to the centre of the 2018–19 episode; SOMA add-ons do not drain private cash, so
-the Fed's leg belongs beside the public one as its own series, not inside it.
+**Panel columns (human, 11 Sep):** `treasury_settlement_bills`, `treasury_settlement_coupons`
+and `treasury_settlement_soma`, each in USD billions. A gross figure blends three different
+pressures: bill settlements drain cash and are primary-dealer financed; coupon settlements
+need repo financing capacity of their own; SOMA add-ons are a non-market adjustment to the
+Fed's balance sheet. **A business day with no settlement reads `0.0`**, a true zero rather
+than a fill: the auction record lists every settlement, so a day without one settled
+nothing. The zero holds only inside the snapshot's coverage, up to its retrieval date; a
+day it cannot speak to stays a hole. Still open: the model report's test of whether the
+aggregate's simplification affected conclusions.
+
+## SOFR tail percentiles stay out of the feature panel
+
+**Decided (human, 11 Sep):** `SOFR_p1` and `SOFR_p99` are parsed but are not panel
+columns; they may return as an optional diagnostics extension. The tails are sensitive to
+bilateral trade quirks and to operational or reporting outliers rather than clearing
+rates, and `sofr_p25`/`sofr_p75` already carry dispersion without that leverage.
 
 ## N-MFP series length: one archive yields one usable month
 

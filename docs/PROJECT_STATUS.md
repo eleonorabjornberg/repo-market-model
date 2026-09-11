@@ -286,11 +286,11 @@ Stated explicitly, because each is easy to mistake for something stronger.
   at every scale, which is not what a relative bound corrects.
   `metadata/sources.json`'s `tolerance_note` carries the derivation and
   `DATA_QUALITY_DECISIONS.md` records the decision.
-- **The Treasury settlement split is not in the panel.** The adapter emits the bill,
-  coupon and SOMA components beside `treasury_settlement`, SOMA outside the aggregate
-  because `offering_amt` excludes it. No panel column is sourced from them in
-  `src/repo_model/contract.py`, so no model reads the split, and nothing tests whether
-  the aggregate's simplification affects conclusions.
+- **No model reads the Treasury settlement split yet.** `treasury_settlement_bills`,
+  `treasury_settlement_coupons` and `treasury_settlement_soma` are panel columns, SOMA
+  outside the aggregate because `offering_amt` excludes it. The `0.0` on a day with no
+  settlement is decided and not yet emitted, and nothing tests whether the aggregate's
+  simplification affects conclusions.
 - **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
   index is licensed, and the Treasury cash-futures basis needs licensed futures prices;
   this repository takes public sources only (human decision, 10 Sep). A public proxy

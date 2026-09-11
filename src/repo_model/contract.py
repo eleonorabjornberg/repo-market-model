@@ -291,6 +291,15 @@ FEATURE_FIELDS = MappingProxyType(
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
         "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
         "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
+        # The split as panel columns (human decision, 11 Sep 2026): a gross
+        # aggregate hides three different pressures. Bill settlements drain cash
+        # and are dealer-financed; coupon settlements need repo balance-sheet
+        # capacity of their own; SOMA add-ons are the Fed's non-market leg, outside
+        # the aggregate. USD billions. A business day with no settlement is 0.0,
+        # within the snapshot's coverage only (DATA_QUALITY_DECISIONS).
+        "treasury_settlement_bills": (("treasury_auctions", "treasury_settlement_bill"),),
+        "treasury_settlement_coupons": (("treasury_auctions", "treasury_settlement_coupon"),),
+        "treasury_settlement_soma": (("treasury_auctions", "treasury_settlement_soma"),),
         "mmf_assets": (("sec_nmfp", "mmf_net_assets"),),
         # The FR 2004 Treasury total. The adapter checks it against its thirteen
         # current-era components and converts millions to billions.

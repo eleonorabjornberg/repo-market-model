@@ -53,6 +53,9 @@ target and policy anchor are required.
 | `tga` | no | USD billions |
 | `on_rrp` | no | USD billions |
 | `treasury_settlement` | no | USD billions |
+| `treasury_settlement_bills` | no | USD billions |
+| `treasury_settlement_coupons` | no | USD billions |
+| `treasury_settlement_soma` | no | USD billions |
 | `dealer_treasury_position` | no | USD billions |
 | `mmf_assets` | no | USD billions |
 | `tbill_4w` | no | percent, coupon equivalent |
