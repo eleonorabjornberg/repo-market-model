@@ -20,8 +20,9 @@ repurchase-agreement market.**
   skill and calibration diagnostics — against a persistence benchmark.
 - **Result.** The harness is verified end to end on real market data and the persistence
   baseline is characterised over a multi-year holdout. **No model has yet met Phase
-  2's exit criterion against it**: the one challenger with a smaller CRPS under-covers
-  its own nominal interval.
+  2's exit criterion against it**: the challenger with a smaller CRPS covers its interval
+  once cross-conformally calibrated, but its upper tail is weaker than persistence's and
+  its tail exceedance probabilities are not yet scored.
 - **Limitation.** The published interval is under its nominal coverage, the money-fund
   channel has open data-quality decisions recorded rather than resolved, and no result
   here is out-of-sample evidence of forecasting skill.
@@ -85,6 +86,7 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | gbm (spread change lags `5`) | 1.98 bp | +0.55 bp | +0.27 to +0.88 bp | beats persistence |
 | gbm | 1.99 bp | +0.54 bp | +0.27 to +0.87 bp | beats persistence |
 | gbm (volatility feature `garch11`) | 2.00 bp | +0.52 bp | +0.25 to +0.86 bp | beats persistence |
+| gbm (calibration `cross_conformal`, calibration folds `5`) | 2.02 bp | +0.51 bp | +0.24 to +0.85 bp | beats persistence |
 | rolling-residual (residual window `60`) | 2.48 bp | +0.05 bp | +0.02 to +0.08 bp | beats persistence |
 | gbm (calibration `conformal`, calibration share `0.25`) | 2.71 bp | -0.18 bp | -0.49 to +0.19 bp | not distinguishable |
 | gbm (calibration `conformal`, calibration share `0.25`, spread change lags `1`) | 2.72 bp | -0.19 bp | -0.50 to +0.18 bp | not distinguishable |
@@ -100,10 +102,11 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
 |---|---|---|---|---|
 | gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.2% to 87.7% | 1.294 bp |
+| gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.6% to 94.6% | 1.130 bp |
 | gbm | 90% | 65.8% | 63.2% to 68.3% | 0.943 bp |
 | persistence | 90% | 81.6% | 78.8% to 84.2% | 0.889 bp |
 
-A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (calibration `conformal`, calibration share `0.25`), gbm, persistence.
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 
@@ -125,10 +128,11 @@ only the Python standard library for everything a published result depends on ex
 the gradient-boosted comparison, which needs the extra below; reproducing any other
 needs no package installation. Phase 2's machine-learning candidates live
 in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
-scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with three opt-in
+scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with four opt-in
 settings: a conformal interval (`--calibration conformal`, or `cross_conformal` with
-`--calibration-folds K`), lagged spread changes (`--spread-change-lags K`) and a GARCH(1,1)
-variance fitted per fold (`--volatility-feature garch11`). All but cross-conformal are scored in Key findings.
+`--calibration-folds K`), lagged spread changes (`--spread-change-lags K`), a GARCH(1,1)
+variance fitted per fold (`--volatility-feature garch11`) and an ARX one-step forecast fitted
+per fold (`--arx-feature declared`). All but the ARX feature are scored in Key findings.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git

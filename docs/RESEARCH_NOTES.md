@@ -22,14 +22,17 @@ second, and the records show why it is the harder half.
    ([`runs/backtest_gbm_mh61.json`](runs/backtest_gbm_mh61.json)). The accuracy is won
    in the body of the distribution, on ordinary days. The upper tail, where funding
    stress lives, is where the model is weakest.
-3. **Honesty costs the edge.** Split-conformal calibration moves gbm's coverage toward
+3. **Honesty need not cost the edge.** Split-conformal calibration moves gbm's coverage toward
    nominal without reaching it, and its CRPS advantage over persistence stops being
    distinguishable from zero
    ([`runs/backtest_gbm_conformal_mh61.json`](runs/backtest_gbm_conformal_mh61.json),
    [`runs/compare_persistence_vs_gbm_conformal_mh61_crps.json`](runs/compare_persistence_vs_gbm_conformal_mh61_crps.json)).
    Cross-conformal calibration, which keeps the full fit's interior and calibrates the
-   band over purged blocks, is being scored: it tests whether the trade-off is forced or
-   an artefact of spending part of each fold on calibration.
+   band over purged blocks, shows the trade-off was not forced: its band covers a little
+   more than it promises, and its CRPS advantage stays distinguishable from zero
+   ([`runs/backtest_gbm_cross_conformal_mh61.json`](runs/backtest_gbm_cross_conformal_mh61.json),
+   [`runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json`](runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json)).
+   Its upper-tail pinball loss is still worse than persistence's.
 4. **Volatility clustering adds nothing measurable.** A GARCH(1,1) conditional-volatility
    feature leaves gbm's CRPS against persistence indistinguishable from gbm without it,
    calibrated or not

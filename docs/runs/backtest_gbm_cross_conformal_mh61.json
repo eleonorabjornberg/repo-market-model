@@ -1,0 +1,693 @@
+{
+  "declaration": {
+    "calibration": "cross_conformal",
+    "calibration_folds": 5,
+    "decision_time": "16:00",
+    "features": [
+      "sofr_p25",
+      "sofr_p75",
+      "sofr_volume",
+      "spread_bps"
+    ],
+    "minimum_history": 61,
+    "model": "gbm"
+  },
+  "derived": {
+    "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR",
+      "nyfed_sofr.SOFR_p25",
+      "nyfed_sofr.SOFR_p75",
+      "nyfed_sofr.SOFR_volume"
+    ],
+    "purge_days": 6,
+    "sources": [
+      "fred_macro_latest_vintage",
+      "nyfed_sofr"
+    ]
+  },
+  "folds": {
+    "count": 2039,
+    "first": {
+      "feature_date": "2018-06-28",
+      "scored_date": "2018-07-05",
+      "train_end": "2018-06-28",
+      "train_rows": 62,
+      "train_start": "2018-04-03"
+    },
+    "last": {
+      "feature_date": "2026-08-27",
+      "scored_date": "2026-09-03",
+      "train_end": "2026-08-27",
+      "train_rows": 2099,
+      "train_start": "2018-04-03"
+    }
+  },
+  "metrics": {
+    "crps_bps": 2.020715495680926,
+    "forecast_count": 2039,
+    "interval_calibration": {
+      "coverage_interval": {
+        "block_length": 5,
+        "level": 0.9,
+        "lower": 0.9156449239823443,
+        "method": "stationary_bootstrap",
+        "replications": 2000,
+        "seed": 950485184,
+        "upper": 0.9460519862677783
+      },
+      "coverage_series": {
+        "encoding": "run_length",
+        "length": 2039,
+        "runs": [
+          [
+            1,
+            12
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            79
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            12
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            7
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            18
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            18
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            63
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            19
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            21
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            18
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            7
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            101
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            6
+          ],
+          [
+            1,
+            165
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            38
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            11
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            174
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            102
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            22
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            9
+          ],
+          [
+            0,
+            9
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            62
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            20
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            275
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            16
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            117
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            40
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            21
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            19
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            19
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            11
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            33
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            8
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            9
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            13
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            6
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            9
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            12
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            23
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            15
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            8
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            50
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            64
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            14
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            9
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            39
+          ]
+        ]
+      },
+      "declared_probability": 0.8999999999999999,
+      "realized_coverage": 0.931338891613536
+    },
+    "interval_coverage": 0.931338891613536,
+    "interval_probability": 0.8999999999999999,
+    "mae_bps": 2.593034425533195,
+    "mae_bps_interval": {
+      "block_length": 5,
+      "level": 0.9,
+      "lower": 2.2275833107128387,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 950485184,
+      "upper": 3.0240091131399947
+    },
+    "pinball_loss": {
+      "0.05": 0.32568949603830394,
+      "0.25": 0.9547184663811611,
+      "0.50": 1.2965172127665976,
+      "0.75": 1.3449133625006653,
+      "0.95": 1.1299502015155953
+    }
+  },
+  "panel": {
+    "build_manifest": {
+      "build_cutoff": "2026-09-08T21:31:42+00:00",
+      "built_columns": [
+        "sofr",
+        "iorb",
+        "sofr_volume",
+        "sofr_p25",
+        "sofr_p75",
+        "tgcr",
+        "bgcr",
+        "treasury_settlement"
+      ],
+      "decision_time": "16:00:00",
+      "end_date": "2026-09-03",
+      "holes": {
+        "bgcr": 2104,
+        "iorb": 0,
+        "sofr": 0,
+        "sofr_p25": 2,
+        "sofr_p75": 2,
+        "sofr_volume": 0,
+        "tgcr": 2104,
+        "treasury_settlement": 2104
+      },
+      "incomplete_dates": 4440,
+      "path": "data/processed/funding_panel.csv",
+      "refused_columns": {
+        "dealer_treasury_position": "feature 'dealer_treasury_position' has no source: no ingesting source is declared in metadata/sources.json; the column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of the sample panel. Sizing a purge over it would purge zero days for a weekly FR 2004 series.",
+        "mmf_assets": "sec_nmfp: every snapshot row must carry available_at",
+        "on_rrp": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "quarter_end": "sources must select at least one feature source",
+        "reserve_balances": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "tax_date": "sources must select at least one feature source",
+        "tga": "fred_macro_latest_vintage: every snapshot row must carry available_at"
+      },
+      "required_columns": [
+        "sofr",
+        "iorb"
+      ],
+      "row_count": 2104,
+      "source_shas": [
+        "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
+        "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
+        "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1"
+      ],
+      "start_date": "2018-04-03"
+    },
+    "build_manifest_binding": {
+      "compared": [
+        "row_count",
+        "first_date",
+        "last_date"
+      ],
+      "kind": "extent",
+      "note": "this manifest carries no digest of the panel it describes, so this binds it to the panel by extent and not by bytes: a manifest is a claim about a path, and the bytes under that path may have changed since it was written"
+    },
+    "first_date": "2018-04-03",
+    "last_date": "2026-09-03",
+    "path": "data/processed/funding_panel.csv",
+    "row_count": 2104,
+    "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec"
+  },
+  "provenance": {
+    "code": {
+      "commit": "679470a4b99c7b979ec7f683b2cbe1d2d8fd0756",
+      "tree_modified": false,
+      "untracked_files_present": false
+    },
+    "inputs": {
+      "source_registry": {
+        "path": "metadata/sources.json",
+        "sha256": "e4a475353e136af87f9fd37840d6b61587d519b77e5bcaa988eb03999c28c396"
+      }
+    },
+    "ml_libraries": {
+      "numpy": "2.0.2",
+      "scikit-learn": "1.6.1"
+    }
+  }
+}

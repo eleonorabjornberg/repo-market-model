@@ -97,8 +97,9 @@ a commit message:
   a refused column is absent and never quietly revised. The join does **not**
   subtract the release lag — the purge does, and a join that shifted values too
   would apply the gap twice while looking careful. There is no forward fill: a
-  reference date with no observation is a hole, counted and left empty; the ingest's
-  quality report records why each source cell behind it was absent.
+  reference date with no observation is a hole, counted and left empty, except the
+  declared Treasury settlement columns, which read `0.0` on a business day inside the
+  snapshot's coverage; the quality report records why each source cell was absent.
 - **An identity that could not be evaluated no longer reads as one that held.**
   Absent terms are never imputed to zero, unevaluable reference dates are recorded
   term by term, and the check walks every date any term was observed on rather than
@@ -195,8 +196,13 @@ Stated explicitly, because each is easy to mistake for something stronger.
   (`docs/runs/backtest_gbm_mh61.json`, `docs/runs/backtest_persistence_mh61.json`),
   and both fall short of their nominal probability. Split-conformal calibration
   (`--calibration conformal`, `docs/runs/backtest_gbm_conformal_mh61.json`) moves
-  gbm's coverage toward nominal without reaching it, and costs it the CRPS win. A
-  cross-conformal interval that keeps the full fit (`--calibration cross_conformal`) is built, not scored.
+  gbm's coverage toward nominal without reaching it, and costs it the CRPS win.
+  Cross-conformal calibration keeps the full fit and both: its interval covers a little
+  more than its nominal probability, and its CRPS win over persistence stays
+  distinguishable from zero (`docs/runs/backtest_gbm_cross_conformal_mh61.json`,
+  `docs/runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json`); its upper-tail
+  pinball loss is still worse than persistence's. The ARX forecast as a gbm feature
+  (`--arx-feature declared`) is built, not scored.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
@@ -289,8 +295,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `DATA_QUALITY_DECISIONS.md` records the decision.
 - **No model reads the Treasury settlement split yet.** `treasury_settlement_bills`,
   `treasury_settlement_coupons` and `treasury_settlement_soma` are panel columns, SOMA
-  outside the aggregate because `offering_amt` excludes it. The `0.0` on a day with no
-  settlement is decided and not yet emitted, and nothing tests whether the aggregate's
+  outside the aggregate because `offering_amt` excludes it. A day with no settlement
+  reads `0.0` inside the snapshot's coverage only; nothing tests whether the aggregate's
   simplification affects conclusions.
 - **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
   index is licensed, and the Treasury cash-futures basis needs licensed futures prices;

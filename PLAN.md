@@ -189,8 +189,11 @@ under CRPS at paired origins (`docs/PROJECT_STATUS.md`). Gradient-boosted quanti
 nominal interval covers well under its nominal probability
 (`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
 calibrated in its interval; split-conformal calibration narrows the coverage gap without
-closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`); a
-cross-conformal interval keeping the full fit is built and not yet scored. Its exceedance probabilities have not been scored in the
+closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`);
+cross-conformal calibration, keeping the full fit, covers a little more than nominal and
+keeps a distinguishable accuracy win, while its upper tail stays worse than persistence's
+(`docs/runs/backtest_gbm_cross_conformal_mh61.json`). The ARX forecast as a gbm feature is
+built and not yet scored. Its exceedance probabilities have not been scored in the
 tails, nor has a conditional predictor been scored against climatology on a
 knowledge-holdout window, so the exit criterion is not met.
 
@@ -296,7 +299,8 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    monthly assembly left a 2.9x range, over which scale explains almost none of the
    residual. The `sec_nmfp` structural-zero review is recorded: `mmf_on_rrp` is a
    declared zero through 2013-08-31, before the facility. The Treasury-settlement split into bill, coupon and SOMA components is
-   done at the adapter; its panel columns are not. Both are recorded in
+   done at the adapter and in the panel, a settlement-free day reading `0.0` inside the
+   snapshot's coverage. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.
 3. **Then widen Phase 1**: primary-dealer positions, the 4- and 13-week bill yields and the
    settlement components are sourced; the liquidity proxies are next. The published Milestone A panel stays pinned to its
