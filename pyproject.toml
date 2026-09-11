@@ -37,7 +37,7 @@ classifiers = [
 # reproduces with no install; tests/test_dependency_boundary.py holds that line.
 # The upper bounds are the last releases that still support Python 3.9.
 [project.optional-dependencies]
-ml = ["numpy>=1.24,<2.1", "scikit-learn>=1.3,<1.7"]
+ml = ["numpy>=1.24,<2.1", "scikit-learn>=1.4,<1.7"]
 
 [project.urls]
 Repository = "https://github.com/eleonorabjornberg/repo-market-model"
