@@ -650,7 +650,7 @@ def _calibration(
     *,
     side: str = "",
 ) -> Mapping[str, Any]:
-    """Resolve `--calibration` and `--calibration-share`, or refuse. `_residual_window`'s shape.
+    """Resolve `--calibration`, `--calibration-share` and `--calibration-folds`, or refuse. `_residual_window`'s shape.
 
     Refused for a model that takes no calibration, by the rule every flag here
     follows: accepted and ignored, it is read by the next person as a setting
@@ -664,7 +664,8 @@ def _calibration(
     Returns only the flags that were given, keyed as the fitter names them, so
     a run naming neither binds nothing and the fitter's defaults decide. The
     *values* are not checked here -- an unknown name, a share outside `(0, 1)`,
-    a share given to `none` -- because `ml.fit_gradient_boosted_quantiles`
+    a share given to `none`, folds below 2 or given to anything but
+    `cross_conformal` -- because `ml.fit_gradient_boosted_quantiles`
     refuses each, and checking them here too would put one rule in two places,
     one of which cannot import the other.
     """
@@ -674,6 +675,7 @@ def _calibration(
         for key, value in (
             ("calibration", args.calibration),
             ("calibration_share", args.calibration_share),
+            ("calibration_folds", args.calibration_folds),
         )
         if value is not None
     }
@@ -922,8 +924,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
 
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
     `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
-    `--calibration-share-a`, `--spread-change-lags-a`, `--volatility-feature-a`,
-    and the same eight for `b` --
+    `--calibration-share-a`, `--calibration-folds-a`, `--spread-change-lags-a`,
+    `--volatility-feature-a`, and the same nine for `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -952,6 +954,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         residual_window=getattr(args, f"residual_window_{side}"),
         calibration=getattr(args, f"calibration_{side}"),
         calibration_share=getattr(args, f"calibration_share_{side}"),
+        calibration_folds=getattr(args, f"calibration_folds_{side}"),
         spread_change_lags=getattr(args, f"spread_change_lags_{side}"),
         volatility_feature=getattr(args, f"volatility_feature_{side}"),
         minimum_history=args.minimum_history,
@@ -1458,10 +1461,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         metavar="NAME",
         default=None,
         help="how the gbm band is calibrated: none, the default and the model "
-        "every published gbm record was produced with, or conformal, which "
+        "every published gbm record was produced with; conformal, which "
         "fits on the earlier rows of each fold's training frame and widens the "
-        "0.05-0.95 band by the conformal score of its most recent rows. "
-        "Refused for every model but gbm",
+        "0.05-0.95 band by the conformal score of its most recent rows; or "
+        "cross_conformal, which reports the fit on every row and moves its "
+        "0.05-0.95 band to the CV+ edges of models fitted without each of "
+        "--calibration-folds purged date blocks. Refused for every model but gbm",
     )
     backtest.add_argument(
         "--calibration-share",
@@ -1470,7 +1475,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help="the share of each training frame --calibration conformal holds "
         "out as calibration rows, strictly inside (0, 1); 0.25 when not given. "
-        "Refused for every model but gbm, and for --calibration none",
+        "Refused for every model but gbm, and for every other calibration",
+    )
+    backtest.add_argument(
+        "--calibration-folds",
+        type=int,
+        metavar="K",
+        default=None,
+        help="how many contiguous date blocks --calibration cross_conformal "
+        "splits each training frame into, at least 2; 5 when not given. "
+        "Refused for every model but gbm, and for every other calibration",
     )
     backtest.add_argument(
         "--spread-change-lags",
@@ -1558,7 +1572,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             metavar="NAME",
             default=None,
             help=f"how the {side} model's gbm band is calibrated: none, the "
-            f"default, or conformal; refused for --model-{side} other than gbm",
+            f"default, conformal or cross_conformal; refused for "
+            f"--model-{side} other than gbm",
         )
         compare.add_argument(
             f"--calibration-share-{side}",
@@ -1567,6 +1582,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             default=None,
             help=f"the share of each training frame --calibration-{side} "
             f"conformal holds out, strictly inside (0, 1); 0.25 when not given",
+        )
+        compare.add_argument(
+            f"--calibration-folds-{side}",
+            type=int,
+            metavar="K",
+            default=None,
+            help=f"how many purged date blocks --calibration-{side} "
+            f"cross_conformal splits each training frame into, at least 2; 5 "
+            f"when not given",
         )
         compare.add_argument(
             f"--spread-change-lags-{side}",

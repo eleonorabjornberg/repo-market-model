@@ -46,6 +46,11 @@ What is covered here
   filters the calibration rows rather than refitting on them, reads nothing
   after a row for that row's variance, is named in the declaration, and its
   refusals.
+* `GradientBoostedCrossConformalTests` -- `calibration="cross_conformal"`: the
+  CV+ band covers its nominal probability where the fitted band does not, the
+  interior is the full fit's bit for bit, every excluding model trains only
+  outside its block and the purge gaps around it and scores only its own
+  block, and the refusals.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -149,6 +154,7 @@ import sys
 import tempfile
 import unittest
 from datetime import date, time, timedelta
+from fractions import Fraction
 from unittest import mock
 
 from repo_model import baseline, cli, cli_eval, ml
@@ -1574,6 +1580,486 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
                 r"did not converge: every one of its 39 observed spread changes is zero",
             ):
                 self.fit(flat, volatility_feature="garch11")
+
+
+class GradientBoostedCrossConformalTests(unittest.TestCase):
+    """`calibration="cross_conformal"`: B25's acceptance criterion and its mutation target.
+
+    **The defect.** Split-conformal gbm (B22) covers far more of its 90% band
+    than the uncalibrated model, and the published
+    `docs/runs/compare_persistence_vs_gbm_conformal_mh61_crps.json` shows what
+    it paid: every level is fitted on the frame less a quarter and the purge,
+    and its CRPS difference with persistence is no longer distinguishable from
+    zero. CV+ (Barber, Candes, Ramdas and Tibshirani, 2021) on conformalized
+    quantile regression keeps the full fit and calibrates its band with
+    out-of-block scores. Its traps: scoring a held-out row with a model that
+    saw it, no purge around the held-out block, reporting the interior from a
+    block model, and blocks of shuffled rows.
+
+    **The coverage tolerance, stated.** B22's, with `n` the held-out scores
+    pooled over every block: `3 sqrt(q (1 - q) (1 / T + 1 / (n + 2)))` about
+    the nominal `q`, two-sided, for `T` held-out rows. CV+'s finite-sample
+    guarantee is only `1 - 2 alpha`; the test holds it to `1 - alpha`, the
+    coverage it attains in practice on exchangeable rows, and this fixture is
+    stationary for that reason. **The control must fail it**: the uncalibrated
+    band is asserted below the tolerance's lower edge.
+
+    **What the leakage subtest can see, and on what.** The fold loop hands the
+    fitter a frame that ends at the feature row, so "trained at or before the
+    fold's train end" holds by construction and is asserted off the dates each
+    excluding model carries. The purge is not by construction, and a dated
+    claim is only a claim, so it is also probed by behaviour, on the last
+    fold's frame of well over a hundred rows -- the B24 lesson, a leak a
+    forty-row frame could not show because no tree split: a row inside a
+    block, and one inside the purge gap on either side of it, each moved by
+    25 bp, leave that block's excluding model's predictions bit-identical; the
+    control, a row that clears the gap, moves them. Every score is recomputed
+    here from its own block's estimators at the feature row the purge chooses,
+    with the control that the full fit's estimators score the same rows
+    differently.
+
+    **The minimum a block must leave.** One held-out row, and one training
+    pair for its excluding model after the purge -- the minimum the split
+    calibration already applies to its fit rows, "one origin and its
+    successor". Not `minimum_history`: at `--minimum-history 61` an excluding
+    model trains on four fifths of the frame less two purge gaps, so the first
+    folds of the published declaration would be refused.
+
+    Mutation record (B25)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` (the worktree's `.venv`: CPython
+    3.9.6, numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src` (checked to
+    resolve to each sub-copy), `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`,
+    whole suite per run. Unmutated control green before and after, zero
+    `expectedFailure`; each anchor found exactly once and confirmed applied.
+    **Every mutation killed this test and nothing else.**
+
+      * **Held-out scores computed with the full-fit model** --
+        `_rearranged(estimators, ...)` for `_rearranged(block_estimators,
+        ...)`. `coverage on held-out rows`, `AssertionError`: the band covers
+        0.771 against 0.90 +/- 0.071 -- the in-sample score tail, as B22's
+        record found for scores on the fit rows -- and every fold of the
+        leakage subtest, `AssertionError`: the scores are not the excluding
+        model's.
+      * **The purge around held-out blocks removed** -- every row outside the
+        block trains. Every fold, `AssertionError: ... block 1's excluding
+        model trained on 2020-01-25, inside its block 2020-01-01..2020-01-24
+        or the 6-day gap around it`; the behavioural probe, `AssertionError`
+        (a row inside the gap before the block moved its model); and `refusal:
+        a block that leaves its excluding model nothing to fit`, `ValueError
+        not raised`. Coverage stays green, as it must at a zero gap.
+      * **Interior levels taken from block model 0.** `the interior levels
+        are the full fit's, bit for bit`, `AssertionError: Tuples differ`.
+      * **The CV+ ranks replaced by split-conformal's single widening** -- the
+        `ceil(q (n + 1))`-th smallest of the pooled out-of-block scores, added
+        to both of the full fit's outer levels. `coverage on held-out rows`,
+        `AssertionError: Tuples differ: (4.1315..., 13.8680...) != (4.1700...,
+        13.5339...)` -- on the band-is-CV+'s check. **The coverage assertions
+        before it passed**: on this stationary fixture a pooled widening of
+        out-of-block scores covers inside the tolerance too, so coverage alone
+        cannot tell the two apart, and that is why the edges are rebuilt here.
+      * **Each refusal removed**, separately:
+          - fewer than two blocks: `AssertionError` on the phrase -- one block
+            falls through to the block refusal, `block 1 of 1 holds out 40 of
+            40 rows and leaves its excluding model 0 training pair(s)`;
+          - a block that leaves its excluding model nothing to fit:
+            `IndexError`, out of the imputation refusal reaching for a first
+            origin that is not there -- an error, not a failure;
+          - `calibration_folds` without `cross_conformal`: `AssertionError:
+            ValueError not raised`, the folds ignored by `none`;
+          - `calibration_share` with `cross_conformal`: `AssertionError:
+            ValueError not raised`, the share ignored;
+          - fewer held-out scores than CV+'s ranks need (extra): `AssertionError:
+            ValueError not raised` -- at eight scores `floor(0.1 x 9)` is 0,
+            and the lower edge silently reads index -1, the largest low;
+          - `cross_conformal` with no gap (extra): `TypeError: unsupported
+            type for timedelta days component: NoneType`, out of
+            `clears_purge`.
+      * **`--calibration-folds` not bound** -- dropped from `cli_eval.
+        _calibration` (extra). The declaration subtest, `AssertionError`: the
+        fitter's keywords lack `calibration_folds`.
+      * **The declaration key dropped** from `model_settings` (extra). The
+        declaration subtest, `AssertionError: {'calibration':
+        'cross_conformal'} != {'calibration': 'cross_conformal',
+        'calibration_folds': 5}`.
+
+    **Runtime, measured** on this interpreter, `OMP_NUM_THREADS=1`, gbm's
+    production `min_samples_leaf` of 20, heteroscedastic frames and a 6-day
+    gap: per fold of the rolling loop, 0.056 s uncalibrated, 0.046 s
+    split-conformal and 0.269 s cross-conformal at `--minimum-history 61` (23
+    folds of 61- to 83-row frames), and 0.188 s, 0.066 s and 0.420 s at 120 to
+    123 rows, where the uncalibrated figure carries the process's first fit.
+    On the 480-row frame above, with this file's `min_samples_leaf`, fitting
+    took 0.92 s uncalibrated and 3.11 s cross-conformal, and forecasting 240
+    rows 0.30 s and 1.83 s: five blocks plus the full fit, and every forecast
+    reads each excluding model once more.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    TRAIN_ROWS = 480
+    HELD_OUT_ROWS = 240
+    PURGE = 6
+    #: The fold loop's panel and minimum: every fold's frame is over a hundred
+    #: rows, so its excluding models' trees split. See the class docstring.
+    PANEL_ROWS = 130
+    MINIMUM_HISTORY = 120
+    #: The block the behavioural probe moves rows around: a middle one, with a
+    #: purge gap on both sides.
+    PROBE_BLOCK = 2
+    SHIFT_BPS = 25.0
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def design(self, row):
+        """A row as the design reads it, built here: the spread, then each regressor."""
+
+        return [float(row.spread_bps)] + [float(row.values[name]) for name in self.REGRESSORS]
+
+    @staticmethod
+    def sorted_levels(estimators, design):
+        """One design row read at every level and sorted, off the estimators directly."""
+
+        return sorted(float(estimator.predict([design])[0]) for estimator in estimators)
+
+    def probe_predictions(self, block, frame):
+        """An excluding model's per-level predictions on every row of `frame`."""
+
+        designs = [self.design(row) for row in frame]
+        return [
+            tuple(float(value) for value in estimator.predict(designs))
+            for estimator in block.estimators
+        ]
+
+    def test_the_cross_conformal_band_covers_its_nominal_probability_and_keeps_the_full_fit(self):
+        """Coverage, the full fit's interior, purged excluding models, the declaration, refusals.
+
+        One criterion. A CV+ band read off models that saw their held-out rows
+        is the split calibration's defect with a better number; a band that
+        covers by reporting a block model's interior is the accuracy B22 gave
+        up, given up again; and a calibration that accepted one block or a
+        block its purge had emptied would report a band with no guarantee
+        behind it.
+        """
+
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + self.HELD_OUT_ROWS)
+        train = rows[: self.TRAIN_ROWS]
+        forecasts = [rows[index - 1] for index in range(self.TRAIN_ROWS, len(rows))]
+        outcomes = [row.spread_bps for row in rows[self.TRAIN_ROWS :]]
+        uncalibrated = self.fit(train)
+        cross = self.fit(train, calibration="cross_conformal", purge_days=0)
+        plain = [uncalibrated.predict(row) for row in forecasts]
+        banded = [cross.predict(row) for row in forecasts]
+
+        with self.subTest("coverage on held-out rows"):
+            q = Fraction("0.95") - Fraction("0.05")
+            nominal = float(q)
+            scores = sum(len(block.scores) for block in cross.calibration_blocks)
+            tolerance = 3.0 * math.sqrt(
+                nominal * (1.0 - nominal) * (1.0 / self.HELD_OUT_ROWS + 1.0 / (scores + 2))
+            )
+            before = sum(v[0] <= y <= v[-1] for v, y in zip(plain, outcomes)) / self.HELD_OUT_ROWS
+            after = sum(v[0] <= y <= v[-1] for v, y in zip(banded, outcomes)) / self.HELD_OUT_ROWS
+            self.assertLess(
+                before,
+                nominal - tolerance,
+                msg=(
+                    f"the control: the uncalibrated band covers {before:.3f} of "
+                    f"{self.HELD_OUT_ROWS} held-out rows, inside the tolerance "
+                    f"{nominal:.2f} +/- {tolerance:.3f}, so this fixture cannot "
+                    f"tell a calibration from its absence"
+                ),
+            )
+            self.assertLessEqual(
+                abs(after - nominal),
+                tolerance,
+                msg=(
+                    f"the cross-conformal band covers {after:.3f} of "
+                    f"{self.HELD_OUT_ROWS} held-out rows against a nominal "
+                    f"{nominal:.2f} +/- {tolerance:.3f} (uncalibrated {before:.3f})"
+                ),
+            )
+            # And it is CV+'s band: built here from each excluding model's own
+            # outer levels at the forecast's feature row and its own block's
+            # scores, at CV+'s two ranks -- not one widening of the full fit.
+            low_rank = math.floor((1 - q) * (scores + 1))
+            high_rank = math.ceil(q * (scores + 1))
+            for row, reported, fitted in list(zip(forecasts, banded, plain))[::4]:
+                lows, highs = [], []
+                for block in cross.calibration_blocks:
+                    excluded = self.sorted_levels(block.estimators, self.design(row))
+                    lows.extend(excluded[0] - score for score in block.scores)
+                    highs.extend(excluded[-1] + score for score in block.scores)
+                self.assertEqual(
+                    (reported[0], reported[-1]),
+                    (
+                        min(sorted(lows)[low_rank - 1], fitted[1]),
+                        max(sorted(highs)[high_rank - 1], fitted[-2]),
+                    ),
+                    msg=f"the band forecast from {row.date} is not CV+'s",
+                )
+
+        with self.subTest("the interior levels are the full fit's, bit for bit"):
+            for row, reported, fitted in zip(forecasts, banded, plain):
+                self.assertEqual(
+                    reported[1:-1],
+                    fitted[1:-1],
+                    msg=f"the interior forecast from {row.date} is not calibration none's",
+                )
+            self.assertEqual(cross.residuals, uncalibrated.residuals)
+            self.assertEqual(cross.fit_end, train[-1].date)
+            # The control: an excluding model's interior differs from the full
+            # fit's, so the equality above is not every fit agreeing.
+            first = cross.calibration_blocks[0]
+            self.assertNotEqual(
+                [tuple(self.sorted_levels(first.estimators, self.design(row))[1:-1]) for row in forecasts],
+                [fitted[1:-1] for fitted in plain],
+                msg="the control: block 1's excluding model reports the full fit's interior",
+            )
+
+        with self.subTest("every excluding model trains outside its block and its purge gaps"):
+            panel = heteroscedastic_frame(self.PANEL_ROWS)
+            with tempfile.TemporaryDirectory() as directory:
+                registry = json.loads(
+                    declared_registry_file(
+                        directory, purge=self.PURGE, features=self.FEATURES
+                    ).read_text(encoding="utf-8")
+                )
+            fits = []
+
+            def calibrating(train_frame, minimum_history, purge_days):
+                model = self.fit(
+                    train_frame,
+                    minimum_history=minimum_history,
+                    calibration="cross_conformal",
+                    purge_days=purge_days,
+                )
+                fits.append((list(train_frame), purge_days, model))
+                return model
+
+            report = baseline.rolling_persistence_backtest(
+                panel,
+                features=self.FEATURES,
+                registry=registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                minimum_history=self.MINIMUM_HISTORY,
+                fit_model=calibrating,
+            )
+            gap = timedelta(days=report.purge_days)
+            self.assertGreater(report.purge_days, 0, msg="at a zero gap the purge is not under test")
+            self.assertGreater(len(fits), 1)
+            self.assertEqual(len(fits), len(report.folds))
+            for fold, (frame, purge, model) in zip(report.folds, fits):
+                with self.subTest(fold=fold.scored_date.isoformat()):
+                    self.assertEqual(purge, report.purge_days)
+                    dates = [row.date for row in frame]
+                    blocks = model.calibration_blocks
+                    self.assertEqual(len(blocks), ml.DEFAULT_CALIBRATION_FOLDS)
+                    # Contiguous date blocks, in order, covering the frame: no
+                    # row shuffled into another block, none left out.
+                    self.assertEqual(
+                        [when for block in blocks for when in dates
+                         if block.held_out_start <= when <= block.held_out_end],
+                        dates,
+                    )
+                    for earlier, later in zip(blocks, blocks[1:]):
+                        self.assertLess(earlier.held_out_end, later.held_out_start)
+                    for number, block in enumerate(blocks, start=1):
+                        self.assertTrue(block.training_dates)
+                        self.assertLessEqual(block.training_dates[-1], dates[-1])
+                        self.assertLess(block.training_dates[-1], fold.scored_date)
+                        for when in block.training_dates:
+                            self.assertTrue(
+                                when + gap < block.held_out_start
+                                or block.held_out_end + gap < when,
+                                msg=(
+                                    f"block {number}'s excluding model trained on "
+                                    f"{when}, inside its block "
+                                    f"{block.held_out_start}..{block.held_out_end} "
+                                    f"or the {report.purge_days}-day gap around it"
+                                ),
+                            )
+                        # Each held-out row is scored by this block's model, at
+                        # the feature row the purge chooses, and only rows
+                        # with one inside the frame are scored.
+                        scored = [
+                            index for index, when in enumerate(dates)
+                            if block.held_out_start <= when <= block.held_out_end
+                            and dates[0] + gap < when
+                        ]
+                        self.assertEqual(block.scored_dates, tuple(dates[i] for i in scored))
+                        rescored, in_sample = [], []
+                        for index in scored:
+                            feature = max(p for p in range(index) if dates[p] + gap < dates[index])
+                            target = frame[index].spread_bps
+                            for estimators, out in (
+                                (block.estimators, rescored),
+                                (model._estimators, in_sample),
+                            ):
+                                levels = self.sorted_levels(estimators, self.design(frame[feature]))
+                                out.append(max(levels[0] - target, target - levels[-1]))
+                        self.assertEqual(
+                            list(block.scores),
+                            rescored,
+                            msg=f"block {number}'s scores are not its own excluding model's",
+                        )
+                        self.assertNotEqual(
+                            rescored,
+                            in_sample,
+                            msg="the control: the full fit scores this block identically",
+                        )
+
+            # By behaviour, on the last fold's frame: a row the probe block's
+            # model may not train on moves nothing in it, and a row it may,
+            # does.
+            frame, purge, model = fits[-1]
+            self.assertGreater(len(frame), 100)
+            dates = [row.date for row in frame]
+            block = model.calibration_blocks[self.PROBE_BLOCK]
+            start = dates.index(block.held_out_start)
+            stop = dates.index(block.held_out_end)
+            baseline_predictions = self.probe_predictions(block, frame)
+
+            def moved(position):
+                shifted = list(frame)
+                shifted[position] = with_spread_shifted(frame[position], self.SHIFT_BPS)
+                refit = self.fit(
+                    shifted,
+                    minimum_history=self.MINIMUM_HISTORY,
+                    calibration="cross_conformal",
+                    purge_days=purge,
+                )
+                return self.probe_predictions(refit.calibration_blocks[self.PROBE_BLOCK], frame)
+
+            for label, position in (
+                ("inside the gap before the block", start - 1),
+                ("inside the block", start + 1),
+                ("inside the gap after the block", stop + 1),
+            ):
+                self.assertEqual(
+                    moved(position),
+                    baseline_predictions,
+                    msg=f"a row {label} ({dates[position]}) moved the block's excluding model",
+                )
+            clear = stop + 1
+            while not dates[stop] + gap < dates[clear]:
+                clear += 1
+            self.assertNotEqual(
+                moved(clear + 1),
+                baseline_predictions,
+                msg="the control: a row the excluding model trains on moves nothing in it",
+            )
+
+        with self.subTest("the declaration names calibration and calibration_folds"):
+            self.assertEqual(
+                dict(report.model_settings),
+                {"calibration": "cross_conformal", "calibration_folds": 5},
+            )
+            three = self.fit(rows[:60], calibration="cross_conformal", calibration_folds=3, purge_days=0)
+            self.assertEqual(
+                dict(baseline._model_settings(three)),
+                {"calibration": "cross_conformal", "calibration_folds": 3},
+            )
+            self.assertEqual(len(three.calibration_blocks), 3)
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "gbm",
+                 "--calibration", "cross_conformal", "--calibration-folds", "3"]
+            )
+            _, fitter = cli_eval._select_fitter(backtest)
+            self.assertEqual(
+                fitter.keywords,
+                {"regressors": (), "calibration": "cross_conformal", "calibration_folds": 3},
+            )
+            compare = parser.parse_args(
+                ["compare", "panel.csv", *common, "--report", "r.json",
+                 "--model-a", "persistence", "--feature-a", "spread_bps",
+                 "--calibration-folds-a", "3",
+                 "--model-b", "gbm", "--feature-b", "spread_bps",
+                 "--calibration-b", "cross_conformal", "--calibration-folds-b", "4"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--calibration-folds-a 3 was given, but --model-a persistence"
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(fitter.keywords.get("calibration_folds"), 4)
+
+        with self.subTest("refusal: fewer than two blocks"):
+            for folds in (1, 0, -3, True, 2.5):
+                with self.assertRaisesRegex(
+                    ValueError, r"calibration_folds must be an int of at least 2"
+                ):
+                    self.fit(rows[:40], calibration="cross_conformal",
+                             calibration_folds=folds, purge_days=0)
+
+        with self.subTest("refusal: a block that leaves its excluding model nothing to fit"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"cross-conformal block 1 of 2 holds out 20 of 40 rows and leaves "
+                r"its excluding model 0 training pair\(s\) after a 19-day purge",
+            ):
+                self.fit(rows[:40], calibration="cross_conformal",
+                         calibration_folds=2, purge_days=19)
+            # And one pair is enough: the refusal sits at the edge.
+            edge = self.fit(rows[:40], calibration="cross_conformal",
+                            calibration_folds=2, purge_days=18)
+            self.assertEqual(
+                [len(block.training_dates) for block in edge.calibration_blocks], [2, 2]
+            )
+
+        with self.subTest("refusal: calibration_folds without cross_conformal"):
+            with self.assertRaisesRegex(
+                ValueError, r"calibration_folds 3 was given, but calibration 'none'"
+            ):
+                self.fit(rows[:40], calibration_folds=3)
+            with self.assertRaisesRegex(
+                ValueError, r"calibration_folds 3 was given, but calibration 'conformal'"
+            ):
+                self.fit(rows[:40], calibration="conformal", calibration_folds=3, purge_days=0)
+
+        with self.subTest("refusal: calibration_share with cross_conformal"):
+            with self.assertRaisesRegex(
+                ValueError, r"calibration_share 0.25 was given, but calibration 'cross_conformal'"
+            ):
+                self.fit(rows[:40], calibration="cross_conformal",
+                         calibration_share=0.25, purge_days=0)
+
+        with self.subTest("refusal: fewer held-out scores than CV+'s ranks need"):
+            with self.assertRaisesRegex(
+                ValueError, r"needs at least 9 held-out scores, got 8"
+            ):
+                self.fit(rows[:9], minimum_history=9, calibration="cross_conformal",
+                         calibration_folds=2, purge_days=0)
+            # And nine is enough.
+            self.assertEqual(
+                sum(
+                    len(block.scores)
+                    for block in self.fit(
+                        rows[:10], minimum_history=10, calibration="cross_conformal",
+                        calibration_folds=2, purge_days=0,
+                    ).calibration_blocks
+                ),
+                9,
+            )
+
+        with self.subTest("refusal: cross_conformal with no gap"):
+            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+                self.fit(rows[:40], calibration="cross_conformal")
 
 
 class GradientBoostedForecastInterfaceTests(

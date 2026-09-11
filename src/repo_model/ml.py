@@ -85,6 +85,43 @@ boosted quantile fit is tight on the rows it was fitted on, so the outer
 produced with: no split, no widening, and no float operation on a reported
 vector that the uncalibrated model did not already perform.
 
+**Cross-conformal, opt-in (B25).** Split-conformal pays for its band with a
+quarter of the frame and the purge: every level, the median and so the CRPS are
+fitted on the rows that are left. `calibration="cross_conformal"` is CV+
+(Barber, Candes, Ramdas and Tibshirani, 2021) applied to conformalized quantile
+regression, done causally inside the one training frame a fold hands over:
+
+* **the reported vector is the full fit's.** Every level is fitted on all of
+  the frame's rows exactly as `none` fits them, and the interior levels are
+  reported as `none` reports them, bit for bit;
+* the frame is split, **by date and never shuffled**, into `calibration_folds`
+  contiguous blocks. Each block's **excluding model** is fitted on the other
+  blocks' rows less every row inside the registry-derived purge gap on either
+  side of it, by `splits.clears_purge` in both directions: a row before the
+  block trains only if it clears the gap before the block opens, a row after it
+  only if the block's last row clears the gap before that row. A design pair
+  trains only if its origin and its target both do, so no pair's target is a
+  held-out row or a purged one. The rows it may not train on are **holes** to
+  it -- a lag or a GARCH variance that would read one is missing, by the rules
+  below -- so an excluding model reads nothing of its block through a feature
+  either;
+* each held-out row is scored `s = max(Q_lo - y, y - Q_hi)` by its own block's
+  excluding model, from the feature row `baseline._feature_index` chooses for
+  it, as a calibration row is under `conformal`. A held-out row with no such
+  feature row inside the frame -- the frame's first rows, within the gap of its
+  start, or before a lag has rows to read -- has no forecast to score and is
+  not scored;
+* a forecast's band is CV+'s: with `alpha = 1 - (Q_hi level - Q_lo level)` and
+  `n` scores, the lower edge is the `floor(alpha (n + 1))`-th smallest of
+  `Q_lo_-k(i)(x) - s_i` and the upper the `ceil((1 - alpha)(n + 1))`-th
+  smallest of `Q_hi_-k(i)(x) + s_i`, every excluding model read at the
+  forecast's own feature row. The full fit's outer levels move to those edges
+  by `_calibrated`'s neighbour rule, and the tail knots `predict_stress` reads
+  move with them.
+
+Runtime is the full fit plus one fit per block, and every forecast reads each
+excluding model once more.
+
 **Lagged spread changes, opt-in (B23).** `spread_change_lags=k` adds `k`
 regressors, `spread_change_lag_1` .. `spread_change_lag_k`: the change in
 `spread_bps` between consecutive rows, the `j`-th ending `j - 1` rows before the
@@ -180,6 +217,7 @@ from .splits import (
 
 __all__ = [
     "CALIBRATIONS",
+    "DEFAULT_CALIBRATION_FOLDS",
     "DEFAULT_CALIBRATION_SHARE",
     "GARCH_MINIMUM_CHANGES",
     "VOLATILITY_FEATURES",
@@ -217,14 +255,19 @@ _MINIMUM_TAIL = 1e-9
 
 #: The band calibrations a fit can be asked for. `none` first: it is the
 #: default, and the model every published record was produced with. See the
-#: module docstring for `conformal`.
-CALIBRATIONS = ("none", "conformal")
+#: module docstring for `conformal` and `cross_conformal`.
+CALIBRATIONS = ("none", "conformal", "cross_conformal")
 
 #: The share of a training frame held out as calibration rows when
 #: `calibration="conformal"` names none. A quarter: at `--minimum-history 61`
 #: the first fold still has more calibration rows than the conformal quantile
 #: needs to be finite, and three quarters of the frame are left to fit on.
 DEFAULT_CALIBRATION_SHARE = 0.25
+
+#: The contiguous date blocks `calibration="cross_conformal"` splits a training
+#: frame into when it names none. Five: each excluding model is fitted on four
+#: fifths of the frame less the purge, and a forecast costs five more reads.
+DEFAULT_CALIBRATION_FOLDS = 5
 
 #: The volatility features gbm can be built with. See the module docstring.
 VOLATILITY_FEATURES = ("garch11",)
@@ -544,10 +587,88 @@ def _calibrated(vector: Sequence[float], widening: float) -> Tuple[float, ...]:
     which would move a calibrated value onto an interior level.
     """
 
+    return _banded(vector, vector[0] - widening, vector[-1] + widening)
+
+
+def _banded(vector: Sequence[float], lower: float, upper: float) -> Tuple[float, ...]:
+    """The rearranged vector with its outer two levels moved to `lower` and `upper`.
+
+    `_calibrated`'s neighbour rule, stated once: an outer level that would pass
+    its neighbour stops at it, and the interior is untouched.
+    """
+
     values = list(vector)
-    values[0] = min(values[0] - widening, values[1])
-    values[-1] = max(values[-1] + widening, values[-2])
+    values[0] = min(lower, values[1])
+    values[-1] = max(upper, values[-2])
     return tuple(values)
+
+
+def _cross_conformal_edges(
+    lows: Sequence[float], highs: Sequence[float], levels: Sequence[float]
+) -> Tuple[float, float]:
+    """CV+'s band edges from `Q_lo_-k(i)(x) - s_i` and `Q_hi_-k(i)(x) + s_i`.
+
+    The `floor(alpha (n + 1))`-th smallest low and the `ceil((1 - alpha)(n +
+    1))`-th smallest high, `alpha` exact by `_band_probability`. Both ranks name
+    an entry exactly when `n >= _minimum_calibration_rows(levels)`, which the
+    fitter refuses below.
+    """
+
+    q = _band_probability(levels)
+    count = len(lows)
+    lower = sorted(lows)[math.floor((1 - q) * (count + 1)) - 1]
+    upper = sorted(highs)[math.ceil(q * (count + 1)) - 1]
+    return lower, upper
+
+
+class _ExcludingModel:
+    """One cross-conformal block: the model fitted without it, and its scores.
+
+    * `estimators`, `imputations`, `garch_parameters`,
+      `garch_initial_variance` --- the fit on the rows outside the block and its
+      purge gaps, in `FittedGradientBoostedQuantiles`' own fields' meaning.
+    * `held_out_start`, `held_out_end` --- the block's first and last dates.
+    * `training_dates` --- every row a design pair of this fit read, as an
+      origin or as a target, ascending. Carried so the purge can be checked
+      against a calendar rather than taken on trust.
+    * `scored_dates`, `scores` --- the held-out rows this model scored, and
+      their scores, in date order.
+    """
+
+    __slots__ = (
+        "estimators",
+        "garch_initial_variance",
+        "garch_parameters",
+        "held_out_end",
+        "held_out_start",
+        "imputations",
+        "scored_dates",
+        "scores",
+        "training_dates",
+    )
+
+    def __init__(
+        self,
+        *,
+        estimators: Sequence[Any],
+        imputations: Mapping[str, float],
+        garch_parameters: Optional[Tuple[float, float, float]],
+        garch_initial_variance: Optional[float],
+        held_out_start: date,
+        held_out_end: date,
+        training_dates: Sequence[date],
+        scored_dates: Sequence[date],
+        scores: Sequence[float],
+    ) -> None:
+        self.estimators: Tuple[Any, ...] = tuple(estimators)
+        self.imputations: Mapping[str, float] = MappingProxyType(dict(imputations))
+        self.garch_parameters = garch_parameters
+        self.garch_initial_variance = garch_initial_variance
+        self.held_out_start: date = held_out_start
+        self.held_out_end: date = held_out_end
+        self.training_dates: Tuple[date, ...] = tuple(training_dates)
+        self.scored_dates: Tuple[date, ...] = tuple(scored_dates)
+        self.scores: Tuple[float, ...] = tuple(scores)
 
 
 class MissingMLExtraError(ValueError):
@@ -644,7 +765,12 @@ class FittedGradientBoostedQuantiles:
       estimators were fitted on, and the first and last calibration rows
       (`None` under `none`, where the fit rows are the whole frame). Carried
       so a reader can check the purge between the two slices against a
-      calendar rather than take it on trust.
+      calendar rather than take it on trust. Under `cross_conformal` the fit
+      rows are the whole frame and the calibration dates are the first and
+      last held-out rows scored.
+    * `calibration_folds`, `calibration_blocks` --- under `cross_conformal`,
+      how many blocks the frame was split into and one `_ExcludingModel` per
+      block, in date order (`None` and empty otherwise).
     * `spread_change_lags`, `_history_dates`, `_history_spreads` --- how many
       lagged spread changes the design carries (`None` when it carries none),
       and the training frame's own dates and spreads, which are the only rows
@@ -680,7 +806,9 @@ class FittedGradientBoostedQuantiles:
         "_history_spreads",
         "_residuals",
         "calibration",
+        "calibration_blocks",
         "calibration_end",
+        "calibration_folds",
         "calibration_share",
         "calibration_start",
         "cutoff",
@@ -719,7 +847,11 @@ class FittedGradientBoostedQuantiles:
         volatility_feature: Optional[str] = None,
         garch_parameters: Optional[Tuple[float, float, float]] = None,
         garch_initial_variance: Optional[float] = None,
+        calibration_folds: Optional[int] = None,
+        calibration_blocks: Sequence[_ExcludingModel] = (),
     ) -> None:
+        self.calibration_folds: Optional[int] = calibration_folds
+        self.calibration_blocks: Tuple[_ExcludingModel, ...] = tuple(calibration_blocks)
         self.volatility_feature: Optional[str] = volatility_feature
         self.garch_parameters: Optional[Tuple[float, float, float]] = (
             None if garch_parameters is None else tuple(garch_parameters)
@@ -816,13 +948,18 @@ class FittedGradientBoostedQuantiles:
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
         `spread_change_lags` and `volatility_feature` by the same rule: named
-        when set, absent when not.
+        when set, absent when not. Each calibration names its own setting and
+        only its own: `calibration_share` for `conformal`, `calibration_folds`
+        for `cross_conformal`.
         """
 
         settings: dict = {}
-        if self.calibration != "none":
+        if self.calibration == "conformal":
             settings["calibration"] = self.calibration
             settings["calibration_share"] = self.calibration_share
+        elif self.calibration == "cross_conformal":
+            settings["calibration"] = self.calibration
+            settings["calibration_folds"] = self.calibration_folds
         if self.spread_change_lags is not None:
             settings["spread_change_lags"] = self.spread_change_lags
         if self.volatility_feature is not None:
@@ -846,6 +983,27 @@ class FittedGradientBoostedQuantiles:
         The GARCH variance by the same rule: the recursion is run with the
         fitted parameters through the frame's rows before `feature_row` and
         then `feature_row`'s own spread, and its last value is the column.
+        """
+
+        return self._design_row(
+            feature_row,
+            self.imputations,
+            self.garch_parameters,
+            self.garch_initial_variance,
+        )
+
+    def _design_row(
+        self,
+        feature_row: DailyObservation,
+        imputations: Mapping[str, float],
+        garch_parameters: Optional[Tuple[float, float, float]],
+        garch_initial_variance: Optional[float],
+    ) -> Tuple[float, ...]:
+        """`design_row` under one fit's imputations and GARCH parameters.
+
+        The full fit's, or an excluding model's: the frame's rows are the
+        history either way, because a forecast's inputs are every row at or
+        before its feature row, and only what a fit *learned* differs.
         """
 
         changes: Sequence[Optional[float]] = ()
@@ -875,14 +1033,14 @@ class FittedGradientBoostedQuantiles:
             if self.volatility_feature is not None:
                 variance = _garch_variances(
                     _squared_changes(spreads),
-                    self.garch_parameters,
-                    self.garch_initial_variance,
+                    garch_parameters,
+                    garch_initial_variance,
                 )[position]
         return tuple(
             _design(
                 feature_row,
                 self.regressors,
-                self.imputations,
+                imputations,
                 "feature row",
                 changes,
                 variance,
@@ -914,10 +1072,43 @@ class FittedGradientBoostedQuantiles:
         by so much as the sign of a zero.
         """
 
+        return self._reported(feature_row)[0]
+
+    def _reported(
+        self, feature_row: DailyObservation
+    ) -> Tuple[Tuple[float, ...], float, float]:
+        """The reported vector, and how far its lower and upper edges were moved out.
+
+        The full fit's rearranged vector in every case; a calibration moves only
+        its two outer levels. Under `cross_conformal` the edges are CV+'s, read
+        off every excluding model at this feature row.
+        """
+
         vector = self._quantile_vector(self.design_row(feature_row))
+        if self.calibration == "cross_conformal":
+            lows: List[float] = []
+            highs: List[float] = []
+            for block in self.calibration_blocks:
+                if not block.scores:
+                    continue
+                excluded = _rearranged(
+                    block.estimators,
+                    [
+                        self._design_row(
+                            feature_row,
+                            block.imputations,
+                            block.garch_parameters,
+                            block.garch_initial_variance,
+                        )
+                    ],
+                )[0]
+                lows.extend(excluded[0] - score for score in block.scores)
+                highs.extend(excluded[-1] + score for score in block.scores)
+            lower, upper = _cross_conformal_edges(lows, highs, self.levels)
+            return _banded(vector, lower, upper), vector[0] - lower, upper - vector[-1]
         if not self.widening:
-            return vector
-        return _calibrated(vector, self.widening)
+            return vector, 0.0, 0.0
+        return _calibrated(vector, self.widening), self.widening, self.widening
 
     def _law(self, feature_row: DailyObservation) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
         """The predictive law for one row, as `(values, levels)` knots.
@@ -941,17 +1132,18 @@ class FittedGradientBoostedQuantiles:
 
         Under a calibration the residual range moves out with the band, by the
         same widening, so the tail knots stay where the calibrated band puts the
-        law's edges rather than where the in-sample fit did.
+        law's edges rather than where the in-sample fit did. Under
+        `cross_conformal` each tail moves by as much as its own edge did.
         """
 
-        interior = self.predict(feature_row)
+        interior, down, up = self._reported(feature_row)
         anchor = interior[self.levels.index(_MEDIAN_LEVEL)]
         pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
         bottom = anchor + self._residuals[0]
         top = anchor + self._residuals[-1]
-        if self.widening:
-            bottom -= self.widening
-            top += self.widening
+        if down or up:
+            bottom -= down
+            top += up
         low = bottom if bottom < interior[0] else interior[0] - pad
         high = top if top > interior[-1] else interior[-1] + pad
         return (low,) + interior + (high,), (0.0,) + self.levels + (1.0,)
@@ -1046,6 +1238,138 @@ def _exceedance_from_law(
     return 1.0 - level
 
 
+def _training_design(
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    spreads: Sequence[Optional[float]],
+    garch_spreads: Sequence[Optional[float]],
+    origins: Sequence[int],
+    names: Tuple[str, ...],
+    lags: int,
+    volatility_feature: Optional[str],
+    label: str,
+) -> Tuple[
+    Mapping[str, float],
+    Optional[Tuple[float, float, float]],
+    Optional[float],
+    List[List[float]],
+    List[float],
+    List[float],
+]:
+    """One fit's imputations, GARCH, design and targets, over the pairs at `origins`.
+
+    `origins` are frame positions `p` whose one-step pair `(p, p + 1)` trains;
+    every one is at least `lags`. `spreads` is what the training lags and
+    variances are read off -- the frame's own, or, for an excluding model, the
+    frame's with every row it may not train on made a hole -- and
+    `garch_spreads` what the GARCH is fitted on. The one spelling the full fit,
+    the split-conformal fit and every excluding model share: two spellings of
+    one design is how two models stop being comparable.
+
+    Returns `(imputations, garch_parameters, garch_initial_variance, design,
+    targets, variances)`, `variances` being the recursion filtered over
+    `spreads` (empty without the volatility feature).
+    """
+
+    change_names = _spread_change_names(lags)
+
+    # The GARCH(1,1), fitted on `garch_spreads` and nothing after them, then
+    # filtered over `spreads` with those parameters: rows it did not fit on are
+    # run through the recursion, never fitted on. `variances[p]` reads rows at
+    # or before `p`.
+    garch: Optional[Tuple[float, float, float]] = None
+    initial: Optional[float] = None
+    variances: List[float] = []
+    if volatility_feature is not None:
+        garch, initial = _fit_garch11(garch_spreads, label)
+        variances = _garch_variances(_squared_changes(spreads), garch, initial)
+
+    # The imputation is fitted on the origins and only these -- contract test
+    # 3's "recomputed on a training window alone", the same rows `fit_arx` uses.
+    changes = [
+        _spread_changes(spreads, position, lags, f"training row for {dates[position]}")
+        for position in origins
+    ]
+    if lags and not any(None not in row_changes for row_changes in changes):
+        raise ValueError(
+            f"spread_change_lags {lags} leaves no training row with every lag "
+            f"defined: none of the {len(changes)} training rows of the {label} "
+            f"with {lags} rows before them observes all {lags}. A lag imputed "
+            f"on every design row is a column of training means, not a regressor"
+        )
+    observed: Mapping[str, List[float]] = {name: [] for name in names + change_names}
+    for row_changes in changes:
+        for name, change in zip(change_names, row_changes):
+            if change is not None:
+                observed[name].append(change)
+    for position in origins:
+        for name in names:
+            value = _raw_regressor(rows[position], name, "training row")
+            if value is not None:
+                observed[name].append(value)
+
+    imputations = {}
+    for name in names:
+        seen = observed[name]
+        if not seen:
+            raise ValueError(
+                f"regressor {name!r} is unobserved on every row of the training "
+                f"window ({dates[origins[0]]}..{dates[origins[-1]]}); there is "
+                f"nothing to fit an imputation from, and filling it with 0.0 would "
+                f"be the coercion contract test 5 prohibits"
+            )
+        imputations[name] = sum(seen) / len(seen)
+    for name in change_names:
+        seen = observed[name]
+        imputations[name] = sum(seen) / len(seen)
+
+    design = []
+    targets = []
+    for position, row_changes in zip(origins, changes):
+        # The origin's variance, `position`: the target row's would read the
+        # change into the target.
+        design.append(
+            _design(
+                rows[position],
+                names,
+                imputations,
+                "training row",
+                row_changes,
+                variances[position] if variances else None,
+            )
+        )
+        targets.append(float(rows[position + 1].spread_bps))
+    return imputations, garch, initial, design, targets, variances
+
+
+def _fitted_levels(
+    estimator_class: Any,
+    grid: Sequence[float],
+    design: Sequence[Sequence[float]],
+    targets: Sequence[float],
+    random_state: int,
+    min_samples_leaf: int,
+) -> List[Any]:
+    """One estimator per level, fitted on `design` and `targets`, in level order."""
+
+    estimators = []
+    for level in grid:
+        estimator = estimator_class(
+            loss="quantile",
+            quantile=level,
+            # Both explicit, both load-bearing. See the module docstring: the
+            # `"auto"` default turns early stopping on above 10 000 rows and
+            # draws a validation split, so a model that is reproducible on a
+            # fixture stops being reproducible on a panel.
+            early_stopping=False,
+            random_state=random_state,
+            min_samples_leaf=min_samples_leaf,
+        )
+        estimator.fit(design, targets)
+        estimators.append(estimator)
+    return estimators
+
+
 def fit_gradient_boosted_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
@@ -1059,6 +1383,7 @@ def fit_gradient_boosted_quantiles(
     purge_days: Optional[int] = None,
     spread_change_lags: Optional[int] = None,
     volatility_feature: Optional[str] = None,
+    calibration_folds: Optional[int] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -1081,20 +1406,23 @@ def fit_gradient_boosted_quantiles(
             all, not as a tuned value --- tuning is not this block's.
         calibration: one of `CALIBRATIONS`. `"none"`, the default, fits every
             row and reports the band as fitted; `"conformal"` holds out the
-            most recent rows and widens the band by their conformal score. See
-            the module docstring.
+            most recent rows and widens the band by their conformal score;
+            `"cross_conformal"` reports the full fit and moves its band to
+            CV+'s edges over `calibration_folds` purged date blocks. See the
+            module docstring.
         calibration_share: the share of the frame held out as calibration rows,
             strictly inside `(0, 1)`. `None` means `DEFAULT_CALIBRATION_SHARE`
             under `conformal`, and is the only value `none` accepts: a share
             handed to a model that holds nothing out would be read as a setting
             that took effect.
         purge_days: the registry-derived gap, in calendar days, between the
-            last fit row and the first calibration row. Passed by the fold loop
-            (`baseline._fit_at_origin`), which sized it from the declaration,
-            and never chosen here. Required under `conformal`, by
-            `splits.require_purge_days`: a calibration split with a defaulted
-            gap is the silent zero the splitter exists to refuse. Read by
-            nothing under `none`, which splits nothing.
+            last fit row and the first calibration row -- and, under
+            `cross_conformal`, on both sides of every held-out block. Passed
+            by the fold loop (`baseline._fit_at_origin`), which sized it from
+            the declaration, and never chosen here. Required under both
+            calibrations, by `splits.require_purge_days`: a calibration split
+            with a defaulted gap is the silent zero the splitter exists to
+            refuse. Read by nothing under `none`, which splits nothing.
         spread_change_lags: how many lagged spread changes the design carries,
             at least 1. `None`, the default, carries none and is the model every
             published gbm record was produced with. See the module docstring.
@@ -1103,6 +1431,12 @@ def fit_gradient_boosted_quantiles(
             published gbm record was produced with. `"garch11"` fits a
             GARCH(1,1) on the fit rows' spread changes and adds its one-step
             conditional variance. See the module docstring.
+        calibration_folds: the contiguous date blocks `cross_conformal` splits
+            the frame into, an int of at least 2. `None` means
+            `DEFAULT_CALIBRATION_FOLDS` under `cross_conformal`, and is the
+            only value the other calibrations accept, for `calibration_share`'s
+            reason; `calibration_share` is refused under `cross_conformal` by
+            the same rule.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -1114,8 +1448,8 @@ def fit_gradient_boosted_quantiles(
         MissingMLExtraError: if the optional `ml` extra is not installed.
         LookAheadError: if any training row is dated after `cutoff`.
         SplitError: if the frame is not strictly ascending by date, or if
-            `calibration="conformal"` is given no `purge_days` (or a
-            `purge_days` that is not a non-negative int).
+            `calibration="conformal"` or `"cross_conformal"` is given no
+            `purge_days` (or a `purge_days` that is not a non-negative int).
         MissingRegressorError: if a training row does not carry a declared
             regressor.
         MetricError: if a declared level is outside `(0, 1)`, or the grid is not
@@ -1129,7 +1463,13 @@ def fit_gradient_boosted_quantiles(
             is not one of `CALIBRATIONS`, if `calibration_share` is outside
             `(0, 1)` or is given to `none`, if the calibration slice holds
             fewer rows than the conformal quantile needs to be finite, or if
-            the purge leaves fewer than two fit rows; and, for the lags, if
+            the purge leaves fewer than two fit rows; and, for the
+            cross-conformal calibration, if `calibration_folds` is not an int
+            of at least 2 or is given to another calibration, if
+            `calibration_share` is given to it, if a block holds out no row or
+            leaves its excluding model no training pair after the purge, or if
+            fewer held-out rows are scored than CV+'s ranks need; and, for the
+            lags, if
             `spread_change_lags` is not an int of at least 1, if it leaves no
             training row with every lag defined, or if a calibration row's
             feature row has fewer rows than that before it; and, for the
@@ -1158,6 +1498,14 @@ def fit_gradient_boosted_quantiles(
             f"would publish the in-sample band under a record that asked for "
             f"another"
         )
+    if calibration_folds is not None and calibration != "cross_conformal":
+        raise ValueError(
+            f"calibration_folds {calibration_folds} was given, but calibration "
+            f"{calibration!r} splits the frame into no blocks; only "
+            f"'cross_conformal' does. A setting that is accepted and ignored is "
+            f"read by the next person as a setting that took effect"
+        )
+    folds: Optional[int] = None
     if calibration == "none":
         if calibration_share is not None:
             raise ValueError(
@@ -1167,6 +1515,26 @@ def fit_gradient_boosted_quantiles(
                 f"that took effect"
             )
         share: Optional[float] = None
+    elif calibration == "cross_conformal":
+        if calibration_share is not None:
+            raise ValueError(
+                f"calibration_share {calibration_share} was given, but "
+                f"calibration 'cross_conformal' holds out every row in turn, "
+                f"not a share of them; its setting is calibration_folds. A "
+                f"setting that is accepted and ignored is read by the next "
+                f"person as a setting that took effect"
+            )
+        share = None
+        folds = (
+            DEFAULT_CALIBRATION_FOLDS if calibration_folds is None else calibration_folds
+        )
+        if isinstance(folds, bool) or not isinstance(folds, int) or folds < 2:
+            raise ValueError(
+                f"calibration_folds must be an int of at least 2, got {folds!r}; "
+                f"one block holds out the whole frame and leaves its excluding "
+                f"model nothing to fit on"
+            )
+        require_purge_days(purge_days)
     else:
         share = (
             DEFAULT_CALIBRATION_SHARE
@@ -1198,7 +1566,6 @@ def fit_gradient_boosted_quantiles(
             f"and a model with no lags is spelled by leaving the setting out"
         )
     lags = spread_change_lags or 0
-    change_names = _spread_change_names(lags)
 
     if volatility_feature is not None and volatility_feature not in VOLATILITY_FEATURES:
         raise ValueError(
@@ -1282,76 +1649,138 @@ def fit_gradient_boosted_quantiles(
         else []
     )
 
-    # The GARCH(1,1), fitted on the fit rows' spreads and nothing after them,
-    # then filtered over the whole frame with those parameters: the calibration
-    # rows are run through the recursion, never fitted on. `variances[p]` reads
-    # rows at or before `p`.
-    garch: Optional[Tuple[float, float, float]] = None
-    initial: Optional[float] = None
-    variances: List[float] = []
-    if volatility_feature is not None:
-        garch, initial = _fit_garch11(spreads[: len(fit_rows)], "fit rows")
-        variances = _garch_variances(_squared_changes(spreads), garch, initial)
-
     # The origins: every fit row that has a successor among the fit rows, less
-    # the first `lags`, whose changes would reach before the frame. These, and
-    # only these, are what the imputation is fitted on -- contract test 3's
-    # "recomputed on a training window alone", the same rows `fit_arx` uses.
-    origins = fit_rows[lags:-1]
-    changes = [
-        _spread_changes(spreads, position, lags, f"training row for {dates[position]}")
-        for position in range(lags, len(fit_rows) - 1)
-    ]
-    if lags and not any(None not in row_changes for row_changes in changes):
-        raise ValueError(
-            f"spread_change_lags {lags} leaves no training row with every lag "
-            f"defined: of {len(fit_rows)} fit rows the first {lags} only start "
-            f"changes, and none of the {len(changes)} after them observes all "
-            f"{lags}. A lag imputed on every design row is a column of training "
-            f"means, not a regressor"
-        )
-    observed: Mapping[str, List[float]] = {name: [] for name in names + change_names}
-    for row_changes in changes:
-        for name, change in zip(change_names, row_changes):
-            if change is not None:
-                observed[name].append(change)
-    for row in origins:
-        for name in names:
-            value = _raw_regressor(row, name, "training row")
-            if value is not None:
-                observed[name].append(value)
+    # the first `lags`, whose changes would reach before the frame. The GARCH is
+    # fitted on the fit rows' spreads and filtered over the whole frame, so the
+    # calibration rows are run through the recursion, never fitted on.
+    imputations, garch, initial, design, targets, variances = _training_design(
+        rows,
+        dates,
+        spreads,
+        spreads[: len(fit_rows)],
+        range(lags, len(fit_rows) - 1),
+        names,
+        lags,
+        volatility_feature,
+        "fit rows",
+    )
 
-    imputations = {}
-    for name in names:
-        seen = observed[name]
-        if not seen:
+    # The cross-conformal blocks, planned and designed before anything is
+    # fitted: every refusal about them is a statement about the frame. Blocks
+    # are contiguous runs of the frame's rows in date order, never shuffled.
+    plans = []
+    if folds is not None:
+        bounds = [len(rows) * number // folds for number in range(folds + 1)]
+        for number in range(folds):
+            start, stop = bounds[number], bounds[number + 1]
+            kept: List[bool] = []
+            origins: List[int] = []
+            if start < stop:
+                opens, closes = dates[start], dates[stop - 1]
+                # A row before the block trains only if it clears the gap
+                # before the block opens; a row after it only if the block's
+                # last row clears the gap before that row. The splitter's own
+                # comparison, in both directions.
+                kept = [
+                    clears_purge(when, opens, purge_days)
+                    if position < start
+                    else position >= stop and clears_purge(closes, when, purge_days)
+                    for position, when in enumerate(dates)
+                ]
+                # A pair trains only if its origin and its target both do.
+                origins = [
+                    position
+                    for position in range(lags, len(rows) - 1)
+                    if kept[position] and kept[position + 1]
+                ]
+            if not origins:
+                raise ValueError(
+                    f"cross-conformal block {number + 1} of {folds} holds out "
+                    f"{stop - start} of {len(rows)} rows and leaves its excluding "
+                    f"model {len(origins)} training pair(s) after a "
+                    f"{purge_days}-day purge on both sides; a gbm fit needs its "
+                    f"block to hold out at least one row, and at least one "
+                    f"origin with its successor to fit on"
+                )
+            # The rows this model may not train on are holes to it, so no lag
+            # and no variance in its design reads one.
+            masked = [
+                spread if keep else None for spread, keep in zip(spreads, kept)
+            ]
+            label = f"training rows of cross-conformal block {number + 1} of {folds}"
+            (
+                block_imputations,
+                block_garch,
+                block_initial,
+                block_design,
+                block_targets,
+                _,
+            ) = _training_design(
+                rows, dates, masked, masked, origins, names, lags, volatility_feature, label
+            )
+            # Its scored rows' inputs are every row at or before their feature
+            # row, as a forecast's are; only what the model learned is its own.
+            filtered = (
+                _garch_variances(_squared_changes(spreads), block_garch, block_initial)
+                if volatility_feature is not None
+                else []
+            )
+            held_out = []
+            for index in range(start, stop):
+                # No row of the frame clears the gap before this one, or its
+                # feature row has too few rows before it for its lags: there is
+                # no forecast of it to score.
+                if not clears_purge(dates[0], dates[index], purge_days):
+                    continue
+                # `_feature_index` on the tail, for the reason the conformal
+                # calibration rows below give.
+                tail = range(max(0, index - purge_days - 1), index)
+                position = _feature_index(dates, tail, index, purge_days)
+                if position < lags:
+                    continue
+                held_out.append(
+                    (
+                        _design(
+                            rows[position],
+                            names,
+                            block_imputations,
+                            "held-out feature row",
+                            _spread_changes(
+                                spreads,
+                                position,
+                                lags,
+                                f"held-out feature row for {dates[position]}",
+                            ),
+                            filtered[position] if filtered else None,
+                        ),
+                        float(rows[index].spread_bps),
+                        dates[index],
+                    )
+                )
+            plans.append(
+                (
+                    start,
+                    stop,
+                    origins,
+                    block_imputations,
+                    block_garch,
+                    block_initial,
+                    block_design,
+                    block_targets,
+                    held_out,
+                )
+            )
+        count = sum(len(plan[-1]) for plan in plans)
+        needed = _minimum_calibration_rows(grid)
+        if count < needed:
             raise ValueError(
-                f"regressor {name!r} is unobserved on every row of the training "
-                f"window ({origins[0].date}..{origins[-1].date}); there is nothing "
-                f"to fit an imputation from, and filling it with 0.0 would be the "
-                f"coercion contract test 5 prohibits"
+                f"cross-conformal calibration needs at least {needed} held-out "
+                f"scores, got {count} over {folds} blocks of {len(rows)} training "
+                f"rows; below {needed} CV+'s ranks for a "
+                f"{float(_band_probability(grid))} band name no score, and a band "
+                f"read off an index that wrapped would claim a coverage the "
+                f"calibration cannot support"
             )
-        imputations[name] = sum(seen) / len(seen)
-    for name in change_names:
-        seen = observed[name]
-        imputations[name] = sum(seen) / len(seen)
-
-    design = []
-    targets = []
-    for index in range(lags + 1, len(fit_rows)):
-        # The origin's variance, `index - 1`: the target row's would read the
-        # change into the target.
-        design.append(
-            _design(
-                fit_rows[index - 1],
-                names,
-                imputations,
-                "training row",
-                changes[index - 1 - lags],
-                variances[index - 1] if variances else None,
-            )
-        )
-        targets.append(float(fit_rows[index].spread_bps))
 
     # Imported here rather than at the top of the function: every refusal
     # above is a statement about the arguments and is owed to a caller whether
@@ -1361,21 +1790,9 @@ def fit_gradient_boosted_quantiles(
     # versions a record publishes are those of the modules that did the fitting.
     versions = _library_versions()
 
-    estimators = []
-    for level in grid:
-        estimator = estimator_class(
-            loss="quantile",
-            quantile=level,
-            # Both explicit, both load-bearing. See the module docstring: the
-            # `"auto"` default turns early stopping on above 10 000 rows and
-            # draws a validation split, so a model that is reproducible on a
-            # fixture stops being reproducible on a panel.
-            early_stopping=False,
-            random_state=random_state,
-            min_samples_leaf=min_samples_leaf,
-        )
-        estimator.fit(design, targets)
-        estimators.append(estimator)
+    estimators = _fitted_levels(
+        estimator_class, grid, design, targets, random_state, min_samples_leaf
+    )
 
     # The residual sample, about this model's own rearranged median rather than
     # about the 0.50 fit: the two differ exactly on the rows where that fit
@@ -1430,6 +1847,60 @@ def fit_gradient_boosted_quantiles(
         rank = math.ceil(_band_probability(grid) * (len(scores) + 1))
         widening = scores[rank - 1]
 
+    # The excluding models: each fitted on its own design, and each held-out
+    # row scored by its own block's model and no other.
+    blocks = []
+    for (
+        start,
+        stop,
+        origins,
+        block_imputations,
+        block_garch,
+        block_initial,
+        block_design,
+        block_targets,
+        held_out,
+    ) in plans:
+        block_estimators = _fitted_levels(
+            estimator_class,
+            grid,
+            block_design,
+            block_targets,
+            random_state,
+            min_samples_leaf,
+        )
+        vectors = (
+            _rearranged(block_estimators, [features for features, _, _ in held_out])
+            if held_out
+            else ()
+        )
+        blocks.append(
+            _ExcludingModel(
+                estimators=block_estimators,
+                imputations=block_imputations,
+                garch_parameters=block_garch,
+                garch_initial_variance=block_initial,
+                held_out_start=dates[start],
+                held_out_end=dates[stop - 1],
+                training_dates=sorted(
+                    {dates[p] for origin in origins for p in (origin, origin + 1)}
+                ),
+                scored_dates=[when for _, _, when in held_out],
+                scores=[
+                    max(vector[0] - target, target - vector[-1])
+                    for vector, (_, target, _) in zip(vectors, held_out)
+                ],
+            )
+        )
+    held_out_dates = [when for block in blocks for when in block.scored_dates]
+    if calibration_rows:
+        calibration_start: Optional[date] = calibration_rows[0].date
+        calibration_end: Optional[date] = calibration_rows[-1].date
+    elif held_out_dates:
+        calibration_start, calibration_end = held_out_dates[0], held_out_dates[-1]
+    else:
+        calibration_start = calibration_end = None
+
     return FittedGradientBoostedQuantiles(
         estimators,
         names,
@@ -1443,13 +1914,15 @@ def fit_gradient_boosted_quantiles(
         calibration_share=share,
         widening=widening,
         fit_end=fit_rows[-1].date,
-        calibration_start=calibration_rows[0].date if calibration_rows else None,
-        calibration_end=calibration_rows[-1].date if calibration_rows else None,
+        calibration_start=calibration_start,
+        calibration_end=calibration_end,
         spread_change_lags=spread_change_lags,
         history=tuple(zip(dates, spreads)),
         volatility_feature=volatility_feature,
         garch_parameters=garch,
         garch_initial_variance=initial,
+        calibration_folds=folds,
+        calibration_blocks=blocks,
     )
 
 
