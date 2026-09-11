@@ -51,6 +51,11 @@ What is covered here
   interior is the full fit's bit for bit, every excluding model trains only
   outside its block and the purge gaps around it and scores only its own
   block, and the refusals.
+* `GradientBoostedArxFeatureTests` -- `arx_feature="declared"`: the column is
+  `baseline.fit_arx`'s own one-step forecast, fitted per fold on the fit rows,
+  read from rows at or before its row, never refitted on calibration rows,
+  fitted apart for every cross-conformal block, named in the declaration, and
+  its refusals.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -2060,6 +2065,599 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
         with self.subTest("refusal: cross_conformal with no gap"):
             with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
                 self.fit(rows[:40], calibration="cross_conformal")
+
+
+def arx_frame(count, seed=20260911):
+    """Weekday rows whose next spread is linear in today's spread and both regressors.
+
+    `s_(t+1) = 1 + 0.6 s_t + 0.08 on_rrp_t - 0.004 (sofr_volume_t - 2200) + e_t`,
+    with `e_t`'s scale growing in `on_rrp_t`. The ARX's forecast is then a
+    better single predictor of the target than any one column the design
+    already carries, so a tree has a reason to split on it -- which the test
+    asserts on each frame it relies on rather than assuming it.
+    """
+
+    rng = random.Random(seed)
+    shocks = standard_normals(random.Random(seed + 1))
+    rows, spread = [], 5.0
+    for when in business_days(date(2020, 1, 1), count):
+        on_rrp = 100.0 * rng.random()
+        volume = 2000.0 + 400.0 * rng.random()
+        rows.append(
+            DailyObservation(
+                when,
+                {
+                    "sofr": 4.30 + spread / 100.0,
+                    "iorb": 4.30,
+                    "on_rrp": on_rrp,
+                    "sofr_volume": volume,
+                },
+            )
+        )
+        spread = (
+            1.0
+            + 0.6 * spread
+            + 0.08 * on_rrp
+            - 0.004 * (volume - 2200.0)
+            + (1.0 + 0.02 * on_rrp) * next(shocks)
+        )
+    return rows
+
+
+class GradientBoostedArxFeatureTests(unittest.TestCase):
+    """`arx_feature="declared"`: B26's acceptance criterion and its mutation target.
+
+    **The traps.** An ARX fitted once on the panel (every fold then reads
+    coefficients estimated on its own future); a training row's column read
+    from its successor, which is its target; a second ARX fitter, subtly
+    different from the one `--model arx` runs; calibration rows scored with an
+    ARX refitted on them; and cross-conformal block models lent the full fit's
+    ARX, which saw their held-out block.
+
+    **What the leakage probe can and cannot see.** As B23 and B24 found, the
+    probe -- every row after the feature date changed, forecast and ARX
+    coefficients bit-identical -- holds by construction: the fold loop hands
+    the fitter a frame that ends at the feature row. The leak that remains is
+    inside the training design, so the gbm is fitted a second time with the
+    column computed *here*, off `baseline.fit_arx`, declared as an ordinary
+    regressor: the two must agree bit for bit, residual sample included. On
+    `DESIGN_ROWS` rows, with two controls: the gbm without the column is a
+    different model (the trees split on it), and the column carried one row
+    late is a different model again (a shifted design would be seen).
+
+    **What a training row shares with its target.** The coefficients, fitted
+    on pairs that include it: the in-sample property the GARCH parameters and
+    every imputation mean already have, and the one the brief asks for ("fit
+    the ARX on the fold's fit rows only"). The column reads nothing after its
+    row; the coefficients are the fit rows'.
+
+    **Why `fit_arx` grew `origins`.** A middle cross-conformal block's
+    excluding model trains on the rows either side of the block. Handed those
+    rows as one frame, `fit_arx` regresses the first row after the block on the
+    last row before it -- a pair weeks apart, read as one step, which is a
+    subtly different ARX from the full fit's. The subtest shows it is:
+    `fit_arx` on the kept rows as one frame differs from the block's ARX for a
+    middle block, and equals it for the first, which has no rows before it.
+
+    Mutation record (B26)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` (the worktree's `.venv`: CPython
+    3.9.6, numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src` (checked to
+    resolve to each sub-copy), `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`,
+    whole suite per run. Unmutated control green before and after, zero
+    `expectedFailure`; each anchor found exactly once and confirmed applied by
+    diff. Every failure below is `AssertionError` unless named otherwise.
+
+      * **ARX fitted on all frame rows including the scored row** -- the fold
+        loop hands the fitter `rows[: index + 1]` in place of the purged
+        training rows (`baseline.rolling_persistence_backtest`), B24's
+        mutation: the fitter is handed a frame and never a panel, so this is
+        the only door a whole-panel fit has. `leakage`: the ARX state and the
+        forecast move when only rows after the feature date change.
+        Twenty-six other failures across `test_baseline`, `test_contract`,
+        `test_generated_results` and the earlier gbm classes, because the frame
+        is every model's.
+      * **The forecast shifted one row forward** -- a training row's column is
+        the ARX forecast from its successor (`_training_design`). `leakage`
+        (the residual sample against the column declared here) and the
+        calibration subtest (the widening against the same reference). This
+        test and nothing else.
+      * **Calibration rows refitted** -- the ARX fitted on the whole frame
+        under `conformal`. The calibration subtest (the ARX is not the fit
+        rows'), and `refusal: too few fit rows for the ARX`, `ValueError not
+        raised`: handed the frame's 38 rows, the ARX clears its minimum. This
+        test and nothing else.
+      * **The full fit's ARX reused by every cross-conformal block model** --
+        each block's ARX fitted on the fit rows rather than on its own training
+        pairs. Every block of the cross-conformal subtest (the block's ARX is
+        not `fit_arx` at its own origins), and the behavioural probe (a row
+        inside the gap before the block moved the block's ARX). This test and
+        nothing else. **Found on the first run:** the CV+ edge check collected
+        its inputs after the per-block assertions, so a failing block left
+        them empty and the check died on an `IndexError`, an error that said
+        nothing about the defect; the inputs are now collected first and the
+        whole record was re-run on the final test.
+      * **Each refusal removed**, separately:
+          - an unknown value: `ValueError not raised` -- `spread_only` fitted
+            as today's gbm under a declaration naming an ARX. This test alone;
+          - the setting on a model other than gbm (`cli_eval._arx_feature`):
+            `SplitError not raised`. This test alone;
+          - too few fit rows for the ARX -- `fit_arx`'s own minimum deleted:
+            `ValueError not raised`, and
+            `test_baseline.ArxExceedanceTests::test_a_training_frame_below_the_minimum_is_refused`,
+            the same refusal reached through the ARX's exceedance interface.
+
+    **Runtime, measured** on this interpreter: `fit_arx` is its leave-one-out
+    law as well as its coefficients, `n` solves per fit, 0.005 s at 83 rows,
+    0.15 s at 500 and 2.6 s at 2100 on this fixture. This test runs in about
+    twenty-five seconds.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PANEL_ROWS = 100
+    MINIMUM_HISTORY = 90
+    PURGE = 6
+    DESIGN_ROWS = 240
+    CALIBRATION_ROWS = 120
+    CROSS_ROWS = 100
+    #: A middle block, with a purge gap on both sides and rows on both sides.
+    PROBE_BLOCK = 2
+    SHIFT_BPS = 25.0
+
+    def setUp(self):
+        require_extra(self)
+        with tempfile.TemporaryDirectory() as directory:
+            self.registry = json.loads(
+                declared_registry_file(
+                    directory, purge=self.PURGE, features=self.FEATURES
+                ).read_text(encoding="utf-8")
+            )
+
+    def fit(self, frame, regressors=None, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(
+            frame, self.REGRESSORS if regressors is None else regressors, **options
+        )
+
+    def backtest(self, panel, **settings):
+        """The rolling fold loop over `panel`, and every frame and model it fitted."""
+
+        frames, fits = [], []
+
+        def fitter(train_frame, minimum_history, purge_days):
+            model = self.fit(
+                train_frame,
+                minimum_history=minimum_history,
+                purge_days=purge_days,
+                **settings,
+            )
+            frames.append(list(train_frame))
+            fits.append(model)
+            return model
+
+        report = baseline.rolling_persistence_backtest(
+            panel,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=fitter,
+        )
+        return report, frames, fits
+
+    @staticmethod
+    def arx_state(arx):
+        """Everything an ARX fitted: coefficients, imputations, residual sample."""
+
+        return arx.coefficients, dict(arx.imputations), arx.residuals
+
+    def design(self, row, arx):
+        """A row as the design reads it, built here: spread, regressors, the ARX forecast."""
+
+        return (
+            [float(row.spread_bps)]
+            + [float(row.values[name]) for name in self.REGRESSORS]
+            + [arx.point_forecast(row)]
+        )
+
+    @staticmethod
+    def sorted_levels(estimators, design):
+        return sorted(float(estimator.predict([design])[0]) for estimator in estimators)
+
+    def test_the_arx_forecast_is_fitted_per_fold_on_rows_at_or_before_the_feature_date(self):
+        """One fitter, leakage, per fold, calibration, cross-conformal, the declaration, refusals.
+
+        One criterion: an ARX forecast fitted on the wrong rows, read one row
+        late, refitted on the rows it is calibrated against, lent to a block
+        model that may not see its block, unnamed in the record, or produced by
+        a second fitter is a column that is not the ARX's forecast from what
+        was known on the day.
+        """
+
+        panel = arx_frame(self.PANEL_ROWS)
+        dates = [row.date for row in panel]
+        report, frames, fits = self.backtest(panel, arx_feature="declared")
+        fold = report.folds[0]
+        feature = dates.index(fold.feature_date)
+
+        calibration_frame = arx_frame(self.CALIBRATION_ROWS)
+        calibrated = self.fit(
+            calibration_frame,
+            arx_feature="declared",
+            calibration="conformal",
+            purge_days=0,
+        )
+        cross_frame = arx_frame(self.CROSS_ROWS)
+        cross = self.fit(
+            cross_frame,
+            arx_feature="declared",
+            calibration="cross_conformal",
+            purge_days=self.PURGE,
+        )
+
+        with self.subTest("the feature is baseline's own ARX one-step forecast"):
+            for frame, model in (
+                (frames[0], fits[0]),
+                (frames[-1], fits[-1]),
+            ):
+                own = baseline.fit_arx(frame, self.REGRESSORS)
+                self.assertIsInstance(model.arx, baseline.FittedArx)
+                self.assertEqual(self.arx_state(model.arx), self.arx_state(own))
+                self.assertEqual(
+                    [model.design_row(row)[-1] for row in frame],
+                    [own.point_forecast(row) for row in frame],
+                    msg="the column is not fit_arx's own point forecast at each row",
+                )
+
+        with self.subTest("leakage"):
+            self.assertGreater(
+                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            )
+            later = panel[: feature + 1] + [
+                with_spread_shifted(row, self.SHIFT_BPS) for row in panel[feature + 1 :]
+            ]
+            again, _, again_fits = self.backtest(later, arx_feature="declared")
+            self.assertEqual(again.folds[0], fold)
+            self.assertEqual(
+                (
+                    self.arx_state(again_fits[0].arx),
+                    again.forecasts[0].predicted_bps,
+                    again.forecasts[0].quantiles_bps,
+                ),
+                (
+                    self.arx_state(fits[0].arx),
+                    report.forecasts[0].predicted_bps,
+                    report.forecasts[0].quantiles_bps,
+                ),
+                msg=f"the fold from {fold.feature_date} moved when only later rows changed",
+            )
+            back = (
+                panel[: feature - 1]
+                + [with_spread_shifted(panel[feature - 1], self.SHIFT_BPS)]
+                + panel[feature:]
+            )
+            moved, _, moved_fits = self.backtest(back, arx_feature="declared")
+            self.assertNotEqual(moved_fits[0].arx.coefficients, fits[0].arx.coefficients)
+            self.assertNotEqual(
+                moved.forecasts[0].quantiles_bps, report.forecasts[0].quantiles_bps
+            )
+
+            # Inside the design: the gbm with the column computed here and
+            # declared as an ordinary regressor is the same model, down to the
+            # residual sample every training design row contributes to.
+            rows = arx_frame(self.DESIGN_ROWS)
+            whole = self.fit(rows, arx_feature="declared")
+            expected = [baseline.fit_arx(rows, self.REGRESSORS).point_forecast(row) for row in rows]
+            declared = self.REGRESSORS + ("arx_check",)
+            checked = with_column(rows, "arx_check", expected)
+            reference = self.fit(checked, regressors=declared)
+            self.assertEqual(reference.residuals, whole.residuals)
+            self.assertEqual(reference.predict(checked[-1]), whole.predict(rows[-1]))
+            # The controls. The gbm without the column is a different model on
+            # this frame, so the trees split on it...
+            self.assertNotEqual(
+                self.fit(rows).residuals,
+                whole.residuals,
+                msg="the control: the gbm does not read the ARX column on this frame",
+            )
+            # ...and each row carrying its successor's forecast -- a training
+            # row reading its target's spread -- is a different model again.
+            late = self.fit(
+                with_column(rows, "arx_check", expected[1:] + expected[-1:]),
+                regressors=declared,
+            )
+            self.assertNotEqual(
+                late.residuals,
+                reference.residuals,
+                msg="the control: a column one row late fits the same trees",
+            )
+
+        with self.subTest("per fold"):
+            self.assertGreater(len(fits), 1)
+            self.assertLess(fits[0].cutoff, fits[-1].cutoff)
+            self.assertNotEqual(
+                fits[0].arx.coefficients,
+                fits[-1].arx.coefficients,
+                msg="two folds with different training ends fitted one ARX",
+            )
+            for frame, model in zip(frames, fits):
+                with self.subTest(train_end=frame[-1].date.isoformat()):
+                    self.assertEqual(model.arx.cutoff, frame[-1].date)
+                    self.assertEqual(
+                        self.arx_state(model.arx),
+                        self.arx_state(baseline.fit_arx(frame, self.REGRESSORS)),
+                        msg="the fold's ARX is not the fit on the fold's own rows",
+                    )
+
+        with self.subTest("calibration rows use the fit rows' ARX"):
+            rows = calibration_frame
+            fit_rows = [row for row in rows if row.date <= calibrated.fit_end]
+            self.assertLess(len(fit_rows), len(rows))
+            own = baseline.fit_arx(fit_rows, self.REGRESSORS)
+            refitted = baseline.fit_arx(rows, self.REGRESSORS)
+            self.assertEqual(
+                self.arx_state(calibrated.arx),
+                self.arx_state(own),
+                msg="the ARX was not fitted on the fit rows alone",
+            )
+            self.assertNotEqual(
+                own.coefficients,
+                refitted.coefficients,
+                msg="the fixture: fit rows and frame fit the same ARX",
+            )
+            expected = [own.point_forecast(row) for row in rows]
+            self.assertEqual([calibrated.design_row(row)[-1] for row in rows], expected)
+            # The widening is scored off exactly those forecasts...
+            declared = self.REGRESSORS + ("arx_check",)
+            reference = self.fit(
+                with_column(rows, "arx_check", expected),
+                regressors=declared,
+                calibration="conformal",
+                purge_days=0,
+            )
+            self.assertEqual(reference.widening, calibrated.widening)
+            # ...which the widening does read: the control moves the
+            # calibration rows' column by 25 bp and the widening moves. (An ARX
+            # refitted on the frame forecasts too close to the fit rows' to
+            # move this one order statistic on this fixture, measured; the
+            # coefficient assertion above is what sees a refit.)
+            mixed = expected[: len(fit_rows)] + [
+                value + self.SHIFT_BPS for value in expected[len(fit_rows) :]
+            ]
+            self.assertNotEqual(
+                self.fit(
+                    with_column(rows, "arx_check", mixed),
+                    regressors=declared,
+                    calibration="conformal",
+                    purge_days=0,
+                ).widening,
+                calibrated.widening,
+                msg="the control: the widening does not read the calibration rows' ARX column",
+            )
+
+        with self.subTest("each block model's ARX is fitted without its block and purge gaps"):
+            rows = cross_frame
+            cross_dates = [row.date for row in rows]
+            gap = timedelta(days=self.PURGE)
+            self.assertEqual(
+                self.arx_state(cross.arx), self.arx_state(baseline.fit_arx(rows, self.REGRESSORS))
+            )
+            blocks = cross.calibration_blocks
+            self.assertEqual(len(blocks), ml.DEFAULT_CALIBRATION_FOLDS)
+            full = self.sorted_levels(cross._estimators, self.design(rows[-1], cross.arx))
+            lows, highs = [], []
+            for number, block in enumerate(blocks, start=1):
+                # CV+'s inputs first, so the edge check below does not depend on
+                # every block's assertions passing.
+                excluded = self.sorted_levels(
+                    block.estimators, self.design(rows[-1], block.arx)
+                )
+                lows.extend(excluded[0] - score for score in block.scores)
+                highs.extend(excluded[-1] + score for score in block.scores)
+                with self.subTest(block=number):
+                    kept = [
+                        when + gap < block.held_out_start or block.held_out_end + gap < when
+                        for when in cross_dates
+                    ]
+                    origins = [
+                        p for p in range(len(rows) - 1) if kept[p] and kept[p + 1]
+                    ]
+                    self.assertEqual(
+                        self.arx_state(block.arx),
+                        self.arx_state(
+                            baseline.fit_arx(rows, self.REGRESSORS, origins=origins)
+                        ),
+                        msg=f"block {number}'s ARX is not fit_arx on its own training pairs",
+                    )
+                    self.assertNotEqual(block.arx.coefficients, cross.arx.coefficients)
+                    one_frame = baseline.fit_arx(
+                        [row for row, keep in zip(rows, kept) if keep], self.REGRESSORS
+                    )
+                    if number == 1:
+                        # No rows before the block: its training rows are one
+                        # run, and fit_arx on them as a frame is the same ARX.
+                        self.assertEqual(self.arx_state(block.arx), self.arx_state(one_frame))
+                    elif number == self.PROBE_BLOCK + 1:
+                        self.assertNotEqual(
+                            block.arx.coefficients,
+                            one_frame.coefficients,
+                            msg="a pair spanning the block changes nothing on this fixture",
+                        )
+                    # Every held-out score is this block's estimators read at a
+                    # design carrying this block's ARX forecast.
+                    rescored = []
+                    for when in block.scored_dates:
+                        index = cross_dates.index(when)
+                        position = max(
+                            p for p in range(index) if cross_dates[p] + gap < when
+                        )
+                        levels = self.sorted_levels(
+                            block.estimators, self.design(rows[position], block.arx)
+                        )
+                        target = rows[index].spread_bps
+                        rescored.append(max(levels[0] - target, target - levels[-1]))
+                    self.assertEqual(list(block.scores), rescored)
+            # A forecast reads every block's own ARX for CV+'s edges.
+            q = Fraction("0.95") - Fraction("0.05")
+            count = len(lows)
+            reported = cross.predict(rows[-1])
+            self.assertEqual(
+                (reported[0], reported[-1]),
+                (
+                    min(sorted(lows)[math.floor((1 - q) * (count + 1)) - 1], full[1]),
+                    max(sorted(highs)[math.ceil(q * (count + 1)) - 1], full[-2]),
+                ),
+            )
+
+            # By behaviour: a row the probe block's model may not train on
+            # leaves its ARX bit-identical, and moves the full fit's.
+            block = blocks[self.PROBE_BLOCK]
+            start = cross_dates.index(block.held_out_start)
+            stop = cross_dates.index(block.held_out_end)
+
+            def moved(position):
+                shifted = list(rows)
+                shifted[position] = with_spread_shifted(rows[position], self.SHIFT_BPS)
+                return self.fit(
+                    shifted,
+                    arx_feature="declared",
+                    calibration="cross_conformal",
+                    purge_days=self.PURGE,
+                )
+
+            for label, position in (
+                ("inside the gap before the block", start - 1),
+                ("inside the block", start + 1),
+                ("inside the gap after the block", stop + 1),
+            ):
+                refit = moved(position)
+                self.assertEqual(
+                    self.arx_state(refit.calibration_blocks[self.PROBE_BLOCK].arx),
+                    self.arx_state(block.arx),
+                    msg=f"a row {label} ({cross_dates[position]}) moved the block's ARX",
+                )
+                self.assertNotEqual(
+                    refit.arx.coefficients,
+                    cross.arx.coefficients,
+                    msg=f"the control: the full fit's ARX does not read the row {label}",
+                )
+            clear = stop + 1
+            while not cross_dates[stop] + gap < cross_dates[clear]:
+                clear += 1
+            self.assertNotEqual(
+                moved(clear + 1).calibration_blocks[self.PROBE_BLOCK].arx.coefficients,
+                block.arx.coefficients,
+                msg="the control: a row the block's model trains on moves nothing in its ARX",
+            )
+
+        with self.subTest("the declaration names arx_feature; absent when not set"):
+            self.assertEqual(dict(report.model_settings), {"arx_feature": "declared"})
+            self.assertEqual(
+                dict(baseline._model_settings(calibrated)),
+                {"calibration": "conformal", "calibration_share": 0.25, "arx_feature": "declared"},
+            )
+            self.assertEqual(
+                dict(baseline._model_settings(cross)),
+                {"calibration": "cross_conformal", "calibration_folds": 5, "arx_feature": "declared"},
+            )
+            self.assertEqual(
+                fits[0].design_names, ("spread_bps",) + self.REGRESSORS + ("arx_forecast",)
+            )
+            # Read off spread_bps and the declared regressors; not a panel column.
+            self.assertEqual(fits[0].features_read, ("spread_bps",) + self.REGRESSORS)
+            composed = self.fit(
+                panel[:40],
+                arx_feature="declared",
+                spread_change_lags=2,
+                volatility_feature="garch11",
+            )
+            self.assertEqual(
+                composed.design_names,
+                ("spread_bps",)
+                + self.REGRESSORS
+                + ("spread_change_lag_1", "spread_change_lag_2", "garch11_variance", "arx_forecast"),
+            )
+            self.assertEqual(
+                dict(baseline._model_settings(composed)),
+                {"spread_change_lags": 2, "volatility_feature": "garch11", "arx_feature": "declared"},
+            )
+            plain = self.fit(panel[:30])
+            self.assertEqual(dict(baseline._model_settings(plain)), {})
+            self.assertEqual(plain.design_names, ("spread_bps",) + self.REGRESSORS)
+            self.assertIsNone(plain.arx)
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "on_rrp", "--feature", "spread_bps", "--model", "gbm",
+                 "--arx-feature", "declared"]
+            )
+            _, fitter = cli_eval._select_fitter(backtest)
+            self.assertEqual(
+                fitter.keywords, {"regressors": ("on_rrp",), "arx_feature": "declared"}
+            )
+
+        with self.subTest("refusal: an unknown value"):
+            with self.assertRaisesRegex(ValueError, r"unknown arx_feature 'spread_only'"):
+                self.fit(panel[:40], arx_feature="spread_only")
+
+        with self.subTest("refusal: the setting on a model other than gbm"):
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "on_rrp", "--feature", "spread_bps", "--model", "arx",
+                 "--arx-feature", "declared"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--arx-feature declared was given, but --model arx"
+            ):
+                cli_eval._select_fitter(backtest)
+            compare = parser.parse_args(
+                ["compare", "panel.csv", *common, "--report", "r.json",
+                 "--model-a", "persistence", "--feature-a", "spread_bps",
+                 "--arx-feature-a", "declared",
+                 "--model-b", "gbm", "--feature-b", "on_rrp", "--feature-b", "spread_bps",
+                 "--arx-feature-b", "declared", "--calibration-b", "cross_conformal"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--arx-feature-a declared was given, but --model-a persistence"
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(
+                fitter.keywords,
+                {
+                    "regressors": ("on_rrp",),
+                    "calibration": "cross_conformal",
+                    "arx_feature": "declared",
+                },
+            )
+
+        with self.subTest("refusal: too few fit rows for the ARX"):
+            # fit_arx's own minimum, on the fit rows and not the frame: 38 rows
+            # clear gbm's minimum and half of them are held out.
+            with self.assertRaisesRegex(
+                ValueError, r"arx needs at least 20 training rows, got 19"
+            ):
+                self.fit(panel[:38], arx_feature="declared", calibration="conformal",
+                         calibration_share=0.5, purge_days=0)
+            # And twenty is enough: the refusal sits at the edge.
+            edge = self.fit(panel[:40], arx_feature="declared", calibration="conformal",
+                            calibration_share=0.5, purge_days=0)
+            self.assertEqual(edge.arx.cutoff, panel[19].date)
+            with self.assertRaisesRegex(
+                ValueError, r"arx needs at least 20 training rows, got 19"
+            ):
+                self.fit(panel[:19], minimum_history=10, arx_feature="declared")
 
 
 class GradientBoostedForecastInterfaceTests(
