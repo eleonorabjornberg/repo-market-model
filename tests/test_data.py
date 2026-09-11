@@ -3885,6 +3885,284 @@ class TreasurySettlementZeroTests(unittest.TestCase):
                     self.build()
 
 
+class BillRatePanelTests(unittest.TestCase):
+    """The bill-rate panel columns: the coupon-equivalent quote, read a day late.
+
+    Human decision, 11 September 2026 (`docs/DATA_QUALITY_DECISIONS.md`,
+    "Bill-rate panel columns"): `tbill_4w` and `tbill_13w` are the
+    coupon-equivalent yields in percent as Treasury publishes them. Treasury
+    takes the quotations at about 3:30 PM; availability is declared at end of
+    day on the quote date, so a 16:00 decision reads the previous business
+    day's rate. The columns were declared (`contract.FEATURE_FIELDS`) and priced
+    (`metadata/sources.json`) before this class, and no panel-build test said
+    any of it. This is a test block: the behaviour held on the tree it was
+    written against, and nothing under `src/` or `metadata/` changed with it.
+
+    The acceptance criterion and the mutation target are the one test,
+    `test_a_16_00_decision_reads_the_previous_business_days_coupon_equivalent_quote`.
+
+    The fixture is a fortnight of January 2026 in Treasury's own CSV layout,
+    read by `ingest._treasury_bill_rate_rows` against the tracked registry, so
+    `available_at` comes from the registry's `release_lag` and not from this
+    file. The two bases differ on every row. SOFR prints on every weekday, so
+    those are the grid; Wednesday 14 January has no bill-rate line at all.
+
+    **Left out, and why.** The brief asked for one more subtest: a Monday
+    decision reads Friday's quote, "shown through the function that turns a
+    decision date and a purge into the latest readable row", and to leave it
+    out if the repository has none. It has none. The two candidates both take
+    the date the scored window *opens*, not the decision date:
+    `splits.clears_purge(row_date, opens, purge)` is a predicate, and
+    `baseline._feature_index(dates, train_indices, scored_index, purge)` returns
+    the last row with `row_date + purge < dates[scored_index]`. Writing the
+    mapping from a decision date to a scored day here would be writing the
+    function, which the brief forbids.
+
+    A finding for Track B and the human, not closed here. The README's target
+    (`README.md`, "Key findings") is the next business day's `spread_bps`,
+    forecast from what is available at 16:00 on the previous business day. At
+    the one-day purge these columns price, `_feature_index` for a Monday scored
+    day (decided Friday at 16:00) returns Friday's row, whose quote this
+    registry declares available at 23:59 that Friday; for a Wednesday scored day
+    (decided Tuesday) it returns Monday's, as the decision says. The gap is
+    counted to the scored day, so a weekend between decision and scored day
+    counts toward it. The published runs report a six-day purge, and this
+    block did not check whether any run binds on it.
+
+    Treasury's actual publication time for these rates has not been read from
+    Treasury by anyone on this project; the registry note says so, and this
+    test pins the declaration as it stands, not the world.
+
+    Mutation record, 11 September 2026, python3 3.9.6. Every mutation applied in
+    a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, confirmed applied
+    (the replaced text occurs exactly once before and the file differs after),
+    reverted and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time. Unmutated control green before the first and after the
+    last, no expected failure. Every mutation was killed by this test:
+
+    1. **`contract.py` maps `tbill_4w` to `tbill_4w_bank_discount`.** Killed
+       "each carries its ref date's coupon-equivalent quote", `AssertionError:
+       3.61 != 3.68 : 2026-01-05 tbill_4w`, and nothing else in the suite: no
+       other test pins which basis the column reads.
+    2. **The tracked registry's `treasury_bill_rates` `available_time` moved to
+       15:30.** The purge prices to zero and `max_release_lag_days` refuses it,
+       so both columns are refused. Killed "both columns are built"
+       (`AssertionError`, `('sofr',)` against all three), "the purge priced at
+       16:00 is one day" (`RegistryContractError: selected sources must produce
+       a nonzero purge`), and the basis and hole subtests as `KeyError:
+       'tbill_4w'` -- incidental, the column is absent. Also killed
+       `test_ingest.TreasuryBillRateTests`'s row digests (`AssertionError`),
+       because the adapter's `available_at` moved with the registry.
+    3. **`tbill_4w` added to `data.SETTLEMENT_ZERO_COLUMNS`.** It never reaches
+       a 0.0: `_settlement_zero_dates` refuses a declared column not drawn from
+       the auction snapshot, on every build. Killed "neither column is declared
+       to read 0.0" (`AssertionError`) and this test's build
+       (`DataContractError`), and every other panel build in the suite the same
+       way, `DataContractError` or a CLI build exiting 2.
+       **3b, so the "never 0.0" assertion is exercised too:** the build's hole
+       branch writes `0.0` into `tbill_4w`, uncounted. Killed "a business day
+       with no quote is a hole", `AssertionError: 0.0 is not None : tbill_4w`,
+       and nothing else in the suite.
+    4. **A forward fill**: the build's hole branch writes the previous row's
+       value when it has one. Killed "a business day with no quote is a hole",
+       `AssertionError: 3.74 is not None : tbill_4w`; also the rule-4 tests in
+       `DailyPanelJoinTests`, `TreasurySettlementZeroTests`, the requested
+       columns digest and the Milestone A reproduction, all `AssertionError`.
+    """
+
+    REGISTRY_PATH = Path(__file__).parents[1] / "metadata" / "sources.json"
+    SOFR_SHA = "a" * 64
+    RETRIEVED_AT = "2026-01-20T14:00:00+00:00"
+    DECISION_TIME = time(16, 0)
+    NEW_YORK = ZoneInfo("America/New_York")
+
+    GRID = (
+        date(2026, 1, 5),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 8),
+        date(2026, 1, 9),
+        date(2026, 1, 12),
+        date(2026, 1, 13),
+        date(2026, 1, 14),
+        date(2026, 1, 15),
+        date(2026, 1, 16),
+    )
+    HOLE = date(2026, 1, 14)
+
+    HEADER = (
+        "Date",
+        "4 WEEKS BANK DISCOUNT",
+        "4 WEEKS COUPON EQUIVALENT",
+        "13 WEEKS BANK DISCOUNT",
+        "13 WEEKS COUPON EQUIVALENT",
+    )
+    #: One line per quote date, cells in `HEADER` order. No line for `HOLE`.
+    QUOTES = {
+        date(2026, 1, 5): ("3.61", "3.68", "3.55", "3.63"),
+        date(2026, 1, 6): ("3.62", "3.69", "3.56", "3.64"),
+        date(2026, 1, 7): ("3.63", "3.70", "3.57", "3.65"),
+        date(2026, 1, 8): ("3.64", "3.71", "3.58", "3.66"),
+        date(2026, 1, 9): ("3.65", "3.72", "3.59", "3.67"),
+        date(2026, 1, 12): ("3.66", "3.73", "3.60", "3.68"),
+        date(2026, 1, 13): ("3.67", "3.74", "3.61", "3.69"),
+        date(2026, 1, 15): ("3.69", "3.76", "3.63", "3.71"),
+        date(2026, 1, 16): ("3.70", "3.77", "3.64", "3.72"),
+    }
+
+    BILL_COLUMNS = ("tbill_4w", "tbill_13w")
+    COLUMNS = ("sofr",) + BILL_COLUMNS
+
+    #: Panel column -> (the header it must carry, the header it must not),
+    #: written out rather than read from `contract.FEATURE_FIELDS`, which is
+    #: the mapping under test.
+    BASIS = {
+        "tbill_4w": ("4 WEEKS COUPON EQUIVALENT", "4 WEEKS BANK DISCOUNT"),
+        "tbill_13w": ("13 WEEKS COUPON EQUIVALENT", "13 WEEKS BANK DISCOUNT"),
+    }
+
+    def registry(self):
+        from repo_model.ingest import load_source_registry
+
+        return load_source_registry(self.REGISTRY_PATH)
+
+    def payload(self):
+        """The export as Treasury lays it out: quoted header, newest date first."""
+
+        lines = [
+            ",".join(
+                name if name == "Date" else f'"{name}"' for name in self.HEADER
+            )
+        ]
+        for day in sorted(self.QUOTES, reverse=True):
+            lines.append(",".join((day.strftime("%m/%d/%Y"),) + self.QUOTES[day]))
+        return ("\n".join(lines) + "\n").encode("utf-8")
+
+    def rows(self, registry):
+        from repo_model.ingest import SnapshotArtifact, _treasury_bill_rate_rows
+
+        payload = self.payload()
+        artifact = SnapshotArtifact(
+            source_id="treasury_bill_rates",
+            path=Path("daily_treasury_bill_rates_2026.csv"),
+            retrieved_at=self.RETRIEVED_AT,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=str(registry["treasury_bill_rates"]["url"]),
+            byte_count=len(payload),
+        )
+        rows = list(_treasury_bill_rate_rows(artifact, payload, registry))
+        for index, ref_date in enumerate(self.GRID):
+            published = ref_date + timedelta(days=3 if ref_date.weekday() == 4 else 1)
+            rows.append(
+                PointInTimeObservation(
+                    series_id="SOFR",
+                    ref_date=ref_date,
+                    available_at=datetime.combine(
+                        published, time(15, 0), tzinfo=self.NEW_YORK
+                    ),
+                    value=3.64 + index / 100,
+                    vintage_id=f"SOFR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+        return rows
+
+    def build(self, registry, *, build_cutoff, columns):
+        return build_daily_panel(
+            self.rows(registry),
+            registry,
+            build_cutoff=build_cutoff,
+            decision_time=self.DECISION_TIME,
+            columns=columns,
+        )
+
+    def test_a_16_00_decision_reads_the_previous_business_days_coupon_equivalent_quote(
+        self,
+    ):
+        """The acceptance criterion and the mutation target. See the class docstring."""
+
+        from repo_model import data
+        from repo_model.contract import field_sources_for_features
+        from repo_model.registry import max_release_lag_days
+
+        registry = self.registry()
+
+        # The fixture's own premise, so the basis subtest cannot pass on a row
+        # where the two quotes happen to agree.
+        for day, quote in self.QUOTES.items():
+            cells = dict(zip(self.HEADER[1:], quote))
+            for coupon_equivalent, bank_discount in self.BASIS.values():
+                self.assertNotEqual(cells[coupon_equivalent], cells[bank_discount], day)
+
+        with self.subTest("neither column is declared to read 0.0 on a day with no quote"):
+            for column in self.BILL_COLUMNS:
+                self.assertNotIn(column, data.SETTLEMENT_ZERO_COLUMNS)
+
+        build = self.build(
+            registry,
+            build_cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc),
+            columns=self.COLUMNS,
+        )
+        panel = {row.date: row.values for row in build.observations}
+
+        with self.subTest("both columns are built, not refused, at 16:00"):
+            self.assertEqual(build.built_columns, self.COLUMNS)
+            for column in self.BILL_COLUMNS:
+                self.assertNotIn(column, build.refusals)
+            self.assertEqual(tuple(panel), self.GRID)
+
+        with self.subTest(
+            "each carries its ref date's coupon-equivalent quote, never the bank-discount one"
+        ):
+            for day, quote in self.QUOTES.items():
+                cells = dict(zip(self.HEADER[1:], quote))
+                for column, (coupon_equivalent, bank_discount) in self.BASIS.items():
+                    self.assertEqual(
+                        panel[day][column], float(cells[coupon_equivalent]), f"{day} {column}"
+                    )
+                    self.assertNotEqual(
+                        panel[day][column], float(cells[bank_discount]), f"{day} {column}"
+                    )
+
+        with self.subTest(
+            "the purge priced at 16:00 is one day, so a decision on D reads D-1's quote"
+        ):
+            decision_day = date(2026, 1, 8)
+            # The day's own quote exists; what is under test is that it is not
+            # yet available at the decision.
+            self.assertIn(decision_day, self.QUOTES)
+            for column in self.BILL_COLUMNS:
+                # The call `data._priceable_columns` makes for the column.
+                purge = max_release_lag_days(
+                    registry,
+                    field_sources_for_features([column]),
+                    decision_time=self.DECISION_TIME,
+                )
+                self.assertEqual(purge, 1, column)
+                at_decision = self.build(
+                    registry,
+                    build_cutoff=datetime.combine(
+                        decision_day, self.DECISION_TIME, tzinfo=self.NEW_YORK
+                    ),
+                    columns=(column,),
+                )
+                latest = at_decision.observations[-1]
+                self.assertEqual(latest.date, decision_day - timedelta(days=purge), column)
+                self.assertEqual(latest.date, date(2026, 1, 7), column)
+                self.assertEqual(
+                    latest.values[column], panel[date(2026, 1, 7)][column], column
+                )
+
+        with self.subTest("a business day with no quote is a hole, never filled and never 0.0"):
+            for column in self.BILL_COLUMNS:
+                self.assertIsNone(panel[self.HOLE][column], column)
+                self.assertEqual(build.holes[column], 1, column)
+            self.assertIsNotNone(panel[self.HOLE]["sofr"])
+            self.assertEqual(build.holes["sofr"], 0)
+
+
 def replace_observation(observation, ref_date):
     """One observation moved to another reference date, availability with it.
 
