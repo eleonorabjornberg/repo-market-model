@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 import gzip
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -3880,8 +3881,9 @@ class TreasurySettlementSplitTests(unittest.TestCase):
     `tests/fixtures/snapshots/treasury_auctions/auctions_2018_present.json` is
     Fiscal Data's `auctions_query`, fetched 10 September 2026: one page, meta
     `total-count` 3562 equal to its row count, issue dates 2018-01-02 through
-    2026-09-30. There is no manifest beside it -- writing one is a human step --
-    so the test builds a `SnapshotArtifact` with a declared `retrieved_at`.
+    2026-09-30. Its manifest is beside it (A16, `TreasurySnapshotManifestTests`)
+    and the test takes `retrieved_at` from there, building the rest of the
+    `SnapshotArtifact` itself.
 
     What the snapshot exercises, and what it does not
     -------------------------------------------------
@@ -4002,15 +4004,16 @@ class TreasurySettlementSplitTests(unittest.TestCase):
         / "treasury_auctions"
         / "auctions_2018_present.json"
     )
-    RETRIEVED_AT = "2026-09-10T19:10:00+00:00"
+    MANIFEST = FIXTURE.with_name(FIXTURE.name + ".manifest.json")
 
     def _artifact(self):
         payload = self.FIXTURE.read_bytes()
+        manifest = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         return (
             SnapshotArtifact(
                 source_id="treasury_auctions",
                 path=self.FIXTURE,
-                retrieved_at=self.RETRIEVED_AT,
+                retrieved_at=manifest["retrieved_at"],
                 sha256=hashlib.sha256(payload).hexdigest(),
                 url="https://api.fiscaldata.treasury.gov/services/api/fiscal_service/"
                 "v1/accounting/od/auctions_query",
@@ -4131,10 +4134,26 @@ class TreasuryBillRateTests(unittest.TestCase):
     `tests/fixtures/snapshots/treasury_bills/` holds Treasury's "Daily Treasury
     Bill Rates" export, one CSV per year, 2018 through 2026: dates MM/DD/YYYY,
     newest row first, a BANK DISCOUNT and a COUPON EQUIVALENT column per tenor.
-    The files have no manifest -- that decision is the human's -- so the test
-    builds each `SnapshotArtifact` itself. `RETRIEVED_AT` is declared, not
-    measured: it is the time of the commit that finished tracking the nine
-    files, an upper bound on their retrieval, and no assertion reads it.
+    Only 2026 has no manifest: Treasury's export for the year in progress no
+    longer returns the committed bytes (A16, `TreasurySnapshotManifestTests`).
+    The test builds each `SnapshotArtifact` itself, taking `retrieved_at` from
+    the year's manifest, and 2026's from `RETRIEVED_AT_2026`. Each is the
+    committer time of the commit that first tracked that file, an upper bound on
+    its retrieval rather than a measurement of it.
+
+    Moving both classes onto the manifests' times changed no expected value, and
+    that was checked rather than assumed. `retrieved_at` reaches two places in
+    `parse_snapshots`: `vintage_id`, and the revision ordering at
+    `ingest.py:2585-2601`, which re-dates a row whose key a later vintage
+    repeats. Neither can move here. The nine files partition the calendar, so no
+    `(series_id, ref_date)` key appears twice across them -- 24050 rows, 0
+    repeated keys -- and the ordering branch never fires: parsing all nine under
+    the single old time and under the eight manifests' times returns the same
+    24050 rows, identical in `available_at`, `value` and `source_sha`, differing
+    only in `vintage_id`. `TreasurySettlementSplitTests` parses one artifact, so
+    it has no ordering to change. Neither class asserts an expected
+    `vintage_id`, which is why the rider that queued this change asked for
+    updated ones and there were none to update.
 
     The header changes twice. 2018-2021 carry 4, 8, 13, 26 and 52 weeks; 17
     weeks appears in 2022 and 6 weeks in 2025. A tenor is blank before its first
@@ -4202,7 +4221,9 @@ class TreasuryBillRateTests(unittest.TestCase):
 
     DIRECTORY = REPO_ROOT / "tests" / "fixtures" / "snapshots" / "treasury_bills"
     YEARS = tuple(range(2018, 2027))
-    RETRIEVED_AT = "2026-09-10T16:39:19+00:00"
+    #: 2026 has no manifest, so its `retrieved_at` is declared here: the
+    #: committer time of 1d715b6, the commit that first tracked the file.
+    RETRIEVED_AT_2026 = "2026-09-10T16:00:11Z"
 
     #: Written out, not derived: a table spelled by the adapter's own rule would
     #: agree with the adapter whatever the rule said.
@@ -4226,12 +4247,18 @@ class TreasuryBillRateTests(unittest.TestCase):
     def _path(self, year):
         return self.DIRECTORY / f"daily_treasury_bill_rates_{year}.csv"
 
+    def _retrieved_at(self, year):
+        if year == 2026:
+            return self.RETRIEVED_AT_2026
+        manifest = self._path(year).with_name(self._path(year).name + ".manifest.json")
+        return json.loads(manifest.read_text(encoding="utf-8"))["retrieved_at"]
+
     def _artifact(self, year):
         payload = self._path(year).read_bytes()
         return SnapshotArtifact(
             source_id="treasury_bill_rates",
             path=self._path(year),
-            retrieved_at=self.RETRIEVED_AT,
+            retrieved_at=self._retrieved_at(year),
             sha256=hashlib.sha256(payload).hexdigest(),
             url=(
                 "https://home.treasury.gov/resource-center/data-chart-center/"
@@ -4379,6 +4406,289 @@ class TreasuryBillRateTests(unittest.TestCase):
             _treasury_bill_rate_rows(
                 artifact, self._planted(2026, non_numeric), registry
             )
+
+
+class TreasurySnapshotManifestTests(unittest.TestCase):
+    """A16: each Treasury snapshot that can carry a manifest carries one, bound to its bytes.
+
+    The two tracked Treasury folders held ten snapshots and no manifest, so
+    nothing recorded where a file came from, when, or that the bytes in the tree
+    are the bytes that arrived. Nine now carry the per-file manifest
+    `tests/fixtures/snapshots/funding_inputs/` uses, plus a `note`.
+
+    Two decisions, both the user's, 11 September 2026
+    -------------------------------------------------
+
+    1. **The bill manifests carry `source_id` `"treasury_bill_rates"`, the
+       registry id. The folder stays `treasury_bills/`; it is a location and
+       nothing else.** `parse_snapshots` dispatches on `source_id`, and the only
+       alias it applies is `LEGACY_SOURCE_IDS`, which exists for ids an adapter
+       once wrote into a checksummed manifest. No adapter ever wrote
+       `treasury_bills`. A manifest carrying the folder name loads --
+       `load_snapshot_manifest` reads `source_id` as a string and checks
+       nothing else about it -- and then has no parser. Making it parse would
+       mean an `ingest.py` change or a legacy alias for a name that was never
+       legacy; recording the registry id needs neither.
+
+    2. **`daily_treasury_bill_rates_2026.csv` gets no manifest. Only a year
+       whose download byte-matches the tracked file gets one.** 2018 through
+       2025 do, at the url each manifest records. For 2026, Treasury's export
+       for the year in progress no longer returns the committed bytes. A
+       manifest is a claim that its `url` produced its `sha256`, and for 2026
+       that claim would be false; leaving `url` out is not an alternative,
+       because `load_snapshot_manifest` requires the key. So 2026 has no
+       manifest, and this test requires that it has none.
+
+    What the fields record
+    ----------------------
+
+    `retrieved_at` is the committer time of the commit that first tracked the
+    file -- 62899d7 for the auctions, 304b6f5 for 2018-2023, 1d715b6 for
+    2024-2025. It is a ceiling on when the file was retrieved, not a
+    measurement, and each note says so. The eight bill files do not share one:
+    2024-2026 were tracked 39 minutes before 2018-2023, so the earlier time is
+    not a ceiling for 2018-2023 and the later one is not 2024-2025's first
+    commit.
+
+    The auctions `url` records the request that was made and cannot reproduce
+    the bytes: its `issue_date` filter has no upper bound, so the same request
+    returns every auction added since. Its note says so. Each bill `url` is one
+    whose download byte-matched the tracked file.
+
+    The traps
+    ---------
+
+    * One `retrieved_at` for all eight bill files: killed by the per-file
+      `retrieved_at` assertion (mutation 4).
+    * A digest of decoded text: `sha256` and `byte_count` are taken from
+      `read_bytes()`. **On these ten files the trap is not exercisable.** None
+      carries a carriage return or a byte-order mark, so UTF-8 text read and
+      re-encoded is byte-identical to the file, and a text digest would pass
+      here. The bytes are read anyway, because the next export might carry
+      either.
+    * Asserting the `source_id` string without parsing: this test asserts no
+      `source_id` literal. Each manifest goes through `load_snapshot_manifest`
+      and then `parse_snapshots` against the real registry, which is the check
+      that caught the first A16 brief's `treasury_bills` (mutation 5).
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, Python
+    3.9.6, whole suite per mutation. Each mutation was applied to its own copy
+    of the control, and each copy was diffed against the control before the run
+    to confirm it differed in exactly one file.
+
+    **The control is green, before the mutations and after,** in the copy and
+    in the worktree. Both earlier records in this module had to score against a
+    standing failure and neither failure remains: the one
+    `TreasuryBillRateTests` names cleared when `treasury_bill_rates` was
+    declared in `contract.UNMODELLED_SOURCES` (35eb88b), and the one
+    `TreasurySettlementSplitTests` names cleared when the human edited
+    `docs/PROJECT_STATUS.md` (9b0ccee). Those two records stand as written; they
+    record the runs that happened.
+
+    1. **A byte appended to one fixture** (`#` on the last line of
+       `daily_treasury_bill_rates_2019.csv`). Killed this test,
+       `AssertionError`, "sha256 is not the digest of the file's bytes". One
+       test beyond it, incidentally:
+       `TreasuryBillRateTests.test_every_tracked_year_parses_by_its_own_header_and_an_unissued_tenor_is_absent`,
+       `ValueError` on the now non-numeric cell `'2.60#'` -- the adapter's own
+       guard, not a second reading of the digest.
+    2. **One manifest's `path` pointed at its sibling** (2020's manifest naming
+       2021's CSV). Killed this test on three subtests, all `AssertionError`:
+       2020 named by no manifest, 2021 named by two, and 2020's manifest not
+       naming its own file. The middle one is the reason the count is asserted
+       rather than the membership.
+    3. **One manifest removed** (2022's). Killed this test, `AssertionError`,
+       2022 named by no manifest. One test beyond it, incidentally:
+       `TreasuryBillRateTests`, `FileNotFoundError` -- that class now reads the
+       year's manifest for its `retrieved_at`, so a missing manifest stops it
+       before any assertion. A `FileNotFoundError` there is not this guard
+       firing twice.
+    4. **2024's `retrieved_at` set to 304b6f5's time** (`16:39:19Z` for
+       `16:00:11Z`), which is the "one `retrieved_at` for all eight bill files"
+       trap made concrete. Killed this test, `AssertionError`, one test only.
+       Nothing else notices: the value reaches `vintage_id`, which no assertion
+       reads.
+    5. **One bill manifest's `source_id` set to `"treasury_bills"`** (2023's),
+       the folder name. Killed this test, **`ValueError`: "no point-in-time
+       parser for treasury_bills"**, raised by `parse_snapshots`, not by an
+       assertion. `load_snapshot_manifest` accepts it -- it reads `source_id`
+       as a string and checks nothing else -- so a test that asserted the
+       string would have to know the right answer in advance, and a test that
+       only loaded would pass. This is the mutation the parse step exists for,
+       and it is the defect the first A16 brief carried.
+    6. **A manifest added for 2026**, well-formed otherwise: real `sha256` and
+       `byte_count`, 1d715b6's time, and the export url for 2026. Killed this
+       test on two subtests, both `AssertionError`: 2026 has a manifest and
+       must not, and the manifest is undeclared. Well-formed is the point --
+       the manifest loads and parses, so only the ruling that 2026 has none
+       can catch it.
+
+    Re-run of the existing records
+    ------------------------------
+
+    This block changes no fixture, so no existing mutation record names
+    anything it edits. It does change what `retrieved_at` both Treasury classes
+    pass, which is an input those records' mutations run over. That cannot
+    blunt them: the checks above show the value reaches no assertion and no
+    admitted row.
+    """
+
+    SNAPSHOTS = REPO_ROOT / "tests" / "fixtures" / "snapshots"
+    DIRECTORIES = (SNAPSHOTS / "treasury_auctions", SNAPSHOTS / "treasury_bills")
+    SIDECAR = ".manifest.json"
+
+    AUCTIONS_URL = (
+        "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/"
+        "accounting/od/auctions_query?page[size]=10000&filter=issue_date:gte:2018-01-01"
+    )
+    BILL_URL = (
+        "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/"
+        "daily-treasury-rates.csv/{year}/all?type=daily_treasury_bill_rates"
+        "&field_tdr_date_value={year}&page&_format=csv"
+    )
+
+    #: Committer time of the commit that first tracked each file.
+    FIRST_TRACKED_62899D7 = "2026-09-10T19:22:46Z"
+    FIRST_TRACKED_304B6F5 = "2026-09-10T16:39:19Z"
+    FIRST_TRACKED_1D715B6 = "2026-09-10T16:00:11Z"
+
+    #: Repo-relative path to (`retrieved_at`, `url`), written out per file.
+    MANIFESTED = {
+        "tests/fixtures/snapshots/treasury_auctions/auctions_2018_present.json": (
+            FIRST_TRACKED_62899D7,
+            AUCTIONS_URL,
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2018.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2018),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2019.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2019),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2020.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2020),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2021.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2021),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2022.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2022),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2023.csv": (
+            FIRST_TRACKED_304B6F5,
+            BILL_URL.format(year=2023),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2024.csv": (
+            FIRST_TRACKED_1D715B6,
+            BILL_URL.format(year=2024),
+        ),
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2025.csv": (
+            FIRST_TRACKED_1D715B6,
+            BILL_URL.format(year=2025),
+        ),
+    }
+
+    #: Tracked files that must have no manifest, and why.
+    UNMANIFESTED = {
+        "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2026.csv": (
+            "Treasury's export for the year in progress no longer returns the "
+            "committed bytes, so no url can be recorded that produced them"
+        ),
+    }
+
+    def test_each_treasury_snapshot_carries_a_manifest_bound_to_its_bytes(self):
+        from repo_model.ingest import load_source_registry
+
+        files = {}
+        manifests = {}
+        for directory in self.DIRECTORIES:
+            for path in sorted(directory.iterdir()):
+                if path.name.startswith("."):
+                    continue
+                relative = path.relative_to(REPO_ROOT).as_posix()
+                if relative.endswith(self.SIDECAR):
+                    manifests[relative] = json.loads(path.read_text(encoding="utf-8"))
+                else:
+                    files[relative] = path
+        self.assertEqual(
+            set(files),
+            set(self.MANIFESTED) | set(self.UNMANIFESTED),
+            msg="the tracked Treasury snapshots are not the files this test names",
+        )
+
+        # Every manifest has its file.
+        for sidecar in manifests:
+            with self.subTest(manifest=sidecar):
+                self.assertIn(
+                    sidecar[: -len(self.SIDECAR)],
+                    files,
+                    msg="a manifest has no snapshot beside it",
+                )
+
+        # Every file is named by exactly one manifest, its own -- except those
+        # that must have none.
+        for relative in files:
+            with self.subTest(file=relative):
+                naming = sorted(
+                    sidecar
+                    for sidecar, manifest in manifests.items()
+                    if manifest.get("path") == relative
+                )
+                if relative in self.UNMANIFESTED:
+                    self.assertEqual(
+                        (naming, relative + self.SIDECAR in manifests),
+                        ([], False),
+                        msg=(
+                            f"{relative} has a manifest and must not: "
+                            f"{self.UNMANIFESTED[relative]}"
+                        ),
+                    )
+                else:
+                    self.assertEqual(
+                        naming,
+                        [relative + self.SIDECAR],
+                        msg=f"{relative} is not named by exactly its own manifest",
+                    )
+
+        # Each manifest is bound to its file's bytes, records the declared
+        # retrieval ceiling and url, and loads and parses as written. The
+        # manifest's path is repo-relative, so it is resolved from the root.
+        registry = load_source_registry()
+        previous = os.getcwd()
+        os.chdir(REPO_ROOT)
+        try:
+            for sidecar, manifest in sorted(manifests.items()):
+                relative = sidecar[: -len(self.SIDECAR)]
+                with self.subTest(manifest=sidecar):
+                    self.assertIn(relative, self.MANIFESTED, msg="an undeclared manifest")
+                    payload = files[relative].read_bytes()
+                    self.assertEqual(
+                        manifest["sha256"],
+                        hashlib.sha256(payload).hexdigest(),
+                        msg="sha256 is not the digest of the file's bytes",
+                    )
+                    self.assertEqual(
+                        manifest["byte_count"],
+                        len(payload),
+                        msg="byte_count is not the file's length in bytes",
+                    )
+                    self.assertEqual(manifest["path"], relative)
+                    retrieved_at, url = self.MANIFESTED[relative]
+                    self.assertEqual(manifest["retrieved_at"], retrieved_at)
+                    self.assertEqual(manifest["url"], url)
+                    artifact = load_snapshot_manifest(REPO_ROOT / sidecar)
+                    parsed = parse_snapshots([artifact], registry=registry)
+                    self.assertTrue(parsed.rows, msg="the manifest parses to nothing")
+        finally:
+            os.chdir(previous)
 
 
 if __name__ == "__main__":

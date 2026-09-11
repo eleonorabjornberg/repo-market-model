@@ -1,0 +1,9 @@
+{
+  "byte_count": 15520,
+  "note": "retrieved_at is the committer time of 304b6f5, the commit that first tracked this file. It is a ceiling on when the file was retrieved, not a measurement of it. url is Treasury's CSV export for the year, and a download of it byte-matched this file.",
+  "path": "tests/fixtures/snapshots/treasury_bills/daily_treasury_bill_rates_2019.csv",
+  "retrieved_at": "2026-09-10T16:39:19Z",
+  "sha256": "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
+  "source_id": "treasury_bill_rates",
+  "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019&page&_format=csv"
+}
