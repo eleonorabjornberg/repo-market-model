@@ -224,6 +224,40 @@ class ExceedanceCurves:
 
     curves: Tuple[Tuple[float, ...], ...]
     features_read: Tuple[str, ...]
+    #: The third-party library versions the fit behind these curves was made
+    #: with, as the fitted model reports them -- `FittedGradientBoostedQuantiles
+    #: .ml_libraries` -- and `None` from a predictor whose fit reached no
+    #: third-party library, which is every predictor in this module. Carried
+    #: here because the curves are the only thing an `ExceedancePredictor` hands
+    #: back: the fitted model stays inside the closure, and a version read
+    #: anywhere but off the fit would be a claim about some other code. See
+    #: `_ml_libraries`.
+    ml_libraries: Optional[Mapping[str, str]] = None
+
+
+def _ml_libraries(*fitted: Any) -> Optional[Mapping[str, str]]:
+    """The library versions a run's fits were made with, or `None`.
+
+    Each argument is one side of a run as it came back from a fit -- a fitted
+    model, or the `ExceedanceCurves` a predictor returned -- and the answer is
+    the first `ml_libraries` any of them carries. Only a model in
+    `repo_model.ml` carries one; this module cannot import numpy or
+    scikit-learn (`tests/test_dependency_boundary.py`), so it never reads a
+    version itself and only passes on what a fit reported.
+
+    **The first one is every one.** Two ml sides of one run are fitted in one
+    process against the same imported modules, so their versions cannot
+    differ; and every fold of a run fits with the same callable, so the first
+    fold's answer is every fold's -- the argument `_check_fitter_stayed_inside`
+    makes for reading `features_read` once. A run with no ml side returns
+    `None`, and `_run_provenance` then writes no key at all.
+    """
+
+    for side in fitted:
+        versions = getattr(side, "ml_libraries", None)
+        if versions is not None:
+            return versions
+    return None
 
 
 #: The exceedance-predictor interface, declared once and in one place.
@@ -663,6 +697,11 @@ class BacktestReport:
     quantile_levels: Tuple[float, ...] = ()
     pinball_loss: Tuple[float, ...] = ()
     crps_bps: Optional[float] = None
+    #: The third-party library versions the fitted models were made with, or
+    #: `None` when the model reached none. Read off the first fit by
+    #: `_ml_libraries`; published by `_run_provenance`, which omits the key
+    #: when this is `None`.
+    ml_libraries: Optional[Mapping[str, str]] = None
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -2775,6 +2814,7 @@ def rolling_persistence_backtest(
     forecasts: List[Forecast] = []
     folds: List[ScoredFold] = []
     model: Optional[FittedForecastModel] = None
+    ml_libraries: Optional[Mapping[str, str]] = None
     dates = [row.date for row in rows]
 
     # `step=1` is the origin-by-origin shape this function has always had: one
@@ -2801,6 +2841,7 @@ def rolling_persistence_backtest(
             _check_fitter_stayed_inside(
                 fitted.features_read, declared, sources, purge
             )
+            ml_libraries = _ml_libraries(fitted)
         model = fitted
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         quantiles = model.predict(feature_row)
@@ -2882,6 +2923,7 @@ def rolling_persistence_backtest(
         quantile_levels=levels,
         pinball_loss=losses,
         crps_bps=crps,
+        ml_libraries=ml_libraries,
     )
 
 
@@ -3506,6 +3548,7 @@ def _run_provenance(
     *,
     registry_path: Path,
     thresholds_path: Optional[Path],
+    ml_libraries: Optional[Mapping[str, str]],
 ) -> dict:
     """What produced the inputs, for both records, from one place.
 
@@ -3565,10 +3608,22 @@ def _run_provenance(
             takes no `--thresholds` and passing a stand-in for one it never
             opened would be exactly the invented field this record refuses
             elsewhere.
+        ml_libraries: the third-party library versions the run's fits
+            reported, off the report (`_ml_libraries`), or `None` when no
+            side of the run reached one. Required and undefaulted like
+            `thresholds_path`, so a document cannot forget to pass it: a
+            record that dropped it would be missing provenance with every
+            other field correct. Published as `ml_libraries` when present and
+            **absent when `None`**, by the rule above -- and absent rather
+            than filled "for completeness", because a record naming numpy on
+            a persistence run claims a dependency the result does not have.
+            Written here and nowhere else, so every record kind that can carry
+            an ml model carries it the same way.
 
     Returns:
-        The `provenance` section: the code the run was read from, and the
-        digests of the declaration files it read.
+        The `provenance` section: the code the run was read from, the digests
+        of the declaration files it read, and -- when an ml model fitted --
+        the library versions it fitted with.
 
     Raises:
         ProvenanceMismatchError: via `_bind_build_manifest`, when a manifest
@@ -3598,6 +3653,8 @@ def _run_provenance(
     code = _code_provenance()
     if code is not None:
         provenance["code"] = code
+    if ml_libraries is not None:
+        provenance["ml_libraries"] = dict(ml_libraries)
     return provenance
 
 
@@ -3913,7 +3970,9 @@ def backtest_document(
     * `provenance` -- the commit the code was read from and whether that tree
       was modified, and the digest of every declaration file the run opened.
       `REPRODUCIBILITY.md` requires both of a reportable result and this
-      document carried neither.
+      document carried neither. When the model reached the `ml` extra it also
+      carries `ml_libraries`, the numpy and scikit-learn versions the fits
+      reported; see `_run_provenance`.
     * `folds` -- the count, and the first and last origin in full. Enough for a
       reader to check the gap against a calendar on the two folds where an
       off-by-one would show, without the artifact growing with the panel.
@@ -4008,7 +4067,11 @@ def backtest_document(
     # anything is returned, because a manifest that does not describe this
     # panel must leave no document behind to be written.
     provenance = _run_provenance(
-        panel, panel_path, registry_path=registry_path, thresholds_path=None
+        panel,
+        panel_path,
+        registry_path=registry_path,
+        thresholds_path=None,
+        ml_libraries=report.ml_libraries,
     )
 
     folds: dict = {"count": len(report.folds)}
@@ -4355,6 +4418,11 @@ class PairedComparisonReport:
     panel_rows: int
     panel_first_date: date
     panel_last_date: date
+    #: The third-party library versions either side was fitted with, or `None`
+    #: when neither side reached one. Required like every field here: `None`
+    #: is a computed answer, read off the first fit of both sides by
+    #: `_ml_libraries`, and `_run_provenance` omits the key for it.
+    ml_libraries: Optional[Mapping[str, str]]
 
     @property
     def loss_name(self) -> str:
@@ -4553,6 +4621,7 @@ def paired_model_comparison(
     losses_a: List[float] = []
     losses_b: List[float] = []
     differences: List[float] = []
+    ml_libraries: Optional[Mapping[str, str]] = None
     checked = False
 
     # `step=1`, the origin-by-origin shape `rolling_persistence_backtest` has,
@@ -4579,6 +4648,7 @@ def paired_model_comparison(
             _check_fitter_stayed_inside(
                 fitted_b.features_read, declared_b, sources_b, purge
             )
+            ml_libraries = _ml_libraries(fitted_a, fitted_b)
             checked = True
 
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
@@ -4653,6 +4723,7 @@ def paired_model_comparison(
         panel_rows=len(rows),
         panel_first_date=rows[0].date,
         panel_last_date=rows[-1].date,
+        ml_libraries=ml_libraries,
     )
 
 
@@ -4807,7 +4878,11 @@ def paired_comparison_document(
     # anything is returned, because a manifest that does not describe this
     # panel must leave no document behind to be written.
     provenance = _run_provenance(
-        panel, panel_path, registry_path=registry_path, thresholds_path=None
+        panel,
+        panel_path,
+        registry_path=registry_path,
+        thresholds_path=None,
+        ml_libraries=comparison.ml_libraries,
     )
 
     folds: dict = {"count": len(comparison.folds)}
@@ -5358,6 +5433,10 @@ class ExceedanceBacktestReport:
     twcrps_weights: Tuple[float, ...]
     twcrps: Optional[float] = None
     twcrps_unavailable: Optional[str] = None
+    #: The third-party library versions the scored predictor's fit reported,
+    #: or `None` when it reached none. Read off the first fold's curves by
+    #: `_ml_libraries`; `_run_provenance` omits the key for `None`.
+    ml_libraries: Optional[Mapping[str, str]] = None
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -5567,6 +5646,7 @@ def rolling_exceedance_backtest(
     realized_bps: List[float] = []
     forecast: List[Tuple[float, ...]] = []
     reference: List[Tuple[float, ...]] = []
+    ml_libraries: Optional[Mapping[str, str]] = None
     checked = False
 
     for train_indices, test_indices in rolling_origin(
@@ -5598,6 +5678,7 @@ def rolling_exceedance_backtest(
             _check_fitter_stayed_inside(
                 referenced.features_read, declared, sources, purge
             )
+            ml_libraries = _ml_libraries(predicted, referenced)
             checked = True
 
         forecast.append(_validate_prediction(predicted, 1, tau_family)[0])
@@ -5667,6 +5748,7 @@ def rolling_exceedance_backtest(
         twcrps_weights=weights,
         twcrps=twcrps,
         twcrps_unavailable=twcrps_unavailable,
+        ml_libraries=ml_libraries,
     )
 
 
@@ -5960,6 +6042,7 @@ def exceedance_backtest_document(
         panel_path,
         registry_path=registry_path,
         thresholds_path=thresholds_path,
+        ml_libraries=report.ml_libraries,
     )
 
     folds: dict = {"count": len(report.folds)}

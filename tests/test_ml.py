@@ -130,12 +130,12 @@ import json
 import os
 import sys
 import unittest
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from unittest import mock
 
 from repo_model import baseline, cli_eval, ml
 from repo_model.contract import QUANTILE_LEVELS
-from repo_model.data import DailyObservation, load_daily_panel
+from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.metrics import crps_from_quantiles
 
 from test_baseline import (
@@ -143,7 +143,7 @@ from test_baseline import (
     ExceedancePredictorConformance,
     REGRESSORS,
 )
-from test_cli_eval import ContinuousModelHarness
+from test_cli_eval import DECISION_TIME, THRESHOLDS, ContinuousModelHarness
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 
 #: The variable a job that exists to exercise the extra sets. See the module
@@ -566,10 +566,81 @@ class GradientBoostedCompareTests(ContinuousModelHarness):
     `compare` run with `gbm` on one side takes about 0.21 seconds per origin,
     of which a single five-level fit is nearly all. The cost grows with the
     training window, roughly `0.2 + 0.002 * rows` seconds per fit measured out
-    to 2 100 rows. The published `compare` records under `docs/runs/` carry
-    2 080 origins over an expanding window that reaches 2 099 rows, which puts
-    a real run at something over an hour of wall clock on eight cores. It fits
-    in an evening; it does not fit in a test.
+    to 2 100 rows. The published `compare` records under `docs/runs/` are two
+    populations over one expanding window that reaches 2 099 rows: the two
+    absolute-error records, at `--minimum-history 20`, carry 2 080 origins, and
+    the `--minimum-history 61` CRPS records -- gbm's among them -- carry 2 039.
+    Either puts a real run at something over an hour of wall clock on eight
+    cores. It fits in an evening; it does not fit in a test.
+
+    The library versions a record names
+    ------------------------------------
+
+    Every record a run with an ml side publishes -- `compare` with `gbm` on
+    either side, `exceedance-backtest` with `gbm_exceedance`, and `backtest
+    --model gbm`, which reaches the same fitter through the same
+    `FITTER_FACTORIES` entry -- carries `provenance.ml_libraries`,
+    `{"numpy": ..., "scikit-learn": ...}`. The record published before this
+    existed named neither, and the versions were read off the environment
+    after the run, which says what is installed now and not what fitted then.
+
+    The value is the imported modules' `__version__`, read by
+    `ml._library_versions` at the fit and carried out of it on the fitted model
+    and on `ExceedanceCurves`; `baseline` never reads a version, because it
+    cannot import either package. The key is written by `_run_provenance`, the
+    one builder all three documents share, and only when a fit reported one:
+    a run with no ml side has no key -- absent, not `null` -- because a
+    record naming libraries that did not run claims a dependency the result
+    does not have.
+
+    `test_a_record_with_an_ml_side_names_the_library_versions_that_fitted_it`
+    is the acceptance test and the mutation target. It runs at
+    `--minimum-history 84` for cost alone: a record's provenance does not
+    depend on how many origins were scored.
+
+    Mutation record (B19). Same protocol as above: the per-branch, per-commit
+    copy under `$HOME` from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `REPO_MODEL_REQUIRE_ML=1`, CPython 3.9.6, numpy 2.0.2, scikit-learn 1.6.1,
+    whole suite per run. Unmutated control green before and after, zero
+    `expectedFailure`; each mutation asserted applied and restored by the
+    driver before the next.
+
+      * **Control for the plant, expected to survive.** The first mutation
+        needs a module whose `__version__` differs from its installed
+        metadata, which a clean install never has. So a guarded
+        `import sklearn` at the top of this module appends `+planted` to
+        `sklearn.__version__` at discovery, before any fit. With nothing else
+        changed the suite is **green**: the fit reads the planted value and so
+        does this test. The plant alone reddens nothing.
+      * **Versions read through `importlib.metadata`**, with the plant in
+        place. Kills this test's three ml subtests (compare, exceedance-
+        backtest, backtest), `AssertionError: {'numpy': '2.0.2',
+        'scikit-learn': '1.6.1'} != {... '1.6.1+planted'}`. On a clean
+        install this defect is invisible, since the two sources agree. That
+        is why the plant exists, and why the source of the version is named
+        in `ml._library_versions` and not left to whichever lookup is nearer.
+      * **The key written for non-ml runs.** `_run_provenance` always writes
+        it, from `ml._library_versions()` when the report carries none. Kills
+        the `persistence vs rolling-residual` subtest alone,
+        `AssertionError: 'ml_libraries' unexpectedly found`. **Nothing else
+        in the suite noticed.** The existing "no `null` in provenance" check
+        in `tests/test_baseline.py` is satisfied by a real dict, so a record
+        claiming a dependency that did not run is visible only here.
+      * **The key written only in the compare document.** The write removed
+        from `_run_provenance` and done instead in
+        `paired_comparison_document`. Kills the exceedance-backtest and
+        backtest subtests, `AssertionError: None != {...}`. The compare
+        subtest stays green, as it should. That is the shared-builder claim
+        mechanically: one document getting it right says nothing about the
+        others.
+      * **scikit-learn's version taken from numpy's.** Kills the three ml
+        subtests, `AssertionError: {'numpy': '2.0.2', 'scikit-learn':
+        '2.0.2'} != {...'1.6.1'}`.
+
+    Every mutation killed this test and nothing else. That is the finding:
+    before this block no test read a record's provenance for anything an ml
+    fit could put there.
 
     """
 
@@ -755,6 +826,75 @@ class GradientBoostedCompareTests(ContinuousModelHarness):
         self.assertIn("'ml' extra", err)
         self.assertNotIn("Traceback", err)
         self.assertFalse(blocked.exists())
+
+    def test_a_record_with_an_ml_side_names_the_library_versions_that_fitted_it(self):
+        """`provenance.ml_libraries` on every record an ml fit reached, and no other.
+
+        See "The library versions a record names" in the class docstring. The
+        expectation is the imported modules' own `__version__`, imported here
+        rather than read through the package, so a record built from anything
+        else -- an installer's metadata, one package's version under the
+        other's name -- disagrees with it.
+        """
+
+        import numpy
+        import sklearn
+
+        fitted_with = {
+            "numpy": numpy.__version__,
+            "scikit-learn": sklearn.__version__,
+        }
+        # Cost only; see the class docstring. The record's provenance does not
+        # depend on how many origins were scored, and at the harness's own
+        # minimum history each gbm run below is sixty-odd five-level fits.
+        self.MINIMUM_HISTORY = "84"
+        minimum_history = int(self.MINIMUM_HISTORY)
+
+        with self.subTest(record="compare, gbm on side b"):
+            code, _, err = self.run_compare(model_b="gbm")
+            self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+            record = json.loads(self.last_report.read_text(encoding="utf-8"))
+            self.assertEqual(record["provenance"].get("ml_libraries"), fitted_with)
+
+        with self.subTest(record="exceedance-backtest, gbm_exceedance"):
+            report = baseline.rolling_exceedance_backtest(
+                load_daily_panel(self.PANEL),
+                predictor=ml.gbm_exceedance(
+                    self.declared_regressors(self.FEATURES),
+                    minimum_history=minimum_history,
+                ),
+                model_name="gbm",
+                features=self.FEATURES,
+                registry=json.loads(self.registry.read_text(encoding="utf-8")),
+                decision_time=time.fromisoformat(DECISION_TIME),
+                taus=load_stress_thresholds(THRESHOLDS)["taus_bp"],
+                minimum_history=minimum_history,
+            )
+            record = baseline.exceedance_backtest_document(
+                report,
+                panel_path=self.PANEL,
+                registry_path=self.registry,
+                thresholds_path=THRESHOLDS,
+            )
+            self.assertEqual(record["provenance"].get("ml_libraries"), fitted_with)
+
+        with self.subTest(record="backtest, gbm"):
+            code, _, err = self.run_backtest(*self.FEATURES, model="gbm")
+            self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+            record = json.loads(self.last_report.read_text(encoding="utf-8"))
+            self.assertEqual(record["provenance"].get("ml_libraries"), fitted_with)
+
+        with self.subTest(record="compare, persistence vs rolling-residual"):
+            code, _, err = self.run_compare(
+                model_a="persistence", model_b="rolling-residual", residual_window_b=5
+            )
+            self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+            record = json.loads(self.last_report.read_text(encoding="utf-8"))
+            self.assertNotIn(
+                "ml_libraries",
+                record["provenance"],
+                msg="a run no ml model took part in names library versions it never used",
+            )
 
 
 if __name__ == "__main__":

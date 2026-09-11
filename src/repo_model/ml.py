@@ -140,6 +140,33 @@ def _estimator_class() -> Any:
     return HistGradientBoostingRegressor
 
 
+def _library_versions() -> Mapping[str, str]:
+    """The numpy and scikit-learn versions this process fits with.
+
+    Read off the **imported modules' own `__version__`**, not off
+    `importlib.metadata`: the metadata answers what an installer recorded in a
+    `site-packages` directory, and the module answers what is actually loaded
+    in this interpreter. The two agree on a clean install and disagree exactly
+    when it matters -- a second copy earlier on `sys.path`, an editable build,
+    a module already imported before an environment changed under it -- and a
+    record's provenance is a claim about the code that fitted, which is the
+    module.
+
+    Called from `fit_gradient_boosted_quantiles` after `_estimator_class`, so
+    the extra is known to be present and a caller without it has already been
+    refused in this repository's vocabulary. The imports are inside the
+    function for the reason every third-party import in this module is; see
+    the module docstring.
+    """
+
+    import numpy
+    import sklearn
+
+    return MappingProxyType(
+        {"numpy": numpy.__version__, "scikit-learn": sklearn.__version__}
+    )
+
+
 class FittedGradientBoostedQuantiles:
     """One gradient-boosted fit per contract level, rearranged into a law.
 
@@ -160,6 +187,13 @@ class FittedGradientBoostedQuantiles:
       tail knots of its law; see `predict_stress`.
     * `cutoff` --- the last date the training frame was allowed to contain, with
       the same meaning and the same `trained_beyond` question as persistence.
+    * `ml_libraries` --- `{"numpy": ..., "scikit-learn": ...}`, the versions
+      of the modules this model was fitted with, read by `_library_versions`
+      at the fit. Required and undefaulted: this is the one fitted model in the
+      package that reached a third-party library, and every record a run of it
+      publishes names those versions under `provenance.ml_libraries` --- see
+      `baseline._ml_libraries` and `baseline._run_provenance`. A model built
+      without them would publish a record that silently lost that key.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -185,6 +219,7 @@ class FittedGradientBoostedQuantiles:
         "cutoff",
         "imputations",
         "levels",
+        "ml_libraries",
         "random_state",
         "regressors",
     )
@@ -198,7 +233,10 @@ class FittedGradientBoostedQuantiles:
         cutoff: date,
         levels: Sequence[float] = QUANTILE_LEVELS,
         random_state: int = DEFAULT_RANDOM_STATE,
+        *,
+        ml_libraries: Mapping[str, str],
     ) -> None:
+        self.ml_libraries: Mapping[str, str] = MappingProxyType(dict(ml_libraries))
         self.regressors: Tuple[str, ...] = tuple(regressors)
         self._estimators: Tuple[Any, ...] = tuple(estimators)
         self.imputations: Mapping[str, float] = MappingProxyType(
@@ -538,6 +576,9 @@ def fit_gradient_boosted_quantiles(
     # above is a statement about the arguments and is owed to a caller whether
     # or not the extra is installed.
     estimator_class = _estimator_class()
+    # Read in the same breath as the class the fits are made with, so the
+    # versions a record publishes are those of the modules that did the fitting.
+    versions = _library_versions()
 
     estimators = []
     for level in grid:
@@ -565,7 +606,14 @@ def fit_gradient_boosted_quantiles(
         for vector, target in zip(_rearranged(estimators, design), targets)
     ]
     return FittedGradientBoostedQuantiles(
-        estimators, names, imputations, residuals, declared, grid, random_state
+        estimators,
+        names,
+        imputations,
+        residuals,
+        declared,
+        grid,
+        random_state,
+        ml_libraries=versions,
     )
 
 
@@ -637,6 +685,9 @@ def gbm_exceedance(
         return ExceedanceCurves(
             tuple(model.predict_stress(row, taus) for row in feature_rows),
             model.features_read,
+            # Off the model that produced the curves, not read again here: the
+            # versions a record names are the fit's.
+            ml_libraries=model.ml_libraries,
         )
 
     return fit_predict
