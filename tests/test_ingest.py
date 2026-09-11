@@ -2818,6 +2818,13 @@ class FR2004DealerPositionTests(unittest.TestCase):
     is the identity's: a week with a suppressed term is `not_evaluable`, naming
     the term, rather than `violated` against a fabricated zero.
 
+    **Superseded at A18.** A suppression is now recorded, and neither an entity
+    unit nor a floor had to be invented for it: the record hangs off the cell,
+    not a cross-section. `_fr2004_rows` records each `*` it reads as an
+    `AbsentCell` with reason `suppressed`, carried in the quality report's
+    `absent_cells`; see `AbsentValueReasonTests`. The identity's handling below
+    is unchanged.
+
     Why the suppressed week is a second week
     ----------------------------------------
 
@@ -4805,6 +4812,592 @@ class TreasurySnapshotManifestTests(unittest.TestCase):
                     self.assertTrue(parsed.rows, msg="the manifest parses to nothing")
         finally:
             os.chdir(previous)
+
+
+class AbsentValueReasonTests(unittest.TestCase):
+    """A18: every absent cell is recorded with the token it was read from.
+
+    The decision is `docs/DATA_QUALITY_DECISIONS.md`, "An absent value keeps its
+    reason". Six adapters used to drop an absent token without a trace, so the
+    panel showed a hole that could not say whether its cell was blank, `.`, not
+    yet published or suppressed. Each now calls `ingest._read_cell`, the one
+    place a token becomes an absence, and the absence is appended to
+    `ParsedSnapshots.absent_cells` and written to the quality report's
+    `absent_cells`, with a count for every reason in the vocabulary.
+
+    The sites, every one in `src/repo_model/ingest.py`: `_nyfed_rows`,
+    `_fr2004_rows`, `_fred_rows`, `_treasury_amount` (for `_treasury_rows`),
+    `_treasury_bill_rate_rows` and `_nmfp_number` (for `_nmfp_archive_scan`).
+    A seventh copy of the N-MFP token set exists outside the package, in
+    `scripts/nmfp_identity_residuals.py`, which restates `_nmfp_number` so the
+    script depends on nothing. `scripts/` is `HUMAN_ONLY`; it is reported, not
+    edited, and it writes no panel.
+
+    What it records, and what it does not
+    -------------------------------------
+
+    Each adapter keeps its own token table, because each publisher writes its
+    own tokens: `NA` is absent to the New York Fed and a refusal to FRED, and
+    blank is absent to FRED and a refusal to FR 2004. No token was added to or
+    removed from any adapter, so every refusal that existed still refuses. A
+    `None` -- a JSON null, or a delimited row short of its header -- was read as
+    the empty cell by every adapter, and is recorded as `blank`.
+
+    A New York Fed key the record does not carry is not a cell and is not
+    recorded. The API has used two spellings of each percentile and a response
+    carries one, so the other spelling is missing from every record; recording
+    it would log four absences per day that no file contains. An FR 2004 series
+    the registry does not declare is skipped before its value is read, so its
+    `*` is not recorded either: the tracked export carries 182 `*` cells, every
+    one in an undeclared series, and none of the fifteen declared ones.
+
+    What it found on the tracked inputs
+    -----------------------------------
+
+    No observation moved. `repo_model.cli build` over
+    `tests/fixtures/snapshots/funding_inputs/`, python3 3.9.6, before and after:
+    the panel pinned to `metadata/funding_panel_manifest.json`'s columns is
+    `b6af33bb...4bec` both times, the default build `d6e9a2b2...af16` both
+    times, and the long point-in-time panel `ef76551d...981e` both times. The
+    quality report beside it moved, as it must, from `1c31ce8a...` to
+    `fda80909...`, and from about 4 KB to about 12 MB: it records 49036 absent
+    cells, 49028 `blank` and 8 `na`. The 8 are the SOFR rate snapshot's four
+    percentiles on two days, written `NA`. The blanks are all FRED's -- 24500
+    `IORB` and 21692 `IOER`, each series blank across the other's years, 2831
+    `RRPONTSYD` and 5 `DFF` -- because the graph CSV joins series of different
+    spans on one date column. It writes no `.` at all in that snapshot: its
+    missing observations arrive blank, so the `dot` count there is zero and is
+    stated as zero.
+
+    The Treasury offering-amount refusal is shadowed, and still raises
+    ------------------------------------------------------------------
+
+    `_treasury_rows` refuses a withheld `offering_amt` with "withholds
+    offering_amt: an announced offering amount is known when the auction is
+    announced". That message is unreachable: the same record's `offering_amt`
+    is parsed with `float()` a few lines earlier, for the aggregate, and a
+    `"null"` or a blank refuses the file there first, as "lacks ... or
+    offering_amt". The file is refused either way, which is what the subtest
+    below asserts; which of the two messages refuses it is not changed here.
+
+    Mutation record
+    ---------------
+
+    11 September 2026, python3 3.9.6. Disposable copies under `$HOME`, one per
+    mutation, each built from `git ls-files -z --cached --others
+    --exclude-standard`; `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, whole suite
+    per mutation. Each replacement was asserted to occur exactly once and then
+    confirmed present in the file before the run. The unmutated control is
+    green before and after, with no expected failures. Every failure below is
+    in this test and no other.
+
+    1. **`.` recorded as `blank`**, in `NMFP_ABSENT_TOKENS`. Killed the
+       `sec_nmfp` subtest, `AssertionError` ("Lists differ"): the two `.`
+       cells come back `blank`.
+    2. **The FR 2004 `*` branch recording nothing**: `_fr2004_rows` back on
+       its old `if raw_value == FR2004_SUPPRESSED: continue`. Killed the
+       `nyfed_fr2004` subtest, `AssertionError` ("Lists differ: [] != ..."):
+       no observation either way, and no record.
+    3. **FRED calling the old skip**: `_fred_rows` back on
+       `if raw_value in {"", "."}: continue`. Killed the `fred` subtest,
+       `AssertionError` ("Lists differ: [] != ..."). It also killed the
+       vocabulary refusal subtest, `AssertionError` ("ValueError not raised"),
+       and rightly: that refusal is shown through FRED's table, and an adapter
+       that no longer reads its table cannot refuse what the table says.
+    4. **The unknown-token refusal removed**: `_nmfp_number`'s `raise` replaced
+       by `return None`. Killed the `sec_nmfp unknown token` refusal subtest,
+       `AssertionError` ("ValueError not raised"). The other five adapters'
+       refusals are untouched by it and still pass.
+    5. **The vocabulary check removed** from `_read_cell`. Killed the
+       vocabulary refusal subtest, `AssertionError` ("ValueError not raised").
+    """
+
+    RETRIEVED_AT = "2026-09-11T12:00:00+00:00"
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+
+    def artifact(self, source_id, name, payload, url):
+        path = self.root / name
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=source_id,
+            path=path,
+            retrieved_at=self.RETRIEVED_AT,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=url,
+            byte_count=len(payload),
+        )
+
+    @staticmethod
+    def recorded(parsed):
+        return sorted(
+            (cell.source_id, cell.field, cell.ref_date, cell.reason, cell.source_sha)
+            for cell in parsed.absent_cells
+        )
+
+    @staticmethod
+    def planted_tsv(payload, table, edits):
+        """An N-MFP archive with cells replaced: `edits` maps (row, column) to text.
+
+        `row` counts data rows from 0, in file order.
+        """
+
+        source = zipfile.ZipFile(io.BytesIO(payload))
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as target:
+            for name in source.namelist():
+                text = source.read(name).decode("utf-8")
+                if name == table:
+                    lines = [line.split("\t") for line in text.rstrip("\n").split("\n")]
+                    header = lines[0]
+                    for (row, column), token in edits.items():
+                        lines[row + 1][header.index(column)] = token
+                    text = "\n".join("\t".join(line) for line in lines) + "\n"
+                target.writestr(name, text)
+        return buffer.getvalue()
+
+    def nmfp_payload(self):
+        """Five filers for July 2026; the first four carry the planted tokens.
+
+        The fifth is untouched, so every series still has an observation and
+        the build's identities have a complete reference date to run on.
+        """
+
+        net = 1_000_000_000
+        payload = nmfp_archive(
+            [
+                {
+                    "accession": f"A{index}",
+                    "series": f"S{index}",
+                    "report": "31-JUL-2026",
+                    "net_assets": net,
+                    "flows": [("30-JUL-2026", 300_000_000, 100_000_000)]
+                    if index in (1, 5)
+                    else [],
+                }
+                for index in range(1, 6)
+            ]
+        )
+        payload = self.planted_tsv(
+            payload,
+            "NMFP_SERIESLEVELINFO.tsv",
+            {(0, "CASH"): "", (1, "CASH"): "NA", (2, "CASH"): "N/A", (3, "CASH"): "."},
+        )
+        payload = self.planted_tsv(
+            payload,
+            "NMFP_DLYSHAREHOLDERFLOWREPORT.tsv",
+            {(0, "DAILYGROSSREDEMPTIONS"): "."},
+        )
+        # Holdings rows are two per filer, Treasury then repo: row 2 is A2's
+        # Treasury holding.
+        return self.planted_tsv(
+            payload,
+            "NMFP_SCHPORTFOLIOSECURITIES.tsv",
+            {(2, "INCLUDINGVALUEOFANYSPONSORSUPP"): "N/A"},
+        )
+
+    def test_every_absent_cell_is_recorded_with_the_token_it_was_read_from(self):
+        from unittest import mock
+
+        from repo_model import ingest
+        from repo_model.data import ABSENCE_REASONS
+        from repo_model.ingest import (
+            _fr2004_rows,
+            _fred_rows,
+            _nyfed_rows,
+            _treasury_bill_rate_rows,
+            _treasury_rows,
+            load_source_registry,
+        )
+
+        registry = load_source_registry()
+        nmfp_url = "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/a18.zip"
+
+        # The vocabulary is closed, and these are its members.
+        self.assertEqual(
+            ABSENCE_REASONS, ("blank", "na", "dot", "null", "suppressed")
+        )
+
+        with self.subTest(adapter="sec_nmfp"):
+            payload = self.nmfp_payload()
+            artifact = self.artifact("sec_nmfp", "a18.zip", payload, nmfp_url)
+            sha = artifact.sha256
+            expected = sorted(
+                [
+                    ("sec_nmfp", "mmf_cash", date(2026, 7, 31), "blank", sha),
+                    ("sec_nmfp", "mmf_cash", date(2026, 7, 31), "na", sha),
+                    ("sec_nmfp", "mmf_cash", date(2026, 7, 31), "na", sha),
+                    ("sec_nmfp", "mmf_cash", date(2026, 7, 31), "dot", sha),
+                    # A flow cell is dated by its flow date, not its report date.
+                    ("sec_nmfp", "mmf_gross_redemptions", date(2026, 7, 30), "dot", sha),
+                    ("sec_nmfp", "mmf_treasury_holdings", date(2026, 7, 31), "na", sha),
+                ]
+            )
+            panel_path = self.root / "nmfp.csv"
+            registry_path = registry_with_nmfp_coverage_floor(self.root, 1)
+            build_point_in_time_snapshot(
+                [artifact], panel_path, registry_path=registry_path
+            )
+            parsed = parse_snapshots(
+                [artifact], registry=json.loads(registry_path.read_text())
+            )
+            self.assertEqual(self.recorded(parsed), expected)
+
+            # ...and the quality report carries exactly those, with a count for
+            # every reason, a zero stated rather than omitted.
+            report = json.loads(
+                panel_path.with_suffix(".csv.quality.json").read_text()
+            )["absent_cells"]
+            self.assertEqual(
+                report["counts"],
+                {"blank": 1, "na": 3, "dot": 2, "null": 0, "suppressed": 0},
+            )
+            self.assertEqual(
+                sorted(
+                    (
+                        cell["source_id"],
+                        cell["field"],
+                        date.fromisoformat(cell["ref_date"]),
+                        cell["reason"],
+                        cell["source_sha"],
+                    )
+                    for cell in report["cells"]
+                ),
+                expected,
+            )
+
+            # No value was invented for an absent cell: A1 was the only filer
+            # to lose its redemptions, and A5 files the same day, so the day
+            # keeps A5's redemptions and the net flow is A5's alone.
+            values = {
+                (row.series_id, row.ref_date): row.value
+                for row in load_point_in_time_panel(panel_path)
+            }
+            self.assertEqual(values[("mmf_gross_subscriptions", date(2026, 7, 30))], 0.6)
+            self.assertEqual(values[("mmf_gross_redemptions", date(2026, 7, 30))], 0.1)
+            self.assertEqual(values[("mmf_net_flow", date(2026, 7, 30))], 0.2)
+            self.assertEqual(values[("mmf_cash", date(2026, 7, 31))], 0.0)
+
+        with self.subTest(adapter="nyfed_fr2004"):
+            fixture = FR2004DealerPositionTests
+            text = fixture.FIXTURE.read_text(encoding="utf-8")
+            declared = set(registry[FR2004_SOURCE_ID]["fields"])
+            real_week = {
+                row.series_id: row.value
+                for row in _fr2004_rows(
+                    self.artifact(FR2004_SOURCE_ID, "real.csv", text.encode(), "fr2004"),
+                    text.encode(),
+                    registry,
+                )
+                if row.ref_date == fixture.REF_DATE
+            }
+            suppressed_series = "PDPOSTIPS-G11"
+            lines = [text.rstrip("\n")]
+            for series_id in (fixture.TOTAL_SERIES, *fixture.COMPONENTS):
+                raw = (
+                    "*"
+                    if series_id == suppressed_series
+                    else str(round(real_week[series_id] * 1000))
+                )
+                lines.append(
+                    f'"{fixture.SUPPRESSED_REF_DATE.isoformat()}","{series_id}","{raw}"'
+                )
+            planted = ("\n".join(lines) + "\n").encode("utf-8")
+            artifact = self.artifact(FR2004_SOURCE_ID, "latest.csv", planted, "fr2004")
+            parsed = parse_snapshots([artifact], registry=registry)
+
+            # Read off the text by `csv`, touching no adapter code.
+            from_text = sorted(
+                (
+                    FR2004_SOURCE_ID,
+                    record["Time Series"].strip(),
+                    date.fromisoformat(record["As Of Date"].strip()),
+                    "suppressed",
+                    artifact.sha256,
+                )
+                for record in csv.DictReader(io.StringIO(planted.decode("utf-8-sig")))
+                if record["Time Series"].strip() in declared
+                and record["Value (millions)"].strip() == "*"
+            )
+            self.assertEqual(
+                from_text,
+                [
+                    (
+                        FR2004_SOURCE_ID,
+                        suppressed_series,
+                        fixture.SUPPRESSED_REF_DATE,
+                        "suppressed",
+                        artifact.sha256,
+                    )
+                ],
+            )
+            self.assertEqual(self.recorded(parsed), from_text)
+
+            # The identity that names the series is not_evaluable, not violated.
+            evaluation = validate_accounting_identities(
+                list(parsed.rows), {FR2004_SOURCE_ID: registry[FR2004_SOURCE_ID]}
+            )["nyfed_fr2004:dealer_treasury_total_is_its_declared_components"]
+            self.assertEqual(evaluation.violations, ())
+            self.assertEqual(
+                [
+                    (item.ref_date, item.absent_fields)
+                    for item in evaluation.unevaluated
+                ],
+                [(fixture.SUPPRESSED_REF_DATE, (suppressed_series,))],
+            )
+
+        def nyfed_artifacts(rate_payload, volume_payload):
+            artifacts = fetch_nyfed_reference_rate(
+                self.root / "nyfed",
+                "sofr",
+                "2026-01-01",
+                "2026-01-06",
+                lambda url: volume_payload if "type=volume" in url else rate_payload,
+            )
+            return {
+                ("volume" if "type=volume" in item.url else "rate"): item
+                for item in artifacts
+            }
+
+        with self.subTest(adapter="nyfed"):
+            rate = json.dumps(
+                {
+                    "refRates": [
+                        {
+                            "effectiveDate": "2026-01-02",
+                            "percentRate": 4.31,
+                            "percentPercentile1": "",
+                            "percentPercentile25": "NA",
+                            "percentPercentile75": "N/A",
+                            "percentPercentile99": ".",
+                        },
+                        {
+                            # Lower case folds, a JSON null is the empty cell,
+                            # and a key the record does not carry is no cell.
+                            "effectiveDate": "2026-01-05",
+                            "percentRate": 4.30,
+                            "percentPercentile1": "na",
+                            "percentPercentile25": None,
+                            "percentPercentile75": 4.29,
+                        },
+                    ]
+                }
+            ).encode()
+            volume = json.dumps(
+                {
+                    "refRates": [
+                        {"effectiveDate": "2026-01-02", "volumeInBillions": "."},
+                        {"effectiveDate": "2026-01-05", "volumeInBillions": 2000},
+                    ]
+                }
+            ).encode()
+            artifacts = nyfed_artifacts(rate, volume)
+            parsed = parse_snapshots(list(artifacts.values()), registry=registry)
+            rate_sha, volume_sha = artifacts["rate"].sha256, artifacts["volume"].sha256
+            self.assertEqual(
+                self.recorded(parsed),
+                sorted(
+                    [
+                        ("nyfed_sofr", "SOFR_p1", date(2026, 1, 2), "blank", rate_sha),
+                        ("nyfed_sofr", "SOFR_p25", date(2026, 1, 2), "na", rate_sha),
+                        ("nyfed_sofr", "SOFR_p75", date(2026, 1, 2), "na", rate_sha),
+                        ("nyfed_sofr", "SOFR_p99", date(2026, 1, 2), "dot", rate_sha),
+                        ("nyfed_sofr", "SOFR_p1", date(2026, 1, 5), "na", rate_sha),
+                        ("nyfed_sofr", "SOFR_p25", date(2026, 1, 5), "blank", rate_sha),
+                        ("nyfed_sofr", "SOFR_volume", date(2026, 1, 2), "dot", volume_sha),
+                    ]
+                ),
+            )
+            self.assertEqual(
+                sorted((row.series_id, row.ref_date, row.value) for row in parsed.rows),
+                [
+                    ("SOFR", date(2026, 1, 2), 4.31),
+                    ("SOFR", date(2026, 1, 5), 4.30),
+                    ("SOFR_p75", date(2026, 1, 5), 4.29),
+                    ("SOFR_volume", date(2026, 1, 5), 2000.0),
+                ],
+            )
+
+        fred_payload = b"observation_date,IORB,DFF\n2026-01-02,,.\n2026-01-05,4.30,4.33\n"
+
+        with self.subTest(adapter="fred"):
+            artifact = fetch_fred_macro(self.root / "fred", lambda url: fred_payload)[0]
+            parsed = parse_snapshots([artifact], registry=registry)
+            self.assertEqual(
+                self.recorded(parsed),
+                [
+                    ("fred_macro_latest_vintage", "DFF", date(2026, 1, 2), "dot", artifact.sha256),
+                    ("fred_macro_latest_vintage", "IORB", date(2026, 1, 2), "blank", artifact.sha256),
+                ],
+            )
+            self.assertEqual(
+                sorted((row.series_id, row.ref_date, row.value) for row in parsed.rows),
+                [("DFF", date(2026, 1, 5), 4.33), ("IORB", date(2026, 1, 5), 4.30)],
+            )
+
+        def auction(issue, security_type, offering, soma):
+            return {
+                "issue_date": issue,
+                "record_date": issue,
+                "auction_date": "2026-01-08",
+                "security_type": security_type,
+                "offering_amt": offering,
+                "soma_accepted": soma,
+            }
+
+        treasury_records = [
+            auction("2026-01-15", "Bill", "50000000000", "null"),
+            auction("2026-01-22", "Note", "25000000000", ""),
+            auction("2026-01-29", "Bill", "30000000000", "1000000000"),
+        ]
+
+        def treasury_payload(records):
+            return json.dumps({"data": records}).encode()
+
+        with self.subTest(adapter="treasury_auctions"):
+            artifact = fetch_treasury_auctions(
+                self.root / "treasury",
+                "2026-01-01",
+                "2026-01-31",
+                lambda url: treasury_payload(treasury_records),
+            )[0]
+            parsed = parse_snapshots([artifact], registry=registry)
+            self.assertEqual(
+                self.recorded(parsed),
+                [
+                    ("treasury_auctions", "treasury_settlement_soma", date(2026, 1, 15), "null", artifact.sha256),
+                    ("treasury_auctions", "treasury_settlement_soma", date(2026, 1, 22), "blank", artifact.sha256),
+                ],
+            )
+            self.assertEqual(
+                sorted(
+                    row.ref_date
+                    for row in parsed.rows
+                    if row.series_id == "treasury_settlement_soma"
+                ),
+                [date(2026, 1, 29)],
+            )
+            # A withheld announced offering amount still refuses the file.
+            withheld = treasury_records + [
+                auction("2026-01-29", "Bill", "null", "1000000000")
+            ]
+            with self.assertRaisesRegex(ValueError, "offering_amt"):
+                _treasury_rows(artifact, treasury_payload(withheld))
+
+        bill_url = (
+            "https://home.treasury.gov/resource-center/data-chart-center/"
+            "interest-rates/TextView?type=daily_treasury_bill_rates"
+        )
+
+        def bill_payload(cell):
+            return (
+                'Date,"4 WEEKS BANK DISCOUNT","4 WEEKS COUPON EQUIVALENT"\n'
+                f"09/09/2026,{cell},4.10\n"
+                "09/08/2026,4.01,4.11\n"
+            ).encode()
+
+        with self.subTest(adapter="treasury_bill_rates"):
+            artifact = self.artifact(
+                "treasury_bill_rates", "bills.csv", bill_payload(""), bill_url
+            )
+            parsed = parse_snapshots([artifact], registry=registry)
+            self.assertEqual(
+                self.recorded(parsed),
+                [
+                    (
+                        "treasury_bill_rates",
+                        "tbill_4w_bank_discount",
+                        date(2026, 9, 9),
+                        "blank",
+                        artifact.sha256,
+                    )
+                ],
+            )
+            self.assertNotIn(
+                ("tbill_4w_bank_discount", date(2026, 9, 9)),
+                {(row.series_id, row.ref_date) for row in parsed.rows},
+            )
+
+        # -- refusals: a token outside an adapter's own table still refuses
+        # the file, each by the message only its adapter writes ------------
+        with self.subTest(refusal="sec_nmfp unknown token"):
+            payload = self.planted_tsv(
+                nmfp_archive(
+                    [{"accession": "A1", "series": "S1", "report": "31-JUL-2026"}]
+                ),
+                "NMFP_SERIESLEVELINFO.tsv",
+                {(0, "CASH"): "null"},
+            )
+            artifact = self.artifact("sec_nmfp", "unknown.zip", payload, nmfp_url)
+            with self.assertRaisesRegex(
+                ValueError, r"SEC Form N-MFP CASH value is not numeric: 'null'"
+            ):
+                parse_snapshots([artifact], registry=registry)
+
+        with self.subTest(refusal="nyfed unknown token"):
+            artifacts = nyfed_artifacts(
+                b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":"*"}]}',
+                b'{"refRates":[]}',
+            )
+            with self.assertRaisesRegex(
+                ValueError, "New York Fed percentRate is not numeric"
+            ):
+                _nyfed_rows(artifacts["rate"], artifacts["rate"].path.read_bytes())
+
+        with self.subTest(refusal="nyfed_fr2004 unknown token"):
+            blank = text.replace(
+                '"2026-08-26","PDPOSGST-TOT","477607"',
+                '"2026-08-26","PDPOSGST-TOT",""',
+            ).encode()
+            self.assertNotEqual(blank, text.encode())
+            with self.assertRaisesRegex(
+                ValueError, r"only '\*' marks a suppressed value"
+            ):
+                _fr2004_rows(
+                    self.artifact(FR2004_SOURCE_ID, "blank.csv", blank, "fr2004"),
+                    blank,
+                    registry,
+                )
+
+        with self.subTest(refusal="fred unknown token"):
+            payload = b"observation_date,IORB\n2026-01-02,NA\n"
+            artifact = self.artifact(
+                "fred_macro_latest_vintage", "fred.csv", payload, "fred"
+            )
+            with self.assertRaisesRegex(ValueError, "FRED IORB is not numeric"):
+                _fred_rows(artifact, payload)
+
+        with self.subTest(refusal="treasury_auctions unknown token"):
+            payload = treasury_payload(
+                [auction("2026-01-15", "Bill", "50000000000", "NULL")]
+            )
+            artifact = self.artifact("treasury_auctions", "t.json", payload, "fiscal")
+            with self.assertRaisesRegex(
+                ValueError, "has a non-numeric soma_accepted: 'NULL'"
+            ):
+                _treasury_rows(artifact, payload)
+
+        with self.subTest(refusal="treasury_bill_rates unknown token"):
+            payload = bill_payload(".")
+            artifact = self.artifact("treasury_bill_rates", "b.csv", payload, bill_url)
+            with self.assertRaisesRegex(
+                ValueError, r"has a non-numeric '4 WEEKS BANK DISCOUNT' cell: '\.'"
+            ):
+                _treasury_bill_rate_rows(artifact, payload, registry)
+
+        # -- refusal: an adapter emitting a reason outside the vocabulary -----
+        with self.subTest(refusal="reason outside the vocabulary"):
+            artifact = self.artifact(
+                "fred_macro_latest_vintage", "fred-vocab.csv", fred_payload, "fred"
+            )
+            with mock.patch.dict(ingest.FRED_ABSENT_TOKENS, {".": "missing"}):
+                with self.assertRaisesRegex(
+                    ValueError, r"absence reason 'missing' is outside the vocabulary"
+                ):
+                    _fred_rows(artifact, fred_payload, absent_cells=[])
 
 
 if __name__ == "__main__":
