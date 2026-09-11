@@ -1178,6 +1178,125 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
     ]
 
 
+TREASURY_BILL_RATES_SOURCE_ID = "treasury_bill_rates"
+
+#: One rate column of Treasury's "Daily Treasury Bill Rates" export: a tenor in
+#: weeks and the basis it is quoted on. The field is spelled from those two
+#: parts and must then be one the registry declares.
+TREASURY_BILL_RATE_COLUMN = re.compile(r"(\d+) WEEKS (BANK DISCOUNT|COUPON EQUIVALENT)")
+TREASURY_BILL_RATE_DATE = re.compile(r"(\d{2})/(\d{2})/(\d{4})")
+TREASURY_BILL_RATE_VALUE = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def _treasury_bill_rate_field(column: str) -> Optional[str]:
+    match = TREASURY_BILL_RATE_COLUMN.fullmatch(column.strip())
+    if match is None:
+        return None
+    tenor, basis = match.groups()
+    return f"tbill_{int(tenor)}w_{basis.lower().replace(' ', '_')}"
+
+
+def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+    """One year of Treasury's daily bill rates, read by that file's own header.
+
+    The header is not stable across years: 2018-2021 carry 4, 8, 13, 26 and 52
+    weeks, 17 weeks appears in 2022 and 6 weeks in 2025. So every column is
+    mapped by its name, per file, and never by position. Applying the newest
+    header to an older file parses, emits declared series, and is wrong: on 2018
+    it publishes the 26-week coupon equivalent as the 13-week one.
+
+    * A header column that maps to no declared field is refused, not skipped. A
+      tenor Treasury adds is a registry decision, and a skipped column is a
+      series nobody decided to drop.
+    * A blank cell is a tenor not yet auctioned on that date -- the new tenor's
+      first months of the year it appears. It yields no observation; `0.0`
+      would publish a rate on a bill that did not exist.
+    * A cell that is neither blank nor a plain decimal is refused. Negative
+      rates are decimals and are real: eight cells of March 2020 carry them.
+    * `days`, `available_time` and `timezone` come from the registry's
+      `release_lag`, as `_fr2004_rows` reads its own. The export carries one
+      date, the quote date, and that is the `record_date` the lag counts from.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .contract import validate_release_lag
+    from .data import PointInTimeObservation
+
+    source_id = TREASURY_BILL_RATES_SOURCE_ID
+    source = registry.get(source_id) if isinstance(registry, Mapping) else None
+    if not isinstance(source, Mapping):
+        raise ValueError(
+            f"{source_id} is not declared in the source registry; the adapter "
+            f"reads its fields and its release lag from there"
+        )
+    declared_fields = {str(field) for field in source.get("fields", ())}
+    release_lag = source.get("release_lag")
+    problems = validate_release_lag(source_id, release_lag)
+    if problems:
+        raise ValueError("; ".join(problems))
+    if release_lag["basis"] != "record_date":
+        raise ValueError(
+            f"{source_id}: availability is counted from the quote date, so the "
+            f"declared basis must be 'record_date', got {release_lag['basis']!r}"
+        )
+    lag = timedelta(days=int(release_lag["days"]))
+    available_time = time.fromisoformat(release_lag["available_time"])
+    zone = ZoneInfo(release_lag["timezone"])
+
+    reader = csv.reader(io.StringIO(payload.decode("utf-8-sig")))
+    header = next(reader, None)
+    if not header or header[0].strip() != "Date":
+        raise ValueError(
+            "Treasury bill-rate snapshot is not the expected CSV format; its first "
+            "column must be Date"
+        )
+    columns = []
+    for position, name in enumerate(header[1:], start=1):
+        field = _treasury_bill_rate_field(name)
+        if field not in declared_fields:
+            raise ValueError(
+                f"Treasury bill-rate header column {name!r} maps to no declared "
+                f"field of {source_id}"
+            )
+        columns.append((position, field))
+
+    rows = []
+    for line_number, record in enumerate(reader, start=2):
+        raw_date = record[0].strip()
+        match = TREASURY_BILL_RATE_DATE.fullmatch(raw_date)
+        try:
+            if match is None:
+                raise ValueError(raw_date)
+            month, day, year = (int(part) for part in match.groups())
+            quote_date = date(year, month, day)
+        except ValueError as exc:
+            raise ValueError(
+                f"Treasury bill-rate line {line_number} has a date not in "
+                f"MM/DD/YYYY: {raw_date!r}"
+            ) from exc
+        available_at = datetime.combine(quote_date + lag, available_time, tzinfo=zone)
+        for position, field in columns:
+            raw = record[position].strip()
+            if not raw:
+                continue
+            if TREASURY_BILL_RATE_VALUE.fullmatch(raw) is None:
+                raise ValueError(
+                    f"Treasury bill-rate line {line_number} has a non-numeric "
+                    f"{header[position]!r} cell: {raw!r}"
+                )
+            rows.append(
+                PointInTimeObservation(
+                    series_id=field,
+                    ref_date=quote_date,
+                    available_at=available_at,
+                    value=float(raw),
+                    vintage_id=f"{quote_date.isoformat()}:{artifact.retrieved_at}",
+                    source_sha=artifact.sha256,
+                )
+            )
+    return rows
+
+
 #: The value columns each N-MFP table contributes, mapped to the series they
 #: feed. Module-level rather than local to `_sec_nmfp_rows` so the required
 #: header below is derived from the mapping the parser actually reads.
@@ -2443,6 +2562,8 @@ def parse_snapshots(
             parsed_rows = _fred_rows(artifact, payload)
         elif artifact.source_id == "treasury_auctions":
             parsed_rows = _treasury_rows(artifact, payload)
+        elif artifact.source_id == TREASURY_BILL_RATES_SOURCE_ID:
+            parsed_rows = _treasury_bill_rate_rows(artifact, payload, registry)
         else:
             raise ValueError(f"no point-in-time parser for {artifact.source_id}")
         retrieved_at = datetime.fromisoformat(
