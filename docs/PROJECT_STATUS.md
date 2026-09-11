@@ -97,7 +97,8 @@ a commit message:
   a refused column is absent and never quietly revised. The join does **not**
   subtract the release lag — the purge does, and a join that shifted values too
   would apply the gap twice while looking careful. There is no forward fill: a
-  reference date with no observation is a hole, counted and left empty.
+  reference date with no observation is a hole, counted and left empty; the ingest's
+  quality report records why each source cell behind it was absent.
 - **An identity that could not be evaluated no longer reads as one that held.**
   Absent terms are never imputed to zero, unevaluable reference dates are recorded
   term by term, and the check walks every date any term was observed on rather than

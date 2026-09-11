@@ -529,7 +529,8 @@ digest and the three eras.
 
 Wired: the `nyfed_fr2004` adapter supplies the column through `contract.FEATURE_FIELDS`,
 millions converted to billions. It dates each series by its own as-of date, never the
-file's, and reads `*` (suppressed for confidentiality) as neither zero nor a failed read.
+file's, and reads `*` (suppressed for confidentiality) as neither zero nor a failed read:
+it is recorded as `suppressed` (below).
 The published Milestone A panel does not carry the column; it is pinned to its manifest's
 `built_columns`.
 
@@ -539,10 +540,13 @@ The SEC's Form N-MFP data-set readme marks fields nullable but defines no token 
 missing value, so `"."` in the archives is undocumented by the publisher. The New York
 Fed's FR 2004 export writes `*` for a figure suppressed for confidentiality.
 
-**Decided: every absent cell is recorded with the token it was read from.** `"."`, `NA`,
-`N/A` and blank in N-MFP, and `*` in FR 2004, still yield no observation, but each is
-recorded with its reason, so an absence can be told apart from a blank and a suppressed
-figure from a missing one. A token outside that vocabulary is still refused.
+**Decided: every absent cell is recorded with the token it was read from.** An absent
+cell still yields no observation; the ingest's quality report records it with one reason
+of `blank`, `na`, `dot`, `null` or `suppressed`. Each adapter keeps its own tokens: New
+York Fed rates and N-MFP accept blank, `NA`, `N/A` and `"."`; FRED blank and `"."`;
+Treasury auctions blank and Fiscal Data's string `"null"`; bill rates blank; FR 2004 `*`
+in a declared series. A token outside an adapter's list is refused, and so is a reason
+outside the vocabulary.
 
 ## Decision rule
 
