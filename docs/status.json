@@ -1,5 +1,5 @@
 {
-  "commit": "aceefb2",
+  "commit": "679470a",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -27,6 +27,8 @@
     "compare_persistence_vs_arx_volume.json",
     "compare_persistence_vs_arx_volume_mh61_crps.json",
     "compare_persistence_vs_gbm_conformal_mh61_crps.json",
+    "compare_persistence_vs_gbm_garch11_conformal_mh61_crps.json",
+    "compare_persistence_vs_gbm_garch11_mh61_crps.json",
     "compare_persistence_vs_gbm_lags1_conformal_mh61_crps.json",
     "compare_persistence_vs_gbm_lags1_mh61_crps.json",
     "compare_persistence_vs_gbm_lags5_conformal_mh61_crps.json",
