@@ -54,15 +54,15 @@ came from.
 - Its uncertainty bands are **too narrow**: a band meant to contain the outcome 90% of the time contained it 81.0% of the time. That gap is measured and unexplained, and it is the next thing being worked on.
 - The scoring itself has been checked against a case where the right answer is known in advance: a forecast with no information in it scores **0.000 skill**, exactly as it must. Every later claim of skill rests on that.
 
-**No model has yet been shown to forecast better than the benchmark.** That is the honest state of the work, and it is why nothing here is a basis for a decision about money.
+**Challenger models have scored better than the benchmark over the same decision points, but none of those results is yet reproduced end to end or broken down by date.** That is the honest state of the work, and it is why nothing here is a basis for a decision about money.
 
 <!-- end generated: headline -->
 
 ## The limitations, stated plainly
 
-- **There is no forecasting result yet.** What exists is a verified measuring
-  instrument and a characterised benchmark. A model that beats the benchmark is
-  the current milestone, not a finished one.
+- **No forecasting result is finished yet.** Challengers have beaten the
+  benchmark over the same decision points, but only the benchmark is re-derived
+  end to end, and no record yet says which days the wins come from.
 - **The uncertainty bands are known to be too narrow**, and whether that is bad
   luck or a real miscalibration has not yet been established either way.
 - **The money-market-fund data channel has open quality decisions**, recorded in
@@ -78,10 +78,10 @@ came from.
 
 ## The next operational step
 
-Finish the model-comparison milestone: score at least one genuine challenger
-against the benchmark at the same decision points, settle whether the coverage
-gap is sampling noise, and publish the pair as a stable, checksummed result
-artifact that a reader can re-derive from a clean clone.
+Finish the model-comparison milestone: record which days each challenger's
+win comes from, settle whether the coverage gap is sampling noise, and publish
+the winning pair as a stable, checksummed result artifact that a reader can
+re-derive from a clean clone.
 
 For the current position in that plan, and for the evidence behind every figure
 above, see [`../README.md`](../README.md), the machine-readable

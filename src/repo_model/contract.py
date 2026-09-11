@@ -835,8 +835,10 @@ TREASURY_COUPON_SECURITY_TYPES = frozenset({"Note", "Bond", "TIPS", "FRN"})
 #: whether it is part of `treasury_settlement`). Units are USD billions, as for
 #: the aggregate. `soma_accepted` is an auction RESULT, unlike `offering_amt`,
 #: which is announced: the SOMA component may not be dated available before
-#: the auction's results are published, and an adapter that dates it by the
-#: announcement's `record_date` reads an outcome early.
+#: the auction's results are published. Fiscal Data's `record_date` is the
+#: settlement (`issue_date`), never before `auction_date` in the tracked
+#: snapshot, so dating by it is late rather than early; the adapter refuses a
+#: result dated before its auction.
 TREASURY_SETTLEMENT_COMPONENTS = MappingProxyType(
     {
         "treasury_settlement_bill": (

@@ -96,8 +96,9 @@ CORP reliability curves with 90% stationary-bootstrap bands, one panel per decla
 Requirements: Python 3.9, 3.10 or 3.11. The supported range is declared once in
 `pyproject.toml` and is checked against the interpreter that runs the suite; 3.12
 moves the published figures in their last digits and is outside it. The project intentionally uses
-only the Python standard library for everything a published result depends on, so
-reproducing one needs no package installation. Phase 2's machine-learning candidates live
+only the Python standard library for everything a published result depends on except
+the gradient-boosted comparison, which needs the extra below; reproducing any other
+needs no package installation. Phase 2's machine-learning candidates live
 in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
 scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`).
 
@@ -156,8 +157,8 @@ Implemented:
 Still in progress:
 
 - validating complete SEC Form N-MFP monthly cross-sections;
-- scoring the threshold and gradient-boosted challengers against persistence on the
-  frozen panel (both run in `compare`; the runs have not been made); and
+- scoring the threshold challenger against persistence on the frozen panel (the
+  gradient-boosted one has been; see `docs/PROJECT_STATUS.md`); and
 - producing genuine out-of-sample and event-window results.
 
 See

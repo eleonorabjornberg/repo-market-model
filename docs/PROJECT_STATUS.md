@@ -161,11 +161,19 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `docs/runs/compare_persistence_vs_rolling_residual_w60_mh61_crps.json`, and its
   90% interval on the paired difference excludes zero in rolling-residual's favour.
   The ARX CRPS records were run at the same minimum history, over the same
-  origins, so all three CRPS findings are measured against persistence at one
+  origins, so every CRPS finding here is measured against persistence at one
   set of origins; no challenger has been compared with another directly.
-  The threshold ARX (`--model threshold`) and gradient-boosted conditional
-  quantiles (`--model gbm`, behind the `ml` extra) are built and both can be
-  scored by `compare --loss crps`; neither has been. The rolling-residual result also makes the interval-coverage finding harder rather than easier: the
+  Gradient-boosted conditional quantiles (`--model gbm`, behind the `ml` extra)
+  were scored the same way, in `docs/runs/compare_persistence_vs_gbm_mh61_crps.json`,
+  and the 90% interval on its mean paired difference also excludes zero in its
+  favour, around a mean difference an order of magnitude larger than
+  rolling-residual's. That record does not name the numpy and scikit-learn versions
+  it ran with, so it re-runs within the `ml` extra's declared range rather than to
+  the digit. These are several challengers against one benchmark at the 90% level,
+  on a daily panel scored with an expanding window and a purge, and no record yet
+  says which days a win or a loss comes from. The threshold ARX
+  (`--model threshold`) has not been scored. The rolling-residual result also makes
+  the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
   replaced.
@@ -259,12 +267,11 @@ Stated explicitly, because each is easy to mistake for something stronger.
   at every scale, which is not what a relative bound corrects.
   `metadata/sources.json`'s `tolerance_note` carries the derivation and
   `DATA_QUALITY_DECISIONS.md` records the decision.
-- **The Treasury settlement series aggregates decisions it does not implement.**
-  Security type and tenor are summed into one series, and the Fed's SOMA leg is
-  absent from it -- this page said SOMA add-ons were summed in until the check the split
-  waited on found `offering_amt` excludes them. The components are now defined in
-  `src/repo_model/contract.py`; the adapter does not emit them yet, and nothing tests
-  whether the simplification affects conclusions.
+- **The Treasury settlement split is not in the panel.** The adapter emits the bill,
+  coupon and SOMA components beside `treasury_settlement`, SOMA outside the aggregate
+  because `offering_amt` excludes it. No panel column is sourced from them in
+  `src/repo_model/contract.py`, so no model reads the split, and nothing tests whether
+  the aggregate's simplification affects conclusions.
 - **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
   index is licensed, and the Treasury cash-futures basis needs licensed futures prices;
   this repository takes public sources only (human decision, 10 Sep). A public proxy
@@ -281,9 +288,9 @@ The first two items of every previous revision of this list -- build and freeze 
 panel, and backfill the archive history -- have been done, and the list now starts
 where they left off.
 
-1. Score the built challengers against the persistence benchmark on the frozen
-   panel under `--loss crps`, before building another: `--model threshold` and
-   `--model gbm`. The models exist; the comparisons do not.
+1. Score the threshold ARX (`--model threshold`) against the persistence benchmark
+   on the frozen panel under `--loss crps`, before building another model. The
+   model exists; the comparison does not.
 2. Make the exceedance metric affordable at panel length, then take it with a
    conditional model rather than with climatology alone.
 3. ~~Settle what a monthly N-MFP cross-section *is*~~ -- done: a split month-end is
@@ -294,8 +301,8 @@ where they left off.
    2022-12-31, when money funds held 2,273.8 bn of Fed reverse repo, 76.4% of their repo
    book (`scripts/nmfp_on_rrp_channel.py`). What is not done is making an absent declared
    field distinguishable from a parsing failure, which is now the whole of this item.
-5. Calibrate the N-MFP identity tolerance -- after item 3, not before -- and split
-   the Treasury-settlement aggregate into its bill, coupon and SOMA components.
+5. Calibrate the N-MFP identity tolerance -- after item 3, not before -- and source
+   panel columns from the Treasury-settlement components the adapter now emits.
    Both decisions are recorded in `DATA_QUALITY_DECISIONS.md`.
 6. Replace the never-revised prose with committed vintages and a test that
    recomputes the comparison offline. The IOER declaration is the weaker of the two

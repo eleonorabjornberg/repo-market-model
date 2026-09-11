@@ -1,0 +1,171 @@
+{
+  "comparison": {
+    "loss": "crps_bps",
+    "mean_difference_bps": 0.5404790111619519,
+    "mean_difference_interval": {
+      "block_length": 5,
+      "level": 0.9,
+      "lower": 0.26950670642264896,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1851977879,
+      "upper": 0.8742102968323692
+    },
+    "model_a": {
+      "crps_bps": 2.528838155958804,
+      "model": "persistence"
+    },
+    "model_b": {
+      "crps_bps": 1.9883591447968527,
+      "model": "gbm"
+    },
+    "origin_count": 2039,
+    "sign_convention": "difference = crps_bps(model_a=persistence) - crps_bps(model_b=gbm) at each scored origin; a positive mean difference means model_a=persistence carried the larger loss over these origins, so model_b=gbm was the more accurate of the two on them"
+  },
+  "declaration": {
+    "decision_time": "16:00",
+    "minimum_history": 61,
+    "model_a": {
+      "features": [
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps"
+      ],
+      "model": "persistence"
+    },
+    "model_b": {
+      "features": [
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps"
+      ],
+      "model": "gbm"
+    }
+  },
+  "derived": {
+    "model_a": {
+      "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR",
+        "nyfed_sofr.SOFR_p25",
+        "nyfed_sofr.SOFR_p75",
+        "nyfed_sofr.SOFR_volume"
+      ],
+      "sources": [
+        "fred_macro_latest_vintage",
+        "nyfed_sofr"
+      ]
+    },
+    "model_b": {
+      "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR",
+        "nyfed_sofr.SOFR_p25",
+        "nyfed_sofr.SOFR_p75",
+        "nyfed_sofr.SOFR_volume"
+      ],
+      "sources": [
+        "fred_macro_latest_vintage",
+        "nyfed_sofr"
+      ]
+    },
+    "purge_days": 6
+  },
+  "folds": {
+    "count": 2039,
+    "first": {
+      "feature_date": "2018-06-28",
+      "scored_date": "2018-07-05",
+      "train_end": "2018-06-28",
+      "train_rows": 62,
+      "train_start": "2018-04-03"
+    },
+    "last": {
+      "feature_date": "2026-08-27",
+      "scored_date": "2026-09-03",
+      "train_end": "2026-08-27",
+      "train_rows": 2099,
+      "train_start": "2018-04-03"
+    }
+  },
+  "panel": {
+    "build_manifest": {
+      "build_cutoff": "2026-09-08T21:31:42+00:00",
+      "built_columns": [
+        "sofr",
+        "iorb",
+        "sofr_volume",
+        "sofr_p25",
+        "sofr_p75",
+        "tgcr",
+        "bgcr",
+        "treasury_settlement"
+      ],
+      "decision_time": "16:00:00",
+      "end_date": "2026-09-03",
+      "holes": {
+        "bgcr": 2104,
+        "iorb": 0,
+        "sofr": 0,
+        "sofr_p25": 2,
+        "sofr_p75": 2,
+        "sofr_volume": 0,
+        "tgcr": 2104,
+        "treasury_settlement": 2104
+      },
+      "incomplete_dates": 4440,
+      "path": "data/processed/funding_panel.csv",
+      "refused_columns": {
+        "dealer_treasury_position": "feature 'dealer_treasury_position' has no source: no ingesting source is declared in metadata/sources.json; the column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of the sample panel. Sizing a purge over it would purge zero days for a weekly FR 2004 series.",
+        "mmf_assets": "sec_nmfp: every snapshot row must carry available_at",
+        "on_rrp": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "quarter_end": "sources must select at least one feature source",
+        "reserve_balances": "fred_macro_latest_vintage: every snapshot row must carry available_at",
+        "tax_date": "sources must select at least one feature source",
+        "tga": "fred_macro_latest_vintage: every snapshot row must carry available_at"
+      },
+      "required_columns": [
+        "sofr",
+        "iorb"
+      ],
+      "row_count": 2104,
+      "source_shas": [
+        "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
+        "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
+        "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1"
+      ],
+      "start_date": "2018-04-03"
+    },
+    "build_manifest_binding": {
+      "compared": [
+        "row_count",
+        "first_date",
+        "last_date"
+      ],
+      "kind": "extent",
+      "note": "this manifest carries no digest of the panel it describes, so this binds it to the panel by extent and not by bytes: a manifest is a claim about a path, and the bytes under that path may have changed since it was written"
+    },
+    "first_date": "2018-04-03",
+    "last_date": "2026-09-03",
+    "path": "data/processed/funding_panel.csv",
+    "row_count": 2104,
+    "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec"
+  },
+  "provenance": {
+    "code": {
+      "commit": "bedc762a46d76d0b13f020f22b612d1b88a35c8c",
+      "tree_modified": false,
+      "untracked_files_present": true
+    },
+    "inputs": {
+      "source_registry": {
+        "path": "metadata/sources.json",
+        "sha256": "3d95f1105a0f57c69ddd1cb36277fb3c4e800ebccd5cfe6c97a79791314f47c3"
+      }
+    }
+  }
+}

@@ -891,15 +891,19 @@ def _split_month_end_divides_the_universe():
     )
 
 
-def _treasury_settlement_is_one_aggregate():
-    """The settlement series is declared as one field, with no split components."""
-    for source in registry().values():
-        fields = source.get("fields", ())
-        if "treasury_settlement" in fields:
-            return not any(
-                str(field).startswith("treasury_settlement_") for field in fields
-            )
-    return False
+def _treasury_components_are_not_panel_columns():
+    """No panel column is sourced from a Treasury-settlement component.
+
+    Read from `contract.FEATURE_FIELDS`, the column-source map, not from the
+    registry: since A10 the registry declares the components, and what the
+    page states is that the panel does not carry them.
+    """
+    from repo_model import contract
+
+    return not any(
+        str(column).startswith("treasury_settlement_")
+        for column in contract.FEATURE_FIELDS
+    )
 
 
 def _part_of_the_cli_is_unpublished():
@@ -1117,14 +1121,14 @@ LIMITATIONS = (
         None,
     ),
     (
-        "treasury_settlement_aggregate",
+        "treasury_settlement_split_not_in_panel",
         "declaration",
         "docs/PROJECT_STATUS.md",
         (
-            "aggregates decisions it does not implement.** Security type and tenor "
-            "are summed into one series,",
+            "split is not in the panel.** The adapter emits the bill, coupon and "
+            "SOMA components",
         ),
-        _treasury_settlement_is_one_aggregate,
+        _treasury_components_are_not_panel_columns,
         None,
     ),
     (
@@ -1241,8 +1245,9 @@ class PublishedLimitationTests(unittest.TestCase):
        the assertion that refuses it.
     4. **Claim matching made line-local** -- `_line_stating` searching each line for the
        claim as a substring instead of matching across the document's word stream. Killed
-       the same assertion, one test in the whole suite, because the Treasury-settlement
-       claim spans a line break.
+       the same assertion, because the Treasury-settlement claim spans a line break, and
+       since 11 September also `RegistryQuotationTests.test_every_declared_quotation_is_still_published`,
+       which reads `_line_stating` too and whose N-MFP tolerance quotation wraps.
 
        **This mutation killed nothing when the guard was first committed, and that was
        measured rather than assumed.** Re-run against the table as it then stood -- two
@@ -1253,11 +1258,17 @@ class PublishedLimitationTests(unittest.TestCase):
        live entry with a wrapped sentence existed. A guard needs at least one live entry
        per code path it claims to have, and counting entries is not the same as covering
        paths.
-    5. **The live predicate forced to "repaired."** `_treasury_settlement_is_one_aggregate`
+    5. **The live predicate forced to "repaired."** `_treasury_components_are_not_panel_columns`
        reduced to `return False` while the page still states the limitation. Killed
        `test_no_published_limitation_outlives_its_repair`, one test in the whole suite --
        the mirror of mutation 1, moving the predicate rather than the prose, so both
        halves of the agreement are shown to be load-bearing from both sides.
+
+       **3 to 5 re-run 11 September against the replaced row.** A10 repaired the claim
+       these were first run on (the settlement series as one aggregate); the row now
+       states that the split is not in the panel, read off `contract.FEATURE_FIELDS`
+       rather than the registry, which declares the components since A10. All three
+       kill as recorded, each an `AssertionError`.
 
     **Two fields added 10 September, and what they are for.** Until then this table
     said whether a limitation still held and nothing else. It could not say *who is

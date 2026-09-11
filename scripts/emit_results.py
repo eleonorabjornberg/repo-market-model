@@ -298,9 +298,10 @@ def headline(persistence, exceedance):
                  "**%s skill**, exactly as it must. Every later claim of skill rests on "
                  "that." % bp(worst, 3))
     lines.append("")
-    lines.append("**No model has yet been shown to forecast better than the benchmark.** "
-                 "That is the honest state of the work, and it is why nothing here is a "
-                 "basis for a decision about money.")
+    lines.append("**Challenger models have scored better than the benchmark over the same "
+                 "decision points, but none of those results is yet reproduced end to end "
+                 "or broken down by date.** That is the honest state of the work, and it "
+                 "is why nothing here is a basis for a decision about money.")
     lines.append("")
     lines.append(HEADLINE_END)
     return "\n".join(lines)
