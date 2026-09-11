@@ -85,19 +85,50 @@ boosted quantile fit is tight on the rows it was fitted on, so the outer
 produced with: no split, no widening, and no float operation on a reported
 vector that the uncalibrated model did not already perform.
 
+**Lagged spread changes, opt-in (B23).** `spread_change_lags=k` adds `k`
+regressors, `spread_change_lag_1` .. `spread_change_lag_k`: the change in
+`spread_bps` between consecutive rows, the `j`-th ending `j - 1` rows before the
+feature row, so lag 1 is the feature row's spread minus the row before it.
+
+* **Where the prior rows come from.** The forecast interface hands a model one
+  feature row, so the rows before it are the training frame's own: the fitted
+  model keeps each frame row's date and spread, and reads a feature row's lags
+  back by that row's *position* in the frame. The frame is what the fold loop
+  handed over, already purged, and the feature row the loop chooses is always
+  its last row -- so no row after the feature date is reachable from here at
+  all, and a feature row the frame does not carry is refused rather than
+  looked up somewhere else.
+* **Inside the design, the same rule.** A training row's lags end at that row,
+  never at its target: the change *into* the day being forecast is lag 0, and
+  it is the target minus the autoregressive term. A calibration row's lags end
+  at the feature row `baseline._feature_index` chose for it. One helper,
+  `_spread_changes`, reads every one of them.
+* **By row, not by calendar day.** A Monday's lag 1 is Friday's change, not a
+  Sunday nobody observed.
+* **A hole is missing, not bridged.** A row whose `sofr` or `iorb` is `None` has
+  no spread, so every change touching it is missing and gets its fitted
+  imputation, exactly as a declared regressor carried as `None` does. It is
+  never differenced against the last observed row before it.
+* **The first `k` rows of a frame start changes and are not design rows.** Their
+  lags would reach before the frame, which is not a hole but no data, and
+  imputing it would put a column of training means in every fit.
+
+Absent is the default and is today's gbm, bit for bit.
+
 Stdlib plus the `ml` extra, inside functions.
 """
 
 from __future__ import annotations
 
 import math
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from datetime import date
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
 from .baseline import (
+    SPREAD_COMPONENTS,
     ExceedanceCurves,
     ExceedancePredictor,
     _feature_index,
@@ -187,16 +218,70 @@ def _minimum_calibration_rows(levels: Sequence[float]) -> int:
     return math.ceil(q / (1 - q))
 
 
+def _spread_change_names(lags: int) -> Tuple[str, ...]:
+    """The lag columns' design names, in lag order: lag 1 first."""
+
+    return tuple(f"spread_change_lag_{lag}" for lag in range(1, lags + 1))
+
+
+def _observed_spread(row: DailyObservation, label: str) -> Optional[float]:
+    """`row.spread_bps`, or `None` where either leg of it is a hole.
+
+    A leg absent from the row is `_raw_regressor`'s refusal, as it is for every
+    other column this model reads; a leg carried as `None` makes the spread
+    unobserved, and that is a missing change, not a zero and not yesterday's.
+    """
+
+    for component in SPREAD_COMPONENTS:
+        observed = _raw_regressor(
+            row,
+            component,
+            label,
+            role="a leg of the spread whose lagged changes this model reads",
+        )
+        if observed is None:
+            return None
+    return float(row.spread_bps)
+
+
+def _spread_changes(
+    spreads: Sequence[Optional[float]], position: int, lags: int, label: str
+) -> List[Optional[float]]:
+    """The `lags` spread changes ending at `spreads[position]`, lag 1 first.
+
+    Lag `j` is `spreads[position - j + 1] - spreads[position - j]`: by row, and
+    never reaching past `position`. A change with a hole at either end is
+    `None`. Every lag this model reads -- a training row's, a calibration
+    row's, a forecast's -- comes through here.
+    """
+
+    if position < lags:
+        raise ValueError(
+            f"the lagged spread changes of the {label} need {lags} rows before "
+            f"it and its frame has {position}; a lag reaching before the "
+            f"frame's first row has no row to read, and a negative position "
+            f"would wrap to the frame's latest rows and read them as its oldest"
+        )
+    changes: List[Optional[float]] = []
+    for lag in range(1, lags + 1):
+        later = spreads[position - lag + 1]
+        earlier = spreads[position - lag]
+        changes.append(None if later is None or earlier is None else later - earlier)
+    return changes
+
+
 def _design(
     row: DailyObservation,
     regressors: Sequence[str],
     imputations: Mapping[str, float],
     label: str,
+    changes: Sequence[Optional[float]] = (),
 ) -> List[float]:
-    """One row as the design reads it: the spread, then each regressor.
+    """One row as the design reads it: the spread, each regressor, each lag.
 
     A regressor carried as `None` gets its fitted imputation; one missing from
-    the row is `_raw_regressor`'s refusal. The one spelling the fit, the
+    the row is `_raw_regressor`'s refusal. A missing spread change gets its
+    lag's imputation, by the same rule. The one spelling the fit, the
     calibration scores and `FittedGradientBoostedQuantiles.design_row` share.
     """
 
@@ -204,6 +289,8 @@ def _design(
     for name in regressors:
         observed = _raw_regressor(row, name, label)
         values.append(imputations[name] if observed is None else observed)
+    for name, change in zip(_spread_change_names(len(changes)), changes):
+        values.append(imputations[name] if change is None else change)
     return values
 
 
@@ -317,6 +404,10 @@ class FittedGradientBoostedQuantiles:
       (`None` under `none`, where the fit rows are the whole frame). Carried
       so a reader can check the purge between the two slices against a
       calendar rather than take it on trust.
+    * `spread_change_lags`, `_history_dates`, `_history_spreads` --- how many
+      lagged spread changes the design carries (`None` when it carries none),
+      and the training frame's own dates and spreads, which are the only rows
+      a feature row's lags are read back from. See the module docstring.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -338,6 +429,8 @@ class FittedGradientBoostedQuantiles:
 
     __slots__ = (
         "_estimators",
+        "_history_dates",
+        "_history_spreads",
         "_residuals",
         "calibration",
         "calibration_end",
@@ -350,6 +443,7 @@ class FittedGradientBoostedQuantiles:
         "ml_libraries",
         "random_state",
         "regressors",
+        "spread_change_lags",
         "widening",
     )
 
@@ -370,7 +464,14 @@ class FittedGradientBoostedQuantiles:
         fit_end: Optional[date] = None,
         calibration_start: Optional[date] = None,
         calibration_end: Optional[date] = None,
+        spread_change_lags: Optional[int] = None,
+        history: Sequence[Tuple[date, Optional[float]]] = (),
     ) -> None:
+        self.spread_change_lags: Optional[int] = spread_change_lags
+        self._history_dates: Tuple[date, ...] = tuple(when for when, _ in history)
+        self._history_spreads: Tuple[Optional[float], ...] = tuple(
+            spread for _, spread in history
+        )
         self.ml_libraries: Mapping[str, str] = MappingProxyType(dict(ml_libraries))
         self.calibration: str = calibration
         self.calibration_share: Optional[float] = calibration_share
@@ -381,7 +482,11 @@ class FittedGradientBoostedQuantiles:
         self.regressors: Tuple[str, ...] = tuple(regressors)
         self._estimators: Tuple[Any, ...] = tuple(estimators)
         self.imputations: Mapping[str, float] = MappingProxyType(
-            {name: float(imputations[name]) for name in self.regressors}
+            {
+                name: float(imputations[name])
+                for name in self.regressors
+                + _spread_change_names(spread_change_lags or 0)
+            }
         )
         self._residuals: Tuple[float, ...] = tuple(sorted(float(r) for r in residuals))
         self.cutoff: date = cutoff
@@ -408,9 +513,15 @@ class FittedGradientBoostedQuantiles:
         No intercept: a tree ensemble has no coefficient for one, and reporting
         a column the model does not read would put `features_read` --- which is
         derived from this --- out of step with the fit.
+
+        The lag columns come last, lag 1 first.
         """
 
-        return ("spread_bps",) + self.regressors
+        return (
+            ("spread_bps",)
+            + self.regressors
+            + _spread_change_names(self.spread_change_lags or 0)
+        )
 
     @property
     def residuals(self) -> Tuple[float, ...]:
@@ -426,9 +537,14 @@ class FittedGradientBoostedQuantiles:
         the reason `FittedArx.features_read` is: `design_row` reads the row in
         `design_names` order, so anything that column order gains this answer
         gains too.
+
+        **Except the lag columns, which are not panel columns.** Each is read off
+        `spread_bps` on rows at or before the feature row, and `spread_bps` is
+        already here. Naming `spread_change_lag_1` would ask the purge check to
+        find a source for a column no source ingests.
         """
 
-        return self.design_names
+        return self.design_names[: 1 + len(self.regressors)]
 
     @property
     def model_settings(self) -> Mapping[str, Any]:
@@ -438,16 +554,16 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
+        `spread_change_lags` by the same rule: named when set, absent when not.
         """
 
-        if self.calibration == "none":
-            return MappingProxyType({})
-        return MappingProxyType(
-            {
-                "calibration": self.calibration,
-                "calibration_share": self.calibration_share,
-            }
-        )
+        settings: dict = {}
+        if self.calibration != "none":
+            settings["calibration"] = self.calibration
+            settings["calibration_share"] = self.calibration_share
+        if self.spread_change_lags is not None:
+            settings["spread_change_lags"] = self.spread_change_lags
+        return MappingProxyType(settings)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
         """Was this model fitted on rows dated after `feature_row`?"""
@@ -455,10 +571,40 @@ class FittedGradientBoostedQuantiles:
         return feature_row.date < self.cutoff
 
     def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
-        """The feature row as this model reads it, in `design_names` order."""
+        """The feature row as this model reads it, in `design_names` order.
 
+        With lags, the rows before `feature_row` are the fitted frame's, found
+        by the position of `feature_row`'s date in it; the feature row's own
+        spread ends lag 1. A row the frame does not carry is refused: it has no
+        position in the frame, and the nearest one would hand it another row's
+        lags.
+        """
+
+        changes: Sequence[Optional[float]] = ()
+        lags = self.spread_change_lags
+        if lags is not None:
+            position = bisect_left(self._history_dates, feature_row.date)
+            if (
+                position == len(self._history_dates)
+                or self._history_dates[position] != feature_row.date
+            ):
+                raise ValueError(
+                    f"feature row for {feature_row.date} is not a row of the "
+                    f"frame this model was fitted on "
+                    f"({self._history_dates[0]}..{self._history_dates[-1]}); its "
+                    f"lagged spread changes are read off that frame's own rows by "
+                    f"position, and a row the frame does not carry has none"
+                )
+            spreads = self._history_spreads[:position] + (
+                _observed_spread(feature_row, "feature row"),
+            )
+            changes = _spread_changes(
+                spreads, position, lags, f"feature row for {feature_row.date}"
+            )
         return tuple(
-            _design(feature_row, self.regressors, self.imputations, "feature row")
+            _design(
+                feature_row, self.regressors, self.imputations, "feature row", changes
+            )
         )
 
     def _quantile_vector(self, design_row: Sequence[float]) -> Tuple[float, ...]:
@@ -629,6 +775,7 @@ def fit_gradient_boosted_quantiles(
     calibration: str = "none",
     calibration_share: Optional[float] = None,
     purge_days: Optional[int] = None,
+    spread_change_lags: Optional[int] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -665,6 +812,9 @@ def fit_gradient_boosted_quantiles(
             `splits.require_purge_days`: a calibration split with a defaulted
             gap is the silent zero the splitter exists to refuse. Read by
             nothing under `none`, which splits nothing.
+        spread_change_lags: how many lagged spread changes the design carries,
+            at least 1. `None`, the default, carries none and is the model every
+            published gbm record was produced with. See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -691,7 +841,10 @@ def fit_gradient_boosted_quantiles(
             is not one of `CALIBRATIONS`, if `calibration_share` is outside
             `(0, 1)` or is given to `none`, if the calibration slice holds
             fewer rows than the conformal quantile needs to be finite, or if
-            the purge leaves fewer than two fit rows.
+            the purge leaves fewer than two fit rows; and, for the lags, if
+            `spread_change_lags` is not an int of at least 1, if it leaves no
+            training row with every lag defined, or if a calibration row's
+            feature row has fewer rows than that before it.
     """
 
     grid = _validate_levels(levels)
@@ -740,6 +893,20 @@ def fit_gradient_boosted_quantiles(
             )
         share = float(share)
         require_purge_days(purge_days)
+
+    if spread_change_lags is not None and (
+        isinstance(spread_change_lags, bool)
+        or not isinstance(spread_change_lags, int)
+        or spread_change_lags < 1
+    ):
+        raise ValueError(
+            f"spread_change_lags must be an int of at least 1, got "
+            f"{spread_change_lags!r}; lag 0 would be the change into the day "
+            f"being forecast, which is the target minus the autoregressive term, "
+            f"and a model with no lags is spelled by leaving the setting out"
+        )
+    lags = spread_change_lags or 0
+    change_names = _spread_change_names(lags)
 
     names = tuple(str(name) for name in regressors)
     if not names:
@@ -804,11 +971,33 @@ def fit_gradient_boosted_quantiles(
                 f"design needs at least one origin and its successor"
             )
 
-    # The origins: every fit row that has a successor among the fit rows. These,
-    # and only these, are what the imputation is fitted on -- contract test 3's
+    # Every row's spread, `None` at a hole, for the lags alone. Over the whole
+    # frame, which is the only history a lag is ever read from; the fit rows are
+    # its prefix, so a position in one is the same position in the other.
+    spreads = [_observed_spread(row, "training row") for row in rows] if lags else []
+
+    # The origins: every fit row that has a successor among the fit rows, less
+    # the first `lags`, whose changes would reach before the frame. These, and
+    # only these, are what the imputation is fitted on -- contract test 3's
     # "recomputed on a training window alone", the same rows `fit_arx` uses.
-    origins = fit_rows[:-1]
-    observed: Mapping[str, List[float]] = {name: [] for name in names}
+    origins = fit_rows[lags:-1]
+    changes = [
+        _spread_changes(spreads, position, lags, f"training row for {dates[position]}")
+        for position in range(lags, len(fit_rows) - 1)
+    ]
+    if lags and not any(None not in row_changes for row_changes in changes):
+        raise ValueError(
+            f"spread_change_lags {lags} leaves no training row with every lag "
+            f"defined: of {len(fit_rows)} fit rows the first {lags} only start "
+            f"changes, and none of the {len(changes)} after them observes all "
+            f"{lags}. A lag imputed on every design row is a column of training "
+            f"means, not a regressor"
+        )
+    observed: Mapping[str, List[float]] = {name: [] for name in names + change_names}
+    for row_changes in changes:
+        for name, change in zip(change_names, row_changes):
+            if change is not None:
+                observed[name].append(change)
     for row in origins:
         for name in names:
             value = _raw_regressor(row, name, "training row")
@@ -826,12 +1015,21 @@ def fit_gradient_boosted_quantiles(
                 f"coercion contract test 5 prohibits"
             )
         imputations[name] = sum(seen) / len(seen)
+    for name in change_names:
+        seen = observed[name]
+        imputations[name] = sum(seen) / len(seen)
 
     design = []
     targets = []
-    for index in range(1, len(fit_rows)):
+    for index in range(lags + 1, len(fit_rows)):
         design.append(
-            _design(fit_rows[index - 1], names, imputations, "training row")
+            _design(
+                fit_rows[index - 1],
+                names,
+                imputations,
+                "training row",
+                changes[index - 1 - lags],
+            )
         )
         targets.append(float(fit_rows[index].spread_bps))
 
@@ -883,10 +1081,23 @@ def fit_gradient_boosted_quantiles(
             # returns the same row as handing it the whole prefix, without a
             # frame-length copy per calibration row per fold.
             tail = range(max(0, index - purge_days - 1), index)
-            feature = rows[_feature_index(dates, tail, index, purge_days)]
+            position = _feature_index(dates, tail, index, purge_days)
+            feature = rows[position]
+            # The lags end at the feature row, never at the row being scored.
             scored.append(
                 (
-                    _design(feature, names, imputations, "calibration row"),
+                    _design(
+                        feature,
+                        names,
+                        imputations,
+                        "calibration row",
+                        _spread_changes(
+                            spreads,
+                            position,
+                            lags,
+                            f"calibration feature row for {dates[position]}",
+                        ),
+                    ),
                     float(rows[index].spread_bps),
                 )
             )
@@ -913,6 +1124,8 @@ def fit_gradient_boosted_quantiles(
         fit_end=fit_rows[-1].date,
         calibration_start=calibration_rows[0].date if calibration_rows else None,
         calibration_end=calibration_rows[-1].date if calibration_rows else None,
+        spread_change_lags=spread_change_lags,
+        history=tuple(zip(dates, spreads)),
     )
 
 

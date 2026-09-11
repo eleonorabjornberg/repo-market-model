@@ -460,6 +460,9 @@ class _FitterChoice:
     #: for the model that takes them and refused for the rest, by the rule
     #: `needs_window` follows for the refusal half. See `_calibration`.
     takes_calibration: bool = False
+    #: Does this model take `--spread-change-lags`? `takes_calibration`'s rule:
+    #: optional for the model that reads lags, refused for the rest.
+    takes_spread_change_lags: bool = False
 
     @property
     def factory(self) -> Callable[..., FittedForecastModel]:
@@ -486,10 +489,10 @@ class _FitterChoice:
         regressors: Tuple[str, ...],
         regime_variable: Optional[str],
         window: Optional[int] = None,
-        calibration: Optional[Mapping[str, Any]] = None,
+        settings: Optional[Mapping[str, Any]] = None,
     ) -> ModelFitter:
         return self.build(
-            self.factory, regressors, regime_variable, window, dict(calibration or {})
+            self.factory, regressors, regime_variable, window, dict(settings or {})
         )
 
 
@@ -508,19 +511,19 @@ FITTER_FACTORIES = MappingProxyType(
             # Nothing to bind: `fit` already has the `ModelFitter` shape. The
             # entry exists so that persistence is a *name* a caller selects
             # rather than what happens when nobody says.
-            build=lambda factory, regressors, regime, window, calibration: factory,
+            build=lambda factory, regressors, regime, window, settings: factory,
             needs_regime_variable=False,
         ),
         "arx": _FitterChoice(
             declared=fit_arx,
-            build=lambda factory, regressors, regime, window, calibration: functools.partial(
+            build=lambda factory, regressors, regime, window, settings: functools.partial(
                 factory, regressors=regressors
             ),
             needs_regime_variable=False,
         ),
         "threshold": _FitterChoice(
             declared=fit_threshold,
-            build=lambda factory, regressors, regime, window, calibration: functools.partial(
+            build=lambda factory, regressors, regime, window, settings: functools.partial(
                 factory, regressors=regressors, threshold_variable=regime
             ),
             needs_regime_variable=True,
@@ -532,7 +535,7 @@ FITTER_FACTORIES = MappingProxyType(
         # against the persistence entry two lines up.
         "rolling-residual": _FitterChoice(
             declared=fit_rolling_residual_law,
-            build=lambda factory, regressors, regime, window, calibration: functools.partial(
+            build=lambda factory, regressors, regime, window, settings: functools.partial(
                 factory, window=window
             ),
             needs_regime_variable=False,
@@ -558,13 +561,15 @@ FITTER_FACTORIES = MappingProxyType(
         # published gbm record was produced with, and the fitter's own
         # defaults decide the rest. The gap between the fit and calibration
         # slices is not bound here: the fold loop derives it and hands it over.
+        # `--spread-change-lags` by the same rule: bound only when given.
         "gbm": _FitterChoice(
             declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
-            build=lambda factory, regressors, regime, window, calibration: functools.partial(
-                factory, regressors=regressors, **calibration
+            build=lambda factory, regressors, regime, window, settings: functools.partial(
+                factory, regressors=regressors, **settings
             ),
             needs_regime_variable=False,
             takes_calibration=True,
+            takes_spread_change_lags=True,
         ),
     }
 )
@@ -619,12 +624,15 @@ def _select_fitter(
         args, name, choice.needs_regime_variable, side=side
     )
     window = _residual_window(args, name, choice.needs_window, side=side)
-    calibration = _calibration(args, name, choice.takes_calibration, side=side)
+    settings = dict(_calibration(args, name, choice.takes_calibration, side=side))
+    settings.update(
+        _spread_change_lags(args, name, choice.takes_spread_change_lags, side=side)
+    )
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
         window=window,
-        calibration=calibration,
+        settings=settings,
     )
 
 
@@ -673,6 +681,37 @@ def _calibration(
             "an interval somebody calibrated"
         )
     return given
+
+
+def _spread_change_lags(
+    args: argparse.Namespace,
+    name: str,
+    takes_lags: bool,
+    *,
+    side: str = "",
+) -> Mapping[str, Any]:
+    """Resolve `--spread-change-lags`, or refuse. `_calibration`'s shape and rule.
+
+    Optional for gbm and refused for every other model. Returned keyed as the
+    fitter names it, and only when given, so a run that names no lags binds
+    nothing and builds the partial every published gbm record was produced
+    with. The value is not range-checked here: `ml.fit_gradient_boosted_quantiles`
+    refuses a lag below 1, and a second statement of that here could not import
+    the first.
+    """
+
+    lags = args.spread_change_lags
+    if lags is None:
+        return {}
+    if not takes_lags:
+        raise SplitError(
+            f"--spread-change-lags{side} {lags} was given, but --model{side} "
+            f"{name} reads no lagged spread changes; only gbm does. A flag that "
+            "is accepted and ignored is read by the next person as a setting "
+            "that took effect -- here, as a model that saw the spread's recent "
+            "path"
+        )
+    return {"spread_change_lags": lags}
 
 
 def _registry(args: argparse.Namespace) -> dict:
@@ -848,7 +887,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
 
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
     `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
-    `--calibration-share-a`, and the same six for `b` --
+    `--calibration-share-a`, `--spread-change-lags-a`, and the same seven for
+    `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -877,6 +917,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         residual_window=getattr(args, f"residual_window_{side}"),
         calibration=getattr(args, f"calibration_{side}"),
         calibration_share=getattr(args, f"calibration_share_{side}"),
+        spread_change_lags=getattr(args, f"spread_change_lags_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1396,6 +1437,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "Refused for every model but gbm, and for --calibration none",
     )
     backtest.add_argument(
+        "--spread-change-lags",
+        type=int,
+        metavar="K",
+        default=None,
+        help="add the change in spread_bps between consecutive panel rows at "
+        "lags 1..K, ending at the feature row, to gbm's design; at least 1, "
+        "none when not given, which is the model every published gbm record was "
+        "produced with. Refused for every model but gbm",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -1471,6 +1522,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             default=None,
             help=f"the share of each training frame --calibration-{side} "
             f"conformal holds out, strictly inside (0, 1); 0.25 when not given",
+        )
+        compare.add_argument(
+            f"--spread-change-lags-{side}",
+            type=int,
+            metavar="K",
+            default=None,
+            help=f"add the {side} model's lagged spread changes, lags 1..K "
+            f"ending at the feature row, to gbm's design; none when not given; "
+            f"refused for --model-{side} other than gbm",
         )
     compare.add_argument(
         "--loss",
