@@ -541,8 +541,8 @@ missing value, so `"."` in the archives is undocumented by the publisher. The Ne
 Fed's FR 2004 export writes `*` for a figure suppressed for confidentiality.
 
 **Decided: every absent cell is recorded with the token it was read from.** An absent
-cell still yields no observation; the ingest's quality report records it with one reason
-of `blank`, `na`, `dot`, `null` or `suppressed`. Each adapter keeps its own tokens: New
+cell still yields no observation; the ingest's quality report records it, in runs of
+consecutive rows, with one reason of `blank`, `na`, `dot`, `null` or `suppressed`. Each adapter keeps its own tokens: New
 York Fed rates and N-MFP accept blank, `NA`, `N/A` and `"."`; FRED blank and `"."`;
 Treasury auctions blank and Fiscal Data's string `"null"`; bill rates blank; FR 2004 `*`
 in a declared series. A token outside an adapter's list is refused, and so is a reason
