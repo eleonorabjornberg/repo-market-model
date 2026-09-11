@@ -1,5 +1,5 @@
 {
-  "commit": "bedc762",
+  "commit": "8653074",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -7,7 +7,7 @@
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
   },
-  "generated_at": "2026-09-10",
+  "generated_at": "2026-09-11",
   "next": {
     "exit": "a model that beats persistence out of sample and remains calibrated in the tails",
     "name": "Forecasting benchmarks and probabilistic ML",
@@ -23,6 +23,7 @@
     "compare_persistence_vs_arx_dispersion_mh61_crps.json",
     "compare_persistence_vs_arx_volume.json",
     "compare_persistence_vs_arx_volume_mh61_crps.json",
+    "compare_persistence_vs_gbm_mh61_crps.json",
     "compare_persistence_vs_rolling_residual_w60_mh61_crps.json",
     "exceedance_funding_climatology.json",
     "funding_panel.manifest.json",
