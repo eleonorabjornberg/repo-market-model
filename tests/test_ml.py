@@ -38,6 +38,9 @@ What is covered here
   band covers its nominal probability on held-out rows where the uncalibrated
   band does not, the fit and calibration slices of every fold are purged apart,
   and the calibration's refusals.
+* `GradientBoostedLaggedSpreadTests` -- `spread_change_lags`: the lagged spread
+  changes read only rows at or before the feature date, by row, never across a
+  hole, named in the declaration, and the lags' refusals.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -160,6 +163,7 @@ from test_cli_eval import (
     THRESHOLDS,
     ConditionalModelHarness,
     ContinuousModelHarness,
+    business_days,
     declared_registry_file,
 )
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
@@ -737,6 +741,329 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
             # The same flags on the gbm side are taken, and reach the fitter.
             _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
             self.assertEqual(fitter.keywords.get("calibration"), "conformal")
+
+
+def business_day_frame(count, seed=20260911):
+    """`heteroscedastic_frame`'s rows, re-dated onto weekdays.
+
+    Weekdays so that a row's predecessor is not always the calendar day before
+    it: a lag read by calendar day and a lag read by row then disagree on every
+    window that spans a weekend, and the test below asserts its window does.
+    """
+
+    return [
+        DailyObservation(when, row.values)
+        for when, row in zip(
+            business_days(date(2020, 1, 1), count), heteroscedastic_frame(count, seed)
+        )
+    ]
+
+
+def with_spread_shifted(row, bps):
+    """`row` with its spread moved by `bps`, through `sofr`, the leg it is read off."""
+
+    values = dict(row.values)
+    values["sofr"] = values["sofr"] + bps / 100.0
+    return DailyObservation(row.date, values)
+
+
+class GradientBoostedLaggedSpreadTests(unittest.TestCase):
+    """`spread_change_lags`: B23's acceptance criterion and its mutation target.
+
+    **The design problem.** The forecast interface hands a model one feature
+    row, and a lagged change needs the rows before it. They are the training
+    frame's own: the fitted model keeps the frame's dates and spreads and reads
+    a feature row's lags back by that row's position in the frame. The fold
+    loop's feature row is always the frame's last row, so the probe below --
+    every row after the feature date changed, the forecast bit-identical --
+    holds because nothing after the feature date reaches the model at all. The
+    leak that remains possible is *inside* the design, where a training row's
+    successor is its target; the design-row subtest reads the lag values off the
+    fitted model against changes computed here from rows at or before the
+    feature row, and that is what sees it.
+
+    **A finding about holes.** A spread hole cannot reach this model through any
+    published path: `load_daily_panel` refuses a row without `sofr` or `iorb`,
+    and build rule 6 does not make such a date a row. In a frame built by hand,
+    a hole is readable only where nothing but the lag reader reads the row --
+    among the first `k`, which start changes and are not design rows. Anywhere
+    later the same row is a target and an autoregressive term, which gbm reads
+    as it always has, lags or none. The hole subtest is therefore placed there,
+    with observed rows on both sides, so a difference across the hole is a
+    number and not a missing one.
+
+    Mutation record (B23)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` (the worktree's `.venv`: CPython 3.9.6, numpy 2.0.2,
+    scikit-learn 1.6.1), `PYTHONPATH=src` (checked to resolve to the copy),
+    `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`, whole suite per run.
+    Unmutated control green before and after, zero `expectedFailure`; each
+    mutation's anchor found exactly once, confirmed applied, and restored and
+    confirmed restored before the next. **Every mutation killed this test and
+    nothing else.**
+
+      * **Lag 1 read from the scored row** -- `spreads[position + 1] -
+        spreads[position]`, `None` where there is no next row. `the design
+        names carry the lags in lag order`, `AssertionError` on the lag
+        columns. **The leakage probe survives it, and that is the design's
+        finding, not a gap:** the fold loop's feature row is the frame's last
+        row, so the next row is not there to read and the mutant's lag 1 is
+        imputed at the forecast. The leak lives in the training design, where
+        every row's next row is its target, and only the values of the design
+        row see that.
+      * **Difference taken across a hole** -- the earlier end of each change
+        the last observed spread at or before it. `a hole one row back is a
+        missing change`, `AssertionError`: lag 1 is the difference across the
+        hole, not its imputation.
+      * **The declaration key dropped** from `model_settings`. `the
+        declaration names spread_change_lags, and only when set`,
+        `AssertionError: {} != {'spread_change_lags': 5}`.
+      * **Each refusal removed**, separately:
+          - a lag below 1: `AssertionError: ValueError not raised` -- a lag of
+            0 fits a model with no lag columns that declares one;
+          - lags for a model other than gbm (`cli_eval._spread_change_lags`):
+            `AssertionError: SplitError not raised`;
+          - no training row with every lag defined: `IndexError`, an error
+            rather than a failure, out of the regressor imputation's own
+            refusal message reaching for the first of no origins;
+          - a feature row the fitted frame does not carry (extra):
+            `AssertionError: ValueError not raised` -- a row dated after the
+            frame is handed the frame's last rows as its lags;
+          - a position with fewer rows before it than lags (extra, in
+            `_spread_changes`): `AssertionError: ValueError not raised` on the
+            same subtest. A negative index wraps to the end of the frame, so
+            without it the oldest lags of an early row are read off the latest
+            rows, silently.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    #: Five, so a lag window of six rows spans a weekend wherever it falls.
+    LAGS = 5
+    PANEL_ROWS = 50
+    MINIMUM_HISTORY = 40
+    #: Nonzero, so the scored day is not the row after the feature row and the
+    #: probe's changed rows include the gap as well as the scored day.
+    PURGE = 6
+
+    def setUp(self):
+        require_extra(self)
+        with tempfile.TemporaryDirectory() as directory:
+            self.registry = json.loads(
+                declared_registry_file(
+                    directory, purge=self.PURGE, features=self.FEATURES
+                ).read_text(encoding="utf-8")
+            )
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def backtest(self, panel, **settings):
+        """The rolling fold loop over `panel`, and every model it fitted."""
+
+        fits = []
+
+        def fitter(train_frame, minimum_history, purge_days):
+            model = self.fit(
+                train_frame,
+                minimum_history=minimum_history,
+                purge_days=purge_days,
+                **settings,
+            )
+            fits.append(model)
+            return model
+
+        report = baseline.rolling_persistence_backtest(
+            panel,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=fitter,
+        )
+        return report, fits
+
+    def test_lagged_spread_changes_read_only_rows_at_or_before_the_feature_date(self):
+        """A probe, the design row, a hole, the declaration and the refusals.
+
+        One criterion: a lag column that leaked, bridged a hole, went unnamed
+        in the record or accepted a lag of zero would each be a model reading
+        something other than the spread's path up to the day it forecasts from.
+        """
+
+        panel = business_day_frame(self.PANEL_ROWS)
+        dates = [row.date for row in panel]
+        report, fits = self.backtest(panel, spread_change_lags=self.LAGS)
+        fold = report.folds[0]
+        feature = dates.index(fold.feature_date)
+
+        with self.subTest("leakage probe"):
+            self.assertGreater(
+                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            )
+            self.assertLess(fold.feature_date, fold.scored_date)
+            # Every row after the feature date: the gap, the scored day, and
+            # every later row.
+            later = panel[: feature + 1] + [
+                with_spread_shifted(row, 25.0) for row in panel[feature + 1 :]
+            ]
+            again, _ = self.backtest(later, spread_change_lags=self.LAGS)
+            self.assertEqual(again.folds[0], fold)
+            self.assertEqual(
+                (again.forecasts[0].predicted_bps, again.forecasts[0].quantiles_bps),
+                (report.forecasts[0].predicted_bps, report.forecasts[0].quantiles_bps),
+                msg=(
+                    f"the forecast from {fold.feature_date} moved when only rows "
+                    f"after it changed"
+                ),
+            )
+            back = (
+                panel[: feature - 1]
+                + [with_spread_shifted(panel[feature - 1], 25.0)]
+                + panel[feature:]
+            )
+            moved, _ = self.backtest(back, spread_change_lags=self.LAGS)
+            self.assertNotEqual(
+                moved.forecasts[0].quantiles_bps,
+                report.forecasts[0].quantiles_bps,
+                msg="the row one lag back changed and the forecast did not move",
+            )
+
+        with self.subTest("the design names carry the lags in lag order"):
+            model = fits[0]
+            self.assertEqual(
+                model.design_names,
+                ("spread_bps",)
+                + self.REGRESSORS
+                + tuple(f"spread_change_lag_{lag}" for lag in range(1, self.LAGS + 1)),
+            )
+            # The lag columns read `spread_bps`, which is already declared; a
+            # lag name here would be a column no source prices.
+            self.assertEqual(model.features_read, ("spread_bps",) + self.REGRESSORS)
+            # By row: the window spans a weekend, so calendar-day lags differ.
+            self.assertGreater(
+                (dates[feature] - dates[feature - self.LAGS]).days, self.LAGS
+            )
+            spreads = [row.spread_bps for row in panel[: feature + 1]]
+            expected = tuple(
+                spreads[feature - lag + 1] - spreads[feature - lag]
+                for lag in range(1, self.LAGS + 1)
+            )
+            self.assertEqual(
+                model.design_row(panel[feature])[-self.LAGS :],
+                expected,
+                msg="the lag columns are not the changes ending at the feature row",
+            )
+
+        with self.subTest("a hole one row back is a missing change"):
+            frame = business_day_frame(24)
+            hole = dict(frame[1].values)
+            hole["sofr"] = None
+            holed = [frame[0], DailyObservation(frame[1].date, hole)] + frame[2:]
+            model = self.fit(holed, spread_change_lags=2)
+            design = model.design_row(holed[2])
+            self.assertEqual(
+                design[-2:],
+                (
+                    model.imputations["spread_change_lag_1"],
+                    model.imputations["spread_change_lag_2"],
+                ),
+            )
+            self.assertNotEqual(
+                design[-2],
+                holed[2].spread_bps - holed[0].spread_bps,
+                msg="lag 1 was differenced across the hole",
+            )
+
+        with self.subTest("the declaration names spread_change_lags, and only when set"):
+            self.assertEqual(
+                dict(report.model_settings), {"spread_change_lags": self.LAGS}
+            )
+            calibrated, _ = self.backtest(
+                panel, spread_change_lags=self.LAGS, calibration="conformal"
+            )
+            self.assertEqual(
+                dict(calibrated.model_settings),
+                {
+                    "calibration": "conformal",
+                    "calibration_share": 0.25,
+                    "spread_change_lags": self.LAGS,
+                },
+            )
+            plain = self.fit(panel[:30])
+            self.assertEqual(dict(baseline._model_settings(plain)), {})
+            self.assertEqual(plain.design_names, ("spread_bps",) + self.REGRESSORS)
+
+        with self.subTest("refusal: a lag below 1"):
+            with self.assertRaisesRegex(
+                ValueError, r"spread_change_lags must be an int of at least 1, got 0"
+            ):
+                self.fit(panel[:30], spread_change_lags=0)
+            with self.assertRaisesRegex(
+                ValueError, r"spread_change_lags must be an int of at least 1, got -1"
+            ):
+                self.fit(panel[:30], spread_change_lags=-1)
+
+        with self.subTest("refusal: lags for a model other than gbm"):
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "arx",
+                 "--spread-change-lags", "1"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--spread-change-lags 1 was given, but --model arx"
+            ):
+                cli_eval._select_fitter(backtest)
+            compare = parser.parse_args(
+                ["compare", "panel.csv", *common, "--report", "r.json",
+                 "--model-a", "persistence", "--feature-a", "spread_bps",
+                 "--spread-change-lags-a", "5",
+                 "--model-b", "gbm", "--feature-b", "spread_bps",
+                 "--spread-change-lags-b", "5", "--calibration-b", "conformal"]
+            )
+            with self.assertRaisesRegex(
+                SplitError,
+                r"--spread-change-lags-a 5 was given, but --model-a persistence",
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            # On the gbm side it is taken, and composes with --calibration.
+            _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(
+                fitter.keywords,
+                {
+                    "regressors": (),
+                    "calibration": "conformal",
+                    "spread_change_lags": 5,
+                },
+            )
+
+        with self.subTest("refusal: no training row with every lag defined"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"spread_change_lags 23 leaves no training row with every lag defined",
+            ):
+                self.fit(panel[:24], spread_change_lags=23)
+
+        with self.subTest("refusal: a feature row the fitted frame does not carry"):
+            model = self.fit(panel[:30], spread_change_lags=self.LAGS)
+            with self.assertRaisesRegex(
+                ValueError, r"is not a row of the frame this model was fitted on"
+            ):
+                model.design_row(panel[30])
+            with self.assertRaisesRegex(
+                ValueError, r"need 5 rows before it and its frame has 3"
+            ):
+                model.design_row(panel[3])
 
 
 class GradientBoostedForecastInterfaceTests(
