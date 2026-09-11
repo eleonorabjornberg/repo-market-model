@@ -131,7 +131,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence, Tuple
+from typing import Any, Mapping, Optional, Sequence, Tuple
 
 from .baseline import (
     KNOWLEDGE_HOLDOUT,
@@ -140,6 +140,7 @@ from .baseline import (
     _check_fitter_stayed_inside,
     _derive_purge,
     _feature_index,
+    _ml_libraries,
     _validate_prediction,
     _validate_taus,
 )
@@ -240,6 +241,16 @@ class EvaluationRecord:
     stay distinct "in code or in reporting", and the journal is reporting. A
     reader of the file should not have to know which module wrote a line to
     know whether the number beside it may be averaged into the main table.
+
+    `ml_libraries` is the numpy and scikit-learn versions the window's fit was
+    made with, read off the `ExceedanceCurves` that fit returned by
+    `baseline._ml_libraries` -- the reader the rolling records use -- and never
+    off the environment. A line from a fit that reached no third-party library
+    has no such key: absent, not `null`, for the reason `_run_provenance` gives
+    on the rolling path. The versions are **not** in `config_sha256`. The hash
+    identifies the scoring configuration, and a rerun under a newer
+    scikit-learn is a rerun of the same configuration, which is the thing the
+    journal exists to show rather than to disguise as a different run.
     """
 
     evaluated_at: str
@@ -253,9 +264,15 @@ class EvaluationRecord:
     purge_days: int
     train_rows: int
     scored_rows: int
+    ml_libraries: Optional[Mapping[str, str]] = None
 
     def as_json_line(self) -> str:
-        return json.dumps(self.__dict__, sort_keys=True)
+        line = dict(self.__dict__)
+        if self.ml_libraries is None:
+            del line["ml_libraries"]
+        else:
+            line["ml_libraries"] = dict(self.ml_libraries)
+        return json.dumps(line, sort_keys=True)
 
 
 @dataclass(frozen=True)
@@ -504,6 +521,8 @@ def evaluate_event_window(
         taus: the exceedance family, strictly ascending.
         model_config: hashed into the evaluation record, so a rerun with
             different settings is distinguishable from a repeat of the same one.
+            The library versions a fit reports are recorded beside the hash,
+            never inside it; see `EvaluationRecord`.
         journal_path: append-only provenance log. Required.
 
     Raises:
@@ -595,6 +614,7 @@ def evaluate_event_window(
         purge_days=purge,
         train_rows=len(train_index),
         scored_rows=len(scored_index),
+        ml_libraries=_ml_libraries(prediction),
     )
     append_record(journal_path, record)
 

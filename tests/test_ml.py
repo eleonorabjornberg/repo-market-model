@@ -31,6 +31,9 @@ What is covered here
   this file's expectation with the run and only the first class sees it, and a
   defect in what `FITTER_FACTORIES` registers leaves `predict` alone and only
   the second class sees it.
+* `GradientBoostedEventHoldoutTests` -- `event-holdout --model gbm`: the
+  journal line names the library versions the window's fit was made with, and
+  the config hash does not move with them.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -136,6 +139,7 @@ from unittest import mock
 from repo_model import baseline, cli_eval, ml
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
+from repo_model.event_eval import config_digest, read_journal
 from repo_model.metrics import crps_from_quantiles
 
 from test_baseline import (
@@ -143,7 +147,12 @@ from test_baseline import (
     ExceedancePredictorConformance,
     REGRESSORS,
 )
-from test_cli_eval import DECISION_TIME, THRESHOLDS, ContinuousModelHarness
+from test_cli_eval import (
+    DECISION_TIME,
+    THRESHOLDS,
+    ConditionalModelHarness,
+    ContinuousModelHarness,
+)
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 
 #: The variable a job that exists to exercise the extra sets. See the module
@@ -478,16 +487,16 @@ class GradientBoostedCompareTests(ContinuousModelHarness):
     the wiring, and it is the reason `--minimum-history` matters more to this
     model than to persistence.
 
-    **Why the report object and not only the artifact.** The record carries
-    each side's *mean* loss and its first and last fold; it does not carry the
-    per-origin series, deliberately -- `paired_comparison_document` publishes
-    what a reader interprets and `PairedComparisonReport` holds what the run
-    computed. The claim below is per origin, so the run's own
+    **Why the report object and not only the artifact.** Since B18 the record
+    does carry the per-origin series, under `comparison.per_origin`, but as
+    what the run published: `paired_comparison_document` writes it from the
+    report. The claim below is about what the run *computed*, so the run's own
     `PairedComparisonReport` is captured on its way into the document by
-    wrapping the name `cli_eval` calls. Nothing about the run changes: the
-    command is entered through `cli.main`, the document is built by the real
-    function, and the file is written. What is read is the run's own object
-    rather than a second comparison built beside it.
+    wrapping the name `cli_eval` calls, and a defect in how the document lays
+    the series out cannot move this test's reading of it. Nothing about the
+    run changes: the command is entered through `cli.main`, the document is
+    built by the real function, and the file is written. What is read is the
+    run's own object rather than a second comparison built beside it.
 
 
     Mutation record
@@ -894,6 +903,129 @@ class GradientBoostedCompareTests(ContinuousModelHarness):
                 "ml_libraries",
                 record["provenance"],
                 msg="a run no ml model took part in names library versions it never used",
+            )
+
+
+class GradientBoostedEventHoldoutTests(ConditionalModelHarness):
+    """`event-holdout --model gbm`: the journal line names what fitted it.
+
+    **What was missing.** B19 put `ml_libraries` on every record a rolling run
+    with an ml side publishes, through `baseline._run_provenance`. The
+    knowledge holdout does not publish a record; it appends an
+    `EvaluationRecord` to the append-only journal, and `evaluate_event_window`
+    never goes through `_run_provenance`. So `event-holdout --model gbm` fitted
+    gbm and wrote a line that named neither numpy nor scikit-learn. A window is
+    scored once, so that line is the only provenance the scoring has.
+
+    **Not `GradientBoostedCompareTests`.** Its harness is
+    `ContinuousModelHarness`, which has no events file, no journal, no
+    `event-holdout` invocation and no rebuilt `model_config`.
+    `ConditionalModelHarness` has all four, and is the fixture
+    `ModelSelectorTests` already scores gbm's three siblings on. A second
+    spelling of the argv or of `expected_config` here would make a difference
+    between this run and theirs indistinguishable from a difference between
+    two fixtures.
+
+    **The versions stay out of `config_sha256`.** The hash identifies the
+    scoring configuration. A knowledge-holdout window is scored once and a
+    rerun is meant to be visible; a hash that moved with the installed
+    scikit-learn would make a re-scoring under a new version look like a
+    different configuration, which is the rerun the journal exists to show.
+    So the expectation is `expected_config`, rebuilt from the declarations and
+    carrying no version, exactly as `ModelSelectorTests` rebuilds it.
+
+    Mutation record (B20)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` (the worktree's `.venv`: CPython 3.9.6, numpy 2.0.2,
+    scikit-learn 1.6.1), whole suite per run. `REPO_MODEL_REQUIRE_ML` was not
+    set; the extra was installed and this test ran, which every kill below
+    shows. Unmutated control green before and after, zero `expectedFailure`;
+    each mutation asserted applied (its anchor found exactly once in
+    `event_eval.py`) and restored by the driver before the next. All four are
+    in `evaluate_event_window` or `EvaluationRecord`.
+
+      * **The versions added to `model_config` before hashing.** The digest
+        taken over `model_config` plus `ml_libraries` whenever the curves
+        carry them. Kills the `gbm config_sha256 carries no versions` subtest
+        alone, `AssertionError: '8b7d…' != 'f24b…'`. The climatology line's
+        hash does not move, which is why the expectation is gbm's.
+      * **The key written as `null` for non-ml fits.** `as_json_line` keeps
+        the `None`. Kills `climatology has no ml_libraries key` alone,
+        `AssertionError: 'ml_libraries' unexpectedly found`. **Nothing else in
+        the suite noticed**: no journal test in `tests/test_cli_eval.py` or
+        `tests/test_event_eval.py` went red over a `null` on every
+        climatology line.
+      * **The key dropped.** `ml_libraries` never set from the curves, so the
+        field keeps its default. Kills `gbm carries both versions` alone,
+        `AssertionError: None != {'numpy': '2.0.2', 'scikit-learn': '1.6.1'}`.
+        This is the tree before this block.
+      * **scikit-learn's version taken from numpy's** on the curves' way into
+        the record. Kills `gbm carries both versions` alone,
+        `AssertionError: {'numpy': '2.0.2', 'scikit-learn': '2.0.2'} !=
+        {... '1.6.1'}`.
+
+    Every mutation killed this test and nothing else, each with
+    `AssertionError`. The `read_journal` subtest is killed by none of them, as
+    expected: it guards that a file mixing the two kinds of line still reads,
+    and no mutation here makes a line unreadable.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        super().setUp()
+
+    def test_an_event_holdout_journal_line_from_an_ml_fit_names_its_library_versions(self):
+        """`ml_libraries` on a gbm line, absent on a climatology line, and not hashed.
+
+        The expectation is the imported modules' own `__version__`, imported
+        here, for the reason the compare test gives: a line built from
+        anything else disagrees with it. Both runs score the same window into
+        one journal, gbm first, so the file under the last subtest holds one
+        line of each kind.
+        """
+
+        import numpy
+        import sklearn
+
+        fitted_with = {
+            "numpy": numpy.__version__,
+            "scikit-learn": sklearn.__version__,
+        }
+
+        self.scored(model="gbm")
+        self.scored(model="climatology")
+        lines = self.journal.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 2, msg="each run appends exactly one line")
+        gbm_line, climatology_line = (json.loads(line) for line in lines)
+
+        with self.subTest(line="gbm carries both versions"):
+            self.assertEqual(gbm_line.get("ml_libraries"), fitted_with)
+
+        with self.subTest(line="climatology has no ml_libraries key"):
+            self.assertNotIn(
+                "ml_libraries",
+                climatology_line,
+                msg="a line no ml fit produced names library versions; absent, not null",
+            )
+            self.assertNotIn("null", lines[1])
+
+        with self.subTest(line="gbm config_sha256 carries no versions"):
+            self.assertEqual(
+                gbm_line["config_sha256"],
+                config_digest(self.expected_config("gbm", self.FEATURES)),
+                msg="the gbm line's hash is not the hash of the model_config the "
+                "command built; the versions moved it",
+            )
+
+        with self.subTest(line="read_journal reads one line of each kind"):
+            entries = read_journal(self.journal)
+            self.assertEqual(entries, (gbm_line, climatology_line))
+            self.assertEqual(
+                [entry["window_name"] for entry in entries],
+                ["smoke-window", "smoke-window"],
             )
 
 
