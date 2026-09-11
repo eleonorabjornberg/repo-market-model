@@ -1208,6 +1208,14 @@ def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registr
     * A header column that maps to no declared field is refused, not skipped. A
       tenor Treasury adds is a registry decision, and a skipped column is a
       series nobody decided to drop.
+    * Two header columns that map to one declared field are refused, whether
+      the name repeats or two spellings (`4 WEEKS` and `04 WEEKS`) meet at one
+      field: either publishes two observations for one `(series, date)`. The
+      header is refused, not de-duplicated, because nothing says which to keep.
+    * A row whose cell count is not the header's is refused, by line number:
+      a short row or a blank line mid-file, and a long row too. A cell beyond
+      the header is a row that no longer lines up with its column names, so its
+      other cells cannot be trusted to either.
     * A blank cell is a tenor not yet auctioned on that date -- the new tenor's
       first months of the year it appears. It yields no observation; `0.0`
       would publish a rate on a bill that did not exist.
@@ -1251,6 +1259,7 @@ def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registr
             "column must be Date"
         )
     columns = []
+    column_for_field = {}
     for position, name in enumerate(header[1:], start=1):
         field = _treasury_bill_rate_field(name)
         if field not in declared_fields:
@@ -1258,10 +1267,23 @@ def _treasury_bill_rate_rows(artifact: SnapshotArtifact, payload: bytes, registr
                 f"Treasury bill-rate header column {name!r} maps to no declared "
                 f"field of {source_id}"
             )
+        if field in column_for_field:
+            raise ValueError(
+                f"Treasury bill-rate header columns {column_for_field[field]!r} and "
+                f"{name!r} both map to {field}: one (series, date) would carry two "
+                f"observations"
+            )
+        column_for_field[field] = name
         columns.append((position, field))
 
     rows = []
     for line_number, record in enumerate(reader, start=2):
+        if len(record) != len(header):
+            raise ValueError(
+                f"Treasury bill-rate line {line_number} has {len(record)} cells "
+                f"against a header of {len(header)}: the row does not line up with "
+                f"its column names"
+            )
         raw_date = record[0].strip()
         match = TREASURY_BILL_RATE_DATE.fullmatch(raw_date)
         try:

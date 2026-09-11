@@ -4177,10 +4177,12 @@ class TreasuryBillRateTests(unittest.TestCase):
     coincidence -- the first 2025 date tried, 13 June, ties the 13-week coupon
     equivalent with the 8-week bank discount and was replaced.
 
-    Not refused, and not exercised: a row with fewer cells than the header
-    raises `IndexError` rather than a phrased `ValueError`, a row with more has
-    its extra cells ignored, and two header columns naming the same field are
-    both read. None occurs in the nine files.
+    As A15 left it, and none of it occurring in the nine files: a row with
+    fewer cells than the header raised `IndexError` rather than a phrased
+    `ValueError`, a row with more had its extra cells ignored, and two header
+    columns naming the same field were both read, two observations for one
+    `(series, date)`. A17 refuses all three; see
+    `test_a_row_or_header_that_does_not_line_up_is_refused` below.
 
     Mutation record
     ---------------
@@ -4217,6 +4219,45 @@ class TreasuryBillRateTests(unittest.TestCase):
     5. **A non-numeric cell read as blank**, beyond the four the brief named,
        because it is a guard too. Killed this test, `AssertionError`
        ("ValueError not raised"), one test beyond the control.
+
+    A17: a row or header that does not line up is refused
+    -----------------------------------------------------
+
+    `test_a_row_or_header_that_does_not_line_up_is_refused` plants five faults
+    on the 2026 file, each in its own subtest asserting `ValueError` and the
+    line number or the column names in the message: a short row, a blank line
+    mid-file (the csv reader yields it as a row of no cells), a long row, a
+    header column repeated by name, and `04 WEEKS BANK DISCOUNT` added beside
+    `4 WEEKS BANK DISCOUNT`, two names the adapter's rule maps to one field.
+    Each header case gives every row the matching cell, so the rows line up
+    and only the header is at fault. A positive subtest pins 2018 and 2025 to
+    a digest of what they parsed to before the guard, so a refusal that also
+    caught the real files, or reordered their rows, cannot pass.
+
+    Two traps. Checking only `len(record) < len(header)` ends the `IndexError`
+    and still accepts the long row. De-duplicating the header silently rather
+    than refusing it hides the fault the refusal exists to surface, and comparing
+    raw names rather than mapped fields refuses the repeat and accepts two
+    spellings of one tenor.
+
+    Mutation record: disposable copies under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, Python 3.9.6, whole suite per
+    mutation. Each replacement was asserted present, exactly once, before the
+    run. The control is green before and after, no expected failures, and
+    every failure below is in this test and no other.
+
+    1. **The length check removed.** Killed this test: the short-row and
+       blank-line subtests with `IndexError` ("list index out of range"), the
+       long-row subtest with `AssertionError` ("ValueError not raised").
+    2. **The length check weakened to `<`.** Killed this test, the long-row
+       subtest alone, `AssertionError` ("ValueError not raised").
+    3. **The repeated-field check removed.** Killed this test, both header
+       subtests, `AssertionError` ("ValueError not raised").
+    4. **The repeated-field check comparing raw names instead of mapped
+       fields.** Killed this test, the two-names subtest alone,
+       `AssertionError` ("ValueError not raised"); the repeated name is still
+       refused under it.
     """
 
     DIRECTORY = REPO_ROOT / "tests" / "fixtures" / "snapshots" / "treasury_bills"
@@ -4406,6 +4447,81 @@ class TreasuryBillRateTests(unittest.TestCase):
             _treasury_bill_rate_rows(
                 artifact, self._planted(2026, non_numeric), registry
             )
+
+    #: sha256 of what `_treasury_bill_rate_rows` returned for these two files
+    #: before A17's refusals existed, at b0f48cc: one line per observation in
+    #: the order returned, `series_id|ref_date|available_at|value|vintage_id|
+    #: source_sha`, joined by newlines.
+    PARSED_BEFORE_A17 = {
+        2018: "b0f592ecf8bd945129987d5029fcc8173a91e92a76de407086f4397fbb866d32",
+        2025: "e3ef7c14e8be56ac34b210682a9d5bef01cd23801f133bdb1e8fcdc6c60213d9",
+    }
+
+    def test_a_row_or_header_that_does_not_line_up_is_refused(self):
+        from repo_model.ingest import _treasury_bill_rate_rows, load_source_registry
+
+        registry = load_source_registry()
+
+        def short_row(lines):
+            lines[5] = lines[5].rsplit(",", 1)[0]
+
+        def blank_line(lines):
+            lines.insert(5, "")
+
+        def long_row(lines):
+            lines[5] = lines[5] + ",9.99"
+
+        def added_column(name, copied_position):
+            # Every row gets the matching cell, so the rows line up and only
+            # the header is at fault.
+            def edit(lines):
+                lines[0] = f'{lines[0]},"{name}"'
+                for index in range(1, len(lines)):
+                    cells = lines[index].split(",")
+                    lines[index] = f"{lines[index]},{cells[copied_position]}"
+
+            return edit
+
+        # Planted on the 2026 file. Lines count from 1 with the header, so
+        # `lines[5]` is line 6; the trailing space keeps "line 6" off line 60.
+        for case, edit, message in (
+            ("short row", short_row, "line 6 "),
+            ("blank line mid-file", blank_line, "line 6 "),
+            ("long row", long_row, "line 6 "),
+            (
+                "the same header name twice",
+                added_column("13 WEEKS COUPON EQUIVALENT", 8),
+                "'13 WEEKS COUPON EQUIVALENT' and '13 WEEKS COUPON EQUIVALENT'",
+            ),
+            (
+                "two names mapping to one declared field",
+                added_column("04 WEEKS BANK DISCOUNT", 1),
+                "'4 WEEKS BANK DISCOUNT' and '04 WEEKS BANK DISCOUNT'",
+            ),
+        ):
+            with self.subTest(case=case):
+                with self.assertRaisesRegex(ValueError, message):
+                    _treasury_bill_rate_rows(
+                        self._artifact(2026), self._planted(2026, edit), registry
+                    )
+
+        # The real files, which line up, parse to what they parsed to before.
+        for year, digest in self.PARSED_BEFORE_A17.items():
+            with self.subTest(year=year):
+                rows = _treasury_bill_rate_rows(
+                    self._artifact(year), self._path(year).read_bytes(), registry
+                )
+                text = "\n".join(
+                    f"{row.series_id}|{row.ref_date.isoformat()}|"
+                    f"{row.available_at.isoformat()}|{row.value!r}|"
+                    f"{row.vintage_id}|{row.source_sha}"
+                    for row in rows
+                )
+                self.assertEqual(
+                    hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                    digest,
+                    msg=f"{year} no longer parses to the rows it parsed to before A17",
+                )
 
 
 class TreasurySnapshotManifestTests(unittest.TestCase):
