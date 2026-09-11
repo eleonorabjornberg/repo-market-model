@@ -41,6 +41,11 @@ What is covered here
 * `GradientBoostedLaggedSpreadTests` -- `spread_change_lags`: the lagged spread
   changes read only rows at or before the feature date, by row, never across a
   hole, named in the declaration, and the lags' refusals.
+* `GradientBoostedGarchFeatureTests` -- `volatility_feature="garch11"`: the
+  GARCH(1,1) recovers a simulated truth, is fitted per fold on the fit rows,
+  filters the calibration rows rather than refitting on them, reads nothing
+  after a row for that row's variance, is named in the declaration, and its
+  refusals.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -1064,6 +1069,511 @@ class GradientBoostedLaggedSpreadTests(unittest.TestCase):
                 ValueError, r"need 5 rows before it and its frame has 3"
             ):
                 model.design_row(panel[3])
+
+
+#: The GARCH(1,1) the fixtures below simulate: persistence 0.95, unconditional
+#: variance 1 bp squared.
+GARCH_TRUTH = (0.05, 0.10, 0.85)
+
+
+def standard_normals(rng):
+    """Box-Muller off `rng.random()`, for `heteroscedastic_frame`'s reason."""
+
+    while True:
+        first, second = rng.random(), rng.random()
+        yield math.sqrt(-2.0 * math.log(1.0 - first)) * math.cos(2.0 * math.pi * second)
+
+
+def garch_spreads(changes, parameters=GARCH_TRUTH, seed=20260911):
+    """`changes + 1` spreads whose changes are a zero-mean GARCH(1,1) path.
+
+    Started at the unconditional variance, so the path has no transient for the
+    fit's own starting variance to disagree with.
+    """
+
+    omega, alpha, beta = parameters
+    variance = omega / (1.0 - alpha - beta)
+    spreads = [10.0]
+    shocks = standard_normals(random.Random(seed))
+    for _ in range(changes):
+        change = math.sqrt(variance) * next(shocks)
+        spreads.append(spreads[-1] + change)
+        variance = omega + alpha * change * change + beta * variance
+    return spreads
+
+
+def garch_frame(count, seed=20260911):
+    """Weekday rows whose spread follows `garch_spreads`; two inert regressors."""
+
+    rng = random.Random(seed + 1)
+    return [
+        DailyObservation(
+            when,
+            {
+                "sofr": 4.30 + spread / 100.0,
+                "iorb": 4.30,
+                "on_rrp": rng.random(),
+                "sofr_volume": 2000.0 + rng.random(),
+            },
+        )
+        for when, spread in zip(
+            business_days(date(2020, 1, 1), count), garch_spreads(count - 1, seed=seed)
+        )
+    ]
+
+
+def recursion_variances(frame, parameters, initial):
+    """`f_t` for every row of `frame`, computed here from rows at or before `t`.
+
+    Written out rather than read from `ml`, in the same arithmetic order, so a
+    value that agrees with it bit for bit is the recursion the module docstring
+    states and not whatever the module's helper happens to do.
+    """
+
+    omega, alpha, beta = parameters
+    variances = []
+    previous = initial
+    for position, row in enumerate(frame):
+        if position == 0:
+            shock = previous
+        else:
+            change = row.spread_bps - frame[position - 1].spread_bps
+            shock = change * change
+        previous = omega + alpha * shock + beta * previous
+        variances.append(previous)
+    return variances
+
+
+def with_column(frame, name, values):
+    """`frame` with `values` carried as the panel column `name`."""
+
+    return [
+        DailyObservation(row.date, dict(row.values, **{name: value}))
+        for row, value in zip(frame, values)
+    ]
+
+
+class GradientBoostedGarchFeatureTests(unittest.TestCase):
+    """`volatility_feature="garch11"`: B24's acceptance criterion and its mutation target.
+
+    **The traps.** A GARCH fitted once on the panel (every fold then reads
+    parameters estimated on its own future); a variance at row `t` that reads
+    the change into `t + 1`, which for a training row is its target; and a
+    constant variance quietly standing in for a fit that failed.
+
+    **What the leakage probe can and cannot see.** As B23 found for the lags,
+    the probe -- every row after the feature date changed, the forecast and the
+    parameters bit-identical -- holds by construction: the fold loop hands the
+    fitter a frame that ends at the feature row. The leak that remains possible
+    is inside the training design, where a row's successor is its target. So
+    the leakage subtest also fits the gbm a second time with the variance
+    computed *here*, from rows at or before each row, declared as an ordinary
+    regressor: the two models must agree bit for bit, residual sample included,
+    and the residual sample is read off every training design row.
+
+    **The recovery tolerance, stated.** `RECOVERY_CHANGES` changes of
+    `GARCH_TRUTH`. Measured across twenty seeds at that length the estimates'
+    standard deviations are about 0.012 (omega), 0.011 (alpha) and 0.020
+    (beta), and every seed fell within `RECOVERY_TOLERANCE` -- roughly three of
+    them. The stationarity half of the subtest is on a series whose variance
+    steps up sixfold halfway: the quasi-likelihood's unconstrained maximum there
+    is explosive, and the control asserts the fitted `alpha + beta` sits on the
+    boundary, so a series on which the constraint did not bind could not leave
+    it green and empty.
+
+    **The minimum.** `ml.GARCH_MINIMUM_CHANGES`, thirty observed changes among
+    the fit rows: ten per parameter.
+
+    Mutation record (B24)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` (the worktree's `.venv`: CPython
+    3.9.6, numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src` (checked to
+    resolve to each copy), `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`,
+    whole suite per run. Unmutated control green before and after, zero
+    `expectedFailure`; each anchor found exactly once and confirmed applied.
+    Every failure below is `AssertionError` unless named otherwise, and
+    **every mutation but the first killed this test and nothing else.**
+
+      * **GARCH fitted on the frame through the scored row** -- the fold loop
+        hands the fitter `rows[: index + 1]` in place of the purged training
+        rows (`baseline.rolling_persistence_backtest`). `leakage`: the
+        parameters and the forecast move when only rows after the feature date
+        change. Twenty-one other failures across `test_contract`,
+        `test_baseline`, `test_generated_results` and both earlier gbm classes,
+        because the frame is every model's. The fitter is handed a frame and
+        never a panel, so this is the only door a whole-panel fit has.
+      * **The variance recursion shifted one row forward** -- `f_p` reads the
+        change into `p + 1` (`_garch_variances`). `recovery` (omega 0.0005
+        against 0.05), `leakage` and the calibration subtest (the design-row
+        variances against the recursion computed here).
+      * **The training design reads the target row's variance** --
+        `variances[index]` for `variances[index - 1]` (extra; the trap as the
+        brief states it). `leakage` (the residual sample against the declared
+        reference) and the calibration subtest (the widening). **Found on the
+        first run:** with the reference fitted on a fold's forty-row frame,
+        `leakage` did not see this -- no level's trees split on the column, so
+        a late column fitted the same trees. The reference moved to the
+        eighty-row frame, with a control that the late column changes the fit
+        there, and the whole record was re-run on the final test.
+      * **Calibration rows refitted** -- the GARCH fitted on the whole frame
+        under `conformal`. The calibration subtest: the parameters are not the
+        fit rows' own.
+      * **The stationarity constraint dropped.** `recovery`: `alpha + beta`
+        1.080 on the stepped series. No fold's optimum is outside, so nothing
+        else sees it.
+      * **A single global fit** -- the first fit's parameters cached for the
+        process (extra). `per fold` (two folds, one GARCH; a later fold's
+        parameters not its own frame's), `leakage` and the calibration subtest.
+      * **The declaration key dropped** from `model_settings`. `the
+        declaration names volatility_feature; absent when not set`,
+        `{} != {'volatility_feature': 'garch11'}`.
+      * **Each refusal removed**, separately:
+          - an unknown value: `ValueError not raised` -- `garch12` fitted as
+            today's gbm under a declaration naming a volatility model;
+          - the setting on a model other than gbm (`cli_eval.
+            _volatility_feature`): `SplitError not raised`;
+          - fewer than 30 observed changes: `ValueError not raised`;
+          - a search that does not converge: `ValueError not raised` -- the
+            parameters where the fifth iteration left them are used;
+          - every observed change zero (extra): `AssertionError` on the phrase.
+            The fit is still refused, by `ValueError: math domain error` out of
+            `math.log` on a zero variance; what the guard adds is that the
+            refusal says why, before a logarithm does.
+
+    **A finding about short frames.** On the forty- to sixty-row frames here,
+    drawn from `GARCH_TRUTH`, the quasi-likelihood's maximum sits at omega of
+    order 1e-15 with alpha near zero and beta just below one: the variance is
+    a slow decay from `f_-1`, not a clustering estimate. Converged, inside the
+    constraints, and what the estimator says at that length; recorded because
+    the first folds of a `--minimum-history 61` run are frames of that size.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PANEL_ROWS = 50
+    MINIMUM_HISTORY = 40
+    PURGE = 6
+    RECOVERY_CHANGES = 5000
+    RECOVERY_TOLERANCE = (0.04, 0.04, 0.07)
+    CALIBRATION_ROWS = 80
+
+    def setUp(self):
+        require_extra(self)
+        with tempfile.TemporaryDirectory() as directory:
+            self.registry = json.loads(
+                declared_registry_file(
+                    directory, purge=self.PURGE, features=self.FEATURES
+                ).read_text(encoding="utf-8")
+            )
+
+    def fit(self, frame, regressors=None, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(
+            frame, self.REGRESSORS if regressors is None else regressors, **options
+        )
+
+    def backtest(self, panel, **settings):
+        """The rolling fold loop over `panel`, and every frame and model it fitted."""
+
+        frames, fits = [], []
+
+        def fitter(train_frame, minimum_history, purge_days):
+            model = self.fit(
+                train_frame,
+                minimum_history=minimum_history,
+                purge_days=purge_days,
+                **settings,
+            )
+            frames.append(list(train_frame))
+            fits.append(model)
+            return model
+
+        report = baseline.rolling_persistence_backtest(
+            panel,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=fitter,
+        )
+        return report, frames, fits
+
+    def test_the_garch_variance_is_fitted_per_fold_on_rows_at_or_before_the_feature_date(self):
+        """Recovery, leakage, per fold, calibration, the declaration, four refusals.
+
+        One criterion: a variance fitted on the wrong rows, read one row late,
+        refitted on the rows it is calibrated against, unnamed in the record, or
+        standing in for a fit that failed is each a column that is not the
+        spread's conditional variance up to the day it forecasts from.
+        """
+
+        panel = garch_frame(self.PANEL_ROWS)
+        dates = [row.date for row in panel]
+        report, frames, fits = self.backtest(panel, volatility_feature="garch11")
+        fold = report.folds[0]
+        feature = dates.index(fold.feature_date)
+
+        calibration_frame = garch_frame(self.CALIBRATION_ROWS)
+        calibrated = self.fit(
+            calibration_frame,
+            volatility_feature="garch11",
+            calibration="conformal",
+            purge_days=0,
+        )
+
+        with self.subTest("recovery"):
+            fitted, _ = ml._fit_garch11(
+                garch_spreads(self.RECOVERY_CHANGES), "fit rows"
+            )
+            for name, estimate, truth, tolerance in zip(
+                ("omega", "alpha", "beta"), fitted, GARCH_TRUTH, self.RECOVERY_TOLERANCE
+            ):
+                self.assertLessEqual(
+                    abs(estimate - truth),
+                    tolerance,
+                    msg=(
+                        f"{name} fitted {estimate:.4f} on {self.RECOVERY_CHANGES} "
+                        f"simulated changes against a true {truth} +/- {tolerance}"
+                    ),
+                )
+            # Stationarity, on a series whose unconstrained maximum is explosive.
+            shocks = standard_normals(random.Random(7))
+            stepped = [0.0]
+            for index in range(200):
+                stepped.append(stepped[-1] + (1.0 if index < 100 else 6.0) * next(shocks))
+            omega, alpha, beta = ml._fit_garch11(stepped, "fit rows")[0]
+            self.assertGreater(
+                alpha + beta,
+                0.999,
+                msg=(
+                    "the control: the stationarity constraint does not bind on "
+                    "this series, so it is not under test"
+                ),
+            )
+            self.assertLess(alpha + beta, 1.0)
+            self.assertGreater(omega, 0.0)
+            self.assertGreaterEqual(min(alpha, beta), 0.0)
+
+        with self.subTest("leakage"):
+            self.assertGreater(
+                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            )
+            later = panel[: feature + 1] + [
+                with_spread_shifted(row, 25.0) for row in panel[feature + 1 :]
+            ]
+            again, _, again_fits = self.backtest(later, volatility_feature="garch11")
+            self.assertEqual(again.folds[0], fold)
+            self.assertEqual(
+                (
+                    again_fits[0].garch_parameters,
+                    again_fits[0].garch_initial_variance,
+                    again.forecasts[0].predicted_bps,
+                    again.forecasts[0].quantiles_bps,
+                ),
+                (
+                    fits[0].garch_parameters,
+                    fits[0].garch_initial_variance,
+                    report.forecasts[0].predicted_bps,
+                    report.forecasts[0].quantiles_bps,
+                ),
+                msg=f"the fold from {fold.feature_date} moved when only later rows changed",
+            )
+            back = (
+                panel[: feature - 1]
+                + [with_spread_shifted(panel[feature - 1], 25.0)]
+                + panel[feature:]
+            )
+            moved, _, moved_fits = self.backtest(back, volatility_feature="garch11")
+            self.assertNotEqual(moved_fits[0].garch_parameters, fits[0].garch_parameters)
+            self.assertNotEqual(
+                moved.forecasts[0].quantiles_bps, report.forecasts[0].quantiles_bps
+            )
+
+            # Inside the design. Every row's variance is the recursion over rows
+            # at or before it...
+            model, frame = fits[0], frames[0]
+            expected = recursion_variances(
+                frame, model.garch_parameters, model.garch_initial_variance
+            )
+            self.assertEqual([model.design_row(row)[-1] for row in frame], expected)
+            # ...and the training design is those values: the gbm with that
+            # column declared as an ordinary regressor is the same model, down
+            # to the residual sample every training design row contributes to.
+            # On the larger frame, because at a fold's forty rows no level's
+            # trees split on the column and a design that read it one row late
+            # fits the same trees.
+            whole = self.fit(calibration_frame, volatility_feature="garch11")
+            expected = recursion_variances(
+                calibration_frame, whole.garch_parameters, whole.garch_initial_variance
+            )
+            declared = self.REGRESSORS + ("garch_check",)
+            reference = self.fit(
+                with_column(calibration_frame, "garch_check", expected),
+                regressors=declared,
+            )
+            self.assertEqual(reference.residuals, whole.residuals)
+            self.assertEqual(
+                reference.predict(
+                    with_column(calibration_frame, "garch_check", expected)[-1]
+                ),
+                whole.predict(calibration_frame[-1]),
+            )
+            # The control: each row carrying its successor's variance -- a
+            # training row reading the change into its target -- is a
+            # different model on this frame, so the equality above is not the
+            # trees ignoring the column.
+            late = self.fit(
+                with_column(calibration_frame, "garch_check", expected[1:] + expected[-1:]),
+                regressors=declared,
+            )
+            self.assertNotEqual(
+                late.residuals,
+                reference.residuals,
+                msg="the control: the gbm does not read the variance column on this frame",
+            )
+
+        with self.subTest("per fold"):
+            self.assertGreater(len(fits), 1)
+            self.assertLess(fits[0].cutoff, fits[-1].cutoff)
+            self.assertNotEqual(
+                fits[0].garch_parameters,
+                fits[-1].garch_parameters,
+                msg="two folds with different training ends fitted one GARCH",
+            )
+            for frame, model in zip(frames, fits):
+                with self.subTest(train_end=frame[-1].date.isoformat()):
+                    self.assertEqual(
+                        (model.garch_parameters, model.garch_initial_variance),
+                        ml._fit_garch11([row.spread_bps for row in frame], "fit rows"),
+                        msg="the fold's GARCH is not the fit on the fold's own rows",
+                    )
+                    omega, alpha, beta = model.garch_parameters
+                    self.assertGreater(omega, 0.0)
+                    self.assertGreaterEqual(min(alpha, beta), 0.0)
+                    self.assertLess(alpha + beta, 1.0)
+
+        with self.subTest("calibration rows are filtered, not refitted"):
+            rows = calibration_frame
+            fit_rows = [row for row in rows if row.date <= calibrated.fit_end]
+            self.assertLess(len(fit_rows), len(rows))
+            self.assertEqual(
+                (calibrated.garch_parameters, calibrated.garch_initial_variance),
+                ml._fit_garch11([row.spread_bps for row in fit_rows], "fit rows"),
+                msg="the GARCH was not fitted on the fit rows alone",
+            )
+            self.assertNotEqual(
+                calibrated.garch_parameters,
+                ml._fit_garch11([row.spread_bps for row in rows], "fit rows")[0],
+                msg="the fixture: fit rows and frame fit the same GARCH",
+            )
+            # Filtered: the fit rows' recursion run on through the calibration
+            # rows, and the widening scored off exactly those variances.
+            expected = recursion_variances(
+                rows, calibrated.garch_parameters, calibrated.garch_initial_variance
+            )
+            self.assertEqual(
+                [calibrated.design_row(row)[-1] for row in rows], expected
+            )
+            reference = self.fit(
+                with_column(rows, "garch_check", expected),
+                regressors=self.REGRESSORS + ("garch_check",),
+                calibration="conformal",
+                purge_days=0,
+            )
+            self.assertEqual(reference.widening, calibrated.widening)
+
+        with self.subTest("the declaration names volatility_feature; absent when not set"):
+            self.assertEqual(dict(report.model_settings), {"volatility_feature": "garch11"})
+            self.assertEqual(
+                dict(baseline._model_settings(calibrated)),
+                {
+                    "calibration": "conformal",
+                    "calibration_share": 0.25,
+                    "volatility_feature": "garch11",
+                },
+            )
+            self.assertEqual(
+                fits[0].design_names,
+                ("spread_bps",) + self.REGRESSORS + ("garch11_variance",),
+            )
+            # Read off spread_bps, already declared; not a panel column.
+            self.assertEqual(fits[0].features_read, ("spread_bps",) + self.REGRESSORS)
+            plain = self.fit(panel[:30])
+            self.assertEqual(dict(baseline._model_settings(plain)), {})
+            self.assertEqual(plain.design_names, ("spread_bps",) + self.REGRESSORS)
+            self.assertIsNone(plain.garch_parameters)
+
+        with self.subTest("refusal: an unknown value"):
+            with self.assertRaisesRegex(ValueError, r"unknown volatility_feature 'garch12'"):
+                self.fit(panel[:40], volatility_feature="garch12")
+
+        with self.subTest("refusal: the setting on a model other than gbm"):
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "arx",
+                 "--volatility-feature", "garch11"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--volatility-feature garch11 was given, but --model arx"
+            ):
+                cli_eval._select_fitter(backtest)
+            compare = parser.parse_args(
+                ["compare", "panel.csv", *common, "--report", "r.json",
+                 "--model-a", "persistence", "--feature-a", "spread_bps",
+                 "--volatility-feature-a", "garch11",
+                 "--model-b", "gbm", "--feature-b", "spread_bps",
+                 "--volatility-feature-b", "garch11", "--calibration-b", "conformal"]
+            )
+            with self.assertRaisesRegex(
+                SplitError,
+                r"--volatility-feature-a garch11 was given, but --model-a persistence",
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(
+                fitter.keywords,
+                {
+                    "regressors": (),
+                    "calibration": "conformal",
+                    "volatility_feature": "garch11",
+                },
+            )
+
+        with self.subTest("refusal: too few fit rows for a GARCH fit"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"needs at least 30 observed spread changes among the fit rows, got 29",
+            ):
+                self.fit(panel[:30], volatility_feature="garch11")
+            # And thirty is enough: the refusal sits at the edge.
+            self.assertIsNotNone(
+                self.fit(panel[:31], volatility_feature="garch11").garch_parameters
+            )
+
+        with self.subTest("refusal: a fit that does not converge"):
+            with mock.patch.object(ml, "_GARCH_MAX_ITERATIONS", 5):
+                with self.assertRaisesRegex(
+                    ValueError, r"did not converge in 5 Nelder-Mead iterations"
+                ):
+                    self.fit(panel[:40], volatility_feature="garch11")
+            flat = [
+                DailyObservation(row.date, dict(row.values, sofr=4.40))
+                for row in panel[:40]
+            ]
+            with self.assertRaisesRegex(
+                ValueError,
+                r"did not converge: every one of its 39 observed spread changes is zero",
+            ):
+                self.fit(flat, volatility_feature="garch11")
 
 
 class GradientBoostedForecastInterfaceTests(
