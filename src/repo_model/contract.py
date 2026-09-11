@@ -57,6 +57,7 @@ __all__ = [
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
+    "UNMODELLED_SOURCES",
     "sources_for_features",
     "TREASURY_BILL_SECURITY_TYPES",
     "TREASURY_COUPON_SECURITY_TYPES",
@@ -332,6 +333,23 @@ CALENDAR_FEATURES = frozenset({"quarter_end", "tax_date"})
 # `tests/test_contract.py` exercises it with a planted entry rather than letting
 # the loop over this mapping pass vacuously.
 UNSOURCED_FEATURES = MappingProxyType({})
+
+# Registry sources that are ingested and deliberately read by no panel column
+# yet, each with its reason. The converse of `UNSOURCED_FEATURES`: there a
+# column lacks a source, here a source lacks a column. The coverage test in
+# `tests/test_contract.py` subtracts these, so each entry is an exemption, and
+# the same file refuses an entry a panel column now reaches (stale), one the
+# registry does not declare (a misspelling excusing nothing), or one with no
+# reason. Adding a column for a source means deleting its entry here.
+UNMODELLED_SOURCES = MappingProxyType(
+    {
+        "treasury_bill_rates": (
+            "parsed at the adapter only (A15); which tenors and which yield "
+            "basis become panel columns is undecided, and a column needs "
+            "data.OPTIONAL_NUMERIC_FIELDS and FEATURE_FIELDS together"
+        ),
+    }
+)
 
 
 def sources_for_features(names):

@@ -236,6 +236,7 @@ from repo_model.contract import (
     FEATURE_SOURCES,
     QUANTILE_LEVELS,
     REVISION_POLICIES,
+    UNMODELLED_SOURCES,
     UNSOURCED_FEATURES,
     UndeclaredFeatureError,
     field_sources_for_features,
@@ -2831,6 +2832,12 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         Also catches a source whose fields were collapsed away: if
         `treasury_auctions` ever loses its one panel column, this fails rather
         than the source quietly becoming unreachable.
+
+        A source deliberately not modelled yet is named, with its reason, in
+        `contract.UNMODELLED_SOURCES` and subtracted here; the next test keeps
+        that list honest. `treasury_bill_rates` (A15) was the first entry: the
+        adapter landed before anyone decided which tenors become columns, and
+        this test was red on the merged tree until the entry was written.
         """
 
         reached = {
@@ -2838,16 +2845,66 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
             for sources in FEATURE_SOURCES.values()
             for source_id in sources
         }
-        unreached = sorted(set(self._registry()) - reached)
+        unreached = sorted(
+            set(self._registry()) - reached - set(UNMODELLED_SOURCES)
+        )
         self.assertEqual(
             unreached,
             [],
             msg=(
                 f"{unreached} are ingested but no panel column draws on them. "
                 "Either a column is missing from FEATURE_SOURCES or the source "
-                "is not modelled and should be recorded as such."
+                "is not modelled and belongs in contract.UNMODELLED_SOURCES "
+                "with its reason."
             ),
         )
+
+    def test_an_unmodelled_source_is_declared_unreached_and_says_why(self):
+        """`UNMODELLED_SOURCES` is an exemption, so it is checked like one.
+
+        The coverage test above subtracts these entries. An exemption nobody
+        re-checks outlives its reason: an entry whose source a panel column now
+        reaches is stale and must go; an entry naming no registry source
+        excuses nothing and hides a misspelling of one that is; an entry with
+        no reason is a silence with a name on it.
+
+        Mutations, 11 Sep 2026, human commit at the A15/B18 round close, whole
+        suite each, unmutated control green before and after:
+
+        1. subtraction of `UNMODELLED_SOURCES` removed from the coverage test
+           -> that test fails, `AssertionError` (lists differ,
+           `['treasury_bill_rates']`); nothing else.
+        2. `"nyfed_sofr"` added as an entry -> this test fails,
+           `AssertionError` (reached by a panel column); nothing else.
+        3. `"treasury_bil_rates"` added as an entry -> this test fails,
+           `AssertionError` (not in the registry); nothing else.
+        4. the reason set to `" "` -> this test fails, `AssertionError`;
+           nothing else.
+        """
+
+        registry = set(self._registry())
+        reached = {
+            source_id
+            for sources in FEATURE_SOURCES.values()
+            for source_id in sources
+        }
+        for source_id, reason in UNMODELLED_SOURCES.items():
+            with self.subTest(source=source_id):
+                self.assertIn(
+                    source_id,
+                    registry,
+                    msg=f"{source_id!r} is exempted but the registry declares no such source",
+                )
+                self.assertNotIn(
+                    source_id,
+                    reached,
+                    msg=(
+                        f"{source_id!r} is exempted but a panel column reaches it; "
+                        "delete the entry"
+                    ),
+                )
+                self.assertIsInstance(reason, str)
+                self.assertTrue(reason.strip(), msg=f"{source_id!r} gives no reason")
 
     def test_an_unclassified_feature_name_raises_rather_than_purging_zero(self):
         """The failure mode the map exists to prevent.
