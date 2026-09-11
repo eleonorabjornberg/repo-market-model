@@ -4122,6 +4122,264 @@ class TreasurySettlementSplitTests(unittest.TestCase):
             )
 
 
+class TreasuryBillRateTests(unittest.TestCase):
+    """A15: every tracked year of Treasury daily bill rates is read by its own header.
+
+    The inputs
+    ----------
+
+    `tests/fixtures/snapshots/treasury_bills/` holds Treasury's "Daily Treasury
+    Bill Rates" export, one CSV per year, 2018 through 2026: dates MM/DD/YYYY,
+    newest row first, a BANK DISCOUNT and a COUPON EQUIVALENT column per tenor.
+    The files have no manifest -- that decision is the human's -- so the test
+    builds each `SnapshotArtifact` itself. `RETRIEVED_AT` is declared, not
+    measured: it is the time of the commit that finished tracking the nine
+    files, an upper bound on their retrieval, and no assertion reads it.
+
+    The header changes twice. 2018-2021 carry 4, 8, 13, 26 and 52 weeks; 17
+    weeks appears in 2022 and 6 weeks in 2025. A tenor is blank before its first
+    auction: 8 weeks on 198 rows of 2018, 17 weeks on 199 rows of 2022, 6 weeks
+    on 31 rows of 2025, each a contiguous run of the year's oldest dates. No
+    other cell is blank, none is non-numeric, and eight cells of 25-26 March
+    2020 are negative, which are rates and not faults.
+
+    The trap, and which assertion kills it
+    --------------------------------------
+
+    Reading columns by position, or by the newest file's header applied to every
+    year. On 2018 the eighth rate column is the 26-week coupon equivalent, and
+    under the 2026 header it is the 13-week one. That reading parses and emits
+    exactly the declared series, so the first assertion passes over it. The
+    second compares the 13-week coupon equivalent on a 2018 date and a 2025 date
+    with the cell under that file's own header, read here by `csv.DictReader`
+    and pinned to a literal, and the column-to-field table below is written out
+    rather than spelled by the adapter's rule. Each literal is unequal to every
+    other cell of its row, so a misread neighbouring column cannot pass by
+    coincidence -- the first 2025 date tried, 13 June, ties the 13-week coupon
+    equivalent with the 8-week bank discount and was replaced.
+
+    Not refused, and not exercised: a row with fewer cells than the header
+    raises `IndexError` rather than a phrased `ValueError`, a row with more has
+    its extra cells ignored, and two header columns naming the same field are
+    both read. None occurs in the nine files.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, Python
+    3.9.6, whole suite per mutation. Each mutation was applied to its own copy
+    of the control, and each replacement was confirmed present in the file
+    before the run.
+
+    **The control is not green, and the failure is the human's to clear.**
+    Exactly one failure, identical before the mutations and after:
+    `test_contract.FeatureSourceMapCoverageTests.test_every_registry_source_reaches_at_least_one_panel_column`,
+    naming `treasury_bill_rates`. Declaring a source no panel column draws on
+    is what that test exists to surface, `AGENT_CONTRACT.md` says the human
+    resolves it, and `contract.FEATURE_FIELDS` is `HUMAN_ONLY`. Each mutation
+    below is scored as tests failing beyond it.
+
+    1. **Columns mapped by the 2026 header positionally**, each row truncated to
+       its own width so the file still parses. Killed this test,
+       `AssertionError`, one test beyond the control: the second assertion's
+       2018 case, "2.07 != 1.94", which is the 26-week coupon equivalent
+       published as the 13-week one. The 2025 case passes under it, as it
+       must, since 2025's header is 2026's. The third assertion fails too, on
+       the per-series counts; the first does not, which is the trap.
+    2. **A blank read as `0.0`.** Killed this test, `AssertionError`, one test
+       beyond the control: the third assertion, the per-series counts.
+    3. **An unknown header column skipped** instead of refused. Killed this
+       test, `AssertionError` ("ValueError not raised"), one test beyond the
+       control.
+    4. **The date parsed permissively**: `%m/%d/%Y`, then `%Y-%m-%d`, `%m/%d/%y`
+       and `%d/%m/%Y` in turn. Killed this test, `AssertionError` ("ValueError
+       not raised"), one test beyond the control.
+    5. **A non-numeric cell read as blank**, beyond the four the brief named,
+       because it is a guard too. Killed this test, `AssertionError`
+       ("ValueError not raised"), one test beyond the control.
+    """
+
+    DIRECTORY = REPO_ROOT / "tests" / "fixtures" / "snapshots" / "treasury_bills"
+    YEARS = tuple(range(2018, 2027))
+    RETRIEVED_AT = "2026-09-10T16:39:19+00:00"
+
+    #: Written out, not derived: a table spelled by the adapter's own rule would
+    #: agree with the adapter whatever the rule said.
+    FIELD_FOR_COLUMN = {
+        "4 WEEKS BANK DISCOUNT": "tbill_4w_bank_discount",
+        "4 WEEKS COUPON EQUIVALENT": "tbill_4w_coupon_equivalent",
+        "6 WEEKS BANK DISCOUNT": "tbill_6w_bank_discount",
+        "6 WEEKS COUPON EQUIVALENT": "tbill_6w_coupon_equivalent",
+        "8 WEEKS BANK DISCOUNT": "tbill_8w_bank_discount",
+        "8 WEEKS COUPON EQUIVALENT": "tbill_8w_coupon_equivalent",
+        "13 WEEKS BANK DISCOUNT": "tbill_13w_bank_discount",
+        "13 WEEKS COUPON EQUIVALENT": "tbill_13w_coupon_equivalent",
+        "17 WEEKS BANK DISCOUNT": "tbill_17w_bank_discount",
+        "17 WEEKS COUPON EQUIVALENT": "tbill_17w_coupon_equivalent",
+        "26 WEEKS BANK DISCOUNT": "tbill_26w_bank_discount",
+        "26 WEEKS COUPON EQUIVALENT": "tbill_26w_coupon_equivalent",
+        "52 WEEKS BANK DISCOUNT": "tbill_52w_bank_discount",
+        "52 WEEKS COUPON EQUIVALENT": "tbill_52w_coupon_equivalent",
+    }
+
+    def _path(self, year):
+        return self.DIRECTORY / f"daily_treasury_bill_rates_{year}.csv"
+
+    def _artifact(self, year):
+        payload = self._path(year).read_bytes()
+        return SnapshotArtifact(
+            source_id="treasury_bill_rates",
+            path=self._path(year),
+            retrieved_at=self.RETRIEVED_AT,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=(
+                "https://home.treasury.gov/resource-center/data-chart-center/"
+                f"interest-rates/TextView?type=daily_treasury_bill_rates"
+                f"&field_tdr_date_value={year}"
+            ),
+            byte_count=len(payload),
+        )
+
+    def _records(self, year):
+        """One file read by its own header, touching no adapter code."""
+
+        with self._path(year).open(newline="", encoding="utf-8") as handle:
+            return list(csv.DictReader(handle))
+
+    def _planted(self, year, edit):
+        """One file's text with `edit` applied to its list of lines."""
+
+        lines = self._path(year).read_text(encoding="utf-8").split("\n")
+        edit(lines)
+        return "\n".join(lines).encode("utf-8")
+
+    def test_every_tracked_year_parses_by_its_own_header_and_an_unissued_tenor_is_absent(
+        self,
+    ):
+        from repo_model.ingest import _treasury_bill_rate_rows, load_source_registry
+
+        registry = load_source_registry()
+        declared = set(registry["treasury_bill_rates"]["fields"])
+        self.assertEqual(
+            sorted(self.DIRECTORY.glob("*.csv")),
+            [self._path(year) for year in self.YEARS],
+            msg="the tracked files are not the nine years this test names",
+        )
+
+        # All nine parse, and the series they emit are the declared fields,
+        # in both directions.
+        rows = observations_from_snapshots(
+            [self._artifact(year) for year in self.YEARS]
+        )
+        observed = {row.series_id for row in rows}
+        self.assertEqual(
+            observed - declared, set(), msg="an observation's series is undeclared"
+        )
+        self.assertEqual(
+            declared - observed, set(), msg="a declared field is never observed"
+        )
+        by_key = {(row.series_id, row.ref_date): row.value for row in rows}
+
+        # The 13-week coupon equivalent is the cell under this file's own
+        # header, in a year before the header changed and a year after.
+        for year, quote_date, literal in (
+            (2018, date(2018, 6, 15), "1.94"),
+            (2025, date(2025, 6, 12), "4.38"),
+        ):
+            with self.subTest(year=year):
+                cell = next(
+                    record["13 WEEKS COUPON EQUIVALENT"]
+                    for record in self._records(year)
+                    if record["Date"] == quote_date.strftime("%m/%d/%Y")
+                )
+                self.assertEqual(cell, literal, msg="the fixture cell moved")
+                self.assertEqual(
+                    by_key.get(("tbill_13w_coupon_equivalent", quote_date)),
+                    float(cell),
+                    msg=(
+                        f"{quote_date}: the 13-week coupon equivalent is not the "
+                        f"cell under {year}'s own header"
+                    ),
+                )
+
+        # A tenor not yet auctioned is absent, never zero: each series has
+        # exactly as many observations as it has non-blank cells, and none on a
+        # date its cell is blank.
+        expected_counts = {}
+        blank = set()
+        for year in self.YEARS:
+            for record in self._records(year):
+                quote_date = datetime.strptime(record["Date"], "%m/%d/%Y").date()
+                for column, cell in record.items():
+                    if column == "Date":
+                        continue
+                    field = self.FIELD_FOR_COLUMN[column]
+                    if cell.strip():
+                        expected_counts[field] = expected_counts.get(field, 0) + 1
+                    else:
+                        blank.add((field, quote_date))
+        counts = {}
+        for row in rows:
+            counts[row.series_id] = counts.get(row.series_id, 0) + 1
+        self.assertEqual(
+            {field for field, _ in blank},
+            {
+                "tbill_6w_bank_discount",
+                "tbill_6w_coupon_equivalent",
+                "tbill_8w_bank_discount",
+                "tbill_8w_coupon_equivalent",
+                "tbill_17w_bank_discount",
+                "tbill_17w_coupon_equivalent",
+            },
+            msg="the fixture no longer carries the three unissued tenors",
+        )
+        self.assertEqual(
+            counts,
+            expected_counts,
+            msg="a series' observation count is not its count of non-blank cells",
+        )
+        self.assertEqual(
+            {key for key in blank if key in by_key},
+            set(),
+            msg="a tenor not yet auctioned was published as a value",
+        )
+
+        # Refusals, each planted on the 2026 file.
+        artifact = self._artifact(2026)
+        with self.assertRaisesRegex(ValueError, "maps to no declared field"):
+            _treasury_bill_rate_rows(
+                artifact,
+                self._planted(
+                    2026,
+                    lambda lines: lines.__setitem__(
+                        0, lines[0].replace('"6 WEEKS BANK', '"10 WEEKS BANK')
+                    ),
+                ),
+                registry,
+            )
+        with self.assertRaisesRegex(ValueError, "a date not in MM/DD/YYYY"):
+            _treasury_bill_rate_rows(
+                artifact,
+                self._planted(
+                    2026,
+                    lambda lines: lines.__setitem__(
+                        1, lines[1].replace("09/09/2026", "2026-09-09")
+                    ),
+                ),
+                registry,
+            )
+
+        def non_numeric(lines):
+            cells = lines[1].split(",")
+            cells[3] = "N/A"
+            lines[1] = ",".join(cells)
+
+        with self.assertRaisesRegex(ValueError, "non-numeric"):
+            _treasury_bill_rate_rows(
+                artifact, self._planted(2026, non_numeric), registry
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
