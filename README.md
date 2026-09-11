@@ -26,9 +26,6 @@ repurchase-agreement market.**
   channel has open data-quality decisions recorded rather than resolved, and no result
   here is out-of-sample evidence of forecasting skill.
 
-A work-in-progress research system for forecasting pressure in the U.S. Treasury
-repurchase-agreement market from public data.
-
 The first target is deliberately narrow: the next-business-day distribution of
 `SOFR - IORB`, accompanied by SOFR dispersion and volume forecasts and the
 probability that the spread exceeds predeclared stress thresholds.
@@ -223,23 +220,25 @@ research directions, not completed features.
 
 ## People
 
-- **Eleonora Björnberg** — author. Research design; data-source selection and the
-  point-in-time contract; methodology and evaluation protocol; validation, including
-  every guard and mutation record in the suite; interpretation of results; review of
-  all machine-written code before it lands; and all final academic responsibility for
-  what this repository claims.
-- **Nicholas Beroud** — finance collaborator. Repo-market and money-market domain
-  expertise, and the finance side of the research design: which quantities are
-  economically meaningful, how the funding market's institutional mechanics should be
-  represented, and which of the open modelling decisions are questions of finance
-  rather than questions of code.
+The project has two co-owners.
 
-The distinction matters to how this repository is read. Most of what is built here is
-data engineering and evaluation discipline, and those are the parts a test suite can
+- **Eleonora Björnberg** — co-owner and author. She designed the model, the
+  methodology and the workflow: the research design and the point-in-time contract,
+  the evaluation protocol, the agent contract the code is developed under, validation
+  (every guard and mutation record in the suite), interpretation of results, and review
+  of all machine-written code before it lands.
+- **Nicholas Beroud** — co-owner and Financial Advisor, and the project's substantive
+  backbone. He selected the data the model is built on and settled what it means:
+  which public series carry the funding market's mechanics, which quantities are
+  economically meaningful, and which open decisions are questions of finance rather
+  than questions of code.
+
+The split matters to how this repository is read. Most of what is built here is data
+engineering and evaluation discipline, and those are the parts a test suite can
 defend. The judgments a suite cannot defend — whether a series measures the thing its
 name suggests, whether an aggregate hides the mechanism that matters, which decisions
 must be made before fitting rather than after — are finance judgments, and they are
-where the collaboration sits.
+his.
 
 ## Repository guide
 
@@ -250,6 +249,8 @@ Start here:
 - [`METHODOLOGY.md`](METHODOLOGY.md) defines the academic claims and evaluation
   protocol.
 - [`DATA.md`](DATA.md) maps public and restricted data sources.
+- [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md) reads the records on volatility
+  and the tails in words, and places the project among related quantitative work.
 - [`PLAN.md`](PLAN.md) records the staged implementation roadmap, and is what
   [`docs/status.json`](docs/status.json) is generated from.
 - [`examples/walkthrough.py`](examples/walkthrough.py) runs the pipeline end to end on
@@ -271,13 +272,12 @@ Then, for how the work is controlled rather than what it claims:
 
 Parts of the implementation were developed with AI coding agents operating in
 separate Git worktrees. Their allowed files and shared interfaces are defined in a
-human-owned contract and checked in CI. Tests, source provenance, model claims, and
-final academic responsibility remain with the project author. Domain input from the
-finance collaborator named above is advisory: it informs the research design, and it
-does not transfer responsibility for any claim this repository makes. Any academic
-submission based on this repository should also follow the relevant instructor's
-AI-use and citation requirements, and should disclose both the AI-agent workflow and
-the collaboration.
+human-owned contract and checked in CI. The co-owners answer for different things:
+the model, methodology, workflow, tests and code with Eleonora Björnberg; the choice
+of data and its economic meaning with Nicholas Beroud. Any academic submission based
+on this repository remains the author's academic responsibility, should follow the
+relevant instructor's AI-use and citation requirements, and should disclose both the
+AI-agent workflow and the collaboration.
 
 ## License
 

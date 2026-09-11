@@ -47,6 +47,7 @@ merge.
 | `.gitignore` | human | `HUMAN_ONLY` |
 | `src/repo_model/ml.py`, `tests/test_ml.py` | Track B | forbidden to `feature/data-layer` (10 Sep, with the `ml` extra) |
 | `tests/test_dependency_boundary.py` | human | `HUMAN_ONLY` |
+| `docs/RESEARCH_NOTES.md` | human | `HUMAN_ONLY` (11 Sep: a reading of the records is a claim) |
 
 **A test goes with the module it guards.** `ingest.py` was forbidden to Track B
 and the test saying what `ingest.py` must do was not, so the gate blocked the

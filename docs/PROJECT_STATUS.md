@@ -334,19 +334,19 @@ where they left off.
 
 ## Who is responsible for what
 
-The author holds research design, implementation, evaluation, and every claim on this
-page. Nicholas Beroud is the project's finance collaborator, contributing repo- and
-money-market domain expertise and the finance side of the research design: which of
-the open decisions in `DATA_QUALITY_DECISIONS.md` are questions about markets rather
-than about code, and what a series has to represent before it is worth fitting on.
+The project has two co-owners. Eleonora Björnberg, the author, designed the model, the
+methodology and the workflow, and holds implementation, evaluation and every claim
+about what the model has earned. Nicholas Beroud, Financial Advisor, selected the data
+the model is built on and settled what it means: which of the open decisions in
+`DATA_QUALITY_DECISIONS.md` are questions about markets rather than about code, and
+what a series has to represent before it is worth fitting on.
 
 The split is worth stating on a status page specifically, because the gaps listed
 above are not all of one kind. Some are engineering — a join not yet run, a freeze not
-yet taken. Others are finance judgments that no amount of test coverage will settle:
-whether a summed settlement series can stand in for a collateral-supply channel,
-whether an accounting identity means anything on a partial cross-section, what a
-stress regime should be declared to be. Advisory input does not transfer
-responsibility for any of them.
+yet taken — and those are the author's. Others are finance judgments that no amount of
+test coverage will settle: whether a summed settlement series can stand in for a
+collateral-supply channel, whether an accounting identity means anything on a partial
+cross-section, what a stress regime should be declared to be. Those are his.
 
 ## Portfolio interpretation
 

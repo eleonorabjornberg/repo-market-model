@@ -91,6 +91,10 @@ HUMAN_ONLY = (
     # reserved page whose source is not reserved is a page anyone can rewrite
     # one level down.
     "docs/EXECUTIVE_SUMMARY.md",
+    # The research notes (11 Sep): the records read in words and the related
+    # work. A reading of the evidence is a claim, so it is reserved with the
+    # pages that make claims.
+    "docs/RESEARCH_NOTES.md",
     "docs/figures/",
     "examples/",
     "notebooks/",

@@ -9,9 +9,9 @@ data become available.
 This is an academic exercise, and the phase structure below should be read as one: the
 committed scope is what the exercise undertakes to evidence, and the aspirational
 phases are research directions recorded so that the committed scope is not quietly
-widened to include them. Finance-side design decisions across these phases are taken
-with Nicholas Beroud, the project's finance collaborator; engineering and evaluation
-decisions, and responsibility for every claim, rest with the author.
+widened to include them. The choice of data and its meaning across these phases rests
+with Nicholas Beroud, co-owner and Financial Advisor; the model, methodology and
+workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days
 and intraday nowcasting.
