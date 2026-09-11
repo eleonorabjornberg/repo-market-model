@@ -62,7 +62,8 @@ came from.
 
 - **No forecasting result is finished yet.** Challengers have beaten the
   benchmark over the same decision points, but only the benchmark is re-derived
-  end to end, and no record yet says which days the wins come from.
+  end to end, and no published record yet says which days the wins come from; the comparison
+  records now carry it, and the published ones predate that.
 - **The uncertainty bands are known to be too narrow**, and whether that is bad
   luck or a real miscalibration has not yet been established either way.
 - **The money-market-fund data channel has open quality decisions**, recorded in
@@ -78,8 +79,8 @@ came from.
 
 ## The next operational step
 
-Finish the model-comparison milestone: record which days each challenger's
-win comes from, settle whether the coverage gap is sampling noise, and publish
+Finish the model-comparison milestone: re-run each challenger's record so it
+says which days its win comes from, settle whether the coverage gap is sampling noise, and publish
 the winning pair as a stable, checksummed result artifact that a reader can
 re-derive from a clean clone.
 

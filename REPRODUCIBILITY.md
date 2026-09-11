@@ -87,7 +87,9 @@ would score persistence against itself under the other model's name and report a
 difference of zero with a degenerate interval, which is the shape of a passing
 sanity check. Its record states the sign convention as a sentence, because a
 signed difference with no statement of direction is a number half its readers
-read as the opposite result.
+read as the opposite result. It also carries each origin's two losses and their
+difference under `comparison.per_origin`, earliest first, so which days a result
+comes from is read off the record rather than re-run.
 
 The paired loss is `--loss absolute-error` unless `--loss crps` is given, and the
 record names which. Absolute error reads only each side's centre, so two models

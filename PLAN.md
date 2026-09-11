@@ -75,11 +75,13 @@ rule. Low-frequency series are joined as-of; values are not backfilled into date
 which they were not yet known.
 
 Ingested so far: the SOFR, TGCR and BGCR families; the FRED macro block; Treasury
-settlement; SEC Form N-MFP, whose declared archive set, per-table refusal rule and
+settlement, with bill, coupon and SOMA components at the adapter; Treasury daily bill
+rates at the adapter (`treasury_bill_rates`); SEC Form N-MFP, whose declared archive set, per-table refusal rule and
 per-era category vocabulary are recorded in `metadata/sec_nmfp_archives.json` and
 `metadata/sources.json`; and the FR 2004 primary-dealer Treasury total (`nyfed_fr2004`,
-`PDPOSGST-TOT`, from 2013-04-03). Not yet ingested: bill yields, basis proxies, and the
-volatility, depth and bid-ask proxies.
+`PDPOSGST-TOT`, from 2013-04-03). Not yet ingested: basis proxies, and the volatility,
+depth and bid-ask proxies. The settlement components and the bill rates are not yet
+panel columns.
 
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
@@ -288,12 +290,11 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    bound was argued from three orders of magnitude of scale, and the coverage floor and
    monthly assembly left a 2.9x range, over which scale explains almost none of the
    residual. The `sec_nmfp` structural-zero review is recorded: `mmf_on_rrp` is a
-   declared zero through 2013-08-31, before the facility. The Treasury-settlement aggregation is half done: the limitation
-   states what was combined, and the split into bill, coupon and SOMA components, from
-   fields already in the snapshot, is next. Both are recorded in
+   declared zero through 2013-08-31, before the facility. The Treasury-settlement split into bill, coupon and SOMA components is
+   done at the adapter; its panel columns are not. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.
-3. **Then widen Phase 1**: primary-dealer positions are sourced; bill yields and the
-   liquidity proxies are next. The published Milestone A panel stays pinned to its
+3. **Then widen Phase 1**: primary-dealer positions are sourced and bill rates parse
+   at the adapter; their panel columns and the liquidity proxies are next. The published Milestone A panel stays pinned to its
    manifest's columns, so a new source does not move it.
 4. **Phase 2 to its exit criterion**: a conditional model scored against climatology on
    the declared knowledge holdouts, and a benchmark that beats persistence out of sample

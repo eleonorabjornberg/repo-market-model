@@ -170,8 +170,9 @@ Stated explicitly, because each is easy to mistake for something stronger.
   rolling-residual's. That record does not carry its numpy and scikit-learn
   versions; read off the environment after the run, they were numpy 2.0.2 and
   scikit-learn 1.6.1. These are several challengers against one benchmark at the 90% level,
-  on a daily panel scored with an expanding window and a purge, and no record yet
-  says which days a win or a loss comes from. The threshold ARX
+  on a daily panel scored with an expanding window and a purge, and no published
+  record yet says which days a win or a loss comes from: `compare` now writes each
+  origin's losses under `comparison.per_origin`, and these records predate it. The threshold ARX
   (`--model threshold`) has not been scored. The rolling-residual result also makes
   the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on

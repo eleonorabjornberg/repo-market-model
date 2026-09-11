@@ -301,8 +301,8 @@ closed.
 
 ## Treasury-settlement aggregation
 
-The current adapter combines Treasury offering amounts by issue date into one
-`treasury_settlement` series. This removes security type and tenor and does not
+The adapter first combined Treasury offering amounts by issue date into one
+`treasury_settlement` series. That removed security type and tenor and did not
 separate SOMA-related amounts from the private-sector cash drain.
 
 **Proposed resolution:** derive separate bill, coupon, and SOMA components before
@@ -310,9 +310,9 @@ model fitting. If a single aggregate is retained for the first empirical version
 the source limitation must explicitly state what was combined and the model report
 must test whether the simplification affects conclusions.
 
-**Half done.** The `limitation` states what was combined: all security types
-aggregated, tenor not represented, and `security_type`, `security_term` and
-`soma_accepted` present in the snapshot and unread, so the split needs no new download.
+**Done at the adapter.** It reads `security_type` and `soma_accepted` from the snapshot
+already committed and emits the aggregate beside its three components. None of the four
+is split into panel columns yet.
 
 **Corrected before the split was defined (human, 10 Sep): `offering_amt` excludes SOMA.**
 This page and the limitation said the aggregate included SOMA add-ons. It does not: the
@@ -329,18 +329,18 @@ billions: `treasury_settlement_bill` and `treasury_settlement_coupon`, each a su
 identity is `treasury_settlement` = bill + coupon at an absolute `1e-9`, since both sides
 sum the same values; SOMA sits outside it. A `security_type` in neither set raises --
 never a coupon by default, which is the residual trap one level down. The sets follow
-Treasury's bills-versus-coupons convention and are not yet enumerated from a fixture;
-the adapter block does that, and a value not listed is a report. `soma_accepted` is an
-auction result where `offering_amt` is announced, so it may not be dated available
-before results are published. It also retires the note it
-replaced, which said announcement and result vintages must be separated to avoid using
-auction outcomes too early. That risk is avoided by construction — `record_date` drives
-`available_at` and the adapter reads `offering_amt` alone, never `total_accepted`,
-`high_yield` or `bid_to_cover` — so the note described a hazard the adapter cannot have
-while saying nothing about the one it creates, which reads as vigilance.
+Treasury's bills-versus-coupons convention; the committed snapshot carries `Bill`,
+`Note` and `Bond` only, so `CMB`, `TIPS` and `FRN` are declared and not yet exercised.
 
-Still open: the split itself, and the model report's test of whether the simplification
-affects conclusions. Both matter to this project specifically. Bill and coupon
+**Availability.** `record_date` in this snapshot is the settlement date (it equals
+`issue_date` on every record), and `available_at` is 23:59 New York on it for all four
+series. `soma_accepted` is an auction result where `offering_amt` is announced; dating
+both at settlement puts each after its auction, and the adapter refuses a result whose
+`record_date` precedes its `auction_date`. It never reads `total_accepted`,
+`high_yield` or `bid_to_cover`.
+
+Still open: the component panel columns, and the model report's test of whether the
+simplification affects conclusions. Both matter to this project specifically. Bill and coupon
 settlements have different collateral and reserve-drain profiles and bill supply is
 close to the centre of the 2018–19 episode; SOMA add-ons do not drain private cash, so
 the Fed's leg belongs beside the public one as its own series, not inside it.
