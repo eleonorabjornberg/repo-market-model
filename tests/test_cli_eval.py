@@ -3470,6 +3470,223 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         self.assertEqual(record["declaration"]["model_a"]["model"], "persistence")
         self.assertEqual(record["declaration"]["model_b"]["model"], "arx")
 
+    def _panel_with_moving_volume(self):
+        """The harness panel with `sofr_volume` moving, so a regime can be read off it.
+
+        The harness writes `sofr_volume` as a constant, and a threshold model
+        refuses a constant regime variable because it has no split. Rewritten
+        from the harness's own file, one column changed, so every other column
+        is the fixture the class docstring describes.
+        """
+
+        path = self.tmp / "panel-moving-volume.csv"
+        with self.PANEL.open(newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=PANEL_COLUMNS)
+            writer.writeheader()
+            for index, row in enumerate(rows):
+                writer.writerow({**row, "sofr_volume": 2100 + (index * 37) % 101})
+        return path
+
+    def test_a_record_names_every_setting_its_models_were_built_with(self):
+        """A declaration names `regime_variable` and `residual_window` where a model has one.
+
+        **The finding (B21).** The two published threshold records,
+        `docs/runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`
+        and `..._regime_spread_mh61_crps.json`, were fitted with different
+        regime variables and published identical declarations: only the
+        filename said which was which. `--residual-window` was missing the same
+        way. `REPRODUCIBILITY.md` requires "the model configuration" of a
+        reportable run, and these settings change every figure in the record.
+
+        **The settings come off the fit.** `baseline._model_settings` reads
+        them from the fitted model on each side's first fold and the reports
+        carry them, the way `features` and `ml_libraries` are carried; the
+        document builders publish what the report holds. `cli_eval` binds the
+        flags into a `functools.partial` and records nothing itself, so there is
+        no second statement of a setting that could disagree with the one the
+        model was built with.
+
+        **Absent, not null.** A model that takes no such setting has no such
+        key. Two windows are used, 7 on `compare` and 4 on `backtest`, so a
+        window read from any one constant fails at least one subtest.
+
+        `exceedance-backtest` selects `threshold` too, so its declaration
+        follows the same rule and is a subtest here. `event-holdout` writes no
+        declaration; its journal `model_config` already carried
+        `regime_variable`, from argv, before this block.
+
+        Mutation record
+        ---------------
+
+        Disposable copy under `$HOME` from `git ls-files`, `.venv/bin/python -B`
+        (the `ml` extra installed, so the gbm side ran) with
+        `PYTHONDONTWRITEBYTECODE=1`, whole suite. Control green before and
+        after. Every kill below is an `AssertionError`; no mutation produced an
+        error.
+
+          * **The regime variable dropped from the compare declaration** --
+            `**comparison.settings_a` and `**comparison.settings_b` in
+            `paired_comparison_document` filtered to exclude `regime_variable`.
+            This test only, subtest `compare regime variable`:
+            `'regime_variable' not found in {'features': [...], 'model':
+            'threshold'}`.
+
+          * **The key written as null for models without the setting** --
+            `_model_settings` returning both keys, each `getattr(fitted, ...,
+            None)`. This test, subtests `compare residual window`, `backtest
+            threshold`, `backtest rolling-residual`, `exceedance-backtest
+            threshold` and `absent` for the persistence, backtest-persistence
+            and gbm sides: `'regime_variable' unexpectedly found` or
+            `'residual_window' unexpectedly found`. The climatology side stayed
+            green, because its curves come from a predictor that never calls
+            `_model_settings`. **And one other test:**
+            `test_generated_results.MilestoneAReproductionTests.test_the_published_persistence_run_reproduces_from_tracked_inputs`,
+            `declaration.regime_variable: present on one side only`. That is
+            correct and worth knowing: the unmutated rule leaves the published
+            persistence record's declaration byte-for-byte reproducible, and
+            the null-key version would not.
+
+          * **`residual_window` read from a constant instead of the fit** --
+            `settings["residual_window"] = 20` in `_model_settings`. This test
+            only: `20 != 7` (`compare residual window`) and `20 != 4`
+            (`backtest rolling-residual`).
+
+          * **`backtest`'s declaration left unchanged** -- the
+            `declaration.update(report.model_settings)` line removed from
+            `backtest_document`. This test only, subtests `backtest threshold`
+            and `backtest rolling-residual`: `'regime_variable' not found` and
+            `'residual_window' not found`. The compare subtests stayed green,
+            which is the trap of fixing compare and not backtest, measured.
+
+          * **`exceedance-backtest`'s declaration left unchanged** -- the same
+            line removed from `exceedance_backtest_document`. This test only,
+            subtest `exceedance-backtest threshold`: `'regime_variable' not
+            found`.
+        """
+
+        self.PANEL = self._panel_with_moving_volume()
+        volume_features = self.FEATURES + ("sofr_volume",)
+
+        def compare_declaration(label, **kwargs):
+            code, _, err = self.run_compare(
+                report=self.tmp / f"settings-{label}.json", **kwargs
+            )
+            self.assertEqual(code, 0, msg=f"{label} failed: {err.strip()}")
+            return json.loads(self.last_report.read_text(encoding="utf-8"))[
+                "declaration"
+            ]
+
+        by_regime = {
+            regime: compare_declaration(
+                f"threshold-{regime}",
+                model_b="threshold",
+                features_b=volume_features,
+                regime_variable_b=regime,
+                loss="crps",
+            )
+            for regime in ("sofr_volume", "spread_bps")
+        }
+        windowed = compare_declaration(
+            "rolling-residual",
+            model_b="rolling-residual",
+            residual_window_b=7,
+            loss="crps",
+        )
+
+        with self.subTest("compare regime variable"):
+            volume, spread = by_regime["sofr_volume"], by_regime["spread_bps"]
+            self.assertIn("regime_variable", volume["model_b"])
+            self.assertEqual(volume["model_b"]["regime_variable"], "sofr_volume")
+            self.assertEqual(spread["model_b"]["regime_variable"], "spread_bps")
+
+            def without_regime(declaration):
+                side = dict(declaration["model_b"])
+                del side["regime_variable"]
+                return {**declaration, "model_b": side}
+
+            # Exactly that key: the two runs differ in nothing else they declare.
+            self.assertEqual(without_regime(volume), without_regime(spread))
+
+        with self.subTest("compare residual window"):
+            self.assertIn("residual_window", windowed["model_b"])
+            self.assertEqual(windowed["model_b"]["residual_window"], 7)
+            self.assertNotIn("regime_variable", windowed["model_b"])
+
+        backtest_threshold = self.published(
+            *self.REGIME_FEATURES,
+            model="threshold",
+            regime_variable=self.REGIME_VARIABLE,
+        )["declaration"]
+        backtest_windowed = self.published(
+            *self.FEATURES, model="rolling-residual", residual_window=4
+        )["declaration"]
+        backtest_persistence = self.published(
+            *self.FEATURES, model="persistence"
+        )["declaration"]
+
+        with self.subTest("backtest threshold"):
+            self.assertIn("regime_variable", backtest_threshold)
+            self.assertEqual(
+                backtest_threshold["regime_variable"], self.REGIME_VARIABLE
+            )
+            self.assertNotIn("residual_window", backtest_threshold)
+
+        with self.subTest("backtest rolling-residual"):
+            self.assertIn("residual_window", backtest_windowed)
+            self.assertEqual(backtest_windowed["residual_window"], 4)
+            self.assertNotIn("regime_variable", backtest_windowed)
+
+        exceedance = {}
+        for model, extra in (
+            ("threshold", ["--regime-variable", self.REGIME_VARIABLE]),
+            ("climatology", []),
+        ):
+            report = self.tmp / f"settings-exceedance-{model}.json"
+            argv = [
+                "exceedance-backtest",
+                "--panel", str(self.PANEL),
+                "--thresholds", str(THRESHOLDS),
+                "--registry", str(self.registry),
+                "--decision-time", DECISION_TIME,
+                "--minimum-history", self.MINIMUM_HISTORY,
+                "--model", model,
+                "--report", str(report),
+                *extra,
+            ]
+            for feature in self.REGIME_FEATURES if extra else (FEATURE,):
+                argv += ["--feature", feature]
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = cli.main(argv)
+            self.assertEqual(code, 0, msg=f"exceedance {model} failed: {err.getvalue()}")
+            exceedance[model] = json.loads(report.read_text(encoding="utf-8"))[
+                "declaration"
+            ]
+
+        with self.subTest("exceedance-backtest threshold"):
+            self.assertIn("regime_variable", exceedance["threshold"])
+            self.assertEqual(
+                exceedance["threshold"]["regime_variable"], self.REGIME_VARIABLE
+            )
+            self.assertNotIn("residual_window", exceedance["threshold"])
+
+        absent = {
+            "compare persistence side": windowed["model_a"],
+            "compare persistence side, threshold run": by_regime["sofr_volume"]["model_a"],
+            "backtest persistence": backtest_persistence,
+            "exceedance-backtest climatology": exceedance["climatology"],
+        }
+        if _extra_installed():
+            absent["compare gbm side"] = compare_declaration(
+                "gbm", model_b="gbm", loss="crps"
+            )["model_b"]
+        for label, declaration in absent.items():
+            with self.subTest("absent", side=label):
+                self.assertNotIn("regime_variable", declaration)
+                self.assertNotIn("residual_window", declaration)
+
     def test_the_loss_flag_reaches_the_record_and_defaults_to_the_point_loss(self):
         """`--loss` on the command, on the pair the flag exists for.
 
