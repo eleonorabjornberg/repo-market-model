@@ -31,6 +31,8 @@ OPTIONAL_NUMERIC_FIELDS = (
     "treasury_settlement",
     "dealer_treasury_position",
     "mmf_assets",
+    "tbill_4w",
+    "tbill_13w",
     "quarter_end",
     "tax_date",
 )

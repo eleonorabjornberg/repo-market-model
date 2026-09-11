@@ -295,6 +295,13 @@ FEATURE_FIELDS = MappingProxyType(
         # The FR 2004 Treasury total. The adapter checks it against its thirteen
         # current-era components and converts millions to billions.
         "dealer_treasury_position": (("nyfed_fr2004", "PDPOSGST-TOT"),),
+        # Bill yields on the coupon-equivalent basis, as published (human
+        # decision, 11 Sep 2026): the 4-week bill is money funds' nearest
+        # substitute for overnight repo, the 13-week the benchmark bill, and
+        # both run unbroken from 2018. Actual/365, against SOFR's actual/360;
+        # documented, not converted.
+        "tbill_4w": (("treasury_bill_rates", "tbill_4w_coupon_equivalent"),),
+        "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
     }
 )
 
@@ -341,15 +348,7 @@ UNSOURCED_FEATURES = MappingProxyType({})
 # the same file refuses an entry a panel column now reaches (stale), one the
 # registry does not declare (a misspelling excusing nothing), or one with no
 # reason. Adding a column for a source means deleting its entry here.
-UNMODELLED_SOURCES = MappingProxyType(
-    {
-        "treasury_bill_rates": (
-            "parsed at the adapter only (A15); which tenors and which yield "
-            "basis become panel columns is undecided, and a column needs "
-            "data.OPTIONAL_NUMERIC_FIELDS and FEATURE_FIELDS together"
-        ),
-    }
-)
+UNMODELLED_SOURCES = MappingProxyType({})
 
 
 def sources_for_features(names):

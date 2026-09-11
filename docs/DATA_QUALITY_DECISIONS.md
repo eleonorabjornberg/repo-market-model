@@ -548,6 +548,25 @@ Treasury auctions blank and Fiscal Data's string `"null"`; bill rates blank; FR 
 in a declared series. A token outside an adapter's list is refused, and so is a reason
 outside the vocabulary.
 
+## Bill-rate panel columns
+
+**Decided (11 Sep):** `tbill_4w` and `tbill_13w`, each the coupon-equivalent yield in
+percent as Treasury publishes it. The 4-week bill is money funds' nearest substitute for
+overnight repo and the 13-week the benchmark bill; both run unbroken from 2018. The basis
+is actual/365 against SOFR's actual/360, documented rather than converted. Treasury takes
+the quotations at about 3:30 PM; availability is declared at end of day, so a 16:00
+decision reads the previous business day's rate. The 2026 export has no manifest, so a
+reported run cannot draw on 2026 bill rates until one exists.
+
+## An empty repo cross-section is excluded, with its reason
+
+A cross-section whose holdings table was read in a declared category era and matched no
+repo category supplies no `mmf_repo_holdings`, and nothing recorded why. The fund industry
+always holds repo, so an admitted month with none is a vocabulary failure until shown
+otherwise. **Decided (11 Sep):** it is excluded like a cross-section below the coverage
+floor, with the reason `no_repo_rows` in its coverage record; it is never a hole that looks
+like a quiet month, and never a zero.
+
 ## Decision rule
 
 These are data-modeling decisions, not formatting cleanup. Each resolution requires:

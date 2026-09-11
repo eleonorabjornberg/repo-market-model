@@ -127,7 +127,7 @@ a commit message:
 - Public-source downloads are stored immutably with retrieval timestamps, request
   URLs, byte counts and SHA-256 digests. The tracked Treasury fixtures are the
   exception: their manifests record a ceiling (the time the file was first
-  committed) in place of a measured retrieval time, the auctions URL records the
+  committed), which stands in for the retrieval time by decision, the auctions URL records the
   request but cannot reproduce the bytes, and the 2026 bill-rate file has no
   manifest at all.
 - Forecast-distribution, exceedance, calibration, and dependence-aware uncertainty

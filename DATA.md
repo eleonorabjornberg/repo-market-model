@@ -55,6 +55,8 @@ target and policy anchor are required.
 | `treasury_settlement` | no | USD billions |
 | `dealer_treasury_position` | no | USD billions |
 | `mmf_assets` | no | USD billions |
+| `tbill_4w` | no | percent, coupon equivalent |
+| `tbill_13w` | no | percent, coupon equivalent |
 | `quarter_end` | no | zero/one |
 | `tax_date` | no | zero/one |
 

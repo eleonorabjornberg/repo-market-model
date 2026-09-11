@@ -149,7 +149,9 @@ historical-vintage archive.
 A result is reportable only when its run record identifies:
 
 - the Git commit;
-- every raw snapshot digest and retrieval timestamp;
+- every raw snapshot digest and retrieval timestamp (for a tracked Treasury bill-rate
+  year, the manifest's `retrieved_at`, the time of the commit that first tracked it: an
+  upper bound on the retrieval, accepted as its timestamp by decision);
 - the source-registry and stress-threshold versions;
 - the point-in-time panel build and quality report;
 - the feature set and decision cutoff;
