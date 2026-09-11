@@ -108,7 +108,9 @@ a commit message:
 - Under-covered SEC Form N-MFP cross-sections are excluded from the modeling panel
   by an entity-count floor declared in the source registry, or because their holdings
   matched no repo category; each exclusion is judged per vintage and carries its `exclusion_reason`
-  (`below_floor`, `no_repo_rows`) and is recorded separately from ordinary missingness. The floor is a **declared absolute
+  (`below_floor`, `no_repo_rows`) and is recorded separately from ordinary missingness. A single
+  derived field can be withheld the same way inside an admitted cross-section, with its own
+  reason (`no_fed_counterparty`) in the coverage record's `withheld_fields`. The floor is a **declared absolute
   count**, calibrated from an observed complete month. A fraction of a trailing
   median was considered and rejected: the trailing window is itself computed from
   straggler months, which would set the floor low enough to admit the

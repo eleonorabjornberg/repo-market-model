@@ -582,6 +582,25 @@ floor, with the reason `no_repo_rows` in its coverage record; it is never a hole
 like a quiet month, and never a zero. Judged per vintage (A21): an amendment that removes
 every repo row excludes only its own vintage, which writes no rows; earlier vintages stand.
 
+**The sibling case, decided the same way (A24).** An amendment that *keeps* its repo rows but
+swaps the counterparty away from the Fed supersedes every submission that supplied
+`mmf_on_rrp`, and re-totalling what is left gave a bare `0.0` that nothing declared. **Decided:
+that vintage writes no row and its coverage record names the cause**, `no_fed_counterparty` in
+`CrossSectionCoverage.withheld_fields`, from a closed vocabulary refused outside it exactly as
+`exclusion_reason` is. It is the same rule one level down: whole cross-section, then single
+field of an admitted one. `mmf_repo_holdings` keeps its rows and is untouched. On the declared
+archives the rule fires nowhere -- A21's census found no `sec_nmfp` repo row equal to `0.0` --
+so no published figure moves; it exists so that the zero cannot appear unexplained later.
+
+Two things that came out of it, both recorded in the tracked test docstrings rather than here.
+The mutation A21 left behind has stopped discriminating, because this rule now withholds the
+zero that mutation injects; its live form is the same mutation on `mmf_repo_holdings`, which
+has no declared derivation, and that still kills. And a field with no declared derivation whose
+last contributor is superseded still re-totals to `0.0` -- an amendment refiling every Treasury
+holding under another category writes `mmf_treasury_holdings 0.0`. Same mechanism, different
+criterion: the behaviour is pinned by a test so that deciding it later moves a test rather than
+discovering an assumption.
+
 ## The purge is stated against the target date
 
 `splits.clears_purge` compares a row's publication against the *scored* date:
@@ -609,7 +628,12 @@ as soon as a slower column joins the feature set: the bill-rate columns, the set
 components, or the dealer positions at six business days. Restating the gap against the
 decision date is a change to the split's definition and therefore the human's; until it
 is made, the audit script is what establishes that a feature set is safe, and it is run
-before a new column is declared.
+before a new column is declared. A guard that would refuse a feature set on the
+decision-relative rule has been built and does not land: the sample fixtures declare release
+lags their own gapped panel cannot deliver by the decision instant, so the guard is a true
+positive on them, and one of the fixtures is in a file the contract assigns to neither track.
+`tests/test_baseline.py`' module docstring carries the measurement and the shape of the
+fixtures' declarations; the real registry is silent under it.
 
 ## Decision rule
 
