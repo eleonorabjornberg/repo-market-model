@@ -20,6 +20,8 @@ from repo_model.data import (
     EXCLUSION_BELOW_FLOOR,
     EXCLUSION_NO_REPO_ROWS,
     EXCLUSION_REASONS,
+    WITHHELD_FIELD_REASONS,
+    WITHHELD_NO_FED_COUNTERPARTY,
     CrossSectionCoverage,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
@@ -35,6 +37,7 @@ from repo_model.ingest import (
     NMFP_CATEGORY_FIELDS,
     NMFP_DERIVED_FROM_MATCH,
     NMFP_INVESTMENT_CATEGORY_ERAS,
+    NMFP_WITHHELD_DERIVED_REASONS,
     REFUSAL_ABSENT_FIELDS,
     REFUSAL_UNREADABLE,
     SnapshotArtifact,
@@ -2884,6 +2887,11 @@ class AmendedRepoVintageTests(unittest.TestCase):
     derived field rather than the required one; the month is rightly admitted,
     so the per-vintage exclusion does not reach it.
 
+    **Closed at A24** by `NmfpFedCounterpartyAmendmentTests`: that vintage now
+    writes no `mmf_on_rrp` row and its record carries `no_fed_counterparty` in
+    `withheld_fields`. See mutation 3 below, which that block blunted and
+    replaced.
+
     Mutation record
     ---------------
 
@@ -2913,6 +2921,17 @@ class AmendedRepoVintageTests(unittest.TestCase):
        differ: [0.0] != []` on the amended vintage's `mmf_on_rrp`; `Tuples
        differ` at `assertEqual(parsed.rows, alone.rows)`, one row longer; and
        the extra row at `rows_from(again, amended)`.
+
+       **Re-run at A24, and quiet.** `NmfpFedCounterpartyAmendmentTests` makes a
+       dirtied cell with no active contributor write no row at all where the
+       field has a declared derivation, and `mmf_on_rrp` is the one field that
+       has. So this mutation's injected zero is now withheld before it reaches
+       the panel and the whole suite stays green under it. The behaviour is not
+       weaker -- it is enforced by two rules where it was enforced by one -- but
+       the mutation no longer discriminates. **Its live form is the same
+       mutation on `mmf_repo_holdings`**, which has no declared derivation and
+       is not withheld: that kills the same three subtests, with the same three
+       messages, and is what this entry means from here on.
     4. **A20 probe 6**: the repo rule reads absence from every archive, the
        intersection over all of `scanned_absent`, instead of `absent_so_far`.
        Two subtests, both `False is not true` at `assertTrue(first.admitted)`:
@@ -3091,6 +3110,298 @@ class AmendedRepoVintageTests(unittest.TestCase):
             self.assertTrue(first.admitted)
             self.assertEqual(
                 self.values(self.rows_from(both, tableless), "mmf_net_assets"), [12.0]
+            )
+
+
+class NmfpFedCounterpartyAmendmentTests(unittest.TestCase):
+    """An amendment that drops the Fed counterparty writes nothing, never a zero.
+
+    A24, closing the finding `AmendedRepoVintageTests` recorded and did not
+    repair. That block made `no_repo_rows` a per-vintage judgement, so an
+    amendment that removes every repo row of an admitted month writes no rows at
+    all. This is its sibling and the exclusion cannot reach it: the amendment
+    *keeps* every repo row and only swaps the counterparty, so the month is
+    rightly admitted, `mmf_repo_holdings` is observed, and there is nothing to
+    exclude. Every submission that supplied `mmf_on_rrp` is superseded all the
+    same, the panel cell is dirtied by their withdrawal, and re-totalling it over
+    the submissions that are left gave `0.0` -- a value nothing observed, beside
+    a coverage record whose `unmatched_derived_fields` said the derivation had
+    matched nothing. `sec_nmfp` declares `mmf_on_rrp` a structural zero only
+    through 2013-08-31, so for 2026-07 nothing declares that zero at all: the
+    record read `no_declaration`, which is the pipeline saying the number has no
+    reason behind it.
+
+    **Her decision, 11 September: option (b).** The vintage writes no
+    `mmf_on_rrp` row and its coverage record says why, in the same shape as
+    `no_repo_rows` one level down -- `withheld_fields` carries
+    `('mmf_on_rrp', 'no_fed_counterparty')`, from the closed vocabulary
+    `data.WITHHELD_FIELD_REASONS`, and a reason outside it raises `ValueError`
+    exactly as an unknown `exclusion_reason` does. Never a zero. It is not
+    widened to `mmf_repo_holdings`, which still has its rows and keeps them.
+
+    **What is deliberately unchanged.** The earlier vintage keeps its
+    `mmf_on_rrp` row: what was known before the amendment stays known, and an
+    as-of query between the two retrievals reads what it read before this block.
+    `mmf_repo_holdings` is not re-emitted at the amendment because its total did
+    not move, which is the revision logic doing its ordinary job and not this
+    rule. `unmatched_derived_fields` still reads
+    `('mmf_on_rrp', 'no_declaration')` on the amended vintage: "the derivation
+    ran over rows that were there and matched none of them" is true whether or
+    not a row was withheld, and the two records are kept apart on purpose -- the
+    new one is a statement about this vintage's effect on a cell an earlier
+    vintage carried, so a first vintage that never matched the Fed records the
+    old one and an empty `withheld_fields`.
+
+    **The sibling defect, found and not repaired (it is a different criterion).**
+    The withholding is keyed by `NMFP_WITHHELD_DERIVED_REASONS`, so it reaches
+    `mmf_on_rrp` and nothing else. A field with no declared derivation whose last
+    contributor is superseded -- an amendment that refiles every Treasury holding
+    under another category, say -- still re-totals to `0.0` in its vintage, on
+    this tree and after this block. It is the same mechanism and the same family
+    of zero; naming its cause needs a sentence this adapter cannot currently
+    write, because outside a declared derivation "the rows went away" is the
+    mechanism rather than the reason. The last subtest below pins that behaviour
+    as it stands, so the day it is decided, the decision moves a test rather than
+    discovering an unrecorded assumption.
+
+    **On the published record.** `AmendedRepoVintageTests` measured, over all 97
+    declared archives, that no `sec_nmfp` repo row is `0.0` -- `mmf_on_rrp`
+    among them. A row is withheld here only where a dirtied cell has no active
+    contributor, which is exactly the case that emits such a zero, so this rule
+    fires on no declared archive and no published figure moves. `data/raw/` is
+    not read by this block; that measurement is the evidence.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files --cached --others
+    --exclude-standard`, `python3 -B` with `PYTHONDONTWRITEBYTECODE=1` and
+    `OMP_NUM_THREADS=1`, the mutation applied to a fresh copy and confirmed
+    applied by grep before the run. Unmutated control green before and after,
+    zero `expectedFailure`. Each run is the whole suite.
+
+    1. **The old behaviour restored** -- the withholding branch in
+       `_assemble_sec_nmfp` deleted, so a dirtied cell with no active
+       contributor is re-totalled to `0.0` and emitted, which is the tree this
+       block was given. Four kills, every one in this test and every one an
+       `AssertionError`: `Lists differ: [0.0] != []` on the amended vintage's
+       `mmf_on_rrp` rows; `Tuples differ: () != (('mmf_on_rrp',
+       'no_fed_counterparty'),)` on `withheld_fields`, twice, in the second and
+       third subtests; and the restored vintage's `rows_from(again, amended)`
+       one `PointInTimeObservation` longer, `value=0.0`. No other test in the
+       suite moved, which is the shape the criterion wants: the zero this rule
+       declines was reachable nowhere else.
+
+    **An existing mutation re-run, and it had gone quiet.**
+    `AmendedRepoVintageTests` mutation 3 -- the withdrawn submissions'
+    `mmf_on_rrp` cells dirtied and re-totalled -- was re-run against this tree
+    and the whole suite stayed **green**, where at A21 it took three subtests.
+    The reason is this block: those cells have no active contributor, so the
+    rule above withholds them and the `0.0` A21's mutation injected never
+    reaches the panel. The behaviour A21 recorded is still enforced -- more
+    strongly, by two rules instead of one -- but that mutation no longer
+    discriminates, and a record that says it does would be the blunted guard
+    `CLAUDE.md` warns about.
+
+    The same mutation on `mmf_repo_holdings`, which has no declared derivation
+    and so is not withheld, still kills in three subtests of
+    `test_an_amendment_that_removes_every_repo_row_writes_no_zero`: `Lists
+    differ: [0.0] != []`, `Tuples differ` at `assertEqual(parsed.rows,
+    alone.rows)` one row longer, and the extra row in the partial amendment --
+    the three A21 recorded, on the required field. That is the live form of
+    mutation 3 from here on; `AmendedRepoVintageTests`' own record carries the
+    same note.
+    """
+
+    FLOOR = 3
+    MONTH = date(2026, 7, 31)
+    REPORT = "31-JUL-2026"
+    NON_REPO_CATEGORY = "Certificate of Deposit"
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.fetched = 0
+
+    def filers(self, prefix, series=(1, 2, 3), *, amended=False, **overrides):
+        """One submission per series for July 2026; an amendment files later."""
+
+        return tuple(
+            dict(
+                {
+                    "accession": f"{prefix}{index}",
+                    "series": f"S{index}",
+                    "report": self.REPORT,
+                    "filing": "20-AUG-2026" if amended else "05-AUG-2026",
+                    "submission_type": "N-MFP3/A" if amended else "N-MFP3",
+                    "net_assets": 4_000_000_000,
+                },
+                **overrides,
+            )
+            for index in series
+        )
+
+    def archive(self, submissions, **kwargs):
+        self.fetched += 1
+        return fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/"
+            f"counterparty-{self.fetched}.zip",
+            lambda url: nmfp_archive(submissions, **kwargs),
+        )[0]
+
+    def registry(self):
+        path = registry_with_nmfp_coverage_floor(self.output_root, self.FLOOR)
+        registry = json.loads(path.read_text(encoding="utf-8"))
+        registry["sec_nmfp"]["structural_zeros"] = []
+        registry["sec_nmfp"]["structural_zeros_reviewed"] = False
+        return registry
+
+    def records(self, parsed):
+        return [item for item in parsed.coverage if item.ref_date == self.MONTH]
+
+    @staticmethod
+    def rows_from(parsed, artifact):
+        return [row for row in parsed.rows if row.source_sha == artifact.sha256]
+
+    @staticmethod
+    def values(rows, series_id):
+        return [row.value for row in rows if row.series_id == series_id]
+
+    def test_an_amendment_that_drops_the_fed_counterparty_writes_no_row_and_records_why(self):
+        registry = self.registry()
+        original = self.archive(self.filers("O"))
+        amended = self.archive(
+            self.filers("R", amended=True, repo_counterparty=FIXTURE_DEALER_COUNTERPARTY)
+        )
+        alone = parse_snapshots([original], registry=registry)
+        parsed = parse_snapshots([original, amended], registry=registry)
+        earlier, later = self.records(parsed)
+        amended_rows = self.rows_from(parsed, amended)
+
+        with self.subTest("the amended vintage writes no mmf_on_rrp row, and no zero"):
+            # The premise: the amendments superseded all three originals, the
+            # holdings table they carry was read, and the month is admitted --
+            # so the per-vintage exclusion has nothing to refuse and this is
+            # genuinely the case A21 could not reach.
+            self.assertEqual(later.submission_types, (("N-MFP3", 3), ("N-MFP3/A", 3)))
+            self.assertNotIn("mmf_repo_holdings", later.absent_fields)
+            self.assertTrue(later.admitted)
+            self.assertIsNone(later.exclusion_reason)
+
+            self.assertEqual(self.values(alone.rows, "mmf_on_rrp"), [3.0])
+            self.assertEqual(self.values(amended_rows, "mmf_on_rrp"), [])
+            self.assertNotIn(0.0, [row.value for row in amended_rows])
+            self.assertEqual(
+                [
+                    row
+                    for row in parsed.rows
+                    if row.series_id == "mmf_on_rrp" and row.value == 0.0
+                ],
+                [],
+            )
+
+        with self.subTest("its record names the cause, in the declared vocabulary"):
+            self.assertEqual(
+                later.withheld_fields, (("mmf_on_rrp", WITHHELD_NO_FED_COUNTERPARTY),)
+            )
+            self.assertEqual(
+                later.as_dict()["withheld_fields"],
+                [{"field": "mmf_on_rrp", "reason": "no_fed_counterparty"}],
+            )
+            # The other record of the same absence is untouched: "we looked and
+            # found nothing" is true of this vintage whether or not a row was
+            # withheld, and the two must not be folded together.
+            self.assertEqual(
+                later.unmatched_derived_fields,
+                (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+            )
+            # A reason nobody declared is refused, as an exclusion reason is.
+            fields = dict(
+                source_id="sec_nmfp",
+                ref_date=self.MONTH,
+                entity_unit="reporting series",
+                entity_count=3,
+                declared_floor=3,
+                admitted=True,
+                row_count=1,
+                era_id="test",
+            )
+            for reason in WITHHELD_FIELD_REASONS:
+                self.assertEqual(
+                    CrossSectionCoverage(
+                        **fields, withheld_fields=(("mmf_on_rrp", reason),)
+                    ).withheld_fields,
+                    (("mmf_on_rrp", reason),),
+                )
+            with self.assertRaises(ValueError) as refused:
+                CrossSectionCoverage(
+                    **fields, withheld_fields=(("mmf_on_rrp", "quiet_month"),)
+                )
+            self.assertIs(type(refused.exception), ValueError)
+            self.assertIn("'quiet_month'", str(refused.exception))
+
+        with self.subTest("mmf_repo_holdings is unaffected and the earlier vintage stands"):
+            # Not widened to the required field: its rows survived the
+            # amendment, its total did not move, and so the revision logic --
+            # not this rule -- emits nothing for it.
+            self.assertEqual(self.values(alone.rows, "mmf_repo_holdings"), [3.0])
+            self.assertEqual(self.values(amended_rows, "mmf_repo_holdings"), [])
+            self.assertEqual(later.withheld_fields, (("mmf_on_rrp", "no_fed_counterparty"),))
+
+            self.assertEqual(alone.coverage, (earlier,))
+            self.assertTrue(earlier.admitted)
+            self.assertEqual(earlier.withheld_fields, ())
+            self.assertEqual(self.rows_from(parsed, original), list(alone.rows))
+            self.assertEqual(parsed.rows, alone.rows)
+
+        with self.subTest("a first vintage that never matched the Fed withholds nothing"):
+            # Nothing was written, so nothing was withheld: the absence is
+            # `unmatched_derived_fields` and that is the whole of its record.
+            never = self.archive(
+                self.filers("N", repo_counterparty=FIXTURE_DEALER_COUNTERPARTY)
+            )
+            first_only = parse_snapshots([never], registry=registry)
+            record = self.records(first_only)[-1]
+            self.assertTrue(record.admitted)
+            self.assertEqual(record.withheld_fields, ())
+            self.assertEqual(
+                record.unmatched_derived_fields,
+                (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+            )
+            self.assertEqual(self.values(first_only.rows, "mmf_on_rrp"), [])
+            self.assertEqual(self.values(first_only.rows, "mmf_repo_holdings"), [3.0])
+
+        with self.subTest("a later archive that files the Fed again re-emits the field"):
+            restored = self.archive(self.filers("T", (1,), amended=True, net_assets=8_000_000_000))
+            again = parse_snapshots([original, amended, restored], registry=registry)
+            record = self.records(again)[-1]
+            restored_rows = self.rows_from(again, restored)
+            self.assertTrue(record.admitted)
+            self.assertEqual(record.withheld_fields, ())
+            # S1 refiles with the Fed counterparty; S2 and S3 keep the dealer.
+            self.assertEqual(self.values(restored_rows, "mmf_on_rrp"), [2.0])
+            self.assertEqual(self.rows_from(again, amended), [])
+
+        with self.subTest("a field with no declared derivation still re-totals; recorded, not repaired"):
+            # The sibling defect, pinned as it stands. `mmf_treasury_holdings`
+            # is in no declared derivation, so an amendment that refiles it
+            # under another category re-totals the cell to 0.0 and emits it.
+            # This is a finding about the tree, not a rule this block adopted.
+            self.assertNotIn("mmf_treasury_holdings", NMFP_WITHHELD_DERIVED_REASONS)
+            swapped = self.archive(
+                self.filers("W", amended=True), treasury_category=self.NON_REPO_CATEGORY
+            )
+            moved = parse_snapshots([original, swapped], registry=registry)
+            swapped_rows = self.rows_from(moved, swapped)
+            record = self.records(moved)[-1]
+            self.assertTrue(record.admitted)
+            self.assertEqual(record.withheld_fields, ())
+            self.assertEqual(
+                self.values(swapped_rows, "mmf_treasury_holdings"),
+                [0.0],
+                "the sibling defect; see this class's docstring",
             )
 
 
