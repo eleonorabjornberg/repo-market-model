@@ -1021,31 +1021,151 @@ def _fred_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
+def _treasury_amount(record, field, record_number):
+    """One Fiscal Data money field in USD billions, or `None` where withheld.
+
+    Fiscal Data reports a field it does not yet have as the JSON **string**
+    `"null"`, not as JSON null, so `float()` is the only thing that separates
+    it from a figure and `record.get(field) is None` never fires. An auction
+    that has not been held carries its results that way. Returning `0.0` there
+    would publish an award nobody has made; returning nothing at all leaves the
+    caller to decide what an absent leg means, which is the caller's decision
+    to make and not this helper's.
+
+    A field the payload does not carry at all is a different thing -- a renamed
+    or dropped column -- and is refused by the caller rather than read as
+    withheld.
+    """
+
+    raw = record.get(field)
+    raw = "" if raw is None else str(raw).strip()
+    if raw in {"", "null"}:
+        return None
+    try:
+        return float(raw.replace(",", "")) / 1_000_000_000
+    except ValueError as exc:
+        raise ValueError(
+            f"Treasury record {record_number} has a non-numeric {field}: {raw!r}"
+        ) from exc
+
+
 def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
+    """Auction records to `treasury_settlement` and its declared components.
+
+    The split -- which `security_type` settles into which component, which
+    components sum to the aggregate, and the tolerance that sum is held to --
+    is `src/repo_model/contract.py`'s, read from there. Restating any of it
+    here would be a second definition, and the adapter would then be checked
+    against its own copy.
+
+    Three things a key can be missing, and only one of them is a zero:
+
+    * **No auction of a kind.** 801 of the fixture's 1088 settlement dates
+      have no coupon and 204 have no bill. That key gets no observation for
+      the absent leg. A `0.0` would claim Treasury settled nothing of that
+      kind that day, which is true, and would also be indistinguishable from
+      a day the adapter failed to classify -- and it is the second reading
+      the panel would have to trust.
+    * **A result not yet awarded.** `soma_accepted` is `"null"` until the
+      auction is held. The whole key loses `treasury_settlement_soma`, not
+      just the unheld record's share: summing the rest publishes a partial
+      award under the face of a complete one.
+    * **A genuine zero award.** 1093 fixture records have `soma_accepted`
+      `"0"`, and those are real. They sum like any other figure.
+    """
+
     from zoneinfo import ZoneInfo
+    from .contract import (
+        TREASURY_SETTLEMENT_COMPONENTS,
+        treasury_settlement_component,
+    )
     from .data import PointInTimeObservation
 
     parsed = json.loads(payload)
     records = parsed.get("data")
     if not isinstance(records, list):
         raise ValueError("Treasury Fiscal Data response does not contain a data list")
+
+    #: The components that sit outside `treasury_settlement`, mapped to the
+    #: auction-record field each sums. Derived from the contract's own
+    #: "is it inside the aggregate" flag, so a component moved across that line
+    #: moves here with it.
+    outside_aggregate = {
+        series: field
+        for series, (field, _types, inside) in TREASURY_SETTLEMENT_COMPONENTS.items()
+        if not inside
+    }
+
     totals = {}
+    components = {}
+    #: `(key, series)` pairs the snapshot withholds a contributing value for.
+    #: Held separately from `components` because a key can have both a real
+    #: figure and a withheld one, and the withheld one decides.
+    withheld = set()
     for record_number, record in enumerate(records, start=1):
         if not isinstance(record, dict):
             raise ValueError(f"Treasury record {record_number} is not an object")
         try:
             ref_date = date.fromisoformat(str(record["issue_date"]))
             record_date = date.fromisoformat(str(record["record_date"]))
+            auction_date = date.fromisoformat(str(record["auction_date"]))
+            security_type = str(record["security_type"])
             amount = float(str(record["offering_amt"]).replace(",", "")) / 1_000_000_000
         except (KeyError, ValueError) as exc:
             raise ValueError(
-                f"Treasury record {record_number} lacks issue_date, record_date, or offering_amt"
+                f"Treasury record {record_number} lacks issue_date, record_date, "
+                f"auction_date, security_type, or offering_amt"
             ) from exc
         key = (ref_date, record_date)
         totals[key] = totals.get(key, 0.0) + amount
+
+        public_leg = treasury_settlement_component(security_type)
+        public_field = TREASURY_SETTLEMENT_COMPONENTS[public_leg][0]
+        if public_field not in record:
+            raise ValueError(
+                f"Treasury record {record_number} does not carry {public_field}, "
+                f"which {public_leg} sums"
+            )
+        public_amount = _treasury_amount(record, public_field, record_number)
+        if public_amount is None:
+            raise ValueError(
+                f"Treasury record {record_number} withholds {public_field}: an "
+                f"announced offering amount is known when the auction is announced"
+            )
+        components[(key, public_leg)] = (
+            components.get((key, public_leg), 0.0) + public_amount
+        )
+
+        for series, field in outside_aggregate.items():
+            if field not in record:
+                raise ValueError(
+                    f"Treasury record {record_number} does not carry {field}, "
+                    f"which {series} sums"
+                )
+            value = _treasury_amount(record, field, record_number)
+            if value is None:
+                withheld.add((key, series))
+                continue
+            if record_date < auction_date:
+                raise ValueError(
+                    f"Treasury record {record_number} carries {field}, an auction "
+                    f"result, dated {record_date.isoformat()} by record_date, which "
+                    f"precedes its auction_date {auction_date.isoformat()}: a result "
+                    f"dated before its auction"
+                )
+            components[(key, series)] = components.get((key, series), 0.0) + value
+
+    emitted = {(key, "treasury_settlement"): value for key, value in totals.items()}
+    emitted.update(
+        {
+            (key, series): value
+            for (key, series), value in components.items()
+            if (key, series) not in withheld
+        }
+    )
     return [
         PointInTimeObservation(
-            series_id="treasury_settlement",
+            series_id=series,
             ref_date=ref_date,
             available_at=datetime.combine(
                 record_date, time(23, 59), tzinfo=ZoneInfo("America/New_York")
@@ -1054,7 +1174,7 @@ def _treasury_rows(artifact: SnapshotArtifact, payload: bytes):
             vintage_id=f"{record_date.isoformat()}:{artifact.retrieved_at}",
             source_sha=artifact.sha256,
         )
-        for (ref_date, record_date), value in sorted(totals.items())
+        for ((ref_date, record_date), series), value in sorted(emitted.items())
     ]
 
 
