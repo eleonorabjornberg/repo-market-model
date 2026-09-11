@@ -146,6 +146,7 @@ quantile machinery; the runs say nothing about them.
 """
 
 import contextlib
+import dataclasses
 import hashlib
 import importlib
 import inspect
@@ -201,7 +202,12 @@ from repo_model.baseline import (
     threshold_exceedance,
     twcrps_weights,
 )
-from repo_model.metrics import MetricError, brier_skill_score, crps_from_quantiles
+from repo_model.metrics import (
+    MetricError,
+    brier_skill_score,
+    crps_from_quantiles,
+    stationary_bootstrap_interval,
+)
 from repo_model.contract import (
     QUANTILE_LEVELS,
     UndeclaredFeatureError,
@@ -5423,13 +5429,24 @@ class PairedComparisonTests(unittest.TestCase):
     Decisions
     ---------
 
-    **The pairing is by construction, not by comparison of two files.** Two
-    published records carry metrics and not per-origin losses, deliberately, so
-    they cannot be differenced after the fact -- and adding the losses to them
-    so that they could would turn the record from a publication into an
-    intermediate. One loop makes the two series the same length, in the same
-    order, over the same days, and nothing has to be checked because nothing
-    could have differed.
+    **The pairing is by construction, not by comparison of two files.** One
+    loop makes the two series the same length, in the same order, over the
+    same days, and nothing has to be checked because nothing could have
+    differed. Two `backtest` records carry metrics and not per-origin losses,
+    so they cannot be differenced after the fact.
+
+    **The compare record publishes its per-origin losses (B18).** This
+    paragraph used to record the opposite decision -- losses kept off the
+    record so it stayed a publication rather than an intermediate. The user
+    made the other decision on 10 Sep: a mean paired difference cannot say
+    whether a win or a loss comes from a few days, and that has to be visible
+    before the SETAR is scored against persistence. What survives of the old
+    decision is its point about files: the losses are from one run, in one
+    record, beside the interval they were drawn from, and two such records are
+    still two runs. `test_the_record_carries_the_per_origin_losses_its_interval_was_drawn_from`
+    holds the record to exactly that -- the entries reproduce the published
+    mean and interval to the digit, and a report whose four per-origin
+    sequences disagree in length is refused rather than published short.
 
     **Two declarations, one gap.** Each model declares its own feature set,
     because an ARX reads columns persistence does not and one shared
@@ -5603,6 +5620,45 @@ class PairedComparisonTests(unittest.TestCase):
          `AssertionError: ValueError not raised`. The run it enables publishes
          a record whose `loss` field is accurate and whose numbers answer a
          question nobody asked.
+
+    Mutation record, B18: the record carries its per-origin losses
+    ----------------------------------------------------------------
+
+    Disposable copy under `$HOME`, built from `git ls-files --cached --others
+    --exclude-standard` as `CLAUDE.md` now prescribes, run with the worktree's
+    `.venv` interpreter and `PYTHONPATH=src` (checked: `repo_model.baseline`
+    imported from the copy). `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `__pycache__` cleared before every run, each mutation applied by an exact
+    single-match replacement and reverted the same way. Unmutated control
+    **green before and after**, zero `expectedFailure`. Every mutation below
+    was killed by the acceptance test and by nothing else in the suite; the
+    subtest named is which of its three assertions broke. **The acceptance test
+    and the mutation target are the same test.**
+
+      6. **The length check removed**, so the `zip` in
+         `paired_comparison_document` truncates to the shortest sequence.
+         Killed by `test_the_record_carries_the_per_origin_losses_its_interval_was_drawn_from`
+         in the refusal subtest only, once for each shortened field --
+         `losses_a`, `losses_b`, `differences`, `folds` -- each
+         `AssertionError: ValueError not raised`. The entries and the
+         statistic stay green under it, which is the trap: on a report that
+         is not short, `zip` writes every entry correctly.
+      7. **Entries paired with the next fold's dates** -- the folds rotated by
+         one inside the `zip`, so the count is unchanged. Killed in
+         `[the entries]` only, `AssertionError: Tuples differ`. On this
+         fixture entries 0 and 1 share their train and feature dates and only
+         `scored_date` moved (`2026-01-21` against `2026-01-20`), so the
+         `scored_date` element of that tuple is the one doing the work here.
+      8. **Losses and difference rounded to four decimals**, as the console
+         prints the means. Killed in `[the entries]`, `AssertionError: 0.74 !=
+         0.739999999999987`, **and independently** in `[the statistic]`,
+         `AssertionError: -0.5039285714285715 != -0.5039285714285799` -- a
+         rounded record does not reproduce its own mean, which is the brief's
+         second trap reaching the assertion it named.
+      9. **The difference written as `loss_b - loss_a`**. Killed in
+         `[the entries]`, `AssertionError: 0.2759999999999928 !=
+         -0.2759999999999928`, and in `[the statistic]`, `AssertionError:
+         0.5039285714285799 != -0.5039285714285799`.
 
     """
 
@@ -5911,10 +5967,10 @@ class PairedComparisonTests(unittest.TestCase):
         """A signed difference is unreadable without its direction, in the file.
 
         The convention is checked in the artifact rather than in a docstring,
-        because the artifact is what a later reader has. The per-origin losses
-        are checked *absent* for the same reason they are not published: the
-        record is a publication and not an intermediate, and shipping them
-        would support the after-the-fact differencing this block replaced.
+        because the artifact is what a later reader has. This test used to
+        check the per-origin losses *absent*; B18 publishes them by the user's
+        decision, and what they must be is
+        `test_the_record_carries_the_per_origin_losses_its_interval_was_drawn_from`.
         """
 
         comparison = self._comparison(rows=load_daily_panel(SAMPLE_PANEL))
@@ -5936,9 +5992,157 @@ class PairedComparisonTests(unittest.TestCase):
         self.assertEqual(interval["block_length"], comparison.block_length)
         self.assertEqual(interval["seed"], comparison.seed)
 
-        serialised = json.dumps(document)
-        for withheld in ("losses_a", "losses_b", "differences"):
-            self.assertNotIn(withheld, serialised)
+    def test_the_record_carries_the_per_origin_losses_its_interval_was_drawn_from(
+        self,
+    ):
+        """B18's acceptance criterion: the losses, beside the interval, reproducing it.
+
+        The user's reason, 10 Sep: before the SETAR is scored, a reader of a
+        `compare` record has to be able to see whether a win or a loss comes
+        from a few days. So the record carries one entry per origin, and this
+        test holds the entries to being *the* losses the published statistic
+        was computed from -- not a rounded copy of them and not most of them.
+
+        Three assertions, each its own subtest so that a mutation's record
+        says which of them it broke:
+
+          * **the entries** -- one per origin, `origin_count` of them, in fold
+            order, each carrying its own fold's dates and the report's losses
+            exactly, and a difference that is `loss_a - loss_b` exactly;
+          * **the statistic** -- the recorded differences, summed in record
+            order, give `mean_difference_bps` to the digit, and
+            `stationary_bootstrap_interval` re-run on them with the record's
+            seed, replications, block length and level returns the recorded
+            endpoints to the digit;
+          * **the refusal** -- a report whose `losses_a`, `losses_b`,
+            `differences` and `folds` disagree in length is refused with a
+            `ValueError`, rather than written as a list silently cut short.
+
+        The traps are named in the brief and both look right. `zip` over the
+        four sequences truncates to the shortest without a word, and every
+        entry it does write is correct: only the refusal sees it. Rounding the
+        losses the way the console prints them keeps every date right and
+        every entry in place: the statistic cannot be recomputed from them.
+
+        The fixture is persistence against the trailing-window law under CRPS
+        on the sample panel, because it yields losses that vary by origin and
+        are not representable at four decimals. Both are asserted first: on
+        the constant-difference fixture `_comparison` builds, a rounded record
+        would reproduce the mean and the interval exactly and the second
+        assertion would pass on the defect it is aimed at.
+
+        The document is passed through `json.dumps` and `json.loads` first, so
+        what is checked is what a reader of the file has, not the dict.
+        """
+
+        comparison = paired_model_comparison(
+            load_daily_panel(SAMPLE_PANEL),
+            model_a="persistence",
+            fit_a=fit,
+            features_a=FEATURES,
+            model_b="rolling-residual",
+            fit_b=partial(fit_rolling_residual_law, window=CRPS_COMPARISON_WINDOW),
+            features_b=FEATURES,
+            registry=declared_registry(COMPARISON_PURGE),
+            decision_time=DECISION_TIME,
+            seed=CRPS_COMPARISON_SEED,
+            minimum_history=10,
+            loss="crps",
+        )
+
+        # The fixture's preconditions, asserted rather than assumed.
+        self.assertGreater(
+            len(set(comparison.differences)),
+            1,
+            "the differences must vary across origins, or every resample has "
+            "one mean and the interval cannot tell a right series from a wrong "
+            "one",
+        )
+        self.assertTrue(
+            any(
+                round(value, 4) != value
+                for value in comparison.losses_a
+                + comparison.losses_b
+                + comparison.differences
+            ),
+            "some loss must need more than four decimals, or a record rounded "
+            "the way the console prints would be exact here",
+        )
+
+        document = json.loads(
+            json.dumps(
+                paired_comparison_document(
+                    comparison, panel_path=SAMPLE_PANEL, registry_path=REAL_REGISTRY
+                )
+            )
+        )
+        published = document["comparison"]
+        recorded = published["per_origin"]
+
+        with self.subTest("the entries"):
+            self.assertEqual(len(recorded), published["origin_count"])
+            self.assertEqual(len(recorded), len(comparison.folds))
+            for position, fold in enumerate(comparison.folds):
+                entry = recorded[position]
+                self.assertEqual(
+                    (
+                        entry["train_start"],
+                        entry["train_end"],
+                        entry["feature_date"],
+                        entry["scored_date"],
+                    ),
+                    (
+                        fold.train_start.isoformat(),
+                        fold.train_end.isoformat(),
+                        fold.feature_date.isoformat(),
+                        fold.scored_date.isoformat(),
+                    ),
+                    f"entry {position} must carry fold {position}'s dates",
+                )
+                self.assertEqual(entry["loss_a_bps"], comparison.losses_a[position])
+                self.assertEqual(entry["loss_b_bps"], comparison.losses_b[position])
+                self.assertEqual(
+                    entry["difference_bps"],
+                    entry["loss_a_bps"] - entry["loss_b_bps"],
+                    "the difference runs model_a minus model_b, as the sign "
+                    "convention the record publishes says",
+                )
+
+        with self.subTest("the statistic"):
+            differences = [entry["difference_bps"] for entry in recorded]
+            self.assertEqual(
+                sum(differences) / len(differences),
+                published["mean_difference_bps"],
+            )
+            interval = published["mean_difference_interval"]
+            self.assertEqual(
+                stationary_bootstrap_interval(
+                    lambda indices: sum(differences[i] for i in indices)
+                    / len(indices),
+                    len(differences),
+                    block_length=interval["block_length"],
+                    seed=interval["seed"],
+                    replications=interval["replications"],
+                    level=interval["level"],
+                ),
+                (interval["lower"], interval["upper"]),
+                "the recorded differences, resampled under the record's own "
+                "declaration, must reproduce the recorded interval exactly",
+            )
+
+        with self.subTest("the refusal"):
+            for field in ("losses_a", "losses_b", "differences", "folds"):
+                shortened = dataclasses.replace(
+                    comparison, **{field: getattr(comparison, field)[:-1]}
+                )
+                with self.subTest(shortened=field):
+                    with self.assertRaises(ValueError) as caught:
+                        paired_comparison_document(
+                            shortened,
+                            panel_path=SAMPLE_PANEL,
+                            registry_path=REAL_REGISTRY,
+                        )
+                    self.assertIn("not the same length", str(caught.exception))
 
     def test_the_seed_follows_the_run_rather_than_a_literal(self):
         """Two comparisons that differ in what they compare do not share a stream.
@@ -6067,9 +6271,10 @@ class IntervalCalibrationTests(unittest.TestCase):
     forecasts, so **the published record cannot reproduce its own coverage
     interval**, and the frozen panel that could is gitignored. That is reported
     rather than fixed: adding per-origin rows to the record would turn a
-    publication into an intermediate, which `PairedComparisonTests` records as
-    a deliberate decision, and this block may not change a published record's
-    shape.
+    publication into an intermediate, which `PairedComparisonTests` then
+    recorded as a deliberate decision (reversed for the `compare` record by
+    B18, by the user's decision; this record's shape is unchanged), and this
+    block may not change a published record's shape.
 
     Mutation record
     ---------------
