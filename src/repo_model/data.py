@@ -99,6 +99,20 @@ class SeriesQuality:
     largest_absolute_revision: Optional[float]
 
 
+# Why a cross-section was kept out of the panel: the closed vocabulary
+# `CrossSectionCoverage.exclusion_reason` is recorded under, `None` meaning it was
+# admitted. See `docs/DATA_QUALITY_DECISIONS.md`, "An empty repo cross-section is
+# excluded, with its reason".
+#
+#   below_floor   fewer reporting entities than its era's declared floor, or no
+#                 declared era to take a floor from (`era_id` is None)
+#   no_repo_rows  cleared the floor, but its holdings table was read in a
+#                 declared INVESTMENTCATEGORY era and supplied no repo holding
+EXCLUSION_BELOW_FLOOR = "below_floor"
+EXCLUSION_NO_REPO_ROWS = "no_repo_rows"
+EXCLUSION_REASONS = (EXCLUSION_BELOW_FLOOR, EXCLUSION_NO_REPO_ROWS)
+
+
 @dataclass(frozen=True)
 class CrossSectionCoverage:
     """Reporting-entity coverage of one cross-section of a cross-sectional source.
@@ -160,6 +174,21 @@ class CrossSectionCoverage:
     what the adapter observed in the archive, not a claim about what the panel
     contains -- and a cross-section the floor dropped is precisely the one a
     reader may want to re-examine.
+
+    `exclusion_reason` says why a cross-section was kept out of the panel, from
+    the closed vocabulary `EXCLUSION_REASONS`, and is `None` when it was
+    admitted. `below_floor` is the coverage floor, for both of the refusals
+    `reason` tells apart by `era_id`. `no_repo_rows` is a cross-section that
+    cleared the floor and whose holdings table was read, in a declared
+    `INVESTMENTCATEGORY` era, without supplying a single repo holding. The fund
+    industry always holds repo, so a month with none is a vocabulary failure
+    until shown otherwise: it is excluded whole, every row with it, rather than
+    admitted with a hole beside its balance sheet that reads as a quiet month --
+    and never admitted with a zero. It is not `absent_fields`. A missing table or
+    an undeclared category era means the archive could not be looked at, and that
+    stays a recorded absence on an admitted cross-section, as it was. An unknown
+    reason raises `ValueError`: a record whose reason nobody declared is a reason
+    nobody can read.
     """
 
     source_id: str
@@ -173,6 +202,18 @@ class CrossSectionCoverage:
     absent_fields: tuple = ()
     era_id: Optional[str] = None
     unmatched_derived_fields: tuple = ()
+    exclusion_reason: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if (
+            self.exclusion_reason is not None
+            and self.exclusion_reason not in EXCLUSION_REASONS
+        ):
+            raise ValueError(
+                f"{self.source_id} {self.ref_date.isoformat()}: cross-section "
+                f"exclusion reason {self.exclusion_reason!r} is not one of "
+                f"{', '.join(EXCLUSION_REASONS)}"
+            )
 
     def as_dict(self) -> Mapping[str, object]:
         return {
@@ -195,6 +236,7 @@ class CrossSectionCoverage:
                 {"field": str(field), "disposition": str(disposition)}
                 for field, disposition in self.unmatched_derived_fields
             ],
+            "exclusion_reason": self.exclusion_reason,
             "reason": self.reason,
         }
 
@@ -214,6 +256,12 @@ class CrossSectionCoverage:
             return (
                 "ref_date falls in no declared coverage era, so no floor "
                 "applies to it; declare the era rather than admitting it"
+            )
+        if self.exclusion_reason == EXCLUSION_NO_REPO_ROWS:
+            return (
+                "holdings table read in a declared INVESTMENTCATEGORY era "
+                "supplied no repo holding, so the cross-section is excluded "
+                f"rather than admitted without one (era {self.era_id})"
             )
         if not self.admitted:
             return (

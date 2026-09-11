@@ -17,6 +17,10 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from repo_model.data import (
     DERIVED_ABSENCE_DECLARED_ZERO,
     DERIVED_ABSENCE_UNDECLARED,
+    EXCLUSION_BELOW_FLOOR,
+    EXCLUSION_NO_REPO_ROWS,
+    EXCLUSION_REASONS,
+    CrossSectionCoverage,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     absent_cells_from_quality_report,
@@ -2538,6 +2542,286 @@ class DerivedFieldAbsenceTests(unittest.TestCase):
             (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
         )
         self.assertEqual(parsed.rows, ())
+
+
+class EmptyRepoCrossSectionTests(unittest.TestCase):
+    """A cross-section that read its holdings and found no repo is excluded, with its reason.
+
+    Decided 11 Sep, `docs/DATA_QUALITY_DECISIONS.md`, "An empty repo
+    cross-section is excluded, with its reason". Before it, a cross-section that
+    cleared the floor and whose holdings table was read in a declared
+    `INVESTMENTCATEGORY` era, but matched no repo category, was admitted with no
+    `mmf_repo_holdings` row and no record of why -- the one case
+    `NMFP_DERIVED_FROM_MATCH` said it deliberately did not record. The fund
+    industry always holds repo, so that month is a vocabulary failure until
+    shown otherwise, and it now leaves the panel whole with
+    `exclusion_reason` `no_repo_rows` on its coverage record.
+
+    The traps, each a subtest: triggering on a missing table or on an undeclared
+    era, which are `absent_fields` and stay admitted; triggering on
+    `mmf_on_rrp`'s absence, which is `unmatched_derived_fields` and stays
+    admitted; dropping only the repo field rather than the cross-section;
+    writing a `0.0`; and losing the excluded month's coverage record.
+
+    **Two readings this block chose, for review.** `below_floor` names both floor
+    refusals, including a `ref_date` in no declared coverage era, because the
+    brief's vocabulary is closed at two reasons; `reason` and `era_id` still tell
+    them apart, as they did. And the rule fires on "no `mmf_repo_holdings`
+    observation", so a month whose only repo rows carry absent value cells is
+    excluded under `no_repo_rows` too; its cells are in `absent_cells`.
+
+    **On the archives, 11 Sep.** Over all 97 declared archives in
+    `data/raw/sec_nmfp/` -- the tracked 2026-07 extract and the backfill -- no
+    cross-section hits `no_repo_rows`: zero `ref_date`s. The `sec_nmfp` rows
+    parsed from them, and the rebuilt `data/processed/point_in_time.csv` and
+    `daily_panel_point_in_time.csv`, are byte-identical before and after this
+    block. The rule is a guard on the next vocabulary change, not a correction
+    of a month already in the panel.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files --cached --others
+    --exclude-standard`, `python3 -B` with `PYTHONDONTWRITEBYTECODE=1`,
+    `OMP_NUM_THREADS=1`, each mutation applied to a fresh copy and confirmed
+    applied by grep before the run. Unmutated control green before and after,
+    zero `expectedFailure`. Each run is the whole suite; every kill below is in
+    the acceptance test alone unless named otherwise.
+
+    1. **The `no_repo_rows` check removed**, so a month that clears its floor is
+       admitted whatever its holdings supplied. Kills the acceptance test on its
+       first subtest, `AssertionError: True is not false` at
+       `assertFalse(record.admitted)`.
+    2. **The check triggering on a missing table too**: the `absent_so_far`
+       clause removed. Kills two tests, all `AssertionError`: the acceptance
+       test on two subtests -- the missing table and the undeclared era, each
+       `False is not true` at `assertTrue(record.admitted)` -- and
+       `PerTableRefusalTests::test_a_report_month_in_no_declared_era_costs_only_the_holdings_fields`
+       on `'mmf_net_assets' not found in set()`. The second is the older
+       per-table guard firing beside the new one: a month short of its
+       vocabulary losing its whole balance sheet is what that class refuses.
+    3. **Only the repo field dropped, the month kept**: the `continue` removed
+       from the `no_repo_rows` branch and the record read from `refused` alone,
+       so the record says `no_repo_rows` while the balance sheet and flows are
+       emitted. Kills the acceptance test on its first subtest,
+       `AssertionError: True is not false` at `assertFalse(record.admitted)` --
+       the assertion mutation 1 hits, reached before the row assertions.
+    4. **`below_floor` recorded as `None`.** Kills the acceptance test on its
+       second subtest, `AssertionError: None != 'below_floor'`.
+    5. **The vocabulary check removed** from `CrossSectionCoverage.__post_init__`.
+       Kills the acceptance test on its last subtest,
+       `AssertionError: ValueError not raised`.
+
+    Two findings, recorded rather than repaired; each would be a second
+    criterion.
+
+    6. **Survives: the progressive reading is unguarded.** `absent_so_far`
+       replaced by the every-archive `absent`, whole suite OK. No test files two
+       archives into one month, the earlier without
+       `NMFP_SCHPORTFOLIOSECURITIES.tsv` and the later with it and no repo
+       category, which is the one shape that separates the two readings. The
+       rule is judged as of each retrieval by construction and by nothing else.
+       The same shape shows that `absent_fields` on a coverage record is taken
+       from every archive, not from those retrieved so far -- older than this
+       block, and a statement in the record rather than in the rows.
+    7. **An amended-away repo month writes zeros, before this block and after
+       it.** Reproduced by scratch on this tree: three filers admitted with repo
+       rows, then a later archive whose `N-MFP3/A` amendments for all three file
+       no repo category. The later vintage emits `mmf_repo_holdings` and
+       `mmf_on_rrp` as `0.0` at 2026-07-31, and the month's record reads
+       admitted with no `exclusion_reason`. Admission is never retracted, and
+       `_assemble_sec_nmfp` re-totals a dirty cell over active submissions that
+       no longer supply it. It is the never-a-zero trap reached through
+       supersession, and this rule, judged at admission, does not reach it.
+    """
+
+    FLOOR = 3
+    ADMITTED = date(2026, 7, 31)
+    NO_REPO = date(2026, 6, 30)
+    UNDECLARED_ERA = date(2026, 8, 31)
+
+    #: A declared category this adapter reads no field from, in every era the
+    #: fixture months fall in. Filed in the repo row's place, so the holdings
+    #: table is present, parsed and classified, and simply carries no repo.
+    NON_REPO_CATEGORY = "Certificate of Deposit"
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+        self.fetched = 0
+
+    def filers(self, report, prefix, count=3, **extra):
+        day = report.split("-", 1)[1]
+        return tuple(
+            {
+                "accession": f"{prefix}{index}",
+                "series": f"S{index}",
+                "report": report,
+                "net_assets": 4_000_000_000,
+                "flows": ((f"0{index}-{day}", 100_000_000 * index, 40_000_000 * index),),
+                **extra,
+            }
+            for index in range(1, count + 1)
+        )
+
+    def archive(self, submissions, **kwargs):
+        self.fetched += 1
+        return fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/"
+            f"fixture-{self.fetched}.zip",
+            lambda url: nmfp_archive(submissions, **kwargs),
+        )[0]
+
+    def registry(self, *, extend_last_era_to=None):
+        """The real registry, floors lowered, structural zeros stated as none.
+
+        `extend_last_era_to` widens the last *coverage* era past the last
+        declared `INVESTMENTCATEGORY` era. The two are bounded at the same month
+        in the real registry, so a month with a floor and no category vocabulary
+        can only be built this way.
+        """
+
+        path = registry_with_nmfp_coverage_floor(self.output_root, self.FLOOR)
+        registry = json.loads(path.read_text(encoding="utf-8"))
+        registry["sec_nmfp"]["structural_zeros"] = []
+        registry["sec_nmfp"]["structural_zeros_reviewed"] = False
+        if extend_last_era_to is not None:
+            registry["sec_nmfp"]["cross_section"]["eras"][-1]["end"] = extend_last_era_to
+        return registry
+
+    @staticmethod
+    def record(parsed, ref_date):
+        records = [item for item in parsed.coverage if item.ref_date == ref_date]
+        if len(records) != 1:
+            raise AssertionError(f"expected one coverage record for {ref_date}: {records}")
+        return records[0]
+
+    def test_a_cross_section_with_no_repo_rows_is_excluded_with_its_reason(self):
+        registry = self.registry()
+
+        with self.subTest("holdings read, no repo category: excluded whole, with its reason"):
+            no_repo = self.archive(
+                self.filers("30-JUN-2026", "N"), repo_category=self.NON_REPO_CATEGORY
+            )
+            admitted = self.archive(self.filers("31-JUL-2026", "A"))
+            parsed = parse_snapshots([no_repo, admitted], registry=registry)
+            record = self.record(parsed, self.NO_REPO)
+
+            # The premise: the month cleared its floor and its table was read.
+            self.assertEqual(record.entity_count, self.FLOOR)
+            self.assertNotIn("mmf_repo_holdings", record.absent_fields)
+            self.assertIn(
+                "mmf_treasury_holdings",
+                {row.series_id for row in parse_snapshots(
+                    [self.archive(self.filers("30-JUN-2026", "T"))], registry=registry
+                ).rows},
+                msg="the fixture month does not read holdings at all",
+            )
+
+            self.assertFalse(record.admitted)
+            self.assertEqual(record.exclusion_reason, EXCLUSION_NO_REPO_ROWS)
+            self.assertEqual(record.as_dict()["exclusion_reason"], EXCLUSION_NO_REPO_ROWS)
+            self.assertIn("no repo holding", record.reason)
+            # The coverage record is kept, and still counts what it declined.
+            self.assertGreater(record.row_count, 0)
+
+            # Excluded whole: no row from its archive and none dated in its
+            # month -- not the balance sheet, not the flows -- and never a zero.
+            self.assertEqual(
+                [row for row in parsed.rows if row.source_sha == no_repo.sha256], []
+            )
+            self.assertEqual(
+                [row for row in parsed.rows
+                 if (row.ref_date.year, row.ref_date.month) == (2026, 6)],
+                [],
+            )
+            self.assertNotIn(
+                0.0,
+                [row.value for row in parsed.rows if row.series_id == "mmf_repo_holdings"],
+            )
+
+        with self.subTest("an admitted cross-section reads None; a thin one reads below_floor"):
+            self.assertTrue(self.record(parsed, self.ADMITTED).admitted)
+            self.assertIsNone(self.record(parsed, self.ADMITTED).exclusion_reason)
+
+            thin = parse_snapshots(
+                [self.archive(self.filers("31-JUL-2026", "B", count=1))],
+                registry=registry,
+            )
+            thin_record = self.record(thin, self.ADMITTED)
+            self.assertFalse(thin_record.admitted)
+            self.assertEqual(thin_record.exclusion_reason, EXCLUSION_BELOW_FLOOR)
+            self.assertEqual(thin.rows, ())
+
+        with self.subTest("a missing holdings table is absent_fields, and admitted"):
+            parsed = parse_snapshots(
+                [self.archive(
+                    self.filers("31-JUL-2026", "M"),
+                    omit=("NMFP_SCHPORTFOLIOSECURITIES.tsv",),
+                )],
+                registry=registry,
+            )
+            record = self.record(parsed, self.ADMITTED)
+            self.assertIn("mmf_repo_holdings", record.absent_fields)
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
+            self.assertIn("mmf_net_assets", {row.series_id for row in parsed.rows})
+
+        with self.subTest("an undeclared category era is absent_fields, and admitted"):
+            parsed = parse_snapshots(
+                [self.archive(self.filers("31-AUG-2026", "U"))],
+                registry=self.registry(extend_last_era_to="2026-08"),
+            )
+            record = self.record(parsed, self.UNDECLARED_ERA)
+            self.assertEqual(record.era_id, "n_mfp3")
+            self.assertIn("mmf_repo_holdings", record.absent_fields)
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
+            self.assertIn("mmf_net_assets", {row.series_id for row in parsed.rows})
+
+        with self.subTest("repo rows with no Fed counterparty: admitted, on_rrp record unchanged"):
+            parsed = parse_snapshots(
+                [self.archive(self.filers(
+                    "31-JUL-2026", "D", repo_counterparty=FIXTURE_DEALER_COUNTERPARTY
+                ))],
+                registry=registry,
+            )
+            record = self.record(parsed, self.ADMITTED)
+            observed = {row.series_id for row in parsed.rows}
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
+            self.assertIn("mmf_repo_holdings", observed)
+            self.assertNotIn("mmf_on_rrp", observed)
+            self.assertEqual(
+                record.unmatched_derived_fields,
+                (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
+            )
+
+        with self.subTest("the reason vocabulary is closed"):
+            self.assertEqual(
+                EXCLUSION_REASONS, (EXCLUSION_BELOW_FLOOR, EXCLUSION_NO_REPO_ROWS)
+            )
+            fields = dict(
+                source_id="sec_nmfp",
+                ref_date=self.NO_REPO,
+                entity_unit="series_id",
+                entity_count=self.FLOOR,
+                declared_floor=self.FLOOR,
+                admitted=False,
+                row_count=0,
+                era_id="n_mfp3",
+            )
+            for reason in EXCLUSION_REASONS:
+                self.assertEqual(
+                    CrossSectionCoverage(**fields, exclusion_reason=reason).exclusion_reason,
+                    reason,
+                )
+            with self.assertRaises(ValueError) as refused:
+                CrossSectionCoverage(**fields, exclusion_reason="quiet_month")
+            self.assertIs(type(refused.exception), ValueError)
+            self.assertIn("'quiet_month'", str(refused.exception))
 
 
 class CoverageEraTests(unittest.TestCase):
