@@ -153,7 +153,7 @@ records about a guard shaped to fit the thing it measures. What closes the gap i
 rebuild described above. See `docs/PROJECT_STATUS.md` for what the benchmark does and
 does not establish.
 
-## Phase 2 — Forecasting benchmarks and probabilistic ML (evaluation foundation complete)
+## Phase 2 — Forecasting benchmarks and probabilistic ML (in progress)
 
 Benchmarks:
 

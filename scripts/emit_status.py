@@ -36,9 +36,10 @@ from pathlib import Path
 #     ## Phase 1 — Public U.S. dataset (in progress)
 #
 # where the parenthetical is the phase's own statement about itself and is
-# optional. Only the exact word "complete" counts as complete: Phase 2 reads
-# "(evaluation foundation complete)", which is a partial claim, and reading it
-# as a finished phase would advance the published status past the work.
+# optional. Only the exact word "complete" counts as complete: a partial claim
+# such as "(evaluation foundation complete)", which Phase 2 carried until
+# 11 Sep, read as a finished phase would advance the published status past the
+# work.
 HEADING = re.compile(r"^## Phase (\d+) — (.+)$")
 MARKER = re.compile(r"^(.*?)\s*\(([^()]+)\)$")
 CRITERION = re.compile(r"^Exit criterion[^:]*:\s*(.*)$")
@@ -116,7 +117,15 @@ def require_exit(phase, role):
 
 
 def current_phase(phases):
-    """The first phase PLAN.md does not call complete, and its state.
+    """The latest phase PLAN.md marks in progress, and its state.
+
+    Phases may overlap (human decision, 11 Sep): the forecasting work of
+    Phase 2 is under way while Phase 1's data work is still open, and
+    publishing Phase 1 as the current phase understated the work as surely as
+    publishing Phase 2 as complete would overstate it. So the current phase is
+    the latest one marked "(in progress)"; every phase before it must be marked
+    complete or in progress, and the open ones are published beside it by
+    `alongside`.
 
     Raising is the point. If PLAN.md will not say that the phase being worked
     is in progress, this file has nothing to publish, and a guess would be the
@@ -141,7 +150,24 @@ def current_phase(phases):
             "its heading says (%s). Mark it '(in progress)' or '(complete)' — "
             "this file will not decide which."
             % (current["number"], current["marker"] or "nothing"))
-    return current["number"], "in progress"
+
+    working = [phase for phase in outstanding if "in progress" in phase["marker"]]
+    latest = working[-1]
+    gap = [phase for phase in outstanding
+           if phase["number"] < latest["number"] and phase not in working]
+    if gap:
+        raise PlanError(
+            "PLAN.md marks phase %d in progress while phase %d, before it, is "
+            "marked neither complete nor in progress (%s). Say which it is."
+            % (latest["number"], gap[0]["number"], gap[0]["marker"] or "nothing"))
+    return latest["number"], "in progress"
+
+
+def alongside(phases, number):
+    """Earlier phases still open while phase `number` is the one published."""
+    return [{"number": phase["number"], "name": phase["name"]}
+            for phase in phases
+            if phase["number"] < number and phase["marker"] != "complete"]
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -174,6 +200,7 @@ def main():
         "generated_at": git("log", "-1", "--format=%cd", "--date=short"),
         "commit": git("rev-parse", "--short", "HEAD"),
         "phase": {"number": phase["number"], "name": phase["name"], "state": state},
+        "alongside": alongside(phases, number),
         "next": {"number": following["number"], "name": following["name"],
                  "exit": require_exit(following, "the next phase")},
         "total_phases": len(phases),

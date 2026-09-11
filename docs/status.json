@@ -1,5 +1,11 @@
 {
-  "commit": "679470a",
+  "alongside": [
+    {
+      "name": "Public U.S. dataset",
+      "number": 1
+    }
+  ],
+  "commit": "bc946b0",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -9,13 +15,13 @@
   },
   "generated_at": "2026-09-11",
   "next": {
-    "exit": "a model that beats persistence out of sample and remains calibrated in the tails",
-    "name": "Forecasting benchmarks and probabilistic ML",
-    "number": 2
+    "exit": "stable posterior intervals for aggregate effective liquidity, with clear sensitivity to unobserved bank-level reserve distribution",
+    "name": "Latent reserves and payment needs",
+    "number": 3
   },
   "phase": {
-    "name": "Public U.S. dataset",
-    "number": 1,
+    "name": "Forecasting benchmarks and probabilistic ML",
+    "number": 2,
     "state": "in progress"
   },
   "run_records": [
