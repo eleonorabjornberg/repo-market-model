@@ -143,6 +143,76 @@ same control after each mutation was reverted.
 
 No mutation was planted in the ARX, the threshold model, the bootstrap or the
 quantile machinery; the runs say nothing about them.
+
+The decision-relative availability guard did not land, and why (B28)
+--------------------------------------------------------------------
+
+B28 asked for a second, decision-relative check beside `clears_purge`: a
+module-private helper in `baseline.py`, called from the rolling path per fold,
+raising `LookAheadError` when a field's own declared release lag puts the fold's
+last training row's availability after the **decision instant** -- the declared
+decision time on the last panel date strictly before the scored date. It was
+built, it works, and it is not in the tree. This section is the finding, recorded
+here because the block's brief instructs a stop-and-report if the guard turns an
+existing test red and a gitignored memo is where a finding goes to be re-derived.
+
+**The defect is real and reproduces.** `splits.clears_purge` states the gap
+against the target date. After a weekend or a holiday the decision comes earlier
+than the calendar day before the target, so the rule alone stops establishing
+that the last training row had been published when the forecast was made. A23
+found it; `docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated against the
+target date", records it.
+
+**Nothing published moves.** Against `metadata/sources.json` the guard is silent:
+`tests/test_cli_eval.py::RealRegistryTests` stays green under it, and the four
+published `--feature spread_bps sofr_p25 sofr_p75 sofr_volume` records price
+`IOER` and `IORB` at one `record_date` day and `SOFR` at one business day while
+the gap is `nyfed_sofr`'s `worst_case_calendar_days` of six. The margin is the
+one `docs/DATA_QUALITY_DECISIONS.md` measured, and the guard exists precisely
+because that margin is a coincidence of a purge sized for a slower source.
+
+**What it turns red is the fixtures, and they are true positives.** Thirty-five
+tests across three modules fail, every one of them a run on the gapped sample
+panel -- `data/sample/daily_market.csv`, business dates, gaps of 1, 3 and 4 days
+-- against a fixture registry that declares `record_date` / `calendar_days` at
+`available_time` `"00:00"` with `days` equal to the purge. Three such fixtures:
+`declared_registry` in this file, `contract_registry` in
+`tests/test_contract.py`, and `RollingBacktestHarness._lag` in
+`tests/test_cli_eval.py`. Each was written so `max_release_lag_days` returns
+exactly `days` with no dependence on the decision time -- `declared_registry`'s
+own docstring says so -- and that independence is the thing the decision-relative
+check contradicts.
+
+The late folds, measured on the sample panel at `--minimum-history 10`:
+
+  * gap 1 (`contract_registry`, `declared_registry(1)`, the cli_eval fast
+    fixture): three folds of fourteen, scoring 2026-01-20, 2026-01-26 and
+    2026-02-02 -- the Tuesday after the MLK Monday, and two Mondays. In all
+    three the last training row is the Friday before, which is *also* the
+    decision day, so a one-day lag cannot be observable at the decision instant
+    under any decision time short of midnight.
+  * gap 6 (`declared_registry(6)`, the cli_eval slow fixture): one fold of
+    twelve, scoring Monday 2026-02-02 from a last training row of Monday
+    2026-01-26, first observable Sunday 2026-02-01 against a decision taken
+    Friday 2026-01-30.
+
+Every one of them is a scored date following a weekend or a holiday, which is
+the shape the criterion names. The guard is not over-firing; the fixtures
+declare a lag their panel cannot deliver by the decision instant.
+
+**Why the block stops here rather than fixing them.** Seven of the thirty-five
+are in `tests/test_contract.py`, which `AGENT_CONTRACT.md` assigns to neither
+track and `.github/check_ownership.py` lists as `SHARED`: "Changes to these are
+proposed to the human and applied once, by one agent, before either track
+resumes." Re-declaring `contract_registry`'s lag is that change. Track B cannot
+make it inside a block, and making it only in the two Track B fixtures would
+leave the guard red in a shared file -- so the guard cannot land until the
+fixture question is settled, and that is the human's to settle.
+
+The three prohibited ways out were not taken: the guard was not weakened, no
+tolerance was widened, and the criterion was not relocated to a module that
+would have made it pass. `splits.clears_purge`, the purge derivation and
+`docs/runs/` were not touched. No mutation is recorded because no guard landed.
 """
 
 import contextlib
