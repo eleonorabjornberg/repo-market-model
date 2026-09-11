@@ -167,7 +167,11 @@ from typing import (
     Tuple,
 )
 
-from .contract import QUANTILE_LEVELS, field_sources_for_features
+from .contract import (
+    DERIVED_FEATURES,
+    QUANTILE_LEVELS,
+    field_sources_for_features,
+)
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import (
     CorpDecomposition,
@@ -1304,24 +1308,52 @@ def _leave_one_out_residuals(
     return residuals
 
 
+#: Why an absent column is not an unobserved one, in the words that fit the
+#: read. The two differ in what happens to a gap: a regressor's is imputed from
+#: the fitted training-window mean, a threshold variable's is refused outright
+#: (`UnobservedThresholdError`). One sentence covering both would be wrong
+#: about one of them, and this message is where a reader of a traceback learns
+#: which read they are looking at.
+_IMPUTED_CONTRAST = (
+    "An absent column is not an unobserved value: an unobserved value arrives "
+    "as None and is imputed from the fitted training-window mean, and treating "
+    "a missing column as one would forecast from a number the row never "
+    "contained"
+)
+_REFUSED_CONTRAST = (
+    "An absent column is not an unobserved value: an unobserved value arrives "
+    "as None and is refused rather than imputed, and treating a missing column "
+    "as one would file this row under whichever regime the absence fell in"
+)
+
+
 def _raw_regressor(
-    row: DailyObservation, name: str, where: str
+    row: DailyObservation,
+    name: str,
+    where: str,
+    role: str = "a declared regressor",
+    contrast: str = _IMPUTED_CONTRAST,
 ) -> Optional[float]:
-    """The declared regressor as the row carries it: a float, or `None`.
+    """The column as the row carries it: a float, or `None`.
 
     Absent key and `None` are returned as different things -- a raise and a
     `None` -- because they are different facts. See `MissingRegressorError`.
+
+    `role` and `contrast` say what the model read the column **as**. The
+    message used to assert that "the model was fitted on that regressor"
+    whatever the read was, and that is false of a threshold variable -- nothing
+    is fitted on it; it selects which fit applies -- and false again of `sofr`,
+    which a `spread_bps` regime reads without the model declaring it as a
+    regressor at all. A message naming the wrong read sends the reader to the
+    wrong flag.
     """
 
     try:
         raw = row.values[name]
     except KeyError:
         raise MissingRegressorError(
-            f"{where} for {row.date} carries no {name!r}; the model was fitted on "
-            f"that regressor and cannot read it here. An absent column is not an "
-            f"unobserved value: an unobserved value arrives as None and is imputed "
-            f"from the fitted training-window mean, and treating a missing column "
-            f"as one would forecast from a number the row never contained"
+            f"{where} for {row.date} carries no {name!r}; the model reads it as "
+            f"{role} and cannot find it here. {contrast}"
         ) from None
     if raw is None:
         return None
@@ -1663,7 +1695,12 @@ class FittedThreshold:
 
     Fitted state, all of it set in `fit_threshold` and nowhere else:
 
-    * `threshold_variable` -- the panel column the regime is read off.
+    * `threshold_variable` -- what the regime is read off: a panel column, or
+      `spread_bps`, which is not one. `DailyObservation` computes the spread
+      from `sofr` and `iorb` and no ingest writes a `spread_bps` key, so a
+      regime read off the autoregressive term -- a SETAR -- reaches it through
+      the property and refuses on either component. `_threshold_value` is where
+      that fork lives; see `SPREAD_VARIABLE`.
     * `threshold` -- the value separating the regimes.
     * `threshold_estimated` -- whether that value was searched for on the
       training frame (`True`) or handed over by the caller (`False`). Carried
@@ -1774,7 +1811,9 @@ class FittedThreshold:
         carry it -- a column may legitimately be both a regressor and the
         regime selector, and reporting it twice would be a claim about
         multiplicity that `_check_fitter_stayed_inside` does not read and a
-        reader would.
+        reader would. A `spread_bps` regime is always that case, since the
+        design carries the spread as its autoregressive term whatever the
+        regime is read off; the tuple is unchanged by declaring it.
 
         The threshold variable is in this tuple because the model reads it off
         the feature row. That it is read to choose a model rather than to
@@ -1812,21 +1851,22 @@ class FittedThreshold:
         split the fit used, so a row sitting exactly on the threshold is scored
         by the regime it was fitted into rather than by the other one.
 
+        The read itself is `_threshold_value`, the one the fit uses, so a
+        regime variable the fit could read is one the forecast can read and the
+        two refuse the same rows for the same reasons. For `spread_bps` that
+        read is of `sofr` and `iorb`.
+
         Raises:
-            MissingRegressorError: if the row does not carry the column.
-            UnobservedThresholdError: if it carries it as `None`.
+            MissingRegressorError: if the row does not carry the column, or,
+                for `spread_bps`, either component of it. The message names the
+                column that is absent.
+            UnobservedThresholdError: if it carries it as `None`, or, for
+                `spread_bps`, either component as `None`.
         """
 
-        observed = _raw_regressor(feature_row, self.threshold_variable, "feature row")
-        if observed is None:
-            raise UnobservedThresholdError(
-                f"feature row for {feature_row.date} carries "
-                f"{self.threshold_variable!r} as None; the regime is a choice "
-                f"between two fitted models and an imputed mean would make it "
-                f"silently, putting every unobserved row in whichever regime the "
-                f"training mean falls in. A regressor is imputed because it "
-                f"enters a sum; a threshold variable selects the sum"
-            )
+        observed = _threshold_value(
+            feature_row, self.threshold_variable, "feature row"
+        )
         return "low" if observed <= self.threshold else "high"
 
     def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
@@ -1887,6 +1927,86 @@ class FittedThreshold:
         )
 
 
+#: The one regime variable that is not a panel column. `DailyObservation`
+#: computes it from `sofr` and `iorb`; `row.values` has never carried a
+#: `spread_bps` key and no ingest writes one. A regime read off the
+#: autoregressive term is a SETAR, which is what the user specified, and
+#: reading it by name off the mapping raised `MissingRegressorError` on the
+#: first training row of every such fit.
+SPREAD_VARIABLE = "spread_bps"
+
+#: What it is made of, taken from the contract's own decomposition rather than
+#: restated here. `contract.DERIVED_FEATURES` is out of both tracks' reach, and
+#: that is the point: the purge resolves `spread_bps` to these two fields to
+#: price the gap, and this regime read resolves it to the same two to read the
+#: value. A local literal would let the two drift, and the drift would be
+#: invisible -- the model would keep fitting while the gap was priced over
+#: columns it no longer read.
+SPREAD_COMPONENTS = DERIVED_FEATURES[SPREAD_VARIABLE]
+
+
+def _unobserved_threshold(
+    row: DailyObservation, name: str, where: str, variable: str
+) -> UnobservedThresholdError:
+    """The refusal, in one place, for the fit and the forecast alike.
+
+    `name` is the column that is unobserved and `variable` the regime variable
+    it makes unreadable; they are the same string except for `spread_bps`,
+    where a gap in `sofr` or `iorb` is what makes the spread unobserved and
+    naming only the spread would send the reader looking for a column the panel
+    does not have.
+
+    One message for both reads, distinguished by `where`. Fitting and
+    forecasting refuse the same fact for the same reason, and two texts for it
+    were two things to keep true.
+    """
+
+    subject = (
+        f"{name!r} as None"
+        if name == variable
+        else f"{name!r} as None, so its {variable!r} is unobserved"
+    )
+    return UnobservedThresholdError(
+        f"{where} for {row.date} carries {subject}; a regime is a choice "
+        f"between two fitted models and cannot be made from an unobserved "
+        f"value. A regressor is imputed because it enters a sum; a threshold "
+        f"variable selects the sum, and an imputed mean would put every "
+        f"unobserved row in whichever regime the training mean falls in, "
+        f"silently and uniformly. Fit on a window that observes the threshold "
+        f"variable, or declare one this window observes"
+    )
+
+
+def _spread_threshold_value(row: DailyObservation, where: str) -> float:
+    """`row.spread_bps`, with the absent and unobserved cases refused first.
+
+    The number comes off the property, so a regime read off the spread uses the
+    same arithmetic as the target and the autoregressive term. A local
+    `100.0 * (sofr - iorb)` here would be a second definition of the spread,
+    free to disagree with `DailyObservation`'s and answering to no test that
+    compares them.
+
+    The property cannot be the whole read, though: it raises `KeyError` on an
+    absent component and `TypeError` on an unobserved one, and this module owes
+    its callers `MissingRegressorError` naming the component that is missing and
+    `UnobservedThresholdError` for a gap. So each component goes through
+    `_raw_regressor` first and the property is called only once both are known
+    to be observed finite floats.
+    """
+
+    for component in SPREAD_COMPONENTS:
+        observed = _raw_regressor(
+            row,
+            component,
+            where,
+            role=f"a component of the {SPREAD_VARIABLE!r} regime variable",
+            contrast=_REFUSED_CONTRAST,
+        )
+        if observed is None:
+            raise _unobserved_threshold(row, component, where, SPREAD_VARIABLE)
+    return row.spread_bps
+
+
 def _threshold_value(row: DailyObservation, name: str, where: str) -> float:
     """The threshold variable on `row`, refusing an unobserved one.
 
@@ -1895,16 +2015,23 @@ def _threshold_value(row: DailyObservation, name: str, where: str) -> float:
     then a refusal rather than an imputation for `None`. See
     `UnobservedThresholdError` for why this is the one column that is not
     imputed.
+
+    `spread_bps` is dispatched away because it is not a panel column at all;
+    see `SPREAD_VARIABLE`. Every other regime variable is a column and is read
+    as one.
     """
 
-    observed = _raw_regressor(row, name, where)
+    if name == SPREAD_VARIABLE:
+        return _spread_threshold_value(row, where)
+    observed = _raw_regressor(
+        row,
+        name,
+        where,
+        role="the threshold variable",
+        contrast=_REFUSED_CONTRAST,
+    )
     if observed is None:
-        raise UnobservedThresholdError(
-            f"{where} for {row.date} carries {name!r} as None; a regime is a "
-            f"choice between two fitted models and cannot be made from an "
-            f"unobserved value. Fit on a window that observes the threshold "
-            f"variable, or declare one this window observes"
-        )
+        raise _unobserved_threshold(row, name, where, name)
     return observed
 
 
@@ -2095,13 +2222,16 @@ def fit_threshold(
         train_frame: the training rows, strictly ascending by date.
         regressors: the ordered exogenous regressor names. **Required, with no
             default**, for the reason `fit_arx` refuses one.
-        threshold_variable: the panel column the regime is read off. Required
-            and undefaulted for the same reason and more sharply: this column
-            does not merely contribute a term, it chooses the model, and a
-            default would be a silent claim about which column a regime is
-            allowed to be a function of. It may also appear in `regressors` --
-            a variable can both shift the level and switch the relationship --
-            and `features_read` reports it once either way.
+        threshold_variable: what the regime is read off -- a panel column, or
+            `spread_bps`, which is computed from `sofr` and `iorb` rather than
+            carried (see `SPREAD_VARIABLE`). Required and undefaulted for the
+            reason `regressors` is and more sharply: it does not merely
+            contribute a term, it chooses the model, and a default would be a
+            silent claim about what a regime is allowed to be a function of. It
+            may also appear in `regressors` -- a variable can both shift the
+            level and switch the relationship -- and `spread_bps` always does,
+            since it is the autoregressive term; `features_read` reports it
+            once either way.
         threshold: the value separating the regimes. `None`, the default,
             estimates it from `train_frame` by `_choose_threshold`. A number is
             honoured as declared and recorded as declared; it is not checked
@@ -4951,10 +5081,11 @@ def threshold_exceedance(
             takes them. **Required, with no default**, for the reason `fit_arx`
             and `arx_exceedance` refuse one: a default would be a silent
             assumption about which columns a model is entitled to read.
-        threshold_variable: the panel column the regime is read off. Required
-            and undefaulted for the same reason and more sharply, the one
-            `fit_threshold` gives: this column does not merely contribute a
-            term, it chooses the model.
+        threshold_variable: what the regime is read off -- a panel column, or
+            `spread_bps`, which is computed rather than carried. Required and
+            undefaulted for the same reason and more sharply, the one
+            `fit_threshold` gives: it does not merely contribute a term, it
+            chooses the model.
         minimum_history: the shortest training frame that may produce a fitted
             law. Passed to `fit_threshold`, which raises below it.
 
