@@ -189,7 +189,8 @@ under CRPS at paired origins (`docs/PROJECT_STATUS.md`). Gradient-boosted quanti
 nominal interval covers well under its nominal probability
 (`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
 calibrated in its interval; split-conformal calibration narrows the coverage gap without
-closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`). Its exceedance probabilities have not been scored in the
+closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`); a
+cross-conformal interval keeping the full fit is built and not yet scored. Its exceedance probabilities have not been scored in the
 tails, nor has a conditional predictor been scored against climatology on a
 knowledge-holdout window, so the exit criterion is not met.
 

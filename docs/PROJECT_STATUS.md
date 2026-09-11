@@ -106,7 +106,7 @@ a commit message:
   balance sheet invisible.
 - Under-covered SEC Form N-MFP cross-sections are excluded from the modeling panel
   by an entity-count floor declared in the source registry, or because their holdings
-  matched no repo category; each exclusion carries its `exclusion_reason`
+  matched no repo category; each exclusion is judged per vintage and carries its `exclusion_reason`
   (`below_floor`, `no_repo_rows`) and is recorded separately from ordinary missingness. The floor is a **declared absolute
   count**, calibrated from an observed complete month. A fraction of a trailing
   median was considered and rejected: the trailing window is itself computed from
@@ -195,7 +195,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   (`docs/runs/backtest_gbm_mh61.json`, `docs/runs/backtest_persistence_mh61.json`),
   and both fall short of their nominal probability. Split-conformal calibration
   (`--calibration conformal`, `docs/runs/backtest_gbm_conformal_mh61.json`) moves
-  gbm's coverage toward nominal without reaching it, and costs it the CRPS win.
+  gbm's coverage toward nominal without reaching it, and costs it the CRPS win. A
+  cross-conformal interval that keeps the full fit (`--calibration cross_conformal`) is built, not scored.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a

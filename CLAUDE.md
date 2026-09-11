@@ -27,7 +27,9 @@ suite, and human-authored edits to the documents and files reserved for the huma
 ## Step 0 — ownership, before you read the rest of a brief
 
 List every file the block will create or modify and check each one against
-`.github/check_ownership.py`, **using the gate's own `matches()`, not by eye.** If any is
+`.github/check_ownership.py`, **using the gate's own `matches()`, not by eye.** Run the gate
+as `python3 .github/check_ownership.py origin/main feature/<your-branch>`: a ref not named like
+a track branch (`HEAD`) is skipped, and the skip exits 0. If any is
 `HUMAN_ONLY`, or is in your track's forbidden list, **stop and report before writing
 anything.**
 

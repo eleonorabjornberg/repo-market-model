@@ -576,8 +576,8 @@ repo category supplies no `mmf_repo_holdings`, and nothing recorded why. The fun
 always holds repo, so an admitted month with none is a vocabulary failure until shown
 otherwise. **Decided (11 Sep):** it is excluded like a cross-section below the coverage
 floor, with the reason `no_repo_rows` in its coverage record; it is never a hole that looks
-like a quiet month, and never a zero. In place since A20 (`exclusion_reason`); no archive on
-disk triggered it when it landed.
+like a quiet month, and never a zero. Judged per vintage (A21): an amendment that removes
+every repo row excludes only its own vintage, which writes no rows; earlier vintages stand.
 
 ## Decision rule
 
