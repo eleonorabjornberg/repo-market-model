@@ -1666,6 +1666,11 @@ NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
 #: A repo row whose value cell is absent supplies no observation either -- the
 #: cell is in `absent_cells` with its token -- so a month of nothing else is
 #: excluded under the same reason. "No repo rows" means none the panel could use.
+#:
+#: Judged at every archive that files into the month, not once at admission. An
+#: amendment that removes every repo row of an admitted month excludes the
+#: vintage it arrives in, and leaves the earlier vintages standing -- see
+#: `_assemble_sec_nmfp`.
 NMFP_REQUIRED_CATEGORY_FIELD = "mmf_repo_holdings"
 
 
@@ -2576,9 +2581,19 @@ def _assemble_sec_nmfp(
     against the fields those same archives could not supply. Taking the absence
     from every archive instead would let a later archive that carries the
     holdings table refuse an earlier vintage that did not. The floor is judged
-    first, so a thin cohort with no repo rows reads `below_floor`. Admission is
-    not retracted by either rule: a month once admitted keeps the vintages it was
-    emitted with, for the reason a moved reference date keeps them.
+    first, so a thin cohort with no repo rows reads `below_floor`. The record's
+    `absent_fields` is read from those same archives retrieved so far.
+
+    The repo rule is judged **per vintage**. A later archive whose amendments
+    leave an admitted month with no repo holding excludes that month as of its
+    own retrieval: it contributes no rows -- not a `0.0` for the repo fields,
+    which re-totalling the month over submissions that no longer supply them
+    would write, and no row for any other field -- and its coverage record reads
+    `no_repo_rows`. Nothing is retracted. The vintages emitted before it and
+    their records stand as what was known then, for the reason a moved reference
+    date keeps them, and a later archive that restores the repo rows re-admits
+    the month. The floor is not re-judged that way: the count it reads only
+    grows, so a month once over its floor stays over it.
     """
 
     from .data import (
@@ -2616,7 +2631,6 @@ def _assemble_sec_nmfp(
     cell_accessions = {}      # cell -> {accession}
     section_cells = {}        # (month, series_id) -> {cross-section-dated cell}
     section_accessions = {}   # month -> {accession}
-    absent = {}               # month -> set of unobservable fields
 
     scanned_sections = []     # per archive, the months it files into
     scanned_accessions = []   # per archive, the accessions it carries
@@ -2663,19 +2677,8 @@ def _assemble_sec_nmfp(
                 archive_absent[section] &= set(fields)
             else:
                 archive_absent[section] = set(fields)
-        for section, fields in archive_absent.items():
-            # A field is absent from an assembled cross-section only when no
-            # archive filing into that month could supply it. One archive
-            # predating the daily-flow table does not make the month's flows
-            # unobservable if another archive carries them.
-            if section in absent:
-                absent[section] &= fields
-            else:
-                absent[section] = fields
         scanned_sections.append(sorted(archive_absent))
         scanned_accessions.append(frozenset(scanned))
-        # Copied: the sets above are shared with `absent` and narrowed in place
-        # by the archives that follow.
         scanned_absent.append(
             {section: frozenset(fields) for section, fields in archive_absent.items()}
         )
@@ -2724,6 +2727,12 @@ def _assemble_sec_nmfp(
         )
         sections = scanned_sections[index]
         known |= scanned_accessions[index]
+        # A field is absent from an assembled cross-section only when no archive
+        # retrieved so far that files into that month could supply it. One
+        # archive predating the daily-flow table does not make the month's flows
+        # unobservable if another carries them -- but only from the retrieval of
+        # the one that does. The coverage record and the `no_repo_rows` rule both
+        # read this, and neither reads a later archive.
         for section, fields in scanned_absent[index].items():
             absent_so_far[section] = (
                 absent_so_far[section] & fields
@@ -2804,7 +2813,12 @@ def _assemble_sec_nmfp(
                 NMFP_REQUIRED_CATEGORY_FIELD not in observed_fields[section]
                 and NMFP_REQUIRED_CATEGORY_FIELD not in absent_so_far.get(section, ())
             ):
+                # Judged per vintage. A month admitted earlier and amended here
+                # into one with no repo holding is excluded *as of this
+                # archive*: its submissions leave `active`, so a later archive
+                # that restores the repo rows re-emits the month in full.
                 refused[section] = EXCLUSION_NO_REPO_ROWS
+                admitted.discard(section)
                 continue
             admitted.add(section)
         wanted = {
@@ -2812,7 +2826,18 @@ def _assemble_sec_nmfp(
             for accession in kept
             if _nmfp_cross_section(submissions[accession][1]) in admitted
         }
-        changed = (wanted - active) | (active - wanted)
+        # The submissions leaving `active` because their month was excluded at
+        # this archive, rather than superseded within an admitted one. They dirty
+        # nothing: re-totalling a cell they supplied over what is left would
+        # write `0.0` for every field of the month, which is an observation of
+        # nothing. The excluded vintage contributes no rows, and the rows emitted
+        # before it stand as what was known then.
+        withdrawn = {
+            accession
+            for accession in active
+            if _nmfp_cross_section(submissions[accession][1]) not in admitted
+        }
+        changed = ((wanted - active) | (active - wanted)) - withdrawn
         # A month whose reference date moved re-dates every cross-section-dated
         # cell its active submissions supply, whether or not those submissions
         # themselves changed. The rows emitted at the month's previous reference
@@ -2884,7 +2909,7 @@ def _assemble_sec_nmfp(
                     admitted=section in admitted,
                     row_count=len(surviving),
                     submission_types=tuple(sorted(mix.items())),
-                    absent_fields=tuple(sorted(absent.get(section, ()))),
+                    absent_fields=tuple(sorted(absent_so_far.get(section, ()))),
                     unmatched_derived_fields=_nmfp_unmatched_derived_fields(
                         observed, structural_zeros, section_ref_dates[section]
                     ),
