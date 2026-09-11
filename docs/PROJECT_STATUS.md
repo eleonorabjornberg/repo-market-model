@@ -193,7 +193,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   interval covers far fewer outcomes than persistence's does
   (`docs/runs/backtest_gbm_mh61.json`, `docs/runs/backtest_persistence_mh61.json`),
   and both fall short of their nominal probability. The model that wins under CRPS
-  is the worst calibrated in its interval.
+  is the worst calibrated in its interval as published; its opt-in split-conformal
+  calibration (`--calibration conformal`) is not yet scored.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
