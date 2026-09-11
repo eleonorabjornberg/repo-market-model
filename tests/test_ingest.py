@@ -19,6 +19,7 @@ from repo_model.data import (
     DERIVED_ABSENCE_UNDECLARED,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
+    absent_cells_from_quality_report,
     declared_coverage_floor,
     load_point_in_time_panel,
     validate_accounting_identities,
@@ -4910,6 +4911,18 @@ class AbsentValueReasonTests(unittest.TestCase):
        refusals are untouched by it and still pass.
     5. **The vocabulary check removed** from `_read_cell`. Killed the
        vocabulary refusal subtest, `AssertionError` ("ValueError not raised").
+
+    Re-run under A19, 11 September 2026, by the same procedure. A19 changed
+    this test's `sec_nmfp` report assertion to read the report back through
+    `data.absent_cells_from_quality_report`, since the report now writes runs.
+    Mutations 1, 4 and 5 kill exactly what is recorded above and nothing else.
+    Mutations 2 and 3 kill what is recorded above and now also
+    `AbsentCellRunTests`, whose expansion subtest reads the same adapters, so
+    "no other" is no longer true of them: 2 kills its expansion subtest,
+    `AssertionError` ("() is not true : nyfed_fr2004"); 3 kills its four
+    run-shape and expansion subtests, `AssertionError` (no runs at all), and
+    its refusal subtest, `IndexError`, because the FRED report it tampers with
+    has no run left to tamper with.
     """
 
     RETRIEVED_AT = "2026-09-11T12:00:00+00:00"
@@ -5042,15 +5055,19 @@ class AbsentValueReasonTests(unittest.TestCase):
                 [artifact], panel_path, registry_path=registry_path
             )
             parsed = parse_snapshots(
-                [artifact], registry=json.loads(registry_path.read_text())
+                [artifact],
+                registry=json.loads(registry_path.read_text()),
+                keep_row_dates=True,
             )
             self.assertEqual(self.recorded(parsed), expected)
 
             # ...and the quality report carries exactly those, with a count for
-            # every reason, a zero stated rather than omitted.
-            report = json.loads(
+            # every reason, a zero stated rather than omitted. Since A19 it
+            # writes them as runs, read back here into one record per cell.
+            quality = json.loads(
                 panel_path.with_suffix(".csv.quality.json").read_text()
-            )["absent_cells"]
+            )
+            report = quality["absent_cells"]
             self.assertEqual(
                 report["counts"],
                 {"blank": 1, "na": 3, "dot": 2, "null": 0, "suppressed": 0},
@@ -5058,13 +5075,15 @@ class AbsentValueReasonTests(unittest.TestCase):
             self.assertEqual(
                 sorted(
                     (
-                        cell["source_id"],
-                        cell["field"],
-                        date.fromisoformat(cell["ref_date"]),
-                        cell["reason"],
-                        cell["source_sha"],
+                        cell.source_id,
+                        cell.field,
+                        cell.ref_date,
+                        cell.reason,
+                        cell.source_sha,
                     )
-                    for cell in report["cells"]
+                    for cell in absent_cells_from_quality_report(
+                        quality, parsed.absent_cell_row_dates
+                    )
                 ),
                 expected,
             )
@@ -5398,6 +5417,444 @@ class AbsentValueReasonTests(unittest.TestCase):
                     ValueError, r"absence reason 'missing' is outside the vocabulary"
                 ):
                     _fred_rows(artifact, fred_payload, absent_cells=[])
+
+
+class AbsentCellRunTests(unittest.TestCase):
+    """A19: absent cells are recorded as runs, and the runs expand back exactly.
+
+    A18's quality report listed every absent cell as its own object. It now
+    writes `absent_cells.runs`: one `data.AbsentCellRun` per source, snapshot
+    (`source_sha`), field and reason, over a maximal stretch of consecutive rows
+    in the adapter's own row sequence -- the rows it read that field at, in the
+    order it read them -- with the first and last date, the number of rows, and
+    the row the stretch starts at. `absent_cells.counts`, one per reason, stays,
+    summed from the runs.
+
+    The runs are built by `data.AbsentCellRecorder`, which `ingest._read_cell`
+    now tells about every value it reads as well as every absence: a value row
+    is what ends a run, and nothing but that read knows the row was there. A
+    date the source never wrote a row for is not a row, so a weekend or a
+    holiday neither ends a run nor counts in one. They are read back by
+    `data.absent_cells_from_quality_report`, which expands each run over the
+    snapshots' row sequences (`parse_snapshots(..., keep_row_dates=True)`) and
+    refuses a run whose `count` rows, taken from `row`, do not run from `first`
+    to `last`.
+
+    Why a run also carries `row`
+    ----------------------------
+
+    The brief named a first date, a last date and a count. Those three do not
+    place a run when a field's row sequence repeats a date or is not in date
+    order, and two adapters' sequences are both. Form N-MFP reads one row per
+    filer, many filers share a `REPORTDATE`, and filer order is not date order;
+    Treasury auctions read one row per auction, and auctions share an
+    `issue_date`. Rows dated d1, d1, d2, d2 that are absent at positions 0-2 or
+    at 1-3 are both "d1 to d2, three rows", and they expand to different cells.
+    `row` places the run, and `first` and `last` are what the read-back checks
+    it against. A run records where its rows are, not each row's date, so the
+    snapshot it was read from is what expands it: the report alone does not.
+
+    What it found on the tracked inputs
+    -----------------------------------
+
+    `repo_model.cli build` over `tests/fixtures/snapshots/funding_inputs/`,
+    python3 3.9.6, before and after, both with the columns
+    `metadata/funding_panel_manifest.json` records and with none. The quality
+    report went from 11,885,055 bytes (`fda80909...`) to 65,576 bytes
+    (`6a4466a5...`): 49036 absent cells in 195 runs, the counts unchanged at
+    49028 `blank` and 8 `na`. No panel byte moved: the pinned panel is
+    `b6af33bb...4bec`, the default build `d6e9a2b2...af16` and the long
+    point-in-time panel `ef76551d...981e`, each the same before and after.
+    Expanding the 195 runs over that parse's row sequences gives back the 49036
+    cells exactly. By field: `RRPONTSYD` 183 runs, `IOER` 2 (19824 rows from
+    1954-07-01 and 1868 from 2021-07-29), `IORB` 1, `DFF` 1, and each of the
+    four SOFR percentiles 2.
+
+    Mutation record
+    ---------------
+
+    11 September 2026, python3 3.9.6. Disposable copies under `$HOME`, one per
+    mutation, each built from `git ls-files -z --cached --others
+    --exclude-standard`; `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, whole suite
+    per mutation. Each replacement was asserted to occur exactly once and then
+    confirmed present in the file before the run. The unmutated control is
+    green before and after, with no expected failures.
+
+    1. **Runs split only on reason, never on an intervening value**:
+       `AbsentCellRecorder._read` returns on a value before it looks at the
+       open run. Killed this test only: the "blanks, a value, blanks" subtest,
+       `AssertionError` ("Lists differ": one run of four rows from 2026-01-05 to
+       -01-09), and the refusal subtest, `AssertionError` ("ValueError not
+       raised"). The second is incidental: the merged run spans all five rows,
+       so one row more than it records still ends on its last date.
+    2. **Runs keyed without the snapshot sha**: the open-run key
+       `(source_id, field)`, row sequences still per snapshot. Killed this test
+       only: the expansion subtest, `AssertionError` ("Lists differ"), where the
+       FRED retrieval that ends on an `IORB` blank and the one that begins with
+       one become a single two-row run carrying the first retrieval's sha. A
+       first attempt dropped the sha from the row-sequence key too, and was
+       killed by the read-back's `ValueError` ("0 rows") on the first fixture
+       instead, a lookup miss rather than the merge; the key was split so this
+       mutation reaches the run alone.
+    3. **Count as calendar days between first and last**:
+       `(last - first).days + 1`. Killed the "dates the source skips" subtest,
+       `AssertionError` (6 for three rows), and the expansion subtest,
+       `AssertionError` ("Lists differ": N-MFP's same-day runs of two expand to
+       one). It also kills `AbsentValueReasonTests`' `sec_nmfp` subtest,
+       `AssertionError` on the report's counts (`na` 2 for 3), rightly: those
+       counts are now summed from the runs.
+    4. **The read-back count check removed**: its `if` made `if False:`.
+       Killed this test only: the refusal subtest, `AssertionError`
+       ("ValueError not raised").
+    """
+
+    RETRIEVED_AT = AbsentValueReasonTests.RETRIEVED_AT
+    FRED = "fred_macro_latest_vintage"
+
+    setUp = AbsentValueReasonTests.setUp
+    artifact = AbsentValueReasonTests.artifact
+    planted_tsv = staticmethod(AbsentValueReasonTests.planted_tsv)
+    nmfp_payload = AbsentValueReasonTests.nmfp_payload
+
+    @staticmethod
+    def runs(parsed):
+        return [
+            (run.field, run.reason, run.first, run.last, run.count, run.row)
+            for run in parsed.absent_cell_runs
+        ]
+
+    @staticmethod
+    def cells(cells):
+        return sorted(
+            (cell.source_id, cell.field, cell.ref_date, cell.reason, cell.source_sha)
+            for cell in cells
+        )
+
+    def quality_report(self, parsed, name):
+        """The quality report for `parsed`, as written to disk and read back."""
+
+        from repo_model.data import write_point_in_time_audit_report
+
+        path = self.root / f"{name}.quality.json"
+        write_point_in_time_audit_report(
+            parsed.rows, path, absent_cell_runs=parsed.absent_cell_runs
+        )
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_absent_cells_collapse_into_runs_that_expand_back_exactly(self):
+        from repo_model.ingest import load_source_registry
+
+        registry = load_source_registry()
+
+        def fred(name, text):
+            payload = text.encode("utf-8")
+            return self.artifact(self.FRED, name, payload, "fred")
+
+        with self.subTest("blanks, a value, blanks: two runs"):
+            parsed = parse_snapshots(
+                [
+                    fred(
+                        "split.csv",
+                        "observation_date,IORB\n"
+                        "2026-01-05,\n2026-01-06,\n2026-01-07,4.30\n"
+                        "2026-01-08,\n2026-01-09,\n",
+                    )
+                ],
+                registry=registry,
+            )
+            self.assertEqual(
+                self.runs(parsed),
+                [
+                    ("IORB", "blank", date(2026, 1, 5), date(2026, 1, 6), 2, 0),
+                    ("IORB", "blank", date(2026, 1, 8), date(2026, 1, 9), 2, 3),
+                ],
+            )
+
+        with self.subTest("a change of reason splits the run"):
+            parsed = parse_snapshots(
+                [
+                    fred(
+                        "reasons.csv",
+                        "observation_date,IORB\n"
+                        "2026-01-05,\n2026-01-06,.\n2026-01-07,.\n2026-01-08,\n",
+                    )
+                ],
+                registry=registry,
+            )
+            self.assertEqual(
+                self.runs(parsed),
+                [
+                    ("IORB", "blank", date(2026, 1, 5), date(2026, 1, 5), 1, 0),
+                    ("IORB", "dot", date(2026, 1, 6), date(2026, 1, 7), 2, 1),
+                    ("IORB", "blank", date(2026, 1, 8), date(2026, 1, 8), 1, 3),
+                ],
+            )
+
+        bill_url = (
+            "https://home.treasury.gov/resource-center/data-chart-center/"
+            "interest-rates/TextView?type=daily_treasury_bill_rates"
+        )
+
+        with self.subTest("dates the source skips neither split nor count"):
+            # A business-daily FRED column: Friday 16 January, then Tuesday 20
+            # January -- a weekend and Martin Luther King Day are not rows.
+            parsed = parse_snapshots(
+                [
+                    fred(
+                        "business.csv",
+                        "observation_date,RRPONTSYD\n"
+                        "2026-01-15,1.5\n2026-01-16,\n2026-01-20,\n"
+                        "2026-01-21,\n2026-01-22,2.0\n",
+                    )
+                ],
+                registry=registry,
+            )
+            self.assertEqual(
+                self.runs(parsed),
+                [("RRPONTSYD", "blank", date(2026, 1, 16), date(2026, 1, 21), 3, 1)],
+            )
+            # Treasury's bill rates are written newest first, and a run's first
+            # and last follow the file: Monday 12 January, then Friday 9.
+            bills = (
+                'Date,"4 WEEKS BANK DISCOUNT","4 WEEKS COUPON EQUIVALENT"\n'
+                "01/12/2026,,4.10\n01/09/2026,,4.11\n01/08/2026,4.01,4.12\n"
+            ).encode()
+            parsed = parse_snapshots(
+                [self.artifact("treasury_bill_rates", "bills.csv", bills, bill_url)],
+                registry=registry,
+            )
+            self.assertEqual(
+                self.runs(parsed),
+                [
+                    (
+                        "tbill_4w_bank_discount",
+                        "blank",
+                        date(2026, 1, 12),
+                        date(2026, 1, 9),
+                        2,
+                        0,
+                    )
+                ],
+            )
+
+        with self.subTest("every run over each A18 fixture expands back exactly"):
+            fixtures = {}
+
+            # sec_nmfp: AbsentValueReasonTests.nmfp_payload, which it builds.
+            fixtures["sec_nmfp"] = (
+                [
+                    self.artifact(
+                        "sec_nmfp",
+                        "a18.zip",
+                        self.nmfp_payload(),
+                        "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/a18.zip",
+                    )
+                ],
+                json.loads(
+                    registry_with_nmfp_coverage_floor(self.root, 1).read_text()
+                ),
+            )
+
+            # nyfed_fr2004: the tracked export plus A18's planted week, one
+            # declared series suppressed.
+            dealer = FR2004DealerPositionTests
+            text = dealer.FIXTURE.read_text(encoding="utf-8")
+            real_week = {
+                row.series_id: row.value
+                for row in parse_snapshots(
+                    [
+                        self.artifact(
+                            FR2004_SOURCE_ID, "real.csv", text.encode(), "fr2004"
+                        )
+                    ],
+                    registry=registry,
+                ).rows
+                if row.ref_date == dealer.REF_DATE
+            }
+            lines = [text.rstrip("\n")]
+            for series_id in (dealer.TOTAL_SERIES, *dealer.COMPONENTS):
+                raw = (
+                    "*"
+                    if series_id == "PDPOSTIPS-G11"
+                    else str(round(real_week[series_id] * 1000))
+                )
+                lines.append(
+                    f'"{dealer.SUPPRESSED_REF_DATE.isoformat()}","{series_id}","{raw}"'
+                )
+            fixtures["nyfed_fr2004"] = (
+                [
+                    self.artifact(
+                        FR2004_SOURCE_ID,
+                        "latest.csv",
+                        ("\n".join(lines) + "\n").encode("utf-8"),
+                        "fr2004",
+                    )
+                ],
+                registry,
+            )
+
+            # nyfed: A18's rate and volume responses.
+            rate = json.dumps(
+                {
+                    "refRates": [
+                        {
+                            "effectiveDate": "2026-01-02",
+                            "percentRate": 4.31,
+                            "percentPercentile1": "",
+                            "percentPercentile25": "NA",
+                            "percentPercentile75": "N/A",
+                            "percentPercentile99": ".",
+                        },
+                        {
+                            "effectiveDate": "2026-01-05",
+                            "percentRate": 4.30,
+                            "percentPercentile1": "na",
+                            "percentPercentile25": None,
+                            "percentPercentile75": 4.29,
+                        },
+                    ]
+                }
+            ).encode()
+            volume = json.dumps(
+                {
+                    "refRates": [
+                        {"effectiveDate": "2026-01-02", "volumeInBillions": "."},
+                        {"effectiveDate": "2026-01-05", "volumeInBillions": 2000},
+                    ]
+                }
+            ).encode()
+            fixtures["nyfed"] = (
+                fetch_nyfed_reference_rate(
+                    self.root / "nyfed",
+                    "sofr",
+                    "2026-01-01",
+                    "2026-01-06",
+                    lambda url: volume if "type=volume" in url else rate,
+                ),
+                registry,
+            )
+
+            # fred: A18's payload, read beside a second retrieval that ends on
+            # the blank A18's begins with. Two snapshots are two runs.
+            earlier = fred(
+                "earlier.csv",
+                "observation_date,IORB,DFF\n2026-01-05,4.30,4.33\n2026-01-06,,4.33\n",
+            )
+            later = fred(
+                "later.csv",
+                "observation_date,IORB,DFF\n2026-01-02,,.\n2026-01-05,4.30,4.33\n",
+            )
+            fixtures["fred"] = ([earlier, later], registry)
+
+            # treasury_auctions: A18's three auction records.
+            def auction(issue, security_type, offering, soma):
+                return {
+                    "issue_date": issue,
+                    "record_date": issue,
+                    "auction_date": "2026-01-08",
+                    "security_type": security_type,
+                    "offering_amt": offering,
+                    "soma_accepted": soma,
+                }
+
+            records = [
+                auction("2026-01-15", "Bill", "50000000000", "null"),
+                auction("2026-01-22", "Note", "25000000000", ""),
+                auction("2026-01-29", "Bill", "30000000000", "1000000000"),
+            ]
+            fixtures["treasury_auctions"] = (
+                fetch_treasury_auctions(
+                    self.root / "treasury",
+                    "2026-01-01",
+                    "2026-01-31",
+                    lambda url: json.dumps({"data": records}).encode(),
+                ),
+                registry,
+            )
+
+            # treasury_bill_rates: A18's two quote dates.
+            fixtures["treasury_bill_rates"] = (
+                [
+                    self.artifact(
+                        "treasury_bill_rates",
+                        "a18-bills.csv",
+                        (
+                            'Date,"4 WEEKS BANK DISCOUNT","4 WEEKS COUPON EQUIVALENT"\n'
+                            "09/09/2026,,4.10\n09/08/2026,4.01,4.11\n"
+                        ).encode(),
+                        bill_url,
+                    )
+                ],
+                registry,
+            )
+
+            for adapter, (artifacts, adapter_registry) in fixtures.items():
+                parsed = parse_snapshots(
+                    artifacts, registry=adapter_registry, keep_row_dates=True
+                )
+                self.assertTrue(parsed.absent_cells, adapter)
+                if adapter == "fred":
+                    # No run crosses from one retrieval into the next.
+                    self.assertEqual(
+                        sorted(
+                            (
+                                run.source_sha,
+                                run.field,
+                                run.reason,
+                                run.first,
+                                run.count,
+                                run.row,
+                            )
+                            for run in parsed.absent_cell_runs
+                        ),
+                        sorted(
+                            [
+                                (earlier.sha256, "IORB", "blank", date(2026, 1, 6), 1, 1),
+                                (later.sha256, "DFF", "dot", date(2026, 1, 2), 1, 0),
+                                (later.sha256, "IORB", "blank", date(2026, 1, 2), 1, 0),
+                            ]
+                        ),
+                    )
+                report = self.quality_report(parsed, adapter)
+                self.assertEqual(
+                    self.cells(
+                        absent_cells_from_quality_report(
+                            report, parsed.absent_cell_row_dates
+                        )
+                    ),
+                    self.cells(parsed.absent_cells),
+                    adapter,
+                )
+                # The per-reason counts are still the cells', one each.
+                counts = {reason: 0 for reason in report["absent_cells"]["counts"]}
+                for cell in parsed.absent_cells:
+                    counts[cell.reason] += 1
+                self.assertEqual(report["absent_cells"]["counts"], counts, adapter)
+
+        with self.subTest(refusal="a run's count disagrees with its rows"):
+            parsed = parse_snapshots(
+                [
+                    fred(
+                        "tampered.csv",
+                        "observation_date,IORB\n"
+                        "2026-01-05,\n2026-01-06,\n2026-01-07,4.30\n"
+                        "2026-01-08,\n2026-01-09,\n",
+                    )
+                ],
+                registry=registry,
+                keep_row_dates=True,
+            )
+            report = self.quality_report(parsed, "tampered")
+            # One more row than the stretch has, with the per-reason count
+            # moved to agree, so only the run itself can say it is wrong.
+            report["absent_cells"]["runs"][0]["count"] += 1
+            report["absent_cells"]["counts"]["blank"] += 1
+            with self.assertRaisesRegex(
+                ValueError,
+                r"IORB blank at row 0 records 3 rows from 2026-01-05 to "
+                r"2026-01-06, and its snapshot's rows from row 0 do not",
+            ):
+                absent_cells_from_quality_report(report, parsed.absent_cell_row_dates)
 
 
 if __name__ == "__main__":
