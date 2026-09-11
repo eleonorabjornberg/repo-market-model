@@ -176,18 +176,23 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `provenance.ml_libraries`, as every record and event-holdout journal line with an
   ml fit does. These are several challengers against one benchmark at the 90% level,
   on a daily panel scored with an expanding window and a purge. The threshold ARX
-  (`--model threshold`) loses to persistence with either regime variable: on
+  (`--model threshold`) loses to persistence with either regime variable, which
+  each record names under `declaration.model_b.regime_variable`: on
   `sofr_volume` (`docs/runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`)
   the 90% interval on the mean difference excludes zero in persistence's favour only
   just, and on `spread_bps`, the SETAR
   (`docs/runs/compare_persistence_vs_threshold_regime_spread_mh61_crps.json`), it
-  excludes zero clearly. The gbm and threshold records say which days a win or a loss
-  comes from (`comparison.per_origin`); the ARX and rolling-residual records predate
+  excludes zero clearly. The gbm, threshold and rolling-residual records say which
+  days a win or a loss comes from (`comparison.per_origin`); the ARX records predate
   it. The rolling-residual result also makes
   the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
-  replaced.
+  replaced. gbm sharpens it: backtested at the same declaration, its nominal
+  interval covers far fewer outcomes than persistence's does
+  (`docs/runs/backtest_gbm_mh61.json`, `docs/runs/backtest_persistence_mh61.json`),
+  and both fall short of their nominal probability. The model that wins under CRPS
+  is the worst calibrated in its interval.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a

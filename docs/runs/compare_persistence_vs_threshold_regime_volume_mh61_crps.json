@@ -20433,7 +20433,8 @@
         "sofr_volume",
         "spread_bps"
       ],
-      "model": "threshold"
+      "model": "threshold",
+      "regime_variable": "sofr_volume"
     }
   },
   "derived": {
@@ -20549,14 +20550,14 @@
   },
   "provenance": {
     "code": {
-      "commit": "f5e7e785aaec5a8a5469fde174d42b5e8a78affe",
+      "commit": "80c80c9fbd0266da66579a806888516bc53e6fed",
       "tree_modified": false,
       "untracked_files_present": true
     },
     "inputs": {
       "source_registry": {
         "path": "metadata/sources.json",
-        "sha256": "534415eb7d7dded27cd61ca8ca65af34cc847d843fafaa8bb688ef2a694aa6e2"
+        "sha256": "f652b443ce5c4cd24a69edf27d187145721b94b21a4a699305d7ce069b410351"
       }
     }
   }

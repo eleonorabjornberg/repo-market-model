@@ -185,9 +185,12 @@ The evaluation machinery exists: rolling-origin folds behind a purge derived fro
 declared feature set, a common fitted-model forecast interface with more than one
 implementer, an event-holdout path, and the metric implementations. On the frozen
 panel, gradient-boosted quantiles and the trailing-window residual law beat persistence
-under CRPS at paired origins (`docs/PROJECT_STATUS.md`). What is not yet measured is
-either model's calibration in the tails, or a conditional predictor scored against
-climatology on a knowledge-holdout window, so the exit criterion is not met.
+under CRPS at paired origins (`docs/PROJECT_STATUS.md`). Gradient-boosted quantiles'
+nominal interval covers well under its nominal probability
+(`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
+calibrated in its interval. Its exceedance probabilities have not been scored in the
+tails, nor has a conditional predictor been scored against climatology on a
+knowledge-holdout window, so the exit criterion is not met.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
