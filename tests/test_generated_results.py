@@ -239,3 +239,53 @@ class MilestoneAReproductionTests(unittest.TestCase):
             "docs/runs/persistence_funding.json does not reproduce from the "
             "tracked inputs:\n  " + "\n  ".join(found),
         )
+
+
+class ChallengerTableRefusalTests(unittest.TestCase):
+    """The generated challenger table ranks only records scored alike.
+
+    `emit_results.challenger_records` refuses a set of comparison records that
+    were not scored on one panel, minimum history, purge and origin count, and
+    refuses two records it cannot tell apart by declared settings or features.
+    A table that silently mixed origin sets would rank numbers that are not
+    comparable; one that silently collapsed two records would drop a row.
+
+    Mutations (11 Sep 2026, each run against this class, then restored):
+
+    1. `if len(keys) != 1:` -> `if False:` in `challenger_records`: the first
+       test fails (no `RecordError` raised; the mixed set is ranked).
+    2. `if not own:` -> `if False:`: the second test fails (no `RecordError`;
+       both rows carry the same label).
+    """
+
+    def records_dir(self, mutate):
+        import shutil
+        import tempfile
+
+        generator = load_generator()
+        workdir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, workdir)
+        source = sorted(generator.RUNS.glob(generator.CHALLENGERS))[:2]
+        for index, path in enumerate(source):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            mutate(index, record)
+            (workdir / path.name).write_text(json.dumps(record), encoding="utf-8")
+        generator.RUNS = workdir
+        return generator
+
+    def test_records_scored_on_different_origins_are_refused(self):
+        def mutate(index, record):
+            if index == 1:
+                record["folds"]["count"] += 1
+
+        generator = self.records_dir(mutate)
+        with self.assertRaises(generator.RecordError):
+            generator.challenger_records()
+
+    def test_two_records_that_cannot_be_told_apart_are_refused(self):
+        def mutate(index, record):
+            record["declaration"]["model_b"] = {"model": "arx", "features": ["spread_bps"]}
+
+        generator = self.records_dir(mutate)
+        with self.assertRaises(generator.RecordError):
+            generator.challenger_records()

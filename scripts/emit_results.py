@@ -2,7 +2,7 @@
 """Emit the README's Key-findings block and its figure from the run records.
 
 Nothing in the block is typed. Every figure is read out of `docs/runs/*.json` --
-the records `backtest` and `exceedance-backtest` wrote, each carrying the panel
+the records `backtest`, `compare` and `exceedance-backtest` wrote, each carrying the panel
 manifest it was built from and the commit it ran at -- and rendered into
 `README.md` between two markers, plus a reliability figure under `docs/figures/`.
 
@@ -193,6 +193,13 @@ def key_findings(persistence, exceedance):
            if excludes else
            "The gap is within what resampling the same history produces."))
     add("")
+    table, challengers = challenger_section()
+    lines.extend(table)
+    add("")
+    add("**Interval coverage on the same origins.**")
+    add("")
+    lines.extend(coverage_section(challengers))
+    add("")
     add("**The control that licenses every future skill number.** A climatology scored "
         "against climatology must show no skill. Over the same %d origins its Brier "
         "skill score is %s at every declared threshold (%s bp), and its reference Brier "
@@ -216,6 +223,158 @@ def key_findings(persistence, exceedance):
     add("")
     add(END)
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# challengers and interval coverage
+
+CHALLENGERS = "compare_persistence_vs_*_crps.json"
+COVERAGE = "backtest_*.json"
+
+
+class _Scored(object):
+    """What a challenger or coverage record was scored on, compared as a key.
+
+    Every row of a generated table must share the origins, panel, purge and
+    history it was scored on, or the table ranks numbers that are not
+    comparable. A record that differs is refused, never quietly left out.
+    """
+
+    @staticmethod
+    def key(record):
+        return (
+            require(record, "panel", "sha256"),
+            require(record, "declaration", "minimum_history"),
+            require(record, "derived", "purge_days"),
+            require(record, "folds", "count"),
+        )
+
+
+#: Declaration keys that are not model settings: shared by every row of a
+#: table (and checked to be), so showing them would repeat them per row.
+_NOT_SETTINGS = ("model", "features", "decision_time", "minimum_history")
+
+
+def _settings(side):
+    """A declared model side as a label: its name, then each declared setting.
+
+    Since B21 a declaration names `regime_variable` / `residual_window`; any
+    key other than `model` and `features` is a setting and is shown.
+    """
+
+    extra = ["%s `%s`" % (key.replace("_", " "), side[key])
+             for key in sorted(side) if key not in _NOT_SETTINGS]
+    return side["model"] + (" (%s)" % ", ".join(extra) if extra else "")
+
+
+def challenger_records():
+    """The CRPS comparisons against persistence, labelled and checked."""
+
+    found = []
+    for path in sorted(RUNS.glob(CHALLENGERS)):
+        with path.open(encoding="utf-8") as handle:
+            record = json.load(handle)
+        if require(record, "comparison", "model_a", "model") != "persistence":
+            raise RecordError("%s does not compare against persistence" % path.name)
+        found.append(record)
+    if not found:
+        raise RecordError("no %s record in docs/runs/; nothing to rank" % CHALLENGERS)
+    keys = set(_Scored.key(record) for record in found)
+    if len(keys) != 1:
+        raise RecordError("challenger records are not scored on one panel, history, "
+                          "purge and origin count: %s" % sorted(keys))
+
+    labels = [_settings(require(r, "declaration", "model_b")) for r in found]
+    # Two records whose declared settings agree are told apart by the features
+    # they alone use -- the ARX pair differ only in their exogenous columns.
+    for label in set(labels):
+        group = [i for i, value in enumerate(labels) if value == label]
+        if len(group) < 2:
+            continue
+        sets = [set(require(found[i], "declaration", "model_b", "features")) for i in group]
+        shared = set.intersection(*sets)
+        for i, features in zip(group, sets):
+            own = sorted(features - shared)
+            if not own:
+                raise RecordError("two challenger records declare the same model, "
+                                  "settings and features: %s" % label)
+            labels[i] = "%s with %s" % (label, ", ".join("`%s`" % f for f in own))
+    return sorted(zip(labels, found),
+                  key=lambda pair: -pair[1]["comparison"]["mean_difference_bps"])
+
+
+def challenger_section():
+    rows = challenger_records()
+    first = rows[0][1]
+    comparison = first["comparison"]
+    lines = []
+    add = lines.append
+    add("**Challengers against persistence.** Each challenger is scored on the same "
+        "%d origins (minimum history %d, purge %d days); persistence's CRPS is %s bp. "
+        "The difference is persistence's CRPS minus the challenger's, so a positive "
+        "value favours the challenger; its interval is a stationary bootstrap "
+        "(block length %d, %d replications) on the per-origin differences."
+        % (comparison["origin_count"], first["declaration"]["minimum_history"],
+           first["derived"]["purge_days"], bp(comparison["model_a"]["crps_bps"]),
+           comparison["mean_difference_interval"]["block_length"],
+           comparison["mean_difference_interval"]["replications"]))
+    add("")
+    add("| Challenger | CRPS | Difference | 90% interval | Verdict |")
+    add("|---|---|---|---|---|")
+    for label, record in rows:
+        c = record["comparison"]
+        interval = c["mean_difference_interval"]
+        if interval["lower"] > 0:
+            verdict = "beats persistence"
+        elif interval["upper"] < 0:
+            verdict = "loses to persistence"
+        else:
+            verdict = "not distinguishable"
+        add("| %s | %s bp | %+.2f bp | %+.2f to %+.2f bp | %s |" % (
+            label, bp(c["model_b"]["crps_bps"]), c["mean_difference_bps"],
+            interval["lower"], interval["upper"], verdict))
+    return lines, rows
+
+
+def coverage_section(challengers):
+    """Interval coverage of every backtest scored on the challengers' origins."""
+
+    reference = _Scored.key(challengers[0][1])
+    found = []
+    for path in sorted(RUNS.glob(COVERAGE)):
+        with path.open(encoding="utf-8") as handle:
+            record = json.load(handle)
+        if _Scored.key(record) == reference:
+            found.append(record)
+    if not found:
+        raise RecordError("no backtest record shares the challengers' origins; "
+                          "interval coverage cannot be published beside them")
+    lines = []
+    add = lines.append
+    top = max(float(level) for level in require(found[0], "metrics", "pinball_loss"))
+    add("| Model | Nominal | Realised coverage | 90%% interval | Pinball loss, quantile %.2f |"
+        % top)
+    add("|---|---|---|---|---|")
+    verdicts = []
+    for record in sorted(found, key=lambda r: r["declaration"]["model"]):
+        metrics = require(record, "metrics")
+        calibration = require(metrics, "interval_calibration")
+        interval = require(calibration, "coverage_interval")
+        nominal = require(calibration, "declared_probability")
+        pinball = require(metrics, "pinball_loss")
+        level = [key for key in pinball if float(key) == top][0]
+        model = _settings(require(record, "declaration"))
+        add("| %s | %s | %s | %s to %s | %s bp |" % (
+            model, pct(nominal, 0), pct(calibration["realized_coverage"]),
+            pct(interval["lower"]), pct(interval["upper"]), bp(pinball[level], 3)))
+        if not (interval["lower"] <= nominal <= interval["upper"]):
+            verdicts.append(model)
+    add("")
+    add("A realised-coverage interval that excludes the nominal probability is a "
+        "calibration finding. %s" % (
+            "It is one for: %s." % ", ".join(verdicts) if verdicts
+            else "None of these models has one."))
+    return lines
 
 
 def status_line():

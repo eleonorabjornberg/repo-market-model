@@ -154,7 +154,10 @@ A result is reportable only when its run record identifies:
 - the point-in-time panel build and quality report;
 - the feature set and decision cutoff;
 - the model configuration and random seed, where applicable, and for a model
-  fitted with the `ml` extra the numpy and scikit-learn versions it fitted with;
+  fitted with the `ml` extra the numpy and scikit-learn versions it fitted with.
+  A comparison's bootstrap seed is derived from the panel, both models, their
+  feature sets and the decision time, not from a model's settings: two records
+  that differ only in a setting share a resample stream, and that is decided;
 - the rolling-origin split and registry-derived purge gap; and
 - any event-window checksum and append-only evaluation-journal entry.
 

@@ -80,6 +80,26 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 
 **The coverage line is the honest one, and it is a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. Intervalled the same way as the error above (stationary bootstrap, block length 5, 2000 replications, seed 1755593764), the realised coverage lies between 78.3% and 83.6%, which excludes the nominal probability. What the gap is — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite.
 
+**Challengers against persistence.** Each challenger is scored on the same 2039 origins (minimum history 61, purge 6 days); persistence's CRPS is 2.53 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 5, 2000 replications) on the per-origin differences.
+
+| Challenger | CRPS | Difference | 90% interval | Verdict |
+|---|---|---|---|---|
+| gbm | 1.99 bp | +0.54 bp | +0.27 to +0.87 bp | beats persistence |
+| rolling-residual (residual window `60`) | 2.48 bp | +0.05 bp | +0.02 to +0.08 bp | beats persistence |
+| arx with `sofr_volume` | 2.90 bp | -0.37 bp | -0.53 to -0.21 bp | loses to persistence |
+| arx with `sofr_p25`, `sofr_p75` | 2.93 bp | -0.40 bp | -0.60 to -0.21 bp | loses to persistence |
+| threshold (regime variable `sofr_volume`) | 4.20 bp | -1.67 bp | -4.25 to -0.03 bp | loses to persistence |
+| threshold (regime variable `spread_bps`) | 4.69 bp | -2.16 bp | -4.28 to -0.50 bp | loses to persistence |
+
+**Interval coverage on the same origins.**
+
+| Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
+|---|---|---|---|---|
+| gbm | 90% | 65.8% | 63.2% to 68.3% | 0.943 bp |
+| persistence | 90% | 81.6% | 78.8% to 84.2% | 0.889 bp |
+
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm, persistence.
+
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 
 <picture>

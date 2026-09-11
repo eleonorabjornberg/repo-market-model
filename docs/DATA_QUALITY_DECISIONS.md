@@ -533,6 +533,17 @@ file's, and reads `*` (suppressed for confidentiality) as neither zero nor a fai
 The published Milestone A panel does not carry the column; it is pinned to its manifest's
 `built_columns`.
 
+## An absent value keeps its reason
+
+The SEC's Form N-MFP data-set readme marks fields nullable but defines no token for a
+missing value, so `"."` in the archives is undocumented by the publisher. The New York
+Fed's FR 2004 export writes `*` for a figure suppressed for confidentiality.
+
+**Decided: every absent cell is recorded with the token it was read from.** `"."`, `NA`,
+`N/A` and blank in N-MFP, and `*` in FR 2004, still yield no observation, but each is
+recorded with its reason, so an absence can be told apart from a blank and a suppressed
+figure from a missing one. A token outside that vocabulary is still refused.
+
 ## Decision rule
 
 These are data-modeling decisions, not formatting cleanup. Each resolution requires:
