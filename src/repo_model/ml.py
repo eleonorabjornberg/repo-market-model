@@ -113,6 +113,39 @@ feature row, so lag 1 is the feature row's spread minus the row before it.
   lags would reach before the frame, which is not a hole but no data, and
   imputing it would put a column of training means in every fit.
 
+**A GARCH(1,1) variance, opt-in (B24).** `volatility_feature="garch11"` adds one
+regressor, `garch11_variance`: the one-step conditional variance of the spread
+change, fitted inside the one training frame a fold hands over.
+
+* **The fit.** The innovations are the daily spread changes between consecutive
+  fit rows, by row and taken as zero-mean. `f_p`, the variance of the change
+  into row `p + 1` forecast at row `p`, is `omega + alpha * e_p + beta *
+  f_(p-1)`, where `e_p` is the squared change into row `p` -- or `f_(p-1)`, its
+  expectation, where that change touches a hole, and on the frame's first row,
+  which has no change into it. `f_(-1)` is the mean squared observed change of
+  the fit rows. `(omega, alpha, beta)` maximise the Gaussian quasi-likelihood of
+  the fit rows' changes subject to `omega > 0`, `alpha, beta >= 0` and
+  `alpha + beta < 1`, by a Nelder-Mead search written here in the standard
+  library: the `ml` extra is numpy and scikit-learn, and an optimiser package
+  is a dependency this block does not add.
+* **Per fold, on the fit rows only.** Nothing is fitted on the panel: the
+  fitter is handed one fold's frame and fits there, so two folds with different
+  training ends fit different parameters. Under `calibration="conformal"` the
+  parameters come from the fit rows alone, and the calibration rows are
+  *filtered* with them -- the recursion run on through those rows -- never
+  refitted on themselves.
+* **The feature at row `t` is `f_t`.** It reads changes at or before `t`, and
+  forecasts the change into `t + 1`: for a training row that is the change
+  into its target, and it is never an input. A calibration row's variance is
+  its feature row's; a forecast's is the feature row's, filtered through the
+  fitted frame's own rows by position, the lag columns' rule.
+* **Refused, never flattened.** Fewer than `GARCH_MINIMUM_CHANGES` observed
+  changes among the fit rows, and a search that does not converge -- including
+  a frame whose every observed change is zero, where omega runs to 0 and there
+  is no maximum -- raise `ValueError`. A constant-variance column in their
+  place would be a feature that says nothing, published under a declaration
+  that says it was read.
+
 Absent is the default and is today's gbm, bit for bit.
 
 Stdlib plus the `ml` extra, inside functions.
@@ -148,6 +181,8 @@ from .splits import (
 __all__ = [
     "CALIBRATIONS",
     "DEFAULT_CALIBRATION_SHARE",
+    "GARCH_MINIMUM_CHANGES",
+    "VOLATILITY_FEATURES",
     "MissingMLExtraError",
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
@@ -190,6 +225,27 @@ CALIBRATIONS = ("none", "conformal")
 #: the first fold still has more calibration rows than the conformal quantile
 #: needs to be finite, and three quarters of the frame are left to fit on.
 DEFAULT_CALIBRATION_SHARE = 0.25
+
+#: The volatility features gbm can be built with. See the module docstring.
+VOLATILITY_FEATURES = ("garch11",)
+
+#: The design name of the `garch11` column.
+_GARCH_COLUMN = "garch11_variance"
+
+#: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
+#: fitted from: ten per fitted parameter. Below it the three parameters are
+#: pinned by a handful of squared changes and the search converges to whichever
+#: of them was largest. At `--minimum-history 61` under `--calibration
+#: conformal` and a six-day gap the first fold's fit rows still carry more.
+GARCH_MINIMUM_CHANGES = 30
+
+#: The Nelder-Mead iteration cap. A search still moving after this many steps
+#: is refused, not read off where it stopped.
+_GARCH_MAX_ITERATIONS = 2000
+
+#: Convergence: the simplex's criterion values agree to this share of the best
+#: one, and its vertices to this much in `(log(omega / f_-1), alpha, beta)`.
+_GARCH_TOLERANCE = 1e-8
 
 
 def _band_probability(levels: Sequence[float]) -> Fraction:
@@ -270,19 +326,202 @@ def _spread_changes(
     return changes
 
 
+def _squared_changes(spreads: Sequence[Optional[float]]) -> List[Optional[float]]:
+    """The squared change into each row, `None` at the first row and at a hole."""
+
+    squares: List[Optional[float]] = [None]
+    for earlier, later in zip(spreads[:-1], spreads[1:]):
+        if later is None or earlier is None:
+            squares.append(None)
+        else:
+            change = later - earlier
+            squares.append(change * change)
+    return squares
+
+
+def _garch_variances(
+    squares: Sequence[Optional[float]],
+    parameters: Tuple[float, float, float],
+    initial: float,
+) -> List[float]:
+    """`f_p` for every row `p`: the variance of the change into row `p + 1`.
+
+    `f_p = omega + alpha * e_p + beta * f_(p-1)`, with `e_p` row `p`'s own
+    squared change, or `f_(p-1)` where it has none, and `f_(-1) = initial`. By
+    construction `f_p` reads `squares[: p + 1]` and nothing after: the one
+    recursion the fit's likelihood, the training design, the calibration rows
+    and a forecast all read.
+    """
+
+    omega, alpha, beta = parameters
+    variances: List[float] = []
+    previous = initial
+    for square in squares:
+        shock = previous if square is None else square
+        previous = omega + alpha * shock + beta * previous
+        variances.append(previous)
+    return variances
+
+
+def _garch_criterion(
+    squares: Sequence[Optional[float]],
+    parameters: Tuple[float, float, float],
+    initial: float,
+) -> float:
+    """Twice the negative Gaussian quasi-log-likelihood, constants dropped.
+
+    Each observed change into row `p + 1` is scored against `f_p`, the variance
+    forecast at the row before it.
+    """
+
+    total = 0.0
+    variances = _garch_variances(squares, parameters, initial)
+    for variance, square in zip(variances, squares[1:]):
+        if square is not None:
+            total += math.log(variance) + square / variance
+    return total
+
+
+def _nelder_mead(
+    criterion: Any, start: Sequence[float], steps: Sequence[float]
+) -> Tuple[Tuple[float, ...], bool]:
+    """Minimise `criterion` from `start`; return the best vertex and convergence.
+
+    The Lagarias et al. (1998) moves -- reflection 1, expansion 2, contraction
+    and shrink 1/2 -- with ties kept in vertex order, so a search is
+    deterministic. Converged when the simplex's values agree to
+    `_GARCH_TOLERANCE` of the best and its vertices to `_GARCH_TOLERANCE`;
+    otherwise, after `_GARCH_MAX_ITERATIONS`, not.
+    """
+
+    dimension = len(start)
+    simplex = [tuple(float(value) for value in start)]
+    for axis, step in enumerate(steps):
+        simplex.append(
+            tuple(
+                value + step if index == axis else value
+                for index, value in enumerate(simplex[0])
+            )
+        )
+    values = [criterion(vertex) for vertex in simplex]
+
+    def between(origin, target, weight):
+        return tuple(o + weight * (t - o) for o, t in zip(origin, target))
+
+    for _ in range(_GARCH_MAX_ITERATIONS):
+        order = sorted(range(dimension + 1), key=values.__getitem__)
+        simplex = [simplex[index] for index in order]
+        values = [values[index] for index in order]
+        best = simplex[0]
+        if values[-1] - values[0] <= _GARCH_TOLERANCE * (1.0 + abs(values[0])) and all(
+            abs(coordinate - anchor) <= _GARCH_TOLERANCE
+            for vertex in simplex[1:]
+            for coordinate, anchor in zip(vertex, best)
+        ):
+            return best, True
+        centroid = tuple(
+            sum(vertex[axis] for vertex in simplex[:-1]) / dimension
+            for axis in range(dimension)
+        )
+        worst = simplex[-1]
+        reflected = between(centroid, worst, -1.0)
+        reflected_value = criterion(reflected)
+        if reflected_value < values[0]:
+            expanded = between(centroid, worst, -2.0)
+            expanded_value = criterion(expanded)
+            if expanded_value < reflected_value:
+                simplex[-1], values[-1] = expanded, expanded_value
+            else:
+                simplex[-1], values[-1] = reflected, reflected_value
+            continue
+        if reflected_value < values[-2]:
+            simplex[-1], values[-1] = reflected, reflected_value
+            continue
+        if reflected_value < values[-1]:
+            contracted = between(centroid, reflected, 0.5)
+            contracted_value = criterion(contracted)
+            accepted = contracted_value <= reflected_value
+        else:
+            contracted = between(centroid, worst, 0.5)
+            contracted_value = criterion(contracted)
+            accepted = contracted_value < values[-1]
+        if accepted:
+            simplex[-1], values[-1] = contracted, contracted_value
+            continue
+        simplex = [best] + [between(best, vertex, 0.5) for vertex in simplex[1:]]
+        values = [values[0]] + [criterion(vertex) for vertex in simplex[1:]]
+    return simplex[0], False
+
+
+def _fit_garch11(
+    spreads: Sequence[Optional[float]], label: str
+) -> Tuple[Tuple[float, float, float], float]:
+    """`((omega, alpha, beta), f_-1)` fitted on `spreads`, or refuse.
+
+    `spreads` are the fit rows' and nothing else; the caller filters any later
+    row with what this returns. The search runs over `(log(omega / f_-1),
+    alpha, beta)`, scale-free in the spread's units, from a persistent start
+    `(0.05, 0.05, 0.90)`; a point outside the constraints scores infinity.
+    """
+
+    squares = _squared_changes(spreads)
+    observed = [square for square in squares if square is not None]
+    if len(observed) < GARCH_MINIMUM_CHANGES:
+        raise ValueError(
+            f"volatility_feature garch11 needs at least {GARCH_MINIMUM_CHANGES} "
+            f"observed spread changes among the {label}, got {len(observed)}; "
+            f"three parameters fitted from fewer are pinned by a handful of "
+            f"squared changes, not estimated"
+        )
+    initial = sum(observed) / len(observed)
+    if not initial > 0.0:
+        raise ValueError(
+            f"the GARCH(1,1) fit on the {label} did not converge: every one of "
+            f"its {len(observed)} observed spread changes is zero, so omega runs "
+            f"to 0 and the quasi-likelihood has no maximum. Refused rather than "
+            f"read as a constant variance"
+        )
+
+    def criterion(point: Tuple[float, ...]) -> float:
+        scale, alpha, beta = point
+        if not (alpha >= 0.0 and beta >= 0.0 and alpha + beta < 1.0):
+            return math.inf
+        if not -700.0 < scale < 700.0:
+            return math.inf
+        return _garch_criterion(
+            squares, (initial * math.exp(scale), alpha, beta), initial
+        )
+
+    point, converged = _nelder_mead(
+        criterion, (math.log(0.05), 0.05, 0.90), (0.5, 0.05, 0.05)
+    )
+    if not converged:
+        raise ValueError(
+            f"the GARCH(1,1) fit on the {label} did not converge in "
+            f"{_GARCH_MAX_ITERATIONS} Nelder-Mead iterations; refused rather "
+            f"than read off where the search stopped, and never replaced by a "
+            f"constant variance"
+        )
+    scale, alpha, beta = point
+    return (initial * math.exp(scale), alpha, beta), initial
+
+
 def _design(
     row: DailyObservation,
     regressors: Sequence[str],
     imputations: Mapping[str, float],
     label: str,
     changes: Sequence[Optional[float]] = (),
+    variance: Optional[float] = None,
 ) -> List[float]:
-    """One row as the design reads it: the spread, each regressor, each lag.
+    """One row as the design reads it: the spread, each regressor, each lag, the variance.
 
     A regressor carried as `None` gets its fitted imputation; one missing from
     the row is `_raw_regressor`'s refusal. A missing spread change gets its
-    lag's imputation, by the same rule. The one spelling the fit, the
-    calibration scores and `FittedGradientBoostedQuantiles.design_row` share.
+    lag's imputation, by the same rule. The GARCH variance, when there is one,
+    is never missing: `_garch_variances` carries a hole forward by its
+    expectation. The one spelling the fit, the calibration scores and
+    `FittedGradientBoostedQuantiles.design_row` share.
     """
 
     values = [float(row.spread_bps)]
@@ -291,6 +530,8 @@ def _design(
         values.append(imputations[name] if observed is None else observed)
     for name, change in zip(_spread_change_names(len(changes)), changes):
         values.append(imputations[name] if change is None else change)
+    if variance is not None:
+        values.append(variance)
     return values
 
 
@@ -408,6 +649,12 @@ class FittedGradientBoostedQuantiles:
       lagged spread changes the design carries (`None` when it carries none),
       and the training frame's own dates and spreads, which are the only rows
       a feature row's lags are read back from. See the module docstring.
+    * `volatility_feature`, `garch_parameters`, `garch_initial_variance` ---
+      the volatility feature the design carries (`None` when it carries none),
+      the `(omega, alpha, beta)` fitted on the fit rows, and `f_-1`, the fit
+      rows' mean squared observed change the recursion starts from. A feature
+      row's variance is filtered through the same frame rows its lags are read
+      from.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -438,12 +685,15 @@ class FittedGradientBoostedQuantiles:
         "calibration_start",
         "cutoff",
         "fit_end",
+        "garch_initial_variance",
+        "garch_parameters",
         "imputations",
         "levels",
         "ml_libraries",
         "random_state",
         "regressors",
         "spread_change_lags",
+        "volatility_feature",
         "widening",
     )
 
@@ -466,7 +716,15 @@ class FittedGradientBoostedQuantiles:
         calibration_end: Optional[date] = None,
         spread_change_lags: Optional[int] = None,
         history: Sequence[Tuple[date, Optional[float]]] = (),
+        volatility_feature: Optional[str] = None,
+        garch_parameters: Optional[Tuple[float, float, float]] = None,
+        garch_initial_variance: Optional[float] = None,
     ) -> None:
+        self.volatility_feature: Optional[str] = volatility_feature
+        self.garch_parameters: Optional[Tuple[float, float, float]] = (
+            None if garch_parameters is None else tuple(garch_parameters)
+        )
+        self.garch_initial_variance: Optional[float] = garch_initial_variance
         self.spread_change_lags: Optional[int] = spread_change_lags
         self._history_dates: Tuple[date, ...] = tuple(when for when, _ in history)
         self._history_spreads: Tuple[Optional[float], ...] = tuple(
@@ -514,13 +772,15 @@ class FittedGradientBoostedQuantiles:
         a column the model does not read would put `features_read` --- which is
         derived from this --- out of step with the fit.
 
-        The lag columns come last, lag 1 first.
+        The lag columns come after the regressors, lag 1 first, and the GARCH
+        variance last.
         """
 
         return (
             ("spread_bps",)
             + self.regressors
             + _spread_change_names(self.spread_change_lags or 0)
+            + ((_GARCH_COLUMN,) if self.volatility_feature is not None else ())
         )
 
     @property
@@ -538,10 +798,11 @@ class FittedGradientBoostedQuantiles:
         `design_names` order, so anything that column order gains this answer
         gains too.
 
-        **Except the lag columns, which are not panel columns.** Each is read off
-        `spread_bps` on rows at or before the feature row, and `spread_bps` is
-        already here. Naming `spread_change_lag_1` would ask the purge check to
-        find a source for a column no source ingests.
+        **Except the lag columns and the GARCH variance, which are not panel
+        columns.** Each is read off `spread_bps` on rows at or before the feature
+        row, and `spread_bps` is already here. Naming `spread_change_lag_1` or
+        `garch11_variance` would ask the purge check to find a source for a
+        column no source ingests.
         """
 
         return self.design_names[: 1 + len(self.regressors)]
@@ -554,7 +815,8 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags` by the same rule: named when set, absent when not.
+        `spread_change_lags` and `volatility_feature` by the same rule: named
+        when set, absent when not.
         """
 
         settings: dict = {}
@@ -563,6 +825,8 @@ class FittedGradientBoostedQuantiles:
             settings["calibration_share"] = self.calibration_share
         if self.spread_change_lags is not None:
             settings["spread_change_lags"] = self.spread_change_lags
+        if self.volatility_feature is not None:
+            settings["volatility_feature"] = self.volatility_feature
         return MappingProxyType(settings)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
@@ -578,11 +842,16 @@ class FittedGradientBoostedQuantiles:
         spread ends lag 1. A row the frame does not carry is refused: it has no
         position in the frame, and the nearest one would hand it another row's
         lags.
+
+        The GARCH variance by the same rule: the recursion is run with the
+        fitted parameters through the frame's rows before `feature_row` and
+        then `feature_row`'s own spread, and its last value is the column.
         """
 
         changes: Sequence[Optional[float]] = ()
+        variance: Optional[float] = None
         lags = self.spread_change_lags
-        if lags is not None:
+        if lags is not None or self.volatility_feature is not None:
             position = bisect_left(self._history_dates, feature_row.date)
             if (
                 position == len(self._history_dates)
@@ -592,18 +861,31 @@ class FittedGradientBoostedQuantiles:
                     f"feature row for {feature_row.date} is not a row of the "
                     f"frame this model was fitted on "
                     f"({self._history_dates[0]}..{self._history_dates[-1]}); its "
-                    f"lagged spread changes are read off that frame's own rows by "
-                    f"position, and a row the frame does not carry has none"
+                    f"lagged spread changes and its GARCH variance are read off "
+                    f"that frame's own rows by position, and a row the frame "
+                    f"does not carry has none"
                 )
             spreads = self._history_spreads[:position] + (
                 _observed_spread(feature_row, "feature row"),
             )
-            changes = _spread_changes(
-                spreads, position, lags, f"feature row for {feature_row.date}"
-            )
+            if lags is not None:
+                changes = _spread_changes(
+                    spreads, position, lags, f"feature row for {feature_row.date}"
+                )
+            if self.volatility_feature is not None:
+                variance = _garch_variances(
+                    _squared_changes(spreads),
+                    self.garch_parameters,
+                    self.garch_initial_variance,
+                )[position]
         return tuple(
             _design(
-                feature_row, self.regressors, self.imputations, "feature row", changes
+                feature_row,
+                self.regressors,
+                self.imputations,
+                "feature row",
+                changes,
+                variance,
             )
         )
 
@@ -776,6 +1058,7 @@ def fit_gradient_boosted_quantiles(
     calibration_share: Optional[float] = None,
     purge_days: Optional[int] = None,
     spread_change_lags: Optional[int] = None,
+    volatility_feature: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -815,6 +1098,11 @@ def fit_gradient_boosted_quantiles(
         spread_change_lags: how many lagged spread changes the design carries,
             at least 1. `None`, the default, carries none and is the model every
             published gbm record was produced with. See the module docstring.
+        volatility_feature: one of `VOLATILITY_FEATURES`, or `None`, the
+            default, which carries no volatility column and is the model every
+            published gbm record was produced with. `"garch11"` fits a
+            GARCH(1,1) on the fit rows' spread changes and adds its one-step
+            conditional variance. See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -844,7 +1132,11 @@ def fit_gradient_boosted_quantiles(
             the purge leaves fewer than two fit rows; and, for the lags, if
             `spread_change_lags` is not an int of at least 1, if it leaves no
             training row with every lag defined, or if a calibration row's
-            feature row has fewer rows than that before it.
+            feature row has fewer rows than that before it; and, for the
+            volatility feature, if `volatility_feature` is not one of
+            `VOLATILITY_FEATURES`, if the fit rows carry fewer than
+            `GARCH_MINIMUM_CHANGES` observed spread changes, or if the GARCH
+            fit does not converge.
     """
 
     grid = _validate_levels(levels)
@@ -907,6 +1199,15 @@ def fit_gradient_boosted_quantiles(
         )
     lags = spread_change_lags or 0
     change_names = _spread_change_names(lags)
+
+    if volatility_feature is not None and volatility_feature not in VOLATILITY_FEATURES:
+        raise ValueError(
+            f"unknown volatility_feature {volatility_feature!r}; this model can "
+            f"be built with {', '.join(VOLATILITY_FEATURES)}, or with none by "
+            f"leaving the setting out. A misspelt feature fitted without one "
+            f"would publish today's gbm under a declaration naming a volatility "
+            f"model"
+        )
 
     names = tuple(str(name) for name in regressors)
     if not names:
@@ -971,10 +1272,26 @@ def fit_gradient_boosted_quantiles(
                 f"design needs at least one origin and its successor"
             )
 
-    # Every row's spread, `None` at a hole, for the lags alone. Over the whole
-    # frame, which is the only history a lag is ever read from; the fit rows are
-    # its prefix, so a position in one is the same position in the other.
-    spreads = [_observed_spread(row, "training row") for row in rows] if lags else []
+    # Every row's spread, `None` at a hole, for the lags and the variance alone.
+    # Over the whole frame, which is the only history either is ever read from;
+    # the fit rows are its prefix, so a position in one is the same position in
+    # the other.
+    spreads = (
+        [_observed_spread(row, "training row") for row in rows]
+        if lags or volatility_feature is not None
+        else []
+    )
+
+    # The GARCH(1,1), fitted on the fit rows' spreads and nothing after them,
+    # then filtered over the whole frame with those parameters: the calibration
+    # rows are run through the recursion, never fitted on. `variances[p]` reads
+    # rows at or before `p`.
+    garch: Optional[Tuple[float, float, float]] = None
+    initial: Optional[float] = None
+    variances: List[float] = []
+    if volatility_feature is not None:
+        garch, initial = _fit_garch11(spreads[: len(fit_rows)], "fit rows")
+        variances = _garch_variances(_squared_changes(spreads), garch, initial)
 
     # The origins: every fit row that has a successor among the fit rows, less
     # the first `lags`, whose changes would reach before the frame. These, and
@@ -1022,6 +1339,8 @@ def fit_gradient_boosted_quantiles(
     design = []
     targets = []
     for index in range(lags + 1, len(fit_rows)):
+        # The origin's variance, `index - 1`: the target row's would read the
+        # change into the target.
         design.append(
             _design(
                 fit_rows[index - 1],
@@ -1029,6 +1348,7 @@ def fit_gradient_boosted_quantiles(
                 imputations,
                 "training row",
                 changes[index - 1 - lags],
+                variances[index - 1] if variances else None,
             )
         )
         targets.append(float(fit_rows[index].spread_bps))
@@ -1097,6 +1417,7 @@ def fit_gradient_boosted_quantiles(
                             lags,
                             f"calibration feature row for {dates[position]}",
                         ),
+                        variances[position] if variances else None,
                     ),
                     float(rows[index].spread_bps),
                 )
@@ -1126,6 +1447,9 @@ def fit_gradient_boosted_quantiles(
         calibration_end=calibration_rows[-1].date if calibration_rows else None,
         spread_change_lags=spread_change_lags,
         history=tuple(zip(dates, spreads)),
+        volatility_feature=volatility_feature,
+        garch_parameters=garch,
+        garch_initial_variance=initial,
     )
 
 
