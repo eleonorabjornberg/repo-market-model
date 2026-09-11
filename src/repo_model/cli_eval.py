@@ -1292,7 +1292,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--regime-variable",
         metavar="COLUMN",
         default=None,
-        help="the panel column a two-regime model reads to choose a regime; "
+        help="the column a two-regime model reads to choose a regime: a panel "
+        "column, or spread_bps, which is computed from sofr and iorb; "
         "required for --model threshold, refused for the others, and it must "
         "be one of --feature",
     )
@@ -1428,7 +1429,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--regime-variable",
         metavar="COLUMN",
         default=None,
-        help="the panel column a two-regime model reads to choose a regime; "
+        help="the column a two-regime model reads to choose a regime: a panel "
+        "column, or spread_bps, which is computed from sofr and iorb; "
         "required for --model threshold, refused for the others, and it must "
         "be one of --feature",
     )
@@ -1487,7 +1489,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--regime-variable",
         metavar="COLUMN",
         default=None,
-        help="the panel column a two-regime model reads to choose a regime; "
+        help="the column a two-regime model reads to choose a regime: a panel "
+        "column, or spread_bps, which is computed from sofr and iorb; "
         "required for --model threshold, refused for the others, and it must "
         "be one of --feature so that what the predictor is handed and what the "
         "run declared are the same set",

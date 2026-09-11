@@ -3938,9 +3938,10 @@ def backtest_document(
     **The interval on coverage is the exception, and it is a narrow one.** It
     is recomputable from the file because the record carries the coverage
     indicator series -- one bit per origin, run-length encoded -- and one bit
-    per origin is not a forecast row. `PairedComparisonTests` records keeping
-    intermediates off a publication as a deliberate decision and that decision
-    stands: nothing here publishes a prediction, a quantile or an actual. What
+    per origin is not a forecast row. Nothing here publishes a prediction, a
+    quantile or an actual. (The `compare` record publishes per-origin losses
+    since B18, by the user's decision recorded on `paired_comparison_document`;
+    this record's shape did not change with it.) What
     is published is whether each origin's actual fell inside its own interval,
     which is the whole of what a coverage statement is over.
 
@@ -4282,8 +4283,8 @@ class PairedComparisonReport:
     `losses_a`, `losses_b` and `differences` are carried at per-origin
     granularity, positionally aligned with `folds`, because the pairing is the
     property the whole block exists for and a reader of the *object* has to be
-    able to check it. They are deliberately **not** published: see
-    `paired_comparison_document`.
+    able to check it. `paired_comparison_document` publishes them, one entry
+    per origin, and refuses a report on which the four lengths disagree.
     """
 
     #: The names the caller selected, in the order the sign convention reads.
@@ -4415,9 +4416,10 @@ def paired_model_comparison(
     fold loop, both models fitted on each fold's training rows and scored on
     that fold's origin. The two loss series are then the same length, in the
     same order, over the same days, and nothing has to be checked afterwards
-    because nothing could have differed. Two existing report files cannot be
-    made to yield this: they carry metrics rather than per-origin losses, and
-    deliberately so.
+    because nothing could have differed. Two `backtest` records cannot be made
+    to yield this: they carry metrics rather than per-origin losses. Nor can
+    two `compare` records, which do carry them: losses from two runs are two
+    runs, whatever dates they share.
 
     **The one thing the loop does not settle is the gap**, because the gap is
     derived from each declaration before any fold exists. Two declarations that
@@ -4733,14 +4735,28 @@ def paired_comparison_document(
     because a reader who has to count fields to resolve a pronoun will
     sometimes count wrong.
 
-    **The per-origin losses are not published, and that is a decision rather
-    than an omission.** They exist on the report, where the pairing can be
-    checked by whatever holds it, and they stay off the artifact for the reason
-    `backtest_document` publishes no per-forecast dump: the record is a
-    publication and not an intermediate. Publishing them would also invite
-    exactly the workflow this function was written to replace -- two files
-    differenced after the fact -- with the difference that it would look
-    supported.
+    **The per-origin losses are published**, under `comparison.per_origin`: one
+    entry per scored origin, earliest first, carrying that fold's dates, both
+    losses and their difference, unrounded. This reverses an earlier decision
+    to keep them on the report only, and the reason is the user's (10 Sep): a
+    mean paired difference and an interval around it cannot say whether a win
+    or a loss comes from a few days, and a reader deciding what a result means
+    needs to see that before the next challenger is scored against it.
+
+    **What stays true of the old decision is that this is not a file to
+    difference against another.** The losses come from one run, one fold loop,
+    both models scored at each origin, and they sit in one record beside the
+    interval that was drawn from them -- the recorded differences, the record's
+    seed, block length, replications and level reproduce `lower` and `upper`
+    exactly. Two such records from two runs are still two runs: subtracting
+    one's losses from another's by date is the workflow `paired_model_comparison`
+    exists instead of, and the published losses do not make it paired.
+
+    **The four sequences are checked against each other before anything is
+    written.** `losses_a`, `losses_b`, `differences` and `folds` are aligned by
+    position, and `zip` over sequences that disagree stops at the shortest
+    without a word -- every entry it writes is right and the record simply
+    carries fewer origins than its interval was drawn from.
 
     Args:
         comparison: a report from `paired_model_comparison`.
@@ -4753,9 +4769,30 @@ def paired_comparison_document(
         A JSON-serialisable dict. The caller writes it; this shapes it.
 
     Raises:
+        ValueError: when `losses_a`, `losses_b`, `differences` and `folds` do
+            not all have one length.
         ProvenanceMismatchError: when a build manifest beside the panel does
             not describe the panel that was scored.
     """
+
+    # Before the panel is read, so a report whose per-origin sequences have
+    # come apart leaves no document behind. Nothing in this module builds such
+    # a report; the check is here because the `zip` below would publish one
+    # quietly shortened rather than refuse it.
+    lengths = (
+        ("losses_a", len(comparison.losses_a)),
+        ("losses_b", len(comparison.losses_b)),
+        ("differences", len(comparison.differences)),
+        ("folds", len(comparison.folds)),
+    )
+    if len({length for _, length in lengths}) != 1:
+        raise ValueError(
+            "the per-origin sequences are not the same length -- "
+            + ", ".join(f"{name} {length}" for name, length in lengths)
+            + "; they are aligned by position, and a record written from them "
+            "would stop at the shortest and publish fewer origins than the "
+            "interval was drawn from"
+        )
 
     digest = panel_sha256(panel_path)
 
@@ -4849,6 +4886,26 @@ def paired_comparison_document(
                 "replications": comparison.replications,
                 "seed": comparison.seed,
             },
+            # Earliest first, in the fold shape `folds.first` and `folds.last`
+            # already use, at full float precision: the console rounds, the
+            # record does not, and a rounded loss would reproduce neither the
+            # mean above nor the interval. `difference_bps` is the report's own
+            # difference, `loss_a - loss_b`, not recomputed here. The lengths
+            # were checked above, so this `zip` truncates nothing.
+            "per_origin": [
+                {
+                    **_fold_document(fold),
+                    "loss_a_bps": loss_a,
+                    "loss_b_bps": loss_b,
+                    "difference_bps": difference,
+                }
+                for fold, loss_a, loss_b, difference in zip(
+                    comparison.folds,
+                    comparison.losses_a,
+                    comparison.losses_b,
+                    comparison.differences,
+                )
+            ],
         },
     }
 
