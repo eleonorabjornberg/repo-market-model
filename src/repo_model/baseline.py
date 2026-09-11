@@ -1379,9 +1379,27 @@ def _leave_one_out_residuals(
     Refitting `n` times rather than using the closed form `e_i / (1 - h_ii)` --
     which is algebraically the same number -- because the two-line version is
     checkable by reading it, and the hat-matrix version needs `(X'X)^-1` and an
-    argument about why `h_ii` is safely below 1. The cost is `n` small solves per
-    fit; on this repository's panels that is microseconds, and if a real panel
-    ever makes it matter the closed form is the drop-in.
+    argument about why `h_ii` is safely below 1.
+
+    **It is not the drop-in (B27, 11 Sep 2026).** The closed form, or any
+    downdate of the full `X'X`, is the same number algebraically and a different
+    float: it adds the products in another order, and every published ARX and
+    threshold record would move in its last digits. So each held-out fit is
+    still `_least_squares` on the other rows, float for float -- the same
+    products `row[i] * row[j]` and `row[i] * target`, one `sum()` over them in
+    row order, the same `_solve` -- and only the bookkeeping around it changed:
+
+    * each product is computed once per design row, not once per held-out row;
+    * the list a held-out fit sums is one list per Gram entry, kept with the
+      held-out row missing. Moving the hole from row `h` to row `h + 1` is one
+      assignment, `reduced[h] = products[h]`, because the two lists agree
+      everywhere else -- so no design is rebuilt;
+    * one triangle is summed and mirrored. `a * b` and `b * a` are the same
+      IEEE product, so `sum` over one is `sum` over the other.
+
+    It stays quadratic: every held-out fit still adds its `n - 1` products, in
+    order, from zero. `tests/test_baseline.py::LeaveOneOutResidualTests` holds
+    it to today's algorithm with `==`, and says why no linear-time law can be.
 
     Raises:
         SingularDesignError: if dropping a row leaves the design rank deficient.
@@ -1391,12 +1409,36 @@ def _leave_one_out_residuals(
             quiet subsample.
     """
 
+    if not design:
+        return []
+    columns = len(design[0])
+    pairs = [(i, j) for i in range(columns) for j in range(i, columns)]
+    # One product list per upper-triangle Gram entry, then one per moment entry,
+    # each in row order: exactly the terms `_least_squares` would sum.
+    products = [[row[i] * row[j] for row in design] for i, j in pairs]
+    products += [
+        [row[i] * target for row, target in zip(design, targets)]
+        for i in range(columns)
+    ]
+    # Row 0 held out first.
+    reduced = [terms[1:] for terms in products]
+
     residuals = []
     for index in range(len(design)):
-        reduced_design = list(design[:index]) + list(design[index + 1 :])
-        reduced_targets = list(targets[:index]) + list(targets[index + 1 :])
+        if index:
+            # The hole moves from row `index - 1` to row `index`.
+            for terms, held_out in zip(products, reduced):
+                held_out[index - 1] = terms[index - 1]
+        totals = [sum(terms) for terms in reduced]
+        gram = [[0.0] * columns for _ in range(columns)]
+        for (i, j), total in zip(pairs, totals):
+            gram[i][j] = total
+        for i in range(columns):
+            for j in range(i):
+                gram[i][j] = gram[j][i]
+        moment = totals[len(pairs) :]
         try:
-            coefficients = _least_squares(reduced_design, reduced_targets)
+            coefficients = _solve(gram, moment)
         except SingularDesignError as error:
             raise SingularDesignError(
                 f"the design is rank deficient with row {index} held out, though "
