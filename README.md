@@ -120,9 +120,10 @@ only the Python standard library for everything a published result depends on ex
 the gradient-boosted comparison, which needs the extra below; reproducing any other
 needs no package installation. Phase 2's machine-learning candidates live
 in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
-scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with two opt-in
-settings not yet scored on the panel: a split-conformal interval (`--calibration conformal`)
-and lagged spread changes (`--spread-change-lags K`).
+scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with three opt-in
+settings: a split-conformal interval (`--calibration conformal`), lagged spread changes
+(`--spread-change-lags K`) and a GARCH(1,1) variance fitted per fold
+(`--volatility-feature garch11`). The first two are scored in the Key-findings tables.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git
