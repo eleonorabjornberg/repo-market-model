@@ -364,8 +364,9 @@ not yet be described as a successful machine-learning forecast of repo stress. A
 frozen funding panel now exists and the persistence benchmark has been measured
 on it, so the phrase that stood here -- that no result rests on real data -- has
 stopped being true. What has not happened is the part that would make it a
-forecast: no challenger has met Phase 2's exit criterion against that benchmark, the
-headline exceedance metric has been taken on the panel only against climatology,
+forecast: Phase 2's exit criterion is recorded met on the interval evidence and its tail
+clause is not yet scored, the headline exceedance metric has been taken on the panel only
+against climatology,
 and the monthly money-fund panel, though no longer a single cross-section, rests
 on a unit of observation still under revision.
 

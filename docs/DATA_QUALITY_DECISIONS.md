@@ -582,6 +582,35 @@ floor, with the reason `no_repo_rows` in its coverage record; it is never a hole
 like a quiet month, and never a zero. Judged per vintage (A21): an amendment that removes
 every repo row excludes only its own vintage, which writes no rows; earlier vintages stand.
 
+## The purge is stated against the target date
+
+`splits.clears_purge` compares a row's publication against the *scored* date:
+``row_date + purge < opens``. The decision is taken at the declared decision time on
+the last panel day strictly before that scored date, which is the calendar day before
+only when the two are consecutive. After a weekend or a holiday the decision comes
+earlier, so on those folds the rule alone no longer establishes that the last training
+row had been published by the time the forecast was made. The gap was found by the
+bill-rate block, whose columns carry a one-day lag, and it is recorded in
+`BillRatePanelTests`' docstring.
+
+It has since been measured rather than argued, by
+`scripts/purge_availability_audit.py`, which rebuilds a published record's folds from
+the panel and checks each fold's last training row against the decision instant two
+ways. Under the conservative gap the run was purged at, the folds whose scored date
+follows a weekend or a holiday are exactly the ones that fail, by up to about three
+days. Under the release lags the sources themselves declare -- the SOFR complex final
+on the next business day, the administered rate the day after its record date -- every
+fold in the published four-feature runs clears the decision instant, with days to
+spare. **No published figure rests on a value that had not been published.**
+
+That is the safe direction and not a licence to leave the rule as it stands. The margin
+comes from a purge sized for a source slower than the features in use, and it narrows
+as soon as a slower column joins the feature set: the bill-rate columns, the settlement
+components, or the dealer positions at six business days. Restating the gap against the
+decision date is a change to the split's definition and therefore the human's; until it
+is made, the audit script is what establishes that a feature set is safe, and it is run
+before a new column is declared.
+
 ## Decision rule
 
 These are data-modeling decisions, not formatting cleanup. Each resolution requires:
