@@ -167,9 +167,9 @@ Stated explicitly, because each is easy to mistake for something stronger.
   were scored the same way, in `docs/runs/compare_persistence_vs_gbm_mh61_crps.json`,
   and the 90% interval on its mean paired difference also excludes zero in its
   favour, around a mean difference an order of magnitude larger than
-  rolling-residual's. That record does not name the numpy and scikit-learn versions
-  it ran with, so it re-runs within the `ml` extra's declared range rather than to
-  the digit. These are several challengers against one benchmark at the 90% level,
+  rolling-residual's. That record does not carry its numpy and scikit-learn
+  versions; read off the environment after the run, they were numpy 2.0.2 and
+  scikit-learn 1.6.1. These are several challengers against one benchmark at the 90% level,
   on a daily panel scored with an expanding window and a purge, and no record yet
   says which days a win or a loss comes from. The threshold ARX
   (`--model threshold`) has not been scored. The rolling-residual result also makes
