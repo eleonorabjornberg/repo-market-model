@@ -10,7 +10,7 @@ This is an academic exercise, and the phase structure below should be read as on
 committed scope is what the exercise undertakes to evidence, and the aspirational
 phases are research directions recorded so that the committed scope is not quietly
 widened to include them. The choice of data and its meaning across these phases rests
-with Nicholas Beroud, co-owner and Financial Advisor; the model, methodology and
+with Nicholas Beroud, the project's advisor; the model, methodology and
 workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days

@@ -220,14 +220,12 @@ research directions, not completed features.
 
 ## People
 
-The project has two co-owners.
-
-- **Eleonora Björnberg** — co-owner and author. She designed the model, the
+- **Eleonora Björnberg** — author. She designed the model, the
   methodology and the workflow: the research design and the point-in-time contract,
   the evaluation protocol, the agent contract the code is developed under, validation
   (every guard and mutation record in the suite), interpretation of results, and review
   of all machine-written code before it lands.
-- **Nicholas Beroud** — co-owner and Financial Advisor, and the project's substantive
+- **Nicholas Beroud** — advisor, and the project's substantive
   backbone. He selected the data the model is built on and settled what it means:
   which public series carry the funding market's mechanics, which quantities are
   economically meaningful, and which open decisions are questions of finance rather
@@ -272,7 +270,7 @@ Then, for how the work is controlled rather than what it claims:
 
 Parts of the implementation were developed with AI coding agents operating in
 separate Git worktrees. Their allowed files and shared interfaces are defined in a
-human-owned contract and checked in CI. The co-owners answer for different things:
+human-owned contract and checked in CI. The author and the advisor answer for different things:
 the model, methodology, workflow, tests and code with Eleonora Björnberg; the choice
 of data and its economic meaning with Nicholas Beroud. Any academic submission based
 on this repository remains the author's academic responsibility, should follow the

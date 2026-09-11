@@ -13,11 +13,11 @@ it has not, and that convention is enforced rather than left to editorial care.
 
 | Person | Role |
 |---|---|
-| Eleonora Björnberg | Co-owner and author. Designed the model, the methodology and the workflow: research design, implementation, evaluation protocol, and academic responsibility for any submission based on this work. |
-| Nicholas Beroud | Co-owner and Financial Advisor. Selected the data the model is built on and settled what it means: which public series carry the funding market's mechanics, which quantities are economically meaningful, and which open decisions are finance questions rather than engineering ones. |
+| Eleonora Björnberg | Author. Designed the model, the methodology and the workflow: research design, implementation, evaluation protocol, and academic responsibility for any submission based on this work. |
+| Nicholas Beroud | Advisor. Selected the data the model is built on and settled what it means: which public series carry the funding market's mechanics, which quantities are economically meaningful, and which open decisions are finance questions rather than engineering ones. |
 
 Ownership divides by kind of judgment. What the project measures, and what a
-measurement means, answer to the Financial Advisor; how it is modelled and evaluated,
+measurement means, answer to the advisor; how it is modelled and evaluated,
 and whether a result has been earned, answer to the author. No result is certified by
 either judgment alone.
 

@@ -334,9 +334,9 @@ where they left off.
 
 ## Who is responsible for what
 
-The project has two co-owners. Eleonora Björnberg, the author, designed the model, the
+Eleonora Björnberg, the author, designed the model, the
 methodology and the workflow, and holds implementation, evaluation and every claim
-about what the model has earned. Nicholas Beroud, Financial Advisor, selected the data
+about what the model has earned. Nicholas Beroud, the project's advisor, selected the data
 the model is built on and settled what it means: which of the open decisions in
 `DATA_QUALITY_DECISIONS.md` are questions about markets rather than about code, and
 what a series has to represent before it is worth fitting on.
