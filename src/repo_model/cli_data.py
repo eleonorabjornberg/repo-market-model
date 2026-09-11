@@ -241,6 +241,11 @@ def _build(args: argparse.Namespace) -> int:
         build_cutoff=datetime.fromisoformat(args.build_cutoff.replace("Z", "+00:00")),
         decision_time=time.fromisoformat(args.decision_time),
         columns=columns,
+        # Rule 8's upper bound: a settlement zero runs to the snapshot's
+        # retrieval date and no further.
+        snapshot_retrieved_at={
+            artifact.sha256: artifact.retrieved_at for artifact in artifacts
+        },
     )
     if args.column and build.refusals:
         raise ValueError(
