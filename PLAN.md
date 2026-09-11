@@ -181,9 +181,11 @@ Evaluation:
 
 The evaluation machinery exists: rolling-origin folds behind a purge derived from the
 declared feature set, a common fitted-model forecast interface with more than one
-implementer, an event-holdout path, and the metric implementations. What it does not
-yet have is a result on fetched data — see Milestone A — or a conditional predictor to
-score against climatology on a knowledge-holdout window.
+implementer, an event-holdout path, and the metric implementations. On the frozen
+panel, gradient-boosted quantiles and the trailing-window residual law beat persistence
+under CRPS at paired origins (`docs/PROJECT_STATUS.md`). What is not yet measured is
+either model's calibration in the tails, or a conditional predictor scored against
+climatology on a knowledge-holdout window, so the exit criterion is not met.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
