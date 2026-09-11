@@ -34,6 +34,10 @@ What is covered here
 * `GradientBoostedEventHoldoutTests` -- `event-holdout --model gbm`: the
   journal line names the library versions the window's fit was made with, and
   the config hash does not move with them.
+* `GradientBoostedConformalCalibrationTests` -- `calibration="conformal"`: the
+  band covers its nominal probability on held-out rows where the uncalibrated
+  band does not, the fit and calibration slices of every fold are purged apart,
+  and the calibration's refusals.
 * `GradientBoostedForecastInterfaceTests` -- `ForecastInterfaceConformance` from
   `tests/test_contract.py`, against `FittedGradientBoostedQuantiles`. Not a
   bespoke test class: `ForecastInterfaceCoverageTests` discovers the fitted
@@ -130,17 +134,21 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 import os
+import random
 import sys
+import tempfile
 import unittest
 from datetime import date, time, timedelta
 from unittest import mock
 
-from repo_model import baseline, cli_eval, ml
+from repo_model import baseline, cli, cli_eval, ml
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.event_eval import config_digest, read_journal
 from repo_model.metrics import crps_from_quantiles
+from repo_model.splits import SplitError
 
 from test_baseline import (
     EXCEEDANCE_TAUS,
@@ -152,6 +160,7 @@ from test_cli_eval import (
     THRESHOLDS,
     ConditionalModelHarness,
     ContinuousModelHarness,
+    declared_registry_file,
 )
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 
@@ -371,6 +380,363 @@ class GradientBoostedQuantileTests(unittest.TestCase):
             ValueError, r"gbm needs at least 20 training rows, got 19"
         ):
             self.fit(rows[:19])
+
+
+def heteroscedastic_frame(count, seed=20260911):
+    """A stationary spread whose next-day noise scale is today's `on_rrp`.
+
+    `spread` is an AR(1) about 10 bp, and the shock that moves it from day `t`
+    to day `t + 1` has scale `0.5 + 6 x^2`, where `x` is the uniform draw
+    carried as day `t`'s `on_rrp`. So the conditional band is narrow on most
+    rows and many times wider on a few, and it is *predictable* from the
+    feature row -- which is what a conditional quantile model is for, and what
+    lets boosted fits chase the in-sample tails on exactly the rows where the
+    band is wide. `sofr_volume` moves with nothing.
+
+    Stationary on purpose: the conformal guarantee is for calibration rows
+    exchangeable with the rows scored, and a drifting series would make a
+    miss here the fixture's fault rather than the calibration's. Drawn through
+    `random.Random(seed).random()`, whose sequence is fixed across the Python
+    versions `pyproject.toml` declares, with the normal shock by Box-Muller
+    rather than `gauss`, so nothing depends on how a version turns uniforms
+    into normals.
+    """
+
+    rng = random.Random(seed)
+    rows = []
+    spread = 10.0
+    scale = rng.random()
+    for index in range(count):
+        first, second = rng.random(), rng.random()
+        shock = math.sqrt(-2.0 * math.log(1.0 - first)) * math.cos(2.0 * math.pi * second)
+        spread = 10.0 + 0.5 * (spread - 10.0) + (0.5 + 6.0 * scale * scale) * shock
+        scale = rng.random()
+        rows.append(
+            DailyObservation(
+                date(2020, 1, 1) + timedelta(days=index),
+                {
+                    "sofr": 4.30 + spread / 100.0,
+                    "iorb": 4.30,
+                    "on_rrp": scale,
+                    "sofr_volume": 2000.0 + rng.random(),
+                },
+            )
+        )
+    return rows
+
+
+class GradientBoostedConformalCalibrationTests(unittest.TestCase):
+    """`calibration="conformal"`: B22's acceptance criterion and its mutation target.
+
+    **The defect.** `FittedGradientBoostedQuantiles` reports each level as
+    fitted, and boosted quantile fits are tight on the rows they were fitted
+    on, so the `0.05`-`0.95` band under-covers out of sample. The published
+    `docs/runs/backtest_gbm_mh61.json` is the measurement. Conformalized
+    quantile regression (Romano, Patterson and Candes, 2019) is the repair,
+    and its traps are all ways of calibrating on rows the fit already saw:
+    scoring the fit rows (today's in-sample tail again), scoring the rows being
+    forecast, refitting on the union after calibrating, and no purge between
+    the fit and calibration slices.
+
+    **The coverage tolerance, stated.** On held-out rows the realized coverage
+    of a conformal band is a binomial count of `T` held-out rows whose success
+    probability is itself random: given its `n` calibration scores the band's
+    coverage is Beta-distributed about the nominal `q`, with variance near
+    `q (1 - q) / (n + 2)`. The two add, so the tolerance is three standard
+    deviations of both, `3 sqrt(q (1 - q) (1 / T + 1 / (n + 2)))`. Two-sided,
+    because a band widened by too much covers too often and is as wrong as
+    one widened by too little. **The control must fail it**: the uncalibrated
+    band's coverage is asserted to be below the tolerance's lower edge, so a
+    fixture on which the in-sample band already covered could not leave this
+    test green and empty.
+
+    **Where the gap comes from.** The fitter cannot derive the purge: it is
+    handed rows, not a registry. `cli_eval` does not bind it either, because
+    that module never holds the number. The fold loop derived it, so the fold
+    loop hands it over -- `baseline._fit_at_origin`, to a fitter whose
+    signature names `purge_days` -- and the slices subtest runs through
+    `rolling_persistence_backtest` for that reason.
+
+    Mutation record (B22)
+    ---------------------
+
+    Two per-branch, per-commit copies under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` (the worktree's `.venv`: CPython 3.9.6, numpy 2.0.2,
+    scikit-learn 1.6.1), `REPO_MODEL_REQUIRE_ML=1`, whole suite per run.
+    `repo_model` was checked to resolve to the copy's `src/` before every run:
+    the `.venv` also carries an installed, non-editable `repo_model` in
+    `site-packages`, and a run without `PYTHONPATH=src` scores that copy
+    instead of the tree. Unmutated control green before and after in each
+    copy, zero `expectedFailure`; each mutation's anchor found exactly once,
+    confirmed gone once applied, and restored before the next. **Every
+    mutation killed this test and nothing else.**
+
+      * **The widening set to 0.** `widening = 0.0` in place of the conformal
+        score. `coverage on held-out rows`, `AssertionError`: the band covers
+        0.650, the uncalibrated figure exactly.
+      * **Calibration scores computed on the fit rows** -- the in-sample
+        one-step pairs the estimators were fitted on, scored in place of the
+        calibration rows. `coverage on held-out rows`, `AssertionError`:
+        widening 0.004, coverage 0.650. This is today's in-sample residual
+        tail, and a widening that small is the reason it under-covers.
+      * **The conformal rank replaced by the median score.** `coverage on
+        held-out rows`, `AssertionError`: widening -0.203, coverage 0.608 --
+        below the uncalibrated band, because the median score narrows it.
+      * **The purge between slices removed** -- the fit rows every row before
+        the calibration slice. Every fold of `the slices of every fold`,
+        `AssertionError` (`the last fit row 2020-02-02 is inside the 6-day gap
+        before the calibration rows open on 2020-02-03`), and `refusal: a gap
+        that leaves nothing to fit`, `AssertionError` on the phrase: with no
+        purge there are fit rows, and the refusal that fires instead is
+        `_feature_index`'s `LookAheadError` for a calibration row with no
+        feature row behind the gap. Coverage stays green, as it must at a
+        zero gap; that is why the slices are a subtest of their own.
+      * **The fold loop withholds the gap** -- `_fit_at_origin` never passes
+        `purge_days`. `the slices of every fold`, `TypeError: calibrating()
+        missing 1 required positional argument: 'purge_days'`, and the
+        declaration subtest after it, `UnboundLocalError` on `report` --
+        collateral from the order of the subtests, not a second finding.
+      * **The settings not read off an ml fit** -- the `model_settings` line
+        dropped from `baseline._model_settings`. `the declaration names the
+        calibration`, `AssertionError: {} != {'calibration': 'conformal',
+        'calibration_share': 0.25}`.
+      * **Each refusal removed**, separately:
+          - fewer than 9 calibration rows: `IndexError` out of the rank, an
+            error rather than a failure -- the rank names a score that does
+            not exist, which is the infinite quantile the refusal names;
+          - a share outside `(0, 1)`: `AssertionError` on the phrase, since a
+            share of 0 then falls through to the calibration-row refusal;
+          - an unknown calibration: `AssertionError: ValueError not raised`,
+            the misspelt name fitted as `conformal`;
+          - calibration settings for a model other than gbm (`cli_eval.
+            _calibration`): `AssertionError: SplitError not raised`;
+          - a share given to `none`: `AssertionError: ValueError not raised`;
+          - `conformal` with no gap: `TypeError: unsupported type for
+            timedelta days component: NoneType`, out of `clears_purge`;
+          - a gap that leaves fewer than two fit rows: `IndexError`, out of the
+            imputation's refusal reaching for a first origin that is not there.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    #: The declaration the fold-loop subtest sizes its gap over: the
+    #: autoregressive term and both regressors.
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    TRAIN_ROWS = 480
+    HELD_OUT_ROWS = 240
+    #: A gap the registry fixture prices in calendar days. Nonzero, or the
+    #: purge between slices is not under test.
+    PURGE = 6
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    @staticmethod
+    def held_out_coverage(model, rows, first_held_out):
+        """Share of held-out rows inside the model's outer band, one step ahead.
+
+        Each held-out row is forecast from the row before it, through the
+        model's own `predict` -- the vector a backtest reads its interval off.
+        """
+
+        covered = 0
+        for index in range(first_held_out, len(rows)):
+            vector = model.predict(rows[index - 1])
+            covered += vector[0] <= rows[index].spread_bps <= vector[-1]
+        return covered / (len(rows) - first_held_out)
+
+    def test_the_calibrated_band_covers_its_nominal_probability_out_of_sample(self):
+        """Covers where the fitted band does not; purged slices; six refusals.
+
+        One criterion. A coverage figure from a calibration that could see its
+        fit rows would be the defect with a better number, and a calibration
+        that accepted eight calibration rows or a share of 1.0 would report a
+        band with no guarantee behind it at all.
+        """
+
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + self.HELD_OUT_ROWS)
+        train = rows[: self.TRAIN_ROWS]
+        nominal = QUANTILE_LEVELS[-1] - QUANTILE_LEVELS[0]
+
+        with self.subTest("coverage on held-out rows"):
+            uncalibrated = self.fit(train)
+            calibrated = self.fit(train, calibration="conformal", purge_days=0)
+            scores = int(ml.DEFAULT_CALIBRATION_SHARE * self.TRAIN_ROWS)
+            tolerance = 3.0 * math.sqrt(
+                nominal * (1.0 - nominal) * (1.0 / self.HELD_OUT_ROWS + 1.0 / (scores + 2))
+            )
+            before = self.held_out_coverage(uncalibrated, rows, self.TRAIN_ROWS)
+            after = self.held_out_coverage(calibrated, rows, self.TRAIN_ROWS)
+            self.assertLess(
+                before,
+                nominal - tolerance,
+                msg=(
+                    f"the control: the uncalibrated band covers {before:.3f} of "
+                    f"{self.HELD_OUT_ROWS} held-out rows, inside the tolerance "
+                    f"{nominal:.2f} +/- {tolerance:.3f}, so this fixture cannot "
+                    f"tell a calibration from its absence"
+                ),
+            )
+            self.assertLessEqual(
+                abs(after - nominal),
+                tolerance,
+                msg=(
+                    f"the conformal band covers {after:.3f} of "
+                    f"{self.HELD_OUT_ROWS} held-out rows against a nominal "
+                    f"{nominal:.2f} +/- {tolerance:.3f} (widening "
+                    f"{calibrated.widening:.3f}; uncalibrated {before:.3f})"
+                ),
+            )
+
+        with self.subTest("the slices of every fold"):
+            # Through the rolling fold loop, so the gap is the one the loop
+            # derived from the registry and handed over -- not one this test
+            # chose and passed in.
+            panel = heteroscedastic_frame(58)
+            with tempfile.TemporaryDirectory() as directory:
+                registry = json.loads(
+                    declared_registry_file(
+                        directory, purge=self.PURGE, features=self.FEATURES
+                    ).read_text(encoding="utf-8")
+                )
+            fits = []
+
+            def calibrating(train_frame, minimum_history, purge_days):
+                model = self.fit(
+                    train_frame,
+                    minimum_history=minimum_history,
+                    calibration="conformal",
+                    purge_days=purge_days,
+                )
+                fits.append((train_frame, purge_days, model))
+                return model
+
+            report = baseline.rolling_persistence_backtest(
+                panel,
+                features=self.FEATURES,
+                registry=registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                minimum_history=44,
+                fit_model=calibrating,
+            )
+            self.assertGreater(
+                report.purge_days, 0, msg="at a zero gap the purge is not under test"
+            )
+            self.assertEqual(len(fits), len(report.folds))
+            for fold, (frame, purge, model) in zip(report.folds, fits):
+                with self.subTest(fold=fold.scored_date.isoformat()):
+                    self.assertEqual(purge, report.purge_days)
+                    self.assertEqual(model.calibration_end, frame[-1].date)
+                    self.assertLess(model.calibration_end, fold.scored_date)
+                    self.assertEqual(
+                        sum(row.date >= model.calibration_start for row in frame),
+                        int(ml.DEFAULT_CALIBRATION_SHARE * len(frame)),
+                        msg="the calibration rows are not the frame's most recent share",
+                    )
+                    self.assertLess(
+                        model.fit_end + timedelta(days=report.purge_days),
+                        model.calibration_start,
+                        msg=(
+                            f"the last fit row {model.fit_end} is inside the "
+                            f"{report.purge_days}-day gap before the calibration "
+                            f"rows open on {model.calibration_start}"
+                        ),
+                    )
+
+            # The fit rows are what the model says: a fit on the frame up to
+            # `fit_end` reports the same interior levels bit for bit. A refit on
+            # the union after calibrating would not.
+            frame, _, model = fits[-1]
+            feature_row = next(row for row in panel if row.date == report.folds[-1].feature_date)
+            refit = self.fit([row for row in frame if row.date <= model.fit_end])
+            self.assertEqual(
+                model.predict(feature_row)[1:-1], refit.predict(feature_row)[1:-1]
+            )
+
+        with self.subTest("the declaration names the calibration, and only when there is one"):
+            # What `backtest_document` and `paired_comparison_document` publish
+            # is the report's `model_settings`, read off the first fit.
+            self.assertEqual(
+                dict(report.model_settings),
+                {"calibration": "conformal", "calibration_share": 0.25},
+            )
+            # Absent, not "none": an uncalibrated gbm declares what every gbm
+            # record published before calibration existed declares.
+            self.assertEqual(dict(baseline._model_settings(uncalibrated)), {})
+
+        with self.subTest("refusal: fewer calibration rows than the quantile needs"):
+            with self.assertRaisesRegex(
+                ValueError, r"needs at least 9 calibration rows, got 8"
+            ):
+                self.fit(rows[:35], calibration="conformal", purge_days=0)
+            # And nine is enough: the refusal sits at the edge, not above it.
+            self.assertEqual(
+                self.fit(rows[:36], calibration="conformal", purge_days=0).calibration_start,
+                rows[27].date,
+            )
+
+        with self.subTest("refusal: a share outside (0, 1)"):
+            for share in (0.0, 1.0, -0.25, 1.25):
+                with self.assertRaisesRegex(ValueError, r"strictly inside \(0, 1\)"):
+                    self.fit(
+                        train,
+                        calibration="conformal",
+                        calibration_share=share,
+                        purge_days=0,
+                    )
+
+        with self.subTest("refusal: an unknown calibration"):
+            with self.assertRaisesRegex(ValueError, r"unknown calibration 'isotonic'"):
+                self.fit(rows[:36], calibration="isotonic", purge_days=0)
+
+        with self.subTest("refusal: a share given to calibration none"):
+            with self.assertRaisesRegex(ValueError, r"'none' holds no rows out"):
+                self.fit(rows[:36], calibration_share=0.25)
+
+        with self.subTest("refusal: conformal with no gap"):
+            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+                self.fit(rows[:36], calibration="conformal")
+
+        with self.subTest("refusal: a gap that leaves nothing to fit"):
+            with self.assertRaisesRegex(ValueError, r"leaves 0 fit row\(s\) of 40"):
+                self.fit(rows[:40], calibration="conformal", purge_days=40)
+
+        with self.subTest("refusal: calibration settings for a model other than gbm"):
+            parser = cli.build_parser()
+            common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", *common, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "arx",
+                 "--calibration", "conformal"]
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--calibration conformal was given, but --model arx"
+            ):
+                cli_eval._select_fitter(backtest)
+
+            compare = parser.parse_args(
+                ["compare", "panel.csv", *common, "--report", "r.json",
+                 "--model-a", "persistence", "--feature-a", "spread_bps",
+                 "--calibration-share-a", "0.3",
+                 "--model-b", "gbm", "--feature-b", "spread_bps",
+                 "--calibration-b", "conformal"]
+            )
+            with self.assertRaisesRegex(
+                SplitError,
+                r"--calibration-share-a 0.3 was given, but --model-a persistence",
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            # The same flags on the gbm side are taken, and reach the fitter.
+            _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(fitter.keywords.get("calibration"), "conformal")
 
 
 class GradientBoostedForecastInterfaceTests(
