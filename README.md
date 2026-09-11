@@ -156,10 +156,7 @@ Implemented:
 
 Still in progress:
 
-- validating complete SEC Form N-MFP monthly cross-sections;
-- scoring the threshold challenger with its regime on `spread_bps` against
-  persistence on the frozen panel (the gradient-boosted one and the `sofr_volume`
-  regime have been; see `docs/PROJECT_STATUS.md`); and
+- validating complete SEC Form N-MFP monthly cross-sections; and
 - producing genuine out-of-sample and event-window results.
 
 See

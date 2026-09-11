@@ -171,18 +171,19 @@ Stated explicitly, because each is easy to mistake for something stronger.
   were scored the same way, in `docs/runs/compare_persistence_vs_gbm_mh61_crps.json`,
   and the 90% interval on its mean paired difference also excludes zero in its
   favour, around a mean difference an order of magnitude larger than
-  rolling-residual's. That record predates `provenance.ml_libraries`, which any
-  `compare`, `backtest` or `exceedance-backtest` record with a gbm side now carries,
-  read at the fit; read off the environment after its run, they were numpy 2.0.2 and
-  scikit-learn 1.6.1. These are several challengers against one benchmark at the 90% level,
+  rolling-residual's. Re-scored on a later commit with the same figures, that record
+  now names the numpy and scikit-learn versions that fitted it under
+  `provenance.ml_libraries`, as every record and event-holdout journal line with an
+  ml fit does. These are several challengers against one benchmark at the 90% level,
   on a daily panel scored with an expanding window and a purge. The threshold ARX
-  (`--model threshold`) with its regime on `sofr_volume` is scored in
-  `docs/runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`, and there
-  persistence carries the smaller loss: the 90% interval on the mean difference
-  excludes zero in persistence's favour, though only just. It is the only record here
-  that says which days a win or a loss comes from (`comparison.per_origin`); the
-  others predate it. The same model with its regime on `spread_bps` has not been
-  scored. The rolling-residual result also makes
+  (`--model threshold`) loses to persistence with either regime variable: on
+  `sofr_volume` (`docs/runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`)
+  the 90% interval on the mean difference excludes zero in persistence's favour only
+  just, and on `spread_bps`, the SETAR
+  (`docs/runs/compare_persistence_vs_threshold_regime_spread_mh61_crps.json`), it
+  excludes zero clearly. The gbm and threshold records say which days a win or a loss
+  comes from (`comparison.per_origin`); the ARX and rolling-residual records predate
+  it. The rolling-residual result also makes
   the interval-coverage finding harder rather than easier: the
   model that under-covers its own nominal interval is the one that wins on
   accuracy, so the coverage gap is not a defect of a strawman about to be
