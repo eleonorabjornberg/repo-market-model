@@ -71,13 +71,18 @@ What is covered here
   about it.
 * `FittedTailPwmTests` -- `_fit_gpd_pwm`: a generalised Pareto fitted to
   residual excesses by probability-weighted moments, held to its own first
-  moment condition. Built and not wired: no caller reads it, no record carries
-  it, and nothing published can move. It is also the one class here that needs
+  moment condition. Read only under the opt-in `tail="gpd"` (see
+  `GpdTailWiringTests`): no record carries it, and nothing published can move. It is also the one class here that needs
   no `require_extra` --- sorting and sums, no array library.
 * `GpdRecoveryTests` -- `_fit_gpd_pwm` again, recovering a declared shape and
   scale from a sample built through the law's quantile function: the guard on
   the plotting position, which the first moment condition cannot see. Also
   needs no `require_extra`.
+* `GpdTailWiringTests` -- `tail="gpd"`: the fitted tail continues the law above
+  the reported top quantile without a jump, is the GPD survival function of the
+  recorded fit, is fitted to the calibration rows' excesses above that same
+  quantile, attaches nothing when there are none, leaves the default law
+  saturating, and its three refusals.
 
 Both walks read `ForecastInterfaceConformance.__subclasses__()` and
 `ExceedancePredictorConformance.__subclasses__()`, so the cases have to be
@@ -3007,7 +3012,9 @@ class FittedTailPwmTests(unittest.TestCase):
     reads `_fit_gpd_pwm`, `predict_stress` is untouched, no record carries a
     `FittedTail`, and no published figure can move --- deliberately, so that the
     estimator can be got right before the law changes shape underneath the
-    records that were produced with it.
+    records that were produced with it. (Wired two blocks later, behind the
+    opt-in `tail="gpd"`: `GpdTailWiringTests` below. The default law, and so
+    every published figure, still does not read it, and no record carries it.)
 
     **Residual space, and why it is not a choice made here.** The excesses are
     residual excesses above the conditional `Q(0.95)`, never level excesses. The
@@ -3396,6 +3403,259 @@ class GpdRecoveryTests(unittest.TestCase):
                     msg=f"fitted sigma {fit.sigma!r} is not the declared "
                     f"{sigma!r}",
                 )
+
+
+class GpdTailWiringTests(unittest.TestCase):
+    """`tail="gpd"`: the fitted tail wired in above the top declared quantile.
+
+    **The defect.** Above the law's top knot `_exceedance_from_law` returns
+    exactly `0.0`, so every declared threshold is read inside the one straight
+    segment from `Q(0.95)` to the largest residual the fit saw and beyond it the
+    model is certain nothing happens. B34 built the estimator and B35 guarded
+    it; nothing called it.
+
+    **The anchor is the GPD survival function, written out here** from the
+    recorded fit's `xi` and `sigma` --- not `ml._gpd_survival`, and not a
+    committed float. A pin of the tail model's output would kill every mutation
+    below and assert only that the code does what it did.
+
+    **The join is exact, not nearly.** At the threshold the knot law returns
+    `1.0 - (levels[-2] + 0.0 * ...)`, which is `1.0 - 0.95` to the bit, and
+    `(1 - levels[-1]) * S(0)` is `(1.0 - 0.95) * 1.0`, the same float; a tail
+    attached anywhere else puts `S` of a nonzero excess there instead.
+
+    **The sample is checked by construction, not by count alone.** Each
+    calibration row's excess is recomputed from `predict` at its feature row ---
+    the row before it, at a purge of zero --- and the fit on that sample must be
+    the recorded fit. A tail collected above a different threshold than the one
+    it is attached at would otherwise pass parts 1 to 3: they read `xi` and
+    `sigma` off the record, whatever sample produced them.
+
+    **Three states.** `heteroscedastic_frame(1200)` at a calibration share of
+    `0.6` leaves 720 calibration rows and a fitted, unclamped, non-fallback
+    shape --- more than `GPD_MINIMUM_EXCESSES` excesses, with margin, so the
+    `xi != 0` branch of the survival function is what is read. A 36-row frame
+    at the default share leaves nine calibration rows, the conformal minimum,
+    where the rank names the largest score, no target exceeds its calibrated top
+    quantile, and there is **no tail to attach**: `tail` says `"gpd"`,
+    `tail_fit` is `None`, and the law is the default's.
+
+    A defect found while building it
+    --------------------------------
+
+    The fitter already had two locals named `tail` --- the index range handed
+    to `_feature_index` in the conformal calibration loop and in each
+    cross-conformal block --- and the new keyword was shadowed by the first of
+    them: every conformal fit, default included, came back with `tail` a
+    `range` and a fitted tail attached. The default's exceedance above the top
+    knot was non-zero. Both locals are now `recent`. Mutation 10 puts the
+    calibration loop's name back and records what sees it.
+
+    Mutation record
+    ---------------
+
+    Run in twelve disposable copies under `$HOME`, one per mutation plus an
+    unmutated control, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring in Python
+    and found exactly once, and the replacement confirmed present and the
+    original gone. **Every mutation 1 to 7 and 10 killed this test and nothing
+    else**, `AssertionError` in every subtest named.
+
+    1. **The tail short-circuited** --- `if self.tail_fit is None:` -> `if
+       True:` in `predict_stress`, so the law saturates as it did. Kills parts 2
+       and 3: the tail model returns the knot law's `0.0375, 0.025, 0.0, 0.0`
+       where the survival function gives `0.00719, 0.00119, ...`, and `0.0 not
+       greater than 0.0` at the top knot. Part 1 stays green, as it must: the
+       two laws agree at the join.
+    2. **The `(1 - levels[-1])` scaling dropped.** Kills **part 2** alone: the
+       unscaled survival `0.1439, 0.0238, ...` against `0.00719, 0.00119, ...`.
+       Part 1 cannot see it --- at the threshold the knot law answers, not the
+       tail --- and part 3 stays green because the unscaled survival at the top
+       knot is still below `1 - levels[-1]` on this fixture.
+    3. **The threshold moved to the uncalibrated top quantile**, in two places,
+       because the trap has two halves:
+       a. *attached* there --- `threshold = values[-2]` -> the uncalibrated
+          vector's last entry in `predict_stress`. Kills **part 1**, `0.01461`
+          against `0.050000000000000044` at the calibrated threshold --- the
+          jump at the join --- and part 2.
+       b. *collected* there --- `top = _calibrated(vector, widening)[-1]` ->
+          `top = vector[-1]` in the fitter, attached at the calibrated knot.
+          **Parts 1 to 5 do not see this one**, and cannot: they read `xi` and
+          `sigma` off the record, whatever sample produced them, and the join
+          stays exact because the tail is still attached at the reported knot.
+          It is killed by the sample subtest (the recorded fit is `xi` about
+          `0.103` against `0.040` on the sample recomputed from `predict`) and
+          by the no-excess subtest (two excesses above the uncalibrated
+          quantile, and a fallback attached where none belongs). The brief
+          expected part 1 to catch it; part 1 catches the attachment half
+          only, and that is the finding that put the sample subtest here.
+    4. **The unknown-family refusal removed.** Part 5, `ValueError not
+       raised`: `"pareto"` fitted as a GPD.
+    5. **The `none` refusal removed.** Part 5, `ValueError not raised`: an
+       uncalibrated fit with the tail silently absent.
+    6. **The `cross_conformal` refusal removed.** Part 5, `ValueError not
+       raised`: a cross-conformal fit with the tail silently absent.
+    7. **The third state given a shape** --- an empty sample recorded as
+       `FittedTail(xi=0.0, sigma=1.0, excesses=0, fallback=True)` rather than
+       `None`. The no-excess subtest, `... is not None`.
+    8. **B35's `_GPD_PLOTTING_OFFSET` 0.35 -> 0.0, re-run.** Kills
+       `GpdRecoveryTests` alone, all five subtests, as B35 recorded. This test
+       stays green: it reads the fit off the record and recomputes its sample
+       through the same estimator, so it holds the wiring and not the
+       estimator. Kill set unchanged.
+    9. **B34's clamp flag, `clamped = False`, re-run.** Kills
+       `FittedTailPwmTests` alone, one subtest, as B34 recorded. This fixture's
+       fit is unclamped. Kill set unchanged.
+    10. **The shadowing restored** --- the calibration loop's `recent` back to
+        `tail`. Kills the recorded-fit subtest (`range(1198, 1199) != 'gpd'`),
+        part 4 (the default's `0.0` above the top knot is gone) and the
+        no-excess subtest. `ForecastInterfaceConformance::
+        test_predict_stress_agrees_with_the_quantiles_predict_reports` stays
+        green: it fits under `calibration="none"`, where that loop never runs.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    ROWS = 1200
+    SHARE = 0.6
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+            "calibration": "conformal",
+            "purge_days": 0,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    @staticmethod
+    def survival(xi, sigma, excess):
+        """The generalised Pareto survival function, from its definition."""
+
+        if xi == 0.0:
+            return math.exp(-excess / sigma)
+        base = 1.0 + xi * excess / sigma
+        return 0.0 if base <= 0.0 else base ** (-1.0 / xi)
+
+    def test_above_the_top_declared_quantile_the_gpd_tail_continues_the_law_and_the_default_still_saturates(
+        self,
+    ):
+        """Join, shape, no zero, default unmoved, the sample, three refusals.
+
+        One criterion: a tail that joined the law but was never read above it,
+        or read above it but moved the default, or was fitted to rows the
+        estimators saw, is each the defect in another form.
+        """
+
+        rows = heteroscedastic_frame(self.ROWS)
+        feature = rows[-1]
+        tailed = self.fit(rows, calibration_share=self.SHARE, tail="gpd")
+        default = self.fit(rows, calibration_share=self.SHARE)
+        fit = tailed.tail_fit
+        top_level = QUANTILE_LEVELS[-1]
+        mass = 1.0 - top_level
+
+        with self.subTest("the fit is recorded, and is a fitted shape"):
+            self.assertEqual(tailed.tail, "gpd")
+            self.assertIsNone(default.tail)
+            self.assertIsNone(default.tail_fit)
+            self.assertIsNotNone(fit)
+            self.assertFalse(fit.fallback)
+            self.assertFalse(fit.clamped)
+            self.assertGreater(fit.xi, 0.0)
+
+        values, levels = default.law_knots(feature)
+        threshold = values[-2]
+        high = values[-1]
+        self.assertEqual(threshold, default.predict(feature)[-1])
+        self.assertEqual(tailed.law_knots(feature), (values, levels))
+        above = (
+            threshold + 0.25 * (high - threshold),
+            threshold + 0.5 * (high - threshold),
+            high,
+            high + 10.0,
+        )
+        taus = (threshold,) + above
+
+        with self.subTest("1. the join"):
+            self.assertEqual(tailed.predict_stress(feature, (threshold,)), (mass,))
+            self.assertEqual(default.predict_stress(feature, (threshold,)), (mass,))
+
+        with self.subTest("2. the shape"):
+            self.assertEqual(
+                tailed.predict_stress(feature, above),
+                tuple(
+                    mass * self.survival(fit.xi, fit.sigma, tau - threshold)
+                    for tau in above
+                ),
+            )
+
+        with self.subTest("3. the zero is gone"):
+            for tau in (high, high + 10.0):
+                (tail_value,) = tailed.predict_stress(feature, (tau,))
+                self.assertGreater(tail_value, 0.0)
+                self.assertLess(tail_value, mass)
+
+        with self.subTest("4. the default did not move"):
+            expected = []
+            for tau in taus:
+                if tau >= high:
+                    expected.append(0.0)
+                else:
+                    weight = (tau - threshold) / (high - threshold)
+                    expected.append(
+                        1.0 - (levels[-2] + weight * (levels[-1] - levels[-2]))
+                    )
+            self.assertEqual(default.predict_stress(feature, taus), tuple(expected))
+            self.assertEqual(default.predict_stress(feature, (high,)), (0.0,))
+
+        with self.subTest("the sample is the calibration rows' excesses above the reported top"):
+            first = len(rows) - int(Fraction(repr(self.SHARE)) * len(rows))
+            excesses = []
+            for index in range(first, len(rows)):
+                top = tailed.predict(rows[index - 1])[-1]
+                if rows[index].spread_bps > top:
+                    excesses.append(rows[index].spread_bps - top)
+            self.assertGreater(len(excesses), ml.GPD_MINIMUM_EXCESSES)
+            self.assertEqual(fit, ml._fit_gpd_pwm(excesses))
+
+        with self.subTest("no excesses: no tail attached, and the default law"):
+            small = heteroscedastic_frame(36)
+            bare = self.fit(small, tail="gpd")
+            plain = self.fit(small)
+            self.assertEqual(bare.tail, "gpd")
+            self.assertIsNone(bare.tail_fit)
+            knots, _ = plain.law_knots(small[-1])
+            probes = (knots[-2], 0.5 * (knots[-2] + knots[-1]), knots[-1], knots[-1] + 10.0)
+            self.assertEqual(
+                bare.predict_stress(small[-1], probes),
+                plain.predict_stress(small[-1], probes),
+            )
+
+        with self.subTest("5. refusals"):
+            with self.assertRaises(ValueError) as caught:
+                self.fit(rows, calibration_share=self.SHARE, tail="pareto")
+            self.assertIn("unknown tail 'pareto'", str(caught.exception))
+            self.assertIn("gpd", str(caught.exception))
+            with self.assertRaises(ValueError) as caught:
+                ml.fit_gradient_boosted_quantiles(
+                    rows,
+                    self.REGRESSORS,
+                    min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+                    tail="gpd",
+                )
+            self.assertIn("in-sample tail", str(caught.exception))
+            with self.assertRaises(ValueError) as caught:
+                self.fit(rows, calibration="cross_conformal", tail="gpd")
+            self.assertIn("not wired for calibration 'cross_conformal'", str(caught.exception))
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
