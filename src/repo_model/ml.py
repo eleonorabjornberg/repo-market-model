@@ -851,12 +851,20 @@ class FittedGradientBoostedQuantiles:
     feature row carrying it as `None` gets the fitted mean. Neither becomes
     `0.0`. Both behaviours are `baseline._raw_regressor`'s, reached rather than
     reimplemented.
+
+    `_last_law` is the one slot that is **not** fitted state and is not set by
+    the fitter: it is `_shared_law`'s one-row memo, written by whichever of
+    `law_knots` and `predict_stress` asks about a row first so that the other
+    reads the same evaluation rather than a second one. Nothing it holds is
+    reported, and clearing it at any moment changes no answer --- only how many
+    times the estimators were called for that answer. See `_shared_law`.
     """
 
     __slots__ = (
         "_estimators",
         "_history_dates",
         "_history_spreads",
+        "_last_law",
         "_residuals",
         "arx",
         "arx_feature",
@@ -938,6 +946,12 @@ class FittedGradientBoostedQuantiles:
             }
         )
         self._residuals: Tuple[float, ...] = tuple(sorted(float(r) for r in residuals))
+        self._last_law: Optional[
+            Tuple[
+                Tuple[date, Tuple[Tuple[str, Optional[float]], ...]],
+                Tuple[Tuple[float, ...], Tuple[float, ...]],
+            ]
+        ] = None
         self.cutoff: date = cutoff
         self.levels: Tuple[float, ...] = _validate_levels(levels)
         self.random_state: int = int(random_state)
@@ -1218,6 +1232,64 @@ class FittedGradientBoostedQuantiles:
         high = top if top > interior[-1] else interior[-1] + pad
         return (low,) + interior + (high,), (0.0,) + self.levels + (1.0,)
 
+    def _shared_law(
+        self, feature_row: DailyObservation
+    ) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+        """`_law` for one row, evaluated **once** however many callers ask.
+
+        Both `law_knots` and `predict_stress` come through here, and that is the
+        point: a record that carries the knots beside the probabilities read off
+        them has to be able to say the two came from one evaluation of one fit.
+        Two evaluations of a deterministic fit agree, so nothing a caller can
+        assert afterwards distinguishes "derived" from "re-derived" --- the
+        distinction is in the call graph or it is nowhere, which is why it is
+        built here rather than checked downstream.
+
+        A memo of one row, keyed on the row's date and its columns, because a
+        scoring job walks rows in order and asks about each one twice. The key
+        is compared by value, so a row rebuilt from the same numbers hits and a
+        row carrying a `NaN` column misses forever; a miss costs an extra
+        evaluation and changes no answer, which is the direction a cache is
+        allowed to be wrong in. A failed evaluation is not memoised: the
+        refusal propagates before the slot is written.
+        """
+
+        key = (
+            feature_row.date,
+            tuple(sorted(feature_row.values.items(), key=lambda item: item[0])),
+        )
+        remembered = self._last_law
+        if remembered is not None and remembered[0] == key:
+            return remembered[1]
+        law = self._law(feature_row)
+        self._last_law = (key, law)
+        return law
+
+    def law_knots(
+        self, feature_row: DailyObservation
+    ) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+        """This row's predictive law as `(values, levels)` knots.
+
+        The law `predict_stress` inverts, handed out rather than described:
+        `values` is non-decreasing and `levels` is `(0.0,) + self.levels +
+        (1.0,)`, and `P(spread > tau)` for any `tau` is fixed by the pair. What
+        it buys a caller is *where* a tau fell --- a tau above the top declared
+        level is read inside the single segment `[Q(0.95), high]`, and a curve
+        that flattens because every tau it was asked about landed in one
+        straight segment looks exactly like a curve that flattened because the
+        learner had nothing to say. Only the knots tell the two apart, and
+        `predict_stress` returns floats and throws them away.
+
+        The same evaluation `predict_stress` uses for that row, not a second
+        one; see `_shared_law`. A feature row missing a declared regressor
+        raises `MissingRegressorError` from the fit's own read of it, uncaught
+        --- a caller asking where its tau fell on a row the model cannot read
+        is asking the wrong question, and a knot set invented to answer it
+        would be the worst possible answer.
+        """
+
+        return self._shared_law(feature_row)
+
     def predict_stress(
         self,
         feature_row: DailyObservation,
@@ -1248,12 +1320,16 @@ class FittedGradientBoostedQuantiles:
         Ties are the one place the inversion is approximate, exactly as there: if
         two fits agree to the last bit the knot set is flat over a range of
         levels and has no single inverse, and the higher level is returned.
+
+        `law_knots` hands out the knots these floats were read off, from this
+        same evaluation, for a caller that needs to know which segment a tau
+        landed in and not only what came out.
         """
 
         family = _validate_taus_bp(
             load_stress_thresholds()["taus_bp"] if taus is None else taus
         )
-        values, levels = self._law(feature_row)
+        values, levels = self._shared_law(feature_row)
         return tuple(_exceedance_from_law(values, levels, tau) for tau in family)
 
 
