@@ -110,6 +110,10 @@
   },
   "nyfed_fr2004": {
     "access": "public",
+    "availability_provenance": {
+      "note": "Read on the human side and recorded 12 September 2026; the project has no network route to the New York Fed, so this is a human-supplied reading and not something any code here fetched. The snapshot cannot corroborate it -- the tracked fixture's manifest records a null retrieved_at and a null url -- which is why the release_lag note already rests the six-business-day gap on the schedule rather than on the file. This object makes the publication claim behind the early available_time machine-readable, as registry.check_availability_provenance requires of any instant earlier than the end-of-day convention.",
+      "publication": "New York Fed Primary Dealer Statistics release schedule: the FR 2004 series for a Wednesday as-of date is published on the Thursday of the following week, six business days later, which is the calendar-week-plus-a-day gap the schedule describes. 16:30 ET is the conservative instant taken within that publication day."
+    },
     "coverage": [
       "primary dealer net outright Treasury positions",
       "bills and Treasury floating-rate notes",
