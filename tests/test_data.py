@@ -4695,6 +4695,315 @@ class BillRatePanelTests(unittest.TestCase):
             self.assertEqual(build.holes["sofr"], 0)
 
 
+class EmptyColumnTests(unittest.TestCase):
+    """A built column that is a hole on every row is built *and empty*, and says so.
+
+    A28. Measured on the merged tree of 12 September 2026, from
+    `docs/runs/funding_panel.manifest.json`: over 2104 rows, `bgcr`, `tgcr` and
+    `treasury_settlement` each have 2104 holes. Three of the eight built columns
+    contain no data at all. The manifest already said so, in `holes` -- but only
+    to a reader who compares each count against `row_count`, and
+    `built_columns` lists those three beside `sofr` with nothing to separate
+    them.
+
+    That distinction is about to matter. The exceedance work needs a settlement
+    or calendar proxy in the tail and `treasury_settlement` is the column
+    anyone reaches for first; a feature declared on an all-hole column is a
+    column of fitted imputations, not data. `DailyPanelBuild.empty_columns` is
+    the build stating the difference.
+
+    The acceptance criterion and the mutation target is
+    `test_a_column_that_is_a_hole_on_every_row_is_named_empty_and_refused_as_a_feature`.
+
+    **The refusal half is not in this block, and the test name still carries
+    it.** The brief's last subtest was "declaring an empty column as a feature
+    to the build is refused", conditional on the feature declaration being
+    reachable from `data.py` on this tree. It is not. `data.py`'s only contact
+    with the word is rule 3, which resolves a *declared panel column* through
+    `contract.field_sources_for_features` -- and refusing there would refuse
+    the published funding build, whose declared columns include all three empty
+    ones, and would contradict this block's own rule that an empty column stays
+    in `built_columns`. A feature *set* is declared to the model layer, not to
+    the build: `grep -rn "features=" src/repo_model/*.py` is
+    `baseline.py:6151`, `event_eval.py:623` and `cli_eval.py` three times, all
+    of them Track B's and all on Track A's forbidden list, and the
+    classification behind them is `contract.FEATURE_FIELDS`, which is
+    human-only. So the refusal would have to be written where this track may
+    not write, the subtest is left out, and the criterion keeps the name the
+    brief gave it rather than being renamed to fit what landed. Mutation M3 of
+    the brief -- the refusal message drops the column name -- has no target on
+    this tree and was not run, for the same reason.
+
+    **Read off `holes`, not off a second pass over the rows.** The membership
+    test is `holes[column] == row_count` on the build's own count. A second
+    scan would key on a grid of its own and could disagree with the published
+    `holes` on an incomplete date, and then two numbers in the same manifest
+    would describe two different panels.
+
+    **An empty column stays in `built_columns`.** Nothing that reads that list
+    today changes meaning; `empty_columns` is a second, narrower fact beside it.
+
+    **A build over zero rows has no empty columns, not every column.**
+    `holes[c] == row_count` is true of every `c` when `row_count` is 0, so the
+    cheap implementation reports a panel with no rows as empty in every column
+    -- when it says nothing about any of them. Rule 6 raises before
+    `build_daily_panel` can return a build with no rows, so the case is not
+    reachable through the join; it is reachable on the frozen dataclass, which
+    is public, and the subtest reaches it the only honest way -- by taking a
+    real fixture build's rows away with `dataclasses.replace`, holes with them.
+    That unreachability is why `empty_columns` is a property and not a field
+    the join computes: a field would leave the trap untestable and the guard
+    unmutatable, which is the same thing as not having one.
+
+    **Not in the written file manifest.** A27's wall, unchanged and for the
+    same reason: `write_daily_panel`'s manifest is carried whole into the
+    published run records under `panel.build_manifest`, and
+    `scripts/reproduce_milestone_a.py` compares it key by key, so a new key is
+    "present on one side only" and the Milestone A reproduction goes red. The
+    last subtest asserts the key's absence so the undone half stays visible,
+    and the comment in `write_daily_panel` now points at both keys rather than
+    carrying a second copy of the argument. Landing either file half is one
+    human commit with every affected record re-scored.
+
+    **No published figure moves.** `empty_columns` is derived from `holes`,
+    which this block does not touch, and it is published nowhere the
+    reproduction reads.
+
+    **The fixture.** A working week, 5 to 9 January 2026. `sofr` prints on all
+    five and is the only `REQUIRED_FIELDS` column declared, so rule 6 retains
+    all five. `tgcr` prints on 7 January alone -- a hole on every row but one,
+    which is the near miss the `==` has to reject. `bgcr` and `on_rrp` have no
+    observation at all, and they are declared in the other order so a tuple
+    that is not sorted cannot pass. `treasury_settlement_coupons` has no
+    observation either and is *not* empty: the auction snapshot supplies a bill
+    settlement on 5 January and is retrieved on 19 January Eastern, so all five
+    grid dates are inside coverage and rule 8 writes 0.0 on every one of them.
+    A settlement zero is a value, not a hole (`TreasurySettlementZeroTests` is
+    the precedent), and reading emptiness off `holes` is what gets that right.
+
+    Mutation record, 12 September 2026, python3 3.9.6. Both mutations applied
+    to `src/repo_model/data.py` in a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, confirmed applied
+    (the replaced text occurs exactly once before), reverted from a kept
+    original and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time. Unmutated control green before the first and after the
+    last, no expected failure.
+
+    1. **The emptiness test becomes `>`** (`self.holes[column] > row_count`) --
+       a count of holes can never exceed the row count, so the guard never
+       fires. Killed by this test and nothing else, one subtest, "a column that
+       is a hole on every row is named empty": `AssertionError`,
+       `() != ('bgcr', 'on_rrp')`. The sortedness subtest passes under it,
+       because the empty tuple is sorted; sortedness is asserted against the
+       declaration order and cannot be what holds the `==`, which is why the
+       naming subtest states the tuple in full rather than testing membership.
+    2. **The zero-row guard deleted** (`if row_count == 0: return ()` removed).
+       Killed by this test and nothing else, `AssertionError` on the trap
+       subtest alone: `('bgcr', 'on_rrp', 'sofr', 'tgcr', 'treasury_settlement_coupons') != ()`.
+       Every other subtest passes under it, which is why the trap needs its own
+       assertion and is not a consequence of the others.
+    """
+
+    SOFR_SHA = "c" * 64
+    AUCTION_SHA = "d" * 64
+    RETRIEVED_AT = "2026-01-20T03:00:00+00:00"
+
+    GRID = (
+        date(2026, 1, 5),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 8),
+        date(2026, 1, 9),
+    )
+
+    #: Declared out of sorted order on purpose: the two empty ones are `on_rrp`
+    #: then `bgcr` here, and `empty_columns` must report `bgcr` first.
+    COLUMNS = ("sofr", "on_rrp", "tgcr", "bgcr", "treasury_settlement_coupons")
+
+    #: `tgcr` is the near miss: a hole on every row but this one.
+    TGCR_DATE = date(2026, 1, 7)
+
+    #: The one settlement the snapshot supplies. It fixes the lower edge of
+    #: coverage at the first grid date; its column is not declared, and the
+    #: coverage bound does not care, because "nothing settled that day" is a
+    #: fact about the whole auction record.
+    BILL_DATE = date(2026, 1, 5)
+
+    LAG = {
+        "basis": "ref_date",
+        "unit": "business_days",
+        "days": 1,
+        "worst_case_calendar_days": 6,
+        "available_time": "15:00",
+        "timezone": "America/New_York",
+        "note": "fixture",
+    }
+
+    def registry(self):
+        """Every source the declared columns draw on; the auction lag is the real one."""
+
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {
+            "nyfed_sofr": {"release_lag": dict(self.LAG)},
+            "nyfed_tgcr": {"release_lag": dict(self.LAG)},
+            "nyfed_bgcr": {"release_lag": dict(self.LAG)},
+            "fred_macro_latest_vintage": {"release_lag": dict(self.LAG)},
+            "treasury_auctions": {
+                "release_lag": dict(real["treasury_auctions"]["release_lag"])
+            },
+        }
+
+    def rows(self):
+        new_york = ZoneInfo("America/New_York")
+        rows = [
+            PointInTimeObservation(
+                series_id="SOFR",
+                ref_date=ref_date,
+                available_at=datetime.combine(
+                    ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                ),
+                value=4.30 + index / 100,
+                vintage_id=f"SOFR-{ref_date.isoformat()}",
+                source_sha=self.SOFR_SHA,
+            )
+            for index, ref_date in enumerate(self.GRID)
+        ]
+        rows.append(
+            PointInTimeObservation(
+                series_id="TGCR",
+                ref_date=self.TGCR_DATE,
+                available_at=datetime.combine(
+                    self.TGCR_DATE + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                ),
+                value=4.29,
+                vintage_id=f"TGCR-{self.TGCR_DATE.isoformat()}",
+                source_sha=self.SOFR_SHA,
+            )
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id="treasury_settlement_bill",
+                ref_date=self.BILL_DATE,
+                available_at=datetime.combine(
+                    self.BILL_DATE, time(23, 59), tzinfo=new_york
+                ),
+                value=50.0,
+                vintage_id=f"{self.BILL_DATE.isoformat()}:{self.RETRIEVED_AT}",
+                source_sha=self.AUCTION_SHA,
+            )
+        )
+        return rows
+
+    def build(self):
+        return build_daily_panel(
+            self.rows(),
+            self.registry(),
+            build_cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("16:00"),
+            columns=self.COLUMNS,
+            snapshot_retrieved_at={self.AUCTION_SHA: self.RETRIEVED_AT},
+        )
+
+    def test_a_column_that_is_a_hole_on_every_row_is_named_empty_and_refused_as_a_feature(
+        self,
+    ):
+        """A28's acceptance criterion and mutation target. See the class docstring.
+
+        The refusal half of the name is not implemented and is not reachable
+        from `data.py` on this tree; the class docstring says what was grepped.
+        """
+
+        build = self.build()
+        panel = {row.date: row.values for row in build.observations}
+        self.assertEqual(len(panel), len(self.GRID))
+
+        with self.subTest("a column that is a hole on every row is named empty"):
+            self.assertEqual(build.holes["bgcr"], len(self.GRID))
+            self.assertEqual(build.holes["on_rrp"], len(self.GRID))
+            self.assertEqual(build.empty_columns, ("bgcr", "on_rrp"))
+            for day in self.GRID:
+                self.assertIsNone(panel[day]["bgcr"], day)
+
+        with self.subTest("an empty column is still a built column"):
+            # The whole point of the tuple being a second fact rather than a
+            # narrowing: nothing that reads `built_columns` changes meaning.
+            self.assertEqual(build.built_columns, self.COLUMNS)
+            for column in build.empty_columns:
+                self.assertIn(column, build.built_columns)
+
+        with self.subTest("the names are sorted, not the declaration order"):
+            self.assertEqual(build.empty_columns, tuple(sorted(build.empty_columns)))
+            # Declared `on_rrp` before `bgcr`, so declaration order would fail.
+            self.assertLess(
+                self.COLUMNS.index("on_rrp"), self.COLUMNS.index("bgcr")
+            )
+
+        with self.subTest("a column with one value is not empty"):
+            # The near miss the `==` exists to reject: four holes over five rows.
+            self.assertEqual(build.holes["tgcr"], len(self.GRID) - 1)
+            self.assertEqual(panel[self.TGCR_DATE]["tgcr"], 4.29)
+            self.assertNotIn("tgcr", build.empty_columns)
+            self.assertEqual(build.holes["sofr"], 0)
+            self.assertNotIn("sofr", build.empty_columns)
+
+        with self.subTest("a rule 8 settlement zero is a value, so its column is not empty"):
+            # No coupon settlement is observed anywhere in the fixture, and the
+            # column still is not empty: rule 8 wrote 0.0 on all five grid
+            # dates, and a written zero is a value. Read off `holes` -- which
+            # does not count a zero -- this is right by construction; a second
+            # pass that counted "no observation" would call it empty.
+            for day in self.GRID:
+                self.assertEqual(panel[day]["treasury_settlement_coupons"], 0.0, day)
+            self.assertEqual(
+                build.settlement_zeros["treasury_settlement_coupons"], len(self.GRID)
+            )
+            self.assertEqual(build.holes["treasury_settlement_coupons"], 0)
+            self.assertNotIn("treasury_settlement_coupons", build.empty_columns)
+
+        with self.subTest("a build over no rows has no empty columns, not every column"):
+            # THE TRAP. `holes[c] == row_count` is true of every column when
+            # `row_count` is 0. Rule 6 raises before the join can return such a
+            # build -- asserted here rather than assumed -- so the case is
+            # reached on the dataclass, which is public: the fixture build with
+            # its rows taken away, and its holes with them, which is what a
+            # build over no rows would carry.
+            with self.assertRaises(DataContractError):
+                build_daily_panel(
+                    [],
+                    self.registry(),
+                    build_cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc),
+                    decision_time=time.fromisoformat("16:00"),
+                    columns=self.COLUMNS,
+                    snapshot_retrieved_at={self.AUCTION_SHA: self.RETRIEVED_AT},
+                )
+            no_rows = replace(
+                build,
+                observations=(),
+                holes={column: 0 for column in build.built_columns},
+            )
+            self.assertEqual(len(no_rows.observations), 0)
+            self.assertEqual(no_rows.built_columns, self.COLUMNS)
+            self.assertEqual(no_rows.empty_columns, ())
+
+        with self.subTest("the file manifest does not carry it, and that is measured"):
+            # A27's wall, and the same one. Not an endorsement: the record of a
+            # measurement, asserting the state this block leaves so the day the
+            # human re-publishes the records, this line says the other half is
+            # still undone. See the class docstring.
+            with tempfile.TemporaryDirectory() as directory:
+                manifest_path = write_daily_panel(build, Path(directory) / "panel.csv")
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["holes"], dict(build.holes))
+            self.assertEqual(manifest["built_columns"], list(build.built_columns))
+            self.assertNotIn("empty_columns", manifest)
+            self.assertNotIn("settlement_zeros", manifest)
+
+
 def replace_observation(observation, ref_date):
     """One observation moved to another reference date, availability with it.
 
