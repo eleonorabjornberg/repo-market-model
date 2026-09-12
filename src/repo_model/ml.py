@@ -217,6 +217,42 @@ declaration, and the purge is already sized over every column the ARX reads.
 
 Absent is the default and is today's gbm, bit for bit.
 
+**A generalised Pareto tail, opt-in (B36).** `tail="gpd"` continues the law
+`predict_stress` inverts above its top declared quantile with `_fit_gpd_pwm`'s
+fitted tail, where the knot law has only one straight segment to the largest
+residual ever seen and then an exceedance of exactly `0.0`.
+
+* **The threshold is the reported top quantile.** The knot at `levels[-1]` of
+  the law this model reports for the row, calibration included --- the value
+  `predict` returns last --- and not the uncalibrated fit's.
+* **The sample is the calibration rows' residual excesses above that same
+  threshold.** Each calibration row is read from its feature row by the
+  estimators fitted on the fit rows, exactly as its conformal score is, and its
+  excess is its target less that row's *calibrated* top quantile, kept where
+  positive. No fit row enters it, and the threshold the excesses are measured
+  from is the one the tail is attached at: collecting them above the
+  uncalibrated quantile and attaching the tail at the calibrated one would put
+  a jump in the curve at the join.
+* **Above the threshold** `P(Y > tau) = (1 - levels[-1]) * S(tau - threshold)`,
+  `S` the fitted survival function. At the threshold that is `1 - levels[-1]`,
+  which the knot law already returns there, so the curve does not jump; at and
+  below it nothing changes at all.
+* **Three states, recorded as `tail` and `tail_fit`.** A fitted shape
+  (`fallback` false); `_fit_gpd_pwm`'s exponential fallback on fewer than
+  `GPD_MINIMUM_EXCESSES` excesses (`fallback` true), which the early folds of an
+  expanding window take; and **no excesses at all**, where there is nothing to
+  fit, `tail_fit` is `None` under `tail="gpd"`, and the law is the default's
+  bit for bit. That third state is not a shape of zero: an `xi` of `0.0` there
+  would be indistinguishable from a fallback that saw nineteen excesses.
+* **Refused under `none` and `cross_conformal`.** `none` holds nothing out, so
+  its only sample is rows the estimators were fitted on --- an in-sample tail.
+  `cross_conformal` holds every row out in some block, and the coherent sample
+  there is a different construction that is not wired; a mixed-provenance tail
+  in the meantime would be worse than the refusal.
+
+Absent is the default and is today's gbm, bit for bit. The tail is stdlib
+arithmetic.
+
 Stdlib plus the `ml` extra, inside functions.
 """
 
@@ -258,6 +294,7 @@ __all__ = [
     "GARCH_MINIMUM_CHANGES",
     "GPD_MINIMUM_EXCESSES",
     "GPD_SHAPE_BOUNDS",
+    "TAIL_FAMILIES",
     "VOLATILITY_FEATURES",
     "FittedTail",
     "MissingMLExtraError",
@@ -320,6 +357,10 @@ ARX_FEATURES = ("declared",)
 
 #: The design name of the ARX forecast column.
 _ARX_COLUMN = "arx_forecast"
+
+#: The tail families gbm's law can be continued with above its top declared
+#: quantile. See the module docstring.
+TAIL_FAMILIES = ("gpd",)
 
 #: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
 #: fitted from: ten per fitted parameter. Below it the three parameters are
@@ -849,6 +890,23 @@ def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
     )
 
 
+def _gpd_survival(tail: FittedTail, excess: float) -> float:
+    """`P(X > excess)` under the generalised Pareto `tail`, for `excess >= 0`.
+
+    `(1 + xi x / sigma) ** (-1 / xi)`, or `exp(-x / sigma)` at `xi == 0.0` ---
+    the fallback's exponential, and the family's own limit there. A negative
+    `xi` puts the endpoint at `sigma / -xi`, at and beyond which this is `0.0`;
+    see `GPD_SHAPE_BOUNDS` on why that zero is bounded two scale units out.
+    """
+
+    if tail.xi == 0.0:
+        return math.exp(-excess / tail.sigma)
+    base = 1.0 + tail.xi * excess / tail.sigma
+    if base <= 0.0:
+        return 0.0
+    return base ** (-1.0 / tail.xi)
+
+
 class _ExcludingModel:
     """One cross-conformal block: the model fitted without it, and its scores.
 
@@ -1016,6 +1074,13 @@ class FittedGradientBoostedQuantiles:
     * `arx_feature`, `arx` --- the ARX feature the design carries (`None` when
       it carries none) and the `baseline.FittedArx` fitted on the fit rows,
       whose point forecast from a feature row is that row's column.
+    * `tail`, `tail_fit` --- the tail family the law is continued with above
+      its top declared quantile (`None` when it is not) and the `FittedTail`
+      fitted to the calibration rows' excesses above that quantile. Three
+      states under `tail="gpd"`: `tail_fit.fallback` false, a fitted shape;
+      true, the exponential fallback; and `tail_fit` `None`, **no excesses at
+      all**, where nothing was fitted and the law is the default's. See the
+      module docstring.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -1066,6 +1131,8 @@ class FittedGradientBoostedQuantiles:
         "random_state",
         "regressors",
         "spread_change_lags",
+        "tail",
+        "tail_fit",
         "volatility_feature",
         "widening",
     )
@@ -1096,7 +1163,11 @@ class FittedGradientBoostedQuantiles:
         calibration_blocks: Sequence[_ExcludingModel] = (),
         arx_feature: Optional[str] = None,
         arx: Optional[FittedArx] = None,
+        tail: Optional[str] = None,
+        tail_fit: Optional[FittedTail] = None,
     ) -> None:
+        self.tail: Optional[str] = tail
+        self.tail_fit: Optional[FittedTail] = tail_fit
         self.arx_feature: Optional[str] = arx_feature
         self.arx: Optional[FittedArx] = arx
         self.calibration_folds: Optional[int] = calibration_folds
@@ -1506,13 +1577,26 @@ class FittedGradientBoostedQuantiles:
         `law_knots` hands out the knots these floats were read off, from this
         same evaluation, for a caller that needs to know which segment a tau
         landed in and not only what came out.
+
+        Under `tail="gpd"` with a fitted `tail_fit`, a tau strictly above the
+        top declared quantile `values[-2]` is read off the fitted tail instead,
+        as `(1 - levels[-1]) * S(tau - values[-2])`; see the module docstring.
+        At and below that knot, and with no `tail_fit`, nothing changes.
         """
 
         family = _validate_taus_bp(
             load_stress_thresholds()["taus_bp"] if taus is None else taus
         )
         values, levels = self._shared_law(feature_row)
-        return tuple(_exceedance_from_law(values, levels, tau) for tau in family)
+        if self.tail_fit is None:
+            return tuple(_exceedance_from_law(values, levels, tau) for tau in family)
+        threshold = values[-2]
+        return tuple(
+            (1.0 - self.levels[-1]) * _gpd_survival(self.tail_fit, tau - threshold)
+            if tau > threshold
+            else _exceedance_from_law(values, levels, tau)
+            for tau in family
+        )
 
 
 def _rearranged(
@@ -1728,6 +1812,7 @@ def fit_gradient_boosted_quantiles(
     volatility_feature: Optional[str] = None,
     calibration_folds: Optional[int] = None,
     arx_feature: Optional[str] = None,
+    tail: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -1786,6 +1871,12 @@ def fit_gradient_boosted_quantiles(
             was produced with. `"declared"` fits `baseline.fit_arx` on the fit
             rows over `regressors` and adds its one-step point forecast. See
             the module docstring.
+        tail: one of `TAIL_FAMILIES`, or `None`, the default, which ends the
+            law at its knots and is the model every published gbm record was
+            produced with. `"gpd"` fits `_fit_gpd_pwm` to the calibration
+            rows' residual excesses above their reported top quantile and
+            continues the law above that quantile with it; `conformal` only.
+            See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -1828,7 +1919,10 @@ def fit_gradient_boosted_quantiles(
             fit does not converge; and, for the ARX feature, if `arx_feature`
             is not one of `ARX_FEATURES`. Whatever `baseline.fit_arx` raises
             on the rows it is handed -- fewer than its default minimum, a
-            singular design -- propagates as it raised it.
+            singular design -- propagates as it raised it; and, for the tail,
+            if `tail` is not one of `TAIL_FAMILIES`, or is given with
+            calibration `none` (an in-sample tail) or `cross_conformal` (not
+            wired).
     """
 
     grid = _validate_levels(levels)
@@ -1935,6 +2029,29 @@ def fit_gradient_boosted_quantiles(
             f"declared regressors -- or with none by leaving the setting out. A "
             f"misspelt feature fitted without one would publish today's gbm "
             f"under a declaration naming an ARX"
+        )
+
+    if tail is not None and tail not in TAIL_FAMILIES:
+        raise ValueError(
+            f"unknown tail {tail!r}; this model's law can be continued with "
+            f"{', '.join(TAIL_FAMILIES)}, or ended at its knots by leaving the "
+            f"setting out. A misspelt tail fitted without one would publish "
+            f"today's saturating law under a declaration naming a tail"
+        )
+    if tail is not None and calibration == "none":
+        raise ValueError(
+            f"tail {tail!r} needs held-out calibration rows, and calibration "
+            f"'none' holds none out: its only sample is the rows the estimators "
+            f"were fitted on, and an in-sample tail is the leakage this "
+            f"repository refuses. Use calibration 'conformal'"
+        )
+    if tail is not None and calibration == "cross_conformal":
+        raise ValueError(
+            f"tail {tail!r} is not wired for calibration 'cross_conformal': "
+            f"every row is held out by some block there, and the coherent "
+            f"sample is a different construction. A tail from in-sample or "
+            f"mixed-provenance excesses in the meantime would be worse than "
+            f"this refusal. Use calibration 'conformal'"
         )
 
     names = tuple(str(name) for name in regressors)
@@ -2120,8 +2237,8 @@ def fit_gradient_boosted_quantiles(
                     continue
                 # `_feature_index` on the tail, for the reason the conformal
                 # calibration rows below give.
-                tail = range(max(0, index - purge_days - 1), index)
-                position = _feature_index(dates, tail, index, purge_days)
+                recent = range(max(0, index - purge_days - 1), index)
+                position = _feature_index(dates, recent, index, purge_days)
                 if position < lags:
                     continue
                 held_out.append(
@@ -2196,6 +2313,7 @@ def fit_gradient_boosted_quantiles(
     # above -- not refitted, and never on a fit row -- from the feature row the
     # backtest's own rule would choose for it, then the conformal rank.
     widening = 0.0
+    tail_fit: Optional[FittedTail] = None
     if calibration_rows:
         first = len(rows) - len(calibration_rows)
         scored = []
@@ -2205,8 +2323,8 @@ def fit_gradient_boosted_quantiles(
             # positions back already clears the gap: handing it only that tail
             # returns the same row as handing it the whole prefix, without a
             # frame-length copy per calibration row per fold.
-            tail = range(max(0, index - purge_days - 1), index)
-            position = _feature_index(dates, tail, index, purge_days)
+            recent = range(max(0, index - purge_days - 1), index)
+            position = _feature_index(dates, recent, index, purge_days)
             feature = rows[position]
             # The lags end at the feature row, never at the row being scored.
             scored.append(
@@ -2236,6 +2354,17 @@ def fit_gradient_boosted_quantiles(
         )
         rank = math.ceil(_band_probability(grid) * (len(scores) + 1))
         widening = scores[rank - 1]
+        # The tail's sample: the same rows, the same vectors, each target's
+        # excess above its own *calibrated* top quantile -- the knot the tail is
+        # attached at -- where it has one.
+        if tail is not None:
+            excesses = []
+            for vector, (_, target) in zip(vectors, scored):
+                top = _calibrated(vector, widening)[-1]
+                if target > top:
+                    excesses.append(target - top)
+            if excesses:
+                tail_fit = _fit_gpd_pwm(excesses)
 
     # The excluding models: each fitted on its own design, and each held-out
     # row scored by its own block's model and no other.
@@ -2317,6 +2446,8 @@ def fit_gradient_boosted_quantiles(
         calibration_blocks=blocks,
         arx_feature=arx_feature,
         arx=arx,
+        tail=tail,
+        tail_fit=tail_fit,
     )
 
 
