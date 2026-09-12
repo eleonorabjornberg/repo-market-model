@@ -1324,6 +1324,34 @@ class DailyPanelJoinTests(unittest.TestCase):
       All `AssertionError`. The original record named four; the three additions
       are tests that did not exist when it was written, and no test it named
       has stopped being killed.
+
+    Addendum, 12 September 2026 -- A30, and mutation 2 re-run
+    ---------------------------------------------------------
+    `_priceable_columns` now prices a `snapshot_retrieved_at` column from the
+    rows the build can see. Mutation 2's test had used a bare snapshot source as
+    its registry refusal, and that refusal was the defect: every row carries
+    `available_at`, so `sofr` there is now built. The fixture's `SOFR` field now
+    declares a `record_date` lag with no `revision_policy`, which the registry
+    refuses on the declaration's own terms whatever the rows.
+
+    Mutation 2 re-run on the changed fixture, same conditions, python3 3.9.6.
+    The list has to change with the tree: the pricing function no longer refuses
+    the set recorded above, so the hard-coded set is `{"mmf_assets"}`, with the
+    retry through rows disabled. Still killed by
+    `test_a_column_is_refused_by_the_registry_not_by_a_list`,
+    `AssertionError: DataContractError not raised`. It is no longer the only
+    kill -- a one-name list is not the panel the tracked registry builds -- and
+    the rest are recorded so they are not misread: `SnapshotBasisPricingTests`'
+    acceptance test, all four parts; `IdentityVerdictTests.test_a_violation_
+    stops_a_panel_that_uses_the_source_and_not_one_that_does_not` and
+    `SourceSuppliedNothingTests.test_a_built_column_whose_source_supplied_
+    nothing_builds_empty` (`AssertionError`); and two errors,
+    `test_the_written_panel_records_its_cutoff_and_its_refusals`
+    (`DataContractError`: with `iorb` built on no rows, no date carries both
+    required columns) and `RequestedColumnsBuildTests`' acceptance test
+    (`KeyError: 'quarter_end'`: the calendar column, refused today by the
+    pricing function's empty-selection error, is built unpriced and is not in
+    `FEATURE_FIELDS`).
     """
 
     #: A `ref_date` source with a nonzero declared lag, copied from
@@ -1409,11 +1437,19 @@ class DailyPanelJoinTests(unittest.TestCase):
         """The refusal tracks the registry because it is delegated, not copied.
 
         Same column, same observations, two registries. On a `ref_date` basis
-        `sofr` is built; moved to a `snapshot_retrieved_at` source with no
-        `revision_policy` -- exactly the shape whose latest value may differ
-        from the value that stood on the day -- `registry.max_release_lag_days`
-        refuses it, and so does the join. A hard-coded refused set in `data.py`
-        cannot follow that, which is what makes this the test for mutation 2.
+        `sofr` is built; moved to a `snapshot_retrieved_at` source whose `SOFR`
+        field declares a `record_date` lag with no `revision_policy` -- a field
+        declaration talking the snapshot refusal out of a correct answer --
+        `registry.max_release_lag_days` refuses it, and so does the join. A
+        hard-coded refused set in `data.py` cannot follow that, which is what
+        makes this the test for mutation 2.
+
+        Until A30 the snapshot registry here declared no field lag at all, and
+        was refused only because `_priceable_columns` handed the pricing
+        function no rows. That was the defect A30 repairs: every row here
+        carries `available_at`, so a bare snapshot source now prices `sofr`
+        from them. The refusal this test needs is now one the registry makes
+        on the declaration's own terms. See the addendum in the class docstring.
         """
 
         rows = [self.observation(date(2026, 1, 5), 4.30)]
@@ -1426,7 +1462,17 @@ class DailyPanelJoinTests(unittest.TestCase):
                 "release_lag": {
                     "basis": "snapshot_retrieved_at",
                     "note": "fixture: latest vintage only",
-                }
+                },
+                "field_release_lags": {
+                    "SOFR": {
+                        "basis": "record_date",
+                        "unit": "calendar_days",
+                        "days": 1,
+                        "available_time": "16:15",
+                        "timezone": "America/New_York",
+                        "note": "fixture: no revision_policy, so not priceable",
+                    }
+                },
             }
         }
         with self.assertRaises(DataContractError):
@@ -3140,6 +3186,25 @@ class RequestedColumnsBuildTests(unittest.TestCase):
          asked for by name and the panel came back without it, with the reason
          in the manifest and exit 0 on the terminal, which is the case this
          assertion exists for.
+
+    Addendum, 12 September 2026 -- A30. The unpriced column asked for by name
+    is `quarter_end`, not `on_rrp`: A30 prices a snapshot column from the rows
+    the build can see, and `funding_inputs/` carries `on_rrp`'s. The manifest's
+    `refused_columns` still names both, because it records the published build.
+    The two mutations that read this phrase were re-run, python3 3.9.6, same
+    conditions as above:
+
+    * the `build.refusals` `raise` deleted -- killed by the same test,
+      `AssertionError: 0 != 2`, exit 0 with `quarter_end` absent from the panel;
+    * only the `columns = ...` line disabled -- killed by the same test,
+      `AssertionError: 2 != 0`, the refusals now naming `mmf_assets` (no
+      `sec_nmfp` rows in `funding_inputs/`), `quarter_end` and the rest; and
+      also `test_generated_results.MilestoneAReproductionTests.test_the_
+      published_persistence_run_reproduces_from_tracked_inputs`, whose build
+      exits 2 for the same reason.
+
+    The pinned build still reproduces the manifest's digest after A30: the
+    manifest's `built_columns` hold no snapshot-basis column.
     """
 
     #: The FR 2004 move's `contract.py` hunk, and nothing else. The human's
@@ -3261,14 +3326,17 @@ class RequestedColumnsBuildTests(unittest.TestCase):
             self.assertIn("is not a panel column", text)
 
             # A panel column this build cannot price is refused rather than
-            # silently absent. `on_rrp` is a declared column and is in the
+            # silently absent. `quarter_end` is a declared column and is in the
             # manifest's `refused_columns`; asked for by name it must not come
-            # back as a panel without it.
-            self.assertIn("on_rrp", manifest["refused_columns"])
-            code, text = self.run_build(Path(tmp) / "unpriced.csv", "sofr", "on_rrp")
+            # back as a panel without it. It was `on_rrp` until A30, which
+            # prices a snapshot column from the rows the build can see, and
+            # this build can see `on_rrp`'s; `quarter_end` is calendar-only and
+            # refused whatever the rows.
+            self.assertIn("quarter_end", manifest["refused_columns"])
+            code, text = self.run_build(Path(tmp) / "unpriced.csv", "sofr", "quarter_end")
             self.assertEqual(code, 2, text)
             self.assertIn("cannot price", text)
-            self.assertIn("on_rrp", text)
+            self.assertIn("quarter_end", text)
 
 
 class FR2004EraIdentityTests(unittest.TestCase):
@@ -5051,6 +5119,219 @@ class EmptyColumnTests(unittest.TestCase):
             self.assertEqual(manifest["built_columns"], list(build.built_columns))
             self.assertNotIn("empty_columns", manifest)
             self.assertNotIn("settlement_zeros", manifest)
+
+
+class SnapshotBasisPricingTests(unittest.TestCase):
+    """A30: a `snapshot_retrieved_at` column is priced from rows, and only visible ones.
+
+    `_priceable_columns` asked `registry.max_release_lag_days` about every
+    column in the `(source, field)` pair form, which carries no rows, so every
+    column on a `snapshot_retrieved_at` source was refused with `every snapshot
+    row must carry available_at` without ever having been handed a row. On the
+    tracked registry that was `on_rrp`, `reserve_balances` and `tga`
+    (`fred_macro_latest_vintage`) and `mmf_assets` (`sec_nmfp`). The registry
+    half landed in the human's `4f317b24`: a per-row priced selection may now
+    return a purge of zero. This is the `data.py` half.
+
+    Fixture registries throughout, never `metadata/sources.json`: a test that
+    asserted which tracked columns are built would be asserting the registry,
+    and a registry edit would break a test that is about pricing.
+
+    Two existing tests asserted the defect and were changed with it, each
+    keeping what it is for: `DailyPanelJoinTests.test_a_column_is_refused_by_
+    the_registry_not_by_a_list` (see the addendum there) and the `on_rrp`
+    phrase of `RequestedColumnsBuildTests`, now `quarter_end` (see that class).
+
+    Mutation record, 12 September 2026, python3 3.9.6. Each mutation applied
+    in its own disposable copy under `$HOME`, built from `git ls-files -z
+    --cached --others --exclude-standard`; `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, the whole suite run in each. Every target was confirmed
+    present exactly once before and absent after. The unmutated control was
+    green before and after. Every kill below is `AssertionError`, and the
+    subtests named are the parts of the one acceptance test.
+
+    1. **The rows dropped again**: the retry with rows replaced by `pass`, so
+       every column is priced in the pair form. Killed only this test: part 1
+       (`[] != ['reserve_balances']`) and part 3's premise, the later-cutoff
+       build (`'reserve_balances' not found in ('sofr',)`).
+    2. **All `observations` passed** to `_priceable_columns` in place of the
+       cutoff-visible rows. Killed only part 3: `('sofr', 'reserve_balances')
+       != ('sofr',)`, the column built at the cutoff from a row published
+       after it.
+    3. **Every column priced by the mapping form**, each source handed the
+       visible rows of the column's fields, no pair-form call. Killed part 4
+       (`[] != ['iorb']`, a declared field refused for want of rows its
+       declaration never needed), and outside this class
+       `DailyPanelJoinTests.test_a_column_is_refused_by_the_registry_not_by_a_
+       list` (`DataContractError not raised`, a field declaration with no
+       revision policy rescued by its source's basis).
+    4. **The refusal composed in `data.py`**: `refusals[column]` set to
+       `f"{column}: a snapshot row carries no available_at"`. Killed only this
+       test: part 2, and parts 3 and 4, which also compare the recorded reason
+       against the pricing function's own message.
+    """
+
+    SOURCE = "fred_macro_latest_vintage"
+    DECISION_TIME = time(16, 0)
+    CUTOFF = datetime(2026, 3, 1, tzinfo=timezone.utc)
+
+    def snapshot_registry(self, **field_release_lags):
+        registry = {
+            self.SOURCE: {
+                "release_lag": {
+                    "basis": "snapshot_retrieved_at",
+                    "note": "fixture: latest vintage only",
+                }
+            },
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 1,
+                    "worst_case_calendar_days": 6,
+                    "available_time": "15:00",
+                    "timezone": "America/New_York",
+                    "note": "fixture",
+                }
+            },
+        }
+        if field_release_lags:
+            registry[self.SOURCE]["field_release_lags"] = field_release_lags
+        return registry
+
+    #: Stands for the tracked `IORB` and `IOER` entries of
+    #: `fred_macro_latest_vintage.field_release_lags`: a `record_date` lag
+    #: licensed on a snapshot source by `revision_policy: "never_revised"`.
+    #: The notes and evidence are shortened; the shape is theirs.
+    def field_lag(self, *, with_policy=True):
+        block = {
+            "basis": "record_date",
+            "unit": "calendar_days",
+            "days": 1,
+            "available_time": "16:15",
+            "timezone": "America/New_York",
+            "note": "fixture",
+        }
+        if with_policy:
+            block["revision_policy"] = "never_revised"
+            block["revision_evidence"] = "fixture: stands for the ALFRED vintage comparison"
+        return block
+
+    def row(self, series_id, ref_date, available_at, value=1.0):
+        return PointInTimeObservation(
+            series_id=series_id,
+            ref_date=ref_date,
+            available_at=available_at,
+            value=value,
+            vintage_id=f"{series_id}-{ref_date.isoformat()}",
+            source_sha="d" * 64,
+        )
+
+    def registry_refusal(self, registry, selection):
+        """The pricing function's own message for a selection, asked directly."""
+
+        from repo_model.registry import RegistryContractError, max_release_lag_days
+
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(registry, selection, decision_time=self.DECISION_TIME)
+        return str(caught.exception)
+
+    def test_a_snapshot_basis_column_is_priced_from_the_rows_this_build_can_see(self):
+        """The acceptance criterion and the mutation target. See the class docstring."""
+
+        from repo_model.contract import field_sources_for_features
+        from repo_model.data import _priceable_columns
+
+        registry = self.snapshot_registry()
+        seen = datetime(2026, 1, 9, 21, tzinfo=timezone.utc)
+        rows = [
+            self.row("WRESBAL", date(2026, 1, 5), seen),
+            self.row("WRESBAL", date(2026, 1, 6), seen),
+        ]
+
+        with self.subTest("built: every visible row carries available_at"):
+            # The premise: with no rows the same column is refused, which is
+            # what every call made before A30 amounted to.
+            built, refusals = _priceable_columns(
+                ["reserve_balances"], registry, self.DECISION_TIME
+            )
+            self.assertEqual(built, [])
+            self.assertIn("reserve_balances", refusals)
+
+            built, refusals = _priceable_columns(
+                ["reserve_balances"], registry, self.DECISION_TIME, rows
+            )
+            self.assertEqual(built, ["reserve_balances"])
+            self.assertNotIn("reserve_balances", refusals)
+
+        with self.subTest("refused, by the registry: one visible row has no available_at"):
+            missing = rows + [self.row("WRESBAL", date(2026, 1, 7), None)]
+            built, refusals = _priceable_columns(
+                ["reserve_balances"], registry, self.DECISION_TIME, missing
+            )
+            self.assertEqual(built, [])
+            self.assertEqual(
+                refusals["reserve_balances"],
+                self.registry_refusal(registry, {self.SOURCE: missing}),
+            )
+
+        with self.subTest("the cutoff binds: a row published after it prices nothing"):
+            sofr = self.row("SOFR", date(2026, 1, 5), seen, value=4.30)
+            future = self.row(
+                "WRESBAL", date(2026, 1, 5), self.CUTOFF + timedelta(days=1)
+            )
+
+            def build(observations, cutoff):
+                return build_daily_panel(
+                    observations,
+                    registry,
+                    build_cutoff=cutoff,
+                    decision_time=self.DECISION_TIME,
+                    columns=("sofr", "reserve_balances"),
+                )
+
+            # The two answers differ, or the assertion below could not fail:
+            # at a cutoff that can see the row, the column is built.
+            later = build([sofr, future], self.CUTOFF + timedelta(days=2))
+            self.assertIn("reserve_balances", later.built_columns)
+
+            at_cutoff = build([sofr, future], self.CUTOFF)
+            self.assertEqual(at_cutoff.built_columns, ("sofr",))
+            without_it = build([sofr], self.CUTOFF)
+            self.assertEqual(
+                at_cutoff.refusals["reserve_balances"],
+                without_it.refusals["reserve_balances"],
+            )
+            self.assertEqual(
+                at_cutoff.refusals["reserve_balances"],
+                self.registry_refusal(registry, {self.SOURCE: []}),
+            )
+
+        with self.subTest("field declarations still win on a snapshot-basis source"):
+            declared = self.snapshot_registry(
+                IORB=self.field_lag(), IOER=self.field_lag()
+            )
+            # Priced by its declaration, with no rows to price it otherwise.
+            built, refusals = _priceable_columns(["iorb"], declared, self.DECISION_TIME, ())
+            self.assertEqual(built, ["iorb"])
+            self.assertEqual(refusals, {})
+
+            # And refused by its declaration, however good the rows: a field
+            # lag with no revision policy is not rescued by the source's basis.
+            unlicensed = self.snapshot_registry(
+                IORB=self.field_lag(with_policy=False),
+                IOER=self.field_lag(with_policy=False),
+            )
+            iorb_rows = [self.row("IORB", date(2026, 1, 5), seen, value=4.40)]
+            built, refusals = _priceable_columns(
+                ["iorb"], unlicensed, self.DECISION_TIME, iorb_rows
+            )
+            self.assertEqual(built, [])
+            self.assertEqual(
+                refusals["iorb"],
+                self.registry_refusal(unlicensed, field_sources_for_features(["iorb"])),
+            )
+            self.assertIn("revision_policy", refusals["iorb"])
 
 
 def replace_observation(observation, ref_date):
