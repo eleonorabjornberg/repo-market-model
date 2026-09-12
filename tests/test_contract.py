@@ -282,7 +282,28 @@ UPPER_LEVEL = QUANTILE_LEVELS[-1]
 def load_sample():
     rows = load_daily_panel(SAMPLE_PANEL)
     audit_panel(rows)  # sortedness and uniqueness are preconditions for the as-of rule
-    return rows
+    return _on_consecutive_days(rows)
+
+
+def _on_consecutive_days(rows):
+    """The sample's values on a gapless calendar, which is what `CONTRACT_PURGE` needs.
+
+    The fixture registry prices every source at exactly `CONTRACT_PURGE` days, so the
+    purge the pipeline derives equals the declared lag. On a calendar with weekends that
+    pair is not decision-safe: the last training row of a fold scored after a weekend is
+    first observable on the Saturday or Sunday, while the forecast is made on the Friday,
+    which is the gap B28 measured. It is the fixture that is unrealistic, not the rule --
+    the real registry declares SOFR's one *business* day against a six-calendar-day worst
+    case, so its availability lands days before the decision. Re-dating the same values
+    onto consecutive days keeps every index, fold and residual window identical and makes
+    the declared lag deliverable.
+    """
+
+    first = rows[0].date
+    return [
+        DailyObservation(first + timedelta(days=index), row.values)
+        for index, row in enumerate(rows)
+    ]
 
 
 def perturb_after(rows, cutoff_index, shock_bps=250.0):
