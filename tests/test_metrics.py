@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model import metrics
 from repo_model.metrics import (
+    REPORTED_PRECISION_PLACES,
     CorpDecomposition,
     MetricError,
     average_precision,
@@ -328,8 +329,10 @@ class CorpDecompositionTests(unittest.TestCase):
 
     def test_an_uninformative_forecast_has_near_zero_resolution(self):
         outcomes = [1 if index % 4 == 0 else 0 for index in range(80)]
-        # Constant forecasts are refused outright, so vary them negligibly and
-        # independently of the outcome: still no information about it.
+        # Varied negligibly and independently of the outcome: still no
+        # information about it. A truly constant set would do as well now that
+        # the decomposition reports rather than refuses it, but this fixture is
+        # the near-constant case, which is the one a fitted model produces.
         probabilities = [0.25 + 1e-9 * index for index in range(80)]
         self.assertLess(corp_decomposition(probabilities, outcomes).resolution, 0.01)
 
@@ -362,15 +365,206 @@ class DegenerateSampleTests(unittest.TestCase):
         with self.assertRaisesRegex(MetricError, "exceedance curve and realized path"):
             corp_decomposition([0.1, 0.4, 0.8], [1, 1, 1])
 
-    def test_a_single_distinct_forecast_is_refused(self):
+    def test_a_single_distinct_forecast_is_refused_by_the_reliability_curve(self):
+        """The refusal that used to be `corp_decomposition`'s as well.
+
+        It is now only the curve's. A constant forecast set is not degenerate
+        arithmetic -- uncertainty is positive and reliability is
+        `(p - base_rate) ** 2`, which is real -- so the decomposition reports it
+        and names the zero share instead, and
+        `RealizedDiscriminationTests` is where that is asserted. A reliability
+        diagram of one point with a bootstrap band around it is still nothing,
+        so here the refusal stands.
+        """
+
         with self.assertRaisesRegex(MetricError, "zero by construction"):
-            corp_decomposition([0.4, 0.4, 0.4], [0, 1, 1])
+            corp_reliability_curve([0.4, 0.4, 0.4], [0, 1, 1], block_length=2, seed=1)
 
     def test_a_ten_day_all_stressed_window_is_refused(self):
         """The shape an event window actually has."""
 
         with self.assertRaises(MetricError):
             corp_decomposition([0.5 + 0.01 * i for i in range(10)], [1] * 10)
+
+
+def _two_group_sample(low_positives, high_positives, size):
+    """A sample whose realised share of achievable discrimination is computable.
+
+    Two equally sized forecast groups with rates `r_low` and `r_high`. The
+    isotonic fit is then the two group rates, so
+
+        uncertainty = b * (1 - b),  b = (r_low + r_high) / 2
+        resolution  = ((r_high - r_low) / 2) ** 2
+
+    and the share follows in closed form. That is what makes these fixtures
+    usable for pinning the naming threshold: the share is chosen, not
+    discovered, so a fixture that lands on the wrong side of it is a fixture
+    error rather than a finding.
+    """
+
+    probabilities = [0.1] * size + [0.2] * size
+    outcomes = (
+        [1] * low_positives
+        + [0] * (size - low_positives)
+        + [1] * high_positives
+        + [0] * (size - high_positives)
+    )
+    return probabilities, outcomes
+
+
+class RealizedDiscriminationTests(unittest.TestCase):
+    """How much of the achievable discrimination the forecasts actually realised.
+
+    `resolution` is not readable on its own, because its ceiling is
+    `uncertainty` and that moves with the base rate. On the published
+    conditional run resolution falls four orders of magnitude from 5bp to 50bp
+    while uncertainty falls two, and from the pair as published a reader cannot
+    tell a model that stopped discriminating from a sample that stopped
+    offering anything to discriminate. `realized_discrimination` is
+    `resolution / uncertainty`, which is the same finding stated in a way that
+    does not depend on how rare the event is.
+
+    The naming is the other half and is not decoration. A share printed at the
+    precision the terms are published at can itself round to `0.0000`, which is
+    exactly the reading failure this number exists to fix one level up, so a
+    share that rounds away is named in the returned value with its reason
+    instead.
+
+    Mutation record
+    ---------------
+
+    Every mutation below was planted in `src/repo_model/metrics.py` in a
+    disposable copy under `$HOME`, built from `git ls-files`, run stdlib-only
+    with `PYTHONDONTWRITEBYTECODE=1` under `python3 -B`. The unmutated control
+    was green before and after. The acceptance test and the mutation target are
+    the same test -- `test_a_decomposition_reports_what_share_of_the_achievable
+    _discrimination_was_realised` -- and it is in every count below.
+
+      1. `_discrimination_note` returns `None` unconditionally
+         (the cheap implementation: divide, return a float, name nothing)
+                                          -> 1 failure, `AssertionError`
+      2. the division moved above `_require_scoreable_outcomes`
+         in `corp_decomposition`          -> 28 errors, every one a
+                                             `ZeroDivisionError`
+      3. the share computed as `resolution / score`
+         instead of `resolution / uncertainty`
+                                          -> 1 failure, `AssertionError`
+      4. `_require_scoreable_outcomes` dropped from `corp_decomposition`
+         and the forecast refusal dropped from `_require_decomposable`
+         (mutation 7 of `MutationRecordTests`, re-run because this block
+         changed the fixture that record names)
+                                          -> 1 failure and 28 errors:
+                                             28 `ZeroDivisionError`, one
+                                             `AssertionError`
+
+    Mutation 2 is the one the block was written around, and its record is the
+    reason exception types are worth writing down. It is not a wrong number; it
+    is a right number computed a line too early, and what it costs is the *name*
+    of the failure. `MetricError("all 3 outcomes are 1; a decomposition against
+    climatology is degenerate on a single-class sample. If this is one event
+    window, the contract asks for the exceedance curve and realized path ...")`
+    becomes `ZeroDivisionError("float division by zero")`, which tells a caller
+    nothing about event windows and nothing about what to do instead. The
+    acceptance test catches it by asserting the type and the message, not merely
+    that something raised.
+
+    Twenty-eight of those errors is also a finding rather than a count: the
+    single-class sample is not a hypothetical here. `test_baseline`'s rolling
+    exceedance suite and `test_cli_eval`'s command tests reach it on ordinary
+    fixtures, so the refusal that names it is on a path real callers take.
+
+    Mutation 3 is worth reading because it is nearly invisible on a good model
+    and wrong everywhere. `score` and `uncertainty` are the same order of
+    magnitude at these base rates, so the mutated share stays plausible; it just
+    stops being bounded by 1 and stops being a share of anything. The
+    ratio assertion catches it first, which is why the observed exception is an
+    `AssertionError` and not the `ZeroDivisionError` the perfect forecast set
+    would raise under it -- `score` is 0 there, and the mutated denominator with
+    it. Both were checked; only the first is reached.
+    """
+
+    def test_a_decomposition_reports_what_share_of_the_achievable_discrimination_was_realised(self):
+        # 1. The share is resolution over uncertainty, on a middling sample.
+        probabilities, outcomes = synthetic(n=300, seed=13)
+        middling = corp_decomposition(probabilities, outcomes)
+        self.assertAlmostEqual(
+            middling.realized_discrimination,
+            middling.resolution / middling.uncertainty,
+            places=12,
+        )
+
+        # 2. The two ends. A forecast set that discriminates perfectly realises
+        #    all of it; a constant one realises none.
+        perfect = corp_decomposition([0.0] * 10 + [1.0] * 10, [0] * 10 + [1] * 10)
+        self.assertAlmostEqual(perfect.realized_discrimination, 1.0, places=12)
+        self.assertIsNone(perfect.discrimination_note)
+
+        constant = corp_decomposition([0.4, 0.4, 0.4], [0, 1, 1])
+        self.assertEqual(constant.realized_discrimination, 0.0)
+
+        # Constant forecasts over varying outcomes return a decomposition. They
+        # are the case the share exists to describe, and they still carry a real
+        # reliability: the squared distance from the rate they should have been.
+        # The refusal this replaced claimed reliability was "zero by
+        # construction" here, and that was false -- only resolution is.
+        self.assertAlmostEqual(constant.reliability, (0.4 - 2 / 3) ** 2, places=12)
+        self.assertGreater(constant.reliability, 0.0)
+        self.assertEqual(constant.resolution, 0.0)
+
+        # 3. A share that rounds to nothing at the reported precision is named
+        #    in the returned value, with a reason.
+        for named in (constant, corp_decomposition(*_two_group_sample(497, 503, 1000))):
+            self.assertIsNotNone(named.discrimination_note)
+            self.assertEqual(
+                "%.*f" % (REPORTED_PRECISION_PLACES, named.realized_discrimination),
+                "%.*f" % (REPORTED_PRECISION_PLACES, 0.0),
+            )
+            self.assertIn("no discrimination", named.discrimination_note)
+            self.assertIn("rounding artefact", named.discrimination_note)
+            self.assertIn(repr(named.resolution), named.discrimination_note)
+            self.assertIn(repr(named.uncertainty), named.discrimination_note)
+
+        # The second of those is named while being strictly positive, so the
+        # naming is a statement about legibility at the reported precision and
+        # not a test for exact zero.
+        nonzero_but_named = corp_decomposition(*_two_group_sample(497, 503, 1000))
+        self.assertGreater(nonzero_but_named.realized_discrimination, 0.0)
+
+        # 4. And the converse: a share small enough that `resolution` alone
+        #    prints as a rounding artefact, but which the share still reports as
+        #    a real quantity, is not named. This is the published 50bp row's
+        #    magnitude, reconstructed rather than read off the record.
+        legible = corp_decomposition(*_two_group_sample(489, 511, 1000))
+        self.assertEqual("%.*f" % (REPORTED_PRECISION_PLACES, legible.resolution), "0.0001")
+        self.assertEqual(
+            "%.*f" % (REPORTED_PRECISION_PLACES, legible.realized_discrimination),
+            "0.0005",
+        )
+        self.assertIsNone(legible.discrimination_note)
+
+        # 5. The share is a share: bounded in [0, 1] and always finite. Neither
+        #    holds of `resolution / score`.
+        for seed in range(15):
+            with self.subTest(seed=seed):
+                sample, labels = synthetic(n=120, seed=seed)
+                if len(set(labels)) < 2:
+                    continue
+                share = corp_decomposition(sample, labels).realized_discrimination
+                self.assertTrue(math.isfinite(share))
+                self.assertGreaterEqual(share, -1e-12)
+                self.assertLessEqual(share, 1.0 + 1e-12)
+
+        # 6. The refusal, which must run before the division. A single-class
+        #    sample has uncertainty 0, so dividing first yields an infinity, a
+        #    NaN or a ZeroDivisionError -- none of which names its cause. The
+        #    assertion is on the type and the message, because a
+        #    ZeroDivisionError escaping here is the mutation, not a pass.
+        for degenerate in (([0.1, 0.4, 0.8], [1, 1, 1]), ([0.1, 0.4, 0.8], [0, 0, 0])):
+            with self.subTest(outcomes=degenerate[1]):
+                with self.assertRaises(MetricError) as caught:
+                    corp_decomposition(*degenerate)
+                self.assertIn("degenerate on a single-class", str(caught.exception))
+                self.assertNotIsInstance(caught.exception, ZeroDivisionError)
 
 
 class ReliabilityCurveTests(unittest.TestCase):
@@ -1259,6 +1453,8 @@ class MutationRecordTests(unittest.TestCase):
       5.  twCRPS `weights` defaulted to ones           -> 1 failure
       6.  exceedance monotonicity check removed        -> 2 failures
       7.  degenerate-sample guard removed              -> 4 failures
+          re-run after the single-forecast half moved to
+          `corp_reliability_curve`                     -> 1 failure, 28 errors
 
     Two of those are worth reading rather than counting.
 
@@ -1415,12 +1611,22 @@ class MutationRecordTests(unittest.TestCase):
         decomposition -- exactly the aggregate the contract prohibits on a
         single event window -- with uncertainty 0 and a resolution measured
         against a baseline that is already perfect. Caught by the refusal.
+
+        **Re-run when the single-forecast half moved.** That refusal is now
+        `corp_reliability_curve`'s alone: `corp_decomposition` reports a
+        constant forecast set and names the zero share, per
+        `RealizedDiscriminationTests`. This test's second assertion was
+        re-pointed at the function that still refuses, and the mutation re-run
+        against the new fixture -- `CLAUDE.md` requires that of a record whose
+        fixture changed, and the earlier version of this assertion would have
+        gone green over a refusal that had been deleted from the caller it
+        named. The counts in the class docstring are from the re-run.
         """
 
         with self.assertRaises(MetricError):
             corp_decomposition([0.5 + 0.01 * i for i in range(10)], [1] * 10)
         with self.assertRaises(MetricError):
-            corp_decomposition([0.4, 0.4, 0.4], [0, 1, 1])
+            corp_reliability_curve([0.4, 0.4, 0.4], [0, 1, 1], block_length=2, seed=1)
 
 
 if __name__ == "__main__":

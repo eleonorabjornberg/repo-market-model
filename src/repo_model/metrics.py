@@ -27,9 +27,44 @@ realized path, read by a human.
 
 That prohibition is not enforced by a row-count threshold here, because there is
 no defensible number to pick and a wrong one would be worse than none. What is
-enforced is narrower and real: the decomposition below refuses a sample that
-cannot support it at all -- one outcome class, or one distinct forecast value --
-and a ten-day stress window usually fails both. See `_require_decomposable`.
+enforced is narrower and real: the decomposition below refuses a sample whose
+arithmetic is degenerate -- one outcome class, where uncertainty is zero and
+there is no discrimination to realise a share of -- and a ten-day all-stressed
+stress window is exactly that. See `_require_scoreable_outcomes`.
+
+How much of the achievable discrimination was realised
+------------------------------------------------------
+
+`resolution` is an absolute quantity and it is not readable on its own, because
+its ceiling moves with the base rate. On the published conditional run
+(`docs/runs/exceedance_gbm_mh61.json`) resolution falls by four orders of
+magnitude from the 5bp threshold to the 50bp one -- but so does `uncertainty`,
+because exceedances get rarer, and from the two numbers side by side a reader
+cannot tell a model that stopped discriminating from a sample that stopped
+offering anything to discriminate.
+
+`CorpDecomposition.realized_discrimination` is `resolution / uncertainty`: the
+share of the discrimination that was there to be realised that the forecasts
+actually realised. It is bounded in `[0, 1]` -- resolution is `UNC` minus the
+recalibrated score, and the recalibrated score is between 0 and `UNC` because
+the isotonic fit can be neither worse than climatology nor better than perfect
+-- so the two ends are meaningful without reference to how rare the event is: 1
+is a perfectly discriminating forecast, 0 is one that carries no information
+about the outcome at all.
+
+`discrimination_note` names the case where that share rounds to nothing at
+`REPORTED_PRECISION_PLACES`, which is the precision the terms are published at.
+This exists because the alternative is a table cell reading `0.0000`, which the
+reader takes for a small number rather than for none -- and that is what the
+generated results table currently prints for resolution at 50bp. A share is not
+allowed to reproduce the failure it was added to fix one level up, so where the
+share is illegible at the reported precision the return value says so in
+words rather than leaving a float for the reader to interpret.
+
+Constant forecasts are the case this describes, and `corp_decomposition`
+reports rather than refuses them for that reason. `corp_reliability_curve`
+still refuses them: a curve has no place to put a sentence, and a band around a
+single point is not a diagram.
 
 Why fixed-bin ECE is absent, and why the decomposition is bin-free
 ------------------------------------------------------------------
@@ -101,10 +136,11 @@ import bisect
 import math
 import random
 from dataclasses import dataclass
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Optional, Sequence, Tuple
 
 
 __all__ = [
+    "REPORTED_PRECISION_PLACES",
     "CorpDecomposition",
     "MetricError",
     "PrecisionRecallCurve",
@@ -183,21 +219,23 @@ def _paired(probabilities: Sequence[float], outcomes: Sequence[float]):
     return forecast, realized
 
 
-def _require_decomposable(forecast: Sequence[float], realized: Sequence[int]) -> None:
-    """Refuse a sample that cannot carry a decomposition at all.
+def _require_scoreable_outcomes(
+    forecast: Sequence[float], realized: Sequence[int]
+) -> None:
+    """Refuse a sample whose outcomes are all one class.
 
     Not a sample-size threshold -- there is no defensible one, and the contract
     handles the ten-day event window structurally instead, by giving
-    `EventWindowReport` nowhere to put an aggregate. These two checks are the
-    cases where the arithmetic is degenerate rather than merely noisy:
+    `EventWindowReport` nowhere to put an aggregate. This is the case where the
+    arithmetic is degenerate rather than merely noisy: uncertainty is exactly
+    zero, so resolution is measured against a baseline that is already perfect,
+    and the share of achievable discrimination is `0 / 0`. A ten-day window with
+    no non-stressed day lands here.
 
-    * One outcome class. Uncertainty is then zero, so resolution is measured
-      against a baseline that is already perfect and the skill decomposition
-      says nothing. A ten-day window with no non-stressed day lands here.
-    * One distinct forecast value. The isotonic fit is a single block, so
-      reliability and resolution are both zero by construction and the
-      decomposition reports a calibrated, uninformative model whatever the
-      forecasts were.
+    This runs **before** `corp_decomposition` divides, and that order is the
+    guard. Divide first and the caller gets a `ZeroDivisionError` naming a line
+    of arithmetic instead of a `MetricError` naming a single-class sample and
+    pointing at the contract's event-window rule.
     """
 
     if len(set(realized)) < 2:
@@ -207,10 +245,33 @@ def _require_decomposable(forecast: Sequence[float], realized: Sequence[int]) ->
             "is one event window, the contract asks for the exceedance curve and "
             "realized path instead of an aggregate"
         )
+
+
+def _require_decomposable(forecast: Sequence[float], realized: Sequence[int]) -> None:
+    """The outcome refusal, plus a refusal of a single distinct forecast value.
+
+    Used by `corp_reliability_curve`, and deliberately **not** by
+    `corp_decomposition`. A constant forecast set is not degenerate arithmetic:
+    uncertainty is positive, resolution is exactly zero, and reliability is
+    `(p - base_rate) ** 2`, which is a real and reportable measurement of how
+    far the constant sits from the rate it should have been. The decomposition
+    reports that case and names it through `discrimination_note`; the
+    reliability curve has nowhere to put a sentence and a consistency band
+    around one point is not a diagram, so here it stays a refusal.
+
+    The previous wording of this refusal said reliability and resolution were
+    "both zero by construction" on a constant forecast. Resolution is; that is
+    what a single isotonic block means. Reliability is not, and the correction
+    matters, because it is the whole of what such a sample still has to say.
+    """
+
+    _require_scoreable_outcomes(forecast, realized)
     if len(set(forecast)) < 2:
         raise MetricError(
-            f"all {len(forecast)} forecasts are {forecast[0]}; reliability and "
-            "resolution are zero by construction and report nothing"
+            f"all {len(forecast)} forecasts are {forecast[0]}; the isotonic fit "
+            "is a single block, so the curve is one point and resolution is zero "
+            "by construction. Use corp_decomposition, which reports this case "
+            "and names it, instead of a reliability diagram that cannot"
         )
 
 
@@ -398,6 +459,43 @@ def _recalibrate(forecast: Sequence[float], realized: Sequence[int]) -> Tuple[fl
     return tuple(recalibrated)
 
 
+REPORTED_PRECISION_PLACES = 4
+"""Decimal places the decomposition's terms are published at.
+
+`scripts/emit_results.py` prints resolution to four places in the generated
+results table, and that string is the number a reader actually sees. Declared
+here rather than read from there, because a metric that learned its own
+precision by importing a page generator would change when the page changed.
+If the published precision ever moves, this constant is the one edit.
+"""
+
+
+def _discrimination_note(
+    resolution: float, uncertainty: float, share: float
+) -> Optional[str]:
+    """Name a share that rounds to nothing, or return `None`.
+
+    `None` means the share is legible as printed and needs no sentence. It is
+    not "no problem found" standing in for "not checked": the share is always
+    computed, and this only decides whether the printed float can be read
+    without help.
+    """
+
+    printed = "%.*f" % (REPORTED_PRECISION_PLACES, share)
+    if float(printed) != 0.0:
+        return None
+    return (
+        "no discrimination at the reported precision: the forecasts realised "
+        f"{share!r} of the discrimination this sample had available "
+        f"({resolution!r} of {uncertainty!r}), which prints as {printed} at the "
+        f"{REPORTED_PRECISION_PLACES} decimal places these terms are reported "
+        "at. Read that as none rather than as a small amount of it -- the "
+        "recalibrated forecasts are climatology to within the reported "
+        "precision, so the resolution beside it is a rounding artefact and not "
+        "a measurement of weak skill"
+    )
+
+
 @dataclass(frozen=True)
 class CorpDecomposition:
     """`score = reliability - resolution + uncertainty`, computed bin-free.
@@ -405,6 +503,13 @@ class CorpDecomposition:
     `reliability` is CORP's MCB and `resolution` is its DSC; the contract's
     requirement is that the two are reported separately, which they are. See the
     module docstring for why the textbook binned form is not used.
+
+    `realized_discrimination` is `resolution / uncertainty`, in `[0, 1]`, and
+    `discrimination_note` names it when it rounds to nothing at
+    `REPORTED_PRECISION_PLACES`. Both are ordinary fields rather than computed
+    properties on purpose: the division has to happen inside
+    `corp_decomposition`, after the refusal that makes it safe, so that moving
+    it in front of that refusal is a change a test can see.
     """
 
     score: float
@@ -413,6 +518,8 @@ class CorpDecomposition:
     uncertainty: float
     base_rate: float
     n: int
+    realized_discrimination: float
+    discrimination_note: Optional[str]
 
     def identity_residual(self) -> float:
         """`score - (reliability - resolution + uncertainty)`. Should be ~0.
@@ -430,15 +537,29 @@ def corp_decomposition(
 ) -> CorpDecomposition:
     """Split the Brier score into reliability, resolution and uncertainty.
 
+    Also reports what share of the achievable discrimination was realised --
+    `resolution / uncertainty` -- and names that share when it rounds to nothing
+    at the precision the terms are published at. See the module docstring: an
+    absolute resolution is unreadable across thresholds whose base rates differ,
+    which is the whole of what the published exceedance record shows.
+
+    A constant forecast set is reported, not refused. It is the case the share
+    exists to describe, it still carries a real reliability, and the published
+    50bp row is close enough to it that refusing would put a record beyond
+    scoring.
+
     Raises:
-        MetricError: on malformed inputs, or a sample that cannot carry the
-            decomposition. See `_require_decomposable` -- and note that a single
-            event window is expected to fail it, which is the contract's rule
-            surfacing rather than a defect.
+        MetricError: on malformed inputs, or on a single-class sample, where
+            uncertainty is zero and the share would be `0 / 0`. See
+            `_require_scoreable_outcomes` -- and note that a single event window
+            is expected to fail it, which is the contract's rule surfacing
+            rather than a defect.
     """
 
     forecast, realized = _paired(probabilities, outcomes)
-    _require_decomposable(forecast, realized)
+    # Before the division below, not after. Uncertainty is zero on a
+    # single-class sample, and a ZeroDivisionError does not name its cause.
+    _require_scoreable_outcomes(forecast, realized)
 
     recalibrated = _recalibrate(forecast, realized)
     base_rate = sum(realized) / len(realized)
@@ -448,14 +569,22 @@ def corp_decomposition(
         (p - y) ** 2 for p, y in zip(recalibrated, realized)
     ) / len(realized)
     uncertainty = sum((base_rate - y) ** 2 for y in realized) / len(realized)
+    resolution = uncertainty - calibrated_score
+
+    # Unguarded on purpose. A `uncertainty == 0` branch here would return a
+    # named "undefined" and leave the refusal above with nothing to catch it,
+    # so reordering the two would stop being visible to any test.
+    share = resolution / uncertainty
 
     return CorpDecomposition(
         score=score,
         reliability=score - calibrated_score,
-        resolution=uncertainty - calibrated_score,
+        resolution=resolution,
         uncertainty=uncertainty,
         base_rate=base_rate,
         n=len(forecast),
+        realized_discrimination=share,
+        discrimination_note=_discrimination_note(resolution, uncertainty, share),
     )
 
 
