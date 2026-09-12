@@ -2342,8 +2342,27 @@ class DailyPanelBuild:
     `holes` counts, per built column, the `ref_date`s in the panel that carry
     no value for it. A hole is not a zero and is not the previous day's value;
     it is recorded and left empty. A settlement zero (`build_daily_panel` rule
-    8) is a value and is not counted. It is counted over the grid the panel
-    actually carries -- see `incomplete_dates`.
+    8) is a value and is not counted here; it is counted in `settlement_zeros`.
+    It is counted over the grid the panel actually carries -- see
+    `incomplete_dates`.
+
+    `settlement_zeros` counts, per built column and over the same grid, the
+    values that are rule 8 settlement zeros. Beside `holes` because they are
+    the two different facts about a column's absences: a hole is an absence
+    left empty, a settlement zero is an absence the auction record answered.
+    Without this the manifest published one of them and a reader of a panel
+    could see how much of a column was missing and not how much of it was a
+    zero written in place of an absence. Since A25 the set of dates eligible
+    for a zero is derived from the build cutoff and the snapshot's coverage,
+    so this count is also the audit of that bound on the build that ran.
+
+    It counts the zeros **written**, not the dates eligible for one. Those are
+    different sets, and the cheap count over the eligible dates over-reports on
+    exactly the columns that have the most data: a date carrying a real
+    settlement observation is eligible and is not a zero. A column that takes
+    no settlement zero -- every column outside `SETTLEMENT_ZERO_COLUMNS`, and a
+    declared one on a build where nothing was filled -- records zero rather
+    than omitting the key, to the standard `incomplete_dates` states next.
 
     `incomplete_dates` counts the `ref_date`s that the union of the sources
     reported but that this panel does not carry, because a `REQUIRED_FIELDS`
@@ -2359,6 +2378,7 @@ class DailyPanelBuild:
     build_cutoff: datetime
     decision_time: object
     incomplete_dates: int
+    settlement_zeros: Mapping[str, int]
 
 
 def _priceable_columns(
@@ -2722,8 +2742,10 @@ def build_daily_panel(
     The aggregate `treasury_settlement` is declared with its components, so on
     every zero day `treasury_settlement = bills + coupons` still holds rather
     than meeting a hole on its left. A zero is a value, so it is not counted in
-    `holes`. The fill happens here, at the build; `load_daily_panel` reads what
-    the build wrote and decides nothing.
+    `holes`; it is counted in `settlement_zeros`, per built column and over the
+    same grid, so the manifest publishes how much of a column is a written zero
+    beside how much of it is missing. The fill happens here, at the build;
+    `load_daily_panel` reads what the build wrote and decides nothing.
 
     Separately bounded by `build_cutoff` since A25, and the bound is the second
     condition above. Until then the rule held by a coincidence of another
@@ -2882,17 +2904,23 @@ def build_daily_panel(
         )
 
     # Rule 8, over the retained grid and nothing wider.
-    settlement_zeros = _settlement_zero_dates(
+    zero_dates = _settlement_zero_dates(
         visible, built, retained, snapshot_retrieved_at, registry, build_cutoff
     )
 
     rows: List[DailyObservation] = []
     holes: Dict[str, int] = {column: 0 for column in built}
+    # Counted in the write, not from `zero_dates` and not from the eligible
+    # dates behind it: what the manifest reports is what went into the rows.
+    # Keyed over every built column, so a column that took none says zero --
+    # see `DailyPanelBuild`.
+    settlement_zeros: Dict[str, int] = {column: 0 for column in built}
     for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
             row = latest.get((column, ref_date))
-            if row is None and ref_date in settlement_zeros.get(column, ()):
+            if row is None and ref_date in zero_dates.get(column, ()):
+                settlement_zeros[column] += 1
                 values[column] = 0.0
             elif row is None:
                 holes[column] += 1
@@ -2909,6 +2937,7 @@ def build_daily_panel(
         build_cutoff=build_cutoff,
         decision_time=decision_time,
         incomplete_dates=incomplete_dates,
+        settlement_zeros=settlement_zeros,
     )
 
 
@@ -2975,6 +3004,17 @@ def write_daily_panel(
         "refused_columns": dict(build.refusals),
         "holes": dict(build.holes),
         "incomplete_dates": build.incomplete_dates,
+        # `settlement_zeros` is on `DailyPanelBuild` and is deliberately not
+        # written here yet. Adding the key changes what a re-run of the
+        # published build writes, and `test_generated_results` compares the
+        # rebuilt `panel.build_manifest` with the one
+        # `docs/runs/persistence_funding.json` records key by key: the new key
+        # is "present on one side only" and the Milestone A reproduction goes
+        # red. Its own docstring says the answer to that is a report and a
+        # re-scored record, and `CLAUDE.md` refuses a rewrite of a published
+        # record inside a block. So the count is published to every reader of a
+        # build and the file half waits on the human. See
+        # `tests/test_data.TreasurySettlementZeroTests`, A27.
         "required_columns": [
             column for column in build.built_columns if column in REQUIRED_FIELDS
         ],
