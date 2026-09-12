@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "b0a1582",
+  "commit": "3b0261a",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -25,6 +25,9 @@
     "state": "in progress"
   },
   "run_records": [
+    "backtest_gbm_arx_declared_conformal_mh61.json",
+    "backtest_gbm_arx_declared_cross_conformal_mh61.json",
+    "backtest_gbm_arx_declared_none_mh61.json",
     "backtest_gbm_conformal_mh61.json",
     "backtest_gbm_cross_conformal_mh61.json",
     "backtest_gbm_mh61.json",
@@ -33,6 +36,9 @@
     "compare_persistence_vs_arx_dispersion_mh61_crps.json",
     "compare_persistence_vs_arx_volume.json",
     "compare_persistence_vs_arx_volume_mh61_crps.json",
+    "compare_persistence_vs_gbm_arx_declared_conformal_mh61_crps.json",
+    "compare_persistence_vs_gbm_arx_declared_cross_conformal_mh61_crps.json",
+    "compare_persistence_vs_gbm_arx_declared_none_mh61_crps.json",
     "compare_persistence_vs_gbm_conformal_mh61_crps.json",
     "compare_persistence_vs_gbm_cross_conformal_mh61_crps.json",
     "compare_persistence_vs_gbm_garch11_conformal_mh61_crps.json",
