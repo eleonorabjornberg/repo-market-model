@@ -69,6 +69,11 @@ What is covered here
   out so a scoring job can record *where* a tau fell and not only what came
   out, and guarded to be that one evaluation rather than a second opinion
   about it.
+* `FittedTailPwmTests` -- `_fit_gpd_pwm`: a generalised Pareto fitted to
+  residual excesses by probability-weighted moments, held to its own first
+  moment condition. Built and not wired: no caller reads it, no record carries
+  it, and nothing published can move. It is also the one class here that needs
+  no `require_extra` --- sorting and sums, no array library.
 
 Both walks read `ForecastInterfaceConformance.__subclasses__()` and
 `ExceedancePredictorConformance.__subclasses__()`, so the cases have to be
@@ -2979,6 +2984,232 @@ class LawKnotsTests(unittest.TestCase):
             with self.assertRaises(ValueError) as caught:
                 model.predict_stress(row, ())
             self.assertIn("no stress thresholds declared", str(caught.exception))
+
+
+class FittedTailPwmTests(unittest.TestCase):
+    """`_fit_gpd_pwm`: a generalised Pareto tail fitted by moments, and nothing wired.
+
+    **Why a fitted tail exists to be built.** `LawKnotsTests` above handed the
+    law out so a scoring job could record where a tau fell, and the job then
+    ran: over the folds of the panel the conditional `Q(0.95)` sits a couple of
+    basis points *below* zero, so every declared threshold --- 5 bp included ---
+    is read inside the single straight segment that runs from `Q(0.95)` to the
+    largest residual the fit ever saw, and beyond that segment's top the law
+    gives a wide move probability exactly zero. A piecewise-linear law has no
+    tail to read; it has a last knot. This estimator is the shape that goes
+    above `Q(0.95)` instead.
+
+    **What this class is not.** Nothing here is wired to anything. No caller
+    reads `_fit_gpd_pwm`, `predict_stress` is untouched, no record carries a
+    `FittedTail`, and no published figure can move --- deliberately, so that the
+    estimator can be got right before the law changes shape underneath the
+    records that were produced with it.
+
+    **Residual space, and why it is not a choice made here.** The excesses are
+    residual excesses above the conditional `Q(0.95)`, never level excesses. The
+    measurement is what settles it: the law's top knot has an enormous spread
+    across folds and takes a nearly distinct value on each, which is the anchor
+    translating from feature row to feature row rather than the tail's shape
+    changing. Residuals are the part that is exchangeable across folds; a
+    level-space excess would spend its hundred-odd points re-learning an anchor
+    the model already reports.
+
+    **No `require_extra`.** Alone among the classes in this file, this one runs
+    on a checkout without the `ml` extra: the estimator is sorting and sums, and
+    reaches no third-party package. That is a property worth having rather than
+    an oversight --- an estimator with no array library behind it is one
+    `tests/test_dependency_boundary.py` never has to arbitrate, and one the core
+    suite exercises on every interpreter rather than skipping.
+
+    The criterion, and why it is this one
+    -------------------------------------
+
+    The estimator inverts the fitted law's own first two probability-weighted
+    moments, so `sigma / (1 - xi)` is `a_0` by construction, and `a_0` is the
+    arithmetic mean of the excesses. The test asserts that equality on a
+    committed sample, together with `clamped` and `fallback` both false. It
+    needs no RNG, no drawn sample and no distributional tolerance, and it is
+    exact rather than approximate --- a recovery test against a draw would be
+    neither.
+
+    **It is also what makes the clamp honest, and that is why the second sample
+    is here.** Clamping `xi` breaks the identity, so an estimator that clamps
+    and does not say so cannot pass: on the first sample a clamp applied where
+    none was needed and hidden moves `sigma / (1 - xi)` off the mean, and on the
+    second --- a sample carrying one residual many times the others, which is
+    exactly the fit `GPD_SHAPE_BOUNDS` exists to take back --- `clamped` is
+    required to be true. The identity is deliberately *not* asserted on the
+    second sample. It does not hold there, and asserting a loosened version of
+    it would be asserting that the clamp did nothing.
+
+    A finding: the criterion cannot see the plotting position
+    ---------------------------------------------------------
+
+    The brief for this block expected the first-moment condition to fail under
+    "the wrong plotting position". **It does not, and it cannot.** Writing
+    `d = a_0 - 2 a_1`, the estimator is `xi = 2 - a_0 / d` and
+    `sigma = 2 a_0 a_1 / d`, so `1 - xi = 2 a_1 / d` and
+
+        sigma / (1 - xi) = (2 a_0 a_1 / d) * (d / 2 a_1) = a_0
+
+    for *any* value of `a_1` whatever. `a_1` enters the numerator and the
+    denominator identically and cancels. The identity pins `xi` and `sigma`
+    against each other and against `a_0`; it says nothing at all about how `a_1`
+    was formed, and the plotting position lives entirely inside `a_1`. Mutation
+    1 below confirms it on both committed samples: the left-hand side is
+    unchanged to the last bit and neither sample's clamp state moves.
+
+    This generalises past this one mutation, which is the part worth recording.
+    **No assertion that compares the fit against moments the test computes by
+    the same convention can see the convention.** The second moment condition
+    has the same blindness for the same reason --- `a_1 = sigma / (2 (2 - xi))`
+    is just the other half of the inverse map, and it would be checked against
+    the same wrongly-weighted `a_1`. What would see it is a committed expected
+    `xi`, which is a regression pin and a different criterion, or a recovery
+    test against a drawn sample, which the brief declined for reasons that still
+    hold. Per `CLAUDE.md`, a mutation that survives is reported here rather than
+    answered with a second test; which of those two the tail is eventually
+    pinned with is a decision, not a gap to be filled in quietly.
+
+    What is deliberately unpinned
+    -----------------------------
+
+    The exponential fallback below `GPD_MINIMUM_EXCESSES`, the three refusals,
+    and the lower end of `GPD_SHAPE_BOUNDS` have no assertion here. One block,
+    one criterion; they are named so that a later block adds them knowingly
+    rather than discovering them absent.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME` built from `git ls-files -z --cached
+    --others --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`
+    and `OMP_NUM_THREADS=1`, on CPython 3.9.6. The copy is gitignore-clean and
+    so carries no `.venv`, so the suite is run there with the mount's
+    `.venv/bin/python` by absolute path --- otherwise the `ml` extra is absent,
+    every other class in this file skips, and a mutation "survives" a suite that
+    never ran. Unmutated control green before and after; each mutation confirmed
+    applied by grep, and restored before the next.
+
+    1. **The plotting position dropped.** `_GPD_PLOTTING_OFFSET = 0.35` ->
+       `0.0` in `ml.py`. **Survives**, here and across the whole suite. The
+       algebra above says why, and the numbers agree: on the first committed
+       sample `xi` moves from about `0.154` to about `0.248` and `sigma` from
+       about `1.433` to about `1.274`, while `sigma / (1 - xi)` is `1.69375`
+       either way --- the sample mean, unmoved --- and the fit stays unclamped.
+       On the second sample `xi` moves from about `0.786` to about `0.831` and
+       the clamp binds under both. This is the finding recorded above, not a
+       mutation that merely happened to miss.
+    2. **The factor of two in the denominator.** `denominator = a_0 - 2.0 * a_1`
+       -> `a_0 - 1.0 * a_1` in `ml._fit_gpd_pwm`. Kills this test and nothing
+       else, two subtests, both `AssertionError`, and by both halves of the
+       criterion at once. With `d' = a_0 - a_1` the algebra gives `1 - xi =
+       a_1 / d'`, so the identity would return `2 a_0` --- `3.3875` against a
+       mean of `1.69375` --- but the *observed* left-hand side is `2.0143`,
+       because the mutation also lifts the first sample's `xi` to about `0.703`
+       and the clamp takes it to `0.5` before the identity is read. So the
+       clamp subtest fails first and the identity subtest fails on a number the
+       clamp shaped. Recorded as observed rather than as predicted: the two
+       guards in this estimator interact, and the clean factor of two is what
+       an unclamped estimator would have shown.
+    3. **The clamp applied without being recorded.** `clamped = not lower <= xi
+       <= upper` -> `clamped = False` in `ml._fit_gpd_pwm`, leaving the clamp
+       itself in place behind `if clamped:` --- so the shape is silently
+       unbounded, which is the more dangerous half of the defect and the one
+       the flag exists to stop. Kills this test alone, `AssertionError`: the
+       second sample's fit reports `clamped` false over a `xi` of about `0.786`.
+       This is the mutation the brief named as the one that matters, and it
+       kills.
+    4. **Control, expected to survive**: `GPD_MINIMUM_EXCESSES` 20 -> 5. Green
+       throughout, as recorded under "what is deliberately unpinned" --- both
+       committed samples are above either value, so no assertion here reaches
+       the fallback branch. Recorded rather than covered by an assertion
+       invented for it.
+    """
+
+    #: Residual excesses above a conditional `Q(0.95)`, in basis points, in the
+    #: order a caller would have collected them --- not sorted. The estimator
+    #: sorts, and `a_0` is `math.fsum`, so the identity below is exact whatever
+    #: order these arrive in; a pre-sorted literal would have let an estimator
+    #: that forgot to sort pass for the wrong reason.
+    #:
+    #: Chosen to fit unclamped and to fit unclamped *comfortably*: `xi` is about
+    #: `0.154`, near the middle of `GPD_SHAPE_BOUNDS` rather than beside an end.
+    #: A sample sitting just inside the clamp would make more mutations red, and
+    #: would make them red by tipping over a boundary --- a fixture whose
+    #: unclamped-ness is marginal reports "clamped" for reasons that have
+    #: nothing to do with the defect under test.
+    UNCLAMPED = (
+        0.39, 1.17, 0.67, 1.39, 1.48, 0.10, 0.02, 2.92,
+        0.43, 0.38, 11.76, 0.93, 2.91, 0.95, 1.54, 0.23,
+        1.52, 3.31, 1.10, 2.10, 1.70, 0.09, 2.22, 1.34,
+    )
+
+    #: A sample that clamps, and the shape of sample that does: ordinary
+    #: excesses of a basis point or two with one residual of about 83, which
+    #: drags the PWM shape to about `0.786` --- past `0.5`, so an infinite
+    #: variance inferred from a single point. The identity is not asserted on
+    #: this one. It does not hold, and that is the clamp working.
+    CLAMPING = (
+        13.97, 12.02, 0.06, 0.09, 4.05, 2.38, 1.78, 0.43,
+        1.38, 1.39, 1.26, 0.18, 0.71, 0.61, 2.24, 82.97,
+        12.35, 1.09, 0.75, 0.35, 0.04, 0.03,
+    )
+
+    def test_the_unclamped_fit_satisfies_its_own_first_moment_condition(self):
+        """`sigma / (1 - xi)` is the mean of the excesses, and the clamp says so.
+
+        Two claims, one criterion, and they are one because either alone is
+        satisfiable by an estimator that is wrong. The identity holds for the
+        *clamped* pair too if the clamp never binds, so it proves something
+        about a fit only alongside the record's own statement that this fit was
+        not clamped and was not the fallback; and `clamped=False` on its own is
+        a boolean any implementation can return. Together they say: this pair of
+        numbers is the probability-weighted-moment solution for this sample, and
+        nothing intervened between the moments and the pair.
+
+        The mean is recomputed here from the committed literal rather than read
+        off `a_0`, with `math.fsum` as the estimator uses, so the two agree
+        independently of the order the excesses were written in.
+        """
+
+        fit = ml._fit_gpd_pwm(self.UNCLAMPED)
+        mean = math.fsum(self.UNCLAMPED) / len(self.UNCLAMPED)
+
+        with self.subTest("the record says the fit is the sample's own"):
+            self.assertFalse(
+                fit.clamped,
+                msg="the sample was chosen to fit inside GPD_SHAPE_BOUNDS; a "
+                "clamped fit here means the estimator moved xi, and the "
+                "identity below would be asserted over a pair no sample "
+                "produced",
+            )
+            self.assertFalse(
+                fit.fallback,
+                msg="the sample carries more than GPD_MINIMUM_EXCESSES "
+                "excesses, so a shape was fitted; a fallback here is an "
+                "exponential being reported as a fit",
+            )
+            self.assertEqual(fit.excesses, len(self.UNCLAMPED))
+
+        with self.subTest("sigma / (1 - xi) is the arithmetic mean"):
+            self.assertAlmostEqual(
+                fit.sigma / (1.0 - fit.xi),
+                mean,
+                delta=abs(mean) * 1e-14,
+                msg="the fitted law's own first moment is not the mean of the "
+                "excesses it was fitted to; the estimator is not the PWM "
+                "solution of this sample",
+            )
+
+        with self.subTest("a sample whose shape the clamp takes back says so"):
+            heavy = ml._fit_gpd_pwm(self.CLAMPING)
+            self.assertTrue(
+                heavy.clamped,
+                msg="a sample whose PWM shape lands outside GPD_SHAPE_BOUNDS "
+                "was clamped without the record saying so; the reported xi is "
+                "then a bound presented as an estimate",
+            )
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
