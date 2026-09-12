@@ -213,6 +213,106 @@ The three prohibited ways out were not taken: the guard was not weakened, no
 tolerance was widened, and the criterion was not relocated to a module that
 would have made it pass. `splits.clears_purge`, the purge derivation and
 `docs/runs/` were not touched. No mutation is recorded because no guard landed.
+
+Why re-dating the Track B fixtures does not close it either (B29)
+-----------------------------------------------------------------
+
+B29 rebuilt that guard on the base the shared change landed on, to fix the two
+Track B fixtures the way `tests/test_contract.py` was fixed -- by re-dating the
+panel they run on rather than by weakening a declaration -- and stopped again,
+on a different reason. This section is that reason, with what was measured.
+
+**The shared change worked.** On a rebuilt guard, `tests/test_contract.py` is
+green: `_on_consecutive_days` makes `CONTRACT_PURGE` deliverable and not one of
+B28's seven reds there survives. Nothing in that file was touched to get it.
+
+**Against `metadata/sources.json` the guard is still silent, and no published
+page moves.** `RealRegistryTests` stays green, and the command README.md and
+REPRODUCIBILITY.md publish --
+
+    backtest data/sample/daily_market.csv --registry metadata/sources.json
+      --feature spread_bps --decision-time 16:00 --model persistence
+
+-- still exits 0 with the gap it has always reported, six days over
+`fred_macro_latest_vintage.IOER`, `.IORB` and `nyfed_sofr.SOFR`. The real
+registry declares SOFR's one **business** day under a six-calendar-day worst
+case, so availability lands days ahead of the decision.
+
+**What stays red is thirty-two tests, in three Track B modules, all
+`repo_model.splits.LookAheadError`** -- `tests/test_baseline.py` fourteen
+(`PurgedBacktestTests` eleven, `RollingBacktestTests` two, `FittedThresholdTests`
+one), `tests/test_cli_eval.py` fourteen, `tests/test_ml.py` four. The CLI ones
+surface as exit code 2, which is the dispatcher translating `ValueError`.
+
+**The fixtures cannot be made decision-safe on the sample panel by any
+declaration at all.** This is the part B28 did not establish, and it rules out
+the fix that would have cost nothing. `data/sample/daily_market.csv` is weekday
+dates with MLK Monday 2026-01-19 absent. For the fold scored Tuesday
+2026-01-20 at a one-day gap, the last training row clearing the purge is Friday
+2026-01-16 -- and the last panel date strictly before the scored date is *also*
+Friday 2026-01-16, because the Monday is not on the panel. The decision is taken
+on the same day as the row it would have to read. Every positive release lag
+puts that row's availability after it, and `max_release_lag_days` refuses to
+return zero, so no declaration of any basis, unit or `available_time` is
+decision-safe for that fold. Only a panel without the gap is.
+
+At a **six**-day gap there is a declaration that works and it is the real
+registry's own shape -- `ref_date` / `business_days`, `days` 1 under
+`worst_case_calendar_days` 6 -- which prices to the same six and leaves the
+numbers bit-identical: twelve forecasts, persistence 2.083333333333348,
+ARX 2.086429950395829, coverage 0.5 for both. It is recorded because it bounds
+the problem, not because it is the fix: `validate_release_lag` requires
+`worst_case_calendar_days` to be at least `days + 5`, so the smallest gap that
+shape can express is six, and the one-day fixtures stay unreachable. Re-declaring
+`days` downward is also the weakening the block forbids.
+
+**So re-dating is the only fix, and this is what it costs.** Measured on the
+sample panel at `minimum_history=10`, with the guard suppressed so the move is
+attributable to the panel alone:
+
+  | run                  | gapped               | consecutive          |
+  |----------------------|----------------------|----------------------|
+  | purge 1, persistence | 14, 1.571428571428595| 14, 1.5000000000000189 |
+  | purge 6, persistence | 12, 2.083333333333348| 9, 1.5555555555555718 |
+  | purge 1, ARX         | 14, 1.9142198265530637| 14, 1.844558792520991 |
+  | purge 6, ARX         | 12, 2.086429950395829| 9, 1.4148220886487588 |
+
+(forecast count, then `mae_bps`; interval coverage goes 0.5 to 4/9 at six days
+and is unchanged at one.) Four tests in this file pin those literals as
+reproductions of earlier blocks, and say in their own docstrings why:
+`RollingBacktestTests.test_persistence_remains_the_default_with_unchanged_numbers`,
+`PurgedBacktestTests.test_the_backtest_derives_its_purge_from_the_declared_feature_set`
+("Exactly, not nearly: if the derivation changed the numbers, then it changed
+something it was not asked to change"),
+`PurgedBacktestTests.test_the_purge_moves_the_reported_numbers_and_the_move_is_kept`
+and
+`FittedThresholdTests.test_the_arx_reports_the_numbers_it_reported_before_a_third_model_existed`.
+Re-dating the panel under them re-baselines every benchmark number Track B
+pins, and severs the chain back to the purge block that established them. That
+is a decision about the evidence base and not a fixture edit, which is why this
+block reports it rather than making it.
+
+**And a third fixture the brief did not name depends on the gaps outright.**
+`business_days` in `tests/test_cli_eval.py` generates weekday-only dates and is
+what `ContinuousModelHarness`, `ConditionalModelHarness` and
+`tests/test_ml.py`'s `business_day_frame` are built on -- all four `test_ml`
+reds are folds after a weekend on one of those. A business-day calendar re-dated
+onto consecutive days is no longer a business-day calendar, so for that fixture
+"re-date the panel" is not available in the way it was for
+`tests/test_contract.py`.
+
+The same three ways out were refused again: no declaration was weakened, no
+tolerance widened, the criterion was not moved to a module that would pass it,
+and `splits.clears_purge`, the purge derivation, `docs/` and
+`tests/test_contract.py` were not touched. The other three call sites remain
+unwired and unclaimed -- `paired_model_comparison`,
+`rolling_exceedance_backtest` and `event_eval.evaluate_event_window`. No
+mutation is recorded because, again, no guard landed.
+
+One note for the human held over from the settled design point: a
+`business_days` lag that runs off the end of the panel is late, because its
+publication date is then after every decision instant the panel can express.
+`scripts/purge_availability_audit.py` is human-owned and still skips that case.
 """
 
 import contextlib
