@@ -391,6 +391,7 @@ from repo_model.baseline import (
     twcrps_weights,
 )
 from repo_model.metrics import (
+    REPORTED_PRECISION_PLACES,
     MetricError,
     brier_skill_score,
     crps_from_quantiles,
@@ -4951,6 +4952,320 @@ class RollingExceedanceTests(unittest.TestCase):
         self.assertEqual(
             report.metrics[position].brier, report.metrics[position].reference_brier
         )
+
+
+#: A share no arithmetic on the terms beside it produces. Planted, so that the
+#: written value can only have come from the field it was read out of.
+PLANTED_SHARE = 0.125
+PLANTED_NOTE = (
+    "planted: a sentence no re-derivation from the terms beside it would write"
+)
+#: Terms whose share rounds to nothing at the published precision, so a writer
+#: that re-derived the note would put a sentence here. The decomposition beside
+#: them says `None`, and `None` is what the record must carry.
+ROUNDS_TO_NOTHING = (1e-9, 0.1)
+#: The share planted beside those terms. Rounds to nothing as they do -- so the
+#: note is the thing under test there -- while differing from their division,
+#: so the provenance claim holds at that threshold too.
+UNPRINTABLE_SHARE = 3e-9
+
+
+class ExceedanceDiscriminationShareTests(unittest.TestCase):
+    """The record carries the share of discrimination realised, from the scoring.
+
+    `metrics.corp_decomposition` computes `realized_discrimination` --
+    `resolution / uncertainty`, the share of the discrimination a sample had
+    available that the forecasts actually realised -- and
+    `_discrimination_note` names the case where that share rounds to nothing at
+    the precision the terms are published at. Until this block the exceedance
+    record carried neither, so `scripts/emit_results.py` derived the share from
+    the record's two terms in order to print it. A page that derives a number
+    the metric already computed is a second implementation of it waiting to be
+    told apart from the first.
+
+    **The share is taken, not recomputed.** This is the whole of the criterion
+    and it is not a statement about the value. On any fixture anyone would
+    write, `decomposition.realized_discrimination` and
+    `written["resolution"] / written["uncertainty"]` agree to the last bit, so
+    an assertion comparing the written number against the division cannot tell
+    a writer that reads the field from one that re-divides. The doctored report
+    below is built for exactly that: a `CorpDecomposition` whose share and note
+    are what the scoring *said*, beside terms that would say something else.
+    A writer that re-derives writes the terms' answer and dies; a writer that
+    reads the field writes the field and lives. That is the failure `B30`
+    avoided by mirroring `_declared_availability` on the audit script line for
+    line, and it is why the trap is worth a fixture of its own.
+
+    **A `None` note is written, not omitted.** `None` means the share prints
+    legibly and needed no sentence -- it is the checked-and-legible answer, not
+    the absence of a check. The reasoning is `DailyPanelBuild.incomplete_dates`',
+    one artifact over: a build that dropped nothing records zero, so a reader
+    can tell it apart from a build that was never asked. In this record the
+    distinction is sharper still, because absence here has a second meaning
+    already: a field the run could not compute is omitted and its reason is
+    recorded under `unavailable`. Omitting a `None` note would file "no
+    sentence needed" under "could not be computed", which is the one direction
+    that reads as reassurance.
+
+    What this does not do
+    =====================
+
+    It does not re-score anything. `docs/runs/exceedance_gbm_mh61.json` and
+    `docs/runs/exceedance_funding_climatology.json` predate the field and will
+    not carry it until they are re-run; that is the human's, and nothing else
+    those files carry moves -- the two new keys are additions to
+    `_decomposition_document` and no existing value is touched. Nor does it
+    delete `emit_results.realized_discrimination`: the generator must keep
+    deriving the share for as long as the published records lack it.
+
+    Mutation record
+    ===============
+
+    Run in a disposable copy under `$HOME`, built from `git ls-files -z --cached
+    --others --exclude-standard` so the copy is every tracked file as the
+    working tree has it plus the untracked new ones and nothing gitignored.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`. Unmutated control green, zero
+    `expectedFailure`, before and after each mutation.
+
+    1. **The acceptance mutation: the writer re-divides.**
+       `_decomposition_document` writes `decomposition.resolution /
+       decomposition.uncertainty` for the share and
+       `metrics._discrimination_note(...)` recomputed from the same two terms
+       for the note, instead of reading the two fields. Every value it produces
+       is in range, and on the undoctored run every one of them is bit-identical
+       to what the correct writer produces. Kills 1, `AssertionError`:
+
+       * `test_the_exceedance_document_records_the_share_of_discrimination_realised`
+         -- `0.7636363636363633 != 0.125` on the doctored entry. The criterion
+         and the mutation target are the same test, and the kill is on the
+         provenance half of it: the first half, asserting the written values
+         against the scored report's own fields, stays green under this
+         mutation, which is the point the doctored fixture exists to make.
+
+    2. **The `None` note omitted.** `_decomposition_document` writes
+       `discrimination_note` only `if decomposition.discrimination_note is not
+       None` -- the shape that reads as tidy and files "checked, legible" under
+       the same absence as "could not be computed". Kills 1, `AssertionError`:
+
+       * `test_the_exceedance_document_records_the_share_of_discrimination_realised`
+         -- `'discrimination_note' not found in {...}` on the scored run's own
+         5bp entry, whose note is legitimately `None`, before the doctored
+         report is reached.
+
+    3. **The share not written at all** -- `realized_discrimination` dropped
+       from the returned dict, which is the state of the tree this block
+       started from. Kills 1, `KeyError`:
+
+       * `test_the_exceedance_document_records_the_share_of_discrimination_realised`
+         -- `KeyError: 'realized_discrimination'`. Recorded because it is the
+         cheapest way for the field to go missing again, and because a `KeyError`
+         rather than an `AssertionError` is what a reader of a future failure
+         will see.
+
+    Nothing outside this test changed status under any of the three, which is
+    the other half of mutation 1's claim: the two new keys reach the published
+    record and nothing that was already in it moves.
+    """
+
+    FEATURES = ARX_FEATURES
+    TAU_FAMILY = EXCEEDANCE_TAUS
+    MINIMUM_HISTORY = EXCEEDANCE_MINIMUM_HISTORY
+
+    def setUp(self):
+        self.rows = regime_shift_frame()
+
+    def report(self):
+        """The same scored run `RollingExceedanceTests` uses, at the same gap."""
+
+        return rolling_exceedance_backtest(
+            self.rows,
+            predictor=arx_exceedance(REGRESSORS, minimum_history=self.MINIMUM_HISTORY),
+            model_name="arx",
+            features=self.FEATURES,
+            registry=declared_registry(1, self.FEATURES),
+            decision_time=DECISION_TIME,
+            taus=self.TAU_FAMILY,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+
+    def document(self, report):
+        return exceedance_backtest_document(
+            report,
+            panel_path=SAMPLE_PANEL,
+            registry_path=REAL_REGISTRY,
+            thresholds_path=REAL_THRESHOLDS,
+        )
+
+    def entries(self, document):
+        """`by_tau` keyed by the tau each row states, not by the string key.
+
+        The key is a formatting decision and the tau is the fact. Reading the
+        rows back by `tau_bp` means an entry written under the wrong key would
+        show up here as a missing threshold rather than as a silently swapped
+        row.
+        """
+
+        by_tau = document["metrics"]["by_tau"]
+        return {entry["tau_bp"]: entry for entry in by_tau.values()}
+
+    def doctored(self, report):
+        """The run's report with every threshold's decomposition replaced.
+
+        Each planted `CorpDecomposition` keeps a real `resolution` and
+        `uncertainty` and carries a share and a note that no arithmetic on them
+        produces. `unavailable` loses its `decomposition` reason wherever one
+        was recorded, because the doctored report is one where every threshold
+        has a decomposition and a record that both carried the field and
+        explained its absence would be incoherent in a way the test is not
+        about.
+        """
+
+        truth = next(
+            metric.decomposition
+            for metric in report.metrics
+            if metric.decomposition is not None
+        )
+        resolution, uncertainty = ROUNDS_TO_NOTHING
+        plants = [
+            # A share that is not the division, and a note where the terms
+            # would have written none.
+            dataclasses.replace(
+                truth,
+                realized_discrimination=PLANTED_SHARE,
+                discrimination_note=PLANTED_NOTE,
+            ),
+            # The refusal, inverted: terms that round to nothing, beside the
+            # `None` the scoring actually produced.
+            dataclasses.replace(
+                truth,
+                resolution=resolution,
+                uncertainty=uncertainty,
+                realized_discrimination=UNPRINTABLE_SHARE,
+                discrimination_note=None,
+            ),
+            dataclasses.replace(
+                truth,
+                realized_discrimination=PLANTED_SHARE * 2.0,
+                discrimination_note=None,
+            ),
+            dataclasses.replace(
+                truth,
+                realized_discrimination=PLANTED_SHARE * 3.0,
+                discrimination_note=PLANTED_NOTE + " (second threshold)",
+            ),
+        ]
+        metrics = []
+        for metric, plant in zip(report.metrics, plants):
+            remaining = {
+                reason: text
+                for reason, text in metric.unavailable.items()
+                if reason != "decomposition"
+            }
+            metrics.append(
+                dataclasses.replace(
+                    metric, decomposition=plant, unavailable=remaining
+                )
+            )
+        self.assertEqual(len(metrics), len(report.metrics))
+        return dataclasses.replace(report, metrics=tuple(metrics))
+
+    def test_the_exceedance_document_records_the_share_of_discrimination_realised(self):
+        """The acceptance criterion, and the mutation target is this same test.
+
+        Three claims, in the order a failure would be reasoned about.
+
+        First, on the run as it scores: every `by_tau` entry that carries a
+        decomposition carries the share and the note, and both equal the
+        fields on the `CorpDecomposition` the scoring produced. The 5bp entry's
+        note is `None` there, and `None` is present as a value -- the key is
+        asserted to exist before its value is read, because omission and a
+        `None` value fail differently and only one of them is the refusal.
+
+        Second, on a report whose decompositions were doctored: the written
+        share and note are the planted ones, and the share is *not* the
+        division of the two terms written beside it. This is the provenance
+        claim, and it is the reason the fixture is doctored at all -- on the
+        scored run the field and the division agree bit for bit, so nothing
+        there can tell the two writers apart.
+
+        Third, the inverted refusal: a threshold whose terms round to nothing
+        at the published precision, and whose note is `None` anyway. A writer
+        that re-derived the note would put a sentence there; a writer that
+        omitted `None` would drop the key. The record says `None`, which is
+        "checked, and legible", and is what the scoring said.
+        """
+
+        report = self.report()
+        entries = self.entries(self.document(report))
+        self.assertEqual(
+            sorted(entries), sorted(metric.tau_bp for metric in report.metrics)
+        )
+
+        carried = 0
+        for metric in report.metrics:
+            entry = entries[metric.tau_bp]
+            if metric.decomposition is None:
+                # Absent with its reason, which is the record's other rule and
+                # not this one. Nothing to carry, and nothing defaulted.
+                self.assertNotIn("decomposition", entry)
+                self.assertIn("decomposition", entry["unavailable"])
+                continue
+            written = entry["decomposition"]
+            self.assertEqual(
+                written["realized_discrimination"],
+                metric.decomposition.realized_discrimination,
+            )
+            self.assertIn("discrimination_note", written)
+            self.assertEqual(
+                written["discrimination_note"],
+                metric.decomposition.discrimination_note,
+            )
+            carried += 1
+        self.assertGreater(carried, 0)
+
+        doctored = self.doctored(report)
+        document = self.document(doctored)
+        entries = self.entries(document)
+        for metric in doctored.metrics:
+            written = entries[metric.tau_bp]["decomposition"]
+            self.assertEqual(
+                written["realized_discrimination"],
+                metric.decomposition.realized_discrimination,
+            )
+            self.assertIn("discrimination_note", written)
+            self.assertEqual(
+                written["discrimination_note"],
+                metric.decomposition.discrimination_note,
+            )
+            # The provenance claim stated as a disagreement: the record's share
+            # is the scoring's, and the scoring's is not this division.
+            self.assertNotEqual(
+                written["realized_discrimination"],
+                written["resolution"] / written["uncertainty"],
+            )
+
+        resolution, uncertainty = ROUNDS_TO_NOTHING
+        inverted = next(
+            entry["decomposition"]
+            for entry in entries.values()
+            if entry["decomposition"]["uncertainty"] == uncertainty
+        )
+        self.assertEqual(inverted["resolution"], resolution)
+        # The terms are in the region `_discrimination_note` writes a sentence
+        # for -- the share prints as nothing at the published precision -- and
+        # the record still carries the `None` the decomposition holds.
+        printed = "%.*f" % (
+            REPORTED_PRECISION_PLACES,
+            inverted["realized_discrimination"],
+        )
+        self.assertEqual(float(printed), 0.0)
+        self.assertIsNone(inverted["discrimination_note"])
+
+        # It still serialises: the note is a string or `None`, both of which
+        # `json` writes, and nothing added here is `Infinity` or `NaN`.
+        text = json.dumps(document)
+        self.assertNotIn("Infinity", text)
+        self.assertNotIn("NaN", text)
 
 
 def log_score_of(report, tau):
