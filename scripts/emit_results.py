@@ -270,7 +270,8 @@ def tail_section(conditional):
         "%d-day purge against a climatology refitted on each fold's training rows. "
         "Run at `%s`." % (scored, purge, commit))
     add("")
-    add("| Threshold | Exceeded on | Brier skill vs climatology | 90% interval | Resolution |")
+    add("| Threshold | Exceeded on | Brier skill vs climatology | 90% interval | "
+        "Discrimination realised |")
     add("|---|---|---|---|---|")
     for key in order:
         entry = taus[key]
@@ -280,7 +281,7 @@ def tail_section(conditional):
             entry["tau_bp"], pct(entry["base_rate"]),
             signed(entry["brier_skill_score"]),
             signed(interval["lower"]), signed(interval["upper"]),
-            bp(decomposition["resolution"], 4)))
+            pct(realized_discrimination(decomposition), 2)))
     add("")
     # Which thresholds are findings is computed: an interval that excludes zero is one.
     beats = [taus[key] for key in order
@@ -288,14 +289,18 @@ def tail_section(conditional):
     loses = [taus[key] for key in order
              if require(taus[key], "brier_skill_score_interval")["upper"] < 0]
     add("**Skill at the shoulder, none in the tail.** The skill interval excludes zero "
-        "above climatology at %s, and below it at %s. Resolution -- the part of the "
-        "Brier score that is information rather than base rate -- falls from %s at "
-        "%g bp to %s at %g bp: the forecasts stop carrying information exactly where "
-        "the exit criterion asks them to."
+        "above climatology at %s, and below it at %s. The last column is resolution as a "
+        "share of uncertainty -- how much of the discrimination a sample had available "
+        "the forecasts actually realised. It is the honest form of the comparison, "
+        "because resolution and uncertainty both collapse as the event gets rarer and "
+        "a resolution quoted alone cannot tell a model that stopped discriminating "
+        "from a sample with nothing left to discriminate. It falls from %s at %g bp to "
+        "%s at %g bp: the forecasts stop carrying information exactly where the exit "
+        "criterion asks them to."
         % (thresholds(beats), thresholds(loses),
-           bp(require(taus[order[0]], "decomposition", "resolution"), 4),
+           pct(realized_discrimination(require(taus[order[0]], "decomposition")), 2),
            taus[order[0]]["tau_bp"],
-           bp(require(taus[order[-1]], "decomposition", "resolution"), 4),
+           pct(realized_discrimination(require(taus[order[-1]], "decomposition")), 2),
            taus[order[-1]]["tau_bp"]))
     add("")
     for key in order:
@@ -320,6 +325,21 @@ def tail_section(conditional):
     add("")
     add(TAIL_END)
     return "\n".join(lines)
+
+
+def realized_discrimination(decomposition):
+    """Resolution as a share of uncertainty, from the record's own two terms.
+
+    `metrics.CorpDecomposition` computes this at scoring time, but the published
+    records predate the field, so it is derived here from the two terms they do
+    carry rather than transcribed from anywhere. When the record carries
+    `realized_discrimination` itself, read that instead and delete this.
+    """
+
+    uncertainty = require(decomposition, "uncertainty")
+    if not uncertainty:
+        raise RecordError("a decomposition with no uncertainty carries no share")
+    return require(decomposition, "resolution") / uncertainty
 
 
 def thresholds(entries):

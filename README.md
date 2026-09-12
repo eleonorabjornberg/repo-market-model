@@ -137,14 +137,14 @@ negative result, published on the same terms as a positive one would have been.
 
 The conditional model's exceedance probabilities, scored over 2039 days at a 6-day purge against a climatology refitted on each fold's training rows. Run at `dbd1b2d`.
 
-| Threshold | Exceeded on | Brier skill vs climatology | 90% interval | Resolution |
+| Threshold | Exceeded on | Brier skill vs climatology | 90% interval | Discrimination realised |
 |---|---|---|---|---|
-| τ = 5 bp | 8.0% of days | **+0.213** | +0.127 to +0.296 | 0.0217 |
-| τ = 10 bp | 3.4% of days | **-0.042** | -0.155 to +0.051 | 0.0031 |
-| τ = 20 bp | 1.0% of days | **-0.254** | -0.514 to -0.133 | 0.0002 |
-| τ = 50 bp | 0.2% of days | **-0.778** | -3.168 to -0.348 | 0.0000 |
+| τ = 5 bp | 8.0% of days | **+0.213** | +0.127 to +0.296 | 29.46% |
+| τ = 10 bp | 3.4% of days | **-0.042** | -0.155 to +0.051 | 9.35% |
+| τ = 20 bp | 1.0% of days | **-0.254** | -0.514 to -0.133 | 2.05% |
+| τ = 50 bp | 0.2% of days | **-0.778** | -3.168 to -0.348 | 0.05% |
 
-**Skill at the shoulder, none in the tail.** The skill interval excludes zero above climatology at 5 bp, and below it at 20 and 50 bp. Resolution -- the part of the Brier score that is information rather than base rate -- falls from 0.0217 at 5 bp to 0.0000 at 50 bp: the forecasts stop carrying information exactly where the exit criterion asks them to.
+**Skill at the shoulder, none in the tail.** The skill interval excludes zero above climatology at 5 bp, and below it at 20 and 50 bp. The last column is resolution as a share of uncertainty -- how much of the discrimination a sample had available the forecasts actually realised. It is the honest form of the comparison, because resolution and uncertainty both collapse as the event gets rarer and a resolution quoted alone cannot tell a model that stopped discriminating from a sample with nothing left to discriminate. It falls from 29.46% at 5 bp to 0.05% at 50 bp: the forecasts stop carrying information exactly where the exit criterion asks them to.
 
 **At 50 bp the record reports no log score.** The forecast assigned probability 0 to an event that occurred, so the mean negative log likelihood is infinite. It is not clipped: a clip replaces an infinite loss with a finite one chosen by whoever picked the clip, and hides the failure worth seeing.
 

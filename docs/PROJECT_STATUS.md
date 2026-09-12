@@ -233,9 +233,12 @@ Stated explicitly, because each is easy to mistake for something stronger.
   threshold and is the check every later skill score rests on, and the gradient-boosted
   model scored against a climatology refitted on each fold
   (`docs/runs/exceedance_gbm_mh61.json`). The second is a result, and a negative one:
-  skill at the lowest declared threshold, none above it, and resolution falling to
-  nothing at the highest. The figures are in the generated tail section of `README.md`
-  rather than transcribed here.
+  skill at the lowest declared threshold, none above it, and the share of the
+  available discrimination it realises falling from about three tenths at the lowest to
+  about one part in two thousand at the highest. The share is the statement that does not
+  depend on how rare the event is, which a resolution quoted on its own is not: both
+  resolution and uncertainty collapse as the threshold rises. The figures are in the
+  generated tail section of `README.md` rather than transcribed here.
 - **The monthly N-MFP panel is no longer a single observation, and is not yet a
   trustworthy series.** The archive history has been backfilled: the declared set is
   fetched and digested in full, none of it refused as unreadable, and the monthly
