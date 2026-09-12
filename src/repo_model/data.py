@@ -2450,35 +2450,73 @@ def _priceable_columns(
     columns: Iterable[str],
     registry: Mapping[str, Mapping[str, object]],
     decision_time,
+    visible_rows: Sequence[PointInTimeObservation] = (),
 ) -> tuple[List[str], Dict[str, str]]:
     """Split declared columns into the ones latest vintage may carry, and why not.
 
     The test is `registry.max_release_lag_days`, called -- not restated. A
-    column is built exactly when the pricing function returns a purge for the
-    `(source, field)` pairs behind it, and refused exactly when it raises. That
-    delegation is the whole point: a field on a `snapshot_retrieved_at` source
-    with no `revision_policy` is refused there because its latest value may
-    differ from the value that stood on the day, and a second copy of that rule
-    here would be free to drift from the registry it is supposed to describe.
+    column is built exactly when the pricing function returns a purge for it,
+    and refused exactly when it raises. That delegation is the whole point: a
+    field-level declaration on a `snapshot_retrieved_at` source with no
+    `revision_policy` is refused there, and a snapshot row with no
+    `available_at` is refused there, and a second copy of either rule here
+    would be free to drift from the registry it is supposed to describe.
 
     Both refusal channels are named rather than caught as bare `ValueError`.
     `RegistryContractError` is the pricing function declining to price;
     `UndeclaredFeatureError` is `contract` declining to resolve a column to
     sources at all -- an unsourced or calendar-only column. Anything else
     raised from here is a fault, not a refusal, and is left to propagate.
+
+    `visible_rows` are the rows this build can see -- already bounded by the
+    build cutoff, never the observations wholesale -- and they are how a
+    `snapshot_retrieved_at` column is priced (A30). The `(source, field)` pair
+    form carries no rows, so on its own it refuses every such column without
+    having been handed one. The mapping form carries rows but no field, so it
+    prices a source by its own `release_lag` and would re-price a field that
+    has a `field_release_lags` entry of its own. Neither form is chosen here by
+    reading the registry. A column the pair form prices is built. A column it
+    refuses is asked again with rows only for the pairs whose refusal is,
+    word for word, the refusal their source gives when handed no rows at all:
+    that is the pricing function saying the field is priced by its source, and
+    that rows are what it lacks. Any other refusal -- a field declaration's own,
+    or one that only the whole column produces -- stands as the pair form gave
+    it.
     """
 
     from .contract import UndeclaredFeatureError, field_sources_for_features
     from .registry import RegistryContractError, max_release_lag_days
+
+    def refusal(selection) -> Optional[str]:
+        try:
+            max_release_lag_days(registry, selection, decision_time=decision_time)
+        except RegistryContractError as exc:
+            return str(exc)
+        return None
 
     built: List[str] = []
     refusals: Dict[str, str] = {}
     for column in columns:
         try:
             pairs = field_sources_for_features([column])
-            max_release_lag_days(registry, pairs, decision_time=decision_time)
-        except (RegistryContractError, UndeclaredFeatureError) as exc:
+        except UndeclaredFeatureError as exc:
             refusals[column] = str(exc)
+            continue
+        reason = refusal(pairs)
+        if reason is not None:
+            rows: Dict[str, List[PointInTimeObservation]] = {}
+            for source_id, field in pairs:
+                alone = refusal([(source_id, field)])
+                if alone is None or alone != refusal({source_id: ()}):
+                    rows = {}
+                    break
+                rows.setdefault(source_id, []).extend(
+                    row for row in visible_rows if row.series_id == field
+                )
+            if rows:
+                reason = refusal(rows)
+        if reason is not None:
+            refusals[column] = reason
             continue
         built.append(column)
     return built, refusals
@@ -2839,7 +2877,8 @@ def build_daily_panel(
         raise DataContractError("build_cutoff must include a UTC offset")
 
     declared = list(columns)
-    built, refusals = _priceable_columns(declared, registry, decision_time)
+    visible = [row for row in observations if row.available_at <= build_cutoff]
+    built, refusals = _priceable_columns(declared, registry, decision_time, visible)
     if not built:
         raise DataContractError(
             "no declared column survived pricing: "
@@ -2853,8 +2892,6 @@ def build_daily_panel(
     for column in built:
         for _source_id, field in FEATURE_FIELDS[column]:
             column_for_series[str(field)] = column
-
-    visible = [row for row in observations if row.available_at <= build_cutoff]
 
     latest: Dict[tuple, PointInTimeObservation] = {}
     contributors: Dict[tuple, set] = {}
