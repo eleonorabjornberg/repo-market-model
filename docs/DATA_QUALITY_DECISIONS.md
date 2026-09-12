@@ -352,6 +352,16 @@ no settlement at all, so a withheld SOMA result on a settlement day stays a hole
 open: the model report's test of whether the aggregate's simplification affected
 conclusions.
 
+**The zero is bounded by the build cutoff (A25).** Rule 8 wrote `0.0` on any settlement-free
+business day inside the snapshot's coverage, and held only because `sofr` happens to be
+published the next day — a rule resting on another column's release lag is a value, not a rule,
+and a build declaring no required column has no such guarantee. A grid date now reads `0.0`
+only once the auction record that would have listed a settlement is itself observable at the
+build cutoff, derived from the same declared `release_lag` the adapter writes into `available_at`
+on the rows that are there. A basis other than `record_date` is refused rather than
+reinterpreted: a bound that had to be guessed is the unbounded zero one level in. No published
+figure moves — the bound is slack on every grid date of the published manifest.
+
 ## SOFR tail percentiles stay out of the feature panel
 
 **Decided (human, 11 Sep):** `SOFR_p1` and `SOFR_p99` are parsed but are not panel
@@ -637,12 +647,24 @@ as soon as a slower column joins the feature set: the bill-rate columns, the set
 components, or the dealer positions at six business days. Restating the gap against the
 decision date is a change to the split's definition and therefore the human's; until it
 is made, the audit script is what establishes that a feature set is safe, and it is run
-before a new column is declared. A guard that would refuse a feature set on the
-decision-relative rule has been built and does not land: the sample fixtures declare release
-lags their own gapped panel cannot deliver by the decision instant, so the guard is a true
-positive on them, and one of the fixtures is in a file the contract assigns to neither track.
-`tests/test_baseline.py`' module docstring carries the measurement and the shape of the
-fixtures' declarations; the real registry is silent under it.
+before a new column is declared. **The guard now lands.** `baseline._check_decision_relative_availability` refuses a fold,
+per field, when a field's declared release lag puts the feature row's availability after the
+decision instant, raising `LookAheadError` and naming the field and the fold. It took three
+blocks to get there, and the two it took to *not* get there are the record: the guard was
+correct from the start and the fixtures were wrong, in two different ways. The fixtures that
+run at a six-day purge keep their gapped, weekday calendars and adopt the real registry's
+declaration shape instead; only the one-day fixtures were re-dated onto a gapless panel, and
+each reproduction literal that moved carries its old value and the reason in the docstring of
+the test that pins it. The real registry is silent under the guard, and the published
+`backtest` command's output is unchanged.
+
+The guard and `scripts/purge_availability_audit.py` derive a field's availability the same way,
+line for line, so the two cannot answer differently. Two questions about it are open and are
+the human's: the guard reads `release_lag` directly, where `AGENT_CONTRACT.md` tells Track B to
+go through `registry.max_release_lag_days` — which answers a deliberately more conservative
+question and would fire where the measurement says the registry is silent; and
+`max_release_lag_days` checks the declared timezone for a `record_date` source but not for a
+`ref_date` one, so `ref_date` availability times are still compared naively.
 
 ## Decision rule
 

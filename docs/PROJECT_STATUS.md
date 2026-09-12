@@ -204,7 +204,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   distinguishable from zero (`docs/runs/backtest_gbm_cross_conformal_mh61.json`,
   `docs/runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json`); its upper-tail
   pinball loss is still worse than persistence's. The ARX forecast as a gbm feature
-  (`--arx-feature declared`) is built, not scored.
+  (`--arx-feature declared`) is built, and scored so far only outside the published record
+  set.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
