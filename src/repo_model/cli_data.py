@@ -63,11 +63,22 @@ def _audit(args: argparse.Namespace) -> int:
     return 0
 
 
+#: The NY Fed secured reference rates `fetch` can reach, as source arguments.
+#: Each is `nyfed-` followed by the rate name the publisher's own URL carries,
+#: which is how `_fetch` derives the rate name without a branch per rate:
+#: declaring a fourth rate is a one-line change here and nothing else.
+#: `metadata/sources.json` is the declaration this tuple has to cover -- every
+#: source whose `url` sits under `ingest.NYFED_BASE` is a rate that must be
+#: fetchable, and `tests/test_ingest.py::NyFedRateSourceChoiceTests` is what
+#: says so.
+NYFED_RATE_SOURCES = ("nyfed-sofr", "nyfed-tgcr", "nyfed-bgcr")
+
+
 def _fetch(args: argparse.Namespace) -> int:
-    if args.source == "nyfed-sofr":
+    if args.source in NYFED_RATE_SOURCES:
         artifacts = fetch_nyfed_reference_rate(
             output_root=args.output_root,
-            rate_name="sofr",
+            rate_name=args.source.split("-", 1)[1],
             start=args.start,
             end=args.end,
         )
@@ -324,7 +335,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch = subparsers.add_parser(
         "fetch", help="download an immutable public-data snapshot"
     )
-    fetch.add_argument("source", choices=("nyfed-sofr", "fred-macro"))
+    fetch.add_argument("source", choices=NYFED_RATE_SOURCES + ("fred-macro",))
     fetch.add_argument("--start", default="2018-04-03", help="effective start date")
     fetch.add_argument(
         "--end", default=date.today().isoformat(), help="effective end date"
