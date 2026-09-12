@@ -3580,8 +3580,13 @@ class TreasurySettlementZeroTests(unittest.TestCase):
     `data.SETTLEMENT_ZERO_COLUMNS`. Before this block every such day was a
     hole: the adapter emits nothing for an absent leg, and still does.
 
-    The acceptance criterion and the mutation target are the one test,
-    `test_a_business_day_with_no_settlement_reads_zero_inside_the_snapshot_coverage_only`.
+    Two blocks, one criterion each, each its own mutation target:
+
+    * A24's is `test_a_business_day_with_no_settlement_reads_zero_inside_the_snapshot_coverage_only`
+      -- the rule and its retrieval bound;
+    * A25's is `test_no_zero_is_written_where_the_settlement_would_not_be_observable_at_the_cutoff`
+      -- the same rule bounded by `build_cutoff`. Its fixture and its record are
+      the second half of this docstring.
 
     The fixture is a fortnight of January 2026. SOFR prints on nine weekdays,
     so those are the grid; 10 and 11 January are inside coverage and off it.
@@ -3639,6 +3644,83 @@ class TreasurySettlementZeroTests(unittest.TestCase):
     days before its retrieval date -- and no SOMA result was withheld on a grid
     date, so on today's data mutations 1, 4 and 6 would move nothing. This
     test is what holds them.
+
+    ---- A25: the zero is bounded by the build cutoff ----
+
+    A24 left this open in its own words, and rule 8's docstring said the same:
+    the rule "never writes a zero past the build cutoff only because `sofr` is
+    published the next day. A build with no required column has no such
+    guarantee." That guarantee is real and it is a coincidence. A settlement
+    dated d publishes at 23:59 Eastern on d; SOFR for d does not publish until
+    15:00 Eastern on the next business day, so any cutoff that admits d as a row
+    under rule 6 has already admitted d's settlement record. Take `sofr` out of
+    the declared columns and the grid end is held by whatever the caller did
+    declare, which can publish hours earlier the same day -- and rule 8 then
+    wrote 0.0 on a date whose settlement record nobody could read yet. Rule 1
+    had removed that date's settlement row; the rule read its own filtering as
+    evidence that nothing settled.
+
+    **The fix** is the second condition of rule 8: a grid date takes a zero only
+    if `datetime.combine(d + days, available_time, timezone) <= build_cutoff`,
+    with `days`, `available_time` and `timezone` read from the auction source's
+    declared `release_lag` -- rule 1's arithmetic applied to the date, because an
+    absence carries no `available_at` of its own. `data._settlement_publication`.
+    A basis other than `record_date` is refused, not reinterpreted.
+
+    **No published figure moves, and it cannot.** Measured against
+    `docs/runs/funding_panel.manifest.json` (build cutoff 2026-09-08T21:31:42Z,
+    grid 2018-04-03 to 2026-09-03) on the tracked registry: the published end
+    date's settlement publishes 2026-09-04T03:59Z, five days inside the cutoff,
+    and on no grid date in that range does a settlement publish later than that
+    day's SOFR. So on every build that declares `sofr` -- which is every
+    published one -- the new bound is slack on every date. That is A24's
+    coincidence, measured rather than assumed, and it is why this block needed a
+    fixture that declares no `REQUIRED_FIELDS` column at all.
+
+    **A25's fixture.** The same fortnight, with `tgcr` in place of `sofr` as the
+    only non-settlement column, so rule 6 retains every date any visible row
+    reports and nothing anchors the grid end. TGCR publishes at 10:00 Eastern on
+    its own date. The cutoff is 14 January 12:00 Eastern: past TGCR for the 14th,
+    short of 23:59 Eastern when the 14th's settlement record publishes. 14
+    January settles 60 billion of bills, which rule 1 hides, so the unbounded
+    rule wrote `0.0` there over a true 60.0 -- a false zero, not merely an early
+    one, and the test asserts the 60.0 by rebuilding at a later cutoff. The
+    snapshot is retrieved 19 January on the Eastern calendar, five days past the
+    cutoff, so A24's retrieval bound cannot be what holds the 14th out. 7, 9 and
+    13 January settle nothing and are inside both bounds, and keep reading 0.0.
+    15 and 16 January never reach the grid: rule 1 drops their TGCR rows.
+
+    Mutation record, 11 September 2026, python3 3.9.6. Every mutation applied to
+    `src/repo_model/data.py` in a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, confirmed applied
+    (the replaced text occurs exactly once before and the digest differs after),
+    reverted and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time. Unmutated control green before the first and after the
+    last, no expected failure. Each mutation was killed by one test and one
+    subtest and by nothing else in the suite, every failure an `AssertionError`:
+
+    1. **The cutoff bound dropped**, restoring A24's behaviour: the `covered`
+       comprehension keeps only the retrieval test. Killed A25's criterion, "a
+       grid date whose settlement is not yet published is a hole" --
+       `0.0 is not None : treasury_settlement`.
+    2. **The basis refusal removed**: `_settlement_publication`'s guard condition
+       replaced by `False`, so a `ref_date`/`business_days` lag is read as if the
+       arithmetic spoke for it. Killed the refusal subtest "a lag the
+       availability arithmetic cannot read", `DataContractError not raised`.
+    3. **Bounded on the cutoff's calendar date** rather than on the declared
+       publication instant (`ref_date <= build_cutoff.date()`) -- the plausible
+       wrong implementation, and one that passes every other assertion here.
+       Killed A25's criterion, `0.0 is not None : treasury_settlement`.
+
+    Mutations 1 and 6 of A24's record above were **re-run** against the changed
+    `covered` comprehension, per `CLAUDE.md`: a guard that goes quiet under a new
+    rule is how a suite stays green over a blunted one. Both still bite, and both
+    still kill A24's criterion alone and not A25's -- the retrieval bound
+    removed (coverage to `date.max`) and the retrieval instant read on the UTC
+    calendar (`parsed.date()`), each `0.0 is not None : 2026-01-14
+    treasury_settlement`. The two bounds are independent, and the suite now
+    shows it rather than asserting it.
     """
 
     SOFR_SHA = "a" * 64
@@ -3883,6 +3965,237 @@ class TreasurySettlementZeroTests(unittest.TestCase):
                     DataContractError, r"not the auction snapshot"
                 ):
                     self.build()
+
+    # ---- A25: the zero is bounded by the build cutoff ----------------------
+    #
+    # The fixture above cannot show the defect, and that is the point: it
+    # declares `sofr`, so rule 6 holds the grid end to a SOFR date, and a SOFR
+    # date readable at the cutoff carries a settlement that was readable
+    # earlier. The bound only has anything to do where no required column
+    # anchors the grid, so this fixture declares none.
+    #
+    #: The grid end is held by `tgcr` alone, readable at 10:00 Eastern on its
+    #: own date. A settlement dated the same day is not readable until 23:59
+    #: Eastern, as the registry declares and the adapter writes. A cutoff
+    #: between the two is a cutoff at which that day's settlement record has
+    #: not been published.
+    UNANCHORED_COLUMNS = ("tgcr",) + SETTLEMENT_COLUMNS
+    UNANCHORED_CUTOFF = datetime(
+        2026, 1, 14, 12, 0, tzinfo=ZoneInfo("America/New_York")
+    )
+    #: Retrieved 19 January on the Eastern calendar -- five days past the
+    #: cutoff, so the retrieval bound of the criterion above cannot be what
+    #: holds 14 January out. Only the cutoff can.
+    UNANCHORED_RETRIEVED_AT = "2026-01-20T03:00:00+00:00"
+    #: Every weekday of the fortnight. 15 and 16 January fall out on their own
+    #: availability under rule 1 and are never grid dates.
+    UNANCHORED_TGCR_DATES = (
+        date(2026, 1, 5),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 8),
+        date(2026, 1, 9),
+        date(2026, 1, 12),
+        date(2026, 1, 13),
+        date(2026, 1, 14),
+        date(2026, 1, 15),
+        date(2026, 1, 16),
+    )
+    UNANCHORED_GRID = UNANCHORED_TGCR_DATES[:-2]
+    #: 14 January settles 60 billion of bills. Rule 1 hides it -- it is not
+    #: published until 23:59 Eastern that day -- which is exactly why the
+    #: unbounded rule reads 0.0 there: a value from the future wearing a zero,
+    #: and in this fixture a demonstrably false one.
+    UNANCHORED_SETTLEMENTS = {
+        date(2026, 1, 6): {
+            "treasury_settlement": 50.0,
+            "treasury_settlement_bill": 50.0,
+            "treasury_settlement_soma": 2.0,
+        },
+        date(2026, 1, 8): {
+            "treasury_settlement": 30.0,
+            "treasury_settlement_coupon": 30.0,
+            "treasury_settlement_soma": 0.0,
+        },
+        date(2026, 1, 12): {
+            "treasury_settlement": 30.0,
+            "treasury_settlement_bill": 20.0,
+            "treasury_settlement_coupon": 10.0,
+            "treasury_settlement_soma": 1.0,
+        },
+        date(2026, 1, 14): {
+            "treasury_settlement": 60.0,
+            "treasury_settlement_bill": 60.0,
+            "treasury_settlement_soma": 3.0,
+        },
+    }
+    #: The covered grid dates on which nothing settled at all. Stated rather
+    #: than derived, for the reason the criterion above states it: a mutation
+    #: that stops writing a zero must not be able to empty the set.
+    UNANCHORED_ZERO_DAYS = (date(2026, 1, 7), date(2026, 1, 9), date(2026, 1, 13))
+
+    def unanchored_rows(self):
+        new_york = ZoneInfo("America/New_York")
+        rows = []
+        for index, ref_date in enumerate(self.UNANCHORED_TGCR_DATES):
+            rows.append(
+                PointInTimeObservation(
+                    series_id="TGCR",
+                    ref_date=ref_date,
+                    available_at=datetime.combine(
+                        ref_date, time(10, 0), tzinfo=new_york
+                    ),
+                    value=4.29 + index / 100,
+                    vintage_id=f"TGCR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+        for ref_date, legs in self.UNANCHORED_SETTLEMENTS.items():
+            for series_id, value in legs.items():
+                rows.append(
+                    PointInTimeObservation(
+                        series_id=series_id,
+                        ref_date=ref_date,
+                        available_at=datetime.combine(
+                            ref_date, time(23, 59), tzinfo=new_york
+                        ),
+                        value=value,
+                        vintage_id=f"{ref_date.isoformat()}:{self.UNANCHORED_RETRIEVED_AT}",
+                        source_sha=self.AUCTION_SHA,
+                    )
+                )
+        return rows
+
+    def build_unanchored(self, *, build_cutoff=None, registry=None):
+        return build_daily_panel(
+            self.unanchored_rows(),
+            self.registry() if registry is None else registry,
+            build_cutoff=self.UNANCHORED_CUTOFF if build_cutoff is None else build_cutoff,
+            decision_time=time.fromisoformat("16:00"),
+            columns=self.UNANCHORED_COLUMNS,
+            snapshot_retrieved_at={self.AUCTION_SHA: self.UNANCHORED_RETRIEVED_AT},
+        )
+
+    def test_no_zero_is_written_where_the_settlement_would_not_be_observable_at_the_cutoff(
+        self,
+    ):
+        """A25's acceptance criterion and mutation target. See the class docstring."""
+
+        from repo_model import data
+
+        build = self.build_unanchored()
+        self.assertEqual(build.built_columns, self.UNANCHORED_COLUMNS)
+        panel = {row.date: row.values for row in build.observations}
+
+        with self.subTest("the premise: no required column anchors the grid end"):
+            # Without this the bound is unreachable and the test proves nothing.
+            self.assertEqual(
+                [
+                    column
+                    for column in build.built_columns
+                    if column in data.REQUIRED_FIELDS
+                ],
+                [],
+            )
+            self.assertEqual(tuple(panel), self.UNANCHORED_GRID)
+
+        with self.subTest("a grid date whose settlement is not yet published is a hole"):
+            unpublished = panel[date(2026, 1, 14)]
+            # On the grid, and readable: `tgcr` is what put the date there.
+            self.assertIsNotNone(unpublished["tgcr"])
+            for column in self.SETTLEMENT_COLUMNS:
+                self.assertIsNone(unpublished[column], column)
+
+        with self.subTest("the zero it would have written is false, not merely early"):
+            # The same fixture at a cutoff past 14 January's 23:59 Eastern
+            # publication. The day settled 60 billion of bills.
+            later = {
+                row.date: row.values
+                for row in self.build_unanchored(
+                    build_cutoff=datetime(
+                        2026, 1, 15, 12, 0, tzinfo=ZoneInfo("America/New_York")
+                    )
+                ).observations
+            }
+            self.assertEqual(later[date(2026, 1, 14)]["treasury_settlement_bills"], 60.0)
+            self.assertEqual(later[date(2026, 1, 14)]["treasury_settlement"], 60.0)
+            self.assertEqual(later[date(2026, 1, 14)]["treasury_settlement_soma"], 3.0)
+            self.assertEqual(later[date(2026, 1, 14)]["treasury_settlement_coupons"], 0.0)
+
+        with self.subTest("a date observable at the cutoff still reads 0.0"):
+            for day in self.UNANCHORED_ZERO_DAYS:
+                for column in self.SETTLEMENT_COLUMNS:
+                    self.assertEqual(panel[day][column], 0.0, f"{day} {column}")
+            # ...including a leg zero beside a settled leg, on both sides.
+            self.assertEqual(panel[date(2026, 1, 6)]["treasury_settlement_coupons"], 0.0)
+            self.assertEqual(panel[date(2026, 1, 6)]["treasury_settlement_bills"], 50.0)
+            self.assertEqual(panel[date(2026, 1, 8)]["treasury_settlement_bills"], 0.0)
+            self.assertEqual(panel[date(2026, 1, 8)]["treasury_settlement_coupons"], 30.0)
+            # ...and an observed zero award is still the observation.
+            self.assertEqual(panel[date(2026, 1, 8)]["treasury_settlement_soma"], 0.0)
+
+        with self.subTest("the identity holds on every zero day"):
+            for day in self.UNANCHORED_ZERO_DAYS + (date(2026, 1, 6), date(2026, 1, 8)):
+                values = panel[day]
+                parts = (
+                    values["treasury_settlement_bills"],
+                    values["treasury_settlement_coupons"],
+                )
+                self.assertIsNotNone(values["treasury_settlement"], day)
+                self.assertNotIn(None, parts, day)
+                self.assertAlmostEqual(
+                    values["treasury_settlement"], sum(parts), delta=1e-9, msg=day
+                )
+
+        with self.subTest("the other bound is untouched: before the first settlement"):
+            for column in self.SETTLEMENT_COLUMNS:
+                self.assertIsNone(panel[date(2026, 1, 5)][column], column)
+
+        with self.subTest("holes count the empty cells, not the zeros"):
+            self.assertEqual(
+                dict(build.holes),
+                {
+                    column: sum(1 for values in panel.values() if values[column] is None)
+                    for column in self.UNANCHORED_COLUMNS
+                },
+            )
+
+        with self.subTest(refusal="a naive build cutoff"):
+            # The bound compares a declared availability instant with the
+            # cutoff, so an offsetless cutoff is not a comparison this rule can
+            # make. It is refused before rule 8 is reached, and this asserts it
+            # stays refused there.
+            with self.assertRaisesRegex(
+                DataContractError, r"build_cutoff must include a UTC offset"
+            ):
+                self.build_unanchored(build_cutoff=datetime(2026, 1, 14, 12, 0))
+
+        with self.subTest(refusal="a declared column not drawn from the auction snapshot"):
+            declared = dict(data.SETTLEMENT_ZERO_COLUMNS)
+            declared["tgcr"] = data.SETTLEMENT_ZERO_LEG
+            with unittest.mock.patch.object(
+                data, "SETTLEMENT_ZERO_COLUMNS", MappingProxyType(declared)
+            ):
+                with self.assertRaisesRegex(
+                    DataContractError, r"not the auction snapshot"
+                ):
+                    self.build_unanchored()
+
+        with self.subTest(refusal="a lag the availability arithmetic cannot read"):
+            # A zero needs a declared instant to be bounded against. A basis
+            # this arithmetic does not speak for is refused rather than assumed
+            # away -- the same reason a snapshot with no retrieval timestamp is
+            # refused rather than filled to `date.max`. A `ref_date` basis is
+            # the case that gets here: `business_days` needs the holiday
+            # calendar this repository does not have. A `snapshot_retrieved_at`
+            # basis never reaches rule 8 at all, because rule 3 refuses the
+            # column first, so it is not asserted here.
+            registry = self.registry()
+            registry["treasury_auctions"] = {"release_lag": dict(self.LAG)}
+            with self.assertRaisesRegex(
+                DataContractError, r"when a settlement dated that day is published"
+            ):
+                self.build_unanchored(registry=registry)
 
 
 class BillRatePanelTests(unittest.TestCase):
