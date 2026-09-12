@@ -333,6 +333,13 @@ FEATURE_SOURCES = MappingProxyType(
 DERIVED_FEATURES = MappingProxyType(
     {
         "spread_bps": ("sofr", "iorb"),
+        # SOFR's interquartile range, in basis points. A difference of two
+        # fields of one source, so its purge is derivable from what
+        # `nyfed_sofr` already declares and no new source is selected. Named
+        # `_bps` like `spread_bps` because it is scaled the same way: the
+        # percentile columns are rates in percent and every threshold in this
+        # project is stated in basis points.
+        "sofr_iqr_bps": ("sofr_p25", "sofr_p75"),
     }
 )
 

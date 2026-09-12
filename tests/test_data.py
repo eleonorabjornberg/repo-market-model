@@ -74,6 +74,55 @@ class DataContractTests(unittest.TestCase):
         self.assertAlmostEqual(rows[0].spread_bps, 1.0)
         self.assertEqual(report.warnings, [])
 
+    def test_the_interquartile_range_is_a_width_in_basis_points(self):
+        """`p75 - p25`, scaled like `spread_bps`, and never the reverse.
+
+        The reader test in `tests/test_contract.py` checks that
+        `contract.DERIVED_FEATURES` names the columns this property reads. It
+        cannot check the arithmetic: swapping the operands or dropping the
+        scale leaves the same two columns being read, so both pass it
+        untouched. This is the guard for the arithmetic, and the swap is the
+        case that matters -- an inverted range is a sign error that reads as an
+        unusually narrow day rather than as an error.
+
+        Mutation record, 12 September 2026, the mount's `.venv/bin/python`
+        against copies staged under `$HOME`, `PYTHONDONTWRITEBYTECODE=1`,
+        `python3 -B`, `OMP_NUM_THREADS=1`, the whole suite each time, reverted
+        and confirmed byte-identical after. Unmutated control green before and
+        after; the control carrying this test against a tree without the
+        property errors here and nowhere else.
+
+        1. **Operands swapped** -- `p25 - p75`. One failure, this test,
+           `AssertionError: -2.000000000000046 != 2.0 within 7 places`. Nothing
+           else in the suite moved.
+        2. **The basis-point scale dropped** -- `100.0` to `1.0` in this
+           property only. One failure, this test,
+           `AssertionError: 0.020000000000000462 != 2.0 within 7 places`.
+           Nothing else moved.
+        3. **The declaration narrowed** -- `DERIVED_FEATURES["sofr_iqr_bps"]`
+           cut to `("sofr_p75",)`. Killed
+           `test_contract.FeatureSourceMapCoverageTests`'
+           `test_a_derived_feature_declares_the_columns_its_implementation_reads`
+           and **not** this test. That is the division of labour the two guards
+           are supposed to have: the reader test holds the declaration against
+           the implementation, this one holds the arithmetic, and neither
+           covers for the other.
+
+        Recording how mutation 2 nearly went unrun: its first attempt guarded
+        application with `grep -cF` on a multi-line anchor, which counts
+        matching *lines* rather than occurrences, saw three and refused. The
+        refusal was correct and the anchor was not; counting an exact substring
+        in python is what settled it.
+        """
+
+        path = self.write_csv(
+            "date,sofr,iorb,sofr_p25,sofr_p75\n"
+            "2026-01-02,4.31,4.30,4.30,4.32\n"
+        )
+        rows = load_daily_panel(path)
+        self.assertAlmostEqual(rows[0].sofr_iqr_bps, 2.0)
+        self.assertGreater(rows[0].sofr_iqr_bps, 0.0)
+
     def test_rejects_unsorted_dates(self):
         path = self.write_csv(
             "date,sofr,iorb\n"

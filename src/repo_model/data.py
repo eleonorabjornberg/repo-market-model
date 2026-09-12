@@ -67,6 +67,27 @@ class DailyObservation:
     def spread_bps(self) -> float:
         return 100.0 * (float(self.values["sofr"]) - float(self.values["iorb"]))
 
+    @property
+    def sofr_iqr_bps(self) -> float:
+        """SOFR's interquartile range for the day, in basis points.
+
+        `p75 - p25`, never the reverse: the range is a width, and a negative
+        width would be a sign error read as a narrow day. `audit_panel` warns
+        when a row's `sofr_p25` exceeds its `sofr_p75`, so an inverted day is
+        visible in the audit; it is not clamped here, because clamping would
+        turn a warned anomaly into a silent zero.
+
+        Scaled by 100 for the same reason `spread_bps` is: the percentile
+        columns are rates in percent and every declared threshold is in basis
+        points. `contract.DERIVED_FEATURES` declares this over exactly the two
+        columns read below, and `tests/test_contract.py` parses this source to
+        check that it still does.
+        """
+
+        return 100.0 * (
+            float(self.values["sofr_p75"]) - float(self.values["sofr_p25"])
+        )
+
 
 @dataclass(frozen=True)
 class PointInTimeObservation:

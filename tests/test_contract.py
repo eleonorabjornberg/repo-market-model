@@ -2772,7 +2772,10 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         rather than an exemption.
         """
 
-        readers = {"spread_bps": DailyObservation.spread_bps.fget}
+        readers = {
+            "spread_bps": DailyObservation.spread_bps.fget,
+            "sofr_iqr_bps": DailyObservation.sofr_iqr_bps.fget,
+        }
         self.assertEqual(
             set(DERIVED_FEATURES),
             set(readers),
