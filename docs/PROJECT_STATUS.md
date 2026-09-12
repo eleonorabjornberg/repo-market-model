@@ -223,17 +223,18 @@ Stated explicitly, because each is easy to mistake for something stronger.
   produced rows on which the target does not exist. That is fixed and the fix is
   a contract decision, not a repair: see "The frozen funding panel" in the
   Summary.
-- **The headline exceedance metric does not yet scale to the panel.**
-  `exceedance-backtest` refits at every rolling origin, which is the whole point
-  of it, and the cost is roughly quadratic in panel length: seconds on the
-  twenty-five-row fixture, minutes on 2104 rows. Nothing about the number is
-  wrong; the command simply outgrew the fixture it was developed against. One
-  record of it on the frozen panel does exist, and it is deliberately the least
-  interesting run available: a climatology scored against itself, which must show
-  exactly no skill and does, at every declared threshold. That is the check every
-  later skill score rests on, and it is not a result. **No conditional model has
-  been scored with this metric on the panel**, which is the real gap between "the
-  metric has a path" and "the metric has been taken".
+- **The headline exceedance metric has now been taken on the panel with a
+  conditional model.** `exceedance-backtest` refits at every rolling origin, which
+  is the whole point of it, and the cost is roughly quadratic in panel length:
+  seconds on the twenty-five-row fixture, a quarter of an hour on the frozen panel.
+  It was run rather than made cheaper. Two records exist: the climatology scored
+  against itself, which must show exactly no skill and does at every declared
+  threshold and is the check every later skill score rests on, and the gradient-boosted
+  model scored against a climatology refitted on each fold
+  (`docs/runs/exceedance_gbm_mh61.json`). The second is a result, and a negative one:
+  skill at the lowest declared threshold, none above it, and resolution falling to
+  nothing at the highest. The figures are in the generated tail section of `README.md`
+  rather than transcribed here.
 - **The monthly N-MFP panel is no longer a single observation, and is not yet a
   trustworthy series.** The archive history has been backfilled: the declared set is
   fetched and digested in full, none of it refused as unreadable, and the monthly
@@ -319,8 +320,10 @@ where they left off.
 1. Score the threshold ARX (`--model threshold`) against the persistence benchmark
    on the frozen panel under `--loss crps`, before building another model. The
    model exists; the comparison does not.
-2. Make the exceedance metric affordable at panel length, then take it with a
-   conditional model rather than with climatology alone.
+2. ~~Take the exceedance metric on the panel with a conditional model rather than with
+   climatology alone~~ -- done, and it fails its half of Phase 2's exit criterion
+   (`docs/runs/exceedance_gbm_mh61.json`). What is not done is the diagnosis: why the
+   fitted exceedance curve is nearly flat across thresholds.
 3. ~~Settle what a monthly N-MFP cross-section *is*~~ -- done: a split month-end is
    assembled as one cross-section (`346d4ff`) and the coverage floor is declared per
    era (`94bf2db`). What is not yet done is recalibrating the identity tolerance (item
@@ -366,9 +369,9 @@ not yet be described as a successful machine-learning forecast of repo stress. A
 frozen funding panel now exists and the persistence benchmark has been measured
 on it, so the phrase that stood here -- that no result rests on real data -- has
 stopped being true. What has not happened is the part that would make it a
-forecast: Phase 2's exit criterion is recorded met on the interval evidence and its tail
-clause is not yet scored, the headline exceedance metric has been taken on the panel only
-against climatology,
+forecast: Phase 2's exit criterion is recorded met on the interval evidence while the
+measured half of its tail clause fails -- the conditional model's exceedance
+probabilities carry skill at the shoulder and none in the tail --
 and the monthly money-fund panel, though no longer a single cross-section, rests
 on a unit of observation still under revision.
 

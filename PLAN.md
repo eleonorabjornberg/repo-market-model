@@ -193,9 +193,12 @@ closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61
 cross-conformal calibration, keeping the full fit, covers a little more than nominal and
 keeps a distinguishable accuracy win, while its upper tail stays worse than persistence's
 (`docs/runs/backtest_gbm_cross_conformal_mh61.json`). The ARX forecast as a gbm feature is
-built and not yet scored. Its exceedance probabilities have not been scored in the
-tails, nor has a conditional predictor been scored against climatology on a
-knowledge-holdout window.
+built and not yet scored. Its exceedance probabilities have now been scored in the
+tails against a climatology refitted on each fold
+(`docs/runs/exceedance_gbm_mh61.json`, and the generated tail section of `README.md`):
+the conditional model carries skill at the lowest declared threshold and none above it,
+and at the highest it is beaten by climatology. No conditional predictor has yet been
+scored against climatology on a knowledge-holdout window.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
@@ -207,9 +210,12 @@ at paired origins and holds its declared interval probability
 training rows from its scored day has been measured against the sources' own publication
 schedules rather than argued (`docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated
 against the target date"). Two parts of the criterion's tail clause are named rather than
-scored and stay open under this heading: exceedance probabilities in the tails, and a
-conditional predictor against climatology on a knowledge-holdout window. The heading
-stays *in progress* for them, and no Phase 3 work has begun. Exit-criterion verdicts are
+scored and stay open under this heading. The first, exceedance probabilities in the
+tails, is now measured and **fails**: skill sits at the shoulder and the forecasts stop
+carrying information where the criterion asks them to, which is a published negative
+result rather than a gap (`docs/runs/exceedance_gbm_mh61.json`). The second, a
+conditional predictor against climatology on a knowledge-holdout window, is still
+unscored. The heading stays *in progress* for both, and no Phase 3 work has begun. Exit-criterion verdicts are
 the human's; this page records hers, and the evidence above is what it rests on.
 
 ## Phase 3 — Latent reserves and payment needs
@@ -317,10 +323,12 @@ and in the block briefs; what belongs here is the order of the milestones and wh
 3. **Then widen Phase 1**: primary-dealer positions, the 4- and 13-week bill yields and the
    settlement components are sourced; the liquidity proxies are next. The published Milestone A panel stays pinned to its
    manifest's columns, so a new source does not move it.
-4. **Phase 2's remaining tail work**: exceedance probabilities scored in the tails, and a
-   conditional model scored against climatology on the declared knowledge holdouts. The
-   interval half of the criterion is recorded met above; these two are what keep the phase
-   open.
+4. **Phase 2's remaining tail work**: a diagnostic block on why the conditional model's
+   exceedance curve flattens across thresholds -- the measurement is published and the
+   explanation is not -- and a conditional model scored against climatology on the
+   declared knowledge holdouts. A model change comes after the diagnosis, not instead of
+   it. The interval half of the criterion is recorded met above; the measured tail half
+   fails, and these two are what keep the phase open.
 5. **Phases 3 and 4.**
 6. **Decision point**, then Phases 5 through 7 or a stop.
 

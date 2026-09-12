@@ -68,6 +68,7 @@ That is the stated limit of this guard rather than a kill it can claim.
 from __future__ import annotations
 
 import ast
+import copy
 import importlib.util
 import json
 import unittest
@@ -120,6 +121,7 @@ class GeneratedResultsTests(unittest.TestCase):
         artifacts = generator.rendered(
             generator.load(generator.PERSISTENCE),
             generator.load(generator.EXCEEDANCE),
+            generator.load(generator.EXCEEDANCE_GBM),
         )
         stale = []
         for path, text in sorted(artifacts.items()):
@@ -239,6 +241,83 @@ class MilestoneAReproductionTests(unittest.TestCase):
             "docs/runs/persistence_funding.json does not reproduce from the "
             "tracked inputs:\n  " + "\n  ".join(found),
         )
+
+
+class UnavailableMetricTests(unittest.TestCase):
+    """A metric the run record declares unavailable is never given a number.
+
+    `exceedance_gbm_mh61.json` reports no log score at the 50 bp threshold: the
+    conditional model gave probability zero to an event that occurred, so the mean
+    negative log likelihood is infinite, and the record refuses to clip it. That
+    refusal is the finding. A published page that fills the hole -- with a clip, a
+    dash, or the next threshold's number -- turns the most informative result in the
+    tail section into a typo nobody can see, and the page would still look complete.
+
+    So this asserts the shape rather than today's record: given a record that marks a
+    metric unavailable on a threshold that *does* carry a value elsewhere, the block
+    must stop printing that value and must carry the record's own stated reason.
+
+    Mutation record
+    ---------------
+
+    Disposable copy under `$HOME` built from `git ls-files`, `PYTHONDONTWRITEBYTECODE=1`
+    and `python3 -B`, control green before and after.
+
+    1. The `unavailable` loop deleted from `scripts/emit_results.py:tail_section`, so
+       the block simply says nothing where the record refuses a number. Kills
+       `test_a_metric_the_record_declares_unavailable_keeps_its_reason` --
+       `AssertionError: the reason the record gives for withholding log_score is not
+       in the block`.
+    2. The loop kept but its reason replaced with a number (`entry["brier"]`), which is
+       the cheap implementation that makes a page look complete. Kills the same test
+       with the same `AssertionError`, because what is asserted is the record's stated
+       reason and not merely that something was printed.
+
+    Both also kill `test_every_generated_artifact_is_what_the_generator_renders`
+    (`AssertionError: Lists differ: [] != ['README.md']`), and that second kill is
+    incidental rather than a second guard: a mutated generator no longer renders the
+    committed page, which is exactly what that older assertion is for. Nothing else in
+    the suite moves. Control green before and after both, each applied to a restored
+    copy rather than on top of the last.
+    """
+
+    def _record(self):
+        generator = load_generator()
+        return generator, copy.deepcopy(generator.load(generator.EXCEEDANCE_GBM))
+
+    def test_a_metric_the_record_declares_unavailable_keeps_its_reason(self):
+        generator, record = self._record()
+        taus = record["metrics"]["by_tau"]
+        key = min(taus, key=float)          # the one that does carry a log score
+        entry = taus[key]
+        self.assertIn("log_score", entry,
+                      "this guard needs a threshold whose log score exists, so that "
+                      "withholding it is a change rather than the status quo")
+        value = entry.pop("log_score")
+        reason = ("the forecasts were scored before the reference was refitted, so "
+                  "this number would compare two different histories")
+        entry["unavailable"] = dict(entry.get("unavailable", {}), log_score=reason)
+
+        block = generator.tail_section(record)
+        # The block opens the reason as a sentence, so the seam is the first letter.
+        self.assertIn(reason[1:].rstrip("."), block,
+                      "the reason the record gives for withholding log_score is not "
+                      "in the block")
+        self.assertNotIn(generator.bp(value, 4), block,
+                         "the block printed a number for a metric the record "
+                         "declares unavailable")
+
+    def test_the_published_record_withholds_its_tail_log_score(self):
+        """The condition above is not hypothetical on the record as published."""
+
+        generator, record = self._record()
+        taus = record["metrics"]["by_tau"]
+        highest = taus[max(taus, key=float)]
+        self.assertIn("log_score", highest.get("unavailable", {}),
+                      "the published conditional record no longer withholds its "
+                      "tail log score; if that is deliberate, this guard and the "
+                      "sentence it protects both need rewriting")
+        self.assertNotIn("log_score", highest)
 
 
 class ChallengerTableRefusalTests(unittest.TestCase):
