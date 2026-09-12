@@ -8,7 +8,7 @@ import json
 import math
 import re
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence
@@ -2454,11 +2454,57 @@ def _settlement_retrieval_date(
     return parsed.astimezone(ZoneInfo(SETTLEMENT_CALENDAR)).date()
 
 
+def _settlement_publication(
+    registry: Mapping[str, Mapping[str, object]]
+) -> "tuple[int, object, object]":
+    """The auction source's declared publication rule, as rule 1 reads it.
+
+    A settlement dated d is observable from `d + days` at `available_time` in
+    `timezone` -- the registry's own `release_lag`, which is what the adapter
+    writes into `available_at` on the rows that *are* there. Rule 8 bounds an
+    absence, and an absence has no row to carry its own `available_at`, so it
+    is bounded by the same declared rule applied to the same date. This is one
+    reading of "when is a settlement observable", not a second one.
+
+    The basis must be `record_date`, which on this dataset is the settlement
+    date itself (`metadata/sources.json`, `treasury_auctions`: record_date
+    "equals issue_date on every row of the tracked snapshot and never precedes
+    its auction_date"), so the grid date *is* the record date. Any other basis
+    is refused rather than reinterpreted: `ref_date` + `business_days` needs
+    the holiday calendar this repository does not have, and
+    `snapshot_retrieved_at` declares no publication instant at all. A zero
+    whose bound had to be guessed is the unbounded zero again, one level in.
+    """
+
+    from datetime import time as _time
+    from zoneinfo import ZoneInfo
+
+    release_lag = registry.get(SETTLEMENT_ZERO_SOURCE, {}).get("release_lag")
+    if not isinstance(release_lag, Mapping) or release_lag.get("basis") != "record_date":
+        basis = (
+            release_lag.get("basis") if isinstance(release_lag, Mapping) else release_lag
+        )
+        raise DataContractError(
+            f"{SETTLEMENT_ZERO_SOURCE} declares release_lag basis {basis!r}, so this "
+            "build cannot say when a settlement dated that day is published; a "
+            "business day with no settlement reads 0.0 only once the record that "
+            "would have listed one is observable at the build cutoff, and that "
+            "bound is never guessed"
+        )
+    return (
+        int(release_lag["days"]),
+        _time.fromisoformat(str(release_lag["available_time"])),
+        ZoneInfo(str(release_lag["timezone"])),
+    )
+
+
 def _settlement_zero_dates(
     visible: Sequence[PointInTimeObservation],
     built: Sequence[str],
     grid: Sequence[date],
     snapshot_retrieved_at: Optional[Mapping[str, str]],
+    registry: Mapping[str, Mapping[str, object]],
+    build_cutoff: datetime,
 ) -> Dict[str, frozenset]:
     """Rule 8: per declared built column, the grid dates that read 0.0.
 
@@ -2509,10 +2555,24 @@ def _settlement_zero_dates(
         (first, _settlement_retrieval_date(source_sha, snapshot_retrieved_at))
         for source_sha, first in sorted(first_by_snapshot.items())
     ]
+    # The cutoff bound. Rule 1 removed every row published after the cutoff, so
+    # on a grid date whose settlement record is not yet published the absence of
+    # a settlement row is rule 1's doing and not the record's. Writing 0.0 there
+    # would read a value off a page nobody could turn yet. The retrieval bound
+    # above is a different question -- what the snapshot can speak to at all --
+    # and neither implies the other: a snapshot retrieved well past the cutoff
+    # covers dates the cutoff cannot see.
+    published_days, published_time, published_zone = _settlement_publication(registry)
     covered = [
         ref_date
         for ref_date in grid
-        if any(first <= ref_date <= last for first, last in coverage)
+        if datetime.combine(
+            ref_date + timedelta(days=published_days),
+            published_time,
+            tzinfo=published_zone,
+        )
+        <= build_cutoff
+        and any(first <= ref_date <= last for first, last in coverage)
     ]
     settled_any = set().union(*observed.values())
 
@@ -2630,11 +2690,19 @@ def build_daily_panel(
     `docs/DATA_QUALITY_DECISIONS.md`, "Panel columns"). The auction record lists
     every settlement, so a day it lists none of settled nothing: a true zero, not
     a fill. The columns that take it are `SETTLEMENT_ZERO_COLUMNS`, declared in
-    this module; every other column keeps rule 4. Four conditions, all of them:
+    this module; every other column keeps rule 4. Five conditions, all of them:
 
     * the date is on the grid rule 6 retained. No row is made for a date off
       it, and there is no holiday calendar and no `weekday()` here: the grid is
       the panel's own statement of which days are business days;
+    * a settlement dated that day would have been observable at `build_cutoff`,
+      by the auction source's declared `release_lag` -- rule 1's own
+      arithmetic, applied to the date rather than to a row, because an absence
+      carries no `available_at` of its own. See `_settlement_publication`. A
+      grid date whose settlement record is not yet published stays a hole: rule
+      1 already removed any settlement row dated there, so its absence is rule
+      1's doing and not the record's, and a zero written over it is a value
+      from the future wearing a zero;
     * the date is inside a supplying snapshot's coverage: from that snapshot's
       first settlement date to the Eastern calendar date of its retrieval
       timestamp, taken from `snapshot_retrieved_at` (source SHA-256 to the
@@ -2657,12 +2725,22 @@ def build_daily_panel(
     `holes`. The fill happens here, at the build; `load_daily_panel` reads what
     the build wrote and decides nothing.
 
-    Not separately bounded by `build_cutoff`. A settlement row is available at
-    23:59 Eastern on its own settlement date; on a build that carries `sofr`, a
-    grid date needs it, and it is published the next business day, so a
-    settlement on any grid date would already be visible at the cutoff. That is
-    a property of the registry's declared lags, not of this rule, and a build
-    carrying no required column has no such guarantee -- recorded, not closed.
+    Separately bounded by `build_cutoff` since A25, and the bound is the second
+    condition above. Until then the rule held by a coincidence of another
+    column's release lag: a settlement is published at 23:59 Eastern on its own
+    settlement date, and on a build carrying `sofr` every grid date needs a SOFR
+    value that is not published until the next business day at 15:00 Eastern, so
+    a settlement on any grid date was already visible at whatever cutoff made
+    that grid date a row. That is a property of the registry's declared lags and
+    not of this rule, and a build declaring no `REQUIRED_FIELDS` column has no
+    such guarantee -- the grid end is then held by whatever column the caller did
+    declare, which may be published hours earlier on the same day. The two bounds
+    are different questions and neither implies the other: the retrieval bound
+    asks what the snapshot can speak to, the cutoff bound asks what this build
+    could read, and a snapshot retrieved well after the cutoff covers dates the
+    cutoff cannot see. On the tracked registry the cutoff bound does not bind on
+    any build that declares `sofr`, which is every published one; it is not a
+    value, it is the rule those builds happened to satisfy.
 
     Raises `DataContractError` if the cutoff is naive, if no declared column
     survives pricing, if nothing is left to index, under rule 5, or under rule 8.
@@ -2805,7 +2883,7 @@ def build_daily_panel(
 
     # Rule 8, over the retained grid and nothing wider.
     settlement_zeros = _settlement_zero_dates(
-        visible, built, retained, snapshot_retrieved_at
+        visible, built, retained, snapshot_retrieved_at, registry, build_cutoff
     )
 
     rows: List[DailyObservation] = []
