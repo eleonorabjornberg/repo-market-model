@@ -362,6 +362,20 @@ on the rows that are there. A basis other than `record_date` is refused rather t
 reinterpreted: a bound that had to be guessed is the unbounded zero one level in. No published
 figure moves — the bound is slack on every grid date of the published manifest.
 
+**And the build records how many it wrote (A27).** `DailyPanelBuild.settlement_zeros` counts, per
+built column and over the same grid as `holes`, the values that are rule 8 zeros — counted at the
+write, not over the dates the cutoff and coverage bounds made eligible, which are a different and
+larger set. Holes and written zeros are the two halves of the same grid, and until now only one
+half was recorded, so a reader could not tell a fully observed column from one a tenth of whose
+values were written in place of an absence. The count is also the audit of the cutoff bound above,
+on the build that actually ran.
+
+The **file** manifest does not carry it yet, and that is deliberate rather than forgotten: adding
+the key to what `write_daily_panel` writes makes the Milestone A reproduction compare a key that
+exists on one side only, and a published record is re-scored by a human, never rewritten inside a
+block. On the published build the count is `0` on every column — the tracked funding inputs carry
+no auction snapshot — so landing the file half moves no figure, only the key.
+
 ## SOFR tail percentiles stay out of the feature panel
 
 **Decided (human, 11 Sep):** `SOFR_p1` and `SOFR_p99` are parsed but are not panel

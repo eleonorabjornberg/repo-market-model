@@ -330,10 +330,16 @@ def tail_section(conditional):
 def realized_discrimination(decomposition):
     """Resolution as a share of uncertainty, from the record's own two terms.
 
-    `metrics.CorpDecomposition` computes this at scoring time, but the published
-    records predate the field, so it is derived here from the two terms they do
-    carry rather than transcribed from anywhere. When the record carries
-    `realized_discrimination` itself, read that instead and delete this.
+    `metrics.CorpDecomposition` computes this at scoring time and
+    `baseline._decomposition_document` now writes it, but the **published records
+    in `docs/runs/` predate the field** and will not carry it until they are
+    re-scored, which is a human's call. So this derives it from the two terms
+    those records do carry, rather than transcribing it from anywhere.
+
+    The trigger for deleting this is therefore the records, not the writer: once
+    every record this generator reads carries `realized_discrimination`, read the
+    field and delete this function. Deleting it while a record on disk lacks the
+    field would raise `RecordError` on a page that is otherwise fine.
     """
 
     uncertainty = require(decomposition, "uncertainty")
