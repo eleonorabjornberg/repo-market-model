@@ -6213,6 +6213,26 @@ def _decomposition_document(decomposition: CorpDecomposition) -> dict:
     `CorpDecomposition` exposes it at all: `score = reliability - resolution +
     uncertainty` is the property the decomposition is *for*, and a file that
     claimed it without carrying the residual would be asking to be believed.
+
+    `realized_discrimination` and `discrimination_note` are **taken from the
+    decomposition, never recomputed here.** The cheap version of this function
+    divides `resolution / uncertainty` again on the way out, which reads as
+    free -- the two terms are right there -- and is a second code path for one
+    number. Two code paths for one number is the failure `_declared_availability`
+    was mirrored line for line to avoid: they agree on every fixture anyone
+    writes until the day scoring changes on one side, and then the record
+    disagrees with the metric that produced it while every value in it is still
+    in range. The division happens once, inside `corp_decomposition`, after the
+    refusal that makes it safe; this is a writer.
+
+    A `discrimination_note` of `None` is **written as `None`, not omitted.**
+    `None` is the checked-and-legible answer, and the reason is the one
+    `DailyPanelBuild.incomplete_dates` gives about defaults: a reader has to be
+    able to tell "the share prints readably, so no sentence was needed" from
+    "nothing looked". Omission conflates those two, and it conflates them in
+    the direction that reads as reassurance. Absence in this artifact means
+    "could not be computed" and is paired with a reason under `unavailable`;
+    this is not that case, so it is not written as though it were.
     """
 
     return {
@@ -6222,6 +6242,8 @@ def _decomposition_document(decomposition: CorpDecomposition) -> dict:
         "uncertainty": decomposition.uncertainty,
         "base_rate": decomposition.base_rate,
         "n": decomposition.n,
+        "realized_discrimination": decomposition.realized_discrimination,
+        "discrimination_note": decomposition.discrimination_note,
         "identity_residual": decomposition.identity_residual(),
     }
 
