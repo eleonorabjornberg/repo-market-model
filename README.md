@@ -172,11 +172,14 @@ only the Python standard library for everything a published result depends on ex
 the gradient-boosted comparison, which needs the extra below; reproducing any other
 needs no package installation. Phase 2's machine-learning candidates live
 in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
-scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with four opt-in
+scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with these opt-in
 settings: a conformal interval (`--calibration conformal`, or `cross_conformal` with
 `--calibration-folds K`), lagged spread changes (`--spread-change-lags K`), a GARCH(1,1)
-variance fitted per fold (`--volatility-feature garch11`) and an ARX one-step forecast fitted
-per fold (`--arx-feature declared`). All but the ARX feature are scored in Key findings.
+variance fitted per fold (`--volatility-feature garch11`), an ARX one-step forecast fitted
+per fold (`--arx-feature declared`), and a generalised Pareto tail continuing the law above
+its top declared quantile, fitted per fold on the calibration rows (`--tail gpd`, with
+`--calibration conformal` only). The ARX feature and the tail are not scored in Key
+findings; the rest are.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git

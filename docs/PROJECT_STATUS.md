@@ -205,7 +205,9 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `docs/runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json`); its upper-tail
   pinball loss is still worse than persistence's. The ARX forecast as a gbm feature
   (`--arx-feature declared`) is built, and scored so far only outside the published record
-  set.
+  set. A generalised Pareto tail continuing the law above its top declared quantile
+  (`--tail gpd`, conformal calibration only) is built and selectable from `backtest` and
+  `compare`; no published record has been produced with it, and nothing has scored it.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
