@@ -18,6 +18,16 @@ A fold is reported when availability falls after the decision instant. The state
 view failing and the actual view passing is the expected shape: the purge is
 allowed to purge more than the evidence requires, never less.
 
+A business-day lag that runs off the end of the panel is late, not unknown. The panel is the only calendar this script has; a value whose declared
+publication day is not on it has not been published by any instant the panel can
+name, and the evaluation path settled the same case the same way (block B29,
+`tests/test_baseline.py`). Returning `None` there -- which this script did -- made the
+audit silently skip exactly the folds at the end of the panel, where a long-lagged
+column is least likely to have arrived. That is the direction an audit must not fail
+in. The two remaining `None`s mean something else and stay: a snapshot-timestamp basis
+is not a row-relative lag at all, and a source declaring no `days` has made no claim to
+check.
+
     python3 scripts/purge_availability_audit.py [RECORD] [PANEL]
 """
 
@@ -30,6 +40,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from repo_model import splits  # noqa: E402
+
+# Later than any deadline the panel can express, so a field whose declared publication
+# day runs off the panel is reported late rather than skipped.
+NEVER_ON_THIS_PANEL = datetime.max
 
 DEFAULT_RECORD = "docs/runs/backtest_gbm_cross_conformal_mh61.json"
 DEFAULT_PANEL = "data/processed/funding_panel.csv"
@@ -54,7 +68,7 @@ def field_availability(registry, source_id, field, row, dates, index):
     if lag.get("unit") == "business_days":
         i = index[row] + days
         if i >= len(dates):
-            return None
+            return NEVER_ON_THIS_PANEL
         return datetime.combine(dates[i], moment)
     return datetime.combine(row + timedelta(days=int(days)), moment)
 

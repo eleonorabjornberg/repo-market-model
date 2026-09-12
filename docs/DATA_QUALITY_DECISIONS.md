@@ -622,6 +622,15 @@ on the next business day, the administered rate the day after its record date --
 fold in the published four-feature runs clears the decision instant, with days to
 spare. **No published figure rests on a value that had not been published.**
 
+One case the audit used to skip now counts against it: a business-day lag whose
+declared publication day runs off the end of the panel is reported **late**, not
+unknown. The panel is the only calendar the audit has, so a value dated past it has not
+been published by any instant the panel can name -- and the evaluation path had already
+settled the same case the same way. Skipping it would have quietly exempted the folds at
+the end of the panel, which is where a long-lagged column is least likely to have
+arrived. The published runs are unaffected, because none of their fields lags that far;
+the change is what keeps that true when one does.
+
 That is the safe direction and not a licence to leave the rule as it stands. The margin
 comes from a purge sized for a source slower than the features in use, and it narrows
 as soon as a slower column joins the feature set: the bill-rate columns, the settlement
