@@ -3677,8 +3677,10 @@ class TailDeclarationTests(unittest.TestCase):
     mapping is the tailed one with `tail` taken out.
 
     **What the declaration is not.** `tail` is what the command declared. What
-    each fold's tail *fit* found -- `xi`, `sigma`, `excesses` -- is not on any
-    record, by design, and nothing here asserts it is.
+    each fold's tail *fit* found -- `xi`, `sigma`, `excesses` -- is not in the
+    declaration, by design, and nothing here asserts it is. Since B38 a
+    `backtest` record carries it per fold under `folds.tail`;
+    `TailAccountTests` holds that.
 
     Mutation record
     ---------------
@@ -3853,6 +3855,241 @@ class TailDeclarationTests(unittest.TestCase):
                 )
             self.assertIn("unknown --tail 'pareto'", str(caught.exception))
             self.assertIn("gpd", str(caught.exception))
+
+
+class TailAccountTests(unittest.TestCase):
+    """Each fold's tail on a `backtest` record, and nothing without one (B38).
+
+    **The defect.** After B37 a record declared `tail: gpd` and said nothing
+    about what the tail did. A rolling backtest refits at every origin, so one
+    field cannot hold the answer, and the answer differs by fold in the way
+    that matters: an expanding window's early folds have too few excesses to
+    fit a shape, and a metric that moved cannot be read against a tail that
+    was never fitted unless the record says which folds had one.
+
+    **The trap is part 2.** The last fold's tail, or `report.model`'s, recorded
+    as the run's. On this fixture the last fold has a fitted shape and the
+    first has no excesses, so a single answer copied across the folds cannot
+    show all three states.
+
+    **How each state is forced.** `frame` is a weekday panel whose spread is
+    `10 +/- 1` bp, with two kinds of row added. From `DIPS_FROM` every sixth
+    row is a dip to `-40` bp: always among the calibration rows (the fit rows
+    end before it at every fold), and more of them than the conformal rank
+    leaves above the widening, so the widening is a dip's score and no
+    ordinary row exceeds its calibrated top quantile. From the first scored
+    row on, every row is a spike far above that top quantile, and each fold's
+    training frame holds one more of them than the fold before. So:
+
+    * **no excesses** -- the first fold, whose frame holds no spike;
+    * **fallback** -- the next folds, one excess per spike, up to one short of
+      `ml.GPD_MINIMUM_EXCESSES`;
+    * **fitted** -- the rest. The first few are **clamped** (few excesses
+      whose spread is small against the dip-set widening), and once the
+      spikes begin to set the widening themselves the later ones are not.
+      Both are asserted, because a clamped shape is not a fitted one and the
+      record must say so.
+
+    The states are asserted against each fold's own fitted model, captured as
+    the fold loop fitted it, and spelled here from that model's `tail_fit` ---
+    not pinned floats. The fold loop's fit count is asserted too: an account
+    read off a second fit of the same frame would have the same floats and
+    would still be a second fit.
+
+    **Part 3's comparison is against the tailed run on this base.** The tail
+    changes `predict_stress` above the top knot and nothing `backtest` scores,
+    so the untailed record is the tailed record with `declaration.tail` and
+    `folds.tail` taken out, key for key and value for value.
+
+    Mutation record
+    ---------------
+
+    Run in five disposable copies under `$HOME`, one per mutation plus an
+    unmutated control, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring in Python
+    and found exactly once. Every failure is `AssertionError`.
+
+    1. **The final fold's answer for every fold** --- the report's tuple built
+       as `tuple(_tail_account(model) for _ in tail_accounts)`, `model` being
+       the last fold's. Kills **part 1** (the first fold's `fitted` account
+       against its own model's `no_excesses`) and **part 2** (`'fitted' !=
+       'no_excesses'` on the first entry). This test and nothing else.
+    2. **The account made unconditional** --- `if self.tail is None: return
+       None` deleted from `ml.FittedGradientBoostedQuantiles.tail_account`, so
+       an untailed fit reports `no_excesses` and every gbm `backtest` record
+       grows `folds.tail`. Kills **part 3** (`plain_report.tail_accounts` is a
+       tuple of `no_excesses`, not `None`). This test and nothing else: **no
+       sibling declaration subtest goes red**, and none can --- they read
+       `model_settings`, which this does not touch, and no other test builds a
+       gbm `backtest` document and reads its `folds` keys. B37's five sibling
+       subtests guard the declaration; the fold account's absence is guarded
+       here alone.
+    3. **A fallback read as a fitted shape of `xi = 0.0`** --- `elif
+       fit.fallback:` -> `elif False:` in `tail_account`. Kills **part 1**
+       (`{'state': 'fitted', 'xi': 0.0, ...} != {'state': 'fallback', ...}`)
+       and **part 2** (`'fallback'` missing from the recorded states). This
+       test and nothing else.
+    4. **The account read off a refit** --- the fold loop appends
+       `_tail_account(_fit_at_origin(fitter, ...))` on the same training frame
+       instead of the scored model's. The fit is deterministic, so every float
+       is the scored model's and parts 1 to 3 would pass on values alone;
+       what kills it is **part 1**'s fit count, `52 != 26`. Also
+       `GradientBoostedConformalCalibrationTests::test_the_calibrated_band_covers_its_nominal_probability_out_of_sample`
+       (`16 != 8`) and
+       `GradientBoostedCrossConformalTests::test_the_cross_conformal_band_covers_its_nominal_probability_and_keeps_the_full_fit`
+       (`8 != 4`), which count fits per fold for their own reasons. Inside
+       the model no refit is expressible: the excesses are not kept, so
+       `tail_account` can only read `tail_fit`.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    MINIMUM_HISTORY = 380
+    DIPS_FROM = 170
+    SPIKES = 24
+    SHARE = 0.6
+
+    def setUp(self):
+        require_extra(self)
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.registry_path = declared_registry_file(
+            self.directory.name, purge=self.PURGE, features=self.FEATURES
+        )
+        self.registry = json.loads(self.registry_path.read_text(encoding="utf-8"))
+
+    def frame(self):
+        """The panel the docstring describes, and a file for its digest."""
+
+        rng = random.Random(20260912)
+        count = self.MINIMUM_HISTORY + self.PURGE + self.SPIKES
+        rows = []
+        for index, when in enumerate(business_days(date(2020, 1, 1), count)):
+            spread = 10.0 + 2.0 * (rng.random() - 0.5)
+            if index >= self.MINIMUM_HISTORY:
+                spread = 150.0 + 60.0 * -math.log(1.0 - rng.random())
+            elif index >= self.DIPS_FROM and index % 6 == 0:
+                spread = -40.0
+            rows.append(
+                DailyObservation(
+                    when,
+                    {
+                        "sofr": 4.30 + spread / 100.0,
+                        "iorb": 4.30,
+                        "on_rrp": 100.0 * rng.random(),
+                        "sofr_volume": 2000.0 + 400.0 * rng.random(),
+                    },
+                )
+            )
+        return rows
+
+    def backtest(self, panel, **settings):
+        """The fold loop over `panel`, its record, and every model it fitted."""
+
+        fits = []
+
+        def fitter(train_frame, minimum_history, purge_days):
+            model = ml.fit_gradient_boosted_quantiles(
+                train_frame,
+                self.REGRESSORS,
+                minimum_history=minimum_history,
+                min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+                calibration="conformal",
+                calibration_share=self.SHARE,
+                purge_days=purge_days,
+                **settings,
+            )
+            fits.append(model)
+            return model
+
+        report = baseline.rolling_persistence_backtest(
+            panel,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=time.fromisoformat(DECISION_TIME),
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=fitter,
+        )
+        panel_path = self.registry_path.with_name("panel.csv")
+        panel_path.write_text("date,sofr,iorb\n", encoding="utf-8")
+        document = baseline.backtest_document(
+            report,
+            panel_path=panel_path,
+            registry_path=self.registry_path,
+            model="gbm",
+        )
+        return report, document, fits
+
+    @staticmethod
+    def expected(fit):
+        """What a record should say of one fold, spelled from its `tail_fit`."""
+
+        if fit is None:
+            return {"state": "no_excesses", "excesses": 0}
+        if fit.fallback:
+            return {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
+        return {
+            "state": "fitted",
+            "xi": fit.xi,
+            "sigma": fit.sigma,
+            "excesses": fit.excesses,
+            "clamped": fit.clamped,
+        }
+
+    def test_a_tail_run_records_what_its_tail_was_at_every_fold_and_a_run_without_one_records_nothing(
+        self,
+    ):
+        """Per fold, off the fold's own model; three states apart; absent without a tail."""
+
+        panel = self.frame()
+        report, document, fits = self.backtest(panel, tail="gpd")
+        plain_report, plain_document, _ = self.backtest(panel)
+        entries = document["folds"]["tail"]
+
+        with self.subTest("1. every fold, off the model that fold scored"):
+            self.assertEqual(len(fits), len(report.folds))
+            self.assertEqual(len(entries), len(report.folds))
+            for fold, model, account, entry in zip(
+                report.folds, fits, report.tail_accounts, entries
+            ):
+                expected = self.expected(model.tail_fit)
+                self.assertEqual(dict(account), expected, msg=str(fold.scored_date))
+                self.assertEqual(
+                    entry,
+                    {"scored_date": fold.scored_date.isoformat(), **expected},
+                )
+
+        with self.subTest("2. the three states are told apart"):
+            states = [entry["state"] for entry in entries]
+            self.assertEqual(states[0], "no_excesses")
+            self.assertEqual(states[-1], "fitted")
+            self.assertEqual(set(states), set(ml.TAIL_STATES))
+            fallbacks = [entry for entry in entries if entry["state"] == "fallback"]
+            self.assertEqual(
+                sorted(entry["excesses"] for entry in fallbacks),
+                list(range(1, ml.GPD_MINIMUM_EXCESSES)),
+            )
+            for entry in fallbacks:
+                self.assertNotIn("xi", entry)
+            fitted = [entry for entry in entries if entry["state"] == "fitted"]
+            self.assertTrue(all(e["excesses"] >= ml.GPD_MINIMUM_EXCESSES for e in fitted))
+            self.assertEqual({entry["clamped"] for entry in fitted}, {True, False})
+
+        with self.subTest("3. without a tail, nothing, and the rest unchanged"):
+            self.assertIsNone(plain_report.tail_accounts)
+            self.assertNotIn("tail", plain_document["folds"])
+            self.assertEqual(set(plain_document["folds"]), {"count", "first", "last"})
+            self.assertNotIn("tail", plain_document["declaration"])
+            stripped = json.loads(json.dumps(document))
+            del stripped["declaration"]["tail"]
+            del stripped["folds"]["tail"]
+            self.assertEqual(json.loads(json.dumps(plain_document)), stripped)
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):

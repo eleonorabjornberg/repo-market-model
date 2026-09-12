@@ -288,6 +288,25 @@ def _model_settings(fitted: Any) -> Mapping[str, Any]:
     return MappingProxyType(settings)
 
 
+def _tail_account(fitted: Any) -> Optional[Mapping[str, Any]]:
+    """What one fitted model's tail was, or `None` for a model without one.
+
+    Read the way `_model_settings` reads a `repo_model.ml` model: through the
+    attribute the model reports itself by, `tail_account`, because this module
+    cannot import that one. `None` for every model here and for a gbm fitted
+    without a tail.
+
+    **Per fit, unlike the settings.** A setting is the callable's, so the first
+    fit's answer is every fit's; a tail is fitted to that fold's calibration
+    rows, so each fold's answer is its own. The caller reads it off the model
+    the fold scored, in the same iteration, for `_shared_law`'s reason: a
+    number recorded from a second fit or a later model can drift from the one
+    that was used.
+    """
+
+    return getattr(fitted, "tail_account", None)
+
+
 def _ml_libraries(*fitted: Any) -> Optional[Mapping[str, str]]:
     """The library versions a run's fits were made with, or `None`.
 
@@ -763,6 +782,13 @@ class BacktestReport:
     model_settings: Mapping[str, Any] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    #: What each fold's tail was, positionally aligned with `folds`, or `None`
+    #: when the run carried no tail. Read inside the fold loop off the model
+    #: that fold scored, through its `tail_account` -- not off `model`, which
+    #: is the last fold's, and not once: an expanding window refits the tail at
+    #: every origin, and the early folds are the ones that fall back. See
+    #: `_tail_account`.
+    tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -3153,6 +3179,7 @@ def rolling_persistence_backtest(
     model: Optional[FittedForecastModel] = None
     ml_libraries: Optional[Mapping[str, str]] = None
     model_settings: Mapping[str, Any] = MappingProxyType({})
+    tail_accounts: List[Optional[Mapping[str, Any]]] = []
     dates = [row.date for row in rows]
 
     # `step=1` is the origin-by-origin shape this function has always had: one
@@ -3206,6 +3233,8 @@ def rolling_persistence_backtest(
         )
         feature_row = rows[feature_index]
         quantiles = model.predict(feature_row)
+        # Off the model this fold scored, in this iteration; see `_tail_account`.
+        tail_accounts.append(_tail_account(model))
         folds.append(
             ScoredFold(
                 train_start=rows[train_indices[0]].date,
@@ -3286,6 +3315,14 @@ def rolling_persistence_backtest(
         crps_bps=crps,
         ml_libraries=ml_libraries,
         model_settings=model_settings,
+        # `None`, not a tuple of `None`s, when no fold had a tail: the fitter
+        # is one callable, so a run either carries a tail at every origin or at
+        # none, and a run without one must record nothing.
+        tail_accounts=(
+            None
+            if all(account is None for account in tail_accounts)
+            else tuple(tail_accounts)
+        ),
     )
 
 
@@ -4343,6 +4380,9 @@ def backtest_document(
     * `folds` -- the count, and the first and last origin in full. Enough for a
       reader to check the gap against a calendar on the two folds where an
       off-by-one would show, without the artifact growing with the panel.
+      A run that carried a tail also gets `tail`, one entry per fold: its
+      scored date and what that fold's tail was, from
+      `report.tail_accounts` (B38). A run without one gets no key.
     * `metrics` -- the numbers, unrounded. Rounding belongs to whoever displays
       them; an artifact that rounded would publish a figure nobody computed and
       would make two runs that genuinely differ look identical.
@@ -4447,6 +4487,13 @@ def backtest_document(
     if report.folds:
         folds["first"] = _fold_document(report.folds[0])
         folds["last"] = _fold_document(report.folds[-1])
+    # Every fold's tail, only when the run carried one: absent, not null, so
+    # a record of a run without a tail is the record it was before B38.
+    if report.tail_accounts is not None:
+        folds["tail"] = [
+            {"scored_date": fold.scored_date.isoformat(), **account}
+            for fold, account in zip(report.folds, report.tail_accounts)
+        ]
 
     metrics: dict = {
         "forecast_count": len(report.forecasts),
