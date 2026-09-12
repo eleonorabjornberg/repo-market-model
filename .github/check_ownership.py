@@ -95,6 +95,11 @@ HUMAN_ONLY = (
     # work. A reading of the evidence is a claim, so it is reserved with the
     # pages that make claims.
     "docs/RESEARCH_NOTES.md",
+    # The portfolio case study: the same argument as the research notes and the
+    # executive summary. It reads the records as a narrative and names what the
+    # project has and has not established, which is a claim about the evidence
+    # rather than a description of the code.
+    "docs/PORTFOLIO_CASE_STUDY.md",
     "docs/figures/",
     "examples/",
     "notebooks/",
