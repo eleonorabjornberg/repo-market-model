@@ -247,6 +247,89 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
         )
 
 
+class SnapshotOnlySelectionTests(unittest.TestCase):
+    """A selection priced entirely by per-row availability may purge zero.
+
+    The nonzero-purge guard exists because a feature set that prices to no gap
+    is the shape of an error: a missing declaration, a `days` of zero, or a
+    calendar-only selection resolving to nothing. It was global, and that made
+    it refuse the one selection for which zero is the correct answer. A
+    `snapshot_retrieved_at` source carries `available_at` on every row, so each
+    row states when it could first be read and there is nothing for a
+    calendar-day bound to conservatively cover. The guard now asks whether the
+    zero was *accounted for* rather than whether it is zero.
+
+    Why this mattered beyond the abstraction: `data._priceable_columns` prices
+    every declared column **alone**, through
+    `contract.field_sources_for_features([column])`. A column whose only source
+    is snapshot-basis therefore reached this guard by itself and could never
+    clear it, so `on_rrp`, `reserve_balances` and `mmf_assets` were refused from
+    the panel on every build, whatever the snapshot held. That is half the
+    defect; the other half is the call site passing no rows, which is Track A's
+    and is not this commit.
+
+    The preserved half is asserted here too, and is the reason this is a scoping
+    and not a removal: a selection that prices to zero with no per-row
+    availability behind it is still refused.
+
+    Mutation record, 12 September 2026. A copy outside the mount,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time, reverted after. Unmutated control green before (823 tests,
+    before these tests existed) and after (825 tests, `OK`).
+
+    1. **The zero never accounted for** -- the `snapshot_retrieved_at` branch
+       setting `contribution = 0` without setting `per_row_availability`. One
+       error, this test,
+       `repo_model.registry.RegistryContractError: selected sources must produce
+       a nonzero purge`. That is the defect this commit repairs, reproduced: the
+       exception is raised on the one selection for which zero is the right
+       answer.
+    2. **The guard dropped entirely** rather than scoped -- the refusal made
+       unreachable. Three failures, and only one of them is this test. The other
+       two are pre-existing and were written by other blocks:
+       `MaxReleaseLagDaysTests.test_zero_purge_is_rejected_instead_of_returned`,
+       and, in `tests/test_event_eval.py`, `PurgeBoundaryTests`'
+       `test_the_gap_is_derived_and_cannot_be_supplied`. Both
+       `AssertionError: RegistryContractError not raised`.
+       That result is the evidence the change is a scoping: the guard it narrows
+       is still independently held up by two tests this commit did not write, so
+       narrowing it did not blunt it. A mutation that killed only the new test
+       would have meant the opposite.
+    """
+
+    ROWS = ({"available_at": "2026-01-02T10:00:00-05:00"},)
+
+    def test_a_snapshot_only_selection_prices_to_zero_and_is_not_refused(self):
+        registry = {"snap": source("snapshot_retrieved_at")}
+
+        self.assertEqual(
+            max_release_lag_days(
+                registry, {"snap": self.ROWS}, decision_time=time(16)
+            ),
+            0,
+        )
+
+        # A row missing the instant is still refused: scoping the zero did not
+        # weaken what the zero is conditional on.
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(
+                registry, {"snap": ({"available_at": ""},)}, decision_time=time(16)
+            )
+        self.assertIn("available_at", str(caught.exception))
+
+        # And a zero with nothing per-row behind it is the error the guard was
+        # written for, so it still raises: a `record_date` source declaring no
+        # lag and an instant the decision time clears.
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(
+                {"filing": source("record_date", "calendar_days", 0,
+                                  available_time="09:00")},
+                ["filing"],
+                decision_time=time(17),
+            )
+        self.assertIn("nonzero purge", str(caught.exception))
+
+
 class AvailabilityProvenanceTests(unittest.TestCase):
     """A declared availability instant earlier than end of day cites its evidence.
 
@@ -328,6 +411,21 @@ class AvailabilityProvenanceTests(unittest.TestCase):
     Neither mutation was caught anywhere else in the suite, which is the point
     of recording them: before this block nothing in the repository could tell an
     evidenced instant from an asserted one.
+
+    Mutation record, 12 September 2026, for the widening past `record_date`.
+    Same method: a copy outside the mount, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, `OMP_NUM_THREADS=1`, the whole suite, reverted after.
+    Unmutated control green before (823 tests, no new tests) and after (825).
+
+    3. **The scope put back** -- `check_availability_provenance` skipping every
+       source whose `release_lag` basis is not `record_date`, which is what this
+       commit removed. Three failures, all of them
+       `test_an_early_instant_carries_its_evidence_whatever_the_basis`, one per
+       instant in `EARLY`, every one `AssertionError: RegistryContractError not
+       raised`. Nothing else in the suite moved, so before this commit nothing
+       could tell an evidenced `ref_date` instant from an asserted one either --
+       and `baseline._check_decision_relative_availability` had been reading
+       those instants per fold since B30.
     """
 
     #: Instants strictly earlier than end of day, including one a minute before
@@ -360,6 +458,65 @@ class AvailabilityProvenanceTests(unittest.TestCase):
                 provenance=provenance,
             )
         }
+
+    def ref_date_registry(self, available_time, provenance=None):
+        """A `ref_date` source declaring an instant, which is optional there.
+
+        `worst_case_calendar_days` because a `ref_date` declaration is priced
+        from its calendar bound and not from `days`; the instant is the only
+        part of it this guard reads.
+        """
+
+        return {
+            "daily": source(
+                "ref_date",
+                "business_days",
+                1,
+                available_time=available_time,
+                provenance=provenance,
+                worst_case_calendar_days=6,
+            )
+        }
+
+    def test_an_early_instant_carries_its_evidence_whatever_the_basis(self):
+        """Earliness is what makes the claim leak, not the basis it sits under.
+
+        The guard was scoped to `record_date` because that is the only basis
+        `max_release_lag_days` reads an instant from, and because the four NY
+        Fed `ref_date` instants cited nothing machine-readable -- so widening it
+        then would have refused the tracked registry on evidence nobody on this
+        project had, which is a fetch, and fetches are the human's. The fetch
+        happened. What is asserted here is the same link the `record_date` case
+        asserts, on a constructed `ref_date` registry, and never that today's
+        document carries a particular instant.
+
+        B30's `baseline._check_decision_relative_availability` reads these
+        instants per fold, so under this basis they are priced and not merely
+        declared. That is what made the unguarded case a hole rather than a
+        technicality.
+        """
+
+        for available_time in self.EARLY:
+            with self.subTest(available_time=available_time, evidence="declared"):
+                check_availability_provenance(
+                    self.ref_date_registry(available_time, self.EVIDENCED)
+                )
+
+            with self.subTest(available_time=available_time, evidence="none"):
+                with self.assertRaises(RegistryContractError) as caught:
+                    check_availability_provenance(
+                        self.ref_date_registry(available_time)
+                    )
+                message = str(caught.exception)
+                self.assertIn(AVAILABILITY_PROVENANCE_KEY, message)
+                self.assertIn(available_time, message)
+
+        # End of day asserts nothing under this basis either.
+        check_availability_provenance(self.ref_date_registry(END_OF_DAY))
+
+        # And a `ref_date` source may decline to declare an instant at all: a
+        # source with nothing to evidence is not a source with missing evidence.
+        check_availability_provenance(self.ref_date_registry(None))
 
     def test_a_declared_availability_time_carries_the_evidence_for_it(self):
         for available_time in self.EARLY:

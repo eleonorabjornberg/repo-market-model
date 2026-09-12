@@ -152,13 +152,20 @@ def check_availability_provenance(registry: Mapping[str, Mapping[str, object]]) 
     Every problem in the document is collected and raised once, so a registry
     with two faults reports both in one run rather than one per edit.
 
-    Scoped to a source's own `record_date` `release_lag`: that is the
-    declaration `contract.validate_release_lag` requires an `available_time` of,
-    and the only one `max_release_lag_days` reads the instant from. Two narrower
-    cases are out of reach rather than out of scope, and both are recorded in
-    `tests/test_registry.py`: a `ref_date` source's optional `available_time`,
-    and a `field_release_lags` entry, which cannot carry provenance at all
-    because `contract._FIELD_ALLOWED_KEYS` is closed and human-owned.
+    Every declared `available_time` earlier than the end-of-day convention is
+    checked, whatever the `release_lag` basis. Earliness is what makes the claim
+    leak; the basis it sits under is not. This was scoped to `record_date` while
+    the four NY Fed `ref_date` instants cited nothing machine-readable, because
+    widening it then would have refused the tracked registry on evidence nobody
+    on this project had. B30's
+    `baseline._check_decision_relative_availability` reads the `ref_date`
+    instants per fold, so they are priced as well as declared, and the link
+    between an early instant and its evidence is the same link.
+
+    One narrower case is still out of reach rather than out of scope, and is
+    recorded in `tests/test_registry.py`: a `field_release_lags` entry, which
+    cannot carry provenance at all because `contract._FIELD_ALLOWED_KEYS` is
+    closed and human-owned.
     """
 
     problems: list[str] = []
@@ -167,8 +174,6 @@ def check_availability_provenance(registry: Mapping[str, Mapping[str, object]]) 
             continue
         release_lag = source.get("release_lag")
         if not isinstance(release_lag, Mapping):
-            continue
-        if release_lag.get("basis") != "record_date":
             continue
         problems.extend(
             _availability_provenance_problems(str(source_id), source, release_lag)
@@ -198,6 +203,7 @@ def max_release_lag_days(
         raise RegistryContractError("sources must select at least one feature source")
 
     maximum = 0
+    per_row_availability = False
     inferred_wall_clock_timezone = None
     for source_id, field, rows in selected:
         try:
@@ -249,9 +255,10 @@ def max_release_lag_days(
                 raise RegistryContractError(
                     f"{source_id}: every snapshot row must carry available_at"
                 )
+            per_row_availability = True
             contribution = 0
 
         maximum = max(maximum, contribution)
-    if maximum == 0:
+    if maximum == 0 and not per_row_availability:
         raise RegistryContractError("selected sources must produce a nonzero purge")
     return maximum
