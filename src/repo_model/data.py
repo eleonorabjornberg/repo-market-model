@@ -2369,6 +2369,35 @@ class DailyPanelBuild:
     column had no observation on them. It is never a default: a build that
     dropped nothing records zero, and a reader can tell that apart from a build
     that was never asked.
+
+    `empty_columns` names the built columns that are a hole on every row. Built
+    and empty is not the same fact as built, and until it was stated the only
+    way to read it off a manifest was to compare each of `holes` against
+    `row_count` -- which no reader of `built_columns` does, so `tgcr`, `bgcr`
+    and `treasury_settlement` sat in that list beside `sofr` with nothing to
+    separate them. On the published build all three are a hole on all 2104 rows.
+
+    It is read off `holes` -- `holes[column] == row_count` -- and never from a
+    second pass over the rows. A second count would key on a grid of its own
+    and could disagree with the published one on an incomplete date, and then
+    the manifest and this tuple would be describing two different panels.
+
+    An empty column is **also** still in `built_columns`. The build attempted
+    it and carried it, and that is what `built_columns` has always meant;
+    nothing that reads it changes meaning because this exists.
+
+    A build with no rows reports **no** empty columns, not every column.
+    `holes[column] == row_count` is true of every column when `row_count` is 0,
+    and the cheap reading of it says a panel carrying no rows is empty in every
+    column -- when what it says is nothing about any of them. Rule 6 raises
+    before `build_daily_panel` can return such a build, so no caller reaches
+    that case through the join today; the guard is written here anyway, because
+    this is a property of a public frozen dataclass and is read on whatever
+    `DailyPanelBuild` a reader holds.
+
+    Deliberately not in the file manifest, for the reason the comment above
+    `write_daily_panel`'s `"required_columns"` gives for this key and for
+    `settlement_zeros`.
     """
 
     observations: Sequence[DailyObservation]
@@ -2379,6 +2408,21 @@ class DailyPanelBuild:
     decision_time: object
     incomplete_dates: int
     settlement_zeros: Mapping[str, int]
+
+    @property
+    def empty_columns(self) -> Sequence[str]:
+        """The built columns that are a hole on every row, sorted. See above."""
+
+        row_count = len(self.observations)
+        if row_count == 0:
+            return ()
+        return tuple(
+            sorted(
+                column
+                for column in self.built_columns
+                if self.holes[column] == row_count
+            )
+        )
 
 
 def _priceable_columns(
@@ -3004,17 +3048,20 @@ def write_daily_panel(
         "refused_columns": dict(build.refusals),
         "holes": dict(build.holes),
         "incomplete_dates": build.incomplete_dates,
-        # `settlement_zeros` is on `DailyPanelBuild` and is deliberately not
-        # written here yet. Adding the key changes what a re-run of the
-        # published build writes, and `test_generated_results` compares the
-        # rebuilt `panel.build_manifest` with the one
-        # `docs/runs/persistence_funding.json` records key by key: the new key
-        # is "present on one side only" and the Milestone A reproduction goes
-        # red. Its own docstring says the answer to that is a report and a
+        # `settlement_zeros` (A27) and `empty_columns` (A28) are both on
+        # `DailyPanelBuild` and are both deliberately not written here yet.
+        # Adding either key changes what a re-run of the published build
+        # writes, and `test_generated_results` compares the rebuilt
+        # `panel.build_manifest` with the one
+        # `docs/runs/persistence_funding.json` records key by key: a new key is
+        # "present on one side only" and the Milestone A reproduction goes red.
+        # Their own docstrings say the answer to that is a report and a
         # re-scored record, and `CLAUDE.md` refuses a rewrite of a published
-        # record inside a block. So the count is published to every reader of a
-        # build and the file half waits on the human. See
-        # `tests/test_data.TreasurySettlementZeroTests`, A27.
+        # record inside a block. So both facts are published to every reader of
+        # a build and the file half waits on the human -- one human commit, for
+        # both keys at once, with every affected record re-scored. See
+        # `tests/test_data.TreasurySettlementZeroTests` (A27) and
+        # `tests/test_data.EmptyColumnTests` (A28).
         "required_columns": [
             column for column in build.built_columns if column in REQUIRED_FIELDS
         ],
