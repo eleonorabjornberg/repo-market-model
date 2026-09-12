@@ -65,6 +65,10 @@ What is covered here
 * `GbmExceedanceTests` -- `ExceedancePredictorConformance` from
   `tests/test_baseline.py`, against `gbm_exceedance`, required by block 10's
   walk for the same reason.
+* `LawKnotsTests` -- `law_knots`: the knots `predict_stress` inverts, handed
+  out so a scoring job can record *where* a tau fell and not only what came
+  out, and guarded to be that one evaluation rather than a second opinion
+  about it.
 
 Both walks read `ForecastInterfaceConformance.__subclasses__()` and
 `ExceedancePredictorConformance.__subclasses__()`, so the cases have to be
@@ -2736,6 +2740,245 @@ class GbmExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
             1,
             msg="every scored day got the same curve; nothing was conditioned on",
         )
+
+
+class LawKnotsTests(unittest.TestCase):
+    """`law_knots`: the law `predict_stress` inverts, handed out and guarded.
+
+    **Why the knots had to come out.** `gbm_exceedance`'s curve is nearly flat
+    at the wide thresholds, and that is not a gbm artefact -- `arx_exceedance`,
+    scored identically, flattens the same way. The live question is no longer
+    whether the learner is wrong but what the *law* can express out there, and
+    that question cannot be asked of this object: `_law` is private, and
+    `predict_stress` returns floats and throws its knots away. A scoring job
+    that wants to record which segment each tau landed in has nothing to read.
+    This class is that read, and the guard on it.
+
+    **What it is not.** Nothing here measures the tail. No fold count, no
+    pooled mean, no claim about where a 50 bp tau falls on the panel -- the
+    measurement is a jobs-lane run against this method, and a version of it
+    fabricated on a forty-eight-row fixture would answer a different question
+    than the one asked.
+
+    **The trap, and why the count assertion is the whole point.** Every
+    equality in this test passes under an implementation whose `law_knots`
+    evaluates `_law` a second time, because two evaluations of a deterministic
+    fit agree to the last bit. Nothing a caller can assert *afterwards*
+    distinguishes derived from re-derived; the distinction lives in the call
+    graph. So the test counts entries into `_reported` for a row whose knots
+    and exceedance are both asked for, and requires one. That is
+    `predict_stress`' own "not a second opinion about it" rule, one level down,
+    and it is what stops a published record's knots and its probabilities from
+    being able to disagree later.
+
+    The counting subtest asks about a row **no earlier subtest touched**, and
+    has to: `_shared_law` remembers one row, so a row already asked about
+    enters `_reported` zero times and the count would pass for the wrong
+    reason. The row is named there rather than here because that is where the
+    dependency is.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME` built from `git ls-files -z --cached
+    --others --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3
+    -B` and `OMP_NUM_THREADS=1`, on CPython 3.9.6 with numpy 2.0.2 and
+    scikit-learn 1.6.1. Unmutated control green before and after; each mutation
+    confirmed applied by grep, and restored before the next. Every target was
+    checked to appear exactly once in its file first.
+
+    1. **`law_knots` re-evaluates the law instead of sharing the one
+       evaluation.** `return self._shared_law(feature_row)` ->
+       `return self._law(feature_row)` in
+       `FittedGradientBoostedQuantiles.law_knots`. Kills this test and nothing
+       else, `AssertionError`: two entries into `_reported` where the record
+       claims one. Every other subtest here stays green under it, and that is
+       the trap demonstrated rather than asserted -- the knots are still
+       correct, still non-decreasing, still inverted by `predict_stress`
+       element for element. They are simply not the knots those floats came
+       from, and no assertion about their values can say so.
+    2. **The top level of the returned grid is the top declared level.**
+       `(0.0,) + self.levels + (1.0,)` -> `(0.0,) + self.levels + (0.95,)` in
+       `FittedGradientBoostedQuantiles._law`. Kills this test alone, two
+       subtests, both `AssertionError`: the grid, and the tau read inside the
+       final segment, whose exceedance becomes exactly `0.05` at every point of
+       `[Q(0.95), high]` instead of falling across it.
+
+       **A finding, and the reason this subtest exists.** The conformance
+       cases do *not* see this. `test_the_exceedance_is_strictly_above_the_
+       threshold` stays green on all five implementers, because
+       `_exceedance_from_law` returns `0.0` from its `tau >= values[-1]` branch
+       without consulting the level at all -- so saturation at the top knot
+       survives a grid that places five per cent of its mass beyond it. What
+       breaks under the mutation is only the interior of the final segment: the
+       law goes flat exactly where the wide taus are read. The closure at `1.0`
+       was unguarded until this test, and it is unguarded precisely in the
+       region the tail measurement this block exists to enable would report.
+    3. **The empty-tau-family refusal removed.** `if not family: raise
+       ValueError("no stress thresholds declared")` deleted from
+       `baseline._validate_taus_bp`. Kills this test, `AssertionError` ("no
+       exception raised"; `predict_stress` returns an empty tuple), together
+       with `test_a_tau_family_that_is_not_ascending_is_refused` on all five
+       `ForecastInterfaceConformance` cases -- `ForecastInterfaceTests`,
+       `ArxForecastInterfaceTests`, `ThresholdForecastInterfaceTests`,
+       `RollingResidualLawForecastInterfaceTests` and
+       `GradientBoostedForecastInterfaceTests` -- same type. The refusal is
+       `baseline`'s and is reached rather than reimplemented here; what this
+       test adds is the refusal on the route this block newly exposes, where a
+       caller holding knots beside an empty curve would record a law nothing
+       was read off.
+    4. **The memo key dropped to the row's date alone.** `key =
+       (feature_row.date, tuple(sorted(feature_row.values.items(), ...)))` ->
+       `key = feature_row.date` in `_shared_law`. Kills this test alone,
+       `AssertionError`: two rows sharing a date, differing in `on_rrp`, get
+       the same knots, because the second read the first's memo.
+
+       This was written as a control expected to survive, and it did -- until
+       the subtest that kills it was added. **It survived for an ordering
+       reason, not a correctness one**: with the columns out of the key the
+       only row that could have exposed the collision was the missing-regressor
+       row, which carries `rows[-1]`'s date, and by the time it is asked the
+       memo holds `rows[-2]`. A guard that passes because of the order its own
+       subtests run in is not a guard, so the collision is now asserted
+       directly. The finding is about the memo generally: new state whose
+       failure mode is returning another row's answer cannot be left to a
+       fixture that happens not to collide.
+    """
+
+    REGRESSORS = ("sofr_volume", "on_rrp")
+    MINIMUM_HISTORY = 20
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": self.MINIMUM_HISTORY,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def test_the_exposed_knots_are_the_law_predict_stress_inverts(self):
+        """The knots are the grid, they are the law, and there is one of them.
+
+        Six claims, one criterion. The shape of the returned grid, the
+        element-for-element inversion, the saturation the docstring promises,
+        the single evaluation, and the two refusals are each meaningless
+        alone: knots that were not what `predict_stress` read are a second
+        opinion however well-formed, an inversion that agrees with re-derived
+        knots proves nothing about the ones a record would carry, and a knot
+        set handed out for a row the model cannot read is a fabrication.
+        """
+
+        rows = crossing_frame()
+        model = self.fit(rows)
+        row = rows[-1]
+        values, levels = model.law_knots(row)
+
+        with self.subTest("the grid is the declared levels closed at 0 and 1"):
+            self.assertEqual(levels, (0.0,) + QUANTILE_LEVELS + (1.0,))
+            self.assertEqual(len(values), len(levels))
+        with self.subTest("the values are non-decreasing"):
+            self.assertEqual(
+                list(values),
+                sorted(values),
+                msg="a knot set that is not increasing is not a distribution",
+            )
+
+        # A tau family placed off the knots themselves: below the lowest, one
+        # inside every segment including the final `[Q(0.95), high]`, at the
+        # top knot and above it. Strictly ascending, which `predict_stress`
+        # requires, because the knots on this fixture are strictly ascending --
+        # asserted here rather than assumed, since a tie would silently collapse
+        # two of the placements onto one value and stop testing a segment.
+        self.assertTrue(
+            all(lower < upper for lower, upper in zip(values, values[1:])),
+            msg=f"the fixture's knots are not strictly ascending: {values}",
+        )
+        interior_taus = tuple(
+            0.5 * (lower + upper) for lower, upper in zip(values, values[1:])
+        )
+        taus = (values[0] - 1.0,) + interior_taus + (values[-1], values[-1] + 1.0)
+
+        with self.subTest("predict_stress inverts exactly these knots"):
+            self.assertEqual(
+                model.predict_stress(row, taus),
+                tuple(ml._exceedance_from_law(values, levels, tau) for tau in taus),
+            )
+        with self.subTest("a tau above the top declared level is read in one segment"):
+            # The reason the knots are worth exposing: everything above Q(0.95)
+            # is read inside the single straight segment `[Q(0.95), high]`, so
+            # its exceedance lies strictly between 0.0 and 1 - 0.95 and carries
+            # no distributional shape of its own. A job that recorded only the
+            # float could not tell that from a learner with nothing to say.
+            above = ml._exceedance_from_law(values, levels, interior_taus[-1])
+            self.assertGreater(above, 0.0)
+            self.assertLess(above, 1.0 - QUANTILE_LEVELS[-1])
+        with self.subTest("the law saturates outside its knots, exactly"):
+            self.assertEqual(
+                model.predict_stress(row, (values[-1],)),
+                (0.0,),
+                msg="a tau at the top knot must be exactly zero, not nearly",
+            )
+            self.assertEqual(model.predict_stress(row, (values[-1] + 1.0,)), (0.0,))
+            self.assertEqual(model.predict_stress(row, (values[0] - 1.0,)), (1.0,))
+
+        with self.subTest("the knots and the curve come from one evaluation"):
+            # `rows[-2]`, which nothing above asked about: `_shared_law`
+            # remembers one row, so a row already evaluated would enter
+            # `_reported` zero times and pass this for the wrong reason.
+            fresh = rows[-2]
+            entered = []
+            reported = ml.FittedGradientBoostedQuantiles._reported
+
+            def counting(self, feature_row):
+                entered.append(feature_row.date)
+                return reported(self, feature_row)
+
+            with mock.patch.object(
+                ml.FittedGradientBoostedQuantiles, "_reported", counting
+            ):
+                recorded_values, recorded_levels = model.law_knots(fresh)
+                curve = model.predict_stress(fresh, taus)
+            self.assertEqual(
+                len(entered),
+                1,
+                msg=(
+                    "the knots and the probabilities a record would carry came "
+                    "from two evaluations of the fit; they agree here because "
+                    "the fit is deterministic, and nothing downstream could "
+                    "tell if they stopped agreeing"
+                ),
+            )
+            self.assertEqual(
+                curve,
+                tuple(
+                    ml._exceedance_from_law(recorded_values, recorded_levels, tau)
+                    for tau in taus
+                ),
+            )
+
+        with self.subTest("two rows sharing a date are two rows"):
+            # `_shared_law` remembers one row, and a row is its date *and* its
+            # columns. Keyed on the date alone the memo would hand this row the
+            # previous one's knots -- a wrong law, silently, for a caller
+            # scoring two vintages of the same day. `on_rrp` is moved between
+            # the fixture's own two regimes so the laws certainly differ.
+            twin = DailyObservation(fresh.date, dict(fresh.values, on_rrp=20.0))
+            self.assertNotEqual(model.law_knots(twin), model.law_knots(fresh))
+
+        with self.subTest("a row missing a declared regressor is not answered"):
+            blind = DailyObservation(
+                row.date, {"sofr": 4.60, "iorb": 4.30, "sofr_volume": 2200.0}
+            )
+            with self.assertRaises(baseline.MissingRegressorError) as caught:
+                model.law_knots(blind)
+            self.assertIn("on_rrp", str(caught.exception))
+        with self.subTest("an empty tau family is refused"):
+            with self.assertRaises(ValueError) as caught:
+                model.predict_stress(row, ())
+            self.assertIn("no stress thresholds declared", str(caught.exception))
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
