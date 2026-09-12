@@ -74,6 +74,10 @@ What is covered here
   moment condition. Built and not wired: no caller reads it, no record carries
   it, and nothing published can move. It is also the one class here that needs
   no `require_extra` --- sorting and sums, no array library.
+* `GpdRecoveryTests` -- `_fit_gpd_pwm` again, recovering a declared shape and
+  scale from a sample built through the law's quantile function: the guard on
+  the plotting position, which the first moment condition cannot see. Also
+  needs no `require_extra`.
 
 Both walks read `ForecastInterfaceConformance.__subclasses__()` and
 `ExceedancePredictorConformance.__subclasses__()`, so the cases have to be
@@ -3069,7 +3073,10 @@ class FittedTailPwmTests(unittest.TestCase):
     test against a drawn sample, which the brief declined for reasons that still
     hold. Per `CLAUDE.md`, a mutation that survives is reported here rather than
     answered with a second test; which of those two the tail is eventually
-    pinned with is a decision, not a gap to be filled in quietly.
+    pinned with is a decision, not a gap to be filled in quietly. (Decided in
+    the next block: neither. `GpdRecoveryTests` below recovers a declared law
+    from a sample built through its quantile function, which is not a draw and
+    not a pin, and kills mutation 1.)
 
     What is deliberately unpinned
     -----------------------------
@@ -3210,6 +3217,185 @@ class FittedTailPwmTests(unittest.TestCase):
                 "was clamped without the record saying so; the reported xi is "
                 "then a bound presented as an estimate",
             )
+
+
+class GpdRecoveryTests(unittest.TestCase):
+    """`_fit_gpd_pwm` returns a declared generalised Pareto from its own quantiles.
+
+    **Why this class exists beside `FittedTailPwmTests`.** That class holds the
+    fit to its first moment condition, and its own docstring records that the
+    condition cannot see the plotting position. Written out once more, because
+    the two tests read the same fit and must not be mistaken for duplicates:
+    with `d = a_0 - 2 a_1`,
+
+        1 - xi = 2 a_1 / d,   sigma = 2 a_0 a_1 / d,
+        sigma / (1 - xi) = (2 a_0 a_1 / d) * (d / 2 a_1) = a_0
+
+    for *any* `a_1`. `a_1` cancels, `a_0` is the plain mean, and
+    `_GPD_PLOTTING_OFFSET` lives entirely inside `a_1` --- so before this class
+    the whole `a_1` limb of the estimator could be changed without a test
+    moving. This class reads `a_1`: the sample is built *through* a set of
+    plotting positions from a declared `(xi, sigma)`, so the recovered pair
+    depends on how the estimator weights each order statistic, and a wrong
+    weighting moves it off the declared truth.
+
+    **The anchor is the declared distribution, not today's output.** Nothing
+    here is a committed fitted value. The expected `xi` and `sigma` are the ones
+    the sample was generated from; a regression pin would kill the same
+    mutations and would assert only that the code does what it did.
+
+    **The design reads `0.35` as a literal, not `ml._GPD_PLOTTING_OFFSET`.** The
+    positions `(j - 0.35) / n` are Hosking and Wallis' convention, declared here
+    as a property of the sample. Reading the module constant instead would move
+    the sample with the mutation it is meant to catch --- a check anchored to
+    the thing it checks --- and at an offset of `0.0` it would place the last
+    point at `p = 1`, where a positive shape's quantile is infinite, so the
+    "kill" would be an incidental `ZeroDivisionError` rather than a failed
+    recovery.
+
+    Choosing `n` and the tolerance
+    ------------------------------
+
+    The sample is a deterministic quadrature of the law, not a draw, so the
+    correct estimator does not recover it exactly: `mean(Q(p_j))` at these
+    positions is not the integral of `Q`, and both moments carry a bias of order
+    `1 / n`. A mutated offset moves `a_1` by an amount also of order `1 / n`, so
+    their ratio does not improve with `n` --- a larger sample shrinks both
+    together and buys no resolution. `n = 100` is therefore chosen for scale,
+    not for power: it is the "about a hundred excesses" `GPD_SHAPE_BOUNDS` is
+    reasoned about in `ml.py`.
+
+    Measured at `n = 100` over the table below, the correct estimator's worst
+    error is `0.0153` in `xi` (at `xi = -0.4`) and `0.0067` in `sigma / sigma_0
+    - 1`. The tolerances are twice those, rounded up to the next `0.005`:
+    **`0.035` in `xi` and `0.015` relative in `sigma`.** The rule was fixed
+    before the mutations below were scored against it, and no tolerance was
+    moved afterwards. Under the offset `0.0` the worst row errs by `0.0545` in
+    `xi` and `0.0344` in `sigma`, each more than half again over its tolerance.
+
+    A finding: the guard is one-sided
+    ---------------------------------
+
+    **An offset moved *up* towards `0.5` is not an error this design can see
+    through `xi`, and very nearly not through `sigma` either.** On an exact
+    quantile design the midpoint offset `0.5` is the better quadrature, so it
+    recovers the declared shape *more* closely than `0.35` does: worst `xi`
+    error `0.0111` against `0.0153`. Hosking and Wallis chose `0.35` for the
+    bias of the estimator over random samples, not for a deterministic grid, and
+    no recovery tolerance on this design can prefer `0.35` to `0.5` in `xi`
+    without being tuned to today's output. What `0.5` does move is `sigma` on the
+    heaviest row, to `0.0153` relative against a tolerance of `0.015` --- so it
+    fails, by `0.0003`, on one row. **That margin is recorded as a kill because
+    it is one, and is not counted as resolution:** a table edit that dropped
+    `xi = 0.4` would let it through. Measured on the same rule, offsets from
+    `0.20` downwards and from `0.60` upwards fail with margin; `0.25` to `0.40`
+    pass. The guard's honest resolution is an offset error of about `0.15`
+    downwards and `0.25` upwards.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME` built from `git ls-files -z --cached
+    --others --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 through the mount's `.venv/bin/python` by absolute path (the
+    copy carries no `.venv`). Unmutated control green before and after; each
+    target confirmed present exactly once by `grep -cF` before, and the
+    replacement present and the original gone after, and restored before the
+    next.
+
+    1. **The plotting position dropped.** `_GPD_PLOTTING_OFFSET = 0.35` ->
+       `0.0` in `ml.py`. **Kills this test and nothing else**, all five
+       subtests, `AssertionError` each. The three bounded and near-exponential
+       rows fail on `xi` (errors `0.0545`, `0.0479`, `0.0406` against `0.035`);
+       the two heavy rows stay inside the `xi` tolerance (`0.0315`, `0.0145`)
+       and fail on `sigma` (`0.0329`, `0.0271` against `0.015`). This is the
+       mutation `FittedTailPwmTests` records as surviving; it no longer does.
+    2. **The plotting position moved up.** `0.35` -> `0.5`. **Kills this test
+       and nothing else, on one subtest only** --- `xi = 0.4, sigma = 0.8`,
+       `AssertionError`, relative `sigma` error `0.01534` against `0.015`. See
+       "the guard is one-sided" above: this is a kill by `0.0003` on the
+       heaviest row, and is recorded as observed, not as resolution.
+    3. **The same limb, reached through the weight.** `(1.0 - (rank -
+       _GPD_PLOTTING_OFFSET) / count)` -> `(1.0 - rank / count)` in
+       `ml._fit_gpd_pwm`. Kills this test and nothing else, all five subtests,
+       `AssertionError`, **with errors identical to mutation 1 to the last
+       digit** --- as they must be: the offset appears nowhere in the estimator
+       but that weight, so the two mutations are one program.
+    4. **B34's clamp mutation, re-run.** `clamped = not lower <= xi <= upper`
+       -> `clamped = False`. Kills `FittedTailPwmTests` alone, one subtest ("a
+       sample whose shape the clamp takes back says so"), `AssertionError`.
+       **This class stays green under it**: every declared shape sits well
+       inside `GPD_SHAPE_BOUNDS`, so no fit here is clamped and the flag's
+       assertion never meets a `True`. The two guards hold separate things ---
+       the clamp's honesty there, the `a_1` limb here.
+    """
+
+    #: The plotting positions the sample is built at: Hosking and Wallis'
+    #: `(j - 0.35) / n`, declared here rather than read from `ml` --- see the
+    #: class docstring.
+    DESIGN_OFFSET = 0.35
+
+    #: One hundred points. Chosen for the scale the fit will see in use, not for
+    #: resolution, which does not improve with `n` on this design.
+    SAMPLE_SIZE = 100
+
+    #: Twice the correct estimator's worst measured error on this table at
+    #: `SAMPLE_SIZE`, rounded up to the next `0.005`.
+    SHAPE_TOLERANCE = 0.035
+    RELATIVE_SCALE_TOLERANCE = 0.015
+
+    #: `(xi, sigma)`, all inside `GPD_SHAPE_BOUNDS`: two bounded tails, one
+    #: nearly exponential, two heavy. `0.01` rather than `0.0` so the sample is
+    #: built by the same formula as every other row, not by the exponential
+    #: limit a special case would need. The scales differ so that a defect
+    #: which confused scale with a unit could not pass on all five.
+    DECLARED = (
+        (-0.4, 2.0),
+        (-0.2, 1.5),
+        (0.01, 1.0),
+        (0.2, 3.0),
+        (0.4, 0.8),
+    )
+
+    def _sample(self, xi, sigma):
+        count = self.SAMPLE_SIZE
+        return [
+            sigma * ((1.0 - (j - self.DESIGN_OFFSET) / count) ** -xi - 1.0) / xi
+            for j in range(1, count + 1)
+        ]
+
+    def test_the_fit_recovers_a_declared_shape_and_scale_from_its_own_quantile_function(
+        self,
+    ):
+        """A sample built from a declared law's inverse CDF fits back to that law.
+
+        For each declared `(xi, sigma)`, `x_j = sigma ((1 - p_j) ** -xi - 1) /
+        xi` at `p_j = (j - 0.35) / n`, reversed so the estimator's sort is
+        exercised. The fit must be unclamped and not the fallback --- a clamped
+        `xi` near a declared one would be the bound agreeing, not the fit --- and
+        must return `xi` within `SHAPE_TOLERANCE` and `sigma` within
+        `RELATIVE_SCALE_TOLERANCE` of the declared values.
+        """
+
+        for xi, sigma in self.DECLARED:
+            with self.subTest(xi=xi, sigma=sigma):
+                fit = ml._fit_gpd_pwm(list(reversed(self._sample(xi, sigma))))
+                self.assertFalse(fit.clamped)
+                self.assertFalse(fit.fallback)
+                self.assertLessEqual(
+                    abs(fit.xi - xi),
+                    self.SHAPE_TOLERANCE,
+                    msg=f"fitted xi {fit.xi!r} is not the declared {xi!r}; the "
+                    "estimator weights the order statistics differently from "
+                    "the plotting positions the law was sampled at",
+                )
+                self.assertLessEqual(
+                    abs(fit.sigma / sigma - 1.0),
+                    self.RELATIVE_SCALE_TOLERANCE,
+                    msg=f"fitted sigma {fit.sigma!r} is not the declared "
+                    f"{sigma!r}",
+                )
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
