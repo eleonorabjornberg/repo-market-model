@@ -125,10 +125,13 @@ below.
 
 ## Acquire public source snapshots
 
-The current command line exposes New York Fed SOFR and FRED macro downloads:
+The `fetch` subcommand reaches each declared New York Fed reference rate and the FRED
+macro series:
 
 ```bash
 PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-sofr
+PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-tgcr
+PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-bgcr
 PYTHONPATH=src python3 -m repo_model.cli fetch fred-macro
 ```
 
