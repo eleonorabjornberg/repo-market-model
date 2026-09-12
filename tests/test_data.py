@@ -3580,13 +3580,15 @@ class TreasurySettlementZeroTests(unittest.TestCase):
     `data.SETTLEMENT_ZERO_COLUMNS`. Before this block every such day was a
     hole: the adapter emits nothing for an absent leg, and still does.
 
-    Two blocks, one criterion each, each its own mutation target:
+    Three blocks, one criterion each, each its own mutation target:
 
     * A24's is `test_a_business_day_with_no_settlement_reads_zero_inside_the_snapshot_coverage_only`
       -- the rule and its retrieval bound;
     * A25's is `test_no_zero_is_written_where_the_settlement_would_not_be_observable_at_the_cutoff`
       -- the same rule bounded by `build_cutoff`. Its fixture and its record are
       the second half of this docstring.
+    * A27's is `test_the_manifest_counts_the_zeros_rule_8_wrote_as_well_as_the_holes`
+      -- the build records how many zeros the rule wrote. Third section below.
 
     The fixture is a fortnight of January 2026. SOFR prints on nine weekdays,
     so those are the grid; 10 and 11 January are inside coverage and off it.
@@ -3721,6 +3723,106 @@ class TreasurySettlementZeroTests(unittest.TestCase):
     calendar (`parsed.date()`), each `0.0 is not None : 2026-01-14
     treasury_settlement`. The two bounds are independent, and the suite now
     shows it rather than asserting it.
+
+    ---- A27: the build counts the zeros rule 8 wrote ----------------------
+
+    A22 left it in its own words: the manifest counts holes but not zeros.
+    `DailyPanelBuild.holes` counts, per built column, the `ref_date`s carrying
+    no value, and a settlement zero is a value and is not among them. Those are
+    two different facts about the same column's absences -- how much of it is
+    missing, and how much of it is a zero written where an observation was
+    absent -- and only one was recorded. A25 made it sharper rather than
+    softer: since the zero is bounded by the build cutoff, the set of dates
+    that get one is derived, and nothing recorded how large that set was on the
+    build that ran. The count is the audit of that bound.
+
+    `DailyPanelBuild.settlement_zeros` is that count, keyed over every built
+    column exactly as `holes` is.
+
+    **It counts at the write, not over the eligible dates**, which is the whole
+    distinction and the reason it is not derived from
+    `_settlement_zero_dates`'s return. Six grid dates of A24's fixture are
+    eligible for a zero -- inside the snapshot's coverage, published by the
+    cutoff -- and no column takes six: `treasury_settlement` settled on four of
+    them. A count over the eligible set over-reports on exactly the columns
+    that have the most data. Nor is it a scan of the panel for `0.0`: 12
+    January's SOMA award is an observed zero and is not rule 8's.
+
+    **A column that took none records zero rather than omitting the key**, to
+    the standard `DailyPanelBuild.incomplete_dates` already states -- a reader
+    tells "none were written" from "this build was never asked". That clause is
+    a refusal and has its own mutation below.
+
+    **The file manifest does not carry it yet, and that is a finding, not an
+    omission.** `write_daily_panel`'s JSON is where a *reader of a published
+    manifest* would meet the count, and A22's complaint is about that reader.
+    Writing the key there turns `test_generated_results.MilestoneAReproduction
+    Tests` red: `scripts/reproduce_milestone_a.py` compares the rebuilt
+    `panel.build_manifest` with the one `docs/runs/persistence_funding.json`
+    records key by key, and `_differences` reports a key on one side only.
+    Measured as mutation 4 below, in the copy and in the mount. That test's own
+    docstring says the answer to a published figure moving is "a report and a
+    re-scored record, not a tolerance", and `CLAUDE.md` refuses a rewrite of a
+    published record inside a block. So this block publishes the count to every
+    reader of a build and leaves the file half to the human, and the last
+    subtest asserts the state it left so the undone half stays visible.
+
+    **No published number moves, and it is the key alone that goes red.**
+    Rebuilt from the tracked inputs at the published cutoff and columns
+    (2026-09-08T21:31:42Z, the eight of `metadata/funding_panel_manifest.json`),
+    `settlement_zeros` is 0 on every one of them. The tracked funding inputs
+    carry no auction snapshot -- `treasury_settlement` has 2104 holes over 2104
+    rows -- so rule 8 fills nothing on that build and the new key would carry
+    no figure the record disagrees with. The reproduction fails on the key's
+    presence, not on a value.
+
+    Mutation record, 12 September 2026, python3 3.9.6. Every mutation applied
+    to `src/repo_model/data.py` in a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, confirmed applied
+    (the replaced text occurs exactly once before), reverted from a kept
+    original and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1`, the whole
+    suite each time. Unmutated control green before the first and after the
+    last, no expected failure.
+
+    1. **The cheap count**: `settlement_zeros` taken from the eligible dates
+       -- `_settlement_zero_dates` also returns `frozenset(covered)` and the
+       count reads its length for every declared column -- rather than from the
+       write. Killed by this test and nothing else, three subtests, every
+       failure an `AssertionError`: "a filled column reports the count of its
+       zeros" (`treasury_settlement` 6 against 2, and every declared column 6),
+       "the count is of zeros written, not of dates eligible"
+       (`6 not less than 6 : treasury_settlement`) and "holes and zeros are the
+       two halves of the same grid" (`13 != 9`).
+    2. **The count never made**: the increment at the write removed. Killed by
+       this test and nothing else, the same three subtests, `AssertionError` --
+       every count 0, `3 != 1` on the SOMA cross-check, `7 != 9` on the grid
+       identity. The refusal subtest passes under it, which is why clause 3
+       needs mutation 3 and not this one.
+    3. **The key omitted where none was written**: the dict starts empty and
+       the increment becomes `setdefault`-style, so a column that took no zero
+       has no key. Killed by this test and nothing else: `AssertionError` on "a
+       filled column reports the count of its zeros" (`sofr` and `tgcr` absent)
+       and on "a build that wrote none records zero, not an absent key"
+       (`{} != {'sofr': 0, 'tgcr': 0}`), and a **`KeyError: 'sofr'`** on the
+       grid identity. The exception type is the point: an absent key is not a
+       wrong number, it is a reader crashing.
+    4. **The key written into the file manifest**: `"settlement_zeros"` added
+       to `write_daily_panel`'s JSON. Killed by two tests, both
+       `AssertionError`: this test's last subtest ("'settlement_zeros'
+       unexpectedly found in ...") and
+       `test_generated_results.MilestoneAReproductionTests` (`['panel.
+       build_manifest.settlement_zeros: present on one side only']`). This is
+       the measurement behind the finding above, not a defect being guarded
+       against.
+
+    A24's mutation 7 -- **a zero counted as a hole** -- was **re-run** against
+    the changed row-assembly loop, per `CLAUDE.md`: the loop that counts the
+    holes is the loop this block edited. It still bites, and it now kills three
+    tests rather than one, all `AssertionError`: A24's "holes count the empty
+    cells, not the zeros" (`treasury_settlement` 5 against 3), A25's same
+    subtest (5 against 2) and this test's grid identity (`11 != 9`). The guard
+    was strengthened by the new count, not blunted by it.
     """
 
     SOFR_SHA = "a" * 64
@@ -4196,6 +4298,123 @@ class TreasurySettlementZeroTests(unittest.TestCase):
                 DataContractError, r"when a settlement dated that day is published"
             ):
                 self.build_unanchored(registry=registry)
+
+    # ---- A27: the manifest counts the written zeros ------------------------
+    #
+    #: The zeros rule 8 writes into A24's fixture, per column, stated rather
+    #: than derived -- the reason the two criteria above state their zero days:
+    #: a count derived from the panel a mutation just changed agrees with the
+    #: mutation. Read off the fixture: the covered grid dates are 6, 7, 8, 9,
+    #: 12 and 13 January (inside the snapshot's coverage, all published by the
+    #: 1 February cutoff), less the dates each column's own series settled on --
+    #: and, for the SOMA leg, less every date any leg settled on.
+    #:
+    #: Six dates are eligible and no column takes six, which is the whole
+    #: distinction: `treasury_settlement` settled on four of them. A count over
+    #: the eligible dates would report 6 for all four columns.
+    ZEROS_WRITTEN = {
+        "sofr": 0,
+        "tgcr": 0,
+        "treasury_settlement": 2,  # 7, 13
+        "treasury_settlement_bills": 3,  # 7, 8, 13
+        "treasury_settlement_coupons": 4,  # 6, 7, 9, 13
+        "treasury_settlement_soma": 2,  # 7, 13 -- 12 January's 0.0 is observed
+    }
+    #: The grid dates rule 8's two bounds make eligible for a zero, which is
+    #: what the cheap implementation counts.
+    ZERO_ELIGIBLE_DATES = 6
+
+    def test_the_manifest_counts_the_zeros_rule_8_wrote_as_well_as_the_holes(self):
+        """A27's acceptance criterion and mutation target. See the class docstring."""
+
+        build = self.build()
+        panel = {row.date: row.values for row in build.observations}
+
+        with self.subTest("a filled column reports the count of its zeros"):
+            self.assertEqual(dict(build.settlement_zeros), self.ZEROS_WRITTEN)
+
+        with self.subTest("the count is of zeros written, not of dates eligible"):
+            # The eligible set is the same for all four settlement columns and
+            # no column's count is it. A count over `covered` over-reports on
+            # exactly the columns that have the most data, because a date
+            # carrying a real settlement is eligible and is not a zero.
+            for column in self.SETTLEMENT_COLUMNS:
+                self.assertLess(
+                    build.settlement_zeros[column], self.ZERO_ELIGIBLE_DATES, column
+                )
+            # ...and it is not a scan of the panel for 0.0 either: 12 January's
+            # SOMA award is an observed zero and is not rule 8's.
+            self.assertEqual(panel[date(2026, 1, 12)]["treasury_settlement_soma"], 0.0)
+            self.assertEqual(
+                sum(
+                    1
+                    for values in panel.values()
+                    if values["treasury_settlement_soma"] == 0.0
+                ),
+                build.settlement_zeros["treasury_settlement_soma"] + 1,
+            )
+
+        with self.subTest("holes and zeros are the two halves of the same grid"):
+            # Every cell of a built column is an observation, a rule 8 zero or
+            # a hole, and the manifest now publishes the last two rather than
+            # one of them. The observation counts are read off the fixture for
+            # the reason the zeros are.
+            observed = {
+                "sofr": 9,
+                "tgcr": 3,
+                "treasury_settlement": 4,
+                "treasury_settlement_bills": 3,
+                "treasury_settlement_coupons": 2,
+                "treasury_settlement_soma": 3,
+            }
+            self.assertEqual(len(panel), len(self.GRID))
+            for column in self.COLUMNS:
+                self.assertEqual(
+                    build.holes[column]
+                    + build.settlement_zeros[column]
+                    + observed[column],
+                    len(panel),
+                    column,
+                )
+
+        with self.subTest("a build that wrote none records zero, not an absent key"):
+            # No settlement column is declared, so rule 8 fills nothing. The
+            # key is present for every built column and reads 0 -- the standard
+            # `incomplete_dates` is held to, and the difference between "none
+            # were written" and "this build was never asked".
+            none_written = build_daily_panel(
+                self.rows(),
+                self.registry(),
+                build_cutoff=datetime(2026, 2, 1, tzinfo=timezone.utc),
+                decision_time=time.fromisoformat("16:00"),
+                columns=("sofr", "tgcr"),
+                snapshot_retrieved_at={self.AUCTION_SHA: self.RETRIEVED_AT},
+            )
+            self.assertEqual(none_written.built_columns, ("sofr", "tgcr"))
+            self.assertEqual(dict(none_written.settlement_zeros), {"sofr": 0, "tgcr": 0})
+            # ...and the keys are the built columns on both builds, as `holes`'
+            # are, so neither count is silently narrower than the other.
+            for candidate in (build, none_written):
+                self.assertEqual(
+                    sorted(candidate.settlement_zeros), sorted(candidate.built_columns)
+                )
+                self.assertEqual(
+                    sorted(candidate.settlement_zeros), sorted(candidate.holes)
+                )
+
+        with self.subTest("the file manifest does not carry it, and that is measured"):
+            # Not an endorsement: the record of a measurement. Writing the key
+            # into `write_daily_panel`'s JSON turns the Milestone A
+            # reproduction red, because the published record's
+            # `panel.build_manifest` has no such key. See the class docstring.
+            # This asserts the state the block leaves, so the day the human
+            # re-publishes the record, this line is what says the other half is
+            # still undone.
+            with tempfile.TemporaryDirectory() as directory:
+                manifest_path = write_daily_panel(build, Path(directory) / "panel.csv")
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["holes"], dict(build.holes))
+            self.assertNotIn("settlement_zeros", manifest)
 
 
 class BillRatePanelTests(unittest.TestCase):
