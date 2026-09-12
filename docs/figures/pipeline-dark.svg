@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="How a feature row earns the right to be read: the date a value describes, the lag its source declares, the purge derived from that declaration, and the decision instant the row has to clear">
+<rect width="640" height="300" fill="#1a1a19"/>
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#898781" stroke-width="1.1" stroke-opacity="0.55"/></pattern><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L7,4 L0,7 z" fill="#c3c2b7"/></marker></defs>
+<text x="8" y="21" font-size="13" fill="#ffffff" font-weight="600">How a feature row earns the right to be read</text>
+<text x="8" y="38" font-size="11" fill="#c3c2b7">Time runs left to right. Nothing on this line is chosen — the gap is derived from what the source declares.</text>
+<text x="8" y="74" font-size="10" fill="#ffffff" font-weight="600">the source</text>
+<text x="8" y="88" font-size="10" fill="#898781">declares a lag</text>
+<rect x="140" y="62" width="172" height="24" rx="3" fill="#898781" fill-opacity="0.16"/>
+<text x="150" y="78" font-size="10" fill="#c3c2b7">the date a value describes</text>
+<line x1="312" y1="74" x2="428" y2="74" stroke="#c3c2b7" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="318" y="66" font-size="10" fill="#c3c2b7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">release_lag, by basis</text>
+<text x="318" y="88" font-size="10" fill="#898781">+ available_time, in its own timezone</text>
+<text x="8" y="128" font-size="10" fill="#ffffff" font-weight="600">the snapshot</text>
+<text x="8" y="142" font-size="10" fill="#898781">immutable, stamped</text>
+<rect x="416" y="114" width="152" height="26" rx="3" fill="#3987e5" fill-opacity="0.14" stroke="#3987e5" stroke-width="1.2"/>
+<text x="426" y="131" font-size="10" fill="#c3c2b7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">retrieved_at + digest</text>
+<text x="600" y="156" font-size="10" fill="#898781" text-anchor="end">the first instant anyone outside the publisher could read it</text>
+<text x="8" y="196" font-size="10" fill="#ffffff" font-weight="600">the fold</text>
+<text x="8" y="210" font-size="10" fill="#898781">reads, or refuses</text>
+<rect x="140" y="184" width="150" height="26" rx="3" fill="none" stroke="#383835" stroke-width="1"/>
+<text x="150" y="201" font-size="10" fill="#c3c2b7">rows it may train on</text>
+<rect x="290" y="184" width="136" height="26" rx="3" fill="url(#hatch)" stroke="#383835" stroke-width="1"/>
+<text x="298" y="201" font-size="10" fill="#c3c2b7">purge gap, derived</text>
+<circle cx="440" cy="197" r="4.5" fill="#3987e5"/>
+<line x1="452" y1="176" x2="452" y2="242" stroke="#ffffff" stroke-width="1.7"/>
+<text x="458" y="180" font-size="10" fill="#ffffff" font-weight="600">decision instant</text>
+<text x="442" y="226" font-size="10" fill="#c3c2b7" text-anchor="end">the feature row it reads</text>
+<text x="8" y="258" font-size="10" fill="#ffffff" font-weight="600">the test</text>
+<text x="140" y="258" font-size="11" fill="#ffffff" font-weight="600" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">available_at  ≤  decision instant</text>
+<text x="600" y="258" font-size="10" fill="#898781" text-anchor="end">otherwise refused, never imputed</text>
+<line x1="134" y1="272" x2="600" y2="272" stroke="#383835" stroke-width="1"/>
+<text x="8" y="290" font-size="10" fill="#898781">A declaration is not provenance: an early instant carries the publication it was read off.</text>
+</svg>

@@ -263,6 +263,25 @@ public observations -> point-in-time panel -> probabilistic forecast
                                                         and holdout evaluation
 ```
 
+Two of those rules carry most of the weight, and both are easier to see than to state.
+The first is what *observable* means. A value is not readable the moment it exists: its
+source declares when it can first be read, and the purge that follows is derived from
+that declaration rather than chosen.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/pipeline-dark.svg">
+  <img alt="How a feature row earns the right to be read: the date a value describes, the lag its source declares, the purge derived from that declaration, and the decision instant the row has to clear" src="docs/figures/pipeline.svg">
+</picture>
+
+The second is what one fold of the evaluation looks like once that gap is taken out of
+it — and why nothing inside the gap is scored and nothing after the decision instant is
+read.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/fold-dark.svg">
+  <img alt="One fold of the purged rolling-origin evaluation: the training window, the derived purge gap, the feature row read at the decision instant, and the scored day" src="docs/figures/fold.svg">
+</picture>
+
 Longer-term latent-liquidity, market-clearing, and network-stress components are
 research directions, not completed features.
 
@@ -276,8 +295,8 @@ research directions, not completed features.
 - **Nicholas Beroud** — advisor, and the project's substantive
   backbone. He selected the data the model is built on and settled what it means:
   which public series carry the funding market's mechanics, which quantities are
-  economically meaningful, and which open decisions are questions of finance rather
-  than questions of code.
+  economically meaningful, and which open decisions are finance questions rather than
+  engineering ones.
 
 The split matters to how this repository is read. Most of what is built here is data
 engineering and evaluation discipline, and those are the parts a test suite can
@@ -297,6 +316,9 @@ Start here:
 - [`DATA.md`](DATA.md) maps public and restricted data sources.
 - [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md) reads the records on volatility
   and the tails in words, and places the project among related quantitative work.
+- [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) is the same work written
+  for a reader outside the project: the business question, the controls, the result and
+  its limitations.
 - [`PLAN.md`](PLAN.md) records the staged implementation roadmap, and is what
   [`docs/status.json`](docs/status.json) is generated from.
 - [`examples/walkthrough.py`](examples/walkthrough.py) runs the pipeline end to end on

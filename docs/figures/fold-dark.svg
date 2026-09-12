@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="One fold of the purged rolling-origin evaluation: the training window, the derived purge gap, the feature row read at the decision instant, and the scored day">
+<rect width="640" height="300" fill="#1a1a19"/>
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#898781" stroke-width="1.1" stroke-opacity="0.55"/></pattern><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L7,4 L0,7 z" fill="#c3c2b7"/></marker></defs>
+<text x="8" y="21" font-size="13" fill="#ffffff" font-weight="600">One fold of the purged rolling-origin evaluation</text>
+<text x="8" y="38" font-size="11" fill="#c3c2b7">Scored on a day beyond the gap; the origin expands by one day for the next fold.</text>
+<polyline points="466.0,89.7 467.3,89.6 468.6,89.4 469.9,89.2 471.2,88.8 472.5,88.4 473.8,87.9 475.1,87.2 476.4,86.4 477.7,85.5 479.0,84.5 480.3,83.3 481.6,82.1 482.9,80.8 484.2,79.5 485.5,78.3 486.8,77.2 488.1,76.3 489.4,75.6 490.7,75.1 492.0,75.0 493.3,75.1 494.6,75.6 495.9,76.3 497.2,77.2 498.5,78.3 499.8,79.5 501.1,80.8 502.4,82.1 503.7,83.3 505.0,84.5 506.3,85.5 507.6,86.4 508.9,87.2 510.2,87.9 511.5,88.4 512.8,88.8 514.1,89.2 515.4,89.4 516.7,89.6 518.0,89.7" fill="none" stroke="#3987e5" stroke-width="1.6"/>
+<text x="492" y="66" font-size="10" fill="#898781" text-anchor="middle">a distribution, not a point</text>
+<text x="8" y="136" font-size="10" fill="#ffffff" font-weight="600">this fold</text>
+<rect x="72" y="118" width="242" height="28" rx="3" fill="#3987e5" fill-opacity="0.14" stroke="#3987e5" stroke-width="1.2"/>
+<text x="84" y="136" font-size="10" fill="#c3c2b7">training window</text>
+<rect x="314" y="118" width="104" height="28" rx="3" fill="url(#hatch)" stroke="#383835" stroke-width="1"/>
+<text x="366" y="110" font-size="10" fill="#c3c2b7" text-anchor="middle">purge gap</text>
+<circle cx="418" cy="132" r="4.5" fill="#3987e5"/>
+<text x="422" y="162" font-size="10" fill="#c3c2b7" text-anchor="end">feature row</text>
+<line x1="430" y1="98" x2="430" y2="170" stroke="#ffffff" stroke-width="1.7"/>
+<text x="436" y="106" font-size="10" fill="#ffffff" font-weight="600">decision instant</text>
+<text x="436" y="118" font-size="10" fill="#898781">16:00, declared timezone</text>
+<circle cx="492" cy="132" r="5" fill="#1a1a19" stroke="#3987e5" stroke-width="1.6"/>
+<text x="492" y="162" font-size="10" fill="#c3c2b7" text-anchor="middle">scored day</text>
+<text x="8" y="216" font-size="10" fill="#ffffff" font-weight="600">the next</text>
+<rect x="72" y="201" width="258" height="22" rx="3" fill="#3987e5" fill-opacity="0.07" stroke="#3987e5" stroke-width="1"/>
+<text x="84" y="216" font-size="10" fill="#898781">one row longer</text>
+<rect x="330" y="201" width="104" height="22" rx="3" fill="url(#hatch)" stroke="#383835" stroke-width="1"/>
+<text x="382" y="234" font-size="10" fill="#898781" text-anchor="middle">the gap keeps its width</text>
+<circle cx="434" cy="212" r="3.5" fill="#898781"/>
+<line x1="446" y1="192" x2="446" y2="228" stroke="#898781" stroke-width="1.2" stroke-dasharray="3 3"/>
+<circle cx="508" cy="212" r="4" fill="#1a1a19" stroke="#898781" stroke-width="1.6"/>
+<line x1="64" y1="252" x2="600" y2="252" stroke="#383835" stroke-width="1"/>
+<text x="8" y="274" font-size="10" fill="#898781">The gap is the largest declared lag across the features the fold reads: a slower source widens it for every fold.</text>
+<text x="8" y="289" font-size="10" fill="#898781">Nothing inside the gap is scored, and nothing after the instant is read.</text>
+</svg>

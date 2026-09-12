@@ -353,7 +353,7 @@ Eleonora Björnberg, the author, designed the model, the
 methodology and the workflow, and holds implementation, evaluation and every claim
 about what the model has earned. Nicholas Beroud, the project's advisor, selected the data
 the model is built on and settled what it means: which of the open decisions in
-`DATA_QUALITY_DECISIONS.md` are questions about markets rather than about code, and
+`DATA_QUALITY_DECISIONS.md` are finance questions rather than engineering ones, and
 what a series has to represent before it is worth fitting on.
 
 The split is worth stating on a status page specifically, because the gaps listed
