@@ -44,9 +44,15 @@ second, and the records show why it is the harder half.
    persistence on either regime variable, and clearly so on the spread
    ([`runs/compare_persistence_vs_threshold_regime_spread_mh61_crps.json`](runs/compare_persistence_vs_threshold_regime_spread_mh61_crps.json),
    [`runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json`](runs/compare_persistence_vs_threshold_regime_volume_mh61_crps.json)).
-6. **No model's stress probabilities are scored in the tails yet.** At the declared
-   thresholds only the climatology control is published, and it scores exactly no skill,
-   as it must ([`runs/exceedance_funding_climatology.json`](runs/exceedance_funding_climatology.json)).
+6. **Stress probabilities carry skill at the shoulder and none in the tail.** The
+   climatology control scores exactly no skill, as it must
+   ([`runs/exceedance_funding_climatology.json`](runs/exceedance_funding_climatology.json)),
+   and the conditional model scored against it beats it only at the lowest declared
+   threshold; at the highest, climatology wins and the fitted probabilities carry no
+   information at all
+   ([`runs/exceedance_gbm_mh61.json`](runs/exceedance_gbm_mh61.json), with the figures
+   in the generated tail section of the README). That is the same boundary the four
+   findings above run into, met from the other side.
 
 **Interpretation — a reading, not a tested claim.** The pattern fits what the
 structural work below finds: repo spikes arrive with the calendar and the balance
