@@ -313,6 +313,19 @@ One note for the human held over from the settled design point: a
 `business_days` lag that runs off the end of the panel is late, because its
 publication date is then after every decision instant the panel can express.
 `scripts/purge_availability_audit.py` is human-owned and still skips that case.
+
+**Both stops are now closed (B30).** The human aligned the audit script with
+that last note -- a business-day count off the end of the panel is late, not
+skipped -- and chose the fixture treatment from B29's measurements: six-day
+fixtures keep their gapped weekday calendars and take the real registry's
+`ref_date` / `business_days` shape, one-day fixtures have their panel re-dated
+onto consecutive days, and the literals that move are re-baselined with their
+old value, their new value and their reason in the docstring of the test that
+pins them. The guard is in `baseline._check_decision_relative_availability`,
+the acceptance test and the mutation record are in
+`DecisionRelativeAvailabilityTests` below, and the re-baselined literals name
+B30 where they sit. B28's and B29's findings above are kept, not superseded:
+they are the measurements the treatment was chosen from.
 """
 
 import contextlib
@@ -328,7 +341,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from functools import partial
 from pathlib import Path
 
@@ -351,6 +364,8 @@ from repo_model.baseline import (
     ScoredFold,
     SingularDesignError,
     UnobservedThresholdError,
+    _check_decision_relative_availability,
+    _declared_availability,
     _dot,
     _feature_index,
     _least_squares,
@@ -384,6 +399,7 @@ from repo_model.metrics import (
 from repo_model.contract import (
     QUANTILE_LEVELS,
     UndeclaredFeatureError,
+    field_sources_for_features,
     sources_for_features,
 )
 from repo_model.data import DailyObservation, load_daily_panel
@@ -445,10 +461,39 @@ def declared_registry(purge, features=FEATURES):
     way to pin one is now to declare a registry that produces it rather than to
     pass an integer the function no longer accepts.
 
-    `record_date` with `available_time` at midnight makes the contribution
-    exactly `days`, with no dependence on `DECISION_TIME`: the arithmetic
-    `max_release_lag_days` performs is Track A's to test, and a fixture that
-    leaned on it would be this file restating it.
+    Either shape makes the contribution exactly `purge`, with no dependence on
+    `DECISION_TIME`: the arithmetic `max_release_lag_days` performs is Track
+    A's to test, and a fixture that leaned on it would be this file restating
+    it. Which of the two is declared is decided below, and the decision is
+    about the *decision instant*, not about the gap.
+
+    **Two shapes, chosen by whether `purge` can express the real registry's
+    (B30).** `_check_decision_relative_availability` asks a second question of
+    the same declaration: was the feature row published by the declared
+    decision time on the last panel date before the scored one. A
+    `record_date` / `calendar_days` lag of exactly `purge` days cannot answer
+    yes on a weekday calendar -- the row a fold scored after a weekend reads is
+    first observable on the Saturday, and the forecast was made on the Friday.
+    That is B28's finding and the fixture is what is unrealistic, not the rule.
+
+    * From six days up, the declaration becomes the shape
+      `metadata/sources.json` actually uses for SOFR: `ref_date` /
+      `business_days`, one day, under a `worst_case_calendar_days` of `purge`.
+      It still prices to `purge`, because a `ref_date` source contributes its
+      worst case -- so every number stays bit-identical on the panel these
+      tests already run -- while availability is now the *next panel date*,
+      which lands ahead of the decision. The gapped weekday calendar is kept,
+      which matters: it is what makes these panels realistic at all.
+    * Below six days that shape is unavailable, and not by accident:
+      `contract.validate_release_lag` requires `worst_case_calendar_days` to be
+      at least `days + 5`, so six is the smallest gap it can express. Those
+      calls keep `record_date` and re-date their panel onto consecutive days
+      instead -- `on_consecutive_days` below, and the docstring there for why
+      no declaration can rescue them.
+
+    Declaring `days` downward to fit, widening a tolerance, or exempting a
+    fixture were the three ways out B28 and B29 refused, and neither shape here
+    is one of them: both price to exactly the gap the caller asked for.
 
     `purge` must be at least 1. `max_release_lag_days` refuses to return zero --
     "selected sources must produce a nonzero purge" -- so an unpurged backtest
@@ -463,18 +508,61 @@ def declared_registry(purge, features=FEATURES):
             "max_release_lag_days cannot produce a gap below 1; an unpurged "
             "backtest is not expressible once the gap is derived"
         )
-    return {
-        source: {
-            "release_lag": {
-                "basis": "record_date",
-                "unit": "calendar_days",
-                "days": purge,
-                "available_time": "00:00",
-                "timezone": "America/New_York",
-            }
+    if purge >= 6:
+        release_lag = {
+            "basis": "ref_date",
+            "unit": "business_days",
+            "days": 1,
+            "worst_case_calendar_days": purge,
+            "available_time": "00:00",
+            "timezone": "America/New_York",
         }
+    else:
+        release_lag = {
+            "basis": "record_date",
+            "unit": "calendar_days",
+            "days": purge,
+            "available_time": "00:00",
+            "timezone": "America/New_York",
+        }
+    return {
+        source: {"release_lag": dict(release_lag)}
         for source in sources_for_features(features)
     }
+
+
+def on_consecutive_days(rows):
+    """The same values on a gapless calendar, for the fixtures below six days.
+
+    The counterpart of `tests/test_contract.py::_on_consecutive_days`, which
+    the human applied there for the same reason and which this deliberately
+    mirrors rather than imports: that file is `SHARED`, and a Track B fixture
+    reaching into it would make every later change to it a cross-track change.
+
+    **Why re-dating is the only fix here, and not a preference.**
+    `data/sample/daily_market.csv` is weekday dates with MLK Monday 2026-01-19
+    absent. For the fold scored Tuesday 2026-01-20 at a one-day gap, the last
+    training row that clears the purge is Friday 2026-01-16 -- and the last
+    panel date strictly before the scored date is *also* Friday 2026-01-16,
+    because the Monday is not on the panel. The decision is taken on the same
+    day as the row it would have to read, so every positive release lag puts
+    that row's availability after it, and `max_release_lag_days` refuses to
+    return zero. No declaration of any basis, unit or `available_time` is
+    decision-safe for that fold. Only a panel without the gap is.
+
+    Every index, fold boundary and residual window is preserved; the values are
+    untouched and only the dates move. What does move is the arithmetic that
+    depends on calendar distance, because a one-day gap on consecutive dates
+    skips no rows where on a weekday calendar it skipped a weekend. The
+    literals that moved are re-baselined in the tests that pin them, each with
+    its old value, its new value and this reason in its own docstring.
+    """
+
+    first = rows[0].date
+    return [
+        DailyObservation(first + timedelta(days=index), row.values)
+        for index, row in enumerate(rows)
+    ]
 
 
 def at_gap(rows, *, purge, features=FEATURES, **kwargs):
@@ -1551,7 +1639,10 @@ class RollingBacktestTests(unittest.TestCase):
     MINIMUM_HISTORY = 10
 
     def sample(self):
-        return load_daily_panel(SAMPLE_PANEL)
+        # Both tests here run at a one-day gap, which no declaration can make
+        # decision-safe on a calendar with weekends -- `on_consecutive_days`
+        # says why. The values are the sample's; only the dates move.
+        return on_consecutive_days(load_daily_panel(SAMPLE_PANEL))
 
     def test_the_backtest_scores_whichever_model_it_is_given(self):
         """Given an ARX fitter, every reported number is the ARX's own.
@@ -1623,6 +1714,17 @@ class RollingBacktestTests(unittest.TestCase):
         nothing, and the two numbers this function reports on the checked-in
         sample are pinned. A generalisation that is also a rewrite would show up
         here rather than in a merge.
+
+        **Re-baselined by B30, and the old value is kept here.** `mae_bps` was
+        `22.0 / 14.0`; it is now `21.0 / 14.0`. The fold count (14) and the
+        interval coverage (`8.0 / 14.0`) did not move. Nothing in the backtest
+        changed: the panel did. A one-day gap is not decision-safe on a
+        calendar with weekends under any declaration -- `on_consecutive_days`
+        gives the proof -- so this class now runs the sample's values on
+        consecutive dates, where a one-day gap skips no weekend and the feature
+        row of a Monday-scored fold is the Sunday rather than the Friday. The
+        claim the test makes is unchanged and so is its chain back to the purge
+        block: the number is re-based on a stated panel, not abandoned.
         """
 
         rows = self.sample()
@@ -1652,11 +1754,13 @@ class RollingBacktestTests(unittest.TestCase):
             )
 
         # Pinned at the smallest expressible gap. The numbers moved from the
-        # unpurged 15/13/11 when the gap stopped being typeable as zero; what
-        # this test asserts -- that the default fitter is persistence and that
+        # unpurged 15/13/11 when the gap stopped being typeable as zero, and
+        # the MAE moved again -- 22.0 to 21.0 over the same 14 folds -- when
+        # B30 re-dated this class's panel onto consecutive days; what this test
+        # asserts -- that the default fitter is persistence and that
         # generalising the backtest moved nothing on its own -- is unchanged.
         self.assertEqual(len(default.forecasts), 14)
-        self.assertAlmostEqual(default.mae_bps, 22.0 / 14.0, places=12)
+        self.assertAlmostEqual(default.mae_bps, 21.0 / 14.0, places=12)
         self.assertAlmostEqual(default.interval_coverage, 8.0 / 14.0, places=12)
 
 
@@ -1715,6 +1819,20 @@ class PurgedBacktestTests(unittest.TestCase):
 
     def sample(self):
         return load_daily_panel(SAMPLE_PANEL)
+
+    def consecutive(self):
+        """The same values on a gapless calendar, for the sub-six-day gaps.
+
+        `self.PURGE` runs on the panel as shipped: the six-day declaration is
+        `ref_date` / `business_days` now, whose availability is the next panel
+        date, so the weekday calendar with its holiday is decision-safe and
+        every number pinned against it is bit-identical to what it was. A
+        one-day gap is not decision-safe there under any declaration, so the
+        few calls below that need one take this panel instead, and say in their
+        own docstrings which literal moved.
+        """
+
+        return on_consecutive_days(self.sample())
 
     def fitters(self):
         return (
@@ -1801,6 +1919,17 @@ class PurgedBacktestTests(unittest.TestCase):
         accepted and then not passed on, so the folds are built at zero. The
         report still comes out, the intervals still look reasonable, and only a
         comparison against independently enumerated folds says otherwise.
+
+        **B30 changed what "unpurged" is measured against, and it got stronger
+        rather than weaker.** The comparison below used to be a second backtest
+        at a one-day gap, which is as close to unpurged as a *derived* gap can
+        get. A one-day gap is not decision-safe on this weekday panel, and
+        re-dating just that arm would have compared fold counts across two
+        different calendars, which measures nothing. `unpurged_reference` is
+        the real thing: the index walk this function had before it was purged,
+        written out longhand in this file, on the same panel. Its count is 15
+        and no gap enters it, so the assertion is now against the definition
+        rather than against an approximation of it.
         """
 
         rows = self.sample()
@@ -1815,10 +1944,10 @@ class PurgedBacktestTests(unittest.TestCase):
         # The gap costs origins on a 25-row panel, and the point of the test is
         # that it does: a run whose fold count matched the unpurged one would
         # mean the purge reached nothing.
-        unpurged = at_gap(
-            rows, purge=1, minimum_history=self.MINIMUM_HISTORY
+        unpurged, _mae, _coverage = unpurged_reference(
+            rows, self.MINIMUM_HISTORY, fit
         )
-        self.assertLess(len(report.forecasts), len(unpurged.forecasts))
+        self.assertLess(len(report.forecasts), len(unpurged))
 
         for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
             self.assertEqual(len(test_indices), 1)
@@ -2207,9 +2336,21 @@ class PurgedBacktestTests(unittest.TestCase):
         `min_train` is tempting, and a run that shrank it would report a number
         produced by a rule nobody declared, under the `minimum_history` the
         caller asked for.
+
+        **Re-baselined by B30.** The carrying run's fold count was 5 and is now
+        4. Both arms moved to the gapless panel together -- the second is at a
+        one-day gap, which no declaration makes decision-safe on a calendar
+        with weekends, and comparing a refusal on one panel against a success
+        on another would have made the two halves say nothing about each other.
+        The fold is lost to the calendar, not to the guard: on consecutive
+        dates `dates[19] + 1` is not strictly less than `dates[20]`, so the
+        twentieth row no longer clears a one-day gap and the first origin with
+        20 training rows behind it moves one forward. The claim -- that the
+        refusal above is about the gap and not about the panel being short --
+        is unchanged, and the panel is the same one in both halves.
         """
 
-        rows = self.sample()
+        rows = self.consecutive()
         with self.assertRaises(SplitError) as caught:
             at_gap(rows, purge=10, minimum_history=20)
         message = str(caught.exception)
@@ -2219,7 +2360,7 @@ class PurgedBacktestTests(unittest.TestCase):
         # Same panel, same `minimum_history`, a gap it can carry: the refusal
         # above is about the gap, not about the panel being short.
         report = at_gap(rows, purge=1, minimum_history=20)
-        self.assertEqual(len(report.forecasts), 5)
+        self.assertEqual(len(report.forecasts), 4)
 
     def test_the_purged_backtest_scores_whichever_model_it_is_given(self):
         """Both implementers go through the purged path, on their own numbers.
@@ -2279,9 +2420,29 @@ class PurgedBacktestTests(unittest.TestCase):
         a later change which quietly narrows the gap has to move these numbers
         and say why; the before/after table and the synthetic caveat are in
         `docs/block-2026-09-10-purged-backtest/RECORD.md`.
+
+        **Re-baselined by B30, both columns, and this is why both.** The test
+        is a comparison, so both arms have to run on one panel or it compares
+        nothing. Its "before" arm is a one-day gap, which no declaration makes
+        decision-safe on a calendar with weekends, so the whole test moved to
+        the gapless panel rather than half of it:
+
+          |          | folds | mae_bps  | coverage | was                       |
+          |----------|-------|----------|----------|---------------------------|
+          | purge 1  | 14    | 21.0/14  | 8.0/14   | 14, 22.0/14, 8.0/14       |
+          | purge 6  | 9     | 14.0/9   | 4.0/9    | 12, 25.0/12, 0.5          |
+
+        The six-day column is *not* the number
+        `test_the_backtest_derives_its_purge_from_the_declared_feature_set`
+        pins. That one is the purge block's reproduction and still runs on the
+        panel as shipped, where it is bit-identical; this one is a paired
+        comparison and had to move with its partner. The claim -- that the
+        purge makes the reported numbers worse and the worse numbers are the
+        ones kept -- survives the move, which is the point of re-basing a
+        literal rather than deleting it.
         """
 
-        rows = self.sample()
+        rows = self.consecutive()
         before = at_gap(
             rows, purge=1, minimum_history=self.MINIMUM_HISTORY
         )
@@ -2289,18 +2450,281 @@ class PurgedBacktestTests(unittest.TestCase):
             rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
         )
 
-        # "Before" is now the *smallest expressible* gap rather than no gap:
+        # "Before" is the *smallest expressible* gap rather than no gap:
         # `max_release_lag_days` refuses to return zero, so a one-day gap is as
-        # close to unpurged as a derived backtest can get. The comparison the
-        # test makes is unchanged; only the left-hand column moved, and it moved
-        # because the gap is derived now.
+        # close to unpurged as a derived backtest can get.
         self.assertEqual(len(before.forecasts), 14)
-        self.assertEqual(len(after.forecasts), 12)
-        self.assertAlmostEqual(before.mae_bps, 22.0 / 14.0, places=12)
-        self.assertAlmostEqual(after.mae_bps, 25.0 / 12.0, places=12)
+        self.assertEqual(len(after.forecasts), 9)
+        self.assertAlmostEqual(before.mae_bps, 21.0 / 14.0, places=12)
+        self.assertAlmostEqual(after.mae_bps, 14.0 / 9.0, places=12)
         self.assertAlmostEqual(before.interval_coverage, 8.0 / 14.0, places=12)
-        self.assertAlmostEqual(after.interval_coverage, 0.5, places=12)
+        self.assertAlmostEqual(after.interval_coverage, 4.0 / 9.0, places=12)
         self.assertGreater(after.mae_bps, before.mae_bps)
+
+
+class DecisionRelativeAvailabilityTests(unittest.TestCase):
+    """The second date the gap has to clear, and it is not the scored one (B30).
+
+    `splits.clears_purge` states the gap against the **target** date: a row is
+    eligible when `row + purge < opens`. The forecast is not made on the target
+    date. It is made at the declared decision time on the last panel date
+    strictly before it -- the calendar day before only when those two days are
+    consecutive. After a weekend or a holiday the decision comes earlier than
+    that, and the purge rule alone stops establishing that the last training
+    row had been published when the forecast was made. A23 found the gap;
+    `docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated against the target
+    date", records it. `baseline._check_decision_relative_availability` closes
+    it, per fold, on the rolling path.
+
+    B28 built this guard and stopped, because seven of the tests it turned red
+    were in `tests/test_contract.py`, which neither track owns. B29 rebuilt it
+    on the base the shared fixture change landed on, confirmed the shared file
+    stays green under it without being touched, and stopped again on a
+    different reason: the two Track B fixtures could not be fixed the same way
+    without deciding what happens to the benchmark literals they pin. Both
+    findings are in this module's docstring above and neither is superseded --
+    they are why the treatment below is what it is.
+
+    What the human decided, on B29's measurements
+    ---------------------------------------------
+
+    * **Fixtures at a six-day purge keep their gapped, weekday calendars** and
+      adopt the real registry's declaration shape: `ref_date` /
+      `business_days`, `days` 1, `worst_case_calendar_days` 6, the
+      `available_time` they already declare. B29 measured that as numerically
+      free and it is: twelve forecasts, persistence 2.083333333333348, ARX
+      2.086429950395829, coverage 0.5 for both, all bit-identical. Those panels
+      are business-day calendars on purpose and stay so. This covers
+      `declared_registry` here, `declared_registry_file` in
+      `tests/test_cli_eval.py`, and through it `business_days` there and
+      `business_day_frame` in `tests/test_ml.py` -- which needed no edit of
+      their own, because both generate panels for runs that price through
+      `declared_registry_file`.
+    * **Fixtures at a one-day purge get their panel re-dated onto consecutive
+      days.** B29 showed no declaration is decision-safe at one day on the
+      sample panel: MLK Monday 2026-01-19 is absent, so for the fold scored
+      Tuesday 2026-01-20 the last eligible training row is Friday 2026-01-16
+      and the last panel date strictly before the scored date is *also* Friday
+      2026-01-16. The decision is taken on the same day as the row it reads,
+      every positive lag misses it, and `max_release_lag_days` refuses a zero.
+      `on_consecutive_days` above, and `write_on_consecutive_days` in
+      `tests/test_cli_eval.py`, are that treatment.
+    * **The literals that moved are re-baselined in the same commit**, each
+      with its old value, its new value and its reason in the docstring of the
+      test that pins it. A number that changes with a stated reason is still
+      auditable; one that changes silently is not.
+
+    Nothing published moved. Against `metadata/sources.json` the guard is
+    silent -- `tests/test_cli_eval.py::RealRegistryTests` is green under it, and
+    the `backtest` command the README and REPRODUCIBILITY publish still exits 0
+    at the six-day gap it has always reported. The real registry declares
+    SOFR's one *business* day under a six-calendar-day worst case, so its
+    availability lands days ahead of the decision; `IOER` and `IORB` price at
+    one `record_date` day under a gap sized by the slower source. That margin
+    is a coincidence of a purge sized for `nyfed_sofr`, which is exactly why
+    the guard exists rather than being left to it.
+
+    Three call sites remain unwired and are not this block's:
+    `paired_model_comparison`, `rolling_exceedance_backtest` and
+    `event_eval.evaluate_event_window`.
+
+    Mutation record, the decision-relative availability guard
+    ---------------------------------------------------------
+
+    Run in a disposable copy under `$HOME`, built from `git ls-files --cached
+    --others --exclude-standard` so it is every tracked file as the working
+    tree has it plus the new untracked ones and nothing gitignored;
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`. Unmutated control green with
+    zero `expectedFailure` before and after.
+
+    Every kill below is the same failure in words: `AssertionError:
+    LookAheadError not raised`. The exception type that matters is the one that
+    stopped arriving, `repo_model.splits.LookAheadError`, and no incidental
+    exception is doing the work in any of the three.
+
+      1. **The acceptance mutation, and the one the brief names.**
+         `_check_decision_relative_availability` compares availability against
+         the **scored** date -- `dates[scored_index]` in place of
+         `dates[scored_index - 1]` -- which is the rule `clears_purge` already
+         applies and therefore the mutation that makes the guard redundant
+         rather than absent. Kills exactly 1:
+         `test_a_feature_whose_lag_misses_the_decision_instant_is_refused`
+         (this class), on its first arm. Nothing else in the suite notices, and
+         that is the result rather than a shortfall: every other fixture in the
+         tree now declares a lag its own calendar can deliver, so no other run
+         is close enough to the boundary for one day to matter. The criterion
+         and the mutation do not come apart -- the test the brief names is the
+         only test the mutation kills, and it dies for the reason it was
+         planted.
+      2. **The guard not called at all.** The per-fold call removed from
+         `rolling_persistence_backtest`. Kills the same 1 and nothing else,
+         which pins the wiring rather than the arithmetic: a helper that is
+         correct and unreached is the shape `rolling_origin` was in before the
+         purge block called it.
+      3. **A business-day count off the end of the panel treated as
+         unknown.** `_declared_availability` returns `None` instead of
+         `_NEVER_ON_THIS_PANEL` -- the answer the audit script gave before the
+         human aligned it, and the one that skips exactly the folds at the end
+         of the panel where a long-lagged column is least likely to have
+         arrived. Kills the same 1, on its third arm.
+
+         **This mutation is why the third arm is ordered the way it is.** Run
+         against the first draft, which asked `_declared_availability` for the
+         instant before putting it through the guard, it died on
+         `TypeError: '>' not supported between instances of 'NoneType' and
+         'datetime.datetime'` -- a kill, and an incidental one that says
+         nothing about leakage. The guard call now comes first and the helper's
+         own answer is checked after it, so the mutation is caught by the
+         refusal it defeats rather than by a comparison it happens to break.
+
+    All three kills are the same test, which is what "the acceptance test and
+    the mutation target are the same test" requires here.
+    """
+
+    MINIMUM_HISTORY = 10
+
+    #: The gap the undeliverable declaration below produces, and the one the
+    #: deliverable declaration produces too. Both price to six; they differ in
+    #: *when* they say the value arrived, which is the whole subject.
+    PURGE = 6
+
+    def rows(self):
+        """The sample panel as shipped: weekday dates, MLK Monday absent."""
+
+        return load_daily_panel(SAMPLE_PANEL)
+
+    @staticmethod
+    def registry(release_lag):
+        return {
+            source: {"release_lag": dict(release_lag)}
+            for source in sources_for_features(FEATURES)
+        }
+
+    def test_a_feature_whose_lag_misses_the_decision_instant_is_refused(self):
+        """A row that cleared the purge and had not been published is refused.
+
+        Three arms, one claim.
+
+        **Late.** A `record_date` lag of six calendar days at midnight prices
+        to a six-day gap, and `rolling_origin` builds twelve folds from it. One
+        of those folds scores Monday 2026-02-02 from a last training row of
+        Monday 2026-01-26. The row clears the purge -- 26 January plus six days
+        is 1 February, strictly before 2 February -- and it is first observable
+        at midnight on Sunday 1 February, while the forecast was made at 16:00
+        on Friday 30 January, the last panel date before the scored one. The
+        purge is satisfied and the forecast read a number that did not exist.
+        The message names the field and both dates, because "a fold leaked" is
+        not something an auditor can act on.
+
+        **Silent where the declaration is deliverable.** The same panel, the
+        same six-day gap, and the shape `metadata/sources.json` uses for SOFR:
+        `ref_date` / `business_days`, one day, under a six-day worst case.
+        Availability is the next *panel* date, which is on the near side of the
+        decision, so all twelve folds run and every number is the one the purge
+        block reported. Without this arm the test above is satisfied by a guard
+        that refuses everything.
+
+        **Off the end of the panel is late, not unknown.** A business-day count
+        whose publication day is past the last panel date has not been
+        published by any instant the panel can name.
+        `scripts/purge_availability_audit.py` settles the same case the same
+        way -- it returned `None` there once, and silently skipped exactly the
+        folds at the end of the panel, which is the direction a leakage guard
+        must not fail in. Asserted on the helper rather than through a fold,
+        because a fold that reaches the case needs a panel whose gaps exceed
+        its own purge, and such a panel is late everywhere before it gets
+        there: the contrived fixture would prove less than the direct call.
+        """
+
+        rows = self.rows()
+        dates = [row.date for row in rows]
+
+        undeliverable = self.registry(
+            {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        with self.assertRaises(LookAheadError) as caught:
+            rolling_persistence_backtest(
+                rows,
+                features=FEATURES,
+                registry=undeliverable,
+                decision_time=DECISION_TIME,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        message = str(caught.exception)
+        # The field, taken from the same resolution the gap was sized over
+        # rather than typed here: a message naming a field this run never
+        # priced would be a different bug wearing the right words.
+        first_source, first_field = field_sources_for_features(FEATURES)[0]
+        self.assertIn(f"{first_source}.{first_field}", message)
+        # The fold: the row that was read, the decision that read it, and the
+        # day it was scoring.
+        self.assertIn("2026-01-26", message)
+        self.assertIn("2026-01-30 16:00:00", message)
+        self.assertIn("2026-02-02", message)
+
+        # Silent on a declaration the panel can deliver, at the same gap.
+        deliverable = self.registry(
+            {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 1,
+                "worst_case_calendar_days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        report = rolling_persistence_backtest(
+            rows,
+            features=FEATURES,
+            registry=deliverable,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(report.purge_days, self.PURGE)
+        self.assertEqual(len(report.forecasts), 12)
+        self.assertAlmostEqual(report.mae_bps, 25.0 / 12.0, places=12)
+
+        # A business-day count that runs off the end of the panel is later than
+        # any deadline the panel can express, so the fold it belongs to is
+        # refused rather than passed over. Asserted through the guard first,
+        # because refusing is the claim; the helper's own answer is checked
+        # after, so a failure says which of the two moved.
+        runs_off_the_panel = {
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 3,
+                    "worst_case_calendar_days": 8,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+        }
+        with self.assertRaises(LookAheadError) as off_panel:
+            _check_decision_relative_availability(
+                runs_off_the_panel,
+                (("nyfed_sofr", "SOFR"),),
+                dates,
+                len(dates) - 2,
+                len(dates) - 1,
+                purge=8,
+                decision_time=DECISION_TIME,
+            )
+        self.assertIn("no date on this panel", str(off_panel.exception))
+        off_the_end = _declared_availability(
+            runs_off_the_panel, "nyfed_sofr", "SOFR", dates, len(dates) - 2
+        )
+        self.assertIsNotNone(off_the_end)
+        self.assertGreater(
+            off_the_end, datetime.combine(dates[-1], time(23, 59))
+        )
 
 
 #: The exogenous regressor a threshold model in this module is fitted on, and
@@ -3118,24 +3542,40 @@ class FittedThresholdTests(unittest.TestCase):
         that moved both would satisfy. They are absolute here, at the two gaps
         the rest of this file uses, so that "the numbers did not move" is a
         claim a run can refute rather than a sentence in a commit message.
+
+        **Re-baselined by B30, both gaps, for the reason
+        `PurgedBacktestTests.test_the_purge_moves_the_reported_numbers_and_the_move_is_kept`
+        gives.** The near arm is a one-day gap, which no declaration makes
+        decision-safe on a calendar with weekends, and a pair of numbers whose
+        whole job is to be comparable cannot have one arm re-dated and the
+        other not. Both now run the sample's values on consecutive dates:
+
+          |         | folds | mae_bps            | coverage | was                          |
+          |---------|-------|--------------------|----------|------------------------------|
+          | purge 1 | 14    | 1.844558792520991  | 8.0/14   | 14, 1.9142198265530637, 4/7  |
+          | purge 6 | 9     | 1.4148220886487588 | 4.0/9    | 12, 2.086429950395829, 0.5   |
+
+        The one-day coverage is unchanged in value -- 4/7 and 8/14 are the same
+        number -- and is written over fourteen folds so both rows read off the
+        same denominator. Nothing in `fit_arx` moved; the calendar did.
         """
 
-        rows = load_daily_panel(SAMPLE_PANEL)
+        rows = on_consecutive_days(load_daily_panel(SAMPLE_PANEL))
         arx = partial(fit_arx, regressors=REGRESSORS)
 
         near = at_gap(
             rows, purge=1, features=ARX_FEATURES, minimum_history=10, fit_model=arx
         )
         self.assertEqual(len(near.forecasts), 14)
-        self.assertAlmostEqual(near.mae_bps, 1.9142198265530637, places=12)
-        self.assertAlmostEqual(near.interval_coverage, 4.0 / 7.0, places=12)
+        self.assertAlmostEqual(near.mae_bps, 1.844558792520991, places=12)
+        self.assertAlmostEqual(near.interval_coverage, 8.0 / 14.0, places=12)
 
         far = at_gap(
             rows, purge=6, features=ARX_FEATURES, minimum_history=10, fit_model=arx
         )
-        self.assertEqual(len(far.forecasts), 12)
-        self.assertAlmostEqual(far.mae_bps, 2.086429950395829, places=12)
-        self.assertAlmostEqual(far.interval_coverage, 0.5, places=12)
+        self.assertEqual(len(far.forecasts), 9)
+        self.assertAlmostEqual(far.mae_bps, 1.4148220886487588, places=12)
+        self.assertAlmostEqual(far.interval_coverage, 4.0 / 9.0, places=12)
 
 
 #: The user's threshold specification, 10 September: a SETAR -- the regime read
