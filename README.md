@@ -90,8 +90,10 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | gbm (spread change lags `1`) | 1.98 bp | +0.55 bp | +0.28 to +0.88 bp | beats persistence |
 | gbm (spread change lags `5`) | 1.98 bp | +0.55 bp | +0.27 to +0.88 bp | beats persistence |
 | gbm | 1.99 bp | +0.54 bp | +0.27 to +0.87 bp | beats persistence |
+| gbm (arx feature `declared`) | 2.00 bp | +0.52 bp | +0.25 to +0.86 bp | beats persistence |
 | gbm (volatility feature `garch11`) | 2.00 bp | +0.52 bp | +0.25 to +0.86 bp | beats persistence |
 | gbm (calibration `cross_conformal`, calibration folds `5`) | 2.02 bp | +0.51 bp | +0.24 to +0.85 bp | beats persistence |
+| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 2.13 bp | +0.40 bp | +0.13 to +0.74 bp | beats persistence |
 | rolling-residual (residual window `60`) | 2.48 bp | +0.05 bp | +0.02 to +0.08 bp | beats persistence |
 | gbm (calibration `conformal`, calibration share `0.25`) | 2.71 bp | -0.18 bp | -0.49 to +0.19 bp | not distinguishable |
 | gbm (calibration `conformal`, calibration share `0.25`, spread change lags `1`) | 2.72 bp | -0.19 bp | -0.50 to +0.18 bp | not distinguishable |
@@ -99,6 +101,7 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | gbm (calibration `conformal`, calibration share `0.25`, volatility feature `garch11`) | 2.76 bp | -0.23 bp | -0.54 to +0.15 bp | not distinguishable |
 | arx with `sofr_volume` | 2.90 bp | -0.37 bp | -0.53 to -0.21 bp | loses to persistence |
 | arx with `sofr_p25`, `sofr_p75` | 2.93 bp | -0.40 bp | -0.60 to -0.21 bp | loses to persistence |
+| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 2.99 bp | -0.47 bp | -0.78 to -0.11 bp | loses to persistence |
 | threshold (regime variable `sofr_volume`) | 4.20 bp | -1.67 bp | -4.25 to -0.03 bp | loses to persistence |
 | threshold (regime variable `spread_bps`) | 4.69 bp | -2.16 bp | -4.28 to -0.50 bp | loses to persistence |
 
@@ -106,12 +109,15 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 
 | Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
 |---|---|---|---|---|
+| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 90% | 86.3% | 83.8% to 88.5% | 1.516 bp |
+| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 90% | 93.8% | 92.4% to 95.2% | 1.367 bp |
+| gbm (arx feature `declared`) | 90% | 63.8% | 61.1% to 66.3% | 0.944 bp |
 | gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.2% to 87.7% | 1.294 bp |
 | gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.6% to 94.6% | 1.130 bp |
 | gbm | 90% | 65.8% | 63.2% to 68.3% | 0.943 bp |
 | persistence | 90% | 81.6% | 78.8% to 84.2% | 0.889 bp |
 
-A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 
