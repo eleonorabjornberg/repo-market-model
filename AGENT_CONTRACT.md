@@ -215,9 +215,15 @@ derived from the predictive distribution of SOFR - IORB:
 
 Low tau carries the calibration evidence (hundreds of positives at quarter-ends,
 tax dates, month-ends). High tau inherits calibration from the shared
-distributional fit. Above the top of the observed range, use a peaks-over-
-threshold GPD with covariates in the scale parameter rather than direct
-frequency estimation.
+distributional fit. Beyond the reported conditional `Q(0.95)` an opt-in
+peaks-over-threshold GPD continues the law, fitted by probability-weighted
+moments on the calibration split's residual excesses rather than by direct
+frequency estimation. It carries no covariates in its scale parameter: that
+remains the intention here and is not built. The threshold is that quantile
+rather than the top of the observed range, because the measurement that
+motivated the tail found every declared tau read inside the one straight segment
+running to the largest residual ever seen. Absent is the default, so no
+published record is produced with it.
 
 Scored quantity is state ("t+1 is stressed"), not onset. Onset has too few
 events to score and is reported qualitatively only.
