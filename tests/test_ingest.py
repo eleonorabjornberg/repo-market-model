@@ -5321,13 +5321,31 @@ class TreasuryBillRateTests(unittest.TestCase):
                 artifact, self._planted(2026, non_numeric), registry
             )
 
-    #: sha256 of what `_treasury_bill_rate_rows` returned for these two files
-    #: before A17's refusals existed, at b0f48cc: one line per observation in
-    #: the order returned, `series_id|ref_date|available_at|value|vintage_id|
-    #: source_sha`, joined by newlines.
-    PARSED_BEFORE_A17 = {
-        2018: "b0f592ecf8bd945129987d5029fcc8173a91e92a76de407086f4397fbb866d32",
-        2025: "e3ef7c14e8be56ac34b210682a9d5bef01cd23801f133bdb1e8fcdc6c60213d9",
+    #: sha256 of what `_treasury_bill_rate_rows` returns for these two files:
+    #: one line per observation in the order returned,
+    #: `series_id|ref_date|available_at|value|vintage_id|source_sha`, joined by
+    #: newlines.
+    #:
+    #: Pinned at b0f48cc against what the parser returned before A17's refusals
+    #: existed, and **re-pinned in A26**, which is the only reason either value
+    #: has moved. The adapter stamps `available_at` from the registry's declared
+    #: `available_time`, and A26 replaced the bill rates' unasserted end-of-day
+    #: declaration with the 16:30 ET publication instant of the H.15 bulk file,
+    #: evidenced in `metadata/sources.json` under `availability_provenance`. So
+    #: every row's `available_at` moved from 23:59 to 16:30 on the same date and
+    #: no other field of any row changed. The values before A26, for anyone
+    #: reading this pin against an older tree:
+    #:
+    #:     2018: b0f592ecf8bd945129987d5029fcc8173a91e92a76de407086f4397fbb866d32
+    #:     2025: e3ef7c14e8be56ac34b210682a9d5bef01cd23801f133bdb1e8fcdc6c60213d9
+    #:
+    #: A25's mutation 2 predicted this exact coupling -- it moved the same
+    #: declaration to 15:30 and recorded that it killed these digests -- so a
+    #: digest that did *not* move here would mean the adapter had stopped
+    #: reading the registry, which is the defect the coupling exists to expose.
+    PARSED_ROWS = {
+        2018: "611277d14ebf0bd4547a8be2543b640bd312d9943d7ea59e13dd98734118802f",
+        2025: "951efc454bdf1f043c18a4ae43f97cdfca55498900be5969be7f276298fb7bb9",
     }
 
     def test_a_row_or_header_that_does_not_line_up_is_refused(self):
@@ -5379,7 +5397,7 @@ class TreasuryBillRateTests(unittest.TestCase):
                     )
 
         # The real files, which line up, parse to what they parsed to before.
-        for year, digest in self.PARSED_BEFORE_A17.items():
+        for year, digest in self.PARSED_ROWS.items():
             with self.subTest(year=year):
                 rows = _treasury_bill_rate_rows(
                     self._artifact(year), self._path(year).read_bytes(), registry
@@ -5393,7 +5411,9 @@ class TreasuryBillRateTests(unittest.TestCase):
                 self.assertEqual(
                     hashlib.sha256(text.encode("utf-8")).hexdigest(),
                     digest,
-                    msg=f"{year} no longer parses to the rows it parsed to before A17",
+                    msg=f"{year} no longer parses to its pinned rows; if the "
+                    f"registry's declared available_time moved, that is the "
+                    f"coupling working and the pin is what records it",
                 )
 
 

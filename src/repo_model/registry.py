@@ -10,11 +10,23 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import time
 
-from repo_model.contract import validate_field_release_lag, validate_release_lag
+from repo_model.contract import END_OF_DAY, validate_field_release_lag, validate_release_lag
 
 
 class RegistryContractError(ValueError):
     """Raised when registry metadata cannot support a safe purge bound."""
+
+
+#: The source-level key carrying the evidence for an `available_time` earlier
+#: than `contract.END_OF_DAY`. Source-level rather than inside `release_lag`
+#: because `contract._ALLOWED_KEYS` is closed and `contract.py` is the human's,
+#: and because the registry already keeps evidence beside a claim rather than
+#: inside it: `structural_zeros_reviewed` with its `reviewed_note`.
+AVAILABILITY_PROVENANCE_KEY = "availability_provenance"
+
+#: The one key of that object this module reads. A provenance that names no
+#: publication is a note with a schema wrapped around it.
+AVAILABILITY_PROVENANCE_PUBLICATION = "publication"
 
 
 def _selected_sources(sources: object) -> list[tuple[str, str | None, object | None]]:
@@ -79,6 +91,90 @@ def _rows_have_available_at(rows: object | None) -> bool:
         if available_at is None or available_at == "":
             return False
     return found_row
+
+
+def _availability_provenance_problems(
+    source_id: str,
+    source: Mapping[str, object],
+    release_lag: Mapping[str, object],
+) -> list[str]:
+    """Problems with one source's evidence for an early `available_time`.
+
+    An empty list means the declaration conforms. `END_OF_DAY` asserts nothing
+    about when anyone outside the publisher could read the value, so it needs no
+    evidence; anything earlier is a claim, and it is a claim in the one direction
+    that can leak -- it makes the data appear available sooner.
+
+    A malformed `available_time` is not reported here. `validate_release_lag`
+    already reports it, and a second message about the same key would read as
+    two faults where there is one.
+    """
+
+    available_time = release_lag.get("available_time")
+    if not isinstance(available_time, str):
+        return []
+    try:
+        declared = time.fromisoformat(available_time)
+    except ValueError:
+        return []
+    if declared >= time.fromisoformat(END_OF_DAY):
+        return []
+
+    provenance = source.get(AVAILABILITY_PROVENANCE_KEY)
+    if provenance is None:
+        return [
+            f"{source_id}: available_time {available_time!r} is earlier than the "
+            f"end-of-day convention {END_OF_DAY!r} and declares no "
+            f"{AVAILABILITY_PROVENANCE_KEY}; an earlier instant makes the data "
+            f"appear available sooner, which is the only direction this "
+            f"declaration can leak in, so it is the one that has to carry its "
+            f"evidence"
+        ]
+    if not isinstance(provenance, Mapping):
+        return [
+            f"{source_id}: {AVAILABILITY_PROVENANCE_KEY} must be an object, got "
+            f"{type(provenance).__name__}"
+        ]
+    publication = provenance.get(AVAILABILITY_PROVENANCE_PUBLICATION)
+    if not isinstance(publication, str) or not publication.strip():
+        return [
+            f"{source_id}: {AVAILABILITY_PROVENANCE_KEY} must name what was read, "
+            f"in a non-empty {AVAILABILITY_PROVENANCE_PUBLICATION!r}; a provenance "
+            f"that names no source is prose in a machine-readable wrapper, and the "
+            f"next reader will take it for a citation"
+        ]
+    return []
+
+
+def check_availability_provenance(registry: Mapping[str, Mapping[str, object]]) -> None:
+    """Refuse a registry that asserts an early availability instant unevidenced.
+
+    Every problem in the document is collected and raised once, so a registry
+    with two faults reports both in one run rather than one per edit.
+
+    Scoped to a source's own `record_date` `release_lag`: that is the
+    declaration `contract.validate_release_lag` requires an `available_time` of,
+    and the only one `max_release_lag_days` reads the instant from. Two narrower
+    cases are out of reach rather than out of scope, and both are recorded in
+    `tests/test_registry.py`: a `ref_date` source's optional `available_time`,
+    and a `field_release_lags` entry, which cannot carry provenance at all
+    because `contract._FIELD_ALLOWED_KEYS` is closed and human-owned.
+    """
+
+    problems: list[str] = []
+    for source_id, source in registry.items():
+        if not isinstance(source, Mapping):
+            continue
+        release_lag = source.get("release_lag")
+        if not isinstance(release_lag, Mapping):
+            continue
+        if release_lag.get("basis") != "record_date":
+            continue
+        problems.extend(
+            _availability_provenance_problems(str(source_id), source, release_lag)
+        )
+    if problems:
+        raise RegistryContractError("; ".join(problems))
 
 
 def max_release_lag_days(

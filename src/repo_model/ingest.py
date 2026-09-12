@@ -2433,12 +2433,24 @@ def _sec_nmfp_rows(
 
 
 def load_source_registry(registry_path: Path = DEFAULT_SOURCE_REGISTRY):
-    """Read the source registry, reporting a bad path or bad JSON the same way."""
+    """Read the source registry, reporting a bad path or bad JSON the same way.
+
+    The one door a registry *document* comes through, so it is where a document
+    that asserts an availability instant it cannot support is refused:
+    `registry.check_availability_provenance` raises `RegistryContractError`,
+    which is a `ValueError`, so the CLI's `(OSError, ValueError)` translates it
+    to exit 2 like every other malformed declaration.
+    """
+
+    from .registry import check_availability_provenance
 
     try:
-        return json.loads(registry_path.read_text(encoding="utf-8"))
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot load source registry: {exc}") from exc
+    if isinstance(registry, Mapping):
+        check_availability_provenance(registry)
+    return registry
 
 
 @dataclass(frozen=True)

@@ -111,8 +111,16 @@ checkout that no later session can read.
 
 ```
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -B -m unittest discover -s tests
+PYTHONPATH=src:tests python3 -m unittest test_module.ClassName
 PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 ```
+
+- **A class-targeted run needs `tests/` on the path and the bare module name.**
+  `-m unittest tests.test_module.ClassName` cannot import `test_baseline`,
+  `test_data`, `test_event_eval` or `test_ml`: each does a module-level
+  `from test_contract import ...`, which resolves only with `tests/` on
+  `sys.path` -- what `discover -s tests` arranges and what the dotted form does
+  not. The dotted form fails with an import error that reads like a red control.
 
 - **Zero `expectedFailure` is load-bearing.** Skip counts vary by checkout and mean
   nothing. **Never put a count of any kind in an acceptance criterion**, or in a published
