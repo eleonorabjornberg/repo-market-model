@@ -8,7 +8,6 @@
       "overnight reverse repurchase agreements",
       "effective federal funds rate"
     ],
-    "fields": ["IORB", "IOER", "WRESBAL", "WTREGEN", "RRPONTSYD", "DFF", "RRPONTSYAWARD", "TREAST"],
     "field_frequencies": {
       "DFF": "calendar_daily",
       "IOER": "calendar_daily",
@@ -21,26 +20,36 @@
     },
     "field_release_lags": {
       "IOER": {
-        "basis": "record_date",
-        "unit": "calendar_days",
-        "days": 1,
         "available_time": "16:15",
-        "timezone": "America/New_York",
-        "revision_policy": "never_revised",
+        "basis": "record_date",
+        "days": 1,
+        "note": "Added 8 September 2026 so the administered leg of SOFR - IORB can be priced before 2021-07-29. Without it the funding panel begins in July 2021 and contains neither September 2019 nor March 2020. The splice is declared in contract.FEATURE_FIELDS and guarded by build_daily_panel rule 7, which raises if IOER and IORB ever report the same reference date. Vintage-verified 10 September 2026 from the user's fetch; until then the never-revised claim rested on the administrative argument alone.",
         "revision_evidence": "Three ALFRED vintages of IOER -- 2019-01-02, 2021-07-27 and 2024-09-24, tracked under tests/fixtures/snapshots/alfred-ioer/ -- agree on every overlapping observation: 3739 identical values from 2008-10-09 to 2019-01-03 across a five-year vintage gap, and 4676 identical values from 2008-10-09 to 2021-07-28 between the last live vintage and the latest. No observation has been restated; `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-ioer/*.csv` re-runs the comparison and exits 1 if one ever is. The rate was set by the Board of Governors and announced ahead of its effective date, which the vintages show: the 2019-01-02 vintage already carries 2019-01-03 and the 2021-07-27 vintage carries 2021-07-28, the final observation, so a one-day lag is conservative. IOER ends 2021-07-28 and IORB begins 2021-07-29, abutting with no overlap and no gap.",
-        "note": "Added 8 September 2026 so the administered leg of SOFR - IORB can be priced before 2021-07-29. Without it the funding panel begins in July 2021 and contains neither September 2019 nor March 2020. The splice is declared in contract.FEATURE_FIELDS and guarded by build_daily_panel rule 7, which raises if IOER and IORB ever report the same reference date. Vintage-verified 10 September 2026 from the user's fetch; until then the never-revised claim rested on the administrative argument alone."
+        "revision_policy": "never_revised",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
       },
       "IORB": {
-        "basis": "record_date",
-        "unit": "calendar_days",
-        "days": 1,
         "available_time": "16:15",
-        "timezone": "America/New_York",
-        "revision_policy": "never_revised",
+        "basis": "record_date",
+        "days": 1,
+        "note": "Deliberately conservative. IORB for a date is knowable before that date; a one-day record-date lag against the H.15 publication time purges more than the evidence requires, which splits.py establishes as the safe direction. The number is the human's decision of 8 September 2026, not a derivation.",
         "revision_evidence": "Three ALFRED vintages of IORB -- 2024-09-01, 2026-09-03 and 2026-09-04 -- agree on every overlapping observation: 1130 identical values from 2021-07-29 to 2024-08-31 across a two-year vintage gap, and 1864 identical values from 2021-07-29 to 2026-09-04. No observation has been restated. The rate is administered by the Board of Governors and announced in advance of its effective date, which the vintages themselves show: the 2026-09-03 vintage already carries observations dated 2026-09-04, and the 2026-09-04 vintage carries through 2026-09-08. Latest vintage is therefore point-in-time for this field and for no other field of this source.",
-        "note": "Deliberately conservative. IORB for a date is knowable before that date; a one-day record-date lag against the H.15 publication time purges more than the evidence requires, which splits.py establishes as the safe direction. The number is the human's decision of 8 September 2026, not a derivation."
+        "revision_policy": "never_revised",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
       }
     },
+    "fields": [
+      "IORB",
+      "IOER",
+      "WRESBAL",
+      "WTREGEN",
+      "RRPONTSYD",
+      "DFF",
+      "RRPONTSYAWARD",
+      "TREAST"
+    ],
     "frequency": "mixed daily and weekly",
     "identities": [],
     "limitation": "Latest revised vintage; not point-in-time historical data. Weekly series require release-lag treatment.",
@@ -49,88 +58,22 @@
       "basis": "snapshot_retrieved_at",
       "note": "Latest-vintage observations inherit the immutable snapshot retrieval timestamp; ref_date plus a nominal publication lag would falsely predate later revisions."
     },
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
     "reviewed_note": "Structural-zero semantics have not yet been reviewed against the FRED series definitions; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv"
-  },
-  "nyfed_sofr": {
-    "access": "public",
-    "coverage": [
-      "SOFR rate",
-      "distribution percentiles",
-      "transaction volume",
-      "revision status"
-    ],
-    "fields": ["SOFR", "SOFR_p1", "SOFR_p25", "SOFR_p75", "SOFR_p99", "SOFR_volume"],
-    "field_frequencies": {
-      "SOFR": "business_daily",
-      "SOFR_p1": "business_daily",
-      "SOFR_p25": "business_daily",
-      "SOFR_p75": "business_daily",
-      "SOFR_p99": "business_daily",
-      "SOFR_volume": "business_daily"
-    },
-    "frequency": "business daily",
-    "identities": [],
-    "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
-    "provider": "Federal Reserve Bank of New York",
-    "release_lag": {
-      "available_time": "15:00",
-      "basis": "ref_date",
-      "days": 1,
-      "note": "SOFR is first published at about 08:00 ET on the next business day and may be revised at about 14:30 ET that day; 15:00 ET is the conservative finalized availability time.",
-      "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 6
-    },
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
-    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
-  },
-  "nyfed_tgcr": {
-    "access": "public",
-    "coverage": [
-      "TGCR rate",
-      "distribution percentiles",
-      "transaction volume"
-    ],
-    "fields": ["TGCR", "TGCR_p1", "TGCR_p25", "TGCR_p75", "TGCR_p99", "TGCR_volume"],
-    "field_frequencies": {
-      "TGCR": "business_daily",
-      "TGCR_p1": "business_daily",
-      "TGCR_p25": "business_daily",
-      "TGCR_p75": "business_daily",
-      "TGCR_p99": "business_daily",
-      "TGCR_volume": "business_daily"
-    },
-    "frequency": "business daily",
-    "identities": [],
-    "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
-    "provider": "Federal Reserve Bank of New York",
-    "release_lag": {
-      "available_time": "15:00",
-      "basis": "ref_date",
-      "days": 1,
-      "note": "TGCR is first published on the next business day; 15:00 ET is the conservative finalized availability time used uniformly by the adapter.",
-      "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 6
-    },
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
-    "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json"
   },
   "nyfed_bgcr": {
     "access": "public",
+    "availability_provenance": {
+      "note": "The publication mechanic is a human-supplied reading of the New York Fed's methodology, recorded 12 September 2026; no code here fetches that page. What was fetched the same day, through repo_model.ingest.fetch_nyfed_reference_rate, is the rate data itself: snapshots pinned in the gitignored data/raw by sha256 -- nyfed_tgcr rate cdaf52e9638cc977 volume 5e87d2b7aa4815c0, nyfed_bgcr rate b1cd7969ac8f1bd2 volume afcffe123cf95f16. It replaces a note that cited only 'the conservative finalized availability time used uniformly by the adapter'.",
+      "publication": "New York Fed Overnight Reference Rates methodology: TGCR, BGCR and SOFR are calculated from the prior business day's transactions and published together at about 08:00 ET on the next business day, with a contingent revision window that closes at 14:30 ET. 15:00 ET on the next business day is therefore the conservative finalized availability instant, after the revision window rather than at the first print."
+    },
     "coverage": [
       "BGCR rate",
       "distribution percentiles",
       "transaction volume"
     ],
-    "fields": ["BGCR", "BGCR_p1", "BGCR_p25", "BGCR_p75", "BGCR_p99", "BGCR_volume"],
     "field_frequencies": {
       "BGCR": "business_daily",
       "BGCR_p1": "business_daily",
@@ -139,6 +82,14 @@
       "BGCR_p99": "business_daily",
       "BGCR_volume": "business_daily"
     },
+    "fields": [
+      "BGCR",
+      "BGCR_p1",
+      "BGCR_p25",
+      "BGCR_p75",
+      "BGCR_p99",
+      "BGCR_volume"
+    ],
     "frequency": "business daily",
     "identities": [],
     "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
@@ -152,9 +103,9 @@
       "unit": "business_days",
       "worst_case_calendar_days": 6
     },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
     "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json"
   },
   "nyfed_fr2004": {
@@ -165,6 +116,23 @@
       "nominal coupons by maturity bucket",
       "TIPS by maturity bucket"
     ],
+    "field_frequencies": {
+      "PDPOSGS-B": "weekly",
+      "PDPOSGS-BFRN": "weekly",
+      "PDPOSGSC-G11": "weekly",
+      "PDPOSGSC-G11L21": "weekly",
+      "PDPOSGSC-G21": "weekly",
+      "PDPOSGSC-G2L3": "weekly",
+      "PDPOSGSC-G3L6": "weekly",
+      "PDPOSGSC-G6L7": "weekly",
+      "PDPOSGSC-G7L11": "weekly",
+      "PDPOSGSC-L2": "weekly",
+      "PDPOSGST-TOT": "weekly",
+      "PDPOSTIPS-G11": "weekly",
+      "PDPOSTIPS-G2": "weekly",
+      "PDPOSTIPS-G6L11": "weekly",
+      "PDPOSTIPS-L2": "weekly"
+    },
     "fields": [
       "PDPOSGST-TOT",
       "PDPOSGS-B",
@@ -182,32 +150,17 @@
       "PDPOSTIPS-G6L11",
       "PDPOSTIPS-G11"
     ],
-    "field_frequencies": {
-      "PDPOSGST-TOT": "weekly",
-      "PDPOSGS-B": "weekly",
-      "PDPOSGS-BFRN": "weekly",
-      "PDPOSGSC-L2": "weekly",
-      "PDPOSGSC-G2L3": "weekly",
-      "PDPOSGSC-G3L6": "weekly",
-      "PDPOSGSC-G6L7": "weekly",
-      "PDPOSGSC-G7L11": "weekly",
-      "PDPOSGSC-G11": "weekly",
-      "PDPOSGSC-G11L21": "weekly",
-      "PDPOSGSC-G21": "weekly",
-      "PDPOSTIPS-L2": "weekly",
-      "PDPOSTIPS-G2": "weekly",
-      "PDPOSTIPS-G6L11": "weekly",
-      "PDPOSTIPS-G11": "weekly"
-    },
     "frequency": "weekly",
     "identities": [
       {
         "eras": [
           {
-            "id": "no_frn_combined_over_11",
             "from": "2013-04-03",
-            "through": "2015-01-06",
-            "left": ["PDPOSGST-TOT"],
+            "id": "no_frn_combined_over_11",
+            "left": [
+              "PDPOSGST-TOT"
+            ],
+            "note": "PDPOSGST-TOT's first as-of date is 2013-04-03; the earlier report used other vocabularies, ends 2013-03-27 and is not mapped, so a date before 2013-04-03 falls in no era of this identity and is recorded not_evaluable rather than checked against these eleven terms. See docs/DATA_QUALITY_DECISIONS.md, 'Dealer Treasury positions'. No floating-rate-note bucket in this era, and the over-eleven-year nominal coupon bucket is the single series PDPOSGSC-G11.",
             "right": [
               "PDPOSGS-B",
               "PDPOSGSC-L2",
@@ -221,13 +174,15 @@
               "PDPOSTIPS-G6L11",
               "PDPOSTIPS-G11"
             ],
-            "note": "PDPOSGST-TOT's first as-of date is 2013-04-03; the earlier report used other vocabularies, ends 2013-03-27 and is not mapped, so a date before 2013-04-03 falls in no era of this identity and is recorded not_evaluable rather than checked against these eleven terms. See docs/DATA_QUALITY_DECISIONS.md, 'Dealer Treasury positions'. No floating-rate-note bucket in this era, and the over-eleven-year nominal coupon bucket is the single series PDPOSGSC-G11."
+            "through": "2015-01-06"
           },
           {
-            "id": "frn_combined_over_11",
             "from": "2015-01-07",
-            "through": "2022-01-04",
-            "left": ["PDPOSGST-TOT"],
+            "id": "frn_combined_over_11",
+            "left": [
+              "PDPOSGST-TOT"
+            ],
+            "note": "PDPOSGS-BFRN begins 2015-01-07; the over-eleven-year bucket is still the single series PDPOSGSC-G11, whose last as-of date is 2021-12-29. The windows are contiguous rather than ending on the last observed date of each era: a bound at 2014-12-31 or 2021-12-29 would leave the turn-of-year weeks between the eras declared by nobody, and a reference date arriving there would be recorded not_evaluable instead of checked. Contiguity is a claim about which vocabulary was in force, which is what an era is; it is not a claim that an as-of date exists in the gap.",
             "right": [
               "PDPOSGS-B",
               "PDPOSGS-BFRN",
@@ -242,12 +197,15 @@
               "PDPOSTIPS-G6L11",
               "PDPOSTIPS-G11"
             ],
-            "note": "PDPOSGS-BFRN begins 2015-01-07; the over-eleven-year bucket is still the single series PDPOSGSC-G11, whose last as-of date is 2021-12-29. The windows are contiguous rather than ending on the last observed date of each era: a bound at 2014-12-31 or 2021-12-29 would leave the turn-of-year weeks between the eras declared by nobody, and a reference date arriving there would be recorded not_evaluable instead of checked. Contiguity is a claim about which vocabulary was in force, which is what an era is; it is not a claim that an as-of date exists in the gap."
+            "through": "2022-01-04"
           },
           {
-            "id": "frn_split_over_11",
             "from": "2022-01-05",
-            "left": ["PDPOSGST-TOT"],
+            "id": "frn_split_over_11",
+            "left": [
+              "PDPOSGST-TOT"
+            ],
+            "note": "PDPOSGSC-G11 is retired and split into PDPOSGSC-G11L21 and PDPOSGSC-G21 from 2022-01-05. No 'through': this era has not ended, and any date written here would be a hand-written future one rather than a measurement. The 'left' and 'right' above are the identity's top-level terms restated, which validate_accounting_identities requires of the most recent era so that the two declarations cannot drift apart.",
             "right": [
               "PDPOSGS-B",
               "PDPOSGS-BFRN",
@@ -262,12 +220,13 @@
               "PDPOSTIPS-G2",
               "PDPOSTIPS-G6L11",
               "PDPOSTIPS-G11"
-            ],
-            "note": "PDPOSGSC-G11 is retired and split into PDPOSGSC-G11L21 and PDPOSGSC-G21 from 2022-01-05. No 'through': this era has not ended, and any date written here would be a hand-written future one rather than a measurement. The 'left' and 'right' above are the identity's top-level terms restated, which validate_accounting_identities requires of the most recent era so that the two declarations cannot drift apart."
+            ]
           }
         ],
         "eras_note": "The identity is evaluated era by era because the source's vocabulary has a history and its data does not have a hole. Declared over the current thirteen terms alone it can be evaluated on 243 of the tracked extract's 700 weekly as-of dates and is not_evaluable on the other 457. The alternative that is refused rather than merely not chosen is one identity over the union of all fifteen terms: on a date in an early era the later era's terms are absent, so the union is not_evaluable everywhere -- and read an absent term as 0.0 to make the sum close and it holds everywhere instead, which turns an absence into a measured value.",
-        "left": ["PDPOSGST-TOT"],
+        "left": [
+          "PDPOSGST-TOT"
+        ],
         "name": "dealer_treasury_total_is_its_declared_components",
         "right": [
           "PDPOSGS-B",
@@ -285,7 +244,7 @@
           "PDPOSTIPS-G11"
         ],
         "tolerance": {
-          "absolute": 0.000001,
+          "absolute": 1e-06,
           "unit": "USD billions"
         },
         "tolerance_note": "Exact, and absolute-only for the same reason shareholder_flows_reconcile is: the total is a re-summation of its era's terms in the same export, not two independently measured quantities that happen to agree. On the tracked fixture at 2026-08-26 the residual is 5.7e-14 USD billions, which is the double-precision cost of dividing fourteen integers by 1000 and adding thirteen of them, and a bound of a millionth of a billion is the statement that nothing but that is tolerated. The thirteen terms are named one by one and never globbed, and so are the eleven and the twelve of the two earlier eras -- see eras and eras_note above. The globs PDPOSGSC-* and PDPOSTIPS-* also match the C-suffixed series in the same buckets -- PDPOSGSC-L2C and its siblings -- and summing those in gives 492637 rather than 477607 millions at that date, so a glob does not merely risk overshooting the total, it does overshoot it on the only date this repository can check."
@@ -302,46 +261,104 @@
       "unit": "business_days",
       "worst_case_calendar_days": 11
     },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the FR 2004 reporting instructions; the empty declaration is not a finding. A dealer net outright position is a signed quantity that can legitimately be zero, and '*' is a suppression rather than a zero, so the two questions a review has to separate here are not the ones the money-fund sources posed.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not been reviewed against the FR 2004 reporting instructions; the empty declaration is not a finding. A dealer net outright position is a signed quantity that can legitimately be zero, and '*' is a suppression rather than a zero, so the two questions a review has to separate here are not the ones the money-fund sources posed.",
     "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+  },
+  "nyfed_sofr": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 12 September 2026 alongside TGCR and BGCR, which share this publication. The release_lag note already carried the mechanic in prose; this is the same claim in the machine-readable object A26 added, so the three reference rates state their evidence the same way.",
+      "publication": "New York Fed Overnight Reference Rates methodology: TGCR, BGCR and SOFR are calculated from the prior business day's transactions and published together at about 08:00 ET on the next business day, with a contingent revision window that closes at 14:30 ET. 15:00 ET on the next business day is therefore the conservative finalized availability instant, after the revision window rather than at the first print."
+    },
+    "coverage": [
+      "SOFR rate",
+      "distribution percentiles",
+      "transaction volume",
+      "revision status"
+    ],
+    "field_frequencies": {
+      "SOFR": "business_daily",
+      "SOFR_p1": "business_daily",
+      "SOFR_p25": "business_daily",
+      "SOFR_p75": "business_daily",
+      "SOFR_p99": "business_daily",
+      "SOFR_volume": "business_daily"
+    },
+    "fields": [
+      "SOFR",
+      "SOFR_p1",
+      "SOFR_p25",
+      "SOFR_p75",
+      "SOFR_p99",
+      "SOFR_volume"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "SOFR is first published at about 08:00 ET on the next business day and may be revised at about 14:30 ET that day; 15:00 ET is the conservative finalized availability time.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
+  },
+  "nyfed_tgcr": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "The publication mechanic is a human-supplied reading of the New York Fed's methodology, recorded 12 September 2026; no code here fetches that page. What was fetched the same day, through repo_model.ingest.fetch_nyfed_reference_rate, is the rate data itself: snapshots pinned in the gitignored data/raw by sha256 -- nyfed_tgcr rate cdaf52e9638cc977 volume 5e87d2b7aa4815c0, nyfed_bgcr rate b1cd7969ac8f1bd2 volume afcffe123cf95f16. It replaces a note that cited only 'the conservative finalized availability time used uniformly by the adapter'.",
+      "publication": "New York Fed Overnight Reference Rates methodology: TGCR, BGCR and SOFR are calculated from the prior business day's transactions and published together at about 08:00 ET on the next business day, with a contingent revision window that closes at 14:30 ET. 15:00 ET on the next business day is therefore the conservative finalized availability instant, after the revision window rather than at the first print."
+    },
+    "coverage": [
+      "TGCR rate",
+      "distribution percentiles",
+      "transaction volume"
+    ],
+    "field_frequencies": {
+      "TGCR": "business_daily",
+      "TGCR_p1": "business_daily",
+      "TGCR_p25": "business_daily",
+      "TGCR_p75": "business_daily",
+      "TGCR_p99": "business_daily",
+      "TGCR_volume": "business_daily"
+    },
+    "fields": [
+      "TGCR",
+      "TGCR_p1",
+      "TGCR_p25",
+      "TGCR_p75",
+      "TGCR_p99",
+      "TGCR_volume"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Publication occurs after the effective date; targets and features must respect that lag.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "TGCR is first published on the next business day; 15:00 ET is the conservative finalized availability time used uniformly by the adapter.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json"
   },
   "sec_nmfp": {
     "access": "public",
-    "cross_section": {
-      "entity_unit": "series_id",
-      "eras": [
-        {
-          "era_id": "n_mfp1",
-          "start": "2010-11",
-          "end": "2016-03",
-          "minimum_reporting_entities": 328,
-          "observed_minimum_entities": 546,
-          "observed_complete_months": 65,
-          "note": "Original Form N-MFP, from the first monthly filing in November 2010. The universe falls from 730 series to 546 across the era."
-        },
-        {
-          "era_id": "n_mfp2",
-          "start": "2016-04",
-          "end": "2024-05",
-          "minimum_reporting_entities": 193,
-          "observed_minimum_entities": 322,
-          "observed_complete_months": 98,
-          "note": "Form N-MFP2, the 2014 money-market-fund reform amendments. The structural 2a-7 changes that consolidated the industry took effect 14 October 2016, inside this era rather than at its start."
-        },
-        {
-          "era_id": "n_mfp3",
-          "start": "2024-06",
-          "end": "2026-07",
-          "minimum_reporting_entities": 184,
-          "observed_minimum_entities": 307,
-          "observed_complete_months": 26,
-          "note": "Form N-MFP3, the 2023 amendments. Bounded at the newest month the declared archive set carries, for the same reason NMFP_INVESTMENT_CATEGORY_ERAS bounds its last era: a month nobody has observed has no calibrated floor, and refusing it is the fail-closed reading."
-        }
-      ],
-      "note": "Each bulk extract covers a filing window and carries one dominant monthly cross-section plus amendment and straggler filings for adjacent months, and the stragglers are not a universe. The floor counts distinct SERIESID and never a value total, because the values are what the floor exists to make trustworthy. A ref_date below its era's floor is excluded from the panel and recorded in the quality report, with the SUBMISSIONTYPE mix of its submissions alongside as a corroborating record that is never a filter. The floor is per era because one absolute cannot hold across a universe that changes size: the single floor of 200 this replaced was 27 percent of the 2010 universe and 65 percent of the 2024 one. It is an absolute count per era rather than a fraction of a trailing median because the trailing median is itself computed from straggler months -- on the 2026-07 extract the straggler counts have a median of 4, so a quarter-of-median rule would set the floor at 1 and admit the 1-series cross-section it was written to reject. Each era's floor is 60 percent of the smallest complete month observed inside it, the same proportion the original single floor used, and observed_minimum_entities and observed_complete_months state what it was measured over. Those counts were derived on 9 September 2026 from the 97 archives on disk, on assembled monthly cross-sections rather than report dates: the earlier counts in this note were measured per REPORTDATE and understated every split month by whichever half they missed -- 2013-06 files 159 series on the 28th and 473 on the 30th, 632 assembled, against 634 and 629 in the adjacent months. 54 of the 189 months are split. The era BOUNDARIES are declared from the Form N-MFP version, which is a dated published fact about who files and on what schedule. They are deliberately not derived from the counts, because a floor that infers its own eras from the data it judges is calibrated against the evidence that is supposed to check it. They should not be read as steps in the size of the universe, and the counts say they are not: the universe declines smoothly and almost monotonically from 730 to 307 with no discontinuity at either boundary. 2016-03 to 2016-04 falls 546 to 529, the third largest month-over-month fall of 188 and smaller than 2013-02 to 2013-03; 2024-05 to 2024-06 does not fall at all, 323 to 323, ranking 123rd. These bounds coincide with NMFP_INVESTMENT_CATEGORY_ERAS because both follow the form version, not because either was fitted to the other; nothing asserts they must stay equal, and a form version that rewrites the categories without moving the universe is exactly the case where they should be allowed to diverge. A ref_date in no declared era is refused and named, never admitted on the nearest era's floor."
-    },
     "coverage": [
       "fund identity",
       "portfolio holdings",
@@ -349,19 +366,39 @@
       "shareholder flows",
       "series balance sheet"
     ],
-    "fields": [
-      "mmf_cash",
-      "mmf_gross_redemptions",
-      "mmf_gross_subscriptions",
-      "mmf_liabilities",
-      "mmf_net_assets",
-      "mmf_net_flow",
-      "mmf_on_rrp",
-      "mmf_other_assets",
-      "mmf_portfolio_securities",
-      "mmf_repo_holdings",
-      "mmf_treasury_holdings"
-    ],
+    "cross_section": {
+      "entity_unit": "series_id",
+      "eras": [
+        {
+          "end": "2016-03",
+          "era_id": "n_mfp1",
+          "minimum_reporting_entities": 328,
+          "note": "Original Form N-MFP, from the first monthly filing in November 2010. The universe falls from 730 series to 546 across the era.",
+          "observed_complete_months": 65,
+          "observed_minimum_entities": 546,
+          "start": "2010-11"
+        },
+        {
+          "end": "2024-05",
+          "era_id": "n_mfp2",
+          "minimum_reporting_entities": 193,
+          "note": "Form N-MFP2, the 2014 money-market-fund reform amendments. The structural 2a-7 changes that consolidated the industry took effect 14 October 2016, inside this era rather than at its start.",
+          "observed_complete_months": 98,
+          "observed_minimum_entities": 322,
+          "start": "2016-04"
+        },
+        {
+          "end": "2026-07",
+          "era_id": "n_mfp3",
+          "minimum_reporting_entities": 184,
+          "note": "Form N-MFP3, the 2023 amendments. Bounded at the newest month the declared archive set carries, for the same reason NMFP_INVESTMENT_CATEGORY_ERAS bounds its last era: a month nobody has observed has no calibrated floor, and refusing it is the fail-closed reading.",
+          "observed_complete_months": 26,
+          "observed_minimum_entities": 307,
+          "start": "2024-06"
+        }
+      ],
+      "note": "Each bulk extract covers a filing window and carries one dominant monthly cross-section plus amendment and straggler filings for adjacent months, and the stragglers are not a universe. The floor counts distinct SERIESID and never a value total, because the values are what the floor exists to make trustworthy. A ref_date below its era's floor is excluded from the panel and recorded in the quality report, with the SUBMISSIONTYPE mix of its submissions alongside as a corroborating record that is never a filter. The floor is per era because one absolute cannot hold across a universe that changes size: the single floor of 200 this replaced was 27 percent of the 2010 universe and 65 percent of the 2024 one. It is an absolute count per era rather than a fraction of a trailing median because the trailing median is itself computed from straggler months -- on the 2026-07 extract the straggler counts have a median of 4, so a quarter-of-median rule would set the floor at 1 and admit the 1-series cross-section it was written to reject. Each era's floor is 60 percent of the smallest complete month observed inside it, the same proportion the original single floor used, and observed_minimum_entities and observed_complete_months state what it was measured over. Those counts were derived on 9 September 2026 from the 97 archives on disk, on assembled monthly cross-sections rather than report dates: the earlier counts in this note were measured per REPORTDATE and understated every split month by whichever half they missed -- 2013-06 files 159 series on the 28th and 473 on the 30th, 632 assembled, against 634 and 629 in the adjacent months. 54 of the 189 months are split. The era BOUNDARIES are declared from the Form N-MFP version, which is a dated published fact about who files and on what schedule. They are deliberately not derived from the counts, because a floor that infers its own eras from the data it judges is calibrated against the evidence that is supposed to check it. They should not be read as steps in the size of the universe, and the counts say they are not: the universe declines smoothly and almost monotonically from 730 to 307 with no discontinuity at either boundary. 2016-03 to 2016-04 falls 546 to 529, the third largest month-over-month fall of 188 and smaller than 2013-02 to 2013-03; 2024-05 to 2024-06 does not fall at all, 323 to 323, ranking 123rd. These bounds coincide with NMFP_INVESTMENT_CATEGORY_ERAS because both follow the form version, not because either was fitted to the other; nothing asserts they must stay equal, and a form version that rewrites the categories without moving the universe is exactly the case where they should be allowed to diverge. A ref_date in no declared era is refused and named, never admitted on the nearest era's floor."
+    },
     "field_frequencies": {
       "mmf_cash": "monthly",
       "mmf_gross_redemptions": "business_daily",
@@ -375,12 +412,32 @@
       "mmf_repo_holdings": "monthly",
       "mmf_treasury_holdings": "monthly"
     },
+    "fields": [
+      "mmf_cash",
+      "mmf_gross_redemptions",
+      "mmf_gross_subscriptions",
+      "mmf_liabilities",
+      "mmf_net_assets",
+      "mmf_net_flow",
+      "mmf_on_rrp",
+      "mmf_other_assets",
+      "mmf_portfolio_securities",
+      "mmf_repo_holdings",
+      "mmf_treasury_holdings"
+    ],
     "frequency": "monthly",
     "identities": [
       {
-        "left": ["mmf_cash", "mmf_portfolio_securities", "mmf_other_assets"],
+        "left": [
+          "mmf_cash",
+          "mmf_portfolio_securities",
+          "mmf_other_assets"
+        ],
         "name": "series_assets_reconcile_to_liabilities_and_net_assets",
-        "right": ["mmf_liabilities", "mmf_net_assets"],
+        "right": [
+          "mmf_liabilities",
+          "mmf_net_assets"
+        ],
         "tolerance": {
           "absolute": 0.5,
           "unit": "USD billions"
@@ -388,11 +445,16 @@
         "tolerance_note": "An absolute bound, and after calibration it stays one. The deferral this note used to carry -- a relative bound withheld 'until at least three cross-sections are admitted' -- has expired, and the answer it was waiting for is no. Derived over the 124 admitted cross-sections on which every declared term is observed; 65 further admitted cross-sections are not evaluable at all, being the n_mfp1 era, which does not report this balance sheet. Scale, taken as the larger side of the identity the way the verdict takes it, runs 3178 to 9254 USD billions across those 124 -- a factor of 2.9. The case this note used to make for a relative bound cited three orders of magnitude of scale, and that population no longer exists: the per-era coverage floor refuses the small cross-sections that made the case, and monthly assembly merged the split month-ends that halved the rest. Over a 2.9x range a relative bound and an absolute one are nearly the same bound. Measured rather than argued: normalising the residual by scale moves its dispersion from 0.764 to 0.745 decades and leaves its rank correlation with scale at +0.05. Scale explains almost none of the spread, so a relative_ppm has almost nothing to correct. What the spread is instead: the residual is 0.92 USD billions at the median, 10.34 at the 95th percentile and 35.14 at its worst, which in parts per million of scale is 171, 1312 and 6395. This bound admits 44 of the 124 and refuses 80. Two facts sit under that and neither is a bound problem. First, from 2024-06 to 2026-02 -- 21 consecutive months, beginning exactly at the declared n_mfp2 to n_mfp3 boundary and resolving after it -- the identity breaks one-sidedly, assets exceeding liabilities plus net assets in all 21, by 1035 ppm and 8.57 USD billions at the median and 2597 ppm at its worst. A bound sized to admit that would be sized to admit a defect that starts and stops on a form-version boundary. Second, outside that window the residual is two-sided -- assets larger on 37 of 103 -- and still exceeds this bound on 59 of 103, at a median of 0.66 USD billions. So the bound is tight for the well-behaved regime too, but tight in absolute terms at every scale, which is not what a relative_ppm corrects. The tolerance is therefore left where it was: this is an ingestion check that currently fails on a majority of the population it checks, and widening it would turn it into a description of that population. The schema accepts relative_ppm alongside absolute and src/repo_model/contract.py resolves the pair as max(absolute, relative_ppm * 1e-6 * scale); the mechanism is present and exercised. What is absent is a reason to use it here. The 2024-06 to 2026-02 break is a finding against the ingestion or the filings and is not this number's to absorb."
       },
       {
-        "left": ["mmf_gross_subscriptions"],
+        "left": [
+          "mmf_gross_subscriptions"
+        ],
         "name": "shareholder_flows_reconcile",
-        "right": ["mmf_gross_redemptions", "mmf_net_flow"],
+        "right": [
+          "mmf_gross_redemptions",
+          "mmf_net_flow"
+        ],
         "tolerance": {
-          "absolute": 0.000001,
+          "absolute": 1e-06,
           "unit": "USD billions"
         }
       }
@@ -403,6 +465,7 @@
       "basis": "snapshot_retrieved_at",
       "note": "The bulk extract is a monthly compilation of as-filed submissions; rows inherit the immutable extract retrieval timestamp rather than the filing deadline or report date."
     },
+    "reviewed_note": "Reviewed for mmf_on_rrp alone, the one field whose absence the archive made reviewable (docs/DATA_QUALITY_DECISIONS.md, 'the ON RRP leg'). The other ten fields declare no structural zero and that is not a finding that they have none: the three shareholder-flow fields have no observation before Form N-MFP3 because the table did not exist, which metadata/sec_nmfp_archives.json records as absent_fields refusals -- an absence with a reason, not a zero.",
     "structural_zeros": [
       {
         "field": "mmf_on_rrp",
@@ -411,7 +474,6 @@
       }
     ],
     "structural_zeros_reviewed": true,
-    "reviewed_note": "Reviewed for mmf_on_rrp alone, the one field whose absence the archive made reviewable (docs/DATA_QUALITY_DECISIONS.md, 'the ON RRP leg'). The other ten fields declare no structural zero and that is not a finding that they have none: the three shareholder-flow fields have no observation before Form N-MFP3 because the table did not exist, which metadata/sec_nmfp_archives.json records as absent_fields refusals -- an absence with a reason, not a zero.",
     "url": "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
   },
   "treasury_auctions": {
@@ -423,18 +485,18 @@
       "issue and maturity timing",
       "offering amount"
     ],
-    "fields": [
-      "treasury_settlement",
-      "treasury_settlement_bill",
-      "treasury_settlement_coupon",
-      "treasury_settlement_soma"
-    ],
     "field_frequencies": {
       "treasury_settlement": "event",
       "treasury_settlement_bill": "event",
       "treasury_settlement_coupon": "event",
       "treasury_settlement_soma": "event"
     },
+    "fields": [
+      "treasury_settlement",
+      "treasury_settlement_bill",
+      "treasury_settlement_coupon",
+      "treasury_settlement_soma"
+    ],
     "frequency": "event",
     "identities": [],
     "limitation": "treasury_settlement is one aggregate: the announced offering amounts of every auction sharing an issue_date, summed and converted to USD billions. All security types are aggregated, so tenor structure is not represented. SOMA add-ons are not in it, which this note said the opposite of until 10 September 2026: offering_amt is the announced public offering, and the Federal Reserve's rollover bids are noncompetitive tenders treated as add-ons to the announced auction size, with Treasury increasing the total issue by the SOMA award (Federal Reserve Bank of New York, 'FAQs: Treasury Rollovers'). The Fed's leg is therefore absent from this series, not mixed into it. Both omissions matter to a repo model specifically. Bill and coupon settlements have different collateral and reserve-drain profiles, and bill supply is close to the centre of the 2018-19 episode this project exists to model. Fed SOMA add-ons do not drain private cash, so leaving them out is right for the private-sector drain; what is missing is the Fed's leg as its own series, which src/repo_model/contract.py now defines as a component outside the aggregate. security_type, security_term and soma_accepted are all present in the snapshot, and as of 10 September 2026 the adapter reads security_type and soma_accepted: treasury_settlement_bill and treasury_settlement_coupon sum offering_amt by Treasury's own bills-versus-coupons split and are the two terms of the declared identity, while treasury_settlement_soma sums soma_accepted and sits outside it. Splitting the series needed no new download. A settlement date with no auction of a kind carries no observation for that leg rather than a zero, and a settlement date any of whose auctions had not been held at retrieval -- Fiscal Data writes an unavailable result as the string 'null' -- carries no treasury_settlement_soma at all, rather than a zero or the partial sum of its held siblings. Those two sentences describe the adapter's observations, not the panel columns, which differ by one rule since 11 September 2026 (src/repo_model/data.py, build_daily_panel rule 8): a date on the panel's grid, inside a snapshot's coverage from its first settlement date to its retrieval date, reads 0.0 for a leg with no observation and for the aggregate on a date with no auction at all, while treasury_settlement_soma reads 0.0 only on a date with no settlement of any kind, so a withheld result stays a hole.This note replaces one that said announcement and result vintages must be separated to avoid using auction outcomes too early. That risk is avoided by construction and was never the live one, but the reason this note gave for it was wrong until 10 September 2026, when the snapshot was first read: the note said record_date drives available_at and is part of vintage_id, so an announced but unsettled auction is visible from its publication date and not before. record_date equals issue_date on all 3562 rows of the tracked snapshot and is greater than or equal to auction_date on all of them, so it is the settlement date, not a publication date, and an auction becomes visible on the day it settles rather than on the day it was announced. That is more conservative than the sentence claimed and is not a leak, but it is a different fact, and a lag argued from the wrong one is not argued. The adapter reads offering_amt and soma_accepted, and never total_accepted, high_yield or bid_to_cover; soma_accepted is an auction result, and it is admitted only where record_date does not precede its auction_date, which on this snapshot is everywhere. A limitation describing a risk the adapter avoids absolutely, while silent on the one it creates, reads as vigilance.",
@@ -447,18 +509,38 @@
       "timezone": "America/New_York",
       "unit": "calendar_days"
     },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
   },
   "treasury_bill_rates": {
     "access": "public",
+    "availability_provenance": {
+      "note": "Read on the human side and recorded 11 September 2026; the project has no network route to Treasury or the Board, so this is a human-supplied reading and not something any code here fetched. It replaces a release_lag note that recorded no publication time at all and said checking it was a human-side step.",
+      "publication": "Federal Reserve Statistical Release H.15, Selected Interest Rates: the daily bulk data file, published at 16:30 ET. The interactive H.15 page publishes at 16:15 ET, and the indicative closing quotations these rates are taken from are struck at about 15:30 ET."
+    },
     "coverage": [
       "bill rates by tenor, in percent",
       "bank discount basis",
       "coupon equivalent basis"
     ],
+    "field_frequencies": {
+      "tbill_13w_bank_discount": "business_daily",
+      "tbill_13w_coupon_equivalent": "business_daily",
+      "tbill_17w_bank_discount": "business_daily",
+      "tbill_17w_coupon_equivalent": "business_daily",
+      "tbill_26w_bank_discount": "business_daily",
+      "tbill_26w_coupon_equivalent": "business_daily",
+      "tbill_4w_bank_discount": "business_daily",
+      "tbill_4w_coupon_equivalent": "business_daily",
+      "tbill_52w_bank_discount": "business_daily",
+      "tbill_52w_coupon_equivalent": "business_daily",
+      "tbill_6w_bank_discount": "business_daily",
+      "tbill_6w_coupon_equivalent": "business_daily",
+      "tbill_8w_bank_discount": "business_daily",
+      "tbill_8w_coupon_equivalent": "business_daily"
+    },
     "fields": [
       "tbill_4w_bank_discount",
       "tbill_4w_coupon_equivalent",
@@ -475,22 +557,6 @@
       "tbill_52w_bank_discount",
       "tbill_52w_coupon_equivalent"
     ],
-    "field_frequencies": {
-      "tbill_4w_bank_discount": "business_daily",
-      "tbill_4w_coupon_equivalent": "business_daily",
-      "tbill_6w_bank_discount": "business_daily",
-      "tbill_6w_coupon_equivalent": "business_daily",
-      "tbill_8w_bank_discount": "business_daily",
-      "tbill_8w_coupon_equivalent": "business_daily",
-      "tbill_13w_bank_discount": "business_daily",
-      "tbill_13w_coupon_equivalent": "business_daily",
-      "tbill_17w_bank_discount": "business_daily",
-      "tbill_17w_coupon_equivalent": "business_daily",
-      "tbill_26w_bank_discount": "business_daily",
-      "tbill_26w_coupon_equivalent": "business_daily",
-      "tbill_52w_bank_discount": "business_daily",
-      "tbill_52w_coupon_equivalent": "business_daily"
-    },
     "frequency": "business daily",
     "identities": [],
     "limitation": "One field per tenor and quoting basis the Daily Treasury Bill Rates export carries, in percent as published. The tracked exports are one CSV per year, 2018 through 2026, and their header is not stable: 17 weeks first appears in 2022 and 6 weeks in 2025, so the adapter maps every column by its own file's header name and refuses a column that maps to no declared field. A tenor is blank before its first auction in the year it appears (8 weeks through 2018-10-15, 17 weeks through 2022-10-18, 6 weeks through 2025-02-14) and those dates carry no observation for it, not a zero; each of those cells is recorded in the build's quality report under absent_cells with reason blank, as runs of consecutive quote dates in the file's own order. A series therefore starts when its tenor does, and the 6-week and 17-week series are short. Every tracked year except 2026 has a snapshot manifest recording the export URL whose download byte-matched it and, as retrieved_at, the time of the commit that first tracked it: a ceiling on the retrieval rather than a measurement of it, which stands in for the retrieval timestamp by decision (11 Sep). Only 2026 lacks a manifest, because Treasury's export for the year in progress no longer returns the committed bytes. Two panel columns draw on this source, each the coupon equivalent in percent as published: tbill_4w from tbill_4w_coupon_equivalent and tbill_13w from tbill_13w_coupon_equivalent.",
@@ -503,13 +569,9 @@
       "timezone": "America/New_York",
       "unit": "calendar_days"
     },
-    "availability_provenance": {
-      "publication": "Federal Reserve Statistical Release H.15, Selected Interest Rates: the daily bulk data file, published at 16:30 ET. The interactive H.15 page publishes at 16:15 ET, and the indicative closing quotations these rates are taken from are struck at about 15:30 ET.",
-      "note": "Read on the human side and recorded 11 September 2026; the project has no network route to Treasury or the Board, so this is a human-supplied reading and not something any code here fetched. It replaces a release_lag note that recorded no publication time at all and said checking it was a human-side step."
-    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against Treasury's description of the daily bill rates; the empty declaration is not a finding.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against Treasury's description of the daily bill rates; the empty declaration is not a finding.",
     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_bill_rates"
   }
 }
