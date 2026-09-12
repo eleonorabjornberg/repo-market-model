@@ -1,3 +1,5 @@
+import argparse
+import contextlib
 import csv
 import hashlib
 from dataclasses import replace
@@ -34,6 +36,7 @@ from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
     FR2004_SOURCE_ID,
+    NYFED_BASE,
     NMFP_CATEGORY_FIELDS,
     NMFP_DERIVED_FROM_MATCH,
     NMFP_INVESTMENT_CATEGORY_ERAS,
@@ -57,6 +60,7 @@ from repo_model.ingest import (
     load_snapshot_manifest,
     observations_from_snapshots,
 )
+from repo_model import cli, cli_data
 from zoneinfo import ZoneInfo
 
 
@@ -6740,6 +6744,224 @@ class AbsentCellRunTests(unittest.TestCase):
                 r"2026-01-06, and its snapshot's rows from row 0 do not",
             ):
                 absent_cells_from_quality_report(report, parsed.absent_cell_row_dates)
+
+
+class NyFedRateSourceChoiceTests(unittest.TestCase):
+    """`fetch` reaches every NY Fed secured rate `metadata/sources.json` declares.
+
+    ### The finding this class records
+
+    Before this class existed, **the `fetch` subcommand had no test at all** --
+    on either track, in any module. `grep -rn '"fetch"' tests/test_ingest.py
+    tests/test_data.py` counted zero. That absence is the whole reason the two
+    defects below survived a green suite for the life of the panel:
+
+    * `cli_data.py` declared `choices=("nyfed-sofr", "fred-macro")`, and
+    * it called the fetcher with `rate_name="sofr"` written out as a literal,
+
+    while `metadata/sources.json` declared `nyfed_tgcr` and `nyfed_bgcr` with
+    six fields each and the registry priced their release lags. The fetcher
+    `ingest.fetch_nyfed_reference_rate` was already general -- it takes the rate
+    name, and the New York Fed parser derives the rate from the URL with nothing
+    hard-coded -- so nothing but the CLI's own tuple and string literal stood
+    between the declarations and the data. The consequence is on the published
+    panel: `tgcr` and `bgcr` are built columns that are a **hole on every one of
+    its 2104 rows**, because nothing could fetch them. A lane with no test is
+    where a declaration and its reach come apart silently.
+
+    The test drives the real parser and the real fetcher and injects a
+    downloader, because neither machine has a network route to the New York Fed;
+    `IngestTests.test_nyfed_snapshots_are_checksummed` is the precedent.
+
+    ### Recorded mutations
+
+    Target and acceptance test are the same test,
+    `test_each_declared_nyfed_rate_source_fetches_its_own_rate_and_fred_macro_is_never_one`.
+    Each was confirmed applied (`grep -cF` == 1 before editing), run in a
+    disposable copy under `$HOME` built from `git ls-files`, with
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, unmutated control green before
+    and after.
+
+    * **M1** -- `rate_name=args.source.split("-", 1)[1]` in `cli_data._fetch`
+      hard-coded back to `rate_name="sofr"`. Kills the acceptance test with
+      `AssertionError`: `fetch nyfed-tgcr` writes its snapshots under source id
+      `nyfed_sofr` from `.../secured/sofr/search.json`, so the assertion that
+      each declared rate reaches the publisher under *its own* name fails. This
+      is the shipped defect, restored.
+    * **M2** -- `if args.source in NYFED_RATE_SOURCES:` weakened to `if True:`,
+      so `fred-macro` falls through to the rate fetcher. Kills the acceptance
+      test with `AssertionError`: the trap subtest asserts the rate fetcher is
+      not called at all for `fred-macro`, and the cheap `split("-")` derivation
+      turns it into rate name `macro` and a request to
+      `.../secured/macro/search.json`. The injected downloader answers that URL
+      rather than raising, so the mutation is caught by the assertion and not by
+      an incidental transport error.
+    * **M3** -- `"nyfed-bgcr"` dropped from `NYFED_RATE_SOURCES`. Kills the
+      acceptance test with `AssertionError`: the declared rate names are read
+      off `metadata/sources.json` (every source whose `url` sits under
+      `ingest.NYFED_BASE`) and compared with the parser's own `choices`, so a
+      declared rate the CLI cannot name is a failure rather than a subtest that
+      quietly does not run.
+
+    Whole suite green under each mutation except the acceptance test; no other
+    test moved, which is the point of the last one -- nothing else in the suite
+    looks at what `fetch` can reach.
+    """
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name)
+
+    @staticmethod
+    def declared_nyfed_rate_names():
+        """The rate names `metadata/sources.json` declares as fetchable.
+
+        Read off the declared `url`, not off the source id: `nyfed_fr2004` is a
+        NY Fed source and is not a secured reference rate, and the thing that
+        separates them is whether the publisher's endpoint sits under
+        `NYFED_BASE`. Deriving it this way means the test retypes no list.
+        """
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        registry = registry.get("sources", registry)
+        prefix = NYFED_BASE + "/"
+        return {
+            entry["url"][len(prefix) :].split("/", 1)[0]
+            for entry in registry.values()
+            if str(entry.get("url", "")).startswith(prefix)
+        }
+
+    @staticmethod
+    def fetch_source_choices():
+        """`fetch`'s `source` choices, from the parser the entry point builds."""
+
+        parser = cli.build_parser()
+        subparsers = next(
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        )
+        fetch = subparsers.choices["fetch"]
+        source = next(action for action in fetch._actions if action.dest == "source")
+        return tuple(source.choices)
+
+    def run_fetch(self, source):
+        """Run `fetch <source>` through `cli.main`, with downloaders injected.
+
+        Returns `(rate_calls, macro_calls)`, each a list of
+        `(kwargs, artifacts)`. The real fetchers run -- only the transport is
+        replaced -- so the snapshots, their source ids and their URLs are the
+        ones a real run would write.
+        """
+
+        rate_calls = []
+        macro_calls = []
+        real_rate = cli_data.fetch_nyfed_reference_rate
+        real_macro = cli_data.fetch_fred_macro
+
+        def transport(url):
+            # Answers any rate name, including one a mutation invents, so a
+            # mutation is caught by an assertion rather than by a KeyError.
+            if "type=volume" in url:
+                return b'{"refRates":[{"effectiveDate":"2026-01-02","volumeInBillions":2000}]}'
+            return b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31}]}'
+
+        def rate_spy(**kwargs):
+            artifacts = real_rate(downloader=transport, **kwargs)
+            rate_calls.append((kwargs, artifacts))
+            return artifacts
+
+        def macro_spy(**kwargs):
+            artifacts = real_macro(
+                downloader=lambda _url: b"observation_date,IORB\n2026-01-01,4.30\n",
+                **kwargs,
+            )
+            macro_calls.append((kwargs, artifacts))
+            return artifacts
+
+        cli_data.fetch_nyfed_reference_rate = rate_spy
+        cli_data.fetch_fred_macro = macro_spy
+        self.addCleanup(
+            setattr, cli_data, "fetch_nyfed_reference_rate", real_rate
+        )
+        self.addCleanup(setattr, cli_data, "fetch_fred_macro", real_macro)
+        argv = [
+            "fetch",
+            source,
+            "--start",
+            "2026-01-01",
+            "--end",
+            "2026-01-03",
+            "--output-root",
+            str(self.output_root / source),
+        ]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(argv), 0)
+        cli_data.fetch_nyfed_reference_rate = real_rate
+        cli_data.fetch_fred_macro = real_macro
+        return rate_calls, macro_calls
+
+    def test_each_declared_nyfed_rate_source_fetches_its_own_rate_and_fred_macro_is_never_one(
+        self,
+    ):
+        declared = self.declared_nyfed_rate_names()
+        choices = self.fetch_source_choices()
+        rate_choices = [name for name in choices if name.startswith("nyfed-")]
+        other_choices = [name for name in choices if not name.startswith("nyfed-")]
+
+        with self.subTest("every declared rate is a choice"):
+            # The defect, stated as a set: sources.json declares sofr, tgcr and
+            # bgcr; the CLI offered only sofr.
+            self.assertEqual(
+                {name[len("nyfed-") :] for name in rate_choices}, declared
+            )
+
+        for source in rate_choices:
+            rate = source[len("nyfed-") :]
+            with self.subTest(source=source):
+                rate_calls, macro_calls = self.run_fetch(source)
+                self.assertEqual(macro_calls, [])
+                self.assertEqual(len(rate_calls), 1)
+                (_kwargs, artifacts) = rate_calls[0]
+                # Behaviour, not a read of the source: the rate name the CLI
+                # derived is whatever the publisher's URL and the snapshot's
+                # source id say it was.
+                self.assertEqual(
+                    {artifact.source_id for artifact in artifacts},
+                    {"nyfed_" + rate},
+                )
+                self.assertEqual(
+                    sorted(artifact.url for artifact in artifacts),
+                    sorted(
+                        NYFED_BASE
+                        + "/"
+                        + rate
+                        + "/search.json?startDate=2026-01-01&endDate=2026-01-03"
+                        + "&type="
+                        + observation_type
+                        for observation_type in ("rate", "volume")
+                    ),
+                )
+                for artifact in artifacts:
+                    self.assertTrue(artifact.path.exists())
+                    self.assertEqual(artifact.path.parent.name, "nyfed_" + rate)
+
+        for source in other_choices:
+            with self.subTest(source=source, trap="not a rate"):
+                # THE TRAP. Deriving the rate name by splitting on `-` and
+                # taking the tail turns `fred-macro` into rate name `macro` and
+                # a request to a secured-rates endpoint that does not exist.
+                rate_calls, macro_calls = self.run_fetch(source)
+                self.assertEqual(rate_calls, [])
+                self.assertEqual(len(macro_calls), 1)
+
+        with self.subTest("an unrecognised source is argparse's refusal"):
+            # Refused by the parser's own `choices`, so the refusal cannot
+            # drift from the tuple the way a hand-written branch would.
+            with contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    cli.main(["fetch", "nyfed-obfr"])
 
 
 if __name__ == "__main__":
