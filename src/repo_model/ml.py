@@ -1275,10 +1275,14 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags`, `volatility_feature` and `arx_feature` by the
-        same rule: named when set, absent when not. Each calibration names its own setting and
+        `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
+        the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal`, `calibration_folds`
         for `cross_conformal`.
+
+        `tail` is what the command declared, not evidence that a shape was
+        fitted: a rolling backtest refits at every origin, so what each fold's
+        `tail_fit` found is not recorded here or on any record (B37).
         """
 
         settings: dict = {}
@@ -1294,6 +1298,8 @@ class FittedGradientBoostedQuantiles:
             settings["volatility_feature"] = self.volatility_feature
         if self.arx_feature is not None:
             settings["arx_feature"] = self.arx_feature
+        if self.tail is not None:
+            settings["tail"] = self.tail
         return MappingProxyType(settings)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:

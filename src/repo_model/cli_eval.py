@@ -467,6 +467,8 @@ class _FitterChoice:
     takes_volatility_feature: bool = False
     #: Does this model take `--arx-feature`? The same rule again.
     takes_arx_feature: bool = False
+    #: Does this model take `--tail`? The same rule again.
+    takes_tail: bool = False
 
     @property
     def factory(self) -> Callable[..., FittedForecastModel]:
@@ -565,8 +567,8 @@ FITTER_FACTORIES = MappingProxyType(
         # published gbm record was produced with, and the fitter's own
         # defaults decide the rest. The gap between the fit and calibration
         # slices is not bound here: the fold loop derives it and hands it over.
-        # `--spread-change-lags`, `--volatility-feature` and `--arx-feature` by
-        # the same rule: bound only when given.
+        # `--spread-change-lags`, `--volatility-feature`, `--arx-feature` and
+        # `--tail` by the same rule: bound only when given.
         "gbm": _FitterChoice(
             declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
             build=lambda factory, regressors, regime, window, settings: functools.partial(
@@ -577,6 +579,7 @@ FITTER_FACTORIES = MappingProxyType(
             takes_spread_change_lags=True,
             takes_volatility_feature=True,
             takes_arx_feature=True,
+            takes_tail=True,
         ),
     }
 )
@@ -639,6 +642,7 @@ def _select_fitter(
         _volatility_feature(args, name, choice.takes_volatility_feature, side=side)
     )
     settings.update(_arx_feature(args, name, choice.takes_arx_feature, side=side))
+    settings.update(_tail(args, name, choice.takes_tail, side=side))
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
@@ -782,6 +786,62 @@ def _arx_feature(
             "took effect -- here, as a model that saw an ARX's forecast"
         )
     return {"arx_feature": feature}
+
+
+def _tail(
+    args: argparse.Namespace,
+    name: str,
+    takes_tail: bool,
+    *,
+    side: str = "",
+) -> Mapping[str, Any]:
+    """Resolve `--tail`, or refuse. `_arx_feature`'s shape and rule.
+
+    Optional for gbm and refused for every other model; returned only when
+    given. Unlike the flags above, the value and its calibration are refused
+    **here**, at selection, and not only by `ml.fit_gradient_boosted_quantiles`:
+    that refusal arrives from the first fold, after the panel is read and the
+    folds are cut, as a traceback-shaped surprise to a command that could have
+    said no before any of it. The family is read off `ml.TAIL_FAMILIES`,
+    imported inside the function as `_DeferredFactory` does, so there is one
+    list; the fitter's refusals stay, for callers that do not come through
+    here.
+    """
+
+    tail = args.tail
+    if tail is None:
+        return {}
+    if not takes_tail:
+        raise SplitError(
+            f"--tail{side} {tail} was given, but --model{side} {name} has no "
+            "quantile law to continue above its top quantile; only gbm does. A "
+            "flag that is accepted and ignored is read by the next person as a "
+            "setting that took effect -- here, as a model with a fitted tail"
+        )
+    from . import ml
+
+    if tail not in ml.TAIL_FAMILIES:
+        raise SplitError(
+            f"unknown --tail{side} {tail!r}; gbm's law can be continued with "
+            f"{', '.join(ml.TAIL_FAMILIES)}, or ended at its knots by leaving the "
+            "flag out"
+        )
+    calibration = args.calibration or "none"
+    if calibration == "none":
+        raise SplitError(
+            f"--tail{side} {tail} was given with calibration none, which holds "
+            "no rows out, so its only tail sample is the rows the estimators "
+            f"were fitted on. A tail is carried only by --calibration{side} "
+            "conformal"
+        )
+    if calibration == "cross_conformal":
+        raise SplitError(
+            f"--tail{side} {tail} was given with --calibration{side} "
+            "cross_conformal, where the tail is not wired: every row is held out "
+            "by some block, and the coherent sample is a different construction. "
+            f"A tail is carried only by --calibration{side} conformal"
+        )
+    return {"tail": tail}
 
 
 def _registry(args: argparse.Namespace) -> dict:
@@ -958,7 +1018,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
     `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
     `--calibration-share-a`, `--calibration-folds-a`, `--spread-change-lags-a`,
-    `--volatility-feature-a`, `--arx-feature-a`, and the same ten for `b` --
+    `--volatility-feature-a`, `--arx-feature-a`, `--tail-a`, and the same
+    eleven for `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -991,6 +1052,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         spread_change_lags=getattr(args, f"spread_change_lags_{side}"),
         volatility_feature=getattr(args, f"volatility_feature_{side}"),
         arx_feature=getattr(args, f"arx_feature_{side}"),
+        tail=getattr(args, f"tail_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1549,6 +1611,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "published gbm record was produced with. Refused for every model but gbm",
     )
     backtest.add_argument(
+        "--tail",
+        metavar="NAME",
+        default=None,
+        help="continue gbm's law above its top declared quantile: gpd, a "
+        "generalised Pareto fitted on each fold's calibration rows' excesses; "
+        "none when not given, which is the model every published gbm record was "
+        "produced with. Refused for every model but gbm, and for every "
+        "calibration but conformal",
+    )
+    backtest.add_argument(
         "--report",
         type=Path,
         required=True,
@@ -1660,6 +1732,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             f"design: declared, the ARX on --feature-{side}, fitted per fold on "
             f"the fit rows; none when not given; refused for --model-{side} "
             f"other than gbm",
+        )
+        compare.add_argument(
+            f"--tail-{side}",
+            metavar="NAME",
+            default=None,
+            help=f"continue the {side} model's gbm law above its top declared "
+            f"quantile: gpd, fitted per fold on the calibration rows' excesses; "
+            f"none when not given; refused for --model-{side} other than gbm and "
+            f"for --calibration-{side} other than conformal",
         )
     compare.add_argument(
         "--loss",

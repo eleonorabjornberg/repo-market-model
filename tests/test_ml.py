@@ -83,6 +83,10 @@ What is covered here
   recorded fit, is fitted to the calibration rows' excesses above that same
   quantile, attaches nothing when there are none, leaves the default law
   saturating, and its three refusals.
+* `TailDeclarationTests` -- `tail` named in `model_settings` when set and absent
+  when not, `--tail` reaching the fitter from `backtest` and either side of
+  `compare`, and refused at selection for a model or calibration that carries
+  no tail.
 
 Both walks read `ForecastInterfaceConformance.__subclasses__()` and
 `ExceedancePredictorConformance.__subclasses__()`, so the cases have to be
@@ -3656,6 +3660,199 @@ class GpdTailWiringTests(unittest.TestCase):
             with self.assertRaises(ValueError) as caught:
                 self.fit(rows, calibration="cross_conformal", tail="gpd")
             self.assertIn("not wired for calibration 'cross_conformal'", str(caught.exception))
+
+
+class TailDeclarationTests(unittest.TestCase):
+    """`tail` in `model_settings`, and `--tail` on the command line (B37).
+
+    **The defect.** After B36 a fit with `tail="gpd"` and a fit without one
+    declared the same mapping, and nothing on the command line could ask for
+    the tail: a record built from a tailed model was indistinguishable from one
+    built without, and no record could be built from one at all.
+
+    **The trap is part 2.** The key named unconditionally -- `tail: None` on
+    every gbm fit -- changes the declaration of every published gbm record,
+    which is re-scored by a human and never rewritten inside a block. So part 2
+    asserts membership, not a `None` value, and asserts the whole untailed
+    mapping is the tailed one with `tail` taken out.
+
+    **What the declaration is not.** `tail` is what the command declared. What
+    each fold's tail *fit* found -- `xi`, `sigma`, `excesses` -- is not on any
+    record, by design, and nothing here asserts it is.
+
+    Mutation record
+    ---------------
+
+    Run in nine disposable copies under `$HOME`, one per mutation plus an
+    unmutated control, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring in Python
+    and found exactly once, and the original confirmed gone.
+
+    1. **The key dropped** --- the `if self.tail is not None:` guard and its
+       assignment deleted from `model_settings`. Kills part 1 (`AssertionError:
+       'tail' not found`), part 2 (the tailed mapping equals the untailed one
+       with no `tail` added, `AssertionError`) and part 3 (`KeyError: 'tail'`
+       on the CLI-built fit). Nothing else in the suite.
+    2. **The key made unconditional** --- `settings["tail"] = self.tail`
+       outside the guard. Kills part 2 (`AssertionError: 'tail' unexpectedly
+       found`) and, `AssertionError` each, the declaration subtests of
+       `GradientBoostedConformalCalibrationTests`,
+       `GradientBoostedCrossConformalTests`, `GradientBoostedLaggedSpreadTests`,
+       `GradientBoostedGarchFeatureTests` and `GradientBoostedArxFeatureTests`:
+       every sibling's declaration grows `'tail': None`. **It does not redden
+       `tests/test_generated_results.py`**, and cannot: that module renders
+       the README and notebook from the committed `docs/runs/` records and
+       refits nothing, so a declaration that would change on a re-run is
+       invisible to it until a human re-scores. The published-record
+       consequence is held here and by the five sibling subtests, not there.
+    3. **The flag not passed through** --- `settings.update(_tail(...))` ->
+       `_tail(...)` in `_select_fitter`, so the refusals still run. Kills part
+       3 alone, `AssertionError` on `fitter.keywords` missing `tail`.
+    4. **Each refusal removed in turn**, the condition made `if False:`:
+       a. *the model refusal* (`if not takes_tail:`). Kills part 4, but as
+          `AssertionError: "--tail gpd was given, but --model arx" does not
+          match`, **not** `... not raised`: `--model arx` takes no
+          calibration, so the next refusal, calibration `none`, still stops the
+          run with the wrong reason. The kill is the message check.
+       b. *calibration `none`*. Part 4, `AssertionError: SplitError not raised`.
+       c. *calibration `cross_conformal`*. Part 4, `SplitError not raised`.
+       d. *the unknown family* (`if tail not in ml.TAIL_FAMILIES:`). Part 4,
+          `SplitError not raised`.
+       Each killed this test and nothing else.
+    5. **B36's short circuit re-run** --- `if self.tail_fit is None:` -> `if
+       True:` in `predict_stress`. Kills `GpdTailWiringTests` parts 2 and 3
+       alone (`Tuples differ`, `0.0 not greater than 0.0`), as B36 recorded.
+       This test stays green: it reads the declaration and the flag, not the
+       law. Kill set unchanged; the two classes still divide the tail.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+            "calibration": "conformal",
+            "purge_days": 0,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def parse(self, *argv):
+        common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+        command, *rest = argv
+        return cli.build_parser().parse_args(
+            [command, "panel.csv", *common, "--report", "r.json", *rest]
+        )
+
+    def test_a_tail_run_declares_its_tail_and_a_run_without_one_declares_exactly_what_it_declared_before(
+        self,
+    ):
+        """Named when set, absent when not, reachable from the flag, refused early."""
+
+        rows = heteroscedastic_frame(1200)
+        tailed = self.fit(rows, calibration_share=0.6, tail="gpd")
+        plain = self.fit(rows, calibration_share=0.6)
+        small = heteroscedastic_frame(36)
+        gbm = ["--feature", "on_rrp", "--feature", "sofr_volume", "--feature", "spread_bps",
+               "--model", "gbm"]
+
+        with self.subTest("1. named when set"):
+            self.assertIsNotNone(tailed.tail_fit)
+            self.assertIn("tail", tailed.model_settings)
+            self.assertEqual(tailed.model_settings["tail"], "gpd")
+            self.assertEqual(baseline._model_settings(tailed)["tail"], "gpd")
+
+        with self.subTest("2. absent when not, and the rest unchanged"):
+            self.assertIsNone(plain.tail)
+            self.assertNotIn("tail", plain.model_settings)
+            self.assertNotIn("tail", baseline._model_settings(plain))
+            expected = {
+                "calibration": plain.calibration,
+                "calibration_share": plain.calibration_share,
+            }
+            self.assertEqual(dict(plain.model_settings), expected)
+            self.assertEqual(dict(tailed.model_settings), {**expected, "tail": "gpd"})
+            # The model every published gbm record was produced with.
+            uncalibrated = self.fit(small, calibration="none")
+            self.assertNotIn("tail", uncalibrated.model_settings)
+            self.assertEqual(dict(baseline._model_settings(uncalibrated)), {})
+
+        with self.subTest("3. the flag reaches the fitter"):
+            backtest = self.parse("backtest", *gbm, "--calibration", "conformal", "--tail", "gpd")
+            _, fitter = cli_eval._select_fitter(backtest)
+            self.assertEqual(
+                fitter.keywords,
+                {"regressors": ("on_rrp", "sofr_volume"), "calibration": "conformal",
+                 "tail": "gpd"},
+            )
+            fitted = fitter(small, minimum_history=20,
+                            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF, purge_days=0)
+            self.assertEqual(fitted.tail, "gpd")
+            self.assertEqual(dict(fitted.model_settings)["tail"], "gpd")
+
+            compare = self.parse(
+                "compare",
+                "--model-a", "gbm", "--feature-a", "on_rrp", "--feature-a", "spread_bps",
+                "--calibration-a", "conformal", "--tail-a", "gpd",
+                "--model-b", "gbm", "--feature-b", "on_rrp", "--feature-b", "spread_bps",
+                "--calibration-b", "conformal",
+            )
+            _, fit_a = cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            _, fit_b = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(fit_a.keywords.get("tail"), "gpd")
+            self.assertNotIn("tail", fit_b.keywords)
+            compare = self.parse(
+                "compare",
+                "--model-a", "persistence", "--feature-a", "spread_bps",
+                "--model-b", "gbm", "--feature-b", "on_rrp", "--feature-b", "spread_bps",
+                "--calibration-b", "conformal", "--tail-b", "gpd",
+            )
+            _, fit_b = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+            self.assertEqual(fit_b.keywords.get("tail"), "gpd")
+
+        with self.subTest("4. refusals, at selection"):
+            arx = self.parse("backtest", "--feature", "on_rrp", "--feature", "spread_bps",
+                             "--model", "arx", "--tail", "gpd")
+            with self.assertRaisesRegex(SplitError, r"--tail gpd was given, but --model arx"):
+                cli_eval._select_fitter(arx)
+            compare = self.parse(
+                "compare",
+                "--model-a", "persistence", "--feature-a", "spread_bps", "--tail-a", "gpd",
+                "--model-b", "gbm", "--feature-b", "on_rrp", "--feature-b", "spread_bps",
+            )
+            with self.assertRaisesRegex(
+                SplitError, r"--tail-a gpd was given, but --model-a persistence"
+            ):
+                cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+            for calibration in ((), ("--calibration", "none")):
+                with self.assertRaises(SplitError) as caught:
+                    cli_eval._select_fitter(self.parse("backtest", *gbm, *calibration,
+                                                       "--tail", "gpd"))
+                self.assertIn("with calibration none", str(caught.exception))
+                self.assertIn("only by --calibration conformal", str(caught.exception))
+            with self.assertRaises(SplitError) as caught:
+                cli_eval._select_fitter(
+                    self.parse("backtest", *gbm, "--calibration", "cross_conformal",
+                               "--tail", "gpd")
+                )
+            self.assertIn("cross_conformal, where the tail is not wired", str(caught.exception))
+            self.assertIn("only by --calibration conformal", str(caught.exception))
+            with self.assertRaises(SplitError) as caught:
+                cli_eval._select_fitter(
+                    self.parse("backtest", *gbm, "--calibration", "conformal",
+                               "--tail", "pareto")
+                )
+            self.assertIn("unknown --tail 'pareto'", str(caught.exception))
+            self.assertIn("gpd", str(caught.exception))
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
