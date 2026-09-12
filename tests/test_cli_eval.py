@@ -178,23 +178,52 @@ def declared_registry_file(directory, purge=6, features=(FEATURE,)):
     over fields, which is what makes those numbers the control: the
     field-priced-purge block changes where the gap comes from, and on this
     registry nothing downstream of the gap may move.
+
+    **Two shapes from B30, chosen by `purge`.** The callers of this write their
+    panels with `business_days` below -- weekday calendars, on purpose, because
+    that is what a funding panel is. `_check_decision_relative_availability`
+    asks whether the feature row had been published at the decision instant,
+    and a `record_date` lag of exactly `purge` days cannot have been on such a
+    calendar: the row a Monday-scored fold reads is the Friday, first
+    observable on the Saturday, and the forecast was made on the Friday
+    afternoon. So from six days up this declares what `metadata/sources.json`
+    declares for SOFR -- `ref_date` / `business_days`, one day, under a
+    `worst_case_calendar_days` of `purge` -- which prices to the same `purge`,
+    because a `ref_date` source contributes its worst case, and whose
+    availability is the next *panel* date rather than the next calendar one.
+    Every number pinned against this registry is therefore unchanged, and the
+    weekday calendar is kept rather than flattened.
+
+    Below six days the shape is unavailable: `contract.validate_release_lag`
+    requires `worst_case_calendar_days` to be at least `days + 5`. No caller of
+    this asks for one; `RollingBacktestHarness`, which does declare a one-day
+    gap, re-dates its panel instead and says so there.
     """
 
     from repo_model.contract import sources_for_features
 
+    if purge >= 6:
+        release_lag = {
+            "basis": "ref_date",
+            "unit": "business_days",
+            "days": 1,
+            "worst_case_calendar_days": purge,
+            "available_time": "00:00",
+            "timezone": "America/New_York",
+        }
+    else:
+        release_lag = {
+            "basis": "record_date",
+            "unit": "calendar_days",
+            "days": purge,
+            "available_time": "00:00",
+            "timezone": "America/New_York",
+        }
     path = Path(directory) / "registry.json"
     path.write_text(
         json.dumps(
             {
-                source: {
-                    "release_lag": {
-                        "basis": "record_date",
-                        "unit": "calendar_days",
-                        "days": purge,
-                        "available_time": "00:00",
-                        "timezone": "America/New_York",
-                    }
-                }
+                source: {"release_lag": dict(release_lag)}
                 for source in sources_for_features(features)
             },
             indent=2,
@@ -211,6 +240,32 @@ def business_days(start, count):
             days.append(cursor)
         cursor += timedelta(days=1)
     return days
+
+
+def write_on_consecutive_days(source, destination):
+    """Copy a panel CSV with its dates re-dated onto consecutive days.
+
+    The file-level counterpart of
+    `tests/test_baseline.py::on_consecutive_days`, and used for the same
+    reason: a one-day gap is not decision-safe on a calendar with weekends
+    under any declaration at all, because the last panel date strictly before a
+    Tuesday-after-a-holiday is the Friday the feature row is dated -- so the
+    forecast would be made on the same day as the row it reads, and
+    `max_release_lag_days` refuses to price that at zero. Only a gapless panel
+    is. Values, column order and row count are untouched; only the first column
+    moves.
+    """
+
+    with Path(source).open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    header, body = rows[0], rows[1:]
+    first = date.fromisoformat(body[0][0])
+    with Path(destination).open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(header)
+        for index, row in enumerate(body):
+            writer.writerow([(first + timedelta(days=index)).isoformat()] + row[1:])
+    return Path(destination)
 
 
 
@@ -1082,7 +1137,15 @@ class RollingBacktestHarness(unittest.TestCase):
     its own class, `EventHoldoutHarness`, for exactly this reason.
     """
 
-    PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
+    #: The tracked sample's values, re-dated onto consecutive days in `setUp`.
+    #: This harness declares a **one**-day gap for the fast feature set, and no
+    #: declaration of any basis, unit or `available_time` is decision-safe at
+    #: one day on a calendar with weekends -- `write_on_consecutive_days` gives
+    #: the proof. The six-day arm rides on the same panel, because the two are
+    #: compared against each other and a comparison across two calendars
+    #: measures nothing. `data/sample/daily_market.csv` itself is untouched: it
+    #: is Track A's file, and this writes a copy into the test's own directory.
+    SOURCE_PANEL = REPO_ROOT / "data" / "sample" / "daily_market.csv"
     MINIMUM_HISTORY = "10"
 
     #: Two declarations, the slower a superset of the faster. Both contain
@@ -1097,6 +1160,9 @@ class RollingBacktestHarness(unittest.TestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.tmp = Path(directory.name)
+        self.PANEL = write_on_consecutive_days(
+            self.SOURCE_PANEL, self.tmp / "daily_market.csv"
+        )
         # One registry pricing both feature sets, at different lags, so a run
         # can name either and the gap has to follow the naming.
         self.registry = self.tmp / "registry.json"
@@ -1711,6 +1777,11 @@ class PublishedReportTests(RollingBacktestHarness):
         The interval is not asserted to any width. What is asserted is that it
         is an interval around this run's number, that it is reproducible, and
         that its structure moved with the gap.
+
+        B30 re-dated this harness's panel onto consecutive days, and one
+        assertion here did not survive the move for a reason worth reading: see
+        the comment on the last block below. No interval literal is pinned in
+        this test, so nothing else moved.
         """
 
         fast = self.published(*self.FAST_FEATURES)
@@ -1778,12 +1849,33 @@ class PublishedReportTests(RollingBacktestHarness):
         )
         self.assertEqual((lower, upper), (interval["lower"], interval["upper"]))
 
-        # A percentile interval from a real resample is not centred on the
-        # point estimate. Stated so that a symmetric width -- the shape a
-        # made-up interval takes -- is a failure rather than a curiosity.
+        # **This assertion used to be "a percentile interval from a real
+        # resample is not centred on the point estimate", and B30 found that it
+        # was never true of the resample -- only of the panel.** On the
+        # re-dated panel the fast arm's errors are fourteen values that are all
+        # within 1e-13 of 1, 2, 3 or 4, and the 5th and 95th percentiles of the
+        # resampled means land symmetrically about the mean: 0.3571428571428499
+        # to the left, 0.3571428571428559 to the right, a difference of 6e-15.
+        # The slow arm is symmetric to 2e-16. Both intervals are the genuine
+        # output of `stationary_bootstrap_interval` -- the equality above
+        # reproduces them from the artifact's own recorded parameters -- so the
+        # old assertion was passing on a property of the previous panel's error
+        # vector, not on a property of bootstraps. Kept as a finding rather
+        # than as a tolerance: asymmetry is not something a percentile interval
+        # owes anyone, and a check tuned until it passed would have been the
+        # widening this block refuses.
+        #
+        # What replaces it discriminates the same mutation without resting on
+        # the fixture. A fixed width around the point estimate is the *same*
+        # width at every gap; a resample's is not, because the errors and the
+        # block length both move with the gap. The reproduction above is still
+        # the primary guard -- a constructed width cannot survive being
+        # recomputed from the parameters it published -- and this is the cheap
+        # second statement that the width is a measurement.
+        slow_interval = slow["metrics"]["mae_bps_interval"]
         self.assertNotAlmostEqual(
-            fast["metrics"]["mae_bps"] - interval["lower"],
-            interval["upper"] - fast["metrics"]["mae_bps"],
+            interval["upper"] - interval["lower"],
+            slow_interval["upper"] - slow_interval["lower"],
         )
 
     def test_the_report_identifies_the_bytes_it_was_computed_from(self):

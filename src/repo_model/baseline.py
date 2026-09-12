@@ -152,7 +152,7 @@ import math
 import subprocess
 from bisect import bisect_right
 from dataclasses import dataclass, field
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -170,6 +170,7 @@ from typing import (
 
 from .contract import (
     DERIVED_FEATURES,
+    END_OF_DAY,
     QUANTILE_LEVELS,
     field_sources_for_features,
 )
@@ -2783,6 +2784,164 @@ def _derive_purge(
     return field_sources, sources, purge
 
 
+#: Later than any deadline a panel can express. A business-day count whose
+#: publication day runs off the end of the panel is **late**, not unknown: the
+#: panel is the only calendar this module has, so a value whose declared
+#: publication day is not on it has not been published by any instant the panel
+#: can name. Returning "unknown" there would skip exactly the folds at the end
+#: of the panel, where a long-lagged column is least likely to have arrived,
+#: which is the direction a leakage guard must not fail in.
+#: `scripts/purge_availability_audit.py` settles the same case the same way and
+#: says so in its own module docstring; the two answers have to agree, or the
+#: audit stops auditing this path.
+_NEVER_ON_THIS_PANEL = datetime.max
+
+
+def _declared_availability(
+    registry: Mapping[str, Mapping[str, object]],
+    source_id: str,
+    field: str,
+    dates: Sequence[date],
+    position: int,
+) -> Optional[datetime]:
+    """The first instant a field's value for `dates[position]` is observable.
+
+    `None` where the declaration makes no row-relative claim there is anything
+    to check: a `snapshot_retrieved_at` basis dates a row from its snapshot
+    timestamp, which is an `available_at` fact about the row and not a lag on
+    the source, and a declaration carrying no `days` has made no claim at all.
+    Neither is a pass. Both are "not this guard's question", and the guard says
+    nothing about those fields rather than clearing them.
+
+    **This reads `release_lag`, which AGENT_CONTRACT.md's "The conversion
+    belongs to the data layer" tells Track B not to do, and that tension is
+    real and is reported rather than resolved here.** The reason it cannot be
+    borrowed from Track A: `registry.max_release_lag_days` answers a different
+    question -- the conservative *calendar-day* bound -- and for a `ref_date`
+    source that bound is `worst_case_calendar_days`, deliberately far larger
+    than the business-day count the source actually declares. Sized from the
+    bound, this guard would fire on `metadata/sources.json`, where the whole
+    point of B29's measurement is that it is silent. Sized from `days` counted
+    on the panel's own dates, it is silent there and fires only where a fixture
+    declares a lag its calendar cannot deliver. The arithmetic mirrors
+    `scripts/purge_availability_audit.py:field_availability` line for line, so
+    the evaluation path and the audit cannot answer differently; a per-field
+    availability instant on Track A's side of the interface would let both drop
+    this copy, and that is the human's call, not a block's.
+
+    Wall clocks are compared, not zoned instants. Where `decision_time` is
+    tz-aware and a `record_date` source declares another zone,
+    `max_release_lag_days` has already refused the run inside `_derive_purge`,
+    before any fold exists. It performs no such check on a `ref_date` source,
+    so a `ref_date` availability time in a zone other than the decision's is
+    compared naively here; that gap is Track A's and is recorded rather than
+    patched over, since inventing a second timezone rule in this module is the
+    duplication the paragraph above is about.
+    """
+
+    source = registry[source_id]
+    field_lags = source.get("field_release_lags") or {}
+    lag = field_lags.get(field) or source.get("release_lag") or {}
+    if lag.get("basis") == "snapshot_retrieved_at":
+        return None
+    days = lag.get("days")
+    if days is None:
+        return None
+    moment = time.fromisoformat(str(lag.get("available_time", END_OF_DAY)))
+    if lag.get("unit") == "business_days":
+        published = position + int(days)
+        if published >= len(dates):
+            return _NEVER_ON_THIS_PANEL
+        return datetime.combine(dates[published], moment)
+    return datetime.combine(dates[position] + timedelta(days=int(days)), moment)
+
+
+def _check_decision_relative_availability(
+    registry: Mapping[str, Mapping[str, object]],
+    field_sources: Tuple[Tuple[str, str], ...],
+    dates: Sequence[date],
+    feature_index: int,
+    scored_index: int,
+    *,
+    purge: int,
+    decision_time: time,
+) -> None:
+    """Raise unless the fold's feature row had been published when it was read.
+
+    `splits.clears_purge` states the gap against the **scored** date: a row is
+    eligible when `row + purge < opens`. The forecast, though, is not made on
+    the scored date. It is made at the declared decision time on the last panel
+    date strictly before it -- the calendar day before only when those two days
+    are consecutive. After a weekend or a holiday the decision comes earlier
+    than that, and the purge rule alone stops establishing that the last
+    training row had been published by then. A23 found the gap and
+    `docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated against the target
+    date", records it; this is the check that closes it.
+
+    Two dates, not one, and that is the whole content of the guard. The purge
+    is a scalar of calendar days by AGENT_CONTRACT.md's "The purge stays a
+    scalar", so it cannot express "and also be observable by 16:00 on the
+    trading day before". Nothing about `clears_purge`, `rolling_origin` or the
+    derivation moves to accommodate this: the gap is still sized the way it was
+    and folds are still built the way they were, and this refuses a fold the
+    two of them accepted. A guard that instead widened the purge would purge
+    every fold to protect the few after a holiday, and would move published
+    numbers to do it.
+
+    Per fold, and per field, because the folds differ: only a scored date that
+    follows a weekend or a holiday can fail, and which fields can fail depends
+    on the panel's own dates. `LookAheadError`, per CLAUDE.md's "Leakage guards
+    raise `LookAheadError`, never `assert`", and for the reason
+    `_check_fitter_stayed_inside` gives -- `python -O` strips asserts and this
+    has to survive the way the numbers are actually produced.
+
+    Args:
+        registry: the parsed source registry.
+        field_sources: the `(source_id, field)` pairs `_derive_purge` sized the
+            gap over. The same pairs, not a second resolution: a guard checking
+            a different field set than the one that was priced would be the
+            "correct rule over the wrong set" failure one level up.
+        dates: the panel's dates, ascending. The only calendar available, and
+            therefore the one business days are counted on.
+        feature_index: the fold's last training row -- the row the model reads,
+            and the one whose publication is in question.
+        scored_index: the fold's scored row.
+        purge: the derived gap, named in the message so a reader can see which
+            of the two rules let the fold through.
+        decision_time: when the forecast is made.
+
+    Raises:
+        LookAheadError: naming the field and the fold, when a field's declared
+            release lag puts the feature row's availability after the decision
+            instant.
+    """
+
+    if scored_index == 0:
+        return  # no panel date precedes the scored one, so no decision instant
+    deadline = datetime.combine(
+        dates[scored_index - 1], decision_time.replace(tzinfo=None)
+    )
+    for source_id, field in field_sources:
+        available = _declared_availability(
+            registry, source_id, field, dates, feature_index
+        )
+        if available is None or available <= deadline:
+            continue
+        when = (
+            "no date on this panel"
+            if available == _NEVER_ON_THIS_PANEL
+            else available.isoformat(sep=" ")
+        )
+        raise LookAheadError(
+            f"{source_id}.{field} for {dates[feature_index]} is first "
+            f"observable at {when}, after the {deadline.isoformat(sep=' ')} "
+            f"decision that scores {dates[scored_index]}; the {purge}-day "
+            f"purge is stated against the scored date, so clearing it does "
+            f"not establish that this row had been published when the "
+            f"forecast was made"
+        )
+
+
 def _check_fitter_stayed_inside(
     features_read: Sequence[str],
     features: Tuple[str, ...],
@@ -3029,7 +3188,23 @@ def rolling_persistence_backtest(
             ml_libraries = _ml_libraries(fitted)
             model_settings = _model_settings(fitted)
         model = fitted
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        feature_index = _feature_index(dates, train_indices, index, purge)
+        # The second of the two dates the gap has to clear. `_feature_index`
+        # answers "did this row clear the purge against the scored date"; this
+        # answers "had it been published when the forecast was made", which
+        # after a weekend or a holiday is a strictly earlier instant and a
+        # strictly stronger question. Per fold, because only some folds follow
+        # a non-trading day.
+        _check_decision_relative_availability(
+            registry,
+            field_sources,
+            dates,
+            feature_index,
+            index,
+            purge=purge,
+            decision_time=decision_time,
+        )
+        feature_row = rows[feature_index]
         quantiles = model.predict(feature_row)
         folds.append(
             ScoredFold(
