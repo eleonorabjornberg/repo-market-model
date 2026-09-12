@@ -224,6 +224,7 @@ from __future__ import annotations
 
 import math
 from bisect import bisect_left, bisect_right
+from dataclasses import dataclass
 from datetime import date
 from fractions import Fraction
 from types import MappingProxyType
@@ -255,7 +256,10 @@ __all__ = [
     "DEFAULT_CALIBRATION_FOLDS",
     "DEFAULT_CALIBRATION_SHARE",
     "GARCH_MINIMUM_CHANGES",
+    "GPD_MINIMUM_EXCESSES",
+    "GPD_SHAPE_BOUNDS",
     "VOLATILITY_FEATURES",
+    "FittedTail",
     "MissingMLExtraError",
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
@@ -331,6 +335,56 @@ _GARCH_MAX_ITERATIONS = 2000
 #: Convergence: the simplex's criterion values agree to this share of the best
 #: one, and its vertices to this much in `(log(omega / f_-1), alpha, beta)`.
 _GARCH_TOLERANCE = 1e-8
+
+#: Hosking and Wallis' plotting position offset: the `j`-th of `n` ascending
+#: excesses is placed at `(j - 0.35) / n`. It is the offset their own study of
+#: the generalised Pareto recommends for probability-weighted moments, and it is
+#: a *convention*, not a tuning knob --- the sample moments below are only the
+#: moments of the fitted law under this one choice, so moving it does not make
+#: the fit better or worse, it makes the two sides of the estimator disagree.
+_GPD_PLOTTING_OFFSET = 0.35
+
+#: The fewest excesses `_fit_gpd_pwm` will read a *shape* from; below it the
+#: exponential fallback is taken and recorded.
+#:
+#: Twenty. The PWM shape's sampling error falls like `1 / sqrt(n)`, so at ten
+#: excesses it is of the same order as the half-width of `GPD_SHAPE_BOUNDS`
+#: below: the fit could not tell one end of its own clamp from the other, and a
+#: shape reported at that precision reads as evidence while carrying none. At
+#: twenty it is about half that, which is the least that distinguishes a heavy
+#: tail from a bounded one.
+#:
+#: The early folds of an expanding window are exactly this case --- a few
+#: hundred training rows put five per cent of them above the conditional
+#: `Q(0.95)` --- and they are the reason the fallback is recorded on the record
+#: rather than signalled by a shape of zero. A caller cannot otherwise tell a
+#: fitted `xi` that landed near zero from one that was never fitted.
+GPD_MINIMUM_EXCESSES = 20
+
+#: The interval the fitted shape is clamped to. The two ends are there for
+#: different reasons, and neither is a preference.
+#:
+#: `0.5` above is the end that matters. At `xi >= 0.5` the fitted law has
+#: infinite variance and at `xi >= 1` an infinite mean; about a hundred excesses
+#: cannot evidence a tail that heavy, and what produces such a fit is one large
+#: residual. The wide taus are read a long way out, so that residual's opinion
+#: would arrive at `P(spread > 50 bp)` multiplied rather than averaged away.
+#:
+#: `-0.5` below bounds the fitted law's *upper endpoint*. A negative `xi` puts a
+#: hard ceiling `sigma / -xi` above the threshold, beyond which the model
+#: returns exactly zero; at `-0.5` that ceiling is two scale units up, and below
+#: it the tail closes tighter still. A zero assigned by a fitted tail is the
+#: same zero this repair exists to remove, arrived at the long way round.
+GPD_SHAPE_BOUNDS = (-0.5, 0.5)
+
+#: How far `a_0 - 2 a_1` may fall, as a share of `a_0`, before the fit is
+#: refused rather than divided by. For a sample that is not identically zero the
+#: exact denominator is at least `0.3 a_0 / n` --- both `x_j` and `2 p_j - 1`
+#: ascend, so Chebyshev's sum inequality bounds it below by `a_0` times the mean
+#: of the weights, which is `0.3 / n` --- so it cannot vanish on its own. A
+#: computed value at or under this share is therefore an all-zero sample or the
+#: cancellation of two sums of equal size, and in neither is there a shape.
+_GPD_MINIMUM_DENOMINATOR = 1e-12
 
 
 def _band_probability(levels: Sequence[float]) -> Fraction:
@@ -665,6 +719,134 @@ def _cross_conformal_edges(
     lower = sorted(lows)[math.floor((1 - q) * (count + 1)) - 1]
     upper = sorted(highs)[math.ceil(q * (count + 1)) - 1]
     return lower, upper
+
+
+@dataclass(frozen=True)
+class FittedTail:
+    """A generalised Pareto fit to a sample of excesses, and how it was got.
+
+    `xi` and `sigma` alone are not enough to read a fit by. Three quite
+    different things come out of `_fit_gpd_pwm` as a pair of floats --- a shape
+    the sample supported, a shape the sample proposed and the clamp took back,
+    and no shape at all --- and only the first is evidence about a tail. So the
+    record carries which of the three happened:
+
+    * `excesses` --- how many excesses the fit saw.
+    * `clamped` --- the PWM shape fell outside `GPD_SHAPE_BOUNDS` and was
+      brought to the nearest end. `sigma` is the unclamped fit's scale; it is
+      not re-estimated against the clamped shape, because the pair is then no
+      longer a PWM fit of anything and pretending otherwise is what the flag
+      exists to prevent.
+    * `fallback` --- fewer than `GPD_MINIMUM_EXCESSES` excesses, so no shape was
+      fitted: `xi` is exactly `0.0` and `sigma` is the mean of the excesses,
+      which is the exponential the two-parameter family collapses to there.
+
+    A caller that ignores all three still gets a usable law. A record that
+    ignores them publishes a fitted shape that was not fitted.
+    """
+
+    xi: float
+    sigma: float
+    excesses: int
+    clamped: bool
+    fallback: bool
+
+
+def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
+    """A generalised Pareto fitted to `excesses` by probability-weighted moments.
+
+    Excesses are non-negative and are *residual* excesses above a conditional
+    quantile, never level excesses. The distinction is the whole reason this
+    estimator can be fitted at all: the conditional law's anchor moves from fold
+    to fold with the feature row, so a level-space excess would re-learn that
+    anchor every fold from about a hundred points, while a residual excess is
+    the part that is exchangeable across folds.
+
+    Sort ascending as `x_1 <= ... <= x_n`, place `x_j` at
+    `p_j = (j - _GPD_PLOTTING_OFFSET) / n`, and form
+
+        a_0 = mean(x_j)
+        a_1 = mean(x_j (1 - p_j))
+        xi    = 2 - a_0 / (a_0 - 2 a_1)
+        sigma = 2 a_0 a_1 / (a_0 - 2 a_1)
+
+    `xi` is the extreme-value convention: positive is heavy-tailed, the fitted
+    mean is `sigma / (1 - xi)`, and negative puts a finite upper endpoint at
+    `sigma / -xi`. The two moments are the population moments of that law
+    inverted, so `sigma / (1 - xi)` is identically `a_0` for any sample the
+    estimator accepts and does not clamp --- which is what `tests/test_ml.py`'s
+    `FittedTailPwmTests` holds it to.
+
+    Both sums are `math.fsum` rather than `sum`, which is the one place this
+    module departs from the repository's plain-summation idiom and does so on
+    purpose. `a_0` is summed over the *sorted* sample while a caller holds the
+    excesses in whatever order it collected them, and the identity above is
+    stated as an equality; `fsum` is correctly rounded and therefore
+    order-independent, so the two agree bit for bit. `sum` would make the
+    criterion depend on the order the excesses arrived in, and --- see
+    `CLAUDE.md` on the 3.12 ceiling --- on the interpreter.
+
+    Stdlib arithmetic throughout: sorting and sums. This module may import numpy
+    and `FittedGradientBoostedQuantiles` does, but an estimator that needs no
+    array library is one `tests/test_dependency_boundary.py` never has to argue
+    about, and one a caller on a checkout without the extra can still reach.
+
+    Args:
+        excesses: non-negative finite excesses above a threshold, any order.
+
+    Returns:
+        A `FittedTail`. See its docstring: `clamped` and `fallback` are the
+        difference between a shape this sample supported and a shape it did not.
+
+    Raises:
+        ValueError: an empty sample; a negative or non-finite excess; or a
+            degenerate `a_0 - 2 a_1`, which has no shape in it and is refused
+            rather than smoothed or defaulted. The message names the sample
+            size, because at these sizes the size is the first thing a caller
+            debugging one wants to know.
+    """
+
+    ordered = sorted(float(value) for value in excesses)
+    count = len(ordered)
+    if count == 0:
+        raise ValueError("cannot fit a tail to an empty sample; sample size 0")
+    for value in ordered:
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(
+                f"excesses must be non-negative and finite; got {value!r} in a "
+                f"sample of size {count}"
+            )
+
+    a_0 = math.fsum(ordered) / count
+    if count < GPD_MINIMUM_EXCESSES:
+        return FittedTail(
+            xi=0.0, sigma=a_0, excesses=count, clamped=False, fallback=True
+        )
+
+    a_1 = (
+        math.fsum(
+            value * (1.0 - (rank - _GPD_PLOTTING_OFFSET) / count)
+            for rank, value in enumerate(ordered, start=1)
+        )
+        / count
+    )
+    denominator = a_0 - 2.0 * a_1
+    if denominator <= _GPD_MINIMUM_DENOMINATOR * a_0:
+        raise ValueError(
+            f"the probability-weighted moments are degenerate "
+            f"(a_0 - 2 a_1 = {denominator!r}, a_0 = {a_0!r}); there is no shape "
+            f"in a sample of size {count}"
+        )
+
+    xi = 2.0 - a_0 / denominator
+    sigma = 2.0 * a_0 * a_1 / denominator
+    lower, upper = GPD_SHAPE_BOUNDS
+    clamped = not lower <= xi <= upper
+    if clamped:
+        xi = min(max(xi, lower), upper)
+    return FittedTail(
+        xi=xi, sigma=sigma, excesses=count, clamped=clamped, fallback=False
+    )
 
 
 class _ExcludingModel:
