@@ -34,6 +34,17 @@ def source(
     return declared
 
 
+#: A revision-only field block: the licence that lets a `snapshot_retrieved_at`
+#: source be priced from rows carrying `available_at`. No basis of its own, and
+#: field-level because the claim is true of some series of a latest-vintage
+#: source and false of others -- see `contract._FIELD_ALLOWED_KEYS`.
+_REVISION_ONLY = {
+    "revision_policy": "never_revised",
+    "revision_evidence": "fixture: stands for an ALFRED vintage comparison",
+    "note": "fixture: revision-only, licences pricing from rows",
+}
+
+
 class MaxReleaseLagDaysTests(unittest.TestCase):
     def test_ref_date_business_days_uses_declared_calendar_bound(self):
         registry = {
@@ -81,10 +92,15 @@ class MaxReleaseLagDaysTests(unittest.TestCase):
                 available_time="10:00",
             ),
         }
-        selected = {
-            "snapshot": [{"available_at": "2026-01-02T12:00:00Z"}],
-            "auction": [],
-        }
+        # The snapshot leg is selected in the three-tuple form and its field
+        # declares a revision-only block. Rows alone stopped being enough when
+        # the licence landed: they say when a row arrived, not whether the
+        # latest vintage is the value that stood on the day.
+        registry["snapshot"]["field_release_lags"] = {"px": _REVISION_ONLY}
+        selected = [
+            ("snapshot", "px", [{"available_at": "2026-01-02T12:00:00Z"}]),
+            "auction",
+        ]
 
         self.assertEqual(
             max_release_lag_days(registry, selected, decision_time=time(15)),
@@ -301,10 +317,11 @@ class SnapshotOnlySelectionTests(unittest.TestCase):
 
     def test_a_snapshot_only_selection_prices_to_zero_and_is_not_refused(self):
         registry = {"snap": source("snapshot_retrieved_at")}
+        registry["snap"]["field_release_lags"] = {"X": _REVISION_ONLY}
 
         self.assertEqual(
             max_release_lag_days(
-                registry, {"snap": self.ROWS}, decision_time=time(16)
+                registry, [("snap", "X", self.ROWS)], decision_time=time(16)
             ),
             0,
         )
@@ -313,7 +330,7 @@ class SnapshotOnlySelectionTests(unittest.TestCase):
         # weaken what the zero is conditional on.
         with self.assertRaises(RegistryContractError) as caught:
             max_release_lag_days(
-                registry, {"snap": ({"available_at": ""},)}, decision_time=time(16)
+                registry, [("snap", "X", ({"available_at": ""},))], decision_time=time(16)
             )
         self.assertIn("available_at", str(caught.exception))
 
@@ -328,6 +345,98 @@ class SnapshotOnlySelectionTests(unittest.TestCase):
                 decision_time=time(17),
             )
         self.assertIn("nonzero purge", str(caught.exception))
+
+
+class SnapshotLicenceTests(unittest.TestCase):
+    """Rows do not buy you a latest-vintage snapshot; a field-level licence does.
+
+    `available_at` on a row says when that row arrived. It does not say whether
+    the value attached to an old date is the value that stood on that date, and
+    on a latest-vintage source it usually is not: `fred_macro_latest_vintage`
+    carries H.4.1 weeklies that are revised. `contract.validate_field_release_lag`
+    has always held a *field-level* declaration on a snapshot source to
+    `revision_policy: "never_revised"` with evidence, for exactly this reason,
+    and the per-row path added around it reached the same source without ever
+    asking that question.
+
+    So a snapshot source is priced from rows only for a field that declares a
+    **revision-only block** -- `revision_policy` and `revision_evidence`, no
+    basis of its own -- which is the licence and not a lag. A source-level
+    policy is not an option and never was: see `contract._FIELD_ALLOWED_KEYS`,
+    where a policy declared for a whole source is named as the claim the split
+    exists to stop anyone making.
+
+    On the tracked registry nothing declares one, so `on_rrp`,
+    `reserve_balances`, `tga` and `mmf_assets` stay refused, which is what
+    `PLAN.md` and `docs/PROJECT_STATUS.md` say and what they were briefly
+    ahead of.
+
+    Mutation record, 13 September 2026, `.venv/bin/python` with
+    `REPO_MODEL_REQUIRE_ML=1`, whole suite per mutation, the patch committed in
+    a disposable checkout under `$HOME` first --- reverting a mutation with
+    `git checkout --` in a tree whose patch is uncommitted throws the patch away
+    too, which is how the first attempt found zero anchors on its second
+    mutation. Control green before and after.
+
+    1. **The licence check removed** from the snapshot branch (`if not
+       licensed:` -> `if False:`). Kills exactly two tests, one in each class
+       that states the rule: this class's unlicensed-refusal test and
+       `test_data.SnapshotLicenceAtTheCallSiteTests`' own. `AssertionError`,
+       `RegistryContractError not raised`. Nothing else in the suite moves,
+       which is the evidence that the licence is a new rule rather than a
+       restatement of the rows rule.
+    2. **A revision-only block read as a lag** (the licence arm also setting
+       `release_lag = declared`). Kills nine tests across four modules --- and
+       all nine are the same `KeyError: 'basis'`, because a licence has no
+       basis to read. That is a crash, not nine independent guards, and it is
+       recorded as one: the count here is not evidence of coverage.
+    3. **The retry drops the field** (`data.py` passing `None` where it passes
+       the field). Kills five subtests, all in the data layer:
+       `SnapshotBasisPricingTests`' four and the call-site class's built test.
+       `AssertionError`. A selection that carries no field can never be
+       licensed, which is precisely why the pair and mapping forms were not
+       enough and the three-tuple form exists.
+    """
+
+    ROWS = ({"available_at": "2026-01-02T10:00:00-05:00"},)
+
+    def licensed(self):
+        registry = {"snap": source("snapshot_retrieved_at")}
+        registry["snap"]["field_release_lags"] = {
+            "X": {
+                "revision_policy": "never_revised",
+                "revision_evidence": "fixture: stands for an ALFRED vintage comparison",
+                "note": "fixture: revision-only, no lag of its own",
+            }
+        }
+        return registry
+
+    def test_an_unlicensed_snapshot_field_is_refused_however_good_its_rows_are(self):
+        registry = {"snap": source("snapshot_retrieved_at")}
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(
+                registry, [("snap", "X", self.ROWS)], decision_time=time(16)
+            )
+        message = str(caught.exception)
+        self.assertIn("revision_policy", message)
+        self.assertNotIn("must carry available_at", message)
+
+    def test_a_licensed_snapshot_field_prices_to_zero_from_rows(self):
+        self.assertEqual(
+            max_release_lag_days(
+                self.licensed(), [("snap", "X", self.ROWS)], decision_time=time(16)
+            ),
+            0,
+        )
+
+    def test_a_licence_does_not_excuse_a_row_with_no_instant(self):
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(
+                self.licensed(),
+                [("snap", "X", ({"available_at": ""},))],
+                decision_time=time(16),
+            )
+        self.assertIn("available_at", str(caught.exception))
 
 
 class AvailabilityProvenanceTests(unittest.TestCase):

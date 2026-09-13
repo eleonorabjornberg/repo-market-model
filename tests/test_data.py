@@ -5121,6 +5121,97 @@ class EmptyColumnTests(unittest.TestCase):
             self.assertNotIn("settlement_zeros", manifest)
 
 
+class SnapshotLicenceAtTheCallSiteTests(unittest.TestCase):
+    """Rows reach the registry, and an unlicensed field is still refused.
+
+    The other half of the same rule, one layer out from
+    `tests/test_registry.py::SnapshotLicenceTests`: `_priceable_columns` now
+    retries in the three-tuple form, carrying each pair's visible rows *and*
+    its field, so the registry can ask whether that field declares a
+    revision-only block. A30 built the retry when no form carried both, and
+    could only ask by source; that form could not have been licensed, and the
+    rule it bypassed is the one `PLAN.md` and `docs/PROJECT_STATUS.md` state.
+
+    Mutation record, 12 September 2026. Copy under `$HOME` from `git ls-files
+    -z --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    whole suite per mutation, control green before and after, each target
+    counted as an exact substring in python.
+
+    1. **The licence check removed** from the snapshot branch of
+       `registry.max_release_lag_days`. Kills
+       `SnapshotLicenceTests.test_an_unlicensed_snapshot_field_is_refused_
+       however_good_its_rows_are` and this class's refusal test, and nothing
+       else: `AssertionError`, `RegistryContractError not raised`.
+    2. **A revision-only block read as a lag** -- the `"basis" not in declared`
+       arm setting `release_lag = declared` as the other arm does. Kills the
+       licensed tests with `KeyError: 'basis'`, which is the shape of reading a
+       licence as a schedule.
+    3. **The retry drops the field**, which is what the mapping form did.
+       Kills five subtests: `SnapshotBasisPricingTests`' four and this class's
+       built test. `AssertionError`. A selection carrying no field can never be
+       licensed, which is why the three-tuple form exists. Drafted here as one
+       kill before it was run; the run said five, and the run wins.
+    """
+
+    DECISION_TIME = time(16, 0)
+
+    def rows_for(self, series_id):
+        return [
+            PointInTimeObservation(
+                series_id=series_id,
+                ref_date=date(2026, 1, 5),
+                available_at=datetime(2026, 1, 9, 21, tzinfo=timezone.utc),
+                value=1.0,
+                vintage_id=f"{series_id}-fixture",
+                source_sha="e" * 64,
+            )
+        ]
+
+    def registry(self, licensed):
+        registry = {
+            "fred_macro_latest_vintage": {
+                "release_lag": {
+                    "basis": "snapshot_retrieved_at",
+                    "note": "fixture: latest vintage only",
+                }
+            }
+        }
+        if licensed:
+            registry["fred_macro_latest_vintage"]["field_release_lags"] = {
+                "WRESBAL": {
+                    "revision_policy": "never_revised",
+                    "revision_evidence": "fixture: stands for an ALFRED vintage comparison",
+                    "note": "fixture: revision-only, licences pricing from rows",
+                }
+            }
+        return registry
+
+    def test_a_licensed_field_is_built_from_its_visible_rows(self):
+        from repo_model.data import _priceable_columns
+
+        built, refusals = _priceable_columns(
+            ["reserve_balances"],
+            self.registry(licensed=True),
+            self.DECISION_TIME,
+            self.rows_for("WRESBAL"),
+        )
+        self.assertEqual(built, ["reserve_balances"])
+        self.assertNotIn("reserve_balances", refusals)
+
+    def test_an_unlicensed_field_is_refused_with_every_row_carrying_its_instant(self):
+        from repo_model.data import _priceable_columns
+
+        built, refusals = _priceable_columns(
+            ["reserve_balances"],
+            self.registry(licensed=False),
+            self.DECISION_TIME,
+            self.rows_for("WRESBAL"),
+        )
+        self.assertEqual(built, [])
+        self.assertIn("revision_policy", refusals["reserve_balances"])
+        self.assertNotIn("must carry available_at", refusals["reserve_balances"])
+
+
 class SnapshotBasisPricingTests(unittest.TestCase):
     """A30: a `snapshot_retrieved_at` column is priced from rows, and only visible ones.
 
@@ -5132,6 +5223,16 @@ class SnapshotBasisPricingTests(unittest.TestCase):
     (`fred_macro_latest_vintage`) and `mmf_assets` (`sec_nmfp`). The registry
     half landed in the human's `4f317b24`: a per-row priced selection may now
     return a purge of zero. This is the `data.py` half.
+
+    **Addendum, the revision-only licence.** Rows alone were never enough: a
+    row's `available_at` says when it arrived, not whether the latest vintage
+    is the value that stood on the day. A snapshot field is now priced from
+    rows only where it declares a revision-only block, and the retry carries
+    the field with the rows so the registry can ask. This class's fixture
+    declares one for `WRESBAL`; the tracked registry declares none, so the four
+    columns above stay refused there, which is what `PLAN.md` and
+    `docs/PROJECT_STATUS.md` say. See `SnapshotLicenceAtTheCallSiteTests`
+    above and `tests/test_registry.py::SnapshotLicenceTests`.
 
     Fixture registries throughout, never `metadata/sources.json`: a test that
     asserted which tracked columns are built would be asserting the registry,
@@ -5195,8 +5296,20 @@ class SnapshotBasisPricingTests(unittest.TestCase):
                 }
             },
         }
-        if field_release_lags:
-            registry[self.SOURCE]["field_release_lags"] = field_release_lags
+        lags = {
+            # The licence the rows path needs since the revision-only block
+            # landed: no lag of its own, and the one declaration that lets a
+            # latest-vintage source be priced from rows. The tracked registry
+            # makes no such declaration for WRESBAL, which is why
+            # `reserve_balances` is refused there and built here.
+            "WRESBAL": {
+                "revision_policy": "never_revised",
+                "revision_evidence": "fixture: stands for an ALFRED vintage comparison",
+                "note": "fixture: revision-only, licences pricing from rows",
+            }
+        }
+        lags.update(field_release_lags)
+        registry[self.SOURCE]["field_release_lags"] = lags
         return registry
 
     #: Stands for the tracked `IORB` and `IOER` entries of
@@ -5272,7 +5385,7 @@ class SnapshotBasisPricingTests(unittest.TestCase):
             self.assertEqual(built, [])
             self.assertEqual(
                 refusals["reserve_balances"],
-                self.registry_refusal(registry, {self.SOURCE: missing}),
+                self.registry_refusal(registry, [(self.SOURCE, "WRESBAL", missing)]),
             )
 
         with self.subTest("the cutoff binds: a row published after it prices nothing"):
@@ -5304,7 +5417,7 @@ class SnapshotBasisPricingTests(unittest.TestCase):
             )
             self.assertEqual(
                 at_cutoff.refusals["reserve_balances"],
-                self.registry_refusal(registry, {self.SOURCE: []}),
+                self.registry_refusal(registry, [(self.SOURCE, "WRESBAL", [])]),
             )
 
         with self.subTest("field declarations still win on a snapshot-basis source"):

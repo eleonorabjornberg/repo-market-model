@@ -497,6 +497,41 @@ def validate_field_release_lag(source_id, field, block, source_basis):
     evidence = block.get("revision_evidence")
     core = {key: value for key, value in block.items() if key in _ALLOWED_KEYS}
 
+    if "basis" not in block:
+        # A *revision-only* block: no lag of its own, and the one thing that
+        # licenses a `snapshot_retrieved_at` source to be priced from rows that
+        # carry their own availability. It is field-level for the reason
+        # `_FIELD_ALLOWED_KEYS` gives: the claim "this value never moves after
+        # publication" is true of some series of a latest-vintage source and
+        # false of others, and a source-level version of it is the claim this
+        # split exists to stop anyone making.
+        if source_basis != "snapshot_retrieved_at":
+            problems.append(
+                f"{label}: a revision-only block licenses pricing from rows on a "
+                f"snapshot_retrieved_at source; on a {source_basis} source it "
+                f"licenses nothing and will never be read"
+            )
+        if policy not in REVISION_POLICIES:
+            problems.append(
+                f"{label}: a revision-only block must declare revision_policy in "
+                f"{list(REVISION_POLICIES)}, got {policy!r}. Latest vintage stands "
+                f"in for a point-in-time record exactly when the value never moves "
+                f"after publication"
+            )
+        if not isinstance(evidence, str) or not evidence.strip():
+            problems.append(
+                f"{label}: revision_policy must carry a non-empty "
+                f"revision_evidence naming what establishes it. A claim with no "
+                f"evidence attached is indistinguishable from an assumption"
+            )
+        lag_keys = sorted(set(core) - {"note"})
+        if lag_keys:
+            problems.append(
+                f"{label}: a revision-only block declares no lag of its own; "
+                f"remove {lag_keys} or give the block a basis"
+            )
+        return problems
+
     if block.get("basis") == "snapshot_retrieved_at":
         problems.append(
             f"{label}: a field-level snapshot_retrieved_at block says nothing "

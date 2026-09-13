@@ -2504,17 +2504,21 @@ def _priceable_columns(
             continue
         reason = refusal(pairs)
         if reason is not None:
-            rows: Dict[str, List[PointInTimeObservation]] = {}
+            selection: List[tuple] = []
             for source_id, field in pairs:
                 alone = refusal([(source_id, field)])
-                if alone is None or alone != refusal({source_id: ()}):
-                    rows = {}
+                if alone is None or alone != refusal([(source_id, field, ())]):
+                    selection = []
                     break
-                rows.setdefault(source_id, []).extend(
-                    row for row in visible_rows if row.series_id == field
+                selection.append(
+                    (
+                        source_id,
+                        field,
+                        [row for row in visible_rows if row.series_id == field],
+                    )
                 )
-            if rows:
-                reason = refusal(rows)
+            if selection:
+                reason = refusal(selection)
         if reason is not None:
             refusals[column] = reason
             continue

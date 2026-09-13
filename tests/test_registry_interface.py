@@ -228,7 +228,17 @@ FIXTURE_REGISTRY = {
             "basis": "snapshot_retrieved_at",
             "note": "Rows are valid from their snapshot timestamp, which is an "
             "available_at fact about a row rather than a lag on a source.",
-        }
+        },
+        # The revision-only licence. Without it rows price nothing here: an
+        # available_at says when a row arrived, not whether the latest vintage
+        # is the value that stood on the day.
+        "field_release_lags": {
+            "vendor_px": {
+                "revision_policy": "never_revised",
+                "revision_evidence": "fixture: stands for a vintage comparison",
+                "note": "fixture: revision-only, licences pricing from rows",
+            }
+        },
     },
 }
 
@@ -861,7 +871,7 @@ class RegistryModuleTests(unittest.TestCase):
 
         alone = self.assertConverts(["morning_filing"])
         with_snapshot = self.convert(
-            {"morning_filing": None, "vendor_snapshot": SNAPSHOT_ROWS}
+            [("vendor_snapshot", "vendor_px", SNAPSHOT_ROWS), "morning_filing"]
         )
         self.assertEqual(
             with_snapshot,
@@ -950,7 +960,20 @@ def _stand_in_registry(
     fault, so a test that fires tells us which fault it saw.
     """
 
-    def contribution(source_id, lag, rows, decision_time):
+    def contribution(source_id, source, field, rows, decision_time):
+        lag = source["release_lag"]
+        field_lags = source.get("field_release_lags") or {}
+        declared = field_lags.get(field) if field is not None else None
+        # A revision-only block -- a policy and its evidence, no basis of its own -- is a
+        # licence to price this field from rows, not a lag. Any other field block is a lag.
+        licensed = (
+            isinstance(declared, dict)
+            and "basis" not in declared
+            and declared.get("revision_policy") == "never_revised"
+            and str(declared.get("revision_evidence") or "").strip() != ""
+        )
+        if declared is not None and not licensed:
+            lag = declared
         basis = lag["basis"]
         if basis == "ref_date":
             return lag["worst_case_calendar_days"]
@@ -960,6 +983,13 @@ def _stand_in_registry(
             return lag["days"] + int(published > decision_time)
         if snapshot_worth_zero:
             return 0
+        if not licensed:
+            raise ValueError(
+                f"{source_id}: a snapshot_retrieved_at source is priced from rows only for a "
+                f"field declaring revision_policy in ['never_revised'] with revision_evidence. "
+                f"A row's available_at says when it arrived, not whether the latest vintage is "
+                f"the value that stood on the day"
+            )
         supplied = None if rows is None else list(rows)
         if not supplied or any(
             row.get("available_at") in (None, "") for row in supplied
@@ -971,14 +1001,23 @@ def _stand_in_registry(
 
     def body(registry, sources, decision_time):
         if hasattr(sources, "items"):
-            selected = list(sources.items())
+            selected = [
+                (str(source_id), None, rows) for source_id, rows in sources.items()
+            ]
         else:
-            selected = [(source_id, None) for source_id in sources]
+            selected = []
+            for entry in sources:
+                if isinstance(entry, tuple) and len(entry) == 3:
+                    selected.append((str(entry[0]), str(entry[1]), entry[2]))
+                elif isinstance(entry, tuple) and len(entry) == 2:
+                    selected.append((str(entry[0]), str(entry[1]), None))
+                else:
+                    selected.append((str(entry), None, None))
         if not selected and not empty_set_worth_zero:
             raise ValueError("sources must select at least one feature source")
 
         purge = 0
-        for source_id, rows in selected:
+        for source_id, field, rows in selected:
             if source_id not in registry:
                 if skip_unknown_sources:
                     continue
@@ -987,7 +1026,8 @@ def _stand_in_registry(
                 purge,
                 contribution(
                     source_id,
-                    registry[source_id]["release_lag"],
+                    registry[source_id],
+                    field,
                     rows,
                     decision_time,
                 ),

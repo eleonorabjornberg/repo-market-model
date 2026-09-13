@@ -10,7 +10,12 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import time
 
-from repo_model.contract import END_OF_DAY, validate_field_release_lag, validate_release_lag
+from repo_model.contract import (
+    END_OF_DAY,
+    REVISION_POLICIES,
+    validate_field_release_lag,
+    validate_release_lag,
+)
 
 
 class RegistryContractError(ValueError):
@@ -46,7 +51,14 @@ def _selected_sources(sources: object) -> list[tuple[str, str | None, object | N
         raise TypeError("sources must be an iterable of source IDs or a source-to-rows mapping")
     selected: list[tuple[str, str | None, object | None]] = []
     for entry in sources:
-        if isinstance(entry, tuple) and len(entry) == 2:
+        if isinstance(entry, tuple) and len(entry) == 3:
+            # The form that carries a field *and* its rows. The pair form has no
+            # rows and the mapping form has no field, and a snapshot source needs
+            # both: the rows to price from, and the field whose revision-only
+            # block licenses pricing from them at all.
+            source_id, field, rows = entry
+            selected.append((str(source_id), str(field), rows))
+        elif isinstance(entry, tuple) and len(entry) == 2:
             source_id, field = entry
             selected.append((str(source_id), str(field), None))
         else:
@@ -218,6 +230,7 @@ def max_release_lag_days(
 
         source_basis = release_lag["basis"]
         field_lags = source.get("field_release_lags") or {}
+        licensed = False
         if field is not None and field in field_lags:
             declared = field_lags[field]
             field_problems = validate_field_release_lag(
@@ -225,7 +238,13 @@ def max_release_lag_days(
             )
             if field_problems:
                 raise RegistryContractError("; ".join(field_problems))
-            release_lag = declared
+            if isinstance(declared, Mapping) and "basis" not in declared:
+                # A revision-only block is a licence, not a lag: the source's own
+                # basis still prices the field, and on a snapshot basis that is
+                # what makes the per-row path reachable at all.
+                licensed = True
+            else:
+                release_lag = declared
             source_id = f"{source_id}.{field}"
 
         basis = release_lag["basis"]
@@ -251,6 +270,14 @@ def max_release_lag_days(
                 time.fromisoformat(release_lag["available_time"]) > cutoff_wall_clock
             )
         else:
+            if not licensed:
+                raise RegistryContractError(
+                    f"{source_id}: a snapshot_retrieved_at source is priced from rows "
+                    f"only for a field declaring revision_policy in "
+                    f"{list(REVISION_POLICIES)} with revision_evidence. A row's "
+                    f"available_at says when it arrived, not whether the latest "
+                    f"vintage is the value that stood on the day"
+                )
             if not _rows_have_available_at(rows):
                 raise RegistryContractError(
                     f"{source_id}: every snapshot row must carry available_at"
