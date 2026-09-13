@@ -374,6 +374,7 @@ from repo_model.baseline import (
     _solve,
     arx_exceedance,
     backtest_document,
+    backtest_record_seed,
     calibration_from_document,
     climatology_exceedance,
     exceedance_backtest_document,
@@ -8494,6 +8495,119 @@ class CalibrationDocumentTests(unittest.TestCase):
         )
         self.assertAlmostEqual(
             narrow["metrics"]["interval_calibration"]["declared_probability"], 0.80
+        )
+
+
+class BacktestRecordSeedTests(unittest.TestCase):
+    """B45: a reader can recompute a backtest record's seed from the record.
+
+    `_report_seed` claimed it and the published records did not bear it out: a
+    publishing job on 13 Sep 2026 joined `declaration.decision_time` as written,
+    `"16:00"`, where the seed's material carries `"16:00:00"`, got a different
+    number and refused a correct record. `backtest_record_seed` is the reader,
+    and it goes through `_backtest_seed_material`, the step `_report_seed` uses.
+
+    **No published seed moved.** Before the change, every
+    `metrics.interval_calibration.*.seed` and `metrics.mae_bps_interval.seed`
+    under `docs/runs/` was recomputed from its record with the then-current
+    `_seed_from` over hand-built material (decision time parsed, then
+    `isoformat()`); after it, with `backtest_record_seed`. Both sets equal the
+    published values, record for record: `950485184` for the seven `backtest_*`
+    records, `2076801414` for `persistence_funding.json`. The comparison and
+    exceedance records carry seeds of their own derivations and are not in
+    scope.
+
+    Mutations, in a disposable copy built from `git ls-files`, with
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`; the unmutated control was
+    green before and after, and each mutation was applied to
+    `_backtest_seed_material` alone.
+
+    1. **Drop the seconds** -- `decision_time.isoformat(timespec="minutes")`.
+       Criterion 3 goes red, `AssertionError: '16:00' != '16:00:00'`. Criterion
+       2 goes red with it, one `AssertionError` per record, e.g.
+       `1045994560 != 2076801414` on `persistence_funding.json`: the writer and
+       the reader move together, so only the published seeds can see it. One
+       test outside this class also fires, and for the same reason:
+       `test_generated_results.MilestoneAReproductionTests.
+       test_the_published_persistence_run_reproduces_from_tracked_inputs`,
+       `AssertionError`, the reproduced record's calibration interval differing.
+
+    2. **Drop the sort** -- `",".join(features)`. **Survives: the whole suite
+       stays green.** Every published record states its features already
+       sorted (`backtest_document` sorts `declaration.features`), and no test
+       compares a writer's seed against the reader over a report whose features
+       are out of order, so nothing can tell a sorted join from an unsorted one.
+       A run declaring `spread_bps,sofr_volume` would publish a seed its own
+       record could not reproduce, and nothing here would say so. That part of
+       the material is unguarded; reported with B45, not closed by it.
+    """
+
+    RUNS = Path(__file__).parents[1] / "docs" / "runs"
+
+    def test_every_published_calibration_seed_recomputes_from_its_record(self):
+        """Criterion 2. Every record, including ones added after this test.
+
+        Globbed, not listed: a record published later whose seed is not
+        derivable from its own fields fails here, by name, rather than at the
+        next publish. A record carrying `metrics.interval_calibration` is a
+        backtest record by construction, so `backtest_record_seed` is the
+        derivation that must reproduce it. The check is not allowed to pass by
+        finding nothing.
+        """
+
+        checked = []
+        for path in sorted(self.RUNS.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            metrics = record.get("metrics")
+            calibration = (
+                metrics.get("interval_calibration")
+                if isinstance(metrics, dict)
+                else None
+            )
+            if not isinstance(calibration, dict):
+                continue
+            for name, entry in sorted(calibration.items()):
+                if not isinstance(entry, dict) or "seed" not in entry:
+                    continue
+                with self.subTest(record=path.name, interval=name):
+                    self.assertEqual(backtest_record_seed(record), entry["seed"])
+                checked.append((path.name, name))
+
+        self.assertTrue(checked, "no published record carries a calibration seed")
+
+    def test_the_decision_time_component_is_seconds_although_the_record_states_minutes(
+        self,
+    ):
+        """Criterion 3: the `HH:MM` against `HH:MM:SS` trap, pinned.
+
+        The seed's decision-time component is `time.isoformat()`, `"16:00:00"`.
+        The record's `declaration.decision_time` is written with
+        `timespec="minutes"`, `"16:00"`. **Join the field as the record states it
+        and you get a different seed** -- which is how a correct record was
+        refused on 13 Sep 2026. The reader parses the field to a `time`; it never
+        joins the text.
+
+        Three assertions: the canonical form is literally `"16:00:00"`; a record
+        stating `"16:00"` recovers the seed of the seconds material; and the
+        seed of the minutes material differs, so the trap is real rather than
+        hypothetical.
+        """
+
+        digest = hashlib.sha256(b"panel").hexdigest()
+        features = ["spread_bps"]
+        material = baseline._backtest_seed_material(digest, features, 6, time(16, 0))
+
+        self.assertEqual(material[3], "16:00:00")
+
+        record = {
+            "declaration": {"features": features, "decision_time": "16:00"},
+            "derived": {"purge_days": 6},
+            "panel": {"sha256": digest},
+        }
+        seconds = baseline._seed_from((digest, "spread_bps", "6", "16:00:00"))
+        self.assertEqual(backtest_record_seed(record), seconds)
+        self.assertNotEqual(
+            baseline._seed_from((digest, "spread_bps", "6", "16:00")), seconds
         )
 
 
