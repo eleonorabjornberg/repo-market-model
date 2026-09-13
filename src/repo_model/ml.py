@@ -243,7 +243,9 @@ residual ever seen and then an exceedance of exactly `0.0`.
   expanding window take; and **no excesses at all**, where there is nothing to
   fit, `tail_fit` is `None` under `tail="gpd"`, and the law is the default's
   bit for bit. That third state is not a shape of zero: an `xi` of `0.0` there
-  would be indistinguishable from a fallback that saw nineteen excesses.
+  would be indistinguishable from a fallback that saw nineteen excesses. A
+  `backtest` record of a tail run carries each fold's state under
+  `folds.tail`, through `tail_account` (B38).
 * **Refused under `none` and `cross_conformal`.** `none` holds nothing out, so
   its only sample is rows the estimators were fitted on --- an in-sample tail.
   `cross_conformal` holds every row out in some block, and the coherent sample
@@ -361,6 +363,11 @@ _ARX_COLUMN = "arx_forecast"
 #: The tail families gbm's law can be continued with above its top declared
 #: quantile. See the module docstring.
 TAIL_FAMILIES = ("gpd",)
+
+#: What a tail was at one fit, as `tail_account` spells it on a record: a
+#: fitted shape, `_fit_gpd_pwm`'s exponential fallback, and no excesses at all.
+#: See `FittedTail` on why the first is the only one that is evidence.
+TAIL_STATES = ("fitted", "fallback", "no_excesses")
 
 #: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
 #: fitted from: ten per fitted parameter. Below it the three parameters are
@@ -1080,7 +1087,7 @@ class FittedGradientBoostedQuantiles:
       states under `tail="gpd"`: `tail_fit.fallback` false, a fitted shape;
       true, the exponential fallback; and `tail_fit` `None`, **no excesses at
       all**, where nothing was fitted and the law is the default's. See the
-      module docstring.
+      module docstring, and `tail_account` for how a record spells them.
 
     **What `residuals` is here, and what it is not.** For persistence and the
     ARX the fitted residual sample *is* the whole law: `predict` is an anchor
@@ -1282,7 +1289,8 @@ class FittedGradientBoostedQuantiles:
 
         `tail` is what the command declared, not evidence that a shape was
         fitted: a rolling backtest refits at every origin, so what each fold's
-        `tail_fit` found is not recorded here or on any record (B37).
+        `tail_fit` found is not recorded here. It is `tail_account`'s, read per
+        fold (B38).
         """
 
         settings: dict = {}
@@ -1301,6 +1309,48 @@ class FittedGradientBoostedQuantiles:
         if self.tail is not None:
             settings["tail"] = self.tail
         return MappingProxyType(settings)
+
+    @property
+    def tail_account(self) -> Optional[Mapping[str, Any]]:
+        """What this fit's tail was, as a record names it, or `None` without one.
+
+        Read by `baseline.rolling_persistence_backtest` off each fold's own
+        fitted model, the one that fold scored, the way `model_settings` is
+        read: `baseline` cannot import this module. `None` under `tail=None`
+        --- absent, not a state --- so a run without a tail records nothing.
+
+        Under `tail="gpd"` one of `TAIL_STATES`, and only the numbers that
+        state has:
+
+        * `fitted` --- `xi`, `sigma`, `excesses` and `clamped`. A clamped shape
+          is still this state and says so; see `FittedTail` on why it is not
+          a shape the sample supported.
+        * `fallback` --- `sigma` and `excesses`, and no `xi`. The fallback's
+          `xi` is the `0.0` the family collapses to, not a fitted value, and
+          a record carrying it would read as a shape of zero.
+        * `no_excesses` --- `excesses` of `0` alone: `tail_fit` is `None` and
+          there is nothing else to report.
+
+        Read off `tail_fit`, the fit the law was continued with. The excesses
+        are not kept, so nothing here could recompute it.
+        """
+
+        if self.tail is None:
+            return None
+        fit = self.tail_fit
+        if fit is None:
+            account: dict = {"state": "no_excesses", "excesses": 0}
+        elif fit.fallback:
+            account = {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
+        else:
+            account = {
+                "state": "fitted",
+                "xi": fit.xi,
+                "sigma": fit.sigma,
+                "excesses": fit.excesses,
+                "clamped": fit.clamped,
+            }
+        return MappingProxyType(account)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
         """Was this model fitted on rows dated after `feature_row`?"""
