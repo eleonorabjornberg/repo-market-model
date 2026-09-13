@@ -83,6 +83,9 @@ What is covered here
   recorded fit, is fitted to the calibration rows' excesses above that same
   quantile, attaches nothing when there are none, leaves the default law
   saturating, and its three refusals.
+* `TailLowerBoundRefusalTests` -- B44: a shape at the lower end of
+  `GPD_SHAPE_BOUNDS` is refused and takes the exponential fallback, recorded as
+  `refused`; the upper clamp is kept. Needs no `require_extra`.
 * `TailDeclarationTests` -- `tail` named in `model_settings` when set and absent
   when not, `--tail` reaching the fitter from `backtest` and either side of
   `compare`, and refused at selection for a model or calibration that carries
@@ -3666,6 +3669,140 @@ class GpdTailWiringTests(unittest.TestCase):
             self.assertIn("not wired for calibration 'cross_conformal'", str(caught.exception))
 
 
+class TailLowerBoundRefusalTests(unittest.TestCase):
+    """A shape at the lower end of `GPD_SHAPE_BOUNDS` is refused and recorded (B44).
+
+    **The decision.** B43 measured the fitted tail's ceiling over the 2039
+    folds of the `--tail gpd` rescore. Exactly three fold-tau cells gave an
+    event that happened probability exactly zero: 2024-09-30 at 5 bp and
+    2024-10-01 at 5 and 10 bp. Both days had a fit clamped at `xi = -0.5`.
+    A clamp at the lower end means the estimator wanted a steeper cutoff still
+    and hit its own guardrail, so the ceiling belongs to the bound, not to the
+    data. Her rule: such a fit is refused and the fold takes the fallback the
+    estimator already has. Over the 2039 folds that refuses three
+    (2024-09-04, 2024-09-30, 2024-10-01) and removes both zero-on-event days.
+    The alternative she rejected, refusing any fit whose absolute ceiling is
+    at or below `max(tau)`, refuses 48 folds and fixes the same two days.
+
+    **Stated on `xi`, not on `clamped`.** `clamped` is true at either end, and
+    the upper end has no endpoint. The two clamps can be told apart, but only
+    by `xi` (a clamped shape is exactly the bound it hit), not by the flag.
+    Part 2 holds the upper clamp kept.
+
+    **What is asserted.** 1: a sample whose shape lands below the lower end is
+    refused, and the law is the fallback's exponential, which gives positive
+    probability past the ceiling the clamped fit would have had. 2: the
+    upper-clamped sample `FittedTailPwmTests.CLAMPING` is kept, clamped, at
+    `xi = 0.5`. 3: a negative shape inside the bounds is kept with its
+    endpoint. 4: the record spells a refusal as its own state, which a reader
+    can count apart from an ordinary fallback. That the untailed path never
+    reaches the estimator is asserted in `ExceedanceTailAccountTests` part 3,
+    and the four states end to end in its part 2 and `TailAccountTests` part 2.
+
+    No `require_extra`: sorting and sums, and a model built directly.
+
+    **Published figures.** The untailed records do not move: they never reach
+    the estimator, which `ExceedanceTailAccountTests` part 3 now asserts. The
+    `--tail gpd` record `docs/runs/exceedance_gbm_conformal_tail_gpd_mh61.json`
+    **would** move on a re-run. Its per-tau Brier scores are the B43 rescore's
+    to the bit, and that rescore holds the three lower-clamped folds this rule
+    refuses. The record is not rewritten here; re-scoring it is a lane job.
+
+    Mutation record
+    ---------------
+
+    B44. Each mutation in its own disposable copy under `$HOME`, built from
+    `git ls-files -z --cached --others --exclude-standard`, run concurrently
+    with an unmutated control, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path. `repo_model` was confirmed to resolve
+    to each copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring and found
+    exactly once in `ml._fit_gpd_pwm`.
+
+    a. **The threshold moved so the rule never fires**: `if xi <= lower:` ->
+       `if xi <= -0.6:`. The check reads the clamped `xi`, which is never below
+       `-0.5`. Every failure is `AssertionError`: this test's **part 1**
+       (`False is not true`, the fit is not refused) and **part 4** (a
+       `fitted` account at `xi = -0.5` against `refused`);
+       `TailAccountTests` part 2 and `ExceedanceTailAccountTests` part 2
+       (`refused` missing from the states); and
+       `test_tail_diagnostics.KnotRefitTests` part 4 (`0 not greater than 0`).
+    b. **The refusal moved to the upper bound**: `if xi <= lower:` -> `if xi
+       >= upper:`. Every failure is `AssertionError`: everything (a) kills,
+       plus this test's **part 2** (`True is not false`, the upper clamp
+       refused).
+    c. **Re-run: the fallback read as a fitted shape**, the
+       `TailAccountTests` mutation 3 / `ExceedanceTailAccountTests` mutation 5
+       (`elif fit.fallback:` -> `elif False:`), because the account now has a
+       `refused` branch ahead of it. Kill sets as recorded there, plus this
+       test's part 4 (`'fitted' != 'fallback'`), `TailCeilingTests` part 4 and
+       `ExceedanceTailAccountTests` part 2. Every failure is `AssertionError`.
+    """
+
+    #: Evenly spaced excesses: bounded above, and the PWM shape of a bounded
+    #: sample is well below `-0.5` (a uniform law has `xi = -1`). Not sorted
+    #: the wrong way on purpose; the estimator sorts.
+    BOUNDED = tuple(0.25 * k for k in range(24, 0, -1))
+
+    def test_a_shape_at_the_lower_bound_is_refused_and_recorded_and_the_upper_bound_is_kept(
+        self,
+    ):
+        """Lower end refused and recorded; upper end and interior shapes kept."""
+
+        lower, upper = ml.GPD_SHAPE_BOUNDS
+
+        with self.subTest("1. a shape below the lower end is refused and falls back"):
+            fit = ml._fit_gpd_pwm(self.BOUNDED)
+            self.assertTrue(fit.refused)
+            self.assertTrue(fit.fallback)
+            self.assertTrue(fit.clamped)
+            self.assertEqual(fit.xi, 0.0)
+            self.assertEqual(fit.sigma, math.fsum(self.BOUNDED) / len(self.BOUNDED))
+            self.assertEqual(fit.excesses, len(self.BOUNDED))
+            beyond = 2.0 * max(self.BOUNDED)
+            self.assertEqual(
+                ml._gpd_survival(fit, beyond), math.exp(-beyond / fit.sigma)
+            )
+            self.assertGreater(ml._gpd_survival(fit, beyond), 0.0)
+
+        with self.subTest("2. the upper clamp is kept, not refused"):
+            heavy = ml._fit_gpd_pwm(FittedTailPwmTests.CLAMPING)
+            self.assertFalse(heavy.refused)
+            self.assertFalse(heavy.fallback)
+            self.assertTrue(heavy.clamped)
+            self.assertEqual(heavy.xi, upper)
+
+        with self.subTest("3. a negative shape inside the bounds is kept"):
+            inside = ml._fit_gpd_pwm(GpdRecoveryTests()._sample(-0.4, 2.0))
+            self.assertFalse(inside.refused)
+            self.assertFalse(inside.clamped)
+            self.assertLess(lower, inside.xi)
+            self.assertLess(inside.xi, 0.0)
+
+        with self.subTest("4. the record counts a refusal apart from a fallback"):
+            refused = dict(TailCeilingTests.account_of(ml._fit_gpd_pwm(self.BOUNDED)))
+            ordinary = dict(
+                TailCeilingTests.account_of(
+                    ml._fit_gpd_pwm(self.BOUNDED[: ml.GPD_MINIMUM_EXCESSES - 1])
+                )
+            )
+            self.assertEqual(
+                refused,
+                {
+                    "state": "refused",
+                    "sigma": math.fsum(self.BOUNDED) / len(self.BOUNDED),
+                    "excesses": len(self.BOUNDED),
+                },
+            )
+            self.assertEqual(ordinary["state"], "fallback")
+            self.assertIn("refused", ml.TAIL_STATES)
+            self.assertEqual(
+                set(ml.TAIL_STATES), {"fitted", "fallback", "no_excesses", "refused"}
+            )
+
+
 class TailDeclarationTests(unittest.TestCase):
     """`tail` in `model_settings`, and `--tail` on the command line (B37).
 
@@ -3889,11 +4026,18 @@ class TailAccountTests(unittest.TestCase):
     * **no excesses** -- the first fold, whose frame holds no spike;
     * **fallback** -- the next folds, one excess per spike, up to one short of
       `ml.GPD_MINIMUM_EXCESSES`;
-    * **fitted** -- the rest. The first few are **clamped** (few excesses
-      whose spread is small against the dip-set widening), and once the
-      spikes begin to set the widening themselves the later ones are not.
-      Both are asserted, because a clamped shape is not a fitted one and the
-      record must say so.
+    * **fitted** -- the rest. The first few were **clamped** at the lower
+      bound (few excesses whose spread is small against the dip-set widening),
+      and once the spikes begin to set the widening themselves the later ones
+      are not.
+    * **refused** (B44) -- those lower-clamped fits. Since B44 a shape at the
+      lower end of `ml.GPD_SHAPE_BOUNDS` is refused and falls back, so this
+      fixture shows four states and no fitted fold at `xi = -0.5`. Part 2 used
+      to assert that the fitted folds carried both `clamped` values; on this
+      fixture every clamp was at the lower end, so that assertion became
+      "some fold is refused and no fitted fold sits at the bound". The upper
+      clamp has no end-to-end fold here; `TailLowerBoundRefusalTests` holds it
+      on a committed sample.
 
     The states are asserted against each fold's own fitted model, captured as
     the fold loop fitted it, and spelled here from that model's `tail_fit` ---
@@ -4037,6 +4181,8 @@ class TailAccountTests(unittest.TestCase):
 
         if fit is None:
             return {"state": "no_excesses", "excesses": 0}
+        if fit.refused:
+            return {"state": "refused", "sigma": fit.sigma, "excesses": fit.excesses}
         if fit.fallback:
             return {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
         spelled = {
@@ -4074,7 +4220,7 @@ class TailAccountTests(unittest.TestCase):
                     {"scored_date": fold.scored_date.isoformat(), **expected},
                 )
 
-        with self.subTest("2. the three states are told apart"):
+        with self.subTest("2. the four states are told apart"):
             states = [entry["state"] for entry in entries]
             self.assertEqual(states[0], "no_excesses")
             self.assertEqual(states[-1], "fitted")
@@ -4088,7 +4234,12 @@ class TailAccountTests(unittest.TestCase):
                 self.assertNotIn("xi", entry)
             fitted = [entry for entry in entries if entry["state"] == "fitted"]
             self.assertTrue(all(e["excesses"] >= ml.GPD_MINIMUM_EXCESSES for e in fitted))
-            self.assertEqual({entry["clamped"] for entry in fitted}, {True, False})
+            lower = ml.GPD_SHAPE_BOUNDS[0]
+            self.assertTrue(all(entry["xi"] > lower for entry in fitted))
+            refused = [entry for entry in entries if entry["state"] == "refused"]
+            for entry in refused:
+                self.assertEqual(set(entry), {"scored_date", "state", "sigma", "excesses"})
+                self.assertGreaterEqual(entry["excesses"], ml.GPD_MINIMUM_EXCESSES)
 
         with self.subTest("3. without a tail, nothing, and the rest unchanged"):
             self.assertIsNone(plain_report.tail_accounts)
@@ -4470,8 +4621,12 @@ class ExceedanceTailAccountTests(unittest.TestCase):
     rows are this loop's too, so the same spikes set the same excesses. The
     first fold's frame holds no spike (**no excesses**); each later fold's holds
     one more, one excess each, so the next folds are the exponential
-    **fallback** below `ml.GPD_MINIMUM_EXCESSES`; the rest are **fitted**. Part 2
-    asserts all three occur, and that a fallback carries no `xi`.
+    **fallback** below `ml.GPD_MINIMUM_EXCESSES`; the rest are **fitted**, or
+    since B44 **refused** where the shape hit the lower bound. Part 2 asserts
+    all four occur, that a fallback or refusal carries no `xi`, and that no
+    fitted fold sits at the lower bound. Part 3 also makes `ml._fit_gpd_pwm`
+    raise under the untailed runs: the refusal is inside the estimator, so an
+    untailed run that never reaches it cannot be moved by it.
 
     **Part 3 is absence, not equality.** The tail moves the curves, so a tailed
     record minus its tail keys is not the untailed record, as it was on
@@ -4646,16 +4801,30 @@ class ExceedanceTailAccountTests(unittest.TestCase):
                     self.assertTrue(0 < entry["excesses"] < ml.GPD_MINIMUM_EXCESSES)
                 elif entry["state"] == "fitted":
                     self.assertGreaterEqual(entry["excesses"], ml.GPD_MINIMUM_EXCESSES)
+                    self.assertGreater(entry["xi"], ml.GPD_SHAPE_BOUNDS[0])
+                elif entry["state"] == "refused":
+                    self.assertNotIn("xi", entry)
+                    self.assertNotIn("upper_endpoint_excess", entry)
+                    self.assertGreaterEqual(entry["excesses"], ml.GPD_MINIMUM_EXCESSES)
                 else:
                     self.assertEqual(entry, {"scored_date": entry["scored_date"],
                                              "state": "no_excesses", "excesses": 0})
 
         with self.subTest("3. without a tail, no key -- absent, not null"):
+            # B44: the lower-bound refusal lives inside `_fit_gpd_pwm`. An
+            # untailed run must never reach the estimator, so the refusal
+            # cannot move a published untailed figure. Made to raise here, so
+            # that is asserted, not assumed.
+            def unreachable(*args, **kwargs):
+                raise AssertionError("an untailed run reached _fit_gpd_pwm")
+
             for name, predictor in (
                 ("gbm", self.gbm()),
                 ("climatology", baseline.climatology_exceedance(self.MINIMUM_HISTORY)),
             ):
-                with self.subTest(model=name):
+                with self.subTest(model=name), mock.patch.object(
+                    ml, "_fit_gpd_pwm", unreachable
+                ):
                     plain_report, plain_document, _ = self.exceedance(panel, predictor)
                     self.assertIsNone(plain_report.tail_accounts)
                     self.assertNotIn("tail", plain_document["folds"])
@@ -4728,8 +4897,14 @@ class TailCeilingTests(unittest.TestCase):
        is `4.0`, not `0.0` --- part 2 kills it on its own because a sign-flipped
        endpoint is not a place the law stops. Also `AssertionError` in
        `TailAccountTests` part 1 and `ExceedanceTailAccountTests` parts 1 and 4,
-       whose `expected` helper spells the endpoint the same way: their fixture
-       has clamped fitted folds at `xi = -0.5`.
+       whose `expected` helper spells the endpoint the same way. When this was
+       recorded, their fixture had clamped fitted folds at `xi = -0.5`. Since
+       B44 those folds are `refused`, and the kill is carried by the one
+       unclamped fitted fold of negative shape (`xi` about `-0.208`).
+       **Mutations 1 to 3 were re-run under B44** on the same protocol: kill
+       sets unchanged, every failure `AssertionError`, except that mutation 2
+       now also raises `ValueError` in `test_tail_diagnostics.KnotRefitTests`
+       part 4, where `state_counts` refuses an endpoint on a positive shape.
     2. **The endpoint emitted for every fitted shape** --- `if fit.xi < 0.0:`
        -> `if True:`. `AssertionError` in **part 3** at `xi = 0.3` and `xi =
        0.5` (the key unexpectedly found, a negative value); at `xi = 0.0` it is
@@ -4755,6 +4930,22 @@ class TailCeilingTests(unittest.TestCase):
     def account(xi, sigma, *, excesses=40, clamped=False, fallback=False, fit=True):
         """`tail_account` of a model declared with this tail and nothing fitted."""
 
+        return TailCeilingTests.account_of(
+            ml.FittedTail(
+                xi=xi,
+                sigma=sigma,
+                excesses=excesses,
+                clamped=clamped,
+                fallback=fallback,
+            )
+            if fit
+            else None
+        )
+
+    @staticmethod
+    def account_of(tail_fit):
+        """`tail_account` of a model declared with `tail_fit` and nothing fitted."""
+
         model = ml.FittedGradientBoostedQuantiles(
             estimators=(None,) * len(QUANTILE_LEVELS),
             regressors=(),
@@ -4763,17 +4954,7 @@ class TailCeilingTests(unittest.TestCase):
             cutoff=date(2024, 1, 2),
             ml_libraries={},
             tail="gpd",
-            tail_fit=(
-                ml.FittedTail(
-                    xi=xi,
-                    sigma=sigma,
-                    excesses=excesses,
-                    clamped=clamped,
-                    fallback=fallback,
-                )
-                if fit
-                else None
-            ),
+            tail_fit=tail_fit,
         )
         return dict(model.tail_account)
 
