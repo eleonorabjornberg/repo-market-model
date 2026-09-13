@@ -2536,6 +2536,9 @@ def gbm_exceedance(
     calibration_share: Optional[float] = None,
     calibration_folds: Optional[int] = None,
     tail: Optional[str] = None,
+    spread_change_lags: Optional[int] = None,
+    volatility_feature: Optional[str] = None,
+    arx_feature: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -2576,6 +2579,10 @@ def gbm_exceedance(
             here; that function refuses each inconsistency (B39). The defaults
             are its own, so a predictor built with none of them fits exactly
             what this one fitted before it took any.
+        spread_change_lags, volatility_feature, arx_feature: the feature
+            settings that change the design the law is fitted on, by the same
+            rule: passed straight to `fit_gradient_boosted_quantiles`, neither
+            checked nor re-derived here, defaulting to its own (B42).
 
     **The gap reaches the fit from the fold loop.** `fit_predict` names
     `purge_days`, so `rolling_exceedance_backtest` hands over the gap it
@@ -2587,11 +2594,16 @@ def gbm_exceedance(
     score the quantile vector, which a tail by design never moves, and this
     was the one predictor whose curve a tail does move -- and it took no tail.
 
+    **Before B42 no feature setting could be scored on the curve.** Every
+    feature this model can be built with had been scored on the quantile vector
+    by `backtest` and `compare`, and none on the exceedance curve, because this
+    predictor took none of them.
+
     Returns:
         A `fit_predict` callable suitable for `event_eval.evaluate_event_window`
         and for `rolling_exceedance_backtest`. The curves carry the fit's
-        `model_settings`, so a record names the calibration and tail it was
-        read off.
+        `model_settings`, so a record names the calibration, tail and feature
+        settings it was read off.
 
     Raises:
         MissingMLExtraError, ValueError, MissingRegressorError, LookAheadError:
@@ -2619,6 +2631,9 @@ def gbm_exceedance(
             calibration_folds=calibration_folds,
             purge_days=purge_days,
             tail=tail,
+            spread_change_lags=spread_change_lags,
+            volatility_feature=volatility_feature,
+            arx_feature=arx_feature,
         )
         return ExceedanceCurves(
             tuple(model.predict_stress(row, taus) for row in feature_rows),

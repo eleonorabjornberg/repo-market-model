@@ -148,6 +148,12 @@ class _ModelChoice:
     #: the same resolvers, `_calibration` and `_tail` (B39).
     takes_calibration: bool = False
     takes_tail: bool = False
+    #: `_FitterChoice`'s three feature settings on this path, read by the same
+    #: resolvers, `_spread_change_lags`, `_volatility_feature` and
+    #: `_arx_feature` (B42).
+    takes_spread_change_lags: bool = False
+    takes_volatility_feature: bool = False
+    takes_arx_feature: bool = False
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -216,9 +222,11 @@ MODEL_FACTORIES = MappingProxyType(
         # history -- because it reads the same declared feature set: the
         # autoregressive term the fitter supplies itself, plus whatever
         # `--feature` named. `--calibration`, `--calibration-share`,
-        # `--calibration-folds` and `--tail` are bound only when given, as on
-        # `FITTER_FACTORIES`' gbm entry, so a run naming none builds exactly the
-        # predictor every published exceedance record was produced with.
+        # `--calibration-folds`, `--tail`, `--spread-change-lags`,
+        # `--volatility-feature` and `--arx-feature` are bound only when given,
+        # as on `FITTER_FACTORIES`' gbm entry, so a run naming none builds
+        # exactly the predictor every published exceedance record was produced
+        # with.
         "gbm": _ModelChoice(
             declared=_DeferredFactory("gbm_exceedance"),
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
@@ -227,6 +235,9 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_calibration=True,
             takes_tail=True,
+            takes_spread_change_lags=True,
+            takes_volatility_feature=True,
+            takes_arx_feature=True,
         ),
     }
 )
@@ -275,11 +286,13 @@ def _select_model(
 
     **The settings go through `_select_fitter`'s resolvers, not a copy of
     them** (B39). `settings_flags` is true on the command whose parser offers
-    `--calibration`, `--calibration-share`, `--calibration-folds` and `--tail`
-    -- `exceedance-backtest` -- and false on `event-holdout`, which offers none
-    of them and whose evaluator hands a predictor no gap. `_calibration` and
-    `_tail` then refuse each flag given to a model that does not take it, with
-    the messages `backtest` already gives.
+    `--calibration`, `--calibration-share`, `--calibration-folds`, `--tail`,
+    and since B42 `--spread-change-lags`, `--volatility-feature` and
+    `--arx-feature` -- `exceedance-backtest` -- and false on `event-holdout`,
+    which offers none of them and whose evaluator hands a predictor no gap.
+    `_calibration`, `_tail`, `_spread_change_lags`, `_volatility_feature` and
+    `_arx_feature` then refuse each flag given to a model that does not take
+    it, with the messages `backtest` already gives.
 
     Returns:
         `(name, fit_predict)`, where `name` is the string the caller passed.
@@ -305,6 +318,13 @@ def _select_model(
     settings: dict = {}
     if settings_flags:
         settings.update(_calibration(args, name, choice.takes_calibration))
+        settings.update(
+            _spread_change_lags(args, name, choice.takes_spread_change_lags)
+        )
+        settings.update(
+            _volatility_feature(args, name, choice.takes_volatility_feature)
+        )
+        settings.update(_arx_feature(args, name, choice.takes_arx_feature))
         settings.update(_tail(args, name, choice.takes_tail))
     return name, choice.construct(
         regressors=regressors,
@@ -1834,9 +1854,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "be one of --feature",
     )
     exceedance.add_argument("--minimum-history", type=int, default=20)
-    # The settings that change the law gbm's curve is read off, and only those
-    # (B39). `backtest` and `compare` score the quantile vector, which a tail
-    # never moves; this command scores the curve, which it does.
+    # The settings that change the law gbm's curve is read off (B39), and the
+    # feature settings that change the design it is fitted on (B42), each
+    # spelled and resolved as on `backtest`. `backtest` and `compare` score the
+    # quantile vector, which a tail never moves; this command scores the curve,
+    # which it does.
     exceedance.add_argument(
         "--calibration",
         metavar="NAME",
@@ -1863,6 +1885,34 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="how many purged date blocks --calibration cross_conformal splits "
         "each training frame into, at least 2; 5 when not given. Refused for "
         "every model but gbm, and for every other calibration",
+    )
+    exceedance.add_argument(
+        "--spread-change-lags",
+        type=int,
+        metavar="K",
+        default=None,
+        help="add the change in spread_bps between consecutive panel rows at "
+        "lags 1..K, ending at the feature row, to gbm's design, as on backtest; "
+        "at least 1, none when not given, which is the model every published "
+        "exceedance record was produced with. Refused for every model but gbm",
+    )
+    exceedance.add_argument(
+        "--volatility-feature",
+        metavar="NAME",
+        default=None,
+        help="add a volatility regressor to gbm's design, as on backtest: "
+        "garch11, fitted on each fold's own fit rows; none when not given, which "
+        "is the model every published exceedance record was produced with. "
+        "Refused for every model but gbm",
+    )
+    exceedance.add_argument(
+        "--arx-feature",
+        metavar="NAME",
+        default=None,
+        help="add an ARX's one-step point forecast to gbm's design, as on "
+        "backtest: declared, fitted on each fold's own fit rows; none when not "
+        "given, which is the model every published exceedance record was "
+        "produced with. Refused for every model but gbm",
     )
     exceedance.add_argument(
         "--tail",
