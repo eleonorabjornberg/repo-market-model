@@ -2512,6 +2512,10 @@ def gbm_exceedance(
     minimum_history: int = 20,
     random_state: int = DEFAULT_RANDOM_STATE,
     min_samples_leaf: int = 20,
+    calibration: str = "none",
+    calibration_share: Optional[float] = None,
+    calibration_folds: Optional[int] = None,
+    tail: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -2546,10 +2550,28 @@ def gbm_exceedance(
             model. Passed through, and refused below.
         random_state: the seed every fit uses.
         min_samples_leaf: passed through to the estimator.
+        calibration, calibration_share, calibration_folds, tail: the settings
+            that change the law the curve is read off, passed straight to
+            `fit_gradient_boosted_quantiles` and neither checked nor re-derived
+            here; that function refuses each inconsistency (B39). The defaults
+            are its own, so a predictor built with none of them fits exactly
+            what this one fitted before it took any.
+
+    **The gap reaches the fit from the fold loop.** `fit_predict` names
+    `purge_days`, so `rolling_exceedance_backtest` hands over the gap it
+    derived, as `baseline._fit_at_origin` does for `backtest`; a calibration
+    needs it and `none` reads nothing. A caller that passes none --
+    `event_eval` -- gets the fitter's refusal under a calibration.
+
+    **Before B39 the tail could not be measured.** `backtest` and `compare`
+    score the quantile vector, which a tail by design never moves, and this
+    was the one predictor whose curve a tail does move -- and it took no tail.
 
     Returns:
         A `fit_predict` callable suitable for `event_eval.evaluate_event_window`
-        and for `rolling_exceedance_backtest`.
+        and for `rolling_exceedance_backtest`. The curves carry the fit's
+        `model_settings`, so a record names the calibration and tail it was
+        read off.
 
     Raises:
         MissingMLExtraError, ValueError, MissingRegressorError, LookAheadError:
@@ -2564,6 +2586,7 @@ def gbm_exceedance(
         train_rows: Sequence[DailyObservation],
         feature_rows: Sequence[DailyObservation],
         taus: Sequence[float],
+        purge_days: Optional[int] = None,
     ) -> ExceedanceCurves:
         model = fit_gradient_boosted_quantiles(
             train_rows,
@@ -2571,6 +2594,11 @@ def gbm_exceedance(
             minimum_history=minimum_history,
             random_state=random_state,
             min_samples_leaf=min_samples_leaf,
+            calibration=calibration,
+            calibration_share=calibration_share,
+            calibration_folds=calibration_folds,
+            purge_days=purge_days,
+            tail=tail,
         )
         return ExceedanceCurves(
             tuple(model.predict_stress(row, taus) for row in feature_rows),
@@ -2578,6 +2606,8 @@ def gbm_exceedance(
             # Off the model that produced the curves, not read again here: the
             # versions a record names are the fit's.
             ml_libraries=model.ml_libraries,
+            # Empty under the defaults, so a default record is unchanged.
+            model_settings=model.model_settings,
         )
 
     return fit_predict
