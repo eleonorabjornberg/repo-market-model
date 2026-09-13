@@ -41,6 +41,11 @@ HUMAN_ONLY = (
     "pyproject.toml",
     "docs/PROJECT_STATUS.md",
     "docs/DATA_QUALITY_DECISIONS.md",
+    # The decision records. A decision and its reasoning are a claim about why the project is
+    # shaped as it is, so they are reserved for the same reason the pages they explain already
+    # are. Reserved as a directory, so a new record does not arrive unowned the way cli.py and
+    # docs/status.json each did.
+    "docs/decisions/",
     # The guard on the published documents: it refuses a transcribed test count
     # or a hand-written date in tracked Markdown. It checks human-owned pages,
     # so it is human-owned too.
