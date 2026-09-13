@@ -62,6 +62,7 @@ target and policy anchor are required.
 | `tbill_13w` | no | percent, coupon equivalent |
 | `quarter_end` | no | zero/one |
 | `tax_date` | no | zero/one |
+| `days_to_month_end` | no | calendar days, 0 on the last day of the month |
 
 ## Point-in-time rule
 
