@@ -63,14 +63,14 @@ climatology at 5 bp and -0.778 at 50 bp -- skill at the shoulder, none in the ta
 to IORB spread in basis points — forecast from information available at 16:00
 on the previous business day.
 
-**Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `b6af33bb7c64`.
+**Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `a588cdf7e911`.
 
 **Evaluation.** Purged rolling origin, 6-day purge, **2080 forecast origins**,
-first scored 2018-05-07, last scored 2026-09-03. Run at `04527a7`.
+first scored 2018-05-07, last scored 2026-09-03. Run at `52915e4`.
 
 | Measure | Benchmark | Value | 90% interval |
 |---|---|---|---|
-| Mean absolute error | persistence | 3.14 bp | 2.60 to 3.79 bp |
+| Mean absolute error | persistence | 3.14 bp | 2.59 to 3.80 bp |
 | CRPS | persistence | 2.56 bp | not intervalled |
 | Interval coverage | nominal 90% | **81.0%** | 78.3% to 83.6% |
 | Pinball loss, quantile 0.05 | persistence | 0.95 bp | not intervalled |
@@ -81,7 +81,7 @@ first scored 2018-05-07, last scored 2026-09-03. Run at `04527a7`.
 
 The interval is a stationary bootstrap, block length 5, 2000 replications, on the errors themselves; the folds overlap in horizon, so a formula assuming independent draws would report a narrower interval than the data supports.
 
-**The coverage line is the honest one, and it is a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. Intervalled the same way as the error above (stationary bootstrap, block length 5, 2000 replications, seed 1755593764), the realised coverage lies between 78.3% and 83.6%, which excludes the nominal probability. What the gap is — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite.
+**The coverage line is the honest one, and it is a finding.** A nominal 90% interval covered 81.0% of 2080 realised outcomes. Intervalled the same way as the error above (stationary bootstrap, block length 5, 2000 replications, seed 2076801414), the realised coverage lies between 78.3% and 83.6%, which excludes the nominal probability. What the gap is — a miscalibrated benchmark, or one a challenger will improve on — is open, and no verdict is asserted in the suite.
 
 **Challengers against persistence.** Each challenger is scored on the same 2039 origins (minimum history 61, purge 6 days); persistence's CRPS is 2.53 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 5, 2000 replications) on the per-origin differences.
 

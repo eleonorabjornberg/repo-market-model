@@ -3289,7 +3289,7 @@ class RequestedColumnsBuildTests(unittest.TestCase):
     def test_a_build_given_the_manifests_columns_reproduces_its_digest_after_a_source_joins(
         self,
     ):
-        """The acceptance criterion. Six assertions, and the first is the premise."""
+        """The acceptance criterion. The first two assertions are its premise."""
 
         root = Path(__file__).parents[1]
         manifest = json.loads(
@@ -3301,13 +3301,30 @@ class RequestedColumnsBuildTests(unittest.TestCase):
         built_columns = list(manifest["built_columns"])
 
         with self.source_joins_the_contract(), tempfile.TemporaryDirectory() as tmp:
-            # The premise. With the source joined, the default build carries a
-            # ninth column -- empty in every row, because `funding_inputs/`
-            # holds no FR 2004 export -- and no longer hashes to the published
-            # digest. Asserted, not assumed: if the default build still
-            # reproduced, `--column` would be pinning nothing.
+            # The premise, re-anchored after the 13 September rebuild. It read:
+            # with the source joined, the default build carries a ninth column,
+            # empty in every row because `funding_inputs/` holds no FR 2004
+            # export, and so cannot hash to the published digest. That
+            # statement was inert, and had been for some time. It passed
+            # because the published manifest recorded an 8 September build of
+            # eight columns while a default build produced fourteen -- not
+            # because the join added anything. The rebuild, which puts the
+            # current default build in the manifest, is what exposed it:
+            # `dealer_treasury_position` is a published column now, so the join
+            # adds nothing at all and the default build reproduces the digest.
+            #
+            # So the join's inertness is asserted rather than left to pass
+            # silently, and the non-vacuity premise moves to something that
+            # cannot decay with the panel: a build given anything less than the
+            # manifest's own list must not reproduce its digest. Under the
+            # mutation that makes `--column` a no-op the test goes red, though
+            # by the priceability assertion below rather than by this one --
+            # an isolating mutation for this line specifically is Track A's to
+            # build, and is recorded as not yet held.
             default = self.digest_of(tmp, "default")
-            self.assertNotEqual(default, published)
+            self.assertEqual(default, published)
+            narrowed = self.digest_of(tmp, "narrowed", *built_columns[:-1])
+            self.assertNotEqual(narrowed, published)
 
             # The fix. The manifest's own `built_columns`, and the bytes are the
             # bytes the manifest records.
