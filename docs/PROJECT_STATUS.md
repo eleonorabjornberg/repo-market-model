@@ -212,7 +212,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   moves. No published record has been produced with it, and nothing has scored it yet. A
   `backtest` record of a run that asked for one now reports what the tail was at every fold
   --- a fitted shape, the exponential fallback, or no excesses at all --- because an expanding
-  window refits at every origin and the early folds are the ones that fall back. A `compare`
+  window refits at every origin and the early folds are the ones that fall back, and an
+  `exceedance-backtest` record reports the same account off its own folds' fits. A `compare`
   record does not carry it.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
