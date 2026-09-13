@@ -1328,7 +1328,12 @@ class FittedGradientBoostedQuantiles:
 
         * `fitted` --- `xi`, `sigma`, `excesses` and `clamped`. A clamped shape
           is still this state and says so; see `FittedTail` on why it is not
-          a shape the sample supported.
+          a shape the sample supported. Under a negative `xi` also
+          `upper_endpoint_excess`: the excess above the top declared quantile
+          at and beyond which the fitted tail assigns probability exactly
+          zero, `sigma / -xi`, where `_gpd_survival` stops (B41). **Absent**
+          at `xi >= 0`, which has no endpoint --- a `None` would read as a
+          ceiling at zero.
         * `fallback` --- `sigma` and `excesses`, and no `xi`. The fallback's
           `xi` is the `0.0` the family collapses to, not a fitted value, and
           a record carrying it would read as a shape of zero.
@@ -1337,6 +1342,15 @@ class FittedGradientBoostedQuantiles:
 
         Read off `tail_fit`, the fit the law was continued with. The excesses
         are not kept, so nothing here could recompute it.
+
+        **The endpoint is a derived reading, not new evidence.** It follows
+        from `xi` and `sigma`, both already on the record. It is carried anyway
+        because nobody reads a ceiling out of two floats by eye: a tail whose
+        ceiling sits below a declared tau gives that tau's exceedance
+        probability exactly zero, which is the zero `GPD_SHAPE_BOUNDS` names
+        and the one a run can publish at 5 bp without the record saying why.
+        Whether such a fit should be refused is not decided here; this only
+        makes it visible.
         """
 
         if self.tail is None:
@@ -1354,6 +1368,8 @@ class FittedGradientBoostedQuantiles:
                 "excesses": fit.excesses,
                 "clamped": fit.clamped,
             }
+            if fit.xi < 0.0:
+                account["upper_endpoint_excess"] = fit.sigma / -fit.xi
         return MappingProxyType(account)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
