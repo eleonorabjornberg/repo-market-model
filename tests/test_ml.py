@@ -172,7 +172,10 @@ restored before the next.
 
 from __future__ import annotations
 
+import contextlib
+import csv
 import importlib.util
+import io
 import json
 import math
 import os
@@ -182,6 +185,7 @@ import tempfile
 import unittest
 from datetime import date, time, timedelta
 from fractions import Fraction
+from pathlib import Path
 from unittest import mock
 
 from repo_model import baseline, cli, cli_eval, ml
@@ -4090,6 +4094,345 @@ class TailAccountTests(unittest.TestCase):
             del stripped["declaration"]["tail"]
             del stripped["folds"]["tail"]
             self.assertEqual(json.loads(json.dumps(plain_document)), stripped)
+
+
+class ExceedanceTailTests(unittest.TestCase):
+    """`exceedance-backtest --model gbm --calibration conformal --tail gpd` (B39).
+
+    **The defect.** Job 350 scored gbm+conformal against gbm+conformal+`--tail
+    gpd` with `backtest` and `compare`, and every metric was bit-identical: those
+    commands score the quantile vector, which the tail by design never moves.
+    The command that scores what the tail moves -- the exceedance curve -- is
+    `exceedance-backtest`, and it took no `--calibration` and no `--tail`, and
+    `ml.gbm_exceedance` took neither. The tail was unmeasurable by every
+    instrument that could be pointed at it.
+
+    **What had to reach the fit, and what was in the way.** The settings, through
+    `_select_fitter`'s own resolvers `_calibration` and `_tail` -- and the purge
+    gap, which no exceedance predictor was ever handed:
+    `rolling_exceedance_backtest` called `predictor(train, feature, taus)`, and a
+    conformal fit refuses a defaulted gap. The fold loop now hands the derived
+    gap to a predictor that names `purge_days`, by `baseline._reads_purge_days`,
+    the rule `backtest`'s loop already follows.
+
+    **The trap is a flag that parses.** So part 2 reads the curves the run
+    scored, at every fold: above the reported top declared quantile they differ,
+    and where the untailed run is exactly zero the tailed run is not.
+
+    **How the fixture forces it.** A weekday panel of `10 +/- 1` bp, with three
+    rows at 35 bp placed inside every fold's calibration rows and outside its fit
+    rows, at a calibration share of one half. The spikes are too few to set the
+    conformal widening, so each exceeds its calibrated top quantile and every
+    fold's tail is fitted on excesses (a fallback shape; the state does not
+    matter here, `TailAccountTests` holds the states). The fit rows' residuals
+    are small, so the untailed law's top knot sits below 20 bp and it is
+    exactly zero at 20 and 50; 5 and 10 sit below the top quantile. Which taus
+    fall on which side is computed per fold from the fit, not assumed.
+
+    **Part 4's comparison is against this base's predictor**, written out here
+    as `gbm_exceedance` stood before B39: fitted with the fitter's defaults, no
+    gap handed over, no settings on the curves. A run asking for neither
+    setting must publish that record key for key.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy per mutation plus an unmutated control under
+    `$HOME`, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring in Python
+    and found exactly once. Every failure is `AssertionError`.
+
+    1. **The tail dropped between resolution and the fit** --- `tail=tail,`
+       removed from `gbm_exceedance`'s call to the fitter. Kills **part 2**
+       (`0.0 == 0.0` above the top quantile) **and part 1 too** (`None !=
+       'gpd'` on the fit's keywords, then no `tail_fit`): part 1 reads the fit,
+       and a tail that never reached it is absent there. The brief expected part
+       2 alone; part 1 cannot stay green over this defect, because what it
+       checks is exactly the fit this drops the tail before.
+    2. **The same, one step earlier** --- `**settings` dropped from
+       `MODEL_FACTORIES["gbm"].build`, so `_calibration` and `_tail` resolve and
+       refuse and nothing is bound. Parts 1 and 2, as mutation 1 (`None !=
+       'gpd'`; `0.0327 == 0.0327`, both runs uncalibrated). This is the trap: a
+       flag that parses.
+    3. **The calibration dropped** --- `calibration=calibration,` removed from
+       the fitter call. The run exits 2 on its first fold, the fitter's own
+       `calibration_share 0.5 was given, but calibration 'none' holds no rows
+       out`, and the test fails at the run's exit code, before part 1.
+    4. **The gap not handed over** --- the fold loop calls every predictor
+       with three arguments. Exit 2, `purge must be an int, got None`, before
+       part 1.
+    5. **The settings not carried on the curves** --- `model_settings=` removed
+       from `ExceedanceCurves`. Part 1 alone, `None != 'gpd'` on the record's
+       declaration: the curves moved and the record did not say why.
+    6. **Each refusal removed in turn**, the condition made `if False:`:
+       a. *calibration to a model that takes none* (`if given and not
+          takes_calibration:`). Part 5's climatology and threshold subtests,
+          `0 != 2`; also `GradientBoostedConformalCalibrationTests` and
+          `GradientBoostedCrossConformalTests`' own refusal subtests, `SplitError
+          not raised`, which read the same resolver on `backtest`.
+       b. *a tail to a model that takes none* (`if not takes_tail:`). Part 5's
+          arx subtest, by its **message**: the run is still refused, by the
+          calibration-none check, for the wrong reason. Also
+          `TailDeclarationTests` part 4, as B37 recorded.
+       c, d, e. *calibration none*, *cross_conformal*, *the unknown family*,
+          each in `_tail`. Part 5's matching subtest, by message: the fitter
+          still refuses, from the first fold, in its own words (`tail 'gpd'
+          needs held-out calibration rows`, `is not wired for calibration
+          'cross_conformal'`, `unknown tail 'pareto'`). Also
+          `TailDeclarationTests` part 4, `SplitError not raised`.
+       f. *the flags not read at all* --- `settings_flags=True` -> `False` in
+          `_exceedance_backtest`. Parts 1 and 2 and every part 5 subtest
+          (`0 != 2`): every flag accepted and ignored.
+       g. *climatology marked as taking both.* Part 5's climatology subtest
+          alone, `0 != 2`: the setting accepted and silently not bound.
+    7. **Part 2's comparison moved below the top quantile** --- the probe
+       `tau > top` -> `tau <= top` in this test. Part 2, `1.0 == 1.0`: below the
+       quantile the two curves are one curve and the test sees no difference.
+    8. **The tail attached at a lower knot** --- `threshold = values[-2]` ->
+       `values[-3]` in `predict_stress`. Part 3 alone of this test (the run's
+       own fits read `0.049` where the untailed law reads `0.15`), and
+       `GpdTailWiringTests` parts 1 and 2. **Before part 3 read the run's fits
+       between their knots, this test did not see it**: the declared family
+       has no tau between the upper two knots on this fixture, so every scored
+       curve was unchanged below the top quantile. That is why part 3 reads
+       them.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    MINIMUM_HISTORY = 120
+    SCORED = 4
+    SPIKES = (100, 107, 113)
+    SHARE = "0.5"
+
+    def setUp(self):
+        require_extra(self)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        self.registry = declared_registry_file(
+            self.tmp, purge=self.PURGE, features=self.FEATURES
+        )
+        self.panel = self.write_panel()
+
+    def write_panel(self):
+        """The panel the docstring describes."""
+
+        rng = random.Random(20260912)
+        path = self.tmp / "panel.csv"
+        days = business_days(
+            date(2021, 1, 4), self.MINIMUM_HISTORY + self.PURGE + self.SCORED
+        )
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["date", "sofr", "iorb", "on_rrp", "sofr_volume"])
+            for index, when in enumerate(days):
+                spread = 10.0 + 2.0 * (rng.random() - 0.5)
+                if index in self.SPIKES:
+                    spread = 35.0
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     round(100.0 * rng.random(), 4), round(2000.0 + 400.0 * rng.random(), 4)]
+                )
+        return path
+
+    def run_command(self, *extra, model="gbm", name="run"):
+        """`exceedance-backtest` through `cli.main`, and what it fitted and scored.
+
+        The fitter and the backtest are wrapped, not replaced: each wrapper
+        calls the real function and returns its value, so the run is the
+        command's own and writes the record it would have written.
+        """
+
+        fits, reports = [], []
+        fitter = ml.fit_gradient_boosted_quantiles
+        backtest = cli_eval.rolling_exceedance_backtest
+
+        def fit_spy(*args, **kwargs):
+            model = fitter(*args, **kwargs)
+            fits.append((model, kwargs))
+            return model
+
+        def backtest_spy(*args, **kwargs):
+            report = backtest(*args, **kwargs)
+            reports.append(report)
+            return report
+
+        report_path = self.tmp / f"{name}.json"
+        argv = [
+            "exceedance-backtest",
+            "--panel", str(self.panel),
+            "--thresholds", str(THRESHOLDS),
+            "--registry", str(self.registry),
+            "--decision-time", DECISION_TIME,
+            "--minimum-history", str(self.MINIMUM_HISTORY),
+            "--model", model,
+            "--report", str(report_path),
+        ]
+        for feature in self.FEATURES:
+            argv += ["--feature", feature]
+        argv += list(extra)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(ml, "fit_gradient_boosted_quantiles", fit_spy), \
+                mock.patch.object(cli_eval, "rolling_exceedance_backtest", backtest_spy), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        document = (
+            json.loads(report_path.read_text(encoding="utf-8"))
+            if report_path.exists()
+            else None
+        )
+        return code, " ".join(err.getvalue().split()), fits, reports, document
+
+    def base_document(self):
+        """The record this base's `gbm_exceedance` published for this run."""
+
+        regressors, minimum_history = self.REGRESSORS, self.MINIMUM_HISTORY
+
+        def fit_predict(train_rows, feature_rows, taus):
+            model = ml.fit_gradient_boosted_quantiles(
+                train_rows, regressors, minimum_history=minimum_history
+            )
+            return baseline.ExceedanceCurves(
+                tuple(model.predict_stress(row, taus) for row in feature_rows),
+                model.features_read,
+                ml_libraries=model.ml_libraries,
+            )
+
+        report = baseline.rolling_exceedance_backtest(
+            load_daily_panel(self.panel),
+            predictor=fit_predict,
+            model_name="gbm",
+            features=self.FEATURES,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            taus=tuple(float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"]),
+            minimum_history=minimum_history,
+        )
+        return json.loads(json.dumps(
+            baseline.exceedance_backtest_document(
+                report,
+                panel_path=self.panel,
+                registry_path=self.registry,
+                thresholds_path=THRESHOLDS,
+            ),
+            sort_keys=True,
+        ))
+
+    def test_an_exceedance_run_asked_for_a_tail_scores_a_different_curve_above_the_top_quantile(
+        self,
+    ):
+        """The setting reaches the fit, the curve moves above the top quantile and
+        only there, the default record is unchanged, and the refusals refuse."""
+
+        conformal = ("--calibration", "conformal", "--calibration-share", self.SHARE)
+        code, err, tail_fits, tail_reports, tail_document = self.run_command(
+            *conformal, "--tail", "gpd", name="tail"
+        )
+        self.assertEqual(code, 0, msg=err)
+        code, err, plain_fits, plain_reports, plain_document = self.run_command(
+            *conformal, name="plain"
+        )
+        self.assertEqual(code, 0, msg=err)
+        (tailed,), (plain,) = tail_reports, plain_reports
+        rows = {row.date: row for row in load_daily_panel(self.panel)}
+
+        with self.subTest("1. the setting reaches the fit"):
+            self.assertTrue(tailed.folds)
+            self.assertEqual(len(tail_fits), len(tailed.folds))
+            self.assertEqual(len(plain_fits), len(plain.folds))
+            for (model, kwargs), (bare, bare_kwargs) in zip(tail_fits, plain_fits):
+                self.assertEqual(kwargs.get("tail"), "gpd")
+                self.assertEqual(kwargs.get("calibration"), "conformal")
+                self.assertEqual(kwargs.get("calibration_share"), float(self.SHARE))
+                self.assertEqual(kwargs.get("purge_days"), tailed.purge_days)
+                self.assertIsNotNone(model.tail_fit)
+                self.assertIsNone(bare_kwargs.get("tail"))
+                self.assertIsNone(bare.tail_fit)
+            self.assertEqual(tail_document["declaration"].get("tail"), "gpd")
+            self.assertEqual(tail_document["declaration"].get("calibration"), "conformal")
+            self.assertNotIn("tail", plain_document["declaration"])
+            self.assertEqual(plain_document["declaration"]["calibration"], "conformal")
+
+        pairs = list(zip(tailed.folds, tail_fits, tailed.forecast, plain.forecast))
+        with self.subTest("2. above the top declared quantile the curve moves"):
+            for fold, (model, _), with_tail, without in pairs:
+                feature = rows[fold.feature_date]
+                top = model.predict(feature)[-1]
+                above = [i for i, tau in enumerate(tailed.taus) if tau > top]
+                self.assertTrue(above, msg=f"no declared tau above {top} at {fold.scored_date}")
+                for i in above:
+                    self.assertNotEqual(with_tail[i], without[i], msg=str(fold.scored_date))
+                    self.assertGreater(with_tail[i], 0.0)
+                self.assertEqual(without[above[-1]], 0.0)
+
+        with self.subTest("3. at and below it the curve does not"):
+            for fold, (model, _), (bare, _), with_tail, without in zip(
+                tailed.folds, tail_fits, plain_fits, tailed.forecast, plain.forecast
+            ):
+                feature = rows[fold.feature_date]
+                top = model.predict(feature)[-1]
+                below = [i for i, tau in enumerate(tailed.taus) if tau <= top]
+                self.assertTrue(below, msg=f"no declared tau at or below {top}")
+                for i in below:
+                    self.assertEqual(with_tail[i], without[i], msg=str(fold.scored_date))
+                # The declared family has no tau between the upper knots on
+                # this fixture, so the run's own fits are also read at every
+                # knot up to the top quantile and between each pair: a tail
+                # attached at a lower knot moves these and no declared tau.
+                knots = sorted(set(model.law_knots(feature)[0][:-1]))
+                probes = sorted(set(knots + [
+                    0.5 * (low + high) for low, high in zip(knots, knots[1:])
+                ]))
+                self.assertEqual(knots[-1], top)
+                self.assertEqual(
+                    model.predict_stress(feature, probes),
+                    bare.predict_stress(feature, probes),
+                    msg=str(fold.scored_date),
+                )
+            self.assertEqual(
+                [(fold.scored_date, fold.feature_date) for fold in tailed.folds],
+                [(fold.scored_date, fold.feature_date) for fold in plain.folds],
+            )
+
+        with self.subTest("4. a run asking for neither publishes this base's record"):
+            code, err, _, _, default_document = self.run_command(name="default")
+            self.assertEqual(code, 0, msg=err)
+            self.assertEqual(default_document, self.base_document())
+
+        with self.subTest("5. refusals"):
+            # A report name per refusal: one shared name would let an accepted
+            # run's file make every later refusal look as if it wrote one.
+            for position, (model, extra, phrase) in enumerate((
+                ("climatology", ("--calibration", "conformal"),
+                 "--calibration conformal was given, but --model climatology takes no "
+                 "band calibration"),
+                ("threshold", ("--regime-variable", "on_rrp", "--calibration-share", "0.5"),
+                 "--calibration-share 0.5 was given, but --model threshold takes no "
+                 "band calibration"),
+                ("arx", ("--tail", "gpd"),
+                 "--tail gpd was given, but --model arx has no quantile law"),
+                ("gbm", ("--tail", "gpd"),
+                 "--tail gpd was given with calibration none"),
+                ("gbm", ("--calibration", "cross_conformal", "--tail", "gpd"),
+                 "cross_conformal, where the tail is not wired"),
+                ("gbm", ("--calibration", "conformal", "--tail", "pareto"),
+                 "unknown --tail 'pareto'"),
+            )):
+                with self.subTest(model=model, flags=extra):
+                    code, err, fits, _, document = self.run_command(
+                        *extra, model=model, name=f"refused-{position}"
+                    )
+                    self.assertEqual(code, 2, msg=err)
+                    self.assertIn(phrase, err)
+                    self.assertIsNone(document)
+                    self.assertEqual(fits, [])
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):

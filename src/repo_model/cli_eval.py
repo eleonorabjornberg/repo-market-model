@@ -144,6 +144,10 @@ class _ModelChoice:
     declared: Union[Callable[..., ExceedancePredictor], _DeferredFactory]
     build: Callable[..., ExceedancePredictor]
     needs_regime_variable: bool
+    #: `_FitterChoice.takes_calibration` and `takes_tail` on this path, read by
+    #: the same resolvers, `_calibration` and `_tail` (B39).
+    takes_calibration: bool = False
+    takes_tail: bool = False
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -170,8 +174,11 @@ class _ModelChoice:
         regressors: Tuple[str, ...],
         regime_variable: Optional[str],
         minimum_history: int,
+        settings: Optional[Mapping[str, Any]] = None,
     ) -> ExceedancePredictor:
-        return self.build(self.factory, regressors, regime_variable, minimum_history)
+        return self.build(
+            self.factory, regressors, regime_variable, minimum_history, dict(settings or {})
+        )
 
 
 #: `--model NAME` -> the predictor it names. **One mapping, in one place.**
@@ -185,21 +192,21 @@ MODEL_FACTORIES = MappingProxyType(
     {
         "climatology": _ModelChoice(
             declared=climatology_exceedance,
-            build=lambda factory, regressors, regime, minimum_history: factory(
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
                 minimum_history=minimum_history
             ),
             needs_regime_variable=False,
         ),
         "arx": _ModelChoice(
             declared=arx_exceedance,
-            build=lambda factory, regressors, regime, minimum_history: factory(
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
                 regressors, minimum_history=minimum_history
             ),
             needs_regime_variable=False,
         ),
         "threshold": _ModelChoice(
             declared=threshold_exceedance,
-            build=lambda factory, regressors, regime, minimum_history: factory(
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
                 regressors, regime, minimum_history=minimum_history
             ),
             needs_regime_variable=True,
@@ -208,13 +215,18 @@ MODEL_FACTORIES = MappingProxyType(
         # construction signature is the ARX's -- regressors plus a minimum
         # history -- because it reads the same declared feature set: the
         # autoregressive term the fitter supplies itself, plus whatever
-        # `--feature` named.
+        # `--feature` named. `--calibration`, `--calibration-share`,
+        # `--calibration-folds` and `--tail` are bound only when given, as on
+        # `FITTER_FACTORIES`' gbm entry, so a run naming none builds exactly the
+        # predictor every published exceedance record was produced with.
         "gbm": _ModelChoice(
             declared=_DeferredFactory("gbm_exceedance"),
-            build=lambda factory, regressors, regime, minimum_history: factory(
-                regressors, minimum_history=minimum_history
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                regressors, minimum_history=minimum_history, **settings
             ),
             needs_regime_variable=False,
+            takes_calibration=True,
+            takes_tail=True,
         ),
     }
 )
@@ -226,7 +238,9 @@ def _model_names() -> str:
     return ", ".join(sorted(MODEL_FACTORIES))
 
 
-def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
+def _select_model(
+    args: argparse.Namespace, *, settings_flags: bool = False
+) -> Tuple[str, ExceedancePredictor]:
     """Resolve `--model` to a constructed predictor, or refuse before anything runs.
 
     **A selector that falls back instead of refusing is the failure this
@@ -259,6 +273,14 @@ def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
     gets should name the column and the flag they typed rather than describe a
     fitted model.
 
+    **The settings go through `_select_fitter`'s resolvers, not a copy of
+    them** (B39). `settings_flags` is true on the command whose parser offers
+    `--calibration`, `--calibration-share`, `--calibration-folds` and `--tail`
+    -- `exceedance-backtest` -- and false on `event-holdout`, which offers none
+    of them and whose evaluator hands a predictor no gap. `_calibration` and
+    `_tail` then refuse each flag given to a model that does not take it, with
+    the messages `backtest` already gives.
+
     Returns:
         `(name, fit_predict)`, where `name` is the string the caller passed.
         It is not re-derived from the factory: the journal records what was
@@ -280,10 +302,15 @@ def _select_model(args: argparse.Namespace) -> Tuple[str, ExceedancePredictor]:
     regressors, regime_variable = _regressors_and_regime(
         args, name, choice.needs_regime_variable
     )
+    settings: dict = {}
+    if settings_flags:
+        settings.update(_calibration(args, name, choice.takes_calibration))
+        settings.update(_tail(args, name, choice.takes_tail))
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
         minimum_history=args.minimum_history,
+        settings=settings,
     )
 
 
@@ -1436,7 +1463,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     scoring happened.
     """
 
-    model_name, predictor = _select_model(args)
+    model_name, predictor = _select_model(args, settings_flags=True)
 
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
@@ -1807,6 +1834,46 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "be one of --feature",
     )
     exceedance.add_argument("--minimum-history", type=int, default=20)
+    # The settings that change the law gbm's curve is read off, and only those
+    # (B39). `backtest` and `compare` score the quantile vector, which a tail
+    # never moves; this command scores the curve, which it does.
+    exceedance.add_argument(
+        "--calibration",
+        metavar="NAME",
+        default=None,
+        help="how the gbm law the curve is read off is calibrated: none, the "
+        "default and the model every published exceedance record was produced "
+        "with; conformal; or cross_conformal, as on backtest. Refused for every "
+        "model but gbm",
+    )
+    exceedance.add_argument(
+        "--calibration-share",
+        type=float,
+        metavar="FRACTION",
+        default=None,
+        help="the share of each training frame --calibration conformal holds "
+        "out, strictly inside (0, 1); 0.25 when not given. Refused for every "
+        "model but gbm, and for every other calibration",
+    )
+    exceedance.add_argument(
+        "--calibration-folds",
+        type=int,
+        metavar="K",
+        default=None,
+        help="how many purged date blocks --calibration cross_conformal splits "
+        "each training frame into, at least 2; 5 when not given. Refused for "
+        "every model but gbm, and for every other calibration",
+    )
+    exceedance.add_argument(
+        "--tail",
+        metavar="NAME",
+        default=None,
+        help="continue gbm's law above its top declared quantile: gpd, a "
+        "generalised Pareto fitted on each fold's calibration rows' excesses, "
+        "which moves the curve at every tau above that quantile; none when not "
+        "given. Refused for every model but gbm, and for every calibration but "
+        "conformal",
+    )
     exceedance.add_argument(
         "--report",
         type=Path,

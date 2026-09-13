@@ -6112,6 +6112,11 @@ def rolling_exceedance_backtest(
     ml_libraries: Optional[Mapping[str, str]] = None
     model_settings: Mapping[str, Any] = MappingProxyType({})
     checked = False
+    # `_fit_at_origin`'s rule on this path: a predictor that names `purge_days`
+    # -- `ml.gbm_exceedance`, whose calibration splits its training rows -- is
+    # handed the gap derived above, and every other predictor is called exactly
+    # as it always was (B39).
+    reads_purge = _reads_purge_days(predictor)
 
     for train_indices, test_indices in rolling_origin(
         dates, minimum_history, 1, purge
@@ -6121,7 +6126,10 @@ def rolling_exceedance_backtest(
         feature_row = rows[_feature_index(dates, train_indices, index, purge)]
         conditioning = (feature_row,)
 
-        predicted = predictor(train_rows, conditioning, tau_family)
+        if reads_purge:
+            predicted = predictor(train_rows, conditioning, tau_family, purge_days=purge)
+        else:
+            predicted = predictor(train_rows, conditioning, tau_family)
         # Refitted here, on this fold's training rows, from the same call the
         # scored model got. Hoisting this one line out of the loop is the
         # mutation `tests/test_baseline.py::RollingExceedanceTests` is planted
