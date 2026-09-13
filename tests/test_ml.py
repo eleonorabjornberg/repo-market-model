@@ -4039,13 +4039,17 @@ class TailAccountTests(unittest.TestCase):
             return {"state": "no_excesses", "excesses": 0}
         if fit.fallback:
             return {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
-        return {
+        spelled = {
             "state": "fitted",
             "xi": fit.xi,
             "sigma": fit.sigma,
             "excesses": fit.excesses,
             "clamped": fit.clamped,
         }
+        if fit.xi < 0.0:
+            # B41; `TailCeilingTests` holds it to the law.
+            spelled["upper_endpoint_excess"] = fit.sigma / -fit.xi
+        return spelled
 
     def test_a_tail_run_records_what_its_tail_was_at_every_fold_and_a_run_without_one_records_nothing(
         self,
@@ -4673,6 +4677,145 @@ class ExceedanceTailAccountTests(unittest.TestCase):
                     self.expected(model.tail_fit),
                     msg=f"entry {position}",
                 )
+
+
+class TailCeilingTests(unittest.TestCase):
+    """A fitted tail's ceiling, on the account a record carries (B41).
+
+    **The measurement.** The two published exceedance records,
+    `docs/runs/exceedance_gbm_conformal_mh61.json` and its `--tail gpd` twin,
+    differ only in the tail, and the tail is a trade. At 50 bp it removes the
+    zero it was built to remove: the untailed run has no log score, "the
+    forecast assigned probability 0 to an event that occurred", and the tailed
+    run has one. At 5 bp and 10 bp the same reason string appears in the tailed
+    run where the untailed run had a log score. The mechanism is the one
+    `ml.GPD_SHAPE_BOUNDS` named in advance: a negative shape puts a hard
+    endpoint at `sigma / -xi`, at and beyond which `_gpd_survival` is exactly
+    `0.0`, and with the conditional `Q(0.95)` a few basis points below zero on
+    most days every declared tau is read in the tail. `xi` and `sigma` were on
+    the record already; the ceiling was not, and nobody reads one out of two
+    floats by eye.
+
+    **What this is not.** It changes nothing the model does. Whether a fit
+    whose ceiling falls inside the declared tau grid should be refused is the
+    human's decision and is not taken here.
+
+    **The trap is asserting part 1 alone.** `sigma / -xi` is arithmetic; part 2
+    is what ties the field to the law, by probing `_gpd_survival` on either side
+    of the value the account reports. The parameters are chosen so that the
+    endpoint is exact in binary floating point, which is what lets "exactly
+    `0.0` at the endpoint" be asserted rather than approximated, and they are
+    three different endpoints, so a field pinned to one of them fails the others.
+
+    The model is constructed directly with a declared `tail_fit`; `tail_account`
+    reads nothing else, so no fit and no extra are needed.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy under `$HOME`, one mutation at a time, built from
+    `git ls-files -z --cached --others --exclude-standard`, with
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, `OMP_NUM_THREADS=1` and
+    `REPO_MODEL_REQUIRE_ML=1`, through the mount's `.venv/bin/python` by
+    absolute path; `repo_model` confirmed to resolve to the copy's `src/`.
+    Unmutated control green before and after, zero `expectedFailure`. Each
+    target was counted as an exact substring in Python and found exactly once,
+    in `ml.FittedGradientBoostedQuantiles.tail_account`.
+
+    1. **The sign dropped** --- `fit.sigma / -fit.xi` -> `fit.sigma / fit.xi`.
+       `AssertionError` in **part 1** (`-2.0 != 2.0`) and in **part 2**: the
+       negative "ceiling" is an excess below the threshold, where the survival
+       is `4.0`, not `0.0` --- part 2 kills it on its own because a sign-flipped
+       endpoint is not a place the law stops. Also `AssertionError` in
+       `TailAccountTests` part 1 and `ExceedanceTailAccountTests` parts 1 and 4,
+       whose `expected` helper spells the endpoint the same way: their fixture
+       has clamped fitted folds at `xi = -0.5`.
+    2. **The endpoint emitted for every fitted shape** --- `if fit.xi < 0.0:`
+       -> `if True:`. `AssertionError` in **part 3** at `xi = 0.3` and `xi =
+       0.5` (the key unexpectedly found, a negative value); at `xi = 0.0` it is
+       a `ZeroDivisionError` from `sigma / -0.0` instead, one incidental
+       exception and not a membership failure, which is why each shape is its
+       own subtest. Also `AssertionError` in `TailAccountTests` part 1 and
+       `ExceedanceTailAccountTests` parts 1 and 4, which carry an unclamped
+       fitted fold of positive shape.
+    3. **The endpoint pinned to a constant** --- `fit.sigma / -fit.xi` ->
+       `2.0`, the first declared pair's true endpoint. `AssertionError` in
+       **part 2** (`0.482... != 0.0` at `xi = -0.25, sigma = 3.0`: the law has
+       not stopped at the reported ceiling) and in **part 1** (`2.0 != 12.0`).
+       Also `AssertionError` in `TailAccountTests` part 1 and
+       `ExceedanceTailAccountTests` parts 1 and 4.
+
+    No other test in the suite goes red under any of the three.
+    """
+
+    #: `(xi, sigma)` pairs whose endpoint `sigma / -xi` is exact in binary.
+    NEGATIVE = ((-0.5, 1.0), (-0.25, 3.0), (-0.125, 0.5))
+
+    @staticmethod
+    def account(xi, sigma, *, excesses=40, clamped=False, fallback=False, fit=True):
+        """`tail_account` of a model declared with this tail and nothing fitted."""
+
+        model = ml.FittedGradientBoostedQuantiles(
+            estimators=(None,) * len(QUANTILE_LEVELS),
+            regressors=(),
+            imputations={},
+            residuals=(),
+            cutoff=date(2024, 1, 2),
+            ml_libraries={},
+            tail="gpd",
+            tail_fit=(
+                ml.FittedTail(
+                    xi=xi,
+                    sigma=sigma,
+                    excesses=excesses,
+                    clamped=clamped,
+                    fallback=fallback,
+                )
+                if fit
+                else None
+            ),
+        )
+        return dict(model.tail_account)
+
+    def test_a_fitted_tail_reports_the_ceiling_beyond_which_it_assigns_exactly_zero(
+        self,
+    ):
+        """The ceiling is `sigma / -xi`, is where the law stops, and is absent without one."""
+
+        with self.subTest("1. the endpoint is sigma / -xi, from the declared parameters"):
+            for xi, sigma in self.NEGATIVE:
+                account = self.account(xi, sigma)
+                self.assertEqual(account["state"], "fitted")
+                self.assertEqual(account["upper_endpoint_excess"], sigma / -xi)
+
+        with self.subTest("2. the endpoint is the value the law actually stops at"):
+            for xi, sigma in self.NEGATIVE:
+                ceiling = self.account(xi, sigma)["upper_endpoint_excess"]
+                tail = ml.FittedTail(
+                    xi=xi, sigma=sigma, excesses=40, clamped=False, fallback=False
+                )
+                below = math.nextafter(ceiling, 0.0)
+                above = math.nextafter(ceiling, math.inf)
+                msg = f"xi={xi}, sigma={sigma}, reported ceiling {ceiling!r}"
+                self.assertGreater(ml._gpd_survival(tail, below), 0.0, msg=msg)
+                self.assertEqual(ml._gpd_survival(tail, ceiling), 0.0, msg=msg)
+                self.assertEqual(ml._gpd_survival(tail, above), 0.0, msg=msg)
+
+        for xi, sigma in ((0.3, 2.0), (0.5, 1.0), (0.0, 1.0)):
+            with self.subTest("3. no ceiling for a non-negative shape: absent, not None", xi=xi):
+                account = self.account(xi, sigma, clamped=xi == 0.5)
+                self.assertEqual(account["state"], "fitted")
+                self.assertNotIn("upper_endpoint_excess", account)
+
+        with self.subTest("4. the fallback and no-excess states are unchanged"):
+            self.assertEqual(
+                self.account(0.0, 1.5, excesses=7, fallback=True),
+                {"state": "fallback", "sigma": 1.5, "excesses": 7},
+            )
+            self.assertEqual(
+                self.account(0.0, 1.0, fit=False),
+                {"state": "no_excesses", "excesses": 0},
+            )
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):
