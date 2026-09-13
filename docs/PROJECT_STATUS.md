@@ -207,7 +207,11 @@ Stated explicitly, because each is easy to mistake for something stronger.
   (`--arx-feature declared`) is built, and scored so far only outside the published record
   set. A generalised Pareto tail continuing the law above its top declared quantile
   (`--tail gpd`, conformal calibration only) is built and selectable from `backtest` and
-  `compare`; no published record has been produced with it, and nothing has scored it.
+  `compare`; no published record has been produced with it, and nothing has scored it. A
+  `backtest` record of a run that asked for one now reports what the tail was at every fold
+  --- a fitted shape, the exponential fallback, or no excesses at all --- because an expanding
+  window refits at every origin and the early folds are the ones that fall back. A `compare`
+  record does not carry it.
 - **Part of the command line is unpublished.** `backfill-nmfp` and
   `event-holdout` ship with no invocation any published document tells a reader
   to run. `tests/test_docs_freshness.py` has checked since `6708755` that a
