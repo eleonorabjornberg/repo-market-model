@@ -178,8 +178,10 @@ settings: a conformal interval (`--calibration conformal`, or `cross_conformal` 
 variance fitted per fold (`--volatility-feature garch11`), an ARX one-step forecast fitted
 per fold (`--arx-feature declared`), and a generalised Pareto tail continuing the law above
 its top declared quantile, fitted per fold on the calibration rows (`--tail gpd`, with
-`--calibration conformal` only), whose per-fold fit a `backtest` record reports. The ARX
-feature and the tail are not scored in Key findings; the rest are.
+`--calibration conformal` only), whose per-fold fit a `backtest` record reports. Not every
+command takes every setting: `exceedance-backtest` takes the calibration and the tail, and its
+record does not report the tail fold by fold. The ARX feature and the tail are not scored in Key
+findings; the rest are.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git
