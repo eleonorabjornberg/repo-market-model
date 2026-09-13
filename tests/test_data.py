@@ -3213,6 +3213,50 @@ class RequestedColumnsBuildTests(unittest.TestCase):
     published build and was not rebuilt. The two mutations that read this
     phrase were re-run; results are recorded in `CalendarColumnTests`, whose
     block changed it.
+
+    Addendum, 13 September 2026 -- A33. The narrowed build's premise -- a
+    build given less than the manifest's `built_columns` does not reproduce its
+    digest -- had no isolating mutation, and the question was whether one can
+    exist. It can. The request and the pricing meet in one call,
+    `cli_data._build` -> `build_daily_panel(columns=...)` ->
+    `_priceable_columns(declared, ...)`, whose `built` is both what is priced
+    and what `write_daily_panel` writes from `build.built_columns`. But
+    `_build` holds the request past that call, so the two separate at the
+    writer: `_requested_columns` has validated the flags and the refusals
+    guard has read the requested build's `refusals` before anything is
+    written. The narrowed request now also pins the header and the manifest's
+    `built_columns` to the subset asked for, stated before the digest
+    inequality.
+
+    Mutation, python3 3.9.6, same conditions as the 10 September record, copy
+    at the per branch and per commit path:
+
+    4. **The writer handed the full build.** In `cli_data._build`, one line
+       inserted immediately before `manifest_path = write_daily_panel(`:
+       `build = build_daily_panel(...)` over the same rows, registry, cutoff,
+       decision time and retrieval map, with `columns=PANEL_COLUMNS`. Flag
+       validation, pricing of the request and the refusals guard all run
+       unchanged; only what is written stops depending on the request. Full
+       suite: exactly one test red, this one --
+       `AssertionError: Lists differ: [... 'tax_date', 'days_to_month_end'] !=
+       [... 'tax_date']`, from the header assertion. Re-run with the header and
+       manifest assertions removed from the copy's test: killed by the
+       `assertNotEqual(narrowed, published)` line itself, `AssertionError:
+       'a588cdf7...a938' == 'a588cdf7...a938'`. So the premise line has teeth
+       of its own, not only through what now stands in front of it.
+
+    Correction to the comment this replaced, found running the above. It said
+    the `--column` no-op mutation goes red "by the priceability assertion
+    below". Re-run against the pre-A33 test: mutation 1 as recorded -- both
+    `args.column` sites disabled -- is killed by the narrowed
+    `assertNotEqual`, `AssertionError: 'a588cdf7...a938' == 'a588cdf7...a938'`,
+    not by the reproduce assertion item 1 names (that kill list predates the
+    13 September re-anchoring). Only the weaker variant, the `columns = ...`
+    line alone, dies through pricing, and there in `digest_of`'s exit-code
+    check for the narrowed build -- `AssertionError: 2 != 0 : error: --column
+    asked for a column this build cannot price: mmf_assets: ...` -- which is
+    the line above the premise, not below it. Unmutated control green before
+    and after.
     """
 
     #: The FR 2004 move's `contract.py` hunk, and nothing else. The human's
@@ -3316,14 +3360,32 @@ class RequestedColumnsBuildTests(unittest.TestCase):
             # So the join's inertness is asserted rather than left to pass
             # silently, and the non-vacuity premise moves to something that
             # cannot decay with the panel: a build given anything less than the
-            # manifest's own list must not reproduce its digest. Under the
-            # mutation that makes `--column` a no-op the test goes red, though
-            # by the priceability assertion below rather than by this one --
-            # an isolating mutation for this line specifically is Track A's to
-            # build, and is recorded as not yet held.
+            # manifest's own list must not reproduce its digest. The isolating
+            # mutation for this line -- the writer handed the full default
+            # build while the request still governs pricing, refusals and
+            # `--column` validation -- is held since A33: see the class
+            # docstring, "Addendum, 13 September 2026 -- A33".
             default = self.digest_of(tmp, "default")
             self.assertEqual(default, published)
             narrowed = self.digest_of(tmp, "narrowed", *built_columns[:-1])
+            # A33. The narrowed request is a strict subset of the buildable
+            # columns, and the subset is what is written: in the header and
+            # in the manifest beside it. Stated before the digest inequality,
+            # which it implies, because it names the columns rather than only
+            # saying the bytes differ.
+            narrowed_panel = Path(tmp) / "narrowed.csv"
+            self.assertEqual(
+                narrowed_panel.read_text(encoding="utf-8").splitlines()[0].split(","),
+                ["date", *built_columns[:-1]],
+            )
+            self.assertEqual(
+                json.loads(
+                    narrowed_panel.with_suffix(".csv.manifest.json").read_text(
+                        encoding="utf-8"
+                    )
+                )["built_columns"],
+                built_columns[:-1],
+            )
             self.assertNotEqual(narrowed, published)
 
             # The fix. The manifest's own `built_columns`, and the bytes are the
