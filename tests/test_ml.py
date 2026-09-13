@@ -4818,6 +4818,326 @@ class TailCeilingTests(unittest.TestCase):
             )
 
 
+class ExceedanceFeatureSettingsTests(unittest.TestCase):
+    """`exceedance-backtest --model gbm` with a feature setting (B42).
+
+    **The gap.** `backtest` and `compare` have taken `--spread-change-lags`,
+    `--volatility-feature` and `--arx-feature` since B23, B24 and B26, and
+    `exceedance-backtest` took none of them, nor did `ml.gbm_exceedance`. Every
+    feature this project has built had been scored on the quantile vector and
+    none on the exceedance curve, which is the metric B39 to B41 established as
+    the one a change to gbm's law moves.
+
+    **What had to reach the fit.** Each setting, through `_select_fitter`'s own
+    resolvers and not a second spelling, into `gbm_exceedance` and from there
+    straight into `fit_gradient_boosted_quantiles`. The purge gap already
+    reaches it (B39), and the curves already carried `model_settings` (B39),
+    which names all three when set and none when not; checked here, not
+    assumed, by part 3.
+
+    **The trap is a flag that parses.** Part 1 alone reads the fit's keywords,
+    and a setting that resolved and was then dropped between the fit's keywords
+    and its design would pass it. Part 2 reads the curves the runs scored: each
+    setting's run scores a different curve from the plain run's at a declared
+    tau on some fold.
+
+    **The fixture.** A weekday panel whose spread is an AR(1) around 10 bp with
+    shocks whose size switches between calm and volatile stretches, so the
+    lagged changes, the GARCH variance and the ARX forecast each carry
+    information the plain design does not. Calibration is `none` throughout:
+    the feature settings are independent of it, and B39's class holds the
+    calibrated and tailed paths.
+
+    **Part 3's comparison is against this block's base**, written out here as
+    `gbm_exceedance` stood before B42: the fitter's defaults, the gap handed
+    over, the curves carrying the fit's settings and tail account. A run asking
+    for no feature setting must publish that record key for key, which is the
+    fixture-sized statement of the claim that every exceedance record published
+    before this block (`docs/runs/exceedance_gbm_mh61.json`,
+    `exceedance_arx_mh61.json`, `exceedance_funding_climatology.json` and the
+    two conformal records) re-scores unchanged: none of them names a feature
+    setting, and a run naming none binds nothing.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy per mutation plus an unmutated control under
+    `$HOME`, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was counted as an exact substring in Python
+    and found exactly once. Every failure is `AssertionError`; none is an
+    incidental exception. A subtest stops at its first failed assertion, so
+    where every setting is dropped at once (5, 6) each subtest reports the
+    first setting in `SETTINGS` and is one failure, not three.
+
+    1, 2, 3. **Each setting dropped between resolution and the fit** ---
+       `spread_change_lags=spread_change_lags,`, then
+       `volatility_feature=volatility_feature,`, then `arx_feature=arx_feature,`
+       removed from `gbm_exceedance`'s call to the fitter. Each kills **part
+       2** (`[] is not true : ... scored the plain run's curve at every fold
+       and tau`) **and part 1 too** (`None != 2`, `None != 'garch11'`, `None
+       != 'declared'` on the fit's keywords), and **part 3** (the same `None`
+       on the record's declaration, because `model_settings` is read off the
+       fit the setting never reached). Part 1 cannot stay green over this
+       defect: it reads exactly the fit the setting is dropped before. Part 2
+       is the guard that does not depend on where the drop happens. Nothing
+       else in the suite goes red.
+    4. **Resolved and never bound** --- `**settings` dropped from
+       `MODEL_FACTORIES["gbm"].build`, so every resolver runs and refuses and
+       nothing reaches `gbm_exceedance`. Parts 1, 2 and 3 as above, reported on
+       the lags setting; also `ExceedanceTailTests` parts 1 and 2 (`None !=
+       'gpd'`; `0.0326... == 0.0326...`), which read the same binding. This is
+       the trap: a flag that parses.
+    5. **The settings never read from the arguments** --- the three
+       `settings.update(...)` calls for the feature resolvers removed from
+       `_select_model`. Parts 1, 2 and 3 as mutation 4, and all three part 4
+       subtests (`0 != 2`: each flag accepted and ignored). Nothing else: the
+       B39 settings are still read.
+    6, 7, 8. **Each refusal removed in turn**, the condition made `if False:`
+       in `_spread_change_lags`, `_volatility_feature` and `_arx_feature`. Each
+       kills its own **part 4** subtest alone of this test (`0 != 2`: the run
+       completes, the climatology, arx or threshold model silently not handed
+       the setting). Also the matching `backtest` refusal subtest of
+       `GradientBoostedLaggedSpreadTests`, `GradientBoostedGarchFeatureTests`
+       and `GradientBoostedArxFeatureTests` respectively, `SplitError not
+       raised`, which read the same resolver.
+    9. **`model_settings` not carried on the curves** --- `model_settings=`
+       removed from `gbm_exceedance`'s `ExceedanceCurves`. **Part 3 alone** of
+       this test (`None != 2` on the record's declaration: the curve moved and
+       the record did not say why); part 3's key-for-key comparison of the
+       plain run does not see it, because an unset run's settings are empty
+       either way, which is why part 3 also reads the set runs. Also
+       `ExceedanceTailTests` part 1, `None != 'gpd'`, the same read.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    MINIMUM_HISTORY = 120
+    SCORED = 4
+    #: `(flags, the fitter keyword, the value it must receive)`, one per setting.
+    SETTINGS = (
+        (("--spread-change-lags", "2"), "spread_change_lags", 2),
+        (("--volatility-feature", "garch11"), "volatility_feature", "garch11"),
+        (("--arx-feature", "declared"), "arx_feature", "declared"),
+    )
+
+    def setUp(self):
+        require_extra(self)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        self.registry = declared_registry_file(
+            self.tmp, purge=self.PURGE, features=self.FEATURES
+        )
+        self.panel = self.write_panel()
+
+    def write_panel(self):
+        """The panel the docstring describes."""
+
+        rng = random.Random(20260913)
+        path = self.tmp / "panel.csv"
+        days = business_days(
+            date(2021, 1, 4), self.MINIMUM_HISTORY + self.PURGE + self.SCORED
+        )
+        spread = 10.0
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["date", "sofr", "iorb", "on_rrp", "sofr_volume"])
+            for index, when in enumerate(days):
+                scale = 3.0 if (index // 15) % 2 else 0.5
+                on_rrp = 100.0 * rng.random()
+                spread = 10.0 + 0.7 * (spread - 10.0) + 0.02 * (on_rrp - 50.0) + rng.gauss(0.0, scale)
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     round(on_rrp, 4), round(2000.0 + 400.0 * rng.random(), 4)]
+                )
+        return path
+
+    def run_command(self, *extra, model="gbm", name="run"):
+        """`exceedance-backtest` through `cli.main`, and what it fitted and scored.
+
+        `ExceedanceTailTests.run_command`'s spies: each wraps the real function
+        and returns its value, so the run is the command's own.
+        """
+
+        fits, reports = [], []
+        fitter = ml.fit_gradient_boosted_quantiles
+        backtest = cli_eval.rolling_exceedance_backtest
+
+        def fit_spy(*args, **kwargs):
+            model = fitter(*args, **kwargs)
+            fits.append((model, kwargs))
+            return model
+
+        def backtest_spy(*args, **kwargs):
+            report = backtest(*args, **kwargs)
+            reports.append(report)
+            return report
+
+        report_path = self.tmp / f"{name}.json"
+        argv = [
+            "exceedance-backtest",
+            "--panel", str(self.panel),
+            "--thresholds", str(THRESHOLDS),
+            "--registry", str(self.registry),
+            "--decision-time", DECISION_TIME,
+            "--minimum-history", str(self.MINIMUM_HISTORY),
+            "--model", model,
+            "--report", str(report_path),
+        ]
+        for feature in self.FEATURES:
+            argv += ["--feature", feature]
+        argv += list(extra)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(ml, "fit_gradient_boosted_quantiles", fit_spy), \
+                mock.patch.object(cli_eval, "rolling_exceedance_backtest", backtest_spy), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(argv)
+        document = (
+            json.loads(report_path.read_text(encoding="utf-8"))
+            if report_path.exists()
+            else None
+        )
+        return code, " ".join(err.getvalue().split()), fits, reports, document
+
+    def base_document(self):
+        """The record this block's base `gbm_exceedance` published for this run."""
+
+        regressors, minimum_history = self.REGRESSORS, self.MINIMUM_HISTORY
+
+        def fit_predict(train_rows, feature_rows, taus, purge_days=None):
+            model = ml.fit_gradient_boosted_quantiles(
+                train_rows,
+                regressors,
+                minimum_history=minimum_history,
+                purge_days=purge_days,
+            )
+            return baseline.ExceedanceCurves(
+                tuple(model.predict_stress(row, taus) for row in feature_rows),
+                model.features_read,
+                ml_libraries=model.ml_libraries,
+                model_settings=model.model_settings,
+                tail_account=model.tail_account,
+            )
+
+        report = baseline.rolling_exceedance_backtest(
+            load_daily_panel(self.panel),
+            predictor=fit_predict,
+            model_name="gbm",
+            features=self.FEATURES,
+            registry=json.loads(self.registry.read_text(encoding="utf-8")),
+            decision_time=time.fromisoformat(DECISION_TIME),
+            taus=tuple(float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"]),
+            minimum_history=minimum_history,
+        )
+        return json.loads(json.dumps(
+            baseline.exceedance_backtest_document(
+                report,
+                panel_path=self.panel,
+                registry_path=self.registry,
+                thresholds_path=THRESHOLDS,
+            ),
+            sort_keys=True,
+        ))
+
+    def test_an_exceedance_run_carries_its_feature_settings_into_every_fold_and_declares_them(
+        self,
+    ):
+        """Each setting reaches every fold's fit, moves the scored curve, is
+        declared on the record when set and absent when not, and is refused for
+        a model that takes none."""
+
+        keys = [key for _, key, _ in self.SETTINGS]
+        code, err, plain_fits, plain_reports, plain_document = self.run_command(
+            name="plain"
+        )
+        self.assertEqual(code, 0, msg=err)
+        (plain,) = plain_reports
+        runs = []
+        for position, (flags, key, value) in enumerate(self.SETTINGS):
+            code, err, fits, reports, document = self.run_command(
+                *flags, name=f"setting-{position}"
+            )
+            self.assertEqual(code, 0, msg=f"{flags}: {err}")
+            (report,) = reports
+            runs.append((flags, key, value, fits, report, document))
+
+        with self.subTest("1. each setting reaches every fold's fit, and only it"):
+            self.assertTrue(plain.folds)
+            self.assertEqual(len(plain_fits), len(plain.folds))
+            for model, kwargs in plain_fits:
+                for other in keys:
+                    self.assertIsNone(kwargs.get(other), msg=other)
+                    self.assertIsNone(getattr(model, other), msg=other)
+            for flags, key, value, fits, report, _ in runs:
+                self.assertEqual(len(fits), len(report.folds), msg=str(flags))
+                self.assertEqual(len(report.folds), len(plain.folds), msg=str(flags))
+                for model, kwargs in fits:
+                    self.assertEqual(kwargs.get(key), value, msg=str(flags))
+                    self.assertEqual(getattr(model, key), value, msg=str(flags))
+                    self.assertEqual(kwargs.get("purge_days"), report.purge_days)
+                    for other in keys:
+                        if other != key:
+                            self.assertIsNone(kwargs.get(other), msg=f"{flags}: {other}")
+
+        with self.subTest("2. each setting's run scores a different curve"):
+            for flags, key, value, fits, report, _ in runs:
+                self.assertEqual(
+                    [(fold.scored_date, fold.feature_date) for fold in report.folds],
+                    [(fold.scored_date, fold.feature_date) for fold in plain.folds],
+                )
+                self.assertEqual(report.taus, plain.taus)
+                moved = [
+                    (fold.scored_date, tau)
+                    for fold, with_setting, without in zip(
+                        report.folds, report.forecast, plain.forecast
+                    )
+                    for tau, a, b in zip(report.taus, with_setting, without)
+                    if a != b
+                ]
+                self.assertTrue(
+                    moved,
+                    msg=f"{flags} scored the plain run's curve at every fold and tau",
+                )
+
+        with self.subTest("3. the record declares each setting, and only when set"):
+            for flags, key, value, _, _, document in runs:
+                declaration = document["declaration"]
+                self.assertEqual(declaration.get(key), value, msg=str(flags))
+                for other in keys:
+                    if other != key:
+                        self.assertNotIn(other, declaration, msg=f"{flags}: {other}")
+            for other in keys:
+                self.assertNotIn(other, plain_document["declaration"])
+            self.assertEqual(plain_document, self.base_document())
+
+        with self.subTest("4. refusals"):
+            for position, (model, extra, phrase) in enumerate((
+                ("climatology", ("--spread-change-lags", "2"),
+                 "--spread-change-lags 2 was given, but --model climatology reads "
+                 "no lagged spread changes; only gbm does"),
+                ("arx", ("--volatility-feature", "garch11"),
+                 "--volatility-feature garch11 was given, but --model arx reads no "
+                 "volatility feature; only gbm does"),
+                ("threshold", ("--regime-variable", "on_rrp", "--arx-feature", "declared"),
+                 "--arx-feature declared was given, but --model threshold reads no "
+                 "ARX forecast as a feature; only gbm does"),
+            )):
+                with self.subTest(model=model, flags=extra):
+                    code, err, fits, _, document = self.run_command(
+                        *extra, model=model, name=f"refused-{position}"
+                    )
+                    self.assertEqual(code, 2, msg=err)
+                    self.assertIn(phrase, err)
+                    self.assertIsNone(document)
+                    self.assertEqual(fits, [])
+
+
 class GradientBoostedCompareTests(ContinuousModelHarness):
     """`compare --model-b gbm --loss crps`: the one ML model reaching the criterion.
 
