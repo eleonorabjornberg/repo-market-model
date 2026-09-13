@@ -197,6 +197,13 @@ TRACKS = {
             "tests/test_metrics.py",
             "tests/test_splits.py",
             "tests/test_event_eval.py",
+            # The tail diagnostic and its test. Forbidden to Track A, which is what makes
+            # them Track B's: a new path in no list at all is one this gate is silent about,
+            # and test_contract's ownership tripwire fails on exactly that. The block that
+            # wrote them was told they were already owned, stopped rather than committing an
+            # unowned path, and was right to.
+            "src/repo_model/tail_diagnostics.py",
+            "tests/test_tail_diagnostics.py",
         ),
         "owner": "Track B (model and evaluation)",
     },
