@@ -2360,6 +2360,147 @@ SETTLEMENT_ZERO_COLUMNS = MappingProxyType(
 SETTLEMENT_CALENDAR = "America/New_York"
 
 
+# The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them "a
+# function of the scored date alone", and that is the whole implementation
+# rule: each value below is computed from one `date` and nothing else -- no
+# panel row, no grid, no source. A value that read the next row on the grid
+# would depend on which rows exist after the scored date, which is a look
+# forward at the panel wearing a calendar.
+
+
+def _last_day_of_month(day: date) -> int:
+    import calendar
+
+    return calendar.monthrange(day.year, day.month)[1]
+
+
+def days_to_month_end(day: date) -> float:
+    """Calendar days remaining until the last day of `day`'s month.
+
+    0 on the last day; 30 on the first of a 31-day month, 29 of a 30-day month,
+    27 of a 28-day February, 28 of a 29-day one. Unclipped and unsigned; see
+    `contract.CALENDAR_FEATURES` for why.
+    """
+
+    return float(_last_day_of_month(day) - day.day)
+
+
+def quarter_end(day: date) -> float:
+    """1.0 on the last calendar day of March, June, September or December.
+
+    The last *calendar* day, not the last grid date: 2019-03-31 was a Sunday,
+    and 2019-03-29 is 0.0. A panel therefore carries no 1.0 at all for a
+    quarter whose last day it has no row for, and that is the definition, not
+    a hole -- the grid-relative reading needs the next row to know it is last.
+    """
+
+    return float(day.month in (3, 6, 9, 12) and day.day == _last_day_of_month(day))
+
+
+#: The months holding a corporate estimated-tax deadline for a calendar-year
+#: corporation: the 15th of the 4th, 6th, 9th and 12th months (26 U.S.C. 6655).
+TAX_DEADLINE_MONTHS = (4, 6, 9, 12)
+
+#: The deadline and this many business days after it read 1.0.
+TAX_WINDOW_BUSINESS_DAYS = 2
+
+
+def _observed(holiday: date) -> date:
+    """A fixed-date DC holiday on a weekend is observed on the nearer weekday."""
+
+    if holiday.weekday() == 5:
+        return holiday - timedelta(days=1)
+    if holiday.weekday() == 6:
+        return holiday + timedelta(days=1)
+    return holiday
+
+
+def _tax_deadline_holidays(year: int) -> frozenset:
+    """The DC legal holidays of the four deadline months, as observed. Nothing else.
+
+    **This is not a holiday calendar and must not be used as one.** The
+    repository refuses to invent one -- `expected_ref_dates_from_registry`,
+    `_settlement_publication`, `build_daily_panel` rule 8, and `splits.py` on
+    why a guard must not depend on one -- and that refusal stands. This is the
+    statutory rolling rule for one deadline: 26 U.S.C. 7503 moves a deadline
+    falling on a Saturday, Sunday or "legal holiday" to the next day that is
+    none of them, and a legal holiday there is one in the District of
+    Columbia. It is therefore bounded to the months a deadline falls in, and it
+    is private.
+
+    D.C. Code 1-612.02 and 28-2701, in those months: DC Emancipation Day
+    (16 April), Juneteenth (19 June, from 2021), Labor Day (first Monday of
+    September) and Christmas Day. A fixed date on a Saturday is observed the
+    Friday before, on a Sunday the Monday after. Labor Day and Christmas cannot
+    reach a deadline window and are listed so the set is the statute's for
+    those months rather than a selection of the days that happened to matter.
+    Not modelled: days appointed as holidays by proclamation, and deadlines
+    postponed by IRS notice (2020's COVID relief). The column is the statutory
+    date.
+
+    Emancipation Day moves the April deadline itself; Juneteenth moves only the
+    window after a June deadline (2023, 2024). `CalendarColumnTests` pins both.
+    """
+
+    labor_day = date(year, 9, 1) + timedelta(days=(0 - date(year, 9, 1).weekday()) % 7)
+    holidays = {
+        _observed(date(year, 4, 16)),
+        labor_day,
+        _observed(date(year, 12, 25)),
+    }
+    if year >= 2021:
+        holidays.add(_observed(date(year, 6, 19)))
+    return frozenset(holidays)
+
+
+def _is_tax_business_day(day: date) -> bool:
+    return day.weekday() < 5 and day not in _tax_deadline_holidays(day.year)
+
+
+def corporate_tax_deadline(year: int, month: int) -> date:
+    """The statutory estimated-tax date: the 15th, rolled forward off weekends and DC holidays."""
+
+    if month not in TAX_DEADLINE_MONTHS:
+        raise ValueError(f"month {month} holds no corporate estimated-tax deadline")
+    day = date(year, month, 15)
+    while not _is_tax_business_day(day):
+        day += timedelta(days=1)
+    return day
+
+
+def tax_date(day: date) -> float:
+    """1.0 on the tax deadline and the two business days after it; 0.0 otherwise.
+
+    The two days are counted by the same weekday-and-DC-holiday arithmetic as
+    the roll, never by stepping through the panel grid: the grid is a property
+    of which sources printed, and a date's value must not depend on which rows
+    exist after it. Every window ends inside its own month, so only `day`'s
+    month is consulted.
+    """
+
+    if day.month not in TAX_DEADLINE_MONTHS:
+        return 0.0
+    current = corporate_tax_deadline(day.year, day.month)
+    window = [current]
+    while len(window) <= TAX_WINDOW_BUSINESS_DAYS:
+        current += timedelta(days=1)
+        if _is_tax_business_day(current):
+            window.append(current)
+    return float(day in window)
+
+
+#: Calendar column -> its rule. A `contract.CALENDAR_FEATURES` name with no
+#: entry here is refused by the build, with the reason, as every calendar
+#: column was before A31.
+CALENDAR_COLUMN_RULES = MappingProxyType(
+    {
+        "days_to_month_end": days_to_month_end,
+        "quarter_end": quarter_end,
+        "tax_date": tax_date,
+    }
+)
+
+
 @dataclass(frozen=True)
 class DailyPanelBuild:
     """A wide daily panel and the record of how it was built.
@@ -2494,7 +2635,11 @@ def _priceable_columns(
     it.
     """
 
-    from .contract import UndeclaredFeatureError, field_sources_for_features
+    from .contract import (
+        CALENDAR_FEATURES,
+        UndeclaredFeatureError,
+        field_sources_for_features,
+    )
     from .registry import RegistryContractError, max_release_lag_days
 
     def refusal(selection) -> Optional[str]:
@@ -2507,6 +2652,17 @@ def _priceable_columns(
     built: List[str] = []
     refusals: Dict[str, str] = {}
     for column in columns:
+        # A calendar column has no source to price, so it is not sent to the
+        # pricing function, which refuses an empty selection. It is built when
+        # this module has its rule, and refused with the reason when not.
+        if column in CALENDAR_FEATURES:
+            if column in CALENDAR_COLUMN_RULES:
+                built.append(column)
+            else:
+                refusals[column] = (
+                    f"calendar column {column!r} has no rule in data.CALENDAR_COLUMN_RULES"
+                )
+            continue
         try:
             pairs = field_sources_for_features([column])
         except UndeclaredFeatureError as exc:
@@ -2881,8 +3037,19 @@ def build_daily_panel(
     any build that declares `sofr`, which is every published one; it is not a
     value, it is the rule those builds happened to satisfy.
 
-    Raises `DataContractError` if the cutoff is naive, if no declared column
-    survives pricing, if nothing is left to index, under rule 5, or under rule 8.
+    **9. A calendar column is computed from the grid date, and is never priced**
+    (A31). `contract.CALENDAR_FEATURES` declares it a function of the scored
+    date alone, so it draws on no source and has no release lag to price; a
+    column there with a rule in `CALENDAR_COLUMN_RULES` is built, one without
+    is refused with the reason. Each value is the rule applied to the row's own
+    `ref_date` -- not to a neighbouring row, and not to the grid -- so it is
+    never a hole and never a settlement zero, and it adds no date to the grid:
+    rule 6's grid is made by the sourced columns alone, and a build with no
+    sourced column surviving raises.
+
+    Raises `DataContractError` if the cutoff is naive, if no declared sourced
+    column survives pricing, if nothing is left to index, under rule 5, or
+    under rule 8.
     """
 
     from .contract import FEATURE_FIELDS
@@ -2893,9 +3060,16 @@ def build_daily_panel(
     declared = list(columns)
     visible = [row for row in observations if row.available_at <= build_cutoff]
     built, refusals = _priceable_columns(declared, registry, decision_time, visible)
-    if not built:
+    # Rule 9. A calendar column is computed on the grid, and supplies none: a
+    # build whose only surviving columns are calendar ones has no dates to
+    # compute them on, and fails here with the refusals rather than later with
+    # none.
+    sourced = [column for column in built if column not in CALENDAR_COLUMN_RULES]
+    if not sourced:
         raise DataContractError(
-            "no declared column survived pricing: "
+            "no declared column survived pricing"
+            + (" other than calendar columns, which supply no dates" if built else "")
+            + ": "
             + "; ".join(f"{name}: {reason}" for name, reason in sorted(refusals.items()))
         )
 
@@ -2903,7 +3077,7 @@ def build_daily_panel(
     # is the one place the rename is written down; deriving it by string
     # matching on `series_id` is the thing that block was written to avoid.
     column_for_series: Dict[str, str] = {}
-    for column in built:
+    for column in sourced:
         for _source_id, field in FEATURE_FIELDS[column]:
             column_for_series[str(field)] = column
 
@@ -2934,7 +3108,7 @@ def build_daily_panel(
     # nothing should not be able to fail this build through any channel,
     # including a malformed declaration of its own.
     built_sources = {
-        str(source_id) for column in built for source_id, _field in FEATURE_FIELDS[column]
+        str(source_id) for column in sourced for source_id, _field in FEATURE_FIELDS[column]
     }
     # ...and only the sources that supplied something. A column can be priceable
     # and built from a source this build holds no file of -- `funding_inputs/`
@@ -2968,7 +3142,7 @@ def build_daily_panel(
             worst = max(evaluation.violations, key=lambda item: item.residual)
             supplied = sorted(
                 column
-                for column in built
+                for column in sourced
                 if any(
                     str(source_id) == evaluation.source_id
                     for source_id, _field in FEATURE_FIELDS[column]
@@ -3034,6 +3208,10 @@ def build_daily_panel(
     for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
+            # Rule 9: from the date alone, never from a row. Never a hole.
+            if column in CALENDAR_COLUMN_RULES:
+                values[column] = CALENDAR_COLUMN_RULES[column](ref_date)
+                continue
             row = latest.get((column, ref_date))
             if row is None and ref_date in zero_dates.get(column, ()):
                 settlement_zeros[column] += 1

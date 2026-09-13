@@ -3205,6 +3205,14 @@ class RequestedColumnsBuildTests(unittest.TestCase):
 
     The pinned build still reproduces the manifest's digest after A30: the
     manifest's `built_columns` hold no snapshot-basis column.
+
+    Addendum, 13 September 2026 -- A31. The unpriced column is
+    `reserve_balances`, not `quarter_end`: A31 builds the calendar columns, so
+    `quarter_end` asked for by name now exits 0. The manifest's
+    `refused_columns` still names `quarter_end`, because it records the
+    published build and was not rebuilt. The two mutations that read this
+    phrase were re-run; results are recorded in `CalendarColumnTests`, whose
+    block changed it.
     """
 
     #: The FR 2004 move's `contract.py` hunk, and nothing else. The human's
@@ -3326,17 +3334,21 @@ class RequestedColumnsBuildTests(unittest.TestCase):
             self.assertIn("is not a panel column", text)
 
             # A panel column this build cannot price is refused rather than
-            # silently absent. `quarter_end` is a declared column and is in the
-            # manifest's `refused_columns`; asked for by name it must not come
-            # back as a panel without it. It was `on_rrp` until A30, which
-            # prices a snapshot column from the rows the build can see, and
-            # this build can see `on_rrp`'s; `quarter_end` is calendar-only and
-            # refused whatever the rows.
-            self.assertIn("quarter_end", manifest["refused_columns"])
-            code, text = self.run_build(Path(tmp) / "unpriced.csv", "sofr", "quarter_end")
+            # silently absent. `reserve_balances` is a declared column and is
+            # in the manifest's `refused_columns`; asked for by name it must
+            # not come back as a panel without it. It was `on_rrp` until A30,
+            # which prices a snapshot column from the rows the build can see,
+            # and `quarter_end` until A31, which computes the calendar columns
+            # from the date. `reserve_balances` is refused by the tracked
+            # registry's own declaration -- `WRESBAL` declares no
+            # `revision_policy` -- whatever the rows.
+            self.assertIn("reserve_balances", manifest["refused_columns"])
+            code, text = self.run_build(
+                Path(tmp) / "unpriced.csv", "sofr", "reserve_balances"
+            )
             self.assertEqual(code, 2, text)
             self.assertIn("cannot price", text)
-            self.assertIn("quarter_end", text)
+            self.assertIn("reserve_balances", text)
 
 
 class FR2004EraIdentityTests(unittest.TestCase):
@@ -5241,7 +5253,8 @@ class SnapshotBasisPricingTests(unittest.TestCase):
     Two existing tests asserted the defect and were changed with it, each
     keeping what it is for: `DailyPanelJoinTests.test_a_column_is_refused_by_
     the_registry_not_by_a_list` (see the addendum there) and the `on_rrp`
-    phrase of `RequestedColumnsBuildTests`, now `quarter_end` (see that class).
+    phrase of `RequestedColumnsBuildTests`, then `quarter_end` and since A31
+    `reserve_balances` (see that class).
 
     Mutation record, 12 September 2026, python3 3.9.6. Each mutation applied
     in its own disposable copy under `$HOME`, built from `git ls-files -z
@@ -5445,6 +5458,259 @@ class SnapshotBasisPricingTests(unittest.TestCase):
                 self.registry_refusal(unlicensed, field_sources_for_features(["iorb"])),
             )
             self.assertIn("revision_policy", refusals["iorb"])
+
+
+class CalendarColumnTests(unittest.TestCase):
+    """A31: `quarter_end`, `tax_date` and `days_to_month_end` are built from the date.
+
+    The acceptance criterion and the mutation target is
+    `test_a_build_computes_the_calendar_columns_from_the_date_alone`. Its
+    expected values are written from the definitions -- the calendar, and the
+    statute for the tax date (26 U.S.C. 6655 and 7503, D.C. Code 1-612.02) --
+    and not from any implementation's output. Each date is there for what it
+    exercises:
+
+    * 2019-03-29, a Friday, is the last grid date of a quarter whose last
+      calendar day, 2019-03-31, is a Sunday: `quarter_end` 0.0 and
+      `days_to_month_end` 2. The quarter carries no 1.0 on this grid at all;
+      2019-09-30, a Monday, is the quarter end that is a grid date.
+    * February: 2019-02-01 reads 27 and 2019-02-28 reads 0; 2020-02-28 reads 1,
+      because 2020 is a leap year. 2019-10-01 and 2019-11-01 are the first days
+      of a 31-day and a 30-day month.
+    * 2019-09-15 was a Sunday, so the deadline rolls to Monday 2019-09-16 and
+      the window covers 2019-09-17 and 2019-09-18; 2019-09-13 and 2019-09-19
+      read 0.0. The grid omits 2019-09-17 in the second build, and 2019-09-18
+      and 2019-09-19 must not move: a window counted by stepping through the
+      grid would put 2019-09-19 inside it.
+    * The three deadlines DC Emancipation Day moves: 2018-04-16 (a Monday, the
+      holiday itself), 2022-04-15 (a Friday, the Saturday holiday observed) and
+      2023-04-17 (a Monday, the Sunday holiday observed) are each 0.0, and the
+      rolled deadline and its two business days are 1.0.
+    * The window moves too, not only the deadline, which the brief did not say:
+      Emancipation Day on Tuesday 2019-04-16 lies inside the window after
+      Monday 2019-04-15, and Juneteenth on Wednesday 2024-06-19 inside the one
+      after Monday 2024-06-17. Both holidays read 0.0 and the window runs a day
+      later.
+
+    `test_dc_holidays_move_exactly_three_deadlines_from_2018_to_2027` is the
+    pin on the holiday rule's reach, as the brief asked: if the count ever
+    changes, a human looks.
+
+    Mutation record, 13 September 2026, python3 3.9.6. Each mutation applied
+    in its own disposable copy under `$HOME`, built from `git ls-files -z
+    --cached --others --exclude-standard`; `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B`, the whole suite run in each, every target confirmed present
+    exactly once before it was replaced. The unmutated control was green before
+    and after. Every kill is `AssertionError`; the bracketed names are subtests
+    of the one acceptance test.
+
+    1. **The window cut to one business day**: `TAX_WINDOW_BUSINESS_DAYS = 1`.
+       Killed only by the acceptance test, `[the values]`, `[a date alone, with
+       no panel]` and `[the grid does not move a value]` -- e.g. `(0.0, 0.0,
+       12.0) != (0.0, 1.0, 12.0)`, the third day of a window read as outside it.
+    2. **The countdown 1-based**: `days_to_month_end` returning `last - day +
+       1`. Killed only by the acceptance test, the same three subtests -- e.g.
+       `1.0 != 0.0` on 2019-03-31 and `(0.0, 0.0, 15.0) != (0.0, 0.0, 14.0)`.
+    3. **Emancipation Day dropped** from `_tax_deadline_holidays`. Killed by
+       the acceptance test's same three subtests and by
+       `test_dc_holidays_move_exactly_three_deadlines_from_2018_to_2027`
+       (`{} != {datetime.date(2018, 4, 16): ...}`), and nothing else.
+
+    A31 changed `RequestedColumnsBuildTests`' unpriced column from `quarter_end`
+    to `reserve_balances`, so the two mutations that class's record names for
+    that phrase were re-run under the same conditions:
+
+    * the `build.refusals` guard in `cli_data._build` disabled -- killed by the
+      same test, `AssertionError: 0 != 2`, exit 0 with `reserve_balances`
+      absent from the panel, and nothing else;
+    * only the `columns = ...` line disabled -- killed by the same test,
+      `AssertionError: 2 != 0`, the refusals naming `mmf_assets` and the other
+      snapshot columns and no longer any calendar column; and by
+      `test_generated_results.MilestoneAReproductionTests.test_the_published_
+      persistence_run_reproduces_from_tracked_inputs` (`AssertionError`, from
+      `reproduce_milestone_a.ReproductionError`: the build exits 2).
+    """
+
+    REGISTRY = {
+        "nyfed_sofr": {
+            "release_lag": {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 1,
+                "worst_case_calendar_days": 6,
+                "available_time": "15:00",
+                "timezone": "America/New_York",
+                "note": "fixture",
+            }
+        }
+    }
+    CALENDAR = ("quarter_end", "tax_date", "days_to_month_end")
+
+    #: date -> (quarter_end, tax_date, days_to_month_end), from the definitions.
+    EXPECTED = {
+        date(2019, 2, 1): (0.0, 0.0, 27.0),
+        date(2019, 2, 28): (0.0, 0.0, 0.0),
+        date(2020, 2, 28): (0.0, 0.0, 1.0),
+        date(2019, 3, 29): (0.0, 0.0, 2.0),
+        date(2019, 4, 1): (0.0, 0.0, 29.0),
+        date(2019, 9, 13): (0.0, 0.0, 17.0),
+        date(2019, 9, 16): (0.0, 1.0, 14.0),
+        date(2019, 9, 17): (0.0, 1.0, 13.0),
+        date(2019, 9, 18): (0.0, 1.0, 12.0),
+        date(2019, 9, 19): (0.0, 0.0, 11.0),
+        date(2019, 9, 30): (1.0, 0.0, 0.0),
+        date(2019, 10, 1): (0.0, 0.0, 30.0),
+        date(2019, 11, 1): (0.0, 0.0, 29.0),
+        # Emancipation Day moves the deadline.
+        date(2018, 4, 16): (0.0, 0.0, 14.0),
+        date(2018, 4, 17): (0.0, 1.0, 13.0),
+        date(2018, 4, 19): (0.0, 1.0, 11.0),
+        date(2018, 4, 20): (0.0, 0.0, 10.0),
+        date(2022, 4, 15): (0.0, 0.0, 15.0),
+        date(2022, 4, 18): (0.0, 1.0, 12.0),
+        date(2022, 4, 20): (0.0, 1.0, 10.0),
+        date(2022, 4, 21): (0.0, 0.0, 9.0),
+        date(2023, 4, 17): (0.0, 0.0, 13.0),
+        date(2023, 4, 18): (0.0, 1.0, 12.0),
+        date(2023, 4, 20): (0.0, 1.0, 10.0),
+        date(2023, 4, 21): (0.0, 0.0, 9.0),
+        # ...and a holiday inside the window moves its end.
+        date(2019, 4, 15): (0.0, 1.0, 15.0),
+        date(2019, 4, 16): (0.0, 0.0, 14.0),
+        date(2019, 4, 18): (0.0, 1.0, 12.0),
+        date(2019, 4, 19): (0.0, 0.0, 11.0),
+        date(2024, 6, 17): (0.0, 1.0, 13.0),
+        date(2024, 6, 19): (0.0, 0.0, 11.0),
+        date(2024, 6, 20): (0.0, 1.0, 10.0),
+        date(2024, 6, 21): (0.0, 0.0, 9.0),
+    }
+
+    def observation(self, ref_date: date) -> PointInTimeObservation:
+        return PointInTimeObservation(
+            series_id="SOFR",
+            ref_date=ref_date,
+            available_at=datetime.combine(
+                ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+            ),
+            value=2.0,
+            vintage_id=f"v{ref_date.isoformat()}",
+            source_sha="a" * 64,
+        )
+
+    def build(self, dates, columns):
+        return build_daily_panel(
+            [self.observation(day) for day in dates],
+            self.REGISTRY,
+            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("15:00"),
+            columns=columns,
+        )
+
+    def test_a_build_computes_the_calendar_columns_from_the_date_alone(self):
+        """The acceptance criterion and the mutation target. See the class docstring."""
+
+        from repo_model import data
+
+        grid = sorted(self.EXPECTED)
+        requested = self.build(grid, ("sofr", *self.CALENDAR))
+
+        with self.subTest("built, not refused, and never a hole"):
+            self.assertEqual(requested.built_columns, ("sofr", *self.CALENDAR))
+            self.assertEqual(requested.refusals, {})
+            for column in self.CALENDAR:
+                self.assertEqual(requested.holes[column], 0)
+            with tempfile.TemporaryDirectory() as tmp:
+                manifest = json.loads(
+                    write_daily_panel(requested, Path(tmp) / "panel.csv").read_text(
+                        encoding="utf-8"
+                    )
+                )
+            self.assertEqual(manifest["refused_columns"], {})
+            self.assertEqual(
+                manifest["built_columns"], ["sofr", "quarter_end", "tax_date", "days_to_month_end"]
+            )
+
+        with self.subTest("the values"):
+            got = {
+                row.date: tuple(row.values[column] for column in self.CALENDAR)
+                for row in requested.observations
+            }
+            self.assertEqual(got, self.EXPECTED)
+
+        with self.subTest("a date alone, with no panel"):
+            self.assertEqual(data.quarter_end(date(2019, 3, 31)), 1.0)
+            self.assertEqual(data.days_to_month_end(date(2019, 3, 31)), 0.0)
+            self.assertEqual(data.days_to_month_end(date(2020, 2, 1)), 28.0)
+            self.assertEqual(data.quarter_end(date(2019, 8, 31)), 0.0)
+            for day, (quarter, tax, countdown) in self.EXPECTED.items():
+                self.assertEqual(
+                    (data.quarter_end(day), data.tax_date(day), data.days_to_month_end(day)),
+                    (quarter, tax, countdown),
+                    day,
+                )
+
+        with self.subTest("the grid does not move a value"):
+            thinned = self.build(
+                [day for day in grid if day != date(2019, 9, 17)], ("sofr", *self.CALENDAR)
+            )
+            for row in thinned.observations:
+                self.assertEqual(
+                    tuple(row.values[column] for column in self.CALENDAR),
+                    self.EXPECTED[row.date],
+                    row.date,
+                )
+
+        with self.subTest("a build that does not request them is unchanged"):
+            plain = self.build(grid, ("sofr",))
+            self.assertEqual(plain.built_columns, ("sofr",))
+            self.assertEqual(plain.refusals, {})
+            self.assertEqual(
+                [(row.date, dict(row.values)) for row in plain.observations],
+                [(row.date, {"sofr": row.values["sofr"]}) for row in requested.observations],
+            )
+
+        with self.subTest("a calendar column with no rule is refused, with the reason"):
+            rules = {k: v for k, v in data.CALENDAR_COLUMN_RULES.items() if k != "tax_date"}
+            with unittest.mock.patch.object(
+                data, "CALENDAR_COLUMN_RULES", MappingProxyType(rules)
+            ):
+                unruled = self.build(grid, ("sofr", *self.CALENDAR))
+            self.assertEqual(unruled.built_columns, ("sofr", "quarter_end", "days_to_month_end"))
+            self.assertIn("CALENDAR_COLUMN_RULES", unruled.refusals["tax_date"])
+
+        with self.subTest("calendar columns alone supply no grid"):
+            with self.assertRaises(DataContractError) as raised:
+                self.build(grid, self.CALENDAR)
+            self.assertIn("calendar columns", str(raised.exception))
+
+    def test_dc_holidays_move_exactly_three_deadlines_from_2018_to_2027(self):
+        """Weekend-only and weekend-plus-DC-holiday rolling disagree on three dates.
+
+        Each is DC Emancipation Day: the weekend-only deadline is the holiday
+        itself or its observed day. If this count changes -- a holiday added,
+        an observance rule altered, the range widened -- a human looks at
+        why before the number is edited.
+        """
+
+        from repo_model.data import TAX_DEADLINE_MONTHS, corporate_tax_deadline
+
+        disagreements = {}
+        for year in range(2018, 2028):
+            for month in TAX_DEADLINE_MONTHS:
+                weekend_only = date(year, month, 15)
+                while weekend_only.weekday() >= 5:
+                    weekend_only += timedelta(days=1)
+                statutory = corporate_tax_deadline(year, month)
+                if statutory != weekend_only:
+                    disagreements[weekend_only] = statutory
+        self.assertEqual(
+            disagreements,
+            {
+                date(2018, 4, 16): date(2018, 4, 17),
+                date(2022, 4, 15): date(2022, 4, 18),
+                date(2023, 4, 17): date(2023, 4, 18),
+            },
+        )
 
 
 def replace_observation(observation, ref_date):
