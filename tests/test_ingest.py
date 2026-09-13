@@ -8,6 +8,7 @@ import gzip
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -46,6 +47,7 @@ from repo_model.ingest import (
     SnapshotArtifact,
     _decode_transport,
     _nmfp_number,
+    _save_snapshot,
     _sec_nmfp_rows,
     fetch_sec_nmfp_archives,
     load_sec_nmfp_archive_manifest,
@@ -6962,6 +6964,163 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
             with contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit):
                     cli.main(["fetch", "nyfed-obfr"])
+
+
+class SnapshotManifestPortabilityTests(unittest.TestCase):
+    """A32: a snapshot manifest resolves after the repository moves.
+
+    The repository moved on 13 September and the panel rebuild failed at once:
+    the `nyfed_tgcr` and `nyfed_bgcr` sidecars fetched on 12 September stored an
+    absolute path to the old directory. `_save_snapshot` resolved the path and
+    `SnapshotArtifact.as_dict` wrote it verbatim; `load_snapshot_manifest` read
+    it back with `Path(manifest["path"])`, against the working directory. Every
+    sidecar the fetchers ever wrote was absolute, and the relative ones on disk
+    are relative to the repository only because a script or a hand rewrote them.
+
+    The decision (13 September) is both halves: the path is written relative to
+    the raw root, and read against the raw root. The rule for what is read, and
+    for a legacy path, is `ingest._resolve_snapshot_path`'s docstring. In short:
+    a legacy absolute or repository-relative path is re-rooted only where its
+    last two components name the manifest's own snapshot, and is otherwise
+    refused with a `ValueError` naming the manifest and the path. It is never
+    re-rooted to a different file by a looser match on its tail.
+
+    The tracked sidecars under `tests/fixtures/snapshots/funding_inputs/` store
+    repository-relative paths and no `/Users/`, and were not rewritten: they
+    now resolve by rule 2, from any working directory.
+
+    Mutation record, 13 Sep 2026, Python 3.9.6, a disposable copy under `$HOME`
+    built from `git ls-files`, `PYTHONDONTWRITEBYTECODE=1 python3 -B`, the
+    unmutated control green before and after:
+
+    1. `as_dict` writes `str(self.path)` again. Kills
+       `test_a_sidecar_path_is_written_relative_to_the_raw_root`, failure
+       `AssertionError`: the absolute resolved path is not `nyfed_sofr/<file>`.
+    2. `load_snapshot_manifest` reads `Path(manifest["path"])` again. Kills
+       `test_a_relative_manifest_reads_after_the_tree_moves`, error
+       `FileNotFoundError`: `nyfed_sofr/<file>` is looked for under the
+       working directory. It also kills all three subtests of
+       `test_a_legacy_absolute_path_reroots_to_its_own_snapshot_or_refuses`,
+       `FileNotFoundError` on the vanished absolute path -- including the two
+       that expect a `ValueError`, so a raise of any kind does not pass them.
+
+    Each mutation was run against this class only; the class was the target.
+    """
+
+    RETRIEVED_AT = datetime(2026, 9, 12, 13, 55, 51, tzinfo=timezone.utc)
+    PAYLOAD = b'{"refRates":[{"effectiveDate":"2026-09-11","percentRate":4.31}]}'
+    URL = NYFED_BASE + "/sofr/search.json?type=rate"
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.scratch = Path(directory.name).resolve()
+
+    def save(self, output_root):
+        return _save_snapshot(
+            source_id="nyfed_sofr",
+            url=self.URL,
+            payload=self.PAYLOAD,
+            output_root=output_root,
+            suffix="json",
+            retrieved_at=self.RETRIEVED_AT,
+        )
+
+    @staticmethod
+    def sidecar(snapshot):
+        return snapshot.with_name(snapshot.name + ".manifest.json")
+
+    def test_a_sidecar_path_is_written_relative_to_the_raw_root(self):
+        absolute_root = self.scratch / "absolute" / "data" / "raw"
+        written = json.loads(
+            self.sidecar(self.save(absolute_root).path).read_text()
+        )["path"]
+
+        relative_parent = self.scratch / "relative"
+        relative_parent.mkdir()
+        previous = os.getcwd()
+        os.chdir(relative_parent)
+        try:
+            passed_relative = json.loads(
+                self.sidecar(self.save(Path("data") / "raw").path).read_text()
+            )["path"]
+        finally:
+            os.chdir(previous)
+
+        self.assertEqual(written, passed_relative)
+        self.assertEqual(
+            written,
+            "nyfed_sofr/20260912T135551Z_"
+            + hashlib.sha256(self.PAYLOAD).hexdigest()[:12]
+            + ".json",
+        )
+        self.assertFalse(written.startswith("/"))
+        self.assertNotIn("/Users/", written)
+        self.assertNotIn(str(self.scratch), written)
+
+    def test_a_relative_manifest_reads_after_the_tree_moves(self):
+        old_checkout = self.scratch / "old-checkout"
+        artifact = self.save(old_checkout / "data" / "raw")
+        name = artifact.path.name
+
+        new_checkout = self.scratch / "moved" / "new-checkout"
+        new_checkout.parent.mkdir()
+        shutil.move(str(old_checkout), str(new_checkout))
+        self.assertFalse(old_checkout.exists())
+
+        # Read from a working directory that is neither checkout.
+        previous = os.getcwd()
+        os.chdir(self.scratch)
+        try:
+            restored = load_snapshot_manifest(
+                new_checkout / "data" / "raw" / "nyfed_sofr" / (name + ".manifest.json")
+            )
+        finally:
+            os.chdir(previous)
+
+        self.assertEqual(
+            restored.path, new_checkout / "data" / "raw" / "nyfed_sofr" / name
+        )
+        self.assertEqual(restored.sha256, artifact.sha256)
+        self.assertEqual(restored.byte_count, artifact.byte_count)
+
+    def test_a_legacy_absolute_path_reroots_to_its_own_snapshot_or_refuses(self):
+        raw_root = self.scratch / "new-checkout" / "data" / "raw"
+        artifact = self.save(raw_root)
+        name = artifact.path.name
+        sidecar = self.sidecar(artifact.path)
+        vanished = self.scratch / "gone" / "old-checkout" / "data" / "raw"
+        self.assertFalse(vanished.exists())
+
+        def store(stored_path):
+            manifest = json.loads(sidecar.read_text())
+            manifest["path"] = str(stored_path)
+            sidecar.write_text(json.dumps(manifest))
+
+        with self.subTest("its own snapshot, under a directory that is gone"):
+            store(vanished / "nyfed_sofr" / name)
+            restored = load_snapshot_manifest(sidecar)
+            self.assertEqual(restored.path, artifact.path)
+            self.assertEqual(restored.sha256, artifact.sha256)
+
+        with self.subTest("a different file, even one with identical bytes"):
+            # The looser rule -- re-root by the tail below `data/raw/` -- would
+            # find this copy, and its checksum would pass. It is not the file
+            # this manifest describes, so it is refused, not returned.
+            impostor = artifact.path.with_name("20260912T135551Z_impostor.json")
+            impostor.write_bytes(self.PAYLOAD)
+            stored = vanished / "nyfed_sofr" / impostor.name
+            store(stored)
+            with self.assertRaises(ValueError) as caught:
+                load_snapshot_manifest(sidecar)
+            self.assertIn(str(sidecar), str(caught.exception))
+            self.assertIn(str(stored), str(caught.exception))
+
+        with self.subTest("its own name, but under another source directory"):
+            store(vanished / "nyfed_bgcr" / name)
+            with self.assertRaises(ValueError) as caught:
+                load_snapshot_manifest(sidecar)
+            self.assertIn(str(sidecar), str(caught.exception))
 
 
 if __name__ == "__main__":
