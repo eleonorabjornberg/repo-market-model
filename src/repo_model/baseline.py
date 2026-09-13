@@ -242,6 +242,12 @@ class ExceedanceCurves:
     model_settings: Mapping[str, Any] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    #: What the tail of the fit behind these curves was -- the fitted model's
+    #: own `tail_account` -- or `None` from a fit without one, which is every
+    #: predictor in this module. Carried here for `ml_libraries`' reason, and
+    #: unlike `model_settings` it is read at every fold, not the first: see
+    #: `_tail_account` (B40).
+    tail_account: Optional[Mapping[str, Any]] = None
 
 
 def _model_settings(fitted: Any) -> Mapping[str, Any]:
@@ -294,7 +300,9 @@ def _tail_account(fitted: Any) -> Optional[Mapping[str, Any]]:
     Read the way `_model_settings` reads a `repo_model.ml` model: through the
     attribute the model reports itself by, `tail_account`, because this module
     cannot import that one. `None` for every model here and for a gbm fitted
-    without a tail.
+    without a tail. `fitted` may also be the `ExceedanceCurves` a predictor
+    returned, which carries its model's account because the model stays inside
+    the predictor -- the same reading `_model_settings` makes of them.
 
     **Per fit, unlike the settings.** A setting is the callable's, so the first
     fit's answer is every fit's; a tail is fitted to that fold's calibration
@@ -305,6 +313,23 @@ def _tail_account(fitted: Any) -> Optional[Mapping[str, Any]]:
     """
 
     return getattr(fitted, "tail_account", None)
+
+
+def _tail_document(
+    folds: Sequence[Any], tail_accounts: Sequence[Mapping[str, Any]]
+) -> List[dict]:
+    """A record's `folds.tail`: one entry per fold, its scored date and its tail.
+
+    The one writer both records use, `backtest_document` since B38 and
+    `exceedance_backtest_document` since B40, so the two cannot spell one
+    account two ways. The accounts are `_tail_account`'s, read per fold by the
+    fold loop; this pairs each with the fold it came from and adds nothing.
+    """
+
+    return [
+        {"scored_date": fold.scored_date.isoformat(), **account}
+        for fold, account in zip(folds, tail_accounts)
+    ]
 
 
 def _ml_libraries(*fitted: Any) -> Optional[Mapping[str, str]]:
@@ -4490,10 +4515,7 @@ def backtest_document(
     # Every fold's tail, only when the run carried one: absent, not null, so
     # a record of a run without a tail is the record it was before B38.
     if report.tail_accounts is not None:
-        folds["tail"] = [
-            {"scored_date": fold.scored_date.isoformat(), **account}
-            for fold, account in zip(report.folds, report.tail_accounts)
-        ]
+        folds["tail"] = _tail_document(report.folds, report.tail_accounts)
 
     metrics: dict = {
         "forecast_count": len(report.forecasts),
@@ -5900,6 +5922,11 @@ class ExceedanceBacktestReport:
     model_settings: Mapping[str, Any] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    #: One tail account per fold, aligned with `folds`, each read off the
+    #: curves that fold scored by `_tail_account` -- or `None` when no fold's
+    #: fit carried a tail, so a record of such a run grows no key.
+    #: `RollingBacktestReport.tail_accounts`, on this path (B40).
+    tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -6111,6 +6138,7 @@ def rolling_exceedance_backtest(
     reference: List[Tuple[float, ...]] = []
     ml_libraries: Optional[Mapping[str, str]] = None
     model_settings: Mapping[str, Any] = MappingProxyType({})
+    tail_accounts: List[Optional[Mapping[str, Any]]] = []
     checked = False
     # `_fit_at_origin`'s rule on this path: a predictor that names `purge_days`
     # -- `ml.gbm_exceedance`, whose calibration splits its training rows -- is
@@ -6156,6 +6184,9 @@ def rolling_exceedance_backtest(
             model_settings = _model_settings(predicted)
             checked = True
 
+        # Off the curves this fold scored, in this iteration, and never off
+        # `referenced`: the climatology has no tail. See `_tail_account` (B40).
+        tail_accounts.append(_tail_account(predicted))
         forecast.append(_validate_prediction(predicted, 1, tau_family)[0])
         reference.append(_validate_prediction(referenced, 1, tau_family)[0])
         folds.append(
@@ -6225,6 +6256,11 @@ def rolling_exceedance_backtest(
         twcrps_unavailable=twcrps_unavailable,
         ml_libraries=ml_libraries,
         model_settings=model_settings,
+        tail_accounts=(
+            None
+            if all(account is None for account in tail_accounts)
+            else tuple(tail_accounts)
+        ),
     )
 
 
@@ -6475,6 +6511,11 @@ def exceedance_backtest_document(
       metric set is per-threshold except twCRPS, which integrates across the
       grid and is therefore one number for the run.
 
+    `folds.tail` is `backtest_document`'s, written by the same `_tail_document`:
+    one entry per fold, what that fold's tail was, only for a run whose fits
+    carried one (B40). A tail moves this record's curves, so a metric here can
+    only be read against it fold by fold.
+
     **What is deliberately not here.** No aggregate over any event window: those
     are `event_eval`'s, are scored once per window, and the contract forbids an
     aggregate on one. No precision-recall curve either, and that omission is
@@ -6549,6 +6590,10 @@ def exceedance_backtest_document(
     if report.folds:
         folds["first"] = _fold_document(report.folds[0])
         folds["last"] = _fold_document(report.folds[-1])
+    # `backtest_document`'s rule and its writer: absent, not null, without a
+    # tail, so every exceedance record published before B40 is unchanged.
+    if report.tail_accounts is not None:
+        folds["tail"] = _tail_document(report.folds, report.tail_accounts)
 
     metrics: dict = {
         "scored_days": len(report.scored_dates),

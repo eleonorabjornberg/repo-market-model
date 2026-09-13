@@ -3684,7 +3684,8 @@ class TailDeclarationTests(unittest.TestCase):
     each fold's tail *fit* found -- `xi`, `sigma`, `excesses` -- is not in the
     declaration, by design, and nothing here asserts it is. Since B38 a
     `backtest` record carries it per fold under `folds.tail`;
-    `TailAccountTests` holds that.
+    `TailAccountTests` holds that, and `ExceedanceTailAccountTests` holds the
+    same account on an `exceedance-backtest` record (B40).
 
     Mutation record
     ---------------
@@ -4433,6 +4434,245 @@ class ExceedanceTailTests(unittest.TestCase):
                     self.assertIn(phrase, err)
                     self.assertIsNone(document)
                     self.assertEqual(fits, [])
+
+
+class ExceedanceTailAccountTests(unittest.TestCase):
+    """Each fold's tail on an `exceedance-backtest` record (B40).
+
+    **The gap.** B39 let an exceedance run ask for a tail, and its record said
+    which tail it declared and nothing about what the tail was at each fold.
+    B38 had built that account for `backtest` alone. On this path it matters
+    more: the tail moves the exceedance curve, so a metric here cannot be read
+    against a tail that was never fitted unless the record says which folds had
+    one.
+
+    **What carries it.** `ml.FittedGradientBoostedQuantiles.tail_account`,
+    unchanged. The fitted model stays inside `gbm_exceedance`'s closure, so the
+    curves carry its account (`ExceedanceCurves.tail_account`, as they carry
+    `model_settings`), the fold loop reads it off the curves that fold scored
+    through `baseline._tail_account`, and the record writes it through
+    `baseline._tail_document`, the writer `backtest_document` now shares. No
+    second mapping.
+
+    **The traps.** The final fold's account for every fold, which part 4
+    catches; and an account read off a model the exceedance run never used --
+    a `backtest` fit, another fold's fit, or the climatology beside it. So the
+    fitter is wrapped only for the duration of this loop, and part 1 asserts
+    each captured fit was made on exactly its fold's training rows.
+
+    **How each state is forced.** `TailAccountTests`' panel, shared rather than
+    copied, through `rolling_exceedance_backtest` with `gbm_exceedance` at the
+    same conformal share: that function's rolling origins, gap and training
+    rows are this loop's too, so the same spikes set the same excesses. The
+    first fold's frame holds no spike (**no excesses**); each later fold's holds
+    one more, one excess each, so the next folds are the exponential
+    **fallback** below `ml.GPD_MINIMUM_EXCESSES`; the rest are **fitted**. Part 2
+    asserts all three occur, and that a fallback carries no `xi`.
+
+    **Part 3 is absence, not equality.** The tail moves the curves, so a tailed
+    record minus its tail keys is not the untailed record, as it was on
+    `backtest`. What is asserted is that neither an untailed gbm run nor the
+    climatology grows `folds.tail` or `declaration.tail`, that `folds` has
+    exactly the keys it had before B40, and that the top-level sections are the
+    tailed record's. The published exceedance records -- gbm without a tail,
+    ARX and climatology -- are runs of such predictors, which is why this is
+    the guard on them; the frozen panel is not in a worktree to re-score them.
+
+    Mutation record
+    ---------------
+
+    Run in a disposable copy per mutation plus an unmutated control before and
+    after, under `$HOME`, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run, on
+    CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1 through the mount's
+    `.venv/bin/python` by absolute path; `repo_model` confirmed to resolve to
+    each copy's `src/`. Both controls green, zero `expectedFailure`. Each
+    target was counted as an exact substring in Python and found exactly once.
+
+    1. **The final fold's account for every fold** --- the exceedance report's
+       tuple built as `tuple(tail_accounts[-1] for _ in tail_accounts)`.
+       `AssertionError` in **part 1** (a `fitted` account against the first
+       fold's own `no_excesses`), **part 2** (`'fitted' != 'no_excesses'`) and
+       **part 4** (`'fitted' == 'fitted'`, first and last entry). This test and
+       nothing else.
+    2. **The key made unconditional in the record** --- the writer's `if
+       report.tail_accounts is not None:` -> `if True:`, over `tail_accounts or
+       ()` so it does not crash. `AssertionError` in **part 3**, both the gbm
+       and the climatology subtests (`'tail' unexpectedly found`). This test
+       and nothing else: no other test builds an exceedance record of a gbm
+       run and reads its `folds` keys.
+    3. **The account made unconditional in the model** --- `if self.tail is
+       None: return None` deleted from `tail_account`. `AssertionError` in
+       **part 3**'s gbm subtest (`tail_accounts` a tuple of `no_excesses`, not
+       `None`); also `TailAccountTests` part 3 and `ExceedanceTailTests` part 4
+       (the base's record grew `folds.tail`), each by its own assertion.
+    4. **The account read off a refit** --- the fold loop appends
+       `_tail_account(predictor(train_rows, conditioning, tau_family,
+       purge_days=purge))`, a second fit of the same frame. Every float is the
+       scored fit's, so nothing that reads values alone could see it: what
+       kills it is **part 1**'s fit count, `52 != 26`, and **part 4**, whose
+       `entries[n]`-against-`fits[n]` pairing the doubled fit list misaligns
+       (`fallback` against `no_excesses`) --- the same count, read through an
+       index, not a second kind of evidence. Also `ExceedanceTailTests` part 1,
+       `12 != 6`, which counts fits for its own reason. This is B38's finding
+       on this path: a refit is visible only as a fit count.
+    5. **A fallback read as a fitted shape of `xi = 0.0`** --- `elif
+       fit.fallback:` -> `elif False:` in `tail_account`. `AssertionError` in
+       **part 1** (`{'state': 'fitted', 'xi': 0.0, ...} != {'state':
+       'fallback', ...}`), **part 2** (`fallback` missing from the states) and
+       **part 4**; also `TailAccountTests` parts 1 and 2.
+    6. **The account read off the reference** --- `_tail_account(predicted)`
+       -> `_tail_account(referenced)`, the climatology fitted beside the scored
+       model. **A crash, not coverage:** every account is `None`, the record
+       grows no `folds.tail`, and the test stops at `KeyError: 'tail'` before
+       its first part. One `KeyError`, in this test alone.
+    """
+
+    REGRESSORS = TailAccountTests.REGRESSORS
+    FEATURES = TailAccountTests.FEATURES
+    PURGE = TailAccountTests.PURGE
+    MINIMUM_HISTORY = TailAccountTests.MINIMUM_HISTORY
+    DIPS_FROM = TailAccountTests.DIPS_FROM
+    SPIKES = TailAccountTests.SPIKES
+    SHARE = TailAccountTests.SHARE
+
+    #: `TailAccountTests`' panel and its spelling of one account, shared rather
+    #: than copied, so the two records are held to one fixture and one mapping.
+    frame = TailAccountTests.frame
+    expected = staticmethod(TailAccountTests.expected)
+
+    def setUp(self):
+        require_extra(self)
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.registry_path = declared_registry_file(
+            self.directory.name, purge=self.PURGE, features=self.FEATURES
+        )
+        self.registry = json.loads(self.registry_path.read_text(encoding="utf-8"))
+        self.taus = tuple(
+            float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"]
+        )
+
+    def exceedance(self, panel, predictor):
+        """The exceedance fold loop over `panel`, its record, and every fit it made.
+
+        The fitter is wrapped, not replaced, and only for the duration of this
+        loop: a fit captured here was made by the exceedance run and by nothing
+        else, with the training rows it was handed.
+        """
+
+        fits = []
+        fitter = ml.fit_gradient_boosted_quantiles
+
+        def fit_spy(train_rows, *args, **kwargs):
+            model = fitter(train_rows, *args, **kwargs)
+            fits.append((tuple(train_rows), model))
+            return model
+
+        with mock.patch.object(ml, "fit_gradient_boosted_quantiles", fit_spy):
+            report = baseline.rolling_exceedance_backtest(
+                panel,
+                predictor=predictor,
+                model_name="gbm",
+                features=self.FEATURES,
+                registry=self.registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                taus=self.taus,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        panel_path = self.registry_path.with_name("panel.csv")
+        panel_path.write_text("date,sofr,iorb\n", encoding="utf-8")
+        document = baseline.exceedance_backtest_document(
+            report,
+            panel_path=panel_path,
+            registry_path=self.registry_path,
+            thresholds_path=THRESHOLDS,
+        )
+        return report, json.loads(json.dumps(document)), fits
+
+    def gbm(self, **settings):
+        """The predictor `exceedance-backtest --model gbm --calibration conformal` binds."""
+
+        return ml.gbm_exceedance(
+            self.REGRESSORS,
+            minimum_history=self.MINIMUM_HISTORY,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            calibration="conformal",
+            calibration_share=self.SHARE,
+            **settings,
+        )
+
+    def test_an_exceedance_run_with_a_tail_records_what_its_tail_was_at_every_fold(
+        self,
+    ):
+        """Per fold, off the fold's own exceedance fit; states apart; absent without a tail."""
+
+        panel = self.frame()
+        report, document, fits = self.exceedance(panel, self.gbm(tail="gpd"))
+        entries = document["folds"]["tail"]
+
+        with self.subTest("1. every fold, off the model that fold's curves came from"):
+            self.assertTrue(report.folds)
+            self.assertEqual(len(fits), len(report.folds))
+            self.assertEqual(len(report.tail_accounts), len(report.folds))
+            self.assertEqual(len(entries), len(report.folds))
+            for fold, (train_rows, model), account, entry in zip(
+                report.folds, fits, report.tail_accounts, entries
+            ):
+                # The fit is this loop's, on this fold's rows -- not a
+                # `backtest` fit and not another fold's.
+                self.assertEqual(len(train_rows), fold.train_rows)
+                self.assertEqual(train_rows[0].date, fold.train_start)
+                self.assertEqual(train_rows[-1].date, fold.train_end)
+                expected = self.expected(model.tail_fit)
+                self.assertEqual(dict(account), expected, msg=str(fold.scored_date))
+                self.assertEqual(
+                    entry, {"scored_date": fold.scored_date.isoformat(), **expected}
+                )
+
+        with self.subTest("2. the states are told apart"):
+            states = [entry["state"] for entry in entries]
+            self.assertEqual(states[0], "no_excesses")
+            self.assertEqual(states[-1], "fitted")
+            self.assertEqual(set(states), set(ml.TAIL_STATES))
+            for entry in entries:
+                if entry["state"] == "fallback":
+                    self.assertNotIn("xi", entry)
+                    self.assertTrue(0 < entry["excesses"] < ml.GPD_MINIMUM_EXCESSES)
+                elif entry["state"] == "fitted":
+                    self.assertGreaterEqual(entry["excesses"], ml.GPD_MINIMUM_EXCESSES)
+                else:
+                    self.assertEqual(entry, {"scored_date": entry["scored_date"],
+                                             "state": "no_excesses", "excesses": 0})
+
+        with self.subTest("3. without a tail, no key -- absent, not null"):
+            for name, predictor in (
+                ("gbm", self.gbm()),
+                ("climatology", baseline.climatology_exceedance(self.MINIMUM_HISTORY)),
+            ):
+                with self.subTest(model=name):
+                    plain_report, plain_document, _ = self.exceedance(panel, predictor)
+                    self.assertIsNone(plain_report.tail_accounts)
+                    self.assertNotIn("tail", plain_document["folds"])
+                    self.assertEqual(
+                        set(plain_document["folds"]), {"count", "first", "last"}
+                    )
+                    self.assertNotIn("tail", plain_document["declaration"])
+                    self.assertEqual(set(plain_document), set(document))
+
+        with self.subTest("4. entry n is fold n's"):
+            self.assertEqual(
+                [entry["scored_date"] for entry in entries],
+                [fold.scored_date.isoformat() for fold in report.folds],
+            )
+            self.assertNotEqual(entries[0]["state"], entries[-1]["state"])
+            for position, (_, model) in enumerate(fits):
+                self.assertEqual(
+                    {k: v for k, v in entries[position].items() if k != "scored_date"},
+                    self.expected(model.tail_fit),
+                    msg=f"entry {position}",
+                )
 
 
 class GradientBoostedCompareTests(ContinuousModelHarness):

@@ -245,7 +245,8 @@ residual ever seen and then an exceedance of exactly `0.0`.
   bit for bit. That third state is not a shape of zero: an `xi` of `0.0` there
   would be indistinguishable from a fallback that saw nineteen excesses. A
   `backtest` record of a tail run carries each fold's state under
-  `folds.tail`, through `tail_account` (B38).
+  `folds.tail`, through `tail_account` (B38), and an `exceedance-backtest`
+  record does the same (B40).
 * **Refused under `none` and `cross_conformal`.** `none` holds nothing out, so
   its only sample is rows the estimators were fitted on --- an in-sample tail.
   `cross_conformal` holds every row out in some block, and the coherent sample
@@ -1316,7 +1317,10 @@ class FittedGradientBoostedQuantiles:
 
         Read by `baseline.rolling_persistence_backtest` off each fold's own
         fitted model, the one that fold scored, the way `model_settings` is
-        read: `baseline` cannot import this module. `None` under `tail=None`
+        read: `baseline` cannot import this module. Read unchanged by
+        `baseline.rolling_exceedance_backtest` too, off the curves
+        `gbm_exceedance` returns at each fold, which carry it from the model
+        that produced them (B40). `None` under `tail=None`
         --- absent, not a state --- so a run without a tail records nothing.
 
         Under `tail="gpd"` one of `TAIL_STATES`, and only the numbers that
@@ -2608,6 +2612,9 @@ def gbm_exceedance(
             ml_libraries=model.ml_libraries,
             # Empty under the defaults, so a default record is unchanged.
             model_settings=model.model_settings,
+            # This fit's tail, off this model, for this fold's entry (B40);
+            # `None` without a tail, so a record without one is unchanged.
+            tail_account=model.tail_account,
         )
 
     return fit_predict
