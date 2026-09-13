@@ -42,6 +42,24 @@ def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def sidecar_path_forms(source: pathlib.Path) -> tuple[str, ...]:
+    """Every spelling of `source` a sidecar has carried, newest first.
+
+    `ingest._save_snapshot` writes the path relative to the raw root since A32;
+    before that it wrote an absolute path, and the sidecars repaired by hand
+    after the repository moved carry the repository-relative form. All three
+    name the same bytes, and this script must accept any of them or it refuses
+    every snapshot fetched after A32. Only the first survives a clone, which is
+    why it is the one written into the tracked copy.
+    """
+
+    return (
+        source.relative_to(RAW).as_posix(),
+        source.relative_to(ROOT).as_posix(),
+        str(source),
+    )
+
+
 def main() -> int:
     record = json.loads(RECORD.read_text(encoding="utf-8"))
     panel_record = record["panel"]
@@ -73,17 +91,27 @@ def main() -> int:
         shutil.copyfile(source, target)
         sidecar = source.with_name(source.name + SIDECAR)
         # The sidecar's `path` is where `load_snapshot_manifest` reads the bytes
-        # from. Copied verbatim it still names data/raw/, which a clone does not
-        # have, so `build --raw-root tests/fixtures/snapshots/funding_inputs`
-        # worked only in the checkout that also held the originals. It names the
-        # tracked copy instead; nothing else in the sidecar changes.
+        # from. Copied verbatim it names wherever the original sat, which a
+        # clone does not have. The tracked copy names the file beside it --
+        # `<source>/<file>`, relative to the raw root the copy sits in -- which
+        # is the one spelling that means the same thing in a clone, after a
+        # move, and from any working directory. Nothing else in the sidecar
+        # changes. See tests/test_snapshot_fixture_paths.py.
         retrieval_text = sidecar.read_text(encoding="utf-8")
-        original = '"path": "%s"' % source.relative_to(ROOT).as_posix()
-        if retrieval_text.count(original) != 1:
-            sys.exit(f"refusing: {sidecar} does not name {source.relative_to(ROOT)} once")
+        found = [
+            form
+            for form in sidecar_path_forms(source)
+            if retrieval_text.count('"path": "%s"' % form) == 1
+        ]
+        if not found:
+            sys.exit(
+                f"refusing: {sidecar} does not name {source.relative_to(ROOT)} once, "
+                "in any spelling a sidecar has carried"
+            )
         target.with_name(target.name + SIDECAR).write_text(
             retrieval_text.replace(
-                original, '"path": "%s"' % target.relative_to(ROOT).as_posix()
+                '"path": "%s"' % found[0],
+                '"path": "%s"' % target.relative_to(DEST).as_posix(),
             ),
             encoding="utf-8",
         )

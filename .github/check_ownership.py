@@ -50,6 +50,11 @@ HUMAN_ONLY = (
     # or a hand-written date in tracked Markdown. It checks human-owned pages,
     # so it is human-owned too.
     "tests/test_docs_freshness.py",
+    # The guard on the tracked snapshot fixtures' path spelling (13 Sep). It
+    # checks what scripts/track_funding_inputs.py writes, and scripts/ is
+    # already reserved here: a guard on a human-owned generator is human-owned
+    # too, by the same argument as the two tests above.
+    "tests/test_snapshot_fixture_paths.py",
     ".github/",
     # Shared contract fixtures. Both tracks import them; neither edits them.
     # A path-level gate cannot see a semantic collision, so the shape both
