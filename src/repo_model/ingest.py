@@ -94,10 +94,23 @@ class SnapshotArtifact:
     url: str
     byte_count: int
 
-    def as_dict(self) -> Mapping[str, object]:
+    def as_dict(self, raw_root: Optional[Path] = None) -> Mapping[str, object]:
+        """The manifest form. With `raw_root`, `path` is written relative to it.
+
+        A sidecar is written with `raw_root` -- `_save_snapshot` passes its
+        `output_root` -- so the stored path is `<source>/<file>` whether the
+        caller named the root absolutely or relatively, and it survives the
+        tree being moved or cloned. Without it the path is kept as held, which
+        is what a panel manifest's `raw_snapshots` has always recorded.
+        """
+
         return {
             "source_id": self.source_id,
-            "path": str(self.path),
+            "path": (
+                str(self.path)
+                if raw_root is None
+                else _relative_to_raw_root(self.path, raw_root)
+            ),
             "retrieved_at": self.retrieved_at,
             "sha256": self.sha256,
             "url": self.url,
@@ -212,7 +225,9 @@ def _save_snapshot(
         byte_count=len(payload),
     )
     manifest_path = path.with_suffix(path.suffix + ".manifest.json")
-    manifest = json.dumps(artifact.as_dict(), indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    manifest = json.dumps(
+        artifact.as_dict(raw_root=output_root), indent=2, sort_keys=True
+    ).encode("utf-8") + b"\n"
     _atomic_write(manifest_path, manifest)
     return artifact
 
@@ -759,14 +774,78 @@ def _artifact_payload(artifact: SnapshotArtifact) -> bytes:
     return payload
 
 
+MANIFEST_SUFFIX = ".manifest.json"
+
+
+def _relative_to_raw_root(path: Path, raw_root: Path) -> str:
+    """`path` as a POSIX string relative to `raw_root`, or a `ValueError`."""
+
+    try:
+        return Path(path).resolve().relative_to(Path(raw_root).resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError(
+            f"snapshot {path} is not under the raw root {raw_root}; a manifest "
+            "path that is not relative to the raw root does not survive a move"
+        ) from exc
+
+
+def _resolve_snapshot_path(manifest_path: Path, stored: str) -> Path:
+    """Where the bytes a manifest names are, read against the raw root.
+
+    The raw root is the manifest's grandparent: a snapshot and its manifest sit
+    side by side in `<raw_root>/<source>/`, which is the layout `_save_snapshot`
+    writes and `build` globs as `*/*.manifest.json`. The rule, in order:
+
+    1. A relative path is read under the raw root. This is the form every
+       sidecar is written in now, and it resolves wherever the tree sits.
+    2. Any other stored path -- absolute, as the 12 September fetches wrote
+       it, or relative to the repository, as the tracked fixtures and the
+       older sources carry it -- is legacy. It is re-rooted only where it names
+       *this manifest's own snapshot*: its last two components must be the
+       manifest's directory and the manifest's name less `.manifest.json`. The
+       file read is then the one beside the manifest.
+    3. An absolute path that exists, and is not this manifest's own snapshot,
+       is read as named. That is a manifest pointed deliberately at bytes kept
+       elsewhere, which `scripts/nmfp_on_rrp_channel.py` does.
+    4. Anything else is refused, naming the manifest and the path. A legacy
+       path is never re-rooted to a *different* file by a looser match on its
+       tail, even one with identical bytes, because the checksum would then
+       pass on a file the manifest does not describe.
+    """
+
+    raw_root = manifest_path.parent.parent
+    candidate = Path(stored)
+    if not candidate.is_absolute() and (raw_root / candidate).is_file():
+        return raw_root / candidate
+    own = manifest_path.name
+    if own.endswith(MANIFEST_SUFFIX) and candidate.parts[-2:] == (
+        manifest_path.parent.name,
+        own[: -len(MANIFEST_SUFFIX)],
+    ):
+        beside = manifest_path.parent / own[: -len(MANIFEST_SUFFIX)]
+        if beside.is_file():
+            return beside
+    if candidate.is_absolute() and candidate.is_file():
+        return candidate
+    raise ValueError(
+        f"snapshot manifest {manifest_path} names {stored!r}, which does not "
+        f"resolve under the raw root {raw_root} and is not the snapshot beside "
+        "the manifest"
+    )
+
+
 def load_snapshot_manifest(path: Path) -> SnapshotArtifact:
-    """Rehydrate and verify a raw snapshot from its saved manifest."""
+    """Rehydrate and verify a raw snapshot from its saved manifest.
+
+    `path` in the manifest is resolved by `_resolve_snapshot_path`, against the
+    raw root the manifest sits in, not against the working directory.
+    """
 
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
         artifact = SnapshotArtifact(
             source_id=str(manifest["source_id"]),
-            path=Path(manifest["path"]),
+            path=_resolve_snapshot_path(path, manifest["path"]),
             retrieved_at=str(manifest["retrieved_at"]),
             sha256=str(manifest["sha256"]),
             url=str(manifest["url"]),
