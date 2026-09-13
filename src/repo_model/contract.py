@@ -348,7 +348,30 @@ DERIVED_FEATURES = MappingProxyType(
 # contributes nothing to the purge is exactly the shape of an error, and the
 # registry's `snapshot_retrieved_at` rule already establishes that nothing
 # gets mapped to a zero gap by default.
-CALENDAR_FEATURES = frozenset({"quarter_end", "tax_date"})
+CALENDAR_FEATURES = frozenset(
+    {
+        "quarter_end",
+        "tax_date",
+        # Calendar days remaining until the last day of the month: 0 on the
+        # last day, 30 on the first of a 31-day month, 27 on the first of
+        # February. Unclipped and unsigned deliberately. A signed distance to
+        # the *nearer* boundary, clipped, was the first draft and had two
+        # faults: measured from zero it gave the last day of a month and the
+        # first of the next the same value, destroying the asymmetry that
+        # justified signing it; and the clip collapsed every mid-month day to
+        # the bound, so the column carried nothing on the September 2019 and
+        # March 2020 days -- six of the sixteen days in the panel that move
+        # 20 bp or more. One monotone ramp puts both boundaries at opposite
+        # ends and keeps the middle resolved.
+        #
+        # Calendar days, not business days: `data.py` refuses to invent a
+        # holiday calendar (rule 8, and `splits.py` on why a guard must not
+        # depend on one), regulatory balance-sheet reporting falls on calendar
+        # month ends, and the evidence that motivated this column was measured
+        # in calendar days.
+        "days_to_month_end",
+    }
+)
 
 # Declared panel columns with no ingesting source. Using one raises, with the
 # reason, rather than resolving to an empty source set. Empty since the FR 2004

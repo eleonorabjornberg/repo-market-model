@@ -39,6 +39,7 @@ OPTIONAL_NUMERIC_FIELDS = (
     "tbill_13w",
     "quarter_end",
     "tax_date",
+    "days_to_month_end",
 )
 POINT_IN_TIME_FIELDS = (
     "series_id",
@@ -2297,6 +2298,15 @@ def audit_panel(observations: Iterable[DailyObservation]) -> AuditReport:
         for field in ("quarter_end", "tax_date"):
             if values.get(field) not in (None, 0.0, 1.0):
                 warnings.append(f"{row.date}: {field} should be 0 or 1")
+        # Not a flag: a countdown. 31 would be a month with 32 days, and a
+        # negative value a date past its own month end -- both are arithmetic
+        # errors in the builder rather than anomalies in a source, so they are
+        # warned on here alongside the flags rather than clamped.
+        countdown = values.get("days_to_month_end")
+        if countdown is not None and not 0.0 <= countdown <= 30.0:
+            warnings.append(
+                f"{row.date}: days_to_month_end is {countdown}, outside 0..30"
+            )
 
     return AuditReport(
         row_count=len(rows),

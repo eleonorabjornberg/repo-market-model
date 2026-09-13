@@ -25,3 +25,6 @@ docs/track-*-decisions-*.md
 # .claude/hooks/ -- are tracked on purpose: a hook that enforces the ownership
 # contract must exist in every worktree, not in whichever one wrote it.
 .claude/settings.local.json
+
+# Scratch written by Cowork sessions; never part of a build.
+Claude outputs/
