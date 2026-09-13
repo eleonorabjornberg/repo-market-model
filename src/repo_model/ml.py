@@ -247,6 +247,10 @@ residual ever seen and then an exceedance of exactly `0.0`.
   `backtest` record of a tail run carries each fold's state under
   `folds.tail`, through `tail_account` (B38), and an `exceedance-backtest`
   record does the same (B40).
+* **A fourth state: a shape at the lower bound is refused (B44).** A fit whose
+  `xi` lands at or below the lower end of `GPD_SHAPE_BOUNDS` is not used: the
+  fold takes the same exponential fallback, and the record says `refused`, not
+  `fallback`, so the two can be counted apart. See `_fit_gpd_pwm`.
 * **Refused under `none` and `cross_conformal`.** `none` holds nothing out, so
   its only sample is rows the estimators were fitted on --- an in-sample tail.
   `cross_conformal` holds every row out in some block, and the coherent sample
@@ -366,9 +370,11 @@ _ARX_COLUMN = "arx_forecast"
 TAIL_FAMILIES = ("gpd",)
 
 #: What a tail was at one fit, as `tail_account` spells it on a record: a
-#: fitted shape, `_fit_gpd_pwm`'s exponential fallback, and no excesses at all.
-#: See `FittedTail` on why the first is the only one that is evidence.
-TAIL_STATES = ("fitted", "fallback", "no_excesses")
+#: fitted shape, `_fit_gpd_pwm`'s exponential fallback, no excesses at all, and
+#: a shape refused at the lower end of `GPD_SHAPE_BOUNDS` and replaced by that
+#: same fallback (B44). See `FittedTail` on why the first is the only one that
+#: is evidence.
+TAIL_STATES = ("fitted", "fallback", "no_excesses", "refused")
 
 #: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
 #: fitted from: ten per fitted parameter. Below it the three parameters are
@@ -424,6 +430,16 @@ GPD_MINIMUM_EXCESSES = 20
 #: returns exactly zero; at `-0.5` that ceiling is two scale units up, and below
 #: it the tail closes tighter still. A zero assigned by a fitted tail is the
 #: same zero this repair exists to remove, arrived at the long way round.
+#:
+#: **The two ends are also handled differently (B44).** A shape at or above
+#: `0.5` is clamped and kept. A shape at or below `-0.5` is refused: the fit is
+#: not used and the exponential fallback is taken instead, recorded as
+#: `refused`. A clamp at the lower end means the estimator wanted a steeper
+#: cutoff still, so the ceiling it would publish belongs to the bound, not to
+#: the data. On the rescored panel this refused three folds of 2039 and removed
+#: both days on which a fitted tail gave an event that happened probability
+#: exactly zero. The rule is stated on `xi` and not on `clamped`, which is true
+#: at either end.
 GPD_SHAPE_BOUNDS = (-0.5, 0.5)
 
 #: How far `a_0 - 2 a_1` may fall, as a share of `a_0`, before the fit is
@@ -789,8 +805,14 @@ class FittedTail:
     * `fallback` --- fewer than `GPD_MINIMUM_EXCESSES` excesses, so no shape was
       fitted: `xi` is exactly `0.0` and `sigma` is the mean of the excesses,
       which is the exponential the two-parameter family collapses to there.
+    * `refused` --- enough excesses were seen, but the shape landed at or below
+      the lower end of `GPD_SHAPE_BOUNDS`, so it was not used (B44). `fallback`
+      is also true and `xi` and `sigma` are the fallback's, so the law is that
+      same exponential; `clamped` still says whether the shape had been clamped
+      before it was refused. Only the record tells a refusal from an ordinary
+      fallback, which is why this flag exists.
 
-    A caller that ignores all three still gets a usable law. A record that
+    A caller that ignores these still gets a usable law. A record that
     ignores them publishes a fitted shape that was not fitted.
     """
 
@@ -799,6 +821,7 @@ class FittedTail:
     excesses: int
     clamped: bool
     fallback: bool
+    refused: bool = False
 
 
 def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
@@ -893,6 +916,19 @@ def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
     clamped = not lower <= xi <= upper
     if clamped:
         xi = min(max(xi, lower), upper)
+    # B44: a shape at the lower bound is refused, not kept. Read on the clamped
+    # `xi`, so this fires for a shape clamped up to the bound and for one that
+    # landed on it exactly, and never at the upper end, where `clamped` is also
+    # true. See `GPD_SHAPE_BOUNDS`.
+    if xi <= lower:
+        return FittedTail(
+            xi=0.0,
+            sigma=a_0,
+            excesses=count,
+            clamped=clamped,
+            fallback=True,
+            refused=True,
+        )
     return FittedTail(
         xi=xi, sigma=sigma, excesses=count, clamped=clamped, fallback=False
     )
@@ -1084,10 +1120,12 @@ class FittedGradientBoostedQuantiles:
       whose point forecast from a feature row is that row's column.
     * `tail`, `tail_fit` --- the tail family the law is continued with above
       its top declared quantile (`None` when it is not) and the `FittedTail`
-      fitted to the calibration rows' excesses above that quantile. Three
+      fitted to the calibration rows' excesses above that quantile. Four
       states under `tail="gpd"`: `tail_fit.fallback` false, a fitted shape;
-      true, the exponential fallback; and `tail_fit` `None`, **no excesses at
-      all**, where nothing was fitted and the law is the default's. See the
+      true, the exponential fallback; `tail_fit.refused` true, a shape refused
+      at the lower bound and replaced by that fallback; and `tail_fit` `None`,
+      **no excesses at all**, where nothing was fitted and the law is the
+      default's. See the
       module docstring, and `tail_account` for how a record spells them.
 
     **What `residuals` is here, and what it is not.** For persistence and the
@@ -1339,6 +1377,11 @@ class FittedGradientBoostedQuantiles:
           a record carrying it would read as a shape of zero.
         * `no_excesses` --- `excesses` of `0` alone: `tail_fit` is `None` and
           there is nothing else to report.
+        * `refused` --- `sigma` and `excesses`, and no `xi`, like `fallback`:
+          the shape landed at the lower end of `GPD_SHAPE_BOUNDS` and was not
+          used, and the law is the fallback's exponential (B44). A separate
+          state so a reader can count refusals apart from folds that fell back
+          for having too few excesses.
 
         Read off `tail_fit`, the fit the law was continued with. The excesses
         are not kept, so nothing here could recompute it.
@@ -1349,8 +1392,9 @@ class FittedGradientBoostedQuantiles:
         ceiling sits below a declared tau gives that tau's exceedance
         probability exactly zero, which is the zero `GPD_SHAPE_BOUNDS` names
         and the one a run can publish at 5 bp without the record saying why.
-        Whether such a fit should be refused is not decided here; this only
-        makes it visible.
+        A fit clamped at the lower bound is now refused (`refused` above); a
+        fitted negative shape inside the bounds keeps its ceiling and is shown
+        here, not refused.
         """
 
         if self.tail is None:
@@ -1358,6 +1402,8 @@ class FittedGradientBoostedQuantiles:
         fit = self.tail_fit
         if fit is None:
             account: dict = {"state": "no_excesses", "excesses": 0}
+        elif fit.refused:
+            account = {"state": "refused", "sigma": fit.sigma, "excesses": fit.excesses}
         elif fit.fallback:
             account = {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
         else:
