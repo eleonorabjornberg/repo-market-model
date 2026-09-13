@@ -1,0 +1,8 @@
+{
+  "byte_count": 446315,
+  "path": "tests/fixtures/snapshots/funding_inputs/nyfed_tgcr/20260912T135551Z_cdaf52e9638c.json",
+  "retrieved_at": "2026-09-12T13:55:51.245283+00:00",
+  "sha256": "cdaf52e9638cc977f31e3f010bbbe0a52aad9018f285904c7e74c83b2d0bb59b",
+  "source_id": "nyfed_tgcr",
+  "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=rate"
+}

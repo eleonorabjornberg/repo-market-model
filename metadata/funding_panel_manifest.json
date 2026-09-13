@@ -8,19 +8,37 @@
     "sofr_p75",
     "tgcr",
     "bgcr",
-    "treasury_settlement"
+    "treasury_settlement",
+    "treasury_settlement_bills",
+    "treasury_settlement_coupons",
+    "treasury_settlement_soma",
+    "dealer_treasury_position",
+    "tbill_4w",
+    "tbill_13w",
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end"
   ],
   "decision_time": "16:00:00",
   "end_date": "2026-09-03",
   "holes": {
-    "bgcr": 2104,
+    "bgcr": 0,
+    "days_to_month_end": 0,
+    "dealer_treasury_position": 2104,
     "iorb": 0,
+    "quarter_end": 0,
     "sofr": 0,
     "sofr_p25": 2,
     "sofr_p75": 2,
     "sofr_volume": 0,
-    "tgcr": 2104,
-    "treasury_settlement": 2104
+    "tax_date": 0,
+    "tbill_13w": 2104,
+    "tbill_4w": 2104,
+    "tgcr": 0,
+    "treasury_settlement": 2104,
+    "treasury_settlement_bills": 2104,
+    "treasury_settlement_coupons": 2104,
+    "treasury_settlement_soma": 2104
   },
   "incomplete_dates": 4440,
   "inputs": [
@@ -47,17 +65,46 @@
       "sha256": "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1",
       "source_id": "nyfed-sofr-rate",
       "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=rate"
+    },
+    {
+      "byte_count": 213006,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_tgcr/20260912T135551Z_5e87d2b7aa48.json",
+      "retrieved_at": "2026-09-12T13:55:51.245283+00:00",
+      "sha256": "5e87d2b7aa4815c0bc20e58190d094801a32fbaa89b1ea6565b0582a5deca563",
+      "source_id": "nyfed_tgcr",
+      "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=volume"
+    },
+    {
+      "byte_count": 213013,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_bgcr/20260912T135552Z_afcffe123cf9.json",
+      "retrieved_at": "2026-09-12T13:55:52.384849+00:00",
+      "sha256": "afcffe123cf95f16b413f3ac0098512e59a6a26f42084cfa1ed6645bb5d14eae",
+      "source_id": "nyfed_bgcr",
+      "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=volume"
+    },
+    {
+      "byte_count": 446324,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_bgcr/20260912T135552Z_b1cd7969ac8f.json",
+      "retrieved_at": "2026-09-12T13:55:52.384849+00:00",
+      "sha256": "b1cd7969ac8f1bd245feccb4ae544c44d28c1b73faf98710a8b0d29cc70c08b2",
+      "source_id": "nyfed_bgcr",
+      "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=rate"
+    },
+    {
+      "byte_count": 446315,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_tgcr/20260912T135551Z_cdaf52e9638c.json",
+      "retrieved_at": "2026-09-12T13:55:51.245283+00:00",
+      "sha256": "cdaf52e9638cc977f31e3f010bbbe0a52aad9018f285904c7e74c83b2d0bb59b",
+      "source_id": "nyfed_tgcr",
+      "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=rate"
     }
   ],
   "path": "data/processed/funding_panel.csv",
   "refused_columns": {
-    "dealer_treasury_position": "feature 'dealer_treasury_position' has no source: no ingesting source is declared in metadata/sources.json; the column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of the sample panel. Sizing a purge over it would purge zero days for a weekly FR 2004 series.",
-    "mmf_assets": "sec_nmfp: every snapshot row must carry available_at",
-    "on_rrp": "fred_macro_latest_vintage: every snapshot row must carry available_at",
-    "quarter_end": "sources must select at least one feature source",
-    "reserve_balances": "fred_macro_latest_vintage: every snapshot row must carry available_at",
-    "tax_date": "sources must select at least one feature source",
-    "tga": "fred_macro_latest_vintage: every snapshot row must carry available_at"
+    "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "reserve_balances": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "tga": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
   },
   "required_columns": [
     "sofr",
@@ -65,11 +112,15 @@
   ],
   "row_count": 2104,
   "run_record": "docs/runs/persistence_funding.json",
-  "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec",
+  "sha256": "a588cdf7e9116948a2d3b4b279e2252ddf8faa54c51e0c112ba829574918a938",
   "source_shas": [
     "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
     "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
-    "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1"
+    "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1",
+    "5e87d2b7aa4815c0bc20e58190d094801a32fbaa89b1ea6565b0582a5deca563",
+    "afcffe123cf95f16b413f3ac0098512e59a6a26f42084cfa1ed6645bb5d14eae",
+    "b1cd7969ac8f1bd245feccb4ae544c44d28c1b73faf98710a8b0d29cc70c08b2",
+    "cdaf52e9638cc977f31e3f010bbbe0a52aad9018f285904c7e74c83b2d0bb59b"
   ],
   "start_date": "2018-04-03"
 }

@@ -688,3 +688,38 @@ These are data-modeling decisions, not formatting cleanup. Each resolution requi
 - a behavioral test that can fail on independently anchored data;
 - an updated source limitation and quality report; and
 - a short rationale in the empirical report.
+
+## The rebuild takes all nine newly buildable columns
+
+Nine columns the tracked manifest listed as refused now build: `treasury_settlement_bills`,
+`treasury_settlement_coupons`, `treasury_settlement_soma`, `dealer_treasury_position`,
+`tbill_4w` and `tbill_13w`, which became buildable as the data layer gained the capability
+to price them, and `days_to_month_end`, `quarter_end` and `tax_date`, the calendar columns
+derived from the scored date. The decision is to take **all nine** rather than a subset: a
+column the build can produce and the registry can price is carried in the panel, and
+whether a model reads it is answered per run by that run's declared feature list.
+
+The persistence run declares `spread_bps` as its only feature and derives from `nyfed_sofr`
+and `fred_macro_latest_vintage` alone, so none of the nine can enter the model. The re-score
+demonstrates that rather than assuming it: `folds`, `derived`, `declaration`, `crps_bps`,
+`forecast_count` and the entire coverage series come back bit-identical, and the publish
+refuses if any of them moves.
+
+Two things do move, and both follow from the panel's identity rather than from the model.
+The panel's digest changes, and `_report_seed` derives the bootstrap seed from that digest
+together with the feature set, the purge gap and the decision time -- deliberately, so that
+two runs differing in any of those respects do not silently share a resample stream. A
+rebuilt panel therefore *must* draw a different bootstrap sample, and the stationary-bootstrap
+bounds on the MAE and on interval coverage shift by about one observation in two thousand.
+The published point estimates do not move at all. The publish step recomputes the seed from
+the record's own fields and refuses unless it is the one the specification derives, so the
+shift is accounted for rather than accepted. Second, the record's build-manifest binding
+strengthens from `extent` to `digest`, because the rebuilt manifest carries a digest of the
+panel it describes where the previous embedded manifest carried none.
+
+The rebuild is required because the manifest and the record are coupled by digest:
+`scripts/track_funding_inputs.py` is the only way `metadata/funding_panel_manifest.json` is
+made, and it refuses unless the local panel hashes to the digest the published record scored.
+A manifest edited to anticipate a rebuild would publish a digest no build produced. The
+thirty-one published records that embed a build manifest bind it by extent -- row count and
+first and last date -- and the rebuild leaves all three unchanged, so none needs re-scoring.
