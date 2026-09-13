@@ -209,9 +209,16 @@ Stated explicitly, because each is easy to mistake for something stronger.
   (`--tail gpd`, conformal calibration only) is built and selectable from `backtest` and
   `compare`, and from `exceedance-backtest`, which is the only one of the three that scores what
   the tail changes: `backtest` and `compare` score the quantile vector, which the tail never
-  moves. No published record has been produced with it, and nothing has scored it yet. A
+  moves. It has now been scored: `docs/runs/exceedance_gbm_conformal_mh61.json` and
+  `docs/runs/exceedance_gbm_conformal_tail_gpd_mh61.json` differ only in the tail, and the trade
+  runs in both directions --- the Brier score improves at every declared threshold and the
+  threshold-weighted CRPS with it, the log score becomes available at the widest threshold where
+  the untailed run assigned probability zero to an event that occurred, and it becomes unavailable
+  at the two narrowest, where that run had it. Each record states its own unavailability and its
+  reason. A
   `backtest` record of a run that asked for one now reports what the tail was at every fold
-  --- a fitted shape, the exponential fallback, or no excesses at all --- because an expanding
+  --- a fitted shape, the exponential fallback, or no excesses at all, and for a fitted shape with
+  a negative parameter the ceiling at and beyond which it assigns exactly zero --- because an expanding
   window refits at every origin and the early folds are the ones that fall back, and an
   `exceedance-backtest` record reports the same account off its own folds' fits. A `compare`
   record does not carry it.
