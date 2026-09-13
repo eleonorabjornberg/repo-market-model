@@ -204,8 +204,11 @@ PYTHONPATH=src python3 -m repo_model.cli build \
   --output /tmp/funding_panel.csv \
   --build-cutoff 2026-09-08T21:31:42+00:00 \
   --decision-time 16:00:00 \
-  --column sofr --column iorb --column sofr_volume --column sofr_p25 \
-  --column sofr_p75 --column tgcr --column bgcr --column treasury_settlement
+  --column sofr --column iorb --column sofr_volume --column sofr_p25 --column sofr_p75 \
+  --column tgcr --column bgcr --column treasury_settlement \
+  --column treasury_settlement_bills --column treasury_settlement_coupons \
+  --column treasury_settlement_soma --column dealer_treasury_position --column tbill_4w \
+  --column tbill_13w --column quarter_end --column tax_date --column days_to_month_end
 PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv \
   --manifest metadata/funding_panel_manifest.json
 PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \

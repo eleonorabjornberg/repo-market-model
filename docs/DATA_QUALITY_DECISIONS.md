@@ -723,3 +723,17 @@ made, and it refuses unless the local panel hashes to the digest the published r
 A manifest edited to anticipate a rebuild would publish a digest no build produced. The
 thirty-one published records that embed a build manifest bind it by extent -- row count and
 first and last date -- and the rebuild leaves all three unchanged, so none needs re-scoring.
+
+What "buildable" means here is narrower than it reads, and the manifest is the evidence. Six of the
+nine are declared and **empty**: `treasury_settlement_bills`, `treasury_settlement_coupons`,
+`treasury_settlement_soma`, `dealer_treasury_position`, `tbill_4w` and `tbill_13w` each carry a hole
+on every row of this build, as `treasury_settlement` already did, because the snapshots their
+sources would be priced from are not under `data/raw/`. The build no longer refuses them; it does
+not follow that data arrived. Only the three calendar columns, computed from the scored date, carry
+a value on every row. A model that declares one of the six as a feature is refused at its first fold
+rather than handed zeros, which is contract test 5 working: an unobserved regressor is never
+coerced.
+
+The bootstrap seed a re-scored record carries can be recomputed from the record itself with
+`baseline.backtest_record_seed`, and the decision time it digests is the `HH:MM:SS` form rather than
+the `HH:MM` the declaration states.
