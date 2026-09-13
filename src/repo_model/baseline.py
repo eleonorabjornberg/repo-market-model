@@ -5312,16 +5312,72 @@ def comparison_seed(
     the same comparison with the sign flipped, they publish different records,
     and two records that differ in what they report should not silently share a
     resample stream.
+
+    The material is built by `_comparison_seed_material`, which
+    `comparison_record_seed` calls too (B46).
     """
 
     return _seed_from(
-        (
-            panel_sha256,
-            model_a,
-            ",".join(sorted(features_a)),
-            model_b,
-            ",".join(sorted(features_b)),
-            decision_time.isoformat(),
+        _comparison_seed_material(
+            panel_sha256, model_a, features_a, model_b, features_b, decision_time
+        )
+    )
+
+
+def _comparison_seed_material(
+    panel_sha256: str,
+    model_a: str,
+    features_a: Iterable[str],
+    model_b: str,
+    features_b: Iterable[str],
+    decision_time: time,
+) -> Tuple[str, ...]:
+    """The six strings a comparison record's seed is the digest of.
+
+    `_backtest_seed_material`'s counterpart, one artifact over, and it carries
+    the same trap: **the decision time is `HH:MM:SS`, and the record states
+    `HH:MM`.** `paired_comparison_document` writes `declaration.decision_time`
+    with `timespec="minutes"`; the component here is `time.isoformat()`. The
+    writer (`comparison_seed`) and the reader (`comparison_record_seed`) both
+    hand in a `time` and the form is chosen once, below. It stays seconds
+    because every published comparison interval was drawn from that form.
+    """
+
+    return (
+        panel_sha256,
+        model_a,
+        ",".join(sorted(features_a)),
+        model_b,
+        ",".join(sorted(features_b)),
+        decision_time.isoformat(),
+    )
+
+
+def comparison_record_seed(record: Mapping[str, Any]) -> int:
+    """The bootstrap seed a published comparison record states, from the record alone.
+
+    `record` is the parsed JSON `paired_comparison_document` produced; the seed
+    it returns is `comparison.mean_difference_interval.seed`. Every input is a
+    field the record carries -- `panel.sha256`, `declaration.model_a` and
+    `declaration.model_b` (each `model` and `features`), and
+    `declaration.decision_time`, parsed to a `time` and never joined as text.
+
+    Raises:
+        KeyError: when the record lacks a field the seed is derived from.
+        ValueError: when `declaration.decision_time` is not an ISO time.
+    """
+
+    declaration = record["declaration"]
+    side_a = declaration["model_a"]
+    side_b = declaration["model_b"]
+    return _seed_from(
+        _comparison_seed_material(
+            record["panel"]["sha256"],
+            side_a["model"],
+            side_a["features"],
+            side_b["model"],
+            side_b["features"],
+            time.fromisoformat(declaration["decision_time"]),
         )
     )
 
@@ -6347,17 +6403,91 @@ def _exceedance_seed(
     than one stream reported four times -- a band that shared a stream with the
     band above it would understate how much the two differ, and it would do so
     invisibly.
+
+    The material is built by `_exceedance_seed_material`, which
+    `exceedance_record_seed` calls too (B46).
     """
 
     return _seed_from(
-        (
+        _exceedance_seed_material(
             panel_sha256,
             report.model_name,
-            ",".join(sorted(report.features)),
-            str(report.purge_days),
-            "" if report.decision_time is None else report.decision_time.isoformat(),
-            ",".join(f"{value:g}" for value in report.taus),
-            "" if tau is None else f"{tau:g}",
+            report.features,
+            report.purge_days,
+            report.decision_time,
+            report.taus,
+            tau,
+        )
+    )
+
+
+def _exceedance_seed_material(
+    panel_sha256: str,
+    model_name: str,
+    features: Iterable[str],
+    purge_days: Optional[int],
+    decision_time: Optional[time],
+    taus: Iterable[float],
+    tau: Optional[float],
+) -> Tuple[str, ...]:
+    """The seven strings an exceedance record's seed is the digest of.
+
+    `_backtest_seed_material`'s counterpart, with the same trap: **the decision
+    time is `HH:MM:SS`, and the record states `HH:MM`.**
+    `exceedance_backtest_document` writes `declaration.decision_time` with
+    `timespec="minutes"`; the component here is `time.isoformat()`. The writer
+    (`_exceedance_seed`) and the reader (`exceedance_record_seed`) both hand in
+    a `time`, and the form is chosen once, below. It stays seconds because every
+    published band was drawn from that form. The taus are formatted with `:g`,
+    so a record's `5.0` and a report's `5.0` give the same `"5"`.
+    """
+
+    return (
+        panel_sha256,
+        model_name,
+        ",".join(sorted(features)),
+        str(purge_days),
+        "" if decision_time is None else decision_time.isoformat(),
+        ",".join(f"{value:g}" for value in taus),
+        "" if tau is None else f"{tau:g}",
+    )
+
+
+def exceedance_record_seed(record: Mapping[str, Any], tau_bp: float) -> int:
+    """The bootstrap seed a published exceedance record states for one threshold.
+
+    `record` is the parsed JSON `exceedance_backtest_document` produced; the
+    seed it returns is the one under `metrics.by_tau.<tau>`, in both
+    `brier_skill_score_interval` and `reliability_curve.band`, which share it.
+    Every input is a field the record carries -- `panel.sha256`,
+    `declaration.model`, `declaration.features`, `derived.purge_days`,
+    `declaration.decision_time` (parsed to a `time`, never joined as text) and
+    `declaration.taus_bp` -- plus the threshold, which is the per-band part of
+    the material.
+
+    Raises:
+        KeyError: when the record lacks a field the seed is derived from.
+        ValueError: when `declaration.decision_time` is not an ISO time, or
+            `tau_bp` is not one of `declaration.taus_bp` -- a seed for a
+            threshold the record did not score is one no record states.
+    """
+
+    declaration = record["declaration"]
+    taus = declaration["taus_bp"]
+    if tau_bp not in taus:
+        raise ValueError(
+            f"tau_bp {tau_bp!r} is not among the record's declared taus_bp {taus!r}"
+        )
+    stated = declaration.get("decision_time")
+    return _seed_from(
+        _exceedance_seed_material(
+            record["panel"]["sha256"],
+            declaration["model"],
+            declaration["features"],
+            record["derived"]["purge_days"],
+            None if stated is None else time.fromisoformat(stated),
+            taus,
+            tau_bp,
         )
     )
 

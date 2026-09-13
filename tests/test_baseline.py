@@ -379,7 +379,9 @@ from repo_model.baseline import (
     climatology_exceedance,
     exceedance_backtest_document,
     fit,
+    comparison_record_seed,
     comparison_seed,
+    exceedance_record_seed,
     fit_arx,
     fit_rolling_residual_law,
     fit_threshold,
@@ -8609,6 +8611,144 @@ class BacktestRecordSeedTests(unittest.TestCase):
         self.assertNotEqual(
             baseline._seed_from((digest, "spread_bps", "6", "16:00")), seconds
         )
+
+
+class SeedMaterialTests(unittest.TestCase):
+    """B46: the backtest material pinned, and the other two seeds made readable.
+
+    B45's second mutation survived for a structural reason: `_report_seed` and
+    `backtest_record_seed` both go through `_backtest_seed_material`, so a change
+    there moves writer and reader together and no agreement test can see it.
+    `test_the_backtest_material_is_these_bytes` fixes the material itself, over
+    a feature list deliberately out of order -- the case no published record
+    exercises, because every record states its features sorted.
+
+    `comparison_seed` and `_exceedance_seed` had the same `HH:MM:SS` against
+    `HH:MM` trap and no reader. Each now builds its material in one step
+    (`_comparison_seed_material`, `_exceedance_seed_material`) and has a public
+    reader (`comparison_record_seed`, `exceedance_record_seed`).
+
+    **No published seed moved.** Before the change, every `seed` key anywhere
+    under `docs/runs/` was recomputed from its record: backtest seeds with
+    `backtest_record_seed`, comparison seeds by calling the then-current
+    `comparison_seed` on the record's parsed fields, exceedance seeds with
+    `_seed_from` over material hand-built as `_exceedance_seed` then spelled it.
+    After it, with the three readers. No `seed` key fell outside those three
+    derivations. Both sets equal the published values, seed for seed: 99 seeds
+    in 35 records -- 16 backtest seeds in 8 records, 19 comparison seeds in 19
+    records, 64 exceedance seeds (a Brier-skill interval and a reliability band
+    per tau) in 8 records.
+
+    Mutations, in a disposable copy built from `git ls-files`, with
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`; the unmutated control was green
+    before and after, and each mutation was confirmed applied by `grep -cF`.
+
+    1. **Drop the sort from `_backtest_seed_material`** -- `",".join(features)`.
+       `test_the_backtest_material_is_these_bytes` goes red, `AssertionError`,
+       `'spread_bps,sofr_volume' != 'sofr_volume,spread_bps'`. Nothing else in
+       the suite fires, which is B45's finding restated: this test is the only
+       thing that sees it.
+    2. **Drop the seconds from `_comparison_seed_material`** --
+       `decision_time.isoformat(timespec="minutes")`.
+       `test_every_published_comparison_seed_recomputes_from_its_record` goes
+       red, one `AssertionError` per record.
+    3. **Drop the seconds from `_exceedance_seed_material`** -- the same edit.
+       `test_every_published_exceedance_seed_recomputes_from_its_record` goes
+       red, one `AssertionError` per seed.
+
+    In mutations 2 and 3 no test outside this class fired: before B46 nothing
+    in the suite could see either derivation's decision-time form.
+
+    **Still unguarded, reported with B46:** dropping the sort from either of the
+    two new material steps. Run as mutations 4 and 5, the same way: **both
+    survive, the whole suite stays green.** Every published comparison and
+    exceedance record states its features sorted, so their record tests cannot
+    tell a sorted join from an unsorted one -- the gap this class closes for the
+    backtest material, left open for the other two because the block asked for
+    a golden test of one.
+    """
+
+    RUNS = Path(__file__).parents[1] / "docs" / "runs"
+
+    def test_the_backtest_material_is_these_bytes(self):
+        """Criterion 1: `_backtest_seed_material`'s exact output, and its digest.
+
+        Every property is a literal here, so each is observable on its own: the
+        component order (panel, features, gap, decision time), the sort -- the
+        input lists `spread_bps` before `sofr_volume` --, the `str` of the gap,
+        the `HH:MM:SS` decision time, the `\\x00` join, and the seed those bytes
+        digest to.
+        """
+
+        digest = "0123456789abcdef" * 4
+        material = baseline._backtest_seed_material(
+            digest, ["spread_bps", "sofr_volume"], 6, time(16, 0)
+        )
+
+        self.assertEqual(
+            material, (digest, "sofr_volume,spread_bps", "6", "16:00:00")
+        )
+        self.assertEqual(
+            "\x00".join(material).encode("utf-8"),
+            b"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            b"\x00sofr_volume,spread_bps\x006\x0016:00:00",
+        )
+        self.assertEqual(baseline._seed_from(material), 1515357806)
+
+    def test_every_published_comparison_seed_recomputes_from_its_record(self):
+        """Criterion 2. Globbed, so a comparison record added later is checked too.
+
+        A record carrying `comparison.mean_difference_interval` is a comparison
+        record by construction. The check may not pass by finding nothing.
+        """
+
+        checked = []
+        for path in sorted(self.RUNS.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            comparison = record.get("comparison")
+            interval = (
+                comparison.get("mean_difference_interval")
+                if isinstance(comparison, dict)
+                else None
+            )
+            if not isinstance(interval, dict) or "seed" not in interval:
+                continue
+            with self.subTest(record=path.name):
+                self.assertEqual(comparison_record_seed(record), interval["seed"])
+            checked.append(path.name)
+
+        self.assertTrue(checked, "no published record carries a comparison seed")
+
+    def test_every_published_exceedance_seed_recomputes_from_its_record(self):
+        """Criterion 3. Every seed under `metrics.by_tau`, from its record and tau.
+
+        Both seeds a threshold publishes -- the Brier-skill interval's and the
+        reliability band's -- are checked, not assumed equal. The check may not
+        pass by finding nothing.
+        """
+
+        checked = []
+        for path in sorted(self.RUNS.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            metrics = record.get("metrics")
+            by_tau = metrics.get("by_tau") if isinstance(metrics, dict) else None
+            if not isinstance(by_tau, dict):
+                continue
+            for key, row in sorted(by_tau.items()):
+                for section in (
+                    row.get("brier_skill_score_interval"),
+                    (row.get("reliability_curve") or {}).get("band"),
+                ):
+                    if not isinstance(section, dict) or "seed" not in section:
+                        continue
+                    with self.subTest(record=path.name, tau=key):
+                        self.assertEqual(
+                            exceedance_record_seed(record, row["tau_bp"]),
+                            section["seed"],
+                        )
+                    checked.append((path.name, key))
+
+        self.assertTrue(checked, "no published record carries an exceedance seed")
 
 
 if __name__ == "__main__":
