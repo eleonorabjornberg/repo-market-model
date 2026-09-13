@@ -179,9 +179,11 @@ variance fitted per fold (`--volatility-feature garch11`), an ARX one-step forec
 per fold (`--arx-feature declared`), and a generalised Pareto tail continuing the law above
 its top declared quantile, fitted per fold on the calibration rows (`--tail gpd`, with
 `--calibration conformal` only), whose per-fold fit a `backtest` record reports. Not every
-command takes every setting: `exceedance-backtest` takes the calibration and the tail, and its
-record does not report the tail fold by fold. The ARX feature and the tail are not scored in Key
-findings; the rest are.
+command takes every setting, and `exceedance-backtest` now takes all of them; its record reports
+the per-fold tail account too. Key findings carries neither the ARX feature nor the tail: the ARX
+feature is scored only outside the published set, and the tail is scored on the exceedance metric
+alone (`docs/runs/exceedance_gbm_conformal_mh61.json` against
+`docs/runs/exceedance_gbm_conformal_tail_gpd_mh61.json`), which is the metric it moves.
 
 ```bash
 git clone https://github.com/eleonorabjornberg/repo-market-model.git

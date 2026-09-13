@@ -205,7 +205,8 @@ Stated explicitly, because each is easy to mistake for something stronger.
   `docs/runs/compare_persistence_vs_gbm_cross_conformal_mh61_crps.json`); its upper-tail
   pinball loss is still worse than persistence's. The ARX forecast as a gbm feature
   (`--arx-feature declared`) is built, and scored so far only outside the published record
-  set. A generalised Pareto tail continuing the law above its top declared quantile
+  set. It, the lagged spread changes and the GARCH variance are now selectable from
+  `exceedance-backtest` as well, and none of the three has an exceedance record yet. A generalised Pareto tail continuing the law above its top declared quantile
   (`--tail gpd`, conformal calibration only) is built and selectable from `backtest` and
   `compare`, and from `exceedance-backtest`, which is the only one of the three that scores what
   the tail changes: `backtest` and `compare` score the quantile vector, which the tail never
