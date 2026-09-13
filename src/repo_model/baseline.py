@@ -3431,16 +3431,81 @@ def _report_seed(report: BacktestReport, panel_sha256: str) -> int:
     So the seed is a digest of the run's own identity: the panel bytes, the
     declared feature set, the derived gap, and the decision time. The same run
     on the same panel reproduces the same interval exactly, a reader can
-    recompute the seed from fields the artifact already carries, and two runs
-    that differ in any of those respects are not silently sharing a stream.
+    recompute the seed from fields the artifact already carries --
+    `backtest_record_seed` is that reader -- and two runs that differ in any of
+    those respects are not silently sharing a stream.
+
+    The material is built by `_backtest_seed_material`, which the reader calls
+    too. It used to be spelled out here, and the spelling was only half
+    recoverable: see that function for the decision-time trap.
     """
 
     return _seed_from(
-        (
-            panel_sha256,
-            ",".join(sorted(report.features)),
-            str(report.purge_days),
-            "" if report.decision_time is None else report.decision_time.isoformat(),
+        _backtest_seed_material(
+            panel_sha256, report.features, report.purge_days, report.decision_time
+        )
+    )
+
+
+def _backtest_seed_material(
+    panel_sha256: str,
+    features: Iterable[str],
+    purge_days: Optional[int],
+    decision_time: Optional[time],
+) -> Tuple[str, ...]:
+    """The four strings a backtest record's seed is the digest of.
+
+    The one place they are built, for the writer (`_report_seed`) and the reader
+    (`backtest_record_seed`) alike. Each takes its inputs from where it stands
+    -- the report, or the parsed record -- and neither formats anything itself,
+    so the two cannot come apart the way two spellings of one material would.
+
+    **The decision time is `HH:MM:SS`, and the record states `HH:MM`.** The
+    component is `time.isoformat()`, which is `"16:00:00"`; `backtest_document`
+    writes `declaration.decision_time` with `timespec="minutes"`, which is
+    `"16:00"`. A reader who joins the field as it stands digests different
+    material and gets a different seed -- on 13 Sep 2026 a publishing job did
+    exactly that and refused a correct record. Taking a `time` here rather than
+    a string is the fix: the writer hands in the report's, the reader parses the
+    record's, and the canonical form is chosen once, below. It is not changed to
+    minutes, because every published interval was drawn from the seconds form.
+    """
+
+    return (
+        panel_sha256,
+        ",".join(sorted(features)),
+        str(purge_days),
+        "" if decision_time is None else decision_time.isoformat(),
+    )
+
+
+def backtest_record_seed(record: Mapping[str, Any]) -> int:
+    """The bootstrap seed a published backtest record states, from the record alone.
+
+    `record` is the parsed JSON `backtest_document` produced. For a reader, in
+    one line: `backtest_record_seed(json.load(open(path)))`. Every input is a
+    field the record carries -- `panel.sha256`, `declaration.features`,
+    `derived.purge_days`, `declaration.decision_time` -- and the material goes
+    through `_backtest_seed_material`, the step the writer uses, so what this
+    returns is the seed the writer drew with rather than a reconstruction of it.
+
+    The one conversion is the decision time: the record's `"16:00"` is parsed
+    to a `time`, never joined as text. That is the trap
+    `_backtest_seed_material` names.
+
+    Raises:
+        KeyError: when the record lacks a field the seed is derived from.
+        ValueError: when `declaration.decision_time` is not an ISO time.
+    """
+
+    declaration = record["declaration"]
+    stated = declaration.get("decision_time")
+    return _seed_from(
+        _backtest_seed_material(
+            record["panel"]["sha256"],
+            declaration["features"],
+            record["derived"]["purge_days"],
+            None if stated is None else time.fromisoformat(stated),
         )
     )
 
