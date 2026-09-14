@@ -731,14 +731,23 @@ A manifest edited to anticipate a rebuild would publish a digest no build produc
 thirty-one published records that embed a build manifest bind it by extent -- row count and
 first and last date -- and the rebuild leaves all three unchanged, so none needs re-scoring.
 
-What "buildable" means here is narrower than it reads, and the manifest is the evidence. Six of the
-nine are declared and **empty**: `treasury_settlement_bills`, `treasury_settlement_coupons`,
-`treasury_settlement_soma`, `dealer_treasury_position`, `tbill_4w` and `tbill_13w` each carry a hole
-on every row of this build, as `treasury_settlement` already did, because the snapshots their
-sources would be priced from are not under `data/raw/`. The build no longer refuses them; it does
-not follow that data arrived. Only the three calendar columns, computed from the scored date, carry
-a value on every row. A model that declares one of the six as a feature is refused at its first fold
-rather than handed zeros, which is contract test 5 working: an unobserved regressor is never
+What "buildable" meant **at this rebuild** was narrower than it reads, and the manifest was the
+evidence. Six of the nine were declared and **empty**: `treasury_settlement_bills`,
+`treasury_settlement_coupons`, `treasury_settlement_soma`, `dealer_treasury_position`, `tbill_4w`
+and `tbill_13w` each carried a hole on every row of that build, as `treasury_settlement` already
+did, because the snapshots their sources would be priced from were not under `data/raw/`. The build
+had stopped refusing them; it did not follow that data had arrived. Only the three calendar columns,
+computed from the scored date, carried a value on every row.
+
+**That is no longer the panel's state, and what changed is two later decisions rather than a
+correction to this one.** Rule 10 carries a weekly column's nearest earlier print forward under a
+bounded gap, and re-fetching the auction source from before the panel's own start closed the
+settlement columns' last holes, which were a fetch-range artefact rather than missing data. All
+seven now carry a value on every row of the published build, and the paragraph above is kept as the
+record of what was true when the rebuild was decided.
+
+A model that declares a genuinely unobserved regressor as a feature is still refused at its first
+fold rather than handed zeros, which is contract test 5 working: an unobserved regressor is never
 coerced.
 
 The bootstrap seed a re-scored record carries can be recomputed from the record itself with
