@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
+    CARRY_FORWARD_COLUMNS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     build_daily_panel,
@@ -5790,6 +5791,232 @@ class CalendarColumnTests(unittest.TestCase):
                 date(2023, 4, 17): date(2023, 4, 18),
             },
         )
+
+
+class WeeklyCarryForwardTests(unittest.TestCase):
+    """A weekly column carries its last print forward by `ref_date`, and no further (rule 10).
+
+    A36. `build_daily_panel` rule 10 and `CARRY_FORWARD_COLUMNS` in `data.py`.
+    The acceptance criterion and every mutation target is
+    `test_a_weekly_column_carries_its_nearest_earlier_print_up_to_the_declared_staleness`.
+
+    **By `ref_date`, and the purge does the point-in-time work.** A35's brief
+    required a carried cell to post-date its source's `available_at`. That is
+    rule 2's "apply the gap twice", and the clause was withdrawn; nothing here
+    reads `available_at` beyond rule 1's cutoff. The fixture's FR 2004 rows are
+    published eight calendar days after their Wednesday, and 8 and 9 January
+    still carry 7 January's print.
+
+    **The staleness bound is publication frequency alone**, 7 x 2 - 1 = 13
+    calendar days: one missed weekly print tolerated, a second not. A35's 18
+    added `nyfed_fr2004`'s `worst_case_calendar_days`, which was the
+    availability clause's term; without that clause it is the release lag
+    entering the join through the bound. The derivation is the comment beside
+    `CARRY_FORWARD_COLUMNS`. The test reads the declared bound rather than
+    restating 13, and asserts its fixture premise -- that the last carried day
+    and the first hole after it are both grid dates -- so a changed bound fails
+    loudly at the premise instead of passing on dates that no longer straddle it.
+
+    **Not in the written file manifest.** `carried_forward` is kept out of
+    `write_daily_panel`'s manifest for A27's and A28's reason: the manifest is
+    carried whole into the published run records, compared key by key by the
+    Milestone A reproduction, and a new key is "present on one side only". The
+    last subtest records that absence.
+
+    **No published figure moves.** Of the three declared columns, the published
+    funding build refuses `reserve_balances` and `tga` (no `revision_policy` on
+    `WRESBAL` or `WTREGEN`) and builds `dealer_treasury_position` as a hole on
+    every row, because `funding_inputs/` holds no FR 2004 export: a column with
+    no observation has nothing to carry. A rebuild over the same inputs writes
+    the same bytes; `RequestedColumnsBuildTests` asserts the digest.
+
+    **The fixture.** Five working weeks, 5 January to 6 February 2026; `sofr`
+    prints on every weekday and is the only `REQUIRED_FIELDS` column, so rule 6
+    retains all 25. `dealer_treasury_position` prints on Wednesday 7 January
+    (100), Wednesday 14 January (200), misses 21 and 28 January, and prints
+    Wednesday 4 February (300). So: 5-6 January are holes (nothing earlier);
+    8-13 January carry 100; 15-27 January carry 200, 27 January being exactly
+    13 days on; 28 January to 3 February are holes, 28 January being 14 days on;
+    5-6 February carry 300. Three observed, fifteen carried, seven holes. `tgcr`
+    prints on 7 January only and is not declared, so it keeps rule 4.
+
+    Mutation record, 14 September 2026, python3 3.9.6. One mutation per clause,
+    each to `src/repo_model/data.py` in a disposable copy under `$HOME` built
+    from `git ls-files -z --cached --others --exclude-standard`, each asserted
+    to occur exactly once before it was applied, and reverted from a kept
+    original and confirmed byte-identical before the next.
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class alone. Unmutated
+    control of the same subset green before the first and after the last. No
+    literal threshold was mutated; each is a comparison or the name it reads.
+    Every failure is an `AssertionError`, and each mutation kills its own
+    clause's subtest:
+
+    a. **The source comparison reads `!=` instead of `<`**
+       (`day != ref_date` in `_carry_forward_values`), so `max` picks a later
+       print. Killed a: `300.0 is not None : 2026-01-05`. Also b and c
+       (`300.0 != 200.0`) and d (`22 != 15`).
+    b. **The overwrite guard dropped** (`row is None and` removed from the
+       carry branch in `build_daily_panel`). Killed b:
+       `100.0 != 200.0 : 2026-01-14`. Also d (`16 != 15`). a and c pass under
+       it: the overwrite lands only on observed dates, which they do not read.
+    c. **The staleness comparison reads `ref_date` for `source`**
+       (`(ref_date - ref_date).days > ...`), so no carry is ever too old.
+       Killed c: `200.0 is not None : 2026-01-28`. Also d (`20 != 15`).
+    d. **The carry counted as a hole** (`carried_forward[column] += 1` becomes
+       `holes[column] += 1`). Killed d alone: `0 != 15`. The values are
+       unchanged, which is why the count needs its own clause.
+    """
+
+    SOFR_SHA = "e" * 64
+    FR2004_SHA = "f" * 64
+    COLUMN = "dealer_treasury_position"
+    COLUMNS = ("sofr", "tgcr", "dealer_treasury_position")
+
+    FIRST = date(2026, 1, 7)
+    NEXT = date(2026, 1, 14)
+    LATER = date(2026, 2, 4)
+    PRINTS = {FIRST: 100.0, NEXT: 200.0, LATER: 300.0}
+
+    LAG = {
+        "basis": "ref_date",
+        "unit": "business_days",
+        "days": 1,
+        "worst_case_calendar_days": 6,
+        "available_time": "15:00",
+        "timezone": "America/New_York",
+        "note": "fixture",
+    }
+
+    @property
+    def grid(self):
+        start = date(2026, 1, 5)
+        days = (start + timedelta(days=offset) for offset in range(33))
+        return tuple(day for day in days if day.weekday() < 5)
+
+    def registry(self):
+        """The fixture lag for the daily rates; `nyfed_fr2004`'s own, from the tracked registry."""
+
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {
+            "nyfed_sofr": {"release_lag": dict(self.LAG)},
+            "nyfed_tgcr": {"release_lag": dict(self.LAG)},
+            "nyfed_fr2004": {"release_lag": dict(real["nyfed_fr2004"]["release_lag"])},
+        }
+
+    def rows(self):
+        new_york = ZoneInfo("America/New_York")
+        rows = [
+            PointInTimeObservation(
+                series_id="SOFR",
+                ref_date=ref_date,
+                available_at=datetime.combine(
+                    ref_date + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                ),
+                value=4.30 + index / 100,
+                vintage_id=f"SOFR-{ref_date.isoformat()}",
+                source_sha=self.SOFR_SHA,
+            )
+            for index, ref_date in enumerate(self.grid)
+        ]
+        rows.append(
+            PointInTimeObservation(
+                series_id="TGCR",
+                ref_date=self.FIRST,
+                available_at=datetime.combine(
+                    self.FIRST + timedelta(days=1), time(19, 0), tzinfo=timezone.utc
+                ),
+                value=4.29,
+                vintage_id=f"TGCR-{self.FIRST.isoformat()}",
+                source_sha=self.SOFR_SHA,
+            )
+        )
+        for ref_date, value in self.PRINTS.items():
+            rows.append(
+                PointInTimeObservation(
+                    series_id="PDPOSGST-TOT",
+                    ref_date=ref_date,
+                    available_at=datetime.combine(
+                        ref_date + timedelta(days=8), time(16, 30), tzinfo=new_york
+                    ),
+                    value=value,
+                    vintage_id=f"PDPOSGST-TOT-{ref_date.isoformat()}",
+                    source_sha=self.FR2004_SHA,
+                )
+            )
+        return rows
+
+    def test_a_weekly_column_carries_its_nearest_earlier_print_up_to_the_declared_staleness(
+        self,
+    ):
+        """A36's acceptance criterion and mutation target. See the class docstring."""
+
+        build = build_daily_panel(
+            self.rows(),
+            self.registry(),
+            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            decision_time=time.fromisoformat("16:00"),
+            columns=self.COLUMNS,
+        )
+        panel = {row.date: row.values[self.COLUMN] for row in build.observations}
+        grid = self.grid
+        bound = CARRY_FORWARD_COLUMNS[self.COLUMN]
+        last_carried = self.NEXT + timedelta(days=bound)
+        first_hole = last_carried + timedelta(days=1)
+
+        # The premise: every date is a row, the column is built, and the
+        # declared bound falls between two grid dates with no print between.
+        self.assertEqual(tuple(panel), grid)
+        self.assertEqual(build.built_columns, self.COLUMNS)
+        self.assertIn(last_carried, grid)
+        self.assertIn(first_hole, grid)
+        self.assertLess(first_hole, self.LATER)
+
+        with self.subTest("a: the carry is the nearest earlier print, not a later or an older one"):
+            for day in (date(2026, 1, 5), date(2026, 1, 6)):
+                self.assertIsNone(panel[day], day)
+            for day in (date(2026, 1, 8), date(2026, 1, 9), date(2026, 1, 13)):
+                self.assertEqual(panel[day], 100.0, day)
+            for day in (date(2026, 1, 15), date(2026, 1, 21)):
+                self.assertEqual(panel[day], 200.0, day)
+            for day in (date(2026, 2, 5), date(2026, 2, 6)):
+                self.assertEqual(panel[day], 300.0, day)
+
+        with self.subTest("b: an observation is never overwritten, and the carry stops at it"):
+            for day, value in self.PRINTS.items():
+                self.assertEqual(panel[day], value, day)
+            # The day after the next print carries that print, not the first.
+            self.assertEqual(panel[self.NEXT + timedelta(days=1)], 200.0)
+
+        with self.subTest("c: the carry stops at the declared staleness and leaves a hole"):
+            self.assertEqual(panel[last_carried], 200.0)
+            for day in grid:
+                if first_hole <= day < self.LATER:
+                    self.assertIsNone(panel[day], day)
+
+        with self.subTest("d: carried cells are counted in carried_forward, not in holes"):
+            observed = sum(1 for day in grid if day in self.PRINTS)
+            self.assertEqual(build.carried_forward[self.COLUMN], 15)
+            self.assertEqual(build.holes[self.COLUMN], 7)
+            self.assertEqual(
+                observed + build.carried_forward[self.COLUMN] + build.holes[self.COLUMN],
+                len(grid),
+            )
+            # An undeclared column keeps rule 4, and every built column has a key.
+            self.assertNotIn("tgcr", CARRY_FORWARD_COLUMNS)
+            self.assertEqual(build.carried_forward["tgcr"], 0)
+            self.assertEqual(build.holes["tgcr"], len(grid) - 1)
+            self.assertEqual(build.carried_forward["sofr"], 0)
+
+        with self.subTest("the file manifest does not carry it, and that is measured"):
+            with tempfile.TemporaryDirectory() as directory:
+                manifest_path = write_daily_panel(build, Path(directory) / "panel.csv")
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["holes"], dict(build.holes))
+            self.assertNotIn("carried_forward", manifest)
 
 
 def replace_observation(observation, ref_date):

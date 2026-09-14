@@ -2328,8 +2328,9 @@ PANEL_COLUMNS = tuple(
 
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
 # 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See
-# `build_daily_panel` rule 8. This is the one place the exception to rule 4 is
-# declared: a column not named here keeps its holes.
+# `build_daily_panel` rule 8. This is the one place rule 8's exception to rule 4
+# is declared: a column not named here or in `CARRY_FORWARD_COLUMNS` keeps its
+# holes.
 #
 #: The auction snapshot: the one source a settlement zero may be read from. The
 #: zero is a claim about what its record lists, so a column drawn from any other
@@ -2358,6 +2359,57 @@ SETTLEMENT_ZERO_COLUMNS = MappingProxyType(
 #: Treasury's issue dates are Eastern calendar dates, so a retrieval instant is
 #: read on that calendar before it bounds them.
 SETTLEMENT_CALENDAR = "America/New_York"
+
+
+# A weekly column carries its last print forward by `ref_date` (A36; see
+# `build_daily_panel` rule 10). This is the one place rule 10's exception to
+# rule 4 is declared.
+#
+# The staleness bound, derived. The carry compares a `ref_date` with an earlier
+# `ref_date` and nothing else, so the bound is a statement about how often the
+# column prints and how many prints it may miss -- not about when a print can
+# be read. A35 put 7 (the weekly interval) + 11 (`nyfed_fr2004`'s
+# `worst_case_calendar_days`) = 18. That second term belonged to the
+# availability clause, which is withdrawn: rule 2 gives the distance between a
+# `ref_date` and its publication to the purge, and a bound lengthened by the
+# release lag would be that gap entering the join a second time, one level in
+# -- not by moving values, but by letting a value stand for as many more days
+# as the purge already holds the scored day clear of it. Nor would the lag be
+# the right size: it says when a print is read, and a print that is late is
+# late by the purge's arithmetic whatever the carry does.
+#
+# So the bound is publication frequency alone: interval x (1 + tolerated missed
+# prints) - 1. One missed print is tolerated -- a print absent from a snapshot
+# is a single fact about the data, and zero tolerance would turn each one into
+# a week of holes -- and a second consecutive one is not: two prints in a row
+# is a gap in the feed, and carrying across it would publish a number two
+# weeks stale as though the feed were alive. 7 x 2 - 1 = 13: a Wednesday print
+# carries through the Tuesday before the *second* Wednesday after it, and that
+# second Wednesday, 14 days on, is a hole if nothing printed. Calendar days,
+# because the interval is a calendar week and the grid skips weekends.
+#
+#: The publication interval of a weekly column, in calendar days.
+WEEKLY_PUBLICATION_INTERVAL_DAYS = 7
+#: How many consecutive prints a carry may stand in for.
+CARRY_FORWARD_TOLERATED_MISSED_PRINTS = 1
+#: The oldest a carried value may be, in calendar days after its own `ref_date`.
+WEEKLY_CARRY_MAX_STALENESS_DAYS = (
+    WEEKLY_PUBLICATION_INTERVAL_DAYS * (1 + CARRY_FORWARD_TOLERATED_MISSED_PRINTS) - 1
+)
+
+#: Carry column -> its maximum staleness in calendar days. Every entry is a
+#: column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
+#: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
+#: `WTREGEN`. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
+#: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
+#: not an absence, and a calendar column is never a hole.
+CARRY_FORWARD_COLUMNS = MappingProxyType(
+    {
+        "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+    }
+)
 
 
 # The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them "a
@@ -2515,8 +2567,9 @@ class DailyPanelBuild:
     no value for it. A hole is not a zero and is not the previous day's value;
     it is recorded and left empty. A settlement zero (`build_daily_panel` rule
     8) is a value and is not counted here; it is counted in `settlement_zeros`.
-    It is counted over the grid the panel actually carries -- see
-    `incomplete_dates`.
+    A carried value (rule 10) is not counted here either; it is counted in
+    `carried_forward`. It is counted over the grid the panel actually carries
+    -- see `incomplete_dates`.
 
     `settlement_zeros` counts, per built column and over the same grid, the
     values that are rule 8 settlement zeros. Beside `holes` because they are
@@ -2535,6 +2588,17 @@ class DailyPanelBuild:
     no settlement zero -- every column outside `SETTLEMENT_ZERO_COLUMNS`, and a
     declared one on a build where nothing was filled -- records zero rather
     than omitting the key, to the standard `incomplete_dates` states next.
+
+    `carried_forward` counts, per built column and over the same grid, the
+    values that are rule 10 carries: a `ref_date` with no observation of its
+    own, holding the value of the nearest earlier one. It is the third fact
+    about a column's absences, and it is neither of the other two. A carried
+    cell is not a hole, because it holds a value; and it is not an observation
+    of its own date, because nothing was published for that date. Without it a
+    reader of `holes` would see a weekly column as nearly complete and could not
+    tell how much of it was published and how much was the last print standing
+    in. Counted in the write, like `settlement_zeros`, and keyed over every
+    built column, so a column that carried nothing records zero.
 
     `incomplete_dates` counts the `ref_date`s that the union of the sources
     reported but that this panel does not carry, because a `REQUIRED_FIELDS`
@@ -2568,8 +2632,8 @@ class DailyPanelBuild:
     `DailyPanelBuild` a reader holds.
 
     Deliberately not in the file manifest, for the reason the comment above
-    `write_daily_panel`'s `"required_columns"` gives for this key and for
-    `settlement_zeros`.
+    `write_daily_panel`'s `"required_columns"` gives for this key, for
+    `settlement_zeros` and for `carried_forward`.
     """
 
     observations: Sequence[DailyObservation]
@@ -2580,6 +2644,7 @@ class DailyPanelBuild:
     decision_time: object
     incomplete_dates: int
     settlement_zeros: Mapping[str, int]
+    carried_forward: Mapping[str, int]
 
     @property
     def empty_columns(self) -> Sequence[str]:
@@ -2881,6 +2946,40 @@ def _settlement_zero_dates(
     return zeros
 
 
+def _carry_forward_values(
+    latest: Mapping[tuple, PointInTimeObservation],
+    built: Sequence[str],
+    grid: Sequence[date],
+) -> Dict[str, Dict[date, float]]:
+    """Rule 10: per declared built column, grid date -> the value it would carry.
+
+    See `build_daily_panel` rule 10. The source of a carry is the nearest
+    earlier `ref_date` the column has an observation for among the rows this
+    build can see -- on the grid or off it: a weekly print dated on a day with
+    no SOFR is still the latest print, and skipping it would carry an older one.
+    A date with an observation of its own is not excluded here; the join writes
+    a carry only where it found no row, and that is the one place the rule that
+    a carry never overwrites an observation is held.
+    """
+
+    carries: Dict[str, Dict[date, float]] = {}
+    for column in built:
+        if column not in CARRY_FORWARD_COLUMNS:
+            continue
+        observed = sorted(ref_date for name, ref_date in latest if name == column)
+        fills: Dict[date, float] = {}
+        for ref_date in grid:
+            earlier = [day for day in observed if day < ref_date]
+            if not earlier:
+                continue
+            source = max(earlier)
+            if (ref_date - source).days > CARRY_FORWARD_COLUMNS[column]:
+                continue
+            fills[ref_date] = latest[(column, source)].value
+        carries[column] = fills
+    return carries
+
+
 def build_daily_panel(
     observations: Iterable[PointInTimeObservation],
     registry: Mapping[str, Mapping[str, object]],
@@ -2919,7 +3018,8 @@ def build_daily_panel(
 
     **4. No forward fill.** A `ref_date` with no observation for a built column
     gets `None`, counted in `holes`. Absent is not zero and is not yesterday.
-    Rule 8 is the one declared exception, and only for the columns it names.
+    Rules 8 and 10 are the two declared exceptions, each only for the columns
+    it names.
 
     **6. The grid is the dates the panel is readable on.** The union of every
     source's `ref_date`s is not a panel: an administered rate that prints every
@@ -3046,6 +3146,31 @@ def build_daily_panel(
     never a hole and never a settlement zero, and it adds no date to the grid:
     rule 6's grid is made by the sourced columns alone, and a build with no
     sourced column surviving raises.
+
+    **10. A weekly column carries its last print forward by `ref_date`, and no
+    further than a declared staleness** (human decision, A36). A `ref_date` on
+    the retained grid with no observation for a column in
+    `CARRY_FORWARD_COLUMNS` takes the value of the most recent earlier
+    `ref_date` that has one. See `_carry_forward_values`. The carry:
+
+    * never overwrites a real observation, and so stops at the next one: the
+      date after it carries that observation, not the one before;
+    * stops after the column's declared maximum staleness in calendar days,
+      beyond which the cell stays a hole, so a missed print cannot carry a stale
+      number indefinitely. The bound and its derivation are beside
+      `CARRY_FORWARD_COLUMNS`;
+    * is counted in `carried_forward`, not in `holes`: a carried cell is
+      neither a hole nor an observation of its own date.
+
+    **By `ref_date`, not by availability.** The carried value is the one whose
+    `ref_date` is nearest before, whether or not it was yet published on the
+    date it fills. That is rule 2, applied to a carry: the purge in
+    `splits.rolling_origin` already holds the last training row a full release
+    lag clear of the scored day, and a carry that also waited for its source's
+    `available_at` would apply the gap twice. A35's brief required that and it
+    was withdrawn for this reason. Like rule 8 and unlike rule 9, the carry adds
+    no date to the grid; a date before the column's first observation stays a
+    hole.
 
     Raises `DataContractError` if the cutoff is naive, if no declared sourced
     column survives pricing, if nothing is left to index, under rule 5, or
@@ -3197,6 +3322,8 @@ def build_daily_panel(
     zero_dates = _settlement_zero_dates(
         visible, built, retained, snapshot_retrieved_at, registry, build_cutoff
     )
+    # Rule 10, over the same grid.
+    carries = _carry_forward_values(latest, built, retained)
 
     rows: List[DailyObservation] = []
     holes: Dict[str, int] = {column: 0 for column in built}
@@ -3205,6 +3332,7 @@ def build_daily_panel(
     # Keyed over every built column, so a column that took none says zero --
     # see `DailyPanelBuild`.
     settlement_zeros: Dict[str, int] = {column: 0 for column in built}
+    carried_forward: Dict[str, int] = {column: 0 for column in built}
     for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
@@ -3216,6 +3344,11 @@ def build_daily_panel(
             if row is None and ref_date in zero_dates.get(column, ()):
                 settlement_zeros[column] += 1
                 values[column] = 0.0
+            elif row is None and ref_date in carries.get(column, {}):
+                # Rule 10. Only where the join found no row: never over an
+                # observation.
+                carried_forward[column] += 1
+                values[column] = carries[column][ref_date]
             elif row is None:
                 holes[column] += 1
                 values[column] = None
@@ -3232,6 +3365,7 @@ def build_daily_panel(
         decision_time=decision_time,
         incomplete_dates=incomplete_dates,
         settlement_zeros=settlement_zeros,
+        carried_forward=carried_forward,
     )
 
 
@@ -3298,9 +3432,9 @@ def write_daily_panel(
         "refused_columns": dict(build.refusals),
         "holes": dict(build.holes),
         "incomplete_dates": build.incomplete_dates,
-        # `settlement_zeros` (A27) and `empty_columns` (A28) are both on
-        # `DailyPanelBuild` and are both deliberately not written here yet.
-        # Adding either key changes what a re-run of the published build
+        # `settlement_zeros` (A27), `empty_columns` (A28) and `carried_forward`
+        # (A36) are all on `DailyPanelBuild` and are all deliberately not
+        # written here yet. Adding any of the keys changes what a re-run of the published build
         # writes, and `test_generated_results` compares the rebuilt
         # `panel.build_manifest` with the one
         # `docs/runs/persistence_funding.json` records key by key: a new key is
