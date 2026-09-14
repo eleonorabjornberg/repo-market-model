@@ -1751,7 +1751,7 @@ class IdentityEra:
     one series (`PDPOSGSC-G11`) through 2021-12-29 and two (`-G11L21`, `-G21`)
     from 2022-01-05. An identity declared over the current thirteen terms alone
     can be evaluated on 243 of the tracked extract's 700 weekly dates and is
-    `not_evaluable` on the other 457 -- honest, and also five sixths of the
+    `not_evaluable` on the other 457 -- honest, and also about two thirds of the
     history left unchecked by a guard that reads as vigilance.
 
     The alternative that has to be refused rather than merely not chosen is one
