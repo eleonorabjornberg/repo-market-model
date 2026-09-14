@@ -344,7 +344,8 @@ and `treasury_settlement_soma`, each in USD billions. A gross figure blends thre
 pressures: bill settlements drain cash and are primary-dealer financed; coupon settlements
 need repo financing capacity of their own; SOMA add-ons are a non-market adjustment to the
 Fed's balance sheet. **A business day with no settlement reads `0.0`** (`build_daily_panel`
-rule 8, the one declared exception to rule 4), a true zero rather than a fill: the auction
+rule 8, the first of two declared exceptions to rule 4; rule 10 is the other, and
+carries a weekly column's last print forward under a bound), a true zero rather than a fill: the auction
 record lists every settlement, so a day without one settled nothing. The zero holds only
 inside the snapshot's coverage, from its first settlement date to the New York date of its
 `retrieved_at`; a day it cannot speak to stays a hole. SOMA reads `0.0` only on a day with

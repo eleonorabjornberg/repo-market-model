@@ -205,12 +205,7 @@ PYTHONPATH=src python3 -m repo_model.cli build \
   --raw-root tests/fixtures/snapshots/funding_inputs \
   --output /tmp/funding_panel.csv \
   --build-cutoff 2026-09-08T21:31:42+00:00 \
-  --decision-time 16:00:00 \
-  --column sofr --column iorb --column sofr_volume --column sofr_p25 --column sofr_p75 \
-  --column tgcr --column bgcr --column treasury_settlement \
-  --column treasury_settlement_bills --column treasury_settlement_coupons \
-  --column treasury_settlement_soma --column dealer_treasury_position --column tbill_4w \
-  --column tbill_13w --column quarter_end --column tax_date --column days_to_month_end
+  --decision-time 16:00:00
 PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv \
   --manifest metadata/funding_panel_manifest.json
 PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
@@ -222,7 +217,20 @@ PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
   --report /tmp/persistence_funding.json
 ```
 
-The build cutoff, decision time and columns are the ones
+The command names **no columns**, and that is load-bearing. The default is every
+declared column: seventeen are built and four are recorded in `refused_columns` with
+the reason the pricing function gives. Naming only the built columns produces the same
+panel bytes and an *empty* refusal record, which `tests/test_data.py` refuses -- and
+naming the refused ones as well does not run at all: `--column` treats a column it
+cannot price as an error, not as a refusal. The refusal record exists only on the
+default path. Both of those were found the hard way, the first after it had reached
+`main`.
+
+A new source joining the registry therefore changes this build, and that is caught by
+the digest rather than by a flag: `verify-panel` compares the panel against the
+manifest, and the manifest records both the built and the refused sets.
+
+The build cutoff and decision time are the ones
 `metadata/funding_panel_manifest.json` records, and the columns are the load-bearing one:
 a source joining the registry adds a column to a build that names none, and that panel is
 different bytes. Flag order does not matter; the panel carries columns in declared order.
