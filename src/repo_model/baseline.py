@@ -3582,6 +3582,68 @@ def mae_bootstrap_interval(
     return lower, upper, block
 
 
+#: Where an origin's actual fell against its own interval, in the order a
+#: record lists the three. `inside` includes both bounds, which is the closed
+#: interval `_coverage_indicators` scores and the published `interval_coverage`
+#: was computed under.
+COVERAGE_SIDES = ("below", "inside", "above")
+
+
+@dataclass(frozen=True)
+class OriginCoverage:
+    """One scored origin of a calibration statement: when, where, and by how much.
+
+    Added by B50. A coverage indicator says *whether* an origin missed and not
+    which way or by how much, and those are the questions a band that misses
+    asymmetrically raises: the control gbm+conformal run covers 79.7% over
+    2022-23 with 20.3% of origins below the band and none above it, which one
+    bit per origin cannot show and which a mean over the whole run hides.
+
+    `actual_bps`, `predicted_bps` and `quantiles_bps` are copied off the
+    `Forecast` unchanged, and `side` is the one derived field. Both bounds are
+    closed: an actual equal to `lower_bps` is `inside`.
+    """
+
+    scored_date: date
+    side: str
+    actual_bps: float
+    predicted_bps: float
+    quantiles_bps: Tuple[float, ...]
+
+
+def _origin_coverage(fold: ScoredFold, forecast: Forecast) -> OriginCoverage:
+    if forecast.actual_bps < forecast.lower_bps:
+        side = "below"
+    elif forecast.actual_bps > forecast.upper_bps:
+        side = "above"
+    else:
+        side = "inside"
+    return OriginCoverage(
+        scored_date=fold.scored_date,
+        side=side,
+        actual_bps=forecast.actual_bps,
+        predicted_bps=forecast.predicted_bps,
+        quantiles_bps=tuple(forecast.quantiles_bps),
+    )
+
+
+def _origin_aggregates(
+    origins: Sequence[OriginCoverage],
+) -> Tuple[Tuple[float, ...], int, int, float]:
+    """The coverage series, both miss counts and the mean bias, off one origin tuple.
+
+    The one place those four are derived, so a record cannot publish a series
+    and a set of miss counts that came from two different walks. Bias is
+    actual minus predicted: positive when the model forecast too low.
+    """
+
+    series = tuple(1.0 if item.side == "inside" else 0.0 for item in origins)
+    below = sum(1 for item in origins if item.side == "below")
+    above = sum(1 for item in origins if item.side == "above")
+    bias = sum(item.actual_bps - item.predicted_bps for item in origins) / len(origins)
+    return series, below, above, bias
+
+
 @dataclass(frozen=True)
 class IntervalCalibration:
     """A run's realized interval coverage, beside the probability it declared.
@@ -3635,7 +3697,23 @@ class IntervalCalibration:
     #: defect `docs/runs/persistence_funding.json` was found to have. See
     #: `_calibration_document`, which publishes it, and
     #: `calibration_from_document`, which resamples it back.
+    #:
+    #: Since B50 it is derived from `origins` below and not from a walk of its
+    #: own; see `_origin_aggregates`.
     coverage_series: Tuple[float, ...]
+    #: One `OriginCoverage` per scored origin, in origin order, and the tuple
+    #: `coverage_series` and the three fields after it are read from. `None`
+    #: only on a statement `calibration_from_document` read back from a record
+    #: written before B50, which carries no per-origin block: those four are
+    #: then absent from the record, and the reader says so rather than
+    #: inventing them. The series is still there and still resamples.
+    origins: Optional[Tuple[OriginCoverage, ...]]
+    #: Origins whose actual fell strictly below, or strictly above, its own
+    #: interval. With the covered count they sum to the origin count.
+    misses_below: Optional[int]
+    misses_above: Optional[int]
+    #: The mean of `actual_bps - predicted_bps` over `origins`.
+    mean_bias_bps: Optional[float]
 
 
 def interval_calibration(
@@ -3693,9 +3771,17 @@ def interval_calibration(
     Returns:
         An `IntervalCalibration`.
 
+    **One walk (B50).** The report's folds and forecasts are zipped once into
+    `origins`, and the coverage series, both miss counts and the mean bias are
+    all read off that tuple by `_origin_aggregates`. A second walk of the
+    forecasts for any of them is the defect `PerOriginCalibrationTests` is
+    built to catch: it agrees with the first until one of the two is edited.
+
     Raises:
         ValueError: if the report carries no forecasts, or fewer than two
-            quantile levels, from which no declared probability can be formed.
+            quantile levels, from which no declared probability can be formed,
+            or a fold count that differs from its forecast count, so that no
+            forecast can be given the date it was scored at.
     """
 
     forecasts = list(report.forecasts)
@@ -3709,13 +3795,24 @@ def interval_calibration(
             "statement cannot be formed from it, and substituting the "
             "contract's grid would report a declaration the run did not make"
         )
+    if len(report.folds) != len(forecasts):
+        raise ValueError(
+            f"the report carries {len(forecasts)} forecasts and "
+            f"{len(report.folds)} folds; a per-origin calibration pairs each "
+            "forecast with the date it was scored at, and pairing them "
+            "positionally across a mismatch would date every origin wrongly"
+        )
     declared = levels[-1] - levels[0]
     block = (
         _maximum_horizon_overlap(report.folds)
         if block_length is None
         else int(block_length)
     )
-    covered = _coverage_indicators(forecasts)
+    origins = tuple(
+        _origin_coverage(fold, forecast)
+        for fold, forecast in zip(report.folds, forecasts)
+    )
+    covered, below, above, bias = _origin_aggregates(origins)
 
     lower, upper = stationary_bootstrap_interval(
         _coverage_statistic(covered),
@@ -3733,7 +3830,11 @@ def interval_calibration(
         seed=seed,
         replications=BOOTSTRAP_REPLICATIONS,
         level=BOOTSTRAP_LEVEL,
-        coverage_series=tuple(covered),
+        coverage_series=covered,
+        origins=origins,
+        misses_below=below,
+        misses_above=above,
+        mean_bias_bps=bias,
     )
 
 
@@ -3746,34 +3847,36 @@ def interval_calibration(
 _COVERAGE_SERIES_ENCODING = "run_length"
 
 
-def _coverage_indicators(forecasts: Sequence[Forecast]) -> List[float]:
-    """The coverage indicator series: `1.0` where the actual fell in its interval.
+#: The per-origin block's field names, in the order `_origin_document` writes
+#: them; `calibration_from_document` requires each of them.
+_ORIGIN_FIELDS = ("scored_date", "side", "actual_bps", "predicted_bps", "quantiles_bps")
 
-    One value per scored origin, in origin order. Extracted from
-    `interval_calibration` when `_calibration_document` needed the same series
-    to publish, and extracted rather than duplicated for the reason the class
-    docstring gives about the centre and the interval: two derivations of the
-    series a record is asked to reproduce can agree today and drift later, and
-    the record would then publish an arrangement that is not the one its
-    endpoints came from.
 
-    **The bounds are closed on both sides, deliberately.** That is the
-    definition `rolling_persistence_backtest` computed the published
-    `interval_coverage` under, so a strict indicator here would calibrate a
-    different quantity than the one being calibrated. See
-    `IntervalCalibrationTests`' mutation 6, which is the mutation that found
-    this was unguarded.
+def _origin_document(origin: OriginCoverage) -> dict:
+    return {
+        "scored_date": origin.scored_date.isoformat(),
+        "side": origin.side,
+        "actual_bps": origin.actual_bps,
+        "predicted_bps": origin.predicted_bps,
+        "quantiles_bps": list(origin.quantiles_bps),
+    }
 
-    Floats, not bools: `stationary_bootstrap_interval` refuses a non-finite
-    statistic and a mean over ints would still be a float, but the series is
-    what a reader is being asked to believe is resampled, and `1.0`/`0.0` is
-    the series the mean is of.
-    """
 
-    return [
-        1.0 if item.lower_bps <= item.actual_bps <= item.upper_bps else 0.0
-        for item in forecasts
-    ]
+def _origin_from_document(entry: Mapping[str, Any]) -> OriginCoverage:
+    for key in _ORIGIN_FIELDS:
+        _required(entry, key, "an origin of interval_calibration")
+    if entry["side"] not in COVERAGE_SIDES:
+        raise ValueError(
+            f"an origin of the record is on side {entry['side']!r}; a coverage "
+            f"side is one of {COVERAGE_SIDES}"
+        )
+    return OriginCoverage(
+        scored_date=date.fromisoformat(entry["scored_date"]),
+        side=entry["side"],
+        actual_bps=entry["actual_bps"],
+        predicted_bps=entry["predicted_bps"],
+        quantiles_bps=tuple(entry["quantiles_bps"]),
+    )
 
 
 #: The repository whose commit a record names. Resolved from this module's own
@@ -4289,12 +4392,21 @@ def _calibration_document(calibration: IntervalCalibration) -> dict:
     that reader. The record states the endpoints so a human can read them, and
     the reader derives them again from the series so that agreeing is a fact
     rather than a definition.
+
+    **The per-origin block (B50).** `origins` carries each scored origin's
+    date, side, actual, prediction and quantile vector, and `misses_below`,
+    `misses_above` and `mean_bias_bps` sit beside it. This function only writes
+    what `interval_calibration` already built: every one of them is read off
+    `calibration`, never recomputed from a report here.
     """
 
     lower, upper = calibration.coverage_interval
     return {
         "realized_coverage": calibration.realized_coverage,
         "declared_probability": calibration.declared_probability,
+        "misses_below": calibration.misses_below,
+        "misses_above": calibration.misses_above,
+        "mean_bias_bps": calibration.mean_bias_bps,
         "coverage_interval": {
             "lower": lower,
             "upper": upper,
@@ -4309,6 +4421,7 @@ def _calibration_document(calibration: IntervalCalibration) -> dict:
             "length": len(calibration.coverage_series),
             "runs": _encode_indicator_runs(calibration.coverage_series),
         },
+        "origins": [_origin_document(item) for item in calibration.origins],
     }
 
 
@@ -4346,6 +4459,13 @@ def calibration_from_document(document: Mapping[str, Any]) -> IntervalCalibratio
     not a quantity a series determines -- see `interval_calibration`, which
     refuses to substitute the contract's grid for the same reason.
 
+    **The per-origin block (B50) is read, and its aggregates recomputed.** The
+    origins are data and are decoded as written; `misses_below`,
+    `misses_above` and `mean_bias_bps` are derived from them by
+    `_origin_aggregates`, never read off the record, for the endpoints'
+    reason. A record written before B50 carries no block,
+    and the four fields come back `None`: absent, not invented.
+
     Args:
         document: a record as `backtest_document` shaped it, parsed from JSON.
 
@@ -4379,6 +4499,19 @@ def calibration_from_document(document: Mapping[str, Any]) -> IntervalCalibratio
         _required(series_object, "length", "coverage_series"),
     )
 
+    origins: Optional[Tuple[OriginCoverage, ...]] = None
+    below: Optional[int] = None
+    above: Optional[int] = None
+    bias: Optional[float] = None
+    if "origins" in statement:
+        origins = tuple(_origin_from_document(entry) for entry in statement["origins"])
+        if not origins:
+            raise ValueError(
+                "the record carries an empty per-origin block beside a "
+                "non-empty coverage series"
+            )
+        _, below, above, bias = _origin_aggregates(origins)
+
     block_length = _required(interval, "block_length", "coverage_interval")
     seed = _required(interval, "seed", "coverage_interval")
     replications = _required(interval, "replications", "coverage_interval")
@@ -4403,6 +4536,10 @@ def calibration_from_document(document: Mapping[str, Any]) -> IntervalCalibratio
         replications=replications,
         level=level,
         coverage_series=tuple(series),
+        origins=origins,
+        misses_below=below,
+        misses_above=above,
+        mean_bias_bps=bias,
     )
 
 
@@ -4485,21 +4622,19 @@ def backtest_document(
       absent from a run that declared no quantile grid, by the rule above.
 
     What is deliberately *not* here: any aggregate over event windows (those
-    are the event path's and the contract forbids aggregating a single window),
-    and any per-forecast dump. The second is a real omission and worth the
-    note: the pinball losses cannot be recomputed from this file alone. They
-    can be recomputed from the panel, which the file identifies by digest,
-    which is what makes the digest load-bearing rather than decorative.
+    are the event path's and the contract forbids aggregating a single window).
 
-    **The interval on coverage is the exception, and it is a narrow one.** It
-    is recomputable from the file because the record carries the coverage
-    indicator series -- one bit per origin, run-length encoded -- and one bit
-    per origin is not a forecast row. Nothing here publishes a prediction, a
-    quantile or an actual. (The `compare` record publishes per-origin losses
-    since B18, by the user's decision recorded on `paired_comparison_document`;
-    this record's shape did not change with it.) What
-    is published is whether each origin's actual fell inside its own interval,
-    which is the whole of what a coverage statement is over.
+    **Per-origin rows are here since B50, inside the calibration statement.**
+    Until B50 this record published no prediction, quantile or actual -- only
+    the coverage indicator series, one bit per origin -- and the pinball losses
+    could be recomputed only from the panel. `interval_calibration.origins` now
+    carries each scored origin's date, side, actual, prediction and full
+    quantile vector, so the pinball losses and the bias are recomputable from
+    this file alone, and the panel digest remains what says which bytes the
+    actuals came from. The shape was changed by the user's decision on B50, to
+    make visible *which way* a band misses; the `compare` record had published
+    per-origin losses since B18 by the same kind of decision. Records in
+    `docs/runs/` written before B50 do not carry the block.
 
     Args:
         report: a report from `rolling_persistence_backtest`.
@@ -6548,8 +6683,8 @@ def _reliability_document(curve: ReliabilityCurve, *, seed: int, block: int) -> 
     It still grows with the number of *distinct* forecasts, and that is a
     property of the model rather than of the panel: a climatology contributes
     one point however long the run, a conditional model roughly one per scored
-    day. `backtest_document` refuses a per-forecast dump for a reason that does
-    not apply here -- the reliability curve is the diagnostic the contract
+    day. `backtest_document` refused a per-forecast dump until B50 for a reason
+    that did not apply here -- the reliability curve is the diagnostic the contract
     asks for, and there is no scalar it can be reduced to. A fixed-bin ECE is
     exactly that scalar and it is prohibited at these base rates.
     """

@@ -1455,10 +1455,12 @@ class PublishedReportTests(RollingBacktestHarness):
     off-by-one in the gap would show, and which does not grow with the panel.
     **`metrics`** is every number, unrounded.
 
-    Two omissions are deliberate. There is **no per-forecast dump**, so the
-    losses cannot be recomputed from this file alone -- they can be recomputed
-    from the panel, which the file identifies by digest, and that is what makes
-    the digest load-bearing rather than decorative. And there is **no event
+    Two omissions were deliberate when this was written. There was **no
+    per-forecast dump**, so the losses could be recomputed only from the panel,
+    which the file identifies by digest. Since B50 that one is gone: the
+    calibration statement carries per-origin actuals, predictions and quantile
+    vectors (`PerOriginCalibrationTests`), and the digest remains what says
+    which bytes they came from. The other stands -- there is **no event
     aggregate**: `AGENT_CONTRACT.md` forbids an aggregate Brier or reliability
     number on a single event window, and a benchmark artifact that carried one
     would be the place somebody averaged it into the main table.
