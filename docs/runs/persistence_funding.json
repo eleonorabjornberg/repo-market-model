@@ -1443,7 +1443,12 @@
       },
       "incomplete_dates": 4440,
       "path": "data/processed/funding_panel.csv",
-      "refused_columns": {},
+      "refused_columns": {
+        "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+        "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+        "reserve_balances": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+        "tga": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
+      },
       "required_columns": [
         "sofr",
         "iorb"
@@ -1490,7 +1495,7 @@
   },
   "provenance": {
     "code": {
-      "commit": "6f59e614910cb2200fd2ef2e009b0f89ec70d94c",
+      "commit": "9e857c45b155336d61ae4341b293536f6de88510",
       "tree_modified": false,
       "untracked_files_present": false
     },

@@ -188,7 +188,12 @@
     }
   ],
   "path": "data/processed/funding_panel.csv",
-  "refused_columns": {},
+  "refused_columns": {
+    "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "reserve_balances": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+    "tga": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
+  },
   "required_columns": [
     "sofr",
     "iorb"
