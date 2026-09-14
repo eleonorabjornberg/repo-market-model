@@ -36,8 +36,10 @@ from .ingest import (
     SEC_NMFP_ARCHIVE_MANIFEST,
     build_point_in_time_snapshot,
     fetch_fred_macro,
+    fetch_nyfed_fr2004,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
+    fetch_treasury_bill_rates,
     load_snapshot_manifest,
     load_sec_nmfp_archive_manifest,
     load_source_registry,
@@ -82,6 +84,12 @@ def _fetch(args: argparse.Namespace) -> int:
             start=args.start,
             end=args.end,
         )
+    elif args.source == "treasury-bill-rates":
+        artifacts = fetch_treasury_bill_rates(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
+    elif args.source == "fr2004":
+        artifacts = fetch_nyfed_fr2004(output_root=args.output_root)
     else:
         artifacts = fetch_fred_macro(output_root=args.output_root)
     print(json.dumps([artifact.as_dict() for artifact in artifacts], indent=2))
@@ -335,8 +343,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch = subparsers.add_parser(
         "fetch", help="download an immutable public-data snapshot"
     )
-    fetch.add_argument("source", choices=NYFED_RATE_SOURCES + ("fred-macro",))
-    fetch.add_argument("--start", default="2018-04-03", help="effective start date")
+    fetch.add_argument(
+        "source",
+        choices=NYFED_RATE_SOURCES + ("fred-macro", "treasury-bill-rates", "fr2004"),
+    )
+    fetch.add_argument(
+        "--start",
+        default="2018-04-03",
+        help="effective start date (treasury-bill-rates: every year from here to --end; "
+        "fr2004 and fred-macro take no range)",
+    )
     fetch.add_argument(
         "--end", default=date.today().isoformat(), help="effective end date"
     )
