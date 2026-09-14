@@ -8,6 +8,8 @@
     "sofr_p75",
     "tgcr",
     "bgcr",
+    "reserve_balances",
+    "tga",
     "treasury_settlement",
     "treasury_settlement_bills",
     "treasury_settlement_coupons",
@@ -27,6 +29,7 @@
     "dealer_treasury_position": 0,
     "iorb": 0,
     "quarter_end": 0,
+    "reserve_balances": 0,
     "sofr": 0,
     "sofr_p25": 2,
     "sofr_p75": 2,
@@ -34,13 +37,14 @@
     "tax_date": 0,
     "tbill_13w": 0,
     "tbill_4w": 0,
+    "tga": 0,
     "tgcr": 0,
     "treasury_settlement": 0,
     "treasury_settlement_bills": 0,
     "treasury_settlement_coupons": 0,
     "treasury_settlement_soma": 0
   },
-  "incomplete_dates": 4440,
+  "incomplete_dates": 4744,
   "inputs": [
     {
       "byte_count": 213838,
@@ -190,9 +194,7 @@
   "path": "data/processed/funding_panel.csv",
   "refused_columns": {
     "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
-    "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
-    "reserve_balances": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
-    "tga": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
+    "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
   },
   "required_columns": [
     "sofr",
@@ -200,7 +202,7 @@
   ],
   "row_count": 2104,
   "run_record": "docs/runs/persistence_funding.json",
-  "sha256": "7094489e0c7bb6bba749d4de5f1fbf860ba43aca4d9bff51556b3dd049b609d5",
+  "sha256": "d8b716cf5d76eb71eb8193fe7d56310db474b7ba80bc31b92c5a555248a6b9d6",
   "source_shas": [
     "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
     "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
