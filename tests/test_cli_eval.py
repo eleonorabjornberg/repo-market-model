@@ -2930,13 +2930,23 @@ class RealRegistryTests(unittest.TestCase):
         a separate claim: the flag is required now, so a refusal has an
         artifact path it must decline to write rather than no artifact to speak
         of.
+
+        **Moved from `reserve_balances` to `on_rrp`, 14 September 2026.**
+        `WRESBAL` is about to declare `never_revised` on four ALFRED vintages
+        with no observation ever restated, and `reserve_balances` will price.
+        `on_rrp` reads `RRPONTSYD` on the same source, which has measured
+        restatements inside the 2020 event holdout (2020-02-19 5.149 -> 0.095;
+        2020-11-18 0.103 -> 0.000 and back), so it is the exemplar least likely
+        to move next. Green against the registry before and after that
+        declaration. The mutation that kills this test is recorded on
+        `tests/test_baseline.py::PurgedBacktestTests::test_two_features_on_one_source_price_differently`.
         """
 
-        code, out, err, written = self._run(FEATURE, "reserve_balances")
+        code, out, err, written = self._run(FEATURE, "on_rrp")
 
         self.assertEqual(code, 2)
         self.assertIn("fred_macro_latest_vintage", err)
-        self.assertIn("WRESBAL", err)
+        self.assertIn("RRPONTSYD", err)
         self.assertIn("available_at", err)
         self.assertEqual(
             out,

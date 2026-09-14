@@ -117,6 +117,18 @@ same control after each mutation was reverted.
          purge cannot be zero" invariant, which is the general statement this
          mutation violates and the reason the narrowing is safe.
 
+     **Re-run 14 September 2026**, when the three real-registry refusals moved
+     off `WRESBAL` and `WTREGEN` (about to declare `never_revised`): the first
+     two to `on_rrp` / `RRPONTSYD`, the second to `mmf_assets` /
+     `sec_nmfp.mmf_net_assets`. Planted as `_derive_purge` returning the gap
+     over the declared pairs alone, it still kills the four real-registry
+     tests named above, and the kind of failure changed: the two in this file
+     now die with `LookAheadError` from `splits` (a one- or two-day gap that
+     `IOER`'s next-day publication does not clear), not by pricing silently;
+     the CLI test fails with `AssertionError` on the message, and the event
+     test with `AssertionError`, not raised. Still caught; the two tests here
+     are caught by a downstream guard rather than by their own `assertRaises`.
+
   4. **The boring one: the fixture-registry numbers.** Not a mutation of the
      code but of the tree -- `git archive HEAD` (`8a18155`, before this block)
      against the working tree, both running `backtest` on
@@ -2241,6 +2253,39 @@ class PurgedBacktestTests(unittest.TestCase):
         neither track may edit. What this test forbids is the shortcut -- a
         snapshot basis mapped to zero, an exemption, or a `revision_policy`
         invented on this side to unblock a number.
+
+        **Moved from `reserve_balances` to `on_rrp`, 14 September 2026.**
+        `WRESBAL` and `WTREGEN` are about to declare `never_revised`: four
+        ALFRED vintages each, no observation ever restated, and the 2026
+        vintage differing from the three before it by exactly x1000 on every
+        shared observation -- a units rescale, not a revision. The refused half
+        now adds `on_rrp`, which reads `fred_macro_latest_vintage.RRPONTSYD` on
+        the same source. It is chosen because it has positive, measured evidence
+        of restatement rather than merely no declaration yet -- 2020-02-19 went
+        5.149 -> 0.095, and 2020-11-18 went 0.103 -> 0.000 and back to 0.103 in
+        a later vintage, both inside the 2020 event holdout -- so it is the
+        field on this source least likely to declare next. The claim is
+        unchanged: same source, opposite verdicts. The swap was green against
+        the registry before the weeklies' declaration landed, and does not
+        depend on it.
+
+        What the field assertion does and does not pin, found while moving it:
+        `_derive_purge` appends *every* field the declaration reads, priced or
+        not, so `RRPONTSYD` would be in the message even if the refused field
+        were `IORB`. The field assertion pins that the refused feature set is
+        the one the message describes; it is the `assertRaises` against the
+        priced half that separates the two fields.
+
+        Mutation record (disposable copy under `$HOME`, unmutated control of
+        the same subset green before and after): `RRPONTSYD` given
+        `revision_policy: never_revised` with `revision_evidence` in the copy's
+        `metadata/sources.json` -- the declaration this exemplar was chosen not
+        to receive. This test fails with `AssertionError` ("RegistryContractError
+        not raised"), and so do
+        `tests/test_cli_eval.py::RealRegistryTests::test_the_backtest_refuses_a_real_field_with_no_revision_policy`
+        (`AssertionError`, exit 0 where 2 was expected) and
+        `tests/test_event_eval.py::DerivedGapTests::test_the_real_registry_refuses_this_path_too_for_the_same_field`
+        (`AssertionError`, not raised).
         """
 
         rows = self.sample()
@@ -2270,7 +2315,7 @@ class PurgedBacktestTests(unittest.TestCase):
         with self.assertRaises(RegistryContractError) as caught:
             rolling_persistence_backtest(
                 rows,
-                features=("spread_bps", "reserve_balances"),
+                features=("spread_bps", "on_rrp"),
                 registry=real,
                 decision_time=DECISION_TIME,
                 minimum_history=self.MINIMUM_HISTORY,
@@ -2278,10 +2323,10 @@ class PurgedBacktestTests(unittest.TestCase):
         message = str(caught.exception)
         # Named to the field, not to the source and not to the registry. A
         # reader told only `fred_macro_latest_vintage` cannot tell a refused
-        # `WRESBAL` from a refused `IORB`, and on this source those are
+        # `RRPONTSYD` from a refused `IORB`, and on this source those are
         # different answers.
         self.assertIn("fred_macro_latest_vintage", message)
-        self.assertIn("WRESBAL", message)
+        self.assertIn("RRPONTSYD", message)
         self.assertIn("available_at", message)
         # And the source it refused is a source it just priced. Without this
         # the test would also pass against two unrelated sources, which is the
@@ -2316,6 +2361,26 @@ class PurgedBacktestTests(unittest.TestCase):
         or a declared `field_release_lags` entry for the weeklies -- and this
         test still goes red on the day it is answered, which is still the right
         alarm.
+
+        **Moved from `tga` to `mmf_assets`, 14 September 2026 -- the alarm
+        above, rung.** `WTREGEN` and `WRESBAL` are about to declare
+        `never_revised` on four ALFRED vintages each (no observation ever
+        restated; the 2026 vintage is the three before it times 1000 on every
+        shared observation, a units rescale). Not moved to `on_rrp` with the
+        other two tests of this move: `test_two_features_on_one_source_price_differently`
+        now refuses `("spread_bps", "on_rrp")` with these same three assertions,
+        and a second copy of that call would be a duplicate rather than a
+        guard. `mmf_assets` reads `sec_nmfp.mmf_net_assets`, whose source is
+        `snapshot_retrieved_at` with no `field_release_lags` at all -- N-MFP
+        filings are superseded by later filings, so the absence is a fact about
+        the world rather than a declaration not yet written. That keeps a second,
+        independent exemplar: one declaration landing cannot silence both, and
+        this one is refused through a source that prices no field, where
+        `on_rrp` is refused beside a field that does. The field assertion names
+        `mmf_net_assets`, but the message lists every field read, so it pins
+        the declaration the refusal describes and not which field was refused.
+        `fred_macro_latest_vintage` is no longer asserted: it is in the message
+        only as the source of the priced `IOER` and `IORB`.
         """
 
         rows = self.sample()
@@ -2323,14 +2388,14 @@ class PurgedBacktestTests(unittest.TestCase):
         with self.assertRaises(RegistryContractError) as caught:
             rolling_persistence_backtest(
                 rows,
-                features=("spread_bps", "tga"),
+                features=("spread_bps", "mmf_assets"),
                 registry=real,
                 decision_time=DECISION_TIME,
                 minimum_history=self.MINIMUM_HISTORY,
             )
         message = str(caught.exception)
-        self.assertIn("fred_macro_latest_vintage", message)
-        self.assertIn("WTREGEN", message)
+        self.assertIn("sec_nmfp", message)
+        self.assertIn("mmf_net_assets", message)
         self.assertIn("available_at", message)
 
     def test_a_purge_that_leaves_too_little_history_raises_rather_than_shrinking_min_train(self):
