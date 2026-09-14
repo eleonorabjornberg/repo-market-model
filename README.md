@@ -87,35 +87,35 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 
 | Challenger | CRPS | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
-| gbm (spread change lags `1`) | 1.98 bp | +0.55 bp | +0.28 to +0.88 bp | beats persistence |
-| gbm (spread change lags `5`) | 1.98 bp | +0.55 bp | +0.27 to +0.88 bp | beats persistence |
-| gbm | 1.99 bp | +0.54 bp | +0.27 to +0.87 bp | beats persistence |
-| gbm (arx feature `declared`) | 2.00 bp | +0.52 bp | +0.25 to +0.86 bp | beats persistence |
-| gbm (volatility feature `garch11`) | 2.00 bp | +0.52 bp | +0.25 to +0.86 bp | beats persistence |
-| gbm (calibration `cross_conformal`, calibration folds `5`) | 2.02 bp | +0.51 bp | +0.24 to +0.85 bp | beats persistence |
-| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 2.13 bp | +0.40 bp | +0.13 to +0.74 bp | beats persistence |
-| rolling-residual (residual window `60`) | 2.48 bp | +0.05 bp | +0.02 to +0.08 bp | beats persistence |
-| gbm (calibration `conformal`, calibration share `0.25`) | 2.71 bp | -0.18 bp | -0.49 to +0.19 bp | not distinguishable |
-| gbm (calibration `conformal`, calibration share `0.25`, spread change lags `1`) | 2.72 bp | -0.19 bp | -0.50 to +0.18 bp | not distinguishable |
-| gbm (calibration `conformal`, calibration share `0.25`, spread change lags `5`) | 2.73 bp | -0.20 bp | -0.51 to +0.17 bp | not distinguishable |
-| gbm (calibration `conformal`, calibration share `0.25`, volatility feature `garch11`) | 2.76 bp | -0.23 bp | -0.54 to +0.15 bp | not distinguishable |
+| gbm (spread change lags `1`) | 1.98 bp | +0.55 bp | +0.28 to +0.89 bp | beats persistence |
+| gbm (spread change lags `5`) | 1.98 bp | +0.55 bp | +0.28 to +0.88 bp | beats persistence |
+| gbm | 1.99 bp | +0.54 bp | +0.28 to +0.88 bp | beats persistence |
+| gbm (arx feature `declared`) | 2.00 bp | +0.52 bp | +0.26 to +0.86 bp | beats persistence |
+| gbm (volatility feature `garch11`) | 2.00 bp | +0.52 bp | +0.26 to +0.86 bp | beats persistence |
+| gbm (calibration `cross_conformal`, calibration folds `5`) | 2.02 bp | +0.51 bp | +0.23 to +0.86 bp | beats persistence |
+| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 2.13 bp | +0.40 bp | +0.12 to +0.75 bp | beats persistence |
+| rolling-residual (residual window `60`) | 2.48 bp | +0.05 bp | +0.02 to +0.09 bp | beats persistence |
+| gbm (calibration `conformal`, calibration share `0.25`) | 2.71 bp | -0.18 bp | -0.49 to +0.21 bp | not distinguishable |
+| gbm (calibration `conformal`, calibration share `0.25`, spread change lags `1`) | 2.72 bp | -0.19 bp | -0.50 to +0.19 bp | not distinguishable |
+| gbm (calibration `conformal`, calibration share `0.25`, spread change lags `5`) | 2.73 bp | -0.20 bp | -0.51 to +0.18 bp | not distinguishable |
+| gbm (calibration `conformal`, calibration share `0.25`, volatility feature `garch11`) | 2.76 bp | -0.23 bp | -0.54 to +0.16 bp | not distinguishable |
 | arx with `sofr_volume` | 2.90 bp | -0.37 bp | -0.53 to -0.21 bp | loses to persistence |
 | arx with `sofr_p25`, `sofr_p75` | 2.93 bp | -0.40 bp | -0.60 to -0.21 bp | loses to persistence |
-| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 2.99 bp | -0.47 bp | -0.78 to -0.11 bp | loses to persistence |
-| threshold (regime variable `sofr_volume`) | 4.20 bp | -1.67 bp | -4.25 to -0.03 bp | loses to persistence |
-| threshold (regime variable `spread_bps`) | 4.69 bp | -2.16 bp | -4.28 to -0.50 bp | loses to persistence |
+| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 2.99 bp | -0.47 bp | -0.78 to -0.08 bp | loses to persistence |
+| threshold (regime variable `sofr_volume`) | 4.20 bp | -1.67 bp | -4.04 to -0.02 bp | loses to persistence |
+| threshold (regime variable `spread_bps`) | 4.69 bp | -2.16 bp | -4.46 to -0.53 bp | loses to persistence |
 
 **Interval coverage on the same origins.**
 
 | Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
 |---|---|---|---|---|
-| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 90% | 86.3% | 83.8% to 88.5% | 1.516 bp |
-| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 90% | 93.8% | 92.4% to 95.2% | 1.367 bp |
-| gbm (arx feature `declared`) | 90% | 63.8% | 61.1% to 66.3% | 0.944 bp |
-| gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.2% to 87.7% | 1.294 bp |
-| gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.6% to 94.6% | 1.130 bp |
-| gbm | 90% | 65.8% | 63.2% to 68.3% | 0.943 bp |
-| persistence | 90% | 81.6% | 78.8% to 84.2% | 0.889 bp |
+| gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 90% | 86.3% | 83.9% to 88.4% | 1.516 bp |
+| gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 90% | 93.8% | 92.3% to 95.2% | 1.367 bp |
+| gbm (arx feature `declared`) | 90% | 63.8% | 61.3% to 66.1% | 0.944 bp |
+| gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.1% to 87.8% | 1.294 bp |
+| gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.5% to 94.7% | 1.130 bp |
+| gbm | 90% | 65.8% | 63.3% to 68.1% | 0.943 bp |
+| persistence | 90% | 81.6% | 78.7% to 84.2% | 0.889 bp |
 
 A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
 
@@ -141,14 +141,14 @@ negative result, published on the same terms as a positive one would have been.
 <!-- Generated by scripts/emit_results.py from docs/runs/. Do not edit by hand:
      the block is regenerated from the run record and checked in the suite. -->
 
-The conditional model's exceedance probabilities, scored over 2039 days at a 6-day purge against a climatology refitted on each fold's training rows. Run at `dbd1b2d`.
+The conditional model's exceedance probabilities, scored over 2039 days at a 6-day purge against a climatology refitted on each fold's training rows. Run at `3eaecc8`.
 
 | Threshold | Exceeded on | Brier skill vs climatology | 90% interval | Discrimination realised |
 |---|---|---|---|---|
-| τ = 5 bp | 8.0% of days | **+0.213** | +0.127 to +0.296 | 29.46% |
-| τ = 10 bp | 3.4% of days | **-0.042** | -0.155 to +0.051 | 9.35% |
-| τ = 20 bp | 1.0% of days | **-0.254** | -0.514 to -0.133 | 2.05% |
-| τ = 50 bp | 0.2% of days | **-0.778** | -3.168 to -0.348 | 0.05% |
+| τ = 5 bp | 8.0% of days | **+0.213** | +0.120 to +0.298 | 29.46% |
+| τ = 10 bp | 3.4% of days | **-0.042** | -0.157 to +0.051 | 9.35% |
+| τ = 20 bp | 1.0% of days | **-0.254** | -0.510 to -0.136 | 2.05% |
+| τ = 50 bp | 0.2% of days | **-0.778** | -3.179 to -0.356 | 0.05% |
 
 **Skill at the shoulder, none in the tail.** The skill interval excludes zero above climatology at 5 bp, and below it at 20 and 50 bp. The last column is resolution as a share of uncertainty -- how much of the discrimination a sample had available the forecasts actually realised. It is the honest form of the comparison, because resolution and uncertainty both collapse as the event gets rarer and a resolution quoted alone cannot tell a model that stopped discriminating from a sample with nothing left to discriminate. It falls from 29.46% at 5 bp to 0.05% at 50 bp: the forecasts stop carrying information exactly where the exit criterion asks them to.
 

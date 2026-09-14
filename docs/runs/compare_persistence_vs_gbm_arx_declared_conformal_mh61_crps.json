@@ -5,11 +5,11 @@
     "mean_difference_interval": {
       "block_length": 5,
       "level": 0.9,
-      "lower": -0.7816307431992937,
+      "lower": -0.778648528633787,
       "method": "stationary_bootstrap",
       "replications": 2000,
-      "seed": 1851977879,
-      "upper": -0.10620168456117067
+      "seed": 1896629516,
+      "upper": -0.08154115829316295
     },
     "model_a": {
       "crps_bps": 2.528838155958804,
@@ -20498,40 +20498,73 @@
         "sofr_p75",
         "tgcr",
         "bgcr",
-        "treasury_settlement"
+        "reserve_balances",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_bills",
+        "treasury_settlement_coupons",
+        "treasury_settlement_soma",
+        "dealer_treasury_position",
+        "tbill_4w",
+        "tbill_13w",
+        "quarter_end",
+        "tax_date",
+        "days_to_month_end"
       ],
       "decision_time": "16:00:00",
       "end_date": "2026-09-03",
       "holes": {
-        "bgcr": 2104,
+        "bgcr": 0,
+        "days_to_month_end": 0,
+        "dealer_treasury_position": 0,
         "iorb": 0,
+        "quarter_end": 0,
+        "reserve_balances": 0,
         "sofr": 0,
         "sofr_p25": 2,
         "sofr_p75": 2,
         "sofr_volume": 0,
-        "tgcr": 2104,
-        "treasury_settlement": 2104
+        "tax_date": 0,
+        "tbill_13w": 0,
+        "tbill_4w": 0,
+        "tga": 0,
+        "tgcr": 0,
+        "treasury_settlement": 0,
+        "treasury_settlement_bills": 0,
+        "treasury_settlement_coupons": 0,
+        "treasury_settlement_soma": 0
       },
-      "incomplete_dates": 4440,
+      "incomplete_dates": 4744,
       "path": "data/processed/funding_panel.csv",
       "refused_columns": {
-        "dealer_treasury_position": "feature 'dealer_treasury_position' has no source: no ingesting source is declared in metadata/sources.json; the column is in OPTIONAL_NUMERIC_FIELDS and empty in every row of the sample panel. Sizing a purge over it would purge zero days for a weekly FR 2004 series.",
-        "mmf_assets": "sec_nmfp: every snapshot row must carry available_at",
-        "on_rrp": "fred_macro_latest_vintage: every snapshot row must carry available_at",
-        "quarter_end": "sources must select at least one feature source",
-        "reserve_balances": "fred_macro_latest_vintage: every snapshot row must carry available_at",
-        "tax_date": "sources must select at least one feature source",
-        "tga": "fred_macro_latest_vintage: every snapshot row must carry available_at"
+        "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
+        "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
       },
       "required_columns": [
         "sofr",
         "iorb"
       ],
       "row_count": 2104,
+      "sha256": "d8b716cf5d76eb71eb8193fe7d56310db474b7ba80bc31b92c5a555248a6b9d6",
       "source_shas": [
         "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
         "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
-        "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1"
+        "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1",
+        "4059b158b989b5bb4d295cc5e3356434bcceba44d89365e368a2aafbf2077859",
+        "47cc8985d9474bbdaea37266ac5658f6b1b276d3310c54c7efd70358e80bc37b",
+        "5e87d2b7aa4815c0bc20e58190d094801a32fbaa89b1ea6565b0582a5deca563",
+        "6f037e225a3f296613f620404667971df9f202743e70540d9ffbf5c7d30a3a51",
+        "722359ea9bc7a629ac5de8adec79c372ed360810bc858aef835653100b3782e7",
+        "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
+        "afcffe123cf95f16b413f3ac0098512e59a6a26f42084cfa1ed6645bb5d14eae",
+        "b1cd7969ac8f1bd245feccb4ae544c44d28c1b73faf98710a8b0d29cc70c08b2",
+        "c98524ef8e4850efad54b979f26561e1641a62aeda009de9cdf240bbd4c9764b",
+        "ca4d73d5e9856391c06ef0b3ec252d950019b1a5db97c934d92d9569fc4ba87c",
+        "cbefb07dbf11e06537a78518959a949d697b8e61779989e4e69595bec0fea34b",
+        "cc29ccb650fe49ce04781e97332cecba11c20e466b053a08d6fb15b6b24dbd20",
+        "cdaf52e9638cc977f31e3f010bbbe0a52aad9018f285904c7e74c83b2d0bb59b",
+        "e45398cf008aeca21679fe1ebcc7d051add07f0819ef62723fe472a1ea00377d",
+        "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a"
       ],
       "start_date": "2018-04-03"
     },
@@ -20539,27 +20572,28 @@
       "compared": [
         "row_count",
         "first_date",
-        "last_date"
+        "last_date",
+        "sha256"
       ],
-      "kind": "extent",
-      "note": "this manifest carries no digest of the panel it describes, so this binds it to the panel by extent and not by bytes: a manifest is a claim about a path, and the bytes under that path may have changed since it was written"
+      "kind": "digest",
+      "note": "this manifest carries a digest of the panel it describes and it is the digest of the bytes this run scored, so the manifest is bound to the panel by bytes; the extent is checked beside it and agrees"
     },
     "first_date": "2018-04-03",
     "last_date": "2026-09-03",
     "path": "data/processed/funding_panel.csv",
     "row_count": 2104,
-    "sha256": "b6af33bb7c6461f62e426f907e6420aeb236eefa3eae4a8c3e27dcd4332c4bec"
+    "sha256": "d8b716cf5d76eb71eb8193fe7d56310db474b7ba80bc31b92c5a555248a6b9d6"
   },
   "provenance": {
     "code": {
-      "commit": "b0a15825c8d445b7718bc00e5e2401fa4b1935d4",
+      "commit": "3eaecc8e7e9add708b7f35dc74cb846da2681896",
       "tree_modified": false,
-      "untracked_files_present": true
+      "untracked_files_present": false
     },
     "inputs": {
       "source_registry": {
         "path": "metadata/sources.json",
-        "sha256": "2442a3bead334612e5bc0d9611c21bb4c9a5f01f17226ce1ef89a63b84448c38"
+        "sha256": "c6cc30036812b6cf92b0153c9e86cc694dfbd12063e5559a169319d4a2373b3a"
       }
     },
     "ml_libraries": {
