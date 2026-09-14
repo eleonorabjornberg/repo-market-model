@@ -6769,9 +6769,11 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
     `ingest.fetch_nyfed_reference_rate` was already general -- it takes the rate
     name, and the New York Fed parser derives the rate from the URL with nothing
     hard-coded -- so nothing but the CLI's own tuple and string literal stood
-    between the declarations and the data. The consequence is on the published
-    panel: `tgcr` and `bgcr` are built columns that are a **hole on every one of
-    its 2104 rows**, because nothing could fetch them. A lane with no test is
+    between the declarations and the data. The consequence was on the published
+    panel: `tgcr` and `bgcr` were built columns that were a **hole on every one
+    of its 2104 rows**, because nothing could fetch them. Both have been fetched
+    since, and since the nineteen-column rebuild neither has a hole on the
+    published panel. A lane with no test is
     where a declaration and its reach come apart silently.
 
     The test drives the real parser and the real fetcher and injects a

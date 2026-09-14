@@ -2611,7 +2611,9 @@ class DailyPanelBuild:
     way to read it off a manifest was to compare each of `holes` against
     `row_count` -- which no reader of `built_columns` does, so `tgcr`, `bgcr`
     and `treasury_settlement` sat in that list beside `sofr` with nothing to
-    separate them. On the published build all three are a hole on all 2104 rows.
+    separate them. On the eight-column published build of 12 September 2026 all
+    three were a hole on every row. Since the nineteen-column rebuild no built
+    column of the published panel is empty.
 
     It is read off `holes` -- `holes[column] == row_count` -- and never from a
     second pass over the rows. A second count would key on a grid of its own
@@ -3237,8 +3239,9 @@ def build_daily_panel(
     }
     # ...and only the sources that supplied something. A column can be priceable
     # and built from a source this build holds no file of -- `funding_inputs/`
-    # carries no FR 2004 export -- and the restriction above admits it anyway,
-    # because it keys on the built columns and not on what arrived. Rule 5 then
+    # carried no FR 2004 export until 14 September 2026 -- and the restriction
+    # above admits it anyway, because it keys on the built columns and not on
+    # what arrived. Rule 5 then
     # evaluated an identity over zero observations, and the evaluator raised
     # `no complete reference date`: a source that supplied nothing failing the
     # build, through exactly the channel the paragraph above says it should not

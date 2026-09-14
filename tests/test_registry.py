@@ -369,10 +369,13 @@ class SnapshotLicenceTests(unittest.TestCase):
     where a policy declared for a whole source is named as the claim the split
     exists to stop anyone making.
 
-    On the tracked registry nothing declares one, so `on_rrp`,
-    `reserve_balances`, `tga` and `mmf_assets` stay refused, which is what
-    `PLAN.md` and `docs/PROJECT_STATUS.md` say and what they were briefly
-    ahead of.
+    When this was written nothing on the tracked registry declared one, so
+    `on_rrp`, `reserve_balances`, `tga` and `mmf_assets` then stayed unbuilt,
+    which is what `PLAN.md` and `docs/PROJECT_STATUS.md` said and what they
+    were briefly ahead of. `metadata/sources.json` has declared the licence for
+    `WRESBAL` and `WTREGEN` since 14 September 2026, so `reserve_balances` and
+    `tga` are built columns of the published panel; `on_rrp` and `mmf_assets`
+    are not.
 
     Mutation record, 13 September 2026, `.venv/bin/python` with
     `REPO_MODEL_REQUIRE_ML=1`, whole suite per mutation, the patch committed in

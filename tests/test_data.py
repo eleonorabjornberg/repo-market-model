@@ -2811,7 +2811,8 @@ class SourceSuppliedNothingTests(unittest.TestCase):
     what arrived. Those come apart the moment a column is priceable from a
     source whose file the build holds none of -- which is what happens to
     `dealer_treasury_position` and `nyfed_fr2004` the moment the column gains a
-    source, because `funding_inputs/` carries no FR 2004 export. Rule 5 then
+    source, because `funding_inputs/` carried no FR 2004 export (it has tracked
+    one since 14 September 2026). Rule 5 then
     evaluated an identity over zero observations, and
     `validate_accounting_identities` raised
 
@@ -3193,7 +3194,7 @@ class RequestedColumnsBuildTests(unittest.TestCase):
     Addendum, 12 September 2026 -- A30. The unpriced column asked for by name
     is `quarter_end`, not `on_rrp`: A30 prices a snapshot column from the rows
     the build can see, and `funding_inputs/` carries `on_rrp`'s. The manifest's
-    `refused_columns` still names both, because it records the published build.
+    `refused_columns` then still named both, because it records the published build.
     The two mutations that read this phrase were re-run, python3 3.9.6, same
     conditions as above:
 
@@ -3212,8 +3213,11 @@ class RequestedColumnsBuildTests(unittest.TestCase):
     Addendum, 13 September 2026 -- A31. The unpriced column is
     `reserve_balances`, not `quarter_end`: A31 builds the calendar columns, so
     `quarter_end` asked for by name now exits 0. The manifest's
-    `refused_columns` still names `quarter_end`, because it records the
-    published build and was not rebuilt. The two mutations that read this
+    `refused_columns` then still named `quarter_end`, because it records the
+    published build and had not been rebuilt. Since the nineteen-column rebuild
+    `quarter_end` and `reserve_balances` are both built columns of the published
+    panel, and the manifest's `refused_columns` holds only `mmf_assets` and
+    `on_rrp`. The two mutations that read this
     phrase were re-run; results are recorded in `CalendarColumnTests`, whose
     block changed it.
 
@@ -4275,11 +4279,14 @@ class TreasurySettlementZeroTests(unittest.TestCase):
     **No published number moves, and it is the key alone that goes red.**
     Rebuilt from the tracked inputs at the published cutoff and columns
     (2026-09-08T21:31:42Z, the eight of `metadata/funding_panel_manifest.json`),
-    `settlement_zeros` is 0 on every one of them. The tracked funding inputs
-    carry no auction snapshot -- `treasury_settlement` has 2104 holes over 2104
-    rows -- so rule 8 fills nothing on that build and the new key would carry
-    no figure the record disagrees with. The reproduction fails on the key's
-    presence, not on a value.
+    `settlement_zeros` was 0 on every one of them. The tracked funding inputs
+    then carried no auction snapshot -- `treasury_settlement` was a hole on
+    every row -- so rule 8 filled nothing on that build and the new key would
+    carry no figure the record disagreed with. The reproduction failed on the
+    key's presence, not on a value. Since the nineteen-column rebuild the
+    tracked inputs carry an auction snapshot, `treasury_settlement` has no hole
+    on the published panel, and that build writes settlement zeros; the
+    rebuild published them, not this block.
 
     Mutation record, 12 September 2026, python3 3.9.6. Every mutation applied
     to `src/repo_model/data.py` in a disposable copy under `$HOME` built from
@@ -5205,8 +5212,8 @@ class EmptyColumnTests(unittest.TestCase):
 
     A28. Measured on the merged tree of 12 September 2026, from
     `docs/runs/funding_panel.manifest.json`: over 2104 rows, `bgcr`, `tgcr` and
-    `treasury_settlement` each have 2104 holes. Three of the eight built columns
-    contain no data at all. The manifest already said so, in `holes` -- but only
+    `treasury_settlement` each had 2104 holes. Three of the eight built columns
+    contained no data at all. The manifest already said so, in `holes` -- but only
     to a reader who compares each count against `row_count`, and
     `built_columns` lists those three beside `sofr` with nothing to separate
     them.
@@ -5617,9 +5624,11 @@ class SnapshotBasisPricingTests(unittest.TestCase):
     is the value that stood on the day. A snapshot field is now priced from
     rows only where it declares a revision-only block, and the retry carries
     the field with the rows so the registry can ask. This class's fixture
-    declares one for `WRESBAL`; the tracked registry declares none, so the four
-    columns above stay refused there, which is what `PLAN.md` and
-    `docs/PROJECT_STATUS.md` say. See `SnapshotLicenceAtTheCallSiteTests`
+    declares one for `WRESBAL`; the tracked registry declared none when this
+    was written, so the four columns above then stayed refused there. It has
+    declared the licence for `WRESBAL` and `WTREGEN` since 14 September 2026,
+    and `reserve_balances` and `tga` are built columns of the published panel;
+    `on_rrp` and `mmf_assets` are still not built. See `SnapshotLicenceAtTheCallSiteTests`
     above and `tests/test_registry.py::SnapshotLicenceTests`.
 
     Fixture registries throughout, never `metadata/sources.json`: a test that
@@ -6120,12 +6129,19 @@ class WeeklyCarryForwardTests(unittest.TestCase):
     Milestone A reproduction, and a new key is "present on one side only". The
     last subtest records that absence.
 
-    **No published figure moves.** Of the three declared columns, the published
-    funding build refuses `reserve_balances` and `tga` (no `revision_policy` on
-    `WRESBAL` or `WTREGEN`) and builds `dealer_treasury_position` as a hole on
-    every row, because `funding_inputs/` holds no FR 2004 export: a column with
-    no observation has nothing to carry. A rebuild over the same inputs writes
-    the same bytes; `RequestedColumnsBuildTests` asserts the digest.
+    **No published figure moved when this landed.** Of the three declared
+    columns, the published funding build of that day refused `reserve_balances`
+    and `tga` (no `revision_policy` on `WRESBAL` or `WTREGEN`) and built
+    `dealer_treasury_position` with no value on any row, because
+    `funding_inputs/` held no FR 2004 export: a column with no observation has
+    nothing to carry. That is no longer the published build. The registry now
+    declares the licence for both H.4.1 series, `funding_inputs/` tracks an FR
+    2004 export, and since the nineteen-column rebuild all three are built
+    columns of the published panel, with no hole, and most of their rows are
+    rule 10 carries rather than prints -- which `carried_forward` counts and
+    the file manifest does not record. The rebuild moved the published panel's
+    digest, not this block; `RequestedColumnsBuildTests` asserts it, and
+    `LaneDocstringColumnClaimTests` holds this paragraph to that build.
 
     **The fixture.** Five working weeks, 5 January to 6 February 2026; `sofr`
     prints on every weekday and is the only `REQUIRED_FIELDS` column, so rule 6
@@ -6570,6 +6586,140 @@ class PanelYear2025DiagnosticTests(unittest.TestCase):
                 }
                 for year in comparison:
                     self.assertGreater(target[2025], target[year], (held_only, target))
+
+
+class LaneDocstringColumnClaimTests(unittest.TestCase):
+    """No docstring in Track A's lane calls a column the published build builds refused or empty.
+
+    A41. The acceptance criterion and every mutation target is
+    `test_no_lane_docstring_calls_a_published_column_refused_or_empty`.
+
+    **The finding.** `WeeklyCarryForwardTests` said the published funding build
+    refused `reserve_balances` and `tga` and built `dealer_treasury_position`
+    with no value on any row. Since the nineteen-column rebuild all three are
+    built, with no hole. The sweep A40 asked for found eight more sentences of
+    the same class across `data.py`, `test_data.py`, `test_ingest.py` and
+    `test_registry.py`: `DailyPanelBuild`, rule 5's comment in
+    `build_daily_panel`, `SourceSuppliedNothingTests`,
+    `RequestedColumnsBuildTests`' A30 and A31 addenda,
+    `TreasurySettlementZeroTests`, `EmptyColumnTests`,
+    `SnapshotBasisPricingTests`, `NyFedRateSourceChoiceTests` and
+    `SnapshotLicenceTests`. `ingest.py` held none. Each was true when written
+    and is now dated rather than deleted.
+
+    **Anchored on the build, not on a list.** The published build is rebuilt
+    from the tracked `funding_inputs/` with the manifest's own columns, cutoff
+    and decision time -- `PanelYear2025DiagnosticTests.published_build`, whose
+    digest must equal the manifest's `sha256` before anything else is read. A
+    column is contradicted as *refused* when it is in that build's
+    `built_columns`, and as *empty* when its `holes` count is below the row
+    count.
+
+    **Narrow on purpose, and what it cannot see.** A docstring is read one
+    sentence at a time (split after `.` or `;`, emphasis stripped), and a
+    sentence is a claim only when all three hold: it says which build it means
+    (`published`, `tracked`, `funding_inputs/` or `manifest`); it names a
+    column in backticks; and it says so in the *present tense* -- `refuses`,
+    `is`/`are`/`stays`/`remains refused`, `is`/`are a hole on every`/`all`,
+    `is`/`are empty`, `has N holes over N rows`, `builds ... as a hole`,
+    `contains no data`. A dated record written in the past tense is not a claim
+    about today's build, and every mutation record in this lane is one; that is
+    what keeps the guard quiet over them. It follows that the guard misses a
+    stale sentence whose column is named only in an earlier sentence --
+    `DailyPanelBuild`'s "all three" was one -- or whose claim is about a source
+    rather than a column, as rule 5's comment was. Parsing past those would mean
+    resolving reference in prose, and a guard that did it badly would fire on
+    the records. It also reads docstrings, not comments. Those misses are the
+    price of no false positives on the current lane.
+
+    Mutation record, 14 September 2026, python3 3.9.6. In a disposable copy
+    under `$HOME` built from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class
+    alone. Each mutation restores one sentence as it stood before this block
+    (or moves the manifest), asserted to occur exactly once and the file
+    confirmed changed before it was scored, then restored from a kept original
+    and confirmed byte-identical. Unmutated control green before the first and
+    after the last. Every kill is an `AssertionError` on exactly one subtest:
+
+    * premise -- the manifest's `sha256` with its first hex digit changed:
+      "the build read is the published panel", digest inequality.
+    * refused clause -- `SnapshotLicenceTests`' paragraph on the tracked
+      registry restored: "no docstring calls a built, filled column refused or
+      empty", `tests/test_registry.py`, `reserve_balances` and `tga`.
+    * empty clause -- `NyFedRateSourceChoiceTests`' consequence sentence
+      restored: the same subtest, `tests/test_ingest.py`, `bgcr` and `tgcr`.
+    * empty clause, the count form -- `TreasurySettlementZeroTests`' holes over
+      rows sentence restored: the same subtest, `treasury_settlement`.
+    * both clauses -- `WeeklyCarryForwardTests`' paragraph restored, the
+      sentence that started this block: the same subtest,
+      `dealer_treasury_position`, `reserve_balances` and `tga`.
+
+    Two restorations stay **green**, recorded so they are read as the limit
+    above and not as a blunt guard: `DailyPanelBuild`'s sentence (its columns
+    are named one sentence earlier) and `SnapshotBasisPricingTests`' "the four
+    columns above" (named one paragraph earlier).
+    """
+
+    LANE = (
+        "src/repo_model/data.py",
+        "src/repo_model/ingest.py",
+        "tests/test_data.py",
+        "tests/test_ingest.py",
+        "tests/test_registry.py",
+    )
+    SCOPE = re.compile(r"\b(?:published|tracked|manifest)\b|`funding_inputs/`")
+    REFUSED = re.compile(r"\b(?:refuses|(?:is|are|stays?|remains?) refused)\b")
+    EMPTY = re.compile(
+        r"\b(?:(?:is|are) (?:a )?holes? on (?:every|all)"
+        r"|(?:is|are) (?:entirely )?empty"
+        r"|(?:has|have) \d+ holes over \d+ rows"
+        r"|builds? [^.;]{0,80}?\bas (?:a )?holes?"
+        r"|contains? no data)\b"
+    )
+
+    @staticmethod
+    def docstrings(path):
+        """Every module, class and function docstring in `path`, with its line."""
+
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(
+                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                text = ast.get_docstring(node, clean=False)
+                if text:
+                    yield node.body[0].lineno, text
+
+    def test_no_lane_docstring_calls_a_published_column_refused_or_empty(self):
+        manifest, build, digest, _joined = PanelYear2025DiagnosticTests.published_build(self)
+        with self.subTest("the build read is the published panel"):
+            self.assertEqual(digest, manifest["sha256"])
+
+        rows = len(build.observations)
+        built = set(build.built_columns)
+        dense = {column for column in built if build.holes[column] < rows}
+        root = Path(__file__).parents[1]
+        found = []
+        for name in self.LANE:
+            docstrings = list(self.docstrings(root / name))
+            with self.subTest("the lane file has docstrings to read", path=name):
+                self.assertTrue(docstrings)
+            for line, text in docstrings:
+                flat = " ".join(text.replace("*", "").split())
+                for sentence in re.split(r"(?<=[.;])\s+", flat):
+                    if not self.SCOPE.search(sentence):
+                        continue
+                    named = set(re.findall(r"`([a-z0-9_]+)`", sentence))
+                    wrong = set()
+                    if self.REFUSED.search(sentence):
+                        wrong |= named & built
+                    if self.EMPTY.search(sentence):
+                        wrong |= named & dense
+                    if wrong:
+                        found.append((name, line, sorted(wrong), sentence))
+
+        with self.subTest("no docstring calls a built, filled column refused or empty"):
+            self.assertEqual(found, [])
 
 
 def replace_observation(observation, ref_date):
