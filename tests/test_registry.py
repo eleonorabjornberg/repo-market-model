@@ -1,5 +1,8 @@
+import json
+import re
 import unittest
 from datetime import time, timezone
+from pathlib import Path
 
 from repo_model.contract import END_OF_DAY
 from repo_model.registry import (
@@ -671,6 +674,158 @@ class AvailabilityProvenanceTests(unittest.TestCase):
                     )
                 }
             )
+
+
+REPO_ROOT = Path(__file__).parents[1]
+TRACKED_REGISTRY = REPO_ROOT / "metadata" / "sources.json"
+TRACKED_SNAPSHOTS = REPO_ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs"
+
+
+class RegistryProseAgainstTrackedSidecarsTests(unittest.TestCase):
+    """No registry prose claims a fixture property its tracked sidecar contradicts.
+
+    The acceptance criterion of A37. `metadata/sources.json` describes the
+    tracked fixtures in free text, and free text is not re-read when a fixture
+    is replaced. A34's fetched snapshots were promoted into
+    `tests/fixtures/snapshots/funding_inputs/` and three sentences went on
+    describing the files they replaced: `nyfed_fr2004`'s `release_lag.note` and
+    its `availability_provenance.note` both said the fixture's manifest records
+    a null `retrieved_at` and a null `url`, and `treasury_bill_rates.limitation`
+    said 2026 alone lacks a manifest. The promoted sidecars carry a real `url`
+    and `retrieved_at`, and every year's export has one.
+
+    The brief named two notes. The third, `availability_provenance.note`, makes
+    the first note's claim word for word and would have kept this test red, so
+    it was corrected in the same commit rather than exempted -- an exemption
+    would have been the defect moved out of sight.
+
+    **Anchored on the sidecars, never on today's wording.** Each sidecar is read
+    and keyed by its own `source_id`; a payload with no sidecar is keyed by the
+    `source_id` of the sidecars beside it, or by its directory name where there
+    are none. Every string anywhere under a source with tracked fixtures is
+    prose this test reads. Two claims are checked:
+
+    1. **`null <field>`** is contradicted when every tracked sidecar of that
+       source carries `<field>` with a non-null value. A field no sidecar
+       carries is not contradicted: the sidecar says nothing about it.
+    2. **A manifest is missing** -- "lacks a manifest", "without a manifest",
+       "except 2026 has a manifest" and their near spellings -- is contradicted
+       when the source has tracked payloads and every one of them has a sidecar.
+       It is not narrowed to a year: the payload does not name one, and a
+       year-reading rule would be a Treasury rule, not a registry rule.
+
+    What it does not reach, and these are findings rather than omissions:
+    numerical claims about a fixture's contents. `nyfed_fr2004.identities[0]`
+    `eras_note` still says the identity is evaluable on "243 of the tracked
+    extract's 700 weekly as-of dates"; the promoted extract carries 1960 as-of
+    dates from 1998-01-28 and the thirteen current terms are all present on 244
+    of them. That is a different field from the two this block was queued for,
+    it is restated in `src/repo_model/data.py` and `tests/test_data.py`, and it
+    is left for its own block. The same field's `tolerance_note` still holds on
+    the promoted file: the residual at 2026-08-26 is 5.7e-14 and the globbed
+    sum is 492637 against 477607 millions.
+
+    Mutation record, 14 September 2026. Each mutation applied to
+    `metadata/sources.json` in a disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`,
+    `PYTHONDONTWRITEBYTECODE=1`, python3 3.9.6 `-B`, this class run with
+    `tests/` on the path, then reverted and confirmed byte-identical to the
+    mount's file. Unmutated control green before the first and after the last.
+    Only this class was run under mutation, so nothing here says whether any
+    other test would also have caught them.
+
+    1. **Clause 1, the `nyfed_fr2004` `release_lag.note` sentence put back** --
+       "the tracked fixture's manifest records retrieved_on 2026-09-10 with a
+       null retrieved_at and a null url". One failure, this test,
+       `AssertionError: Lists differ`, naming two contradictions:
+       `nyfed_fr2004/release_lag/note: says 'null retrieved_at', but every
+       tracked nyfed_fr2004 sidecar carries a non-null retrieved_at`, and the
+       same for `'null url'`. `retrieved_on` is not named: no sidecar carries
+       that field, so no sidecar contradicts it.
+    2. **Clause 2, the `treasury_bill_rates` `limitation` sentence put back** --
+       "Only 2026 lacks a manifest, because Treasury's export for the year in
+       progress no longer returns the committed bytes." One failure, this test,
+       `AssertionError: Lists differ`, naming one contradiction:
+       `treasury_bill_rates/limitation: says 'lacks a manifest', but all 9
+       tracked treasury_bill_rates payloads have a sidecar`.
+    """
+
+    NULL_CLAIM = re.compile(r"\bnull ([a-z][a-z0-9_]*)\b")
+    MISSING_MANIFEST_CLAIM = re.compile(
+        r"\b(?:lacks?|without|has no|have no|carries no|carry no)"
+        r" (?:a |any )?(?:snapshot )?manifest"
+        r"|\bexcept \S+ ha(?:s|ve) a (?:snapshot )?manifest",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def tracked_fixtures():
+        fixtures = {}
+        for directory in sorted(p for p in TRACKED_SNAPSHOTS.iterdir() if p.is_dir()):
+            sidecar_paths = sorted(directory.glob("*.manifest.json"))
+            sidecars = [json.loads(p.read_text(encoding="utf-8")) for p in sidecar_paths]
+            covered = {p.name[: -len(".manifest.json")] for p in sidecar_paths}
+            for sidecar in sidecars:
+                entry = fixtures.setdefault(
+                    sidecar["source_id"], {"sidecars": [], "payloads": [], "bare": []}
+                )
+                entry["sidecars"].append(sidecar)
+            owners = {sidecar["source_id"] for sidecar in sidecars}
+            owner = owners.pop() if len(owners) == 1 else directory.name
+            for payload in sorted(directory.iterdir()):
+                if payload.name.endswith(".manifest.json") or not payload.is_file():
+                    continue
+                entry = fixtures.setdefault(
+                    owner, {"sidecars": [], "payloads": [], "bare": []}
+                )
+                entry["payloads"].append(payload)
+                if payload.name not in covered:
+                    entry["bare"].append(payload)
+        return fixtures
+
+    @classmethod
+    def prose(cls, value, path):
+        if isinstance(value, dict):
+            for key, item in value.items():
+                yield from cls.prose(item, f"{path}/{key}")
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                yield from cls.prose(item, f"{path}/{index}")
+        elif isinstance(value, str):
+            yield path, value
+
+    def test_no_registry_prose_contradicts_a_tracked_sidecar(self):
+        registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        fixtures = self.tracked_fixtures()
+        # Not vacuous: a moved fixture root would otherwise pass by reading nothing.
+        self.assertTrue(
+            any(entry["sidecars"] for entry in fixtures.values()),
+            f"no tracked sidecar under {TRACKED_SNAPSHOTS}",
+        )
+
+        contradictions = []
+        for source_id, entry in sorted(fixtures.items()):
+            if source_id not in registry:
+                continue
+            for path, text in self.prose(registry[source_id], source_id):
+                for match in self.NULL_CLAIM.finditer(text):
+                    field = match.group(1)
+                    if entry["sidecars"] and all(
+                        sidecar.get(field) is not None for sidecar in entry["sidecars"]
+                    ):
+                        contradictions.append(
+                            f"{path}: says '{match.group(0)}', but every tracked "
+                            f"{source_id} sidecar carries a non-null {field}"
+                        )
+                for match in self.MISSING_MANIFEST_CLAIM.finditer(text):
+                    if entry["payloads"] and not entry["bare"]:
+                        contradictions.append(
+                            f"{path}: says '{match.group(0)}', but all "
+                            f"{len(entry['payloads'])} tracked {source_id} payloads "
+                            "have a sidecar"
+                        )
+
+        self.assertEqual(contradictions, [], "\n".join(contradictions))
 
 
 if __name__ == "__main__":
