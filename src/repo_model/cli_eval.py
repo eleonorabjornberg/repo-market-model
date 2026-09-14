@@ -289,7 +289,10 @@ def _select_model(
     `--calibration`, `--calibration-share`, `--calibration-folds`, `--tail`,
     and since B42 `--spread-change-lags`, `--volatility-feature` and
     `--arx-feature` -- `exceedance-backtest` -- and false on `event-holdout`,
-    which offers none of them and whose evaluator hands a predictor no gap.
+    which offers none of them yet. Its evaluator did not hand a predictor the
+    gap either, so a calibrated fit there would have been refused; since B52
+    `evaluate_event_window` hands it over as the rolling path does, and the
+    flags are the block after it.
     `_calibration`, `_tail`, `_spread_change_lags`, `_volatility_feature` and
     `_arx_feature` then refuse each flag given to a model that does not take
     it, with the messages `backtest` already gives.

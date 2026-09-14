@@ -198,7 +198,14 @@ from unittest import mock
 from repo_model import baseline, cli, cli_eval, ml
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
-from repo_model.event_eval import config_digest, read_journal
+from repo_model.contract import event_window_digest
+from repo_model.event_eval import (
+    EventWindow,
+    config_digest,
+    evaluate_event_window,
+    read_journal,
+)
+from repo_model.splits import clears_purge
 from repo_model.metrics import crps_from_quantiles
 from repo_model.splits import SplitError
 
@@ -6156,6 +6163,143 @@ class GradientBoostedEventHoldoutTests(ConditionalModelHarness):
                 [entry["window_name"] for entry in entries],
                 ["smoke-window", "smoke-window"],
             )
+
+
+class EventHoldoutCalibrationGapTests(unittest.TestCase):
+    """A calibrated gbm fit on a knowledge holdout, split on the registry's gap (B52).
+
+    **The defect.** `event-holdout` could only score an uncalibrated, untailed
+    gbm, while every published exceedance record is conformal. Its parser
+    offers no `--calibration` -- but the flags were not the first thing in the
+    way. `evaluate_event_window` called every predictor as `fit_predict(train,
+    features, taus)`, so the gap never reached the fit, and
+    `fit_gradient_boosted_quantiles` refuses a calibration without one
+    (`splits.require_purge_days`). A calibrated fit on this path would not have
+    split wrongly; it would not have run. That is B39's shape in
+    `rolling_exceedance_backtest`, found again on the other evaluation path.
+
+    **The fix is B39's rule, not a second one.** The evaluator hands the gap it
+    derived to a predictor whose signature names `purge_days`, by
+    `baseline._reads_purge_days`, and calls every other predictor exactly as
+    before. The `--calibration` and `--tail` flags on `event-holdout` are the
+    next block; this one makes what they would select runnable.
+
+    **What is asserted is the split, not that a keyword arrived.** The fit's
+    `fit_end` is the last training row that clears the registry's purge before
+    its `calibration_start`, by the splitter's own `clears_purge`, and its
+    calibration rows end on the last row that trained. On consecutive calendar
+    days a gap one day short moves `fit_end` by one row, so an off-by-one
+    between the derived gap and the handed one is visible here.
+
+    Mutation record (B52)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` through the worktree's `.venv` (CPython 3.9.6, numpy 2.0.2,
+    scikit-learn 1.6.1), `REPO_MODEL_REQUIRE_ML=1`, whole suite per run.
+    Unmutated control green before and after, zero `expectedFailure`. Each
+    mutation's anchor was counted as an exact substring of
+    `src/repo_model/event_eval.py`, found exactly once, replaced, and the
+    replacement confirmed present before the run; the copy was restored before
+    the next.
+
+    1. **The gap not handed over** -- the evaluator calls every predictor with
+       three arguments (`if _reads_purge_days(fit_predict):` -> `if False:`),
+       which is the tree before this block. Kills this test alone, as an
+       error: `SplitError: purge must be an int, got None`, the fitter's
+       refusal through `require_purge_days`, raised before any assertion.
+    2. **The gap handed over one day short** -- `purge_days=purge)` ->
+       `purge_days=purge - 1)`. Kills this test alone, `AssertionError: 5 !=
+       6` on the handed gap. Re-run on this test alone with that one assertion
+       deleted from the copy, it still dies, `AssertionError` on `fit_end`:
+       `2020-04-16 != 2020-04-15`, one calendar day later than the last row
+       that clears the declared purge before calibration opens on
+       `2020-04-22`. So the split clause stands on its own and is not carried
+       by the keyword check.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    #: Nonzero, and more than one, so a gap one day short is a different split.
+    PURGE = 6
+    PANEL_ROWS = 160
+    WINDOW_DAYS = 5
+    MINIMUM_HISTORY = 40
+
+    def setUp(self):
+        require_extra(self)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        self.registry = json.loads(
+            declared_registry_file(
+                self.tmp, purge=self.PURGE, features=self.FEATURES
+            ).read_text(encoding="utf-8")
+        )
+
+    def test_a_calibrated_fit_on_a_knowledge_holdout_splits_on_the_declared_purge(self):
+        rows = heteroscedastic_frame(self.PANEL_ROWS)
+        start, end = rows[-self.WINDOW_DAYS].date, rows[-1].date
+        window = EventWindow(
+            "calibrated-window",
+            start,
+            end,
+            event_window_digest("calibrated-window", start.isoformat(), end.isoformat()),
+        )
+        predictor = ml.gbm_exceedance(
+            self.REGRESSORS,
+            minimum_history=self.MINIMUM_HISTORY,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            calibration="conformal",
+        )
+
+        fits = []
+        fitter = ml.fit_gradient_boosted_quantiles
+
+        def fit_spy(*args, **kwargs):
+            model = fitter(*args, **kwargs)
+            fits.append((args[0], kwargs, model))
+            return model
+
+        journal = self.tmp / "events.jsonl"
+        with mock.patch.object(ml, "fit_gradient_boosted_quantiles", fit_spy):
+            report = evaluate_event_window(
+                rows,
+                predictor,
+                window,
+                features=self.FEATURES,
+                registry=self.registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                taus=EXCEEDANCE_TAUS,
+                model_config={"model": "gbm", "calibration": "conformal"},
+                journal_path=journal,
+            )
+
+        self.assertEqual(report.purge_days, self.PURGE)
+        self.assertEqual(len(fits), 1, msg="a knowledge holdout is fitted once")
+        (frame, kwargs, model), = fits
+
+        self.assertEqual(kwargs.get("calibration"), "conformal")
+        self.assertEqual(kwargs.get("purge_days"), report.purge_days)
+        self.assertEqual(frame[-1].date, report.last_train_date)
+        self.assertEqual(model.calibration_end, report.last_train_date)
+        self.assertEqual(
+            model.fit_end,
+            max(
+                row.date
+                for row in frame
+                if clears_purge(row.date, model.calibration_start, self.PURGE)
+            ),
+            msg=(
+                f"the fit rows end on {model.fit_end}, which is not the last "
+                f"training row clearing the registry's {self.PURGE}-day purge "
+                f"before the calibration rows open on {model.calibration_start}"
+            ),
+        )
+        self.assertEqual(
+            [line["purge_days"] for line in read_journal(journal)], [self.PURGE]
+        )
 
 
 if __name__ == "__main__":
