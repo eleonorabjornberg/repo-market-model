@@ -122,6 +122,42 @@ regression, done causally inside the one training frame a fold hands over:
 Runtime is the full fit plus one fit per block, and every forecast reads each
 excluding model once more.
 
+**Asymmetric split-conformal, opt-in (B51).** `cross_conformal` changes two
+things at once: it keeps the full fit, and it takes its two band edges from
+separate order statistics. `calibration="conformal_asymmetric"` changes only the
+second, so the two can be told apart. It is `conformal` in everything but how the
+calibration scores are reduced -- the same split, the same fit rows only and no
+refit, the same feature rows, the same `calibration_share` -- and then:
+
+* each calibration row keeps **two** scores, `s_lo = Q_lo - y` and
+  `s_hi = y - Q_hi`, which are never pooled. `Q_lo` moves down by the
+  `ceil((1 - lo)(n + 1))`-th smallest `s_lo` and `Q_hi` up by the
+  `ceil(hi (n + 1))`-th smallest `s_hi`, with `lo` and `hi` the declared outer
+  levels, exact by `_side_probabilities` -- for the declared grid, the
+  `ceil(0.95 (n + 1))`-th of each. Either may be negative, and each goes through
+  `_banded`, so an outer level a negative widening would carry past its
+  neighbour stops there, as under `conformal`;
+* **the guarantee claimed is per side, and two-sided by their sum.** Each rank
+  is the one-sided split-conformal rank at that side's own miss rate, so under
+  exchangeability `P(y < lower) <= lo` and `P(y > upper) <= 1 - hi`. The two
+  misses are disjoint -- `_banded` keeps `lower <= Q_(2) <= Q_(k-1) <= upper` --
+  so the two-sided miss is their sum, at most `alpha = 1 - (hi - lo)`, and not
+  a union bound that gives anything away. With no ties each side also misses at
+  least its rate less `1 / (n + 1)`, so coverage sits in
+  `[1 - alpha, 1 - alpha + 2 / (n + 1)]`: one `1 / (n + 1)` looser above than
+  `conformal`, in exchange for a statement about each side that `conformal`
+  does not make at all -- its pooled score can spend the whole `alpha` below.
+  **Not** `conformal`'s rank `ceil((1 - alpha)(n + 1))` applied to each side:
+  that lets each side miss `alpha`, and the band only `2 alpha`;
+* so it does **not** reproduce `conformal`'s figure when the two score sets
+  coincide. It reduces to `conformal`'s *construction* -- equal widenings move
+  the band exactly as `_calibrated` moves it -- at a higher rank;
+* the per-side rank names a score only while `n >= p / (1 - p)` at the larger
+  side probability `p`: **nineteen** calibration rows for the declared band, not
+  `conformal`'s nine, and the fitter refuses below it;
+* no tail: `tail` is refused with it, as under `cross_conformal`, because the
+  tail's threshold is `conformal`'s single widening and is not wired here.
+
 **Lagged spread changes, opt-in (B23).** `spread_change_lags=k` adds `k`
 regressors, `spread_change_lag_1` .. `spread_change_lag_k`: the change in
 `spread_bps` between consecutive rows, the `j`-th ending `j - 1` rows before the
@@ -338,8 +374,10 @@ _MINIMUM_TAIL = 1e-9
 
 #: The band calibrations a fit can be asked for. `none` first: it is the
 #: default, and the model every published record was produced with. See the
-#: module docstring for `conformal` and `cross_conformal`.
-CALIBRATIONS = ("none", "conformal", "cross_conformal")
+#: module docstring for `conformal`, `cross_conformal` and
+#: `conformal_asymmetric`, which is appended rather than slotted beside
+#: `conformal` so no existing name's position moves.
+CALIBRATIONS = ("none", "conformal", "cross_conformal", "conformal_asymmetric")
 
 #: The share of a training frame held out as calibration rows when
 #: `calibration="conformal"` names none. A quarter: at `--minimum-history 61`
@@ -476,6 +514,50 @@ def _minimum_calibration_rows(levels: Sequence[float]) -> int:
 
     q = _band_probability(levels)
     return math.ceil(q / (1 - q))
+
+
+def _side_probabilities(levels: Sequence[float]) -> Tuple[Fraction, Fraction]:
+    """Each edge's one-sided coverage, exactly: `(1 - lo, hi)` of the outer two levels.
+
+    Exact for `_band_probability`'s reason. Their misses, `lo` and `1 - hi`,
+    sum to the band's `alpha`; see the module docstring on why that sum is the
+    two-sided guarantee `conformal_asymmetric` claims.
+    """
+
+    return (
+        1 - Fraction(repr(float(levels[0]))),
+        Fraction(repr(float(levels[-1]))),
+    )
+
+
+def _minimum_asymmetric_calibration_rows(levels: Sequence[float]) -> int:
+    """The fewest calibration rows at which both of `conformal_asymmetric`'s ranks are finite.
+
+    `_minimum_calibration_rows`' bound at each side's own probability, and the
+    larger of the two. Nineteen for the declared `0.05`-`0.95` band.
+    """
+
+    return max(math.ceil(p / (1 - p)) for p in _side_probabilities(levels))
+
+
+def _asymmetric_widenings(
+    lower_scores: Sequence[float],
+    upper_scores: Sequence[float],
+    levels: Sequence[float],
+) -> Tuple[float, float]:
+    """How far `conformal_asymmetric` moves the lower edge down and the upper edge up.
+
+    Each score set reduced on its own, at its own side's rank. The two sets
+    are one per calibration row, so they have one length, and both ranks name
+    an entry exactly when that length is at least
+    `_minimum_asymmetric_calibration_rows(levels)`, which the fitter refuses
+    below.
+    """
+
+    lower_p, upper_p = _side_probabilities(levels)
+    down = sorted(lower_scores)[math.ceil(lower_p * (len(lower_scores) + 1)) - 1]
+    up = sorted(upper_scores)[math.ceil(upper_p * (len(upper_scores) + 1)) - 1]
+    return down, up
 
 
 def _spread_change_names(lags: int) -> Tuple[str, ...]:
@@ -1095,6 +1177,10 @@ class FittedGradientBoostedQuantiles:
       this model was built with, the share of its frame held out for it
       (`None` under `none`), and the amount the outer two levels were moved
       by (`0.0` under `none`). See the module docstring.
+    * `edge_widenings` --- under `conformal_asymmetric`, how far the lower
+      edge was moved down and the upper edge up, `(down, up)`, each off its
+      own score set; `widening` is `0.0` there, since no single amount was
+      applied. `(0.0, 0.0)` under every other calibration.
     * `fit_end`, `calibration_start`, `calibration_end` --- the last row the
       estimators were fitted on, and the first and last calibration rows
       (`None` under `none`, where the fit rows are the whole frame). Carried
@@ -1168,6 +1254,7 @@ class FittedGradientBoostedQuantiles:
         "calibration_share",
         "calibration_start",
         "cutoff",
+        "edge_widenings",
         "fit_end",
         "garch_initial_variance",
         "garch_parameters",
@@ -1211,7 +1298,12 @@ class FittedGradientBoostedQuantiles:
         arx: Optional[FittedArx] = None,
         tail: Optional[str] = None,
         tail_fit: Optional[FittedTail] = None,
+        edge_widenings: Tuple[float, float] = (0.0, 0.0),
     ) -> None:
+        self.edge_widenings: Tuple[float, float] = (
+            float(edge_widenings[0]),
+            float(edge_widenings[1]),
+        )
         self.tail: Optional[str] = tail
         self.tail_fit: Optional[FittedTail] = tail_fit
         self.arx_feature: Optional[str] = arx_feature
@@ -1323,8 +1415,8 @@ class FittedGradientBoostedQuantiles:
         what every gbm record published before calibration existed declares.
         `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
         the same rule: named when set, absent when not. Each calibration names its own setting and
-        only its own: `calibration_share` for `conformal`, `calibration_folds`
-        for `cross_conformal`.
+        only its own: `calibration_share` for `conformal` and
+        `conformal_asymmetric`, `calibration_folds` for `cross_conformal`.
 
         `tail` is what the command declared, not evidence that a shape was
         fitted: a rolling backtest refits at every origin, so what each fold's
@@ -1333,7 +1425,7 @@ class FittedGradientBoostedQuantiles:
         """
 
         settings: dict = {}
-        if self.calibration == "conformal":
+        if self.calibration in ("conformal", "conformal_asymmetric"):
             settings["calibration"] = self.calibration
             settings["calibration_share"] = self.calibration_share
         elif self.calibration == "cross_conformal":
@@ -1539,10 +1631,15 @@ class FittedGradientBoostedQuantiles:
 
         The full fit's rearranged vector in every case; a calibration moves only
         its two outer levels. Under `cross_conformal` the edges are CV+'s, read
-        off every excluding model at this feature row.
+        off every excluding model at this feature row. Under
+        `conformal_asymmetric` each edge moves by its own `edge_widenings`
+        entry, through `_banded`'s neighbour rule.
         """
 
         vector = self._quantile_vector(self.design_row(feature_row))
+        if self.calibration == "conformal_asymmetric":
+            down, up = self.edge_widenings
+            return _banded(vector, vector[0] - down, vector[-1] + up), down, up
         if self.calibration == "cross_conformal":
             lows: List[float] = []
             highs: List[float] = []
@@ -1959,8 +2056,9 @@ def fit_gradient_boosted_quantiles(
             row and reports the band as fitted; `"conformal"` holds out the
             most recent rows and widens the band by their conformal score;
             `"cross_conformal"` reports the full fit and moves its band to
-            CV+'s edges over `calibration_folds` purged date blocks. See the
-            module docstring.
+            CV+'s edges over `calibration_folds` purged date blocks;
+            `"conformal_asymmetric"` splits as `"conformal"` does and moves
+            each edge by its own side's score. See the module docstring.
         calibration_share: the share of the frame held out as calibration rows,
             strictly inside `(0, 1)`. `None` means `DEFAULT_CALIBRATION_SHARE`
             under `conformal`, and is the only value `none` accepts: a share
@@ -2043,8 +2141,10 @@ def fit_gradient_boosted_quantiles(
             on the rows it is handed -- fewer than its default minimum, a
             singular design -- propagates as it raised it; and, for the tail,
             if `tail` is not one of `TAIL_FAMILIES`, or is given with
-            calibration `none` (an in-sample tail) or `cross_conformal` (not
-            wired).
+            calibration `none` (an in-sample tail), `cross_conformal` or
+            `conformal_asymmetric` (not wired). Under `conformal_asymmetric`
+            the calibration-row floor is its own per-side one, not
+            `conformal`'s.
     """
 
     grid = _validate_levels(levels)
@@ -2175,6 +2275,14 @@ def fit_gradient_boosted_quantiles(
             f"mixed-provenance excesses in the meantime would be worse than "
             f"this refusal. Use calibration 'conformal'"
         )
+    if tail is not None and calibration == "conformal_asymmetric":
+        raise ValueError(
+            f"tail {tail!r} is not wired for calibration 'conformal_asymmetric': "
+            f"the tail is attached at the top quantile moved by one widening, and "
+            f"this calibration moves the two edges by two. A tail attached at "
+            f"the wrong knot would put a jump in the curve at the join. Use "
+            f"calibration 'conformal'"
+        )
 
     names = tuple(str(name) for name in regressors)
     if not names:
@@ -2216,10 +2324,14 @@ def fit_gradient_boosted_quantiles(
     calibration_rows: List[DailyObservation] = []
     if share is not None:
         count = int(Fraction(repr(share)) * len(rows))
-        needed = _minimum_calibration_rows(grid)
+        needed = (
+            _minimum_asymmetric_calibration_rows(grid)
+            if calibration == "conformal_asymmetric"
+            else _minimum_calibration_rows(grid)
+        )
         if count < needed:
             raise ValueError(
-                f"conformal calibration needs at least {needed} calibration "
+                f"{calibration} calibration needs at least {needed} calibration "
                 f"rows, got {count} ({share} of {len(rows)} training rows); "
                 f"below {needed} the conformal quantile of a "
                 f"{float(_band_probability(grid))} band is infinite, and a "
@@ -2435,6 +2547,7 @@ def fit_gradient_boosted_quantiles(
     # above -- not refitted, and never on a fit row -- from the feature row the
     # backtest's own rule would choose for it, then the conformal rank.
     widening = 0.0
+    edge_widenings = (0.0, 0.0)
     tail_fit: Optional[FittedTail] = None
     if calibration_rows:
         first = len(rows) - len(calibration_rows)
@@ -2470,6 +2583,15 @@ def fit_gradient_boosted_quantiles(
                 )
             )
         vectors = _rearranged(estimators, [features for features, _ in scored])
+    if calibration_rows and calibration == "conformal_asymmetric":
+        # The two score sets, kept apart and reduced apart. No pooled score and
+        # no single widening: that is `conformal`, below.
+        edge_widenings = _asymmetric_widenings(
+            [vector[0] - target for vector, (_, target) in zip(vectors, scored)],
+            [target - vector[-1] for vector, (_, target) in zip(vectors, scored)],
+            grid,
+        )
+    elif calibration_rows:
         scores = sorted(
             max(vector[0] - target, target - vector[-1])
             for vector, (_, target) in zip(vectors, scored)
@@ -2570,6 +2692,7 @@ def fit_gradient_boosted_quantiles(
         arx=arx,
         tail=tail,
         tail_fit=tail_fit,
+        edge_widenings=edge_widenings,
     )
 
 
