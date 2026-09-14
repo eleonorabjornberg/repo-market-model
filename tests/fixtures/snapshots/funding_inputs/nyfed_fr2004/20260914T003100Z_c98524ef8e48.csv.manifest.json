@@ -1,0 +1,8 @@
+{
+  "byte_count": 26737886,
+  "path": "nyfed_fr2004/20260914T003100Z_c98524ef8e48.csv",
+  "retrieved_at": "2026-09-14T00:31:00.991705+00:00",
+  "sha256": "c98524ef8e4850efad54b979f26561e1641a62aeda009de9cdf240bbd4c9764b",
+  "source_id": "nyfed_fr2004",
+  "url": "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+}
