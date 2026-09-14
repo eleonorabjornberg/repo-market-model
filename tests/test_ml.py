@@ -4686,6 +4686,41 @@ class ExceedanceTailAccountTests(unittest.TestCase):
        model. **A crash, not coverage:** every account is `None`, the record
        grows no `folds.tail`, and the test stops at `KeyError: 'tail'` before
        its first part. One `KeyError`, in this test alone.
+
+    B49: the brief's premise was false
+    ----------------------------------
+
+    B49 was queued as "nothing guards that a tail run records its per-fold
+    account", on two pieces of evidence: `docs/runs/exceedance_gbm_conformal_tail_gpd_mh61.json`
+    carries only `count`, `first` and `last` under `folds`, and a grep of
+    `tests/test_baseline.py` finds no such assertion. Both are true and neither
+    shows the defect. The guard is this test, in `tests/test_ml.py`, landed with
+    the wiring in B40: part 1 holds `folds.tail` to one entry per fold (the writer
+    sets `folds.count` to `len(report.folds)`, the length part 1 reads), part 2
+    holds the states to `ml.TAIL_STATES`, and part 3 holds an untailed run to no
+    `folds.tail` key at all. The published tail record is simply older than the
+    wiring (it was not among the records the nineteen-column republish rescored),
+    and re-scoring it needs the frozen panel, which is the human's. No test was
+    added: the acceptance criterion and the mutation target are this test.
+
+    Both clauses reproduced on the tree at `b288cc60`, by the protocol above
+    (disposable copies from `git ls-files`, whole suite, CPython 3.9.6, numpy
+    2.0.2, scikit-learn 1.6.1, `OMP_NUM_THREADS=1`, `REPO_MODEL_REQUIRE_ML=1`),
+    each target asserted present exactly once, in `exceedance_backtest_document`
+    only, before it was scored. Unmutated control green, zero `expectedFailure`.
+
+    * **Clause 1, the account one entry short** --- the exceedance writer's
+      `_tail_document(report.folds, report.tail_accounts)` ->
+      `_tail_document(report.folds[:-1], report.tail_accounts)`.
+      `AssertionError` in **part 1** (`25 != 26`) and **part 4** (the scored
+      dates one short). Also `test_tail_diagnostics.KnotRefitTests`, which reads
+      the record: `ValueError: folds.tail has 25 entries for 26 folds`, in two
+      of its subtests. A short account was already refused twice.
+    * **Clause 2, an empty account where there should be none** --- the
+      writer's `if report.tail_accounts is not None:` -> `if True:`, over
+      `report.tail_accounts or ()`. `AssertionError` in **part 3**, both the gbm
+      and climatology subtests: `'tail' unexpectedly found in {..., 'tail': []}`.
+      This test and nothing else.
     """
 
     REGRESSORS = TailAccountTests.REGRESSORS
