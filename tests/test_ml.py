@@ -38,6 +38,10 @@ What is covered here
   band covers its nominal probability on held-out rows where the uncalibrated
   band does not, the fit and calibration slices of every fold are purged apart,
   and the calibration's refusals.
+* `GradientBoostedAsymmetricConformalTests` -- `calibration=
+  "conformal_asymmetric"`: `conformal`'s split with the two edges moved by
+  their own score sets at their own ranks, `conformal`'s band and law at equal
+  widenings, and the refusals.
 * `GradientBoostedLaggedSpreadTests` -- `spread_change_lags`: the lagged spread
   changes read only rows at or before the feature date, by row, never across a
   hole, named in the declaration, and the lags' refusals.
@@ -786,6 +790,228 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
             # The same flags on the gbm side are taken, and reach the fitter.
             _, fitter = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
             self.assertEqual(fitter.keywords.get("calibration"), "conformal")
+
+
+class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
+    """`calibration="conformal_asymmetric"`: B51's acceptance criterion and its mutation target.
+
+    **The question.** `cross_conformal` keeps the full fit *and* takes its two
+    edges from separate order statistics. Its point forecast is bit-identical
+    to `none`'s, so the point half of what it changed is the fit. Its coverage
+    half is not attributed: 2022-23 misses below fall from 20.3% under
+    `conformal` to 3.8% under `cross_conformal`, and that could be either. This
+    calibration keeps `conformal`'s split exactly and separates only the score
+    sets, so a scored run of it answers which.
+
+    **What this test asserts, and what it cannot.** That the two edges move by
+    the two score sets' own order statistics, at each side's own rank,
+    recomputed here from the calibration rows; that equal widenings give
+    `conformal`'s band and law bit for bit; and the refusals. It asserts no
+    coverage figure: the question is about 2022-23 on the funding panel, which
+    no fixture here is, and a fixture coverage figure would answer a question
+    nobody asked.
+
+    **Not `conformal`'s figure when the score sets coincide.** The brief asked
+    for a reduction to current behaviour when the two score sets do not differ.
+    What reduces is the construction -- `(w, w)` moves the band exactly as
+    `_calibrated(vector, w)` does -- and not the number: the per-side rank is
+    `ceil(0.95 (n + 1))`, `conformal`'s is `ceil(0.90 (n + 1))`, and a
+    calibration that reproduced `conformal`'s widening from identical score
+    sets would be applying the one-sided rank twice and claiming `1 - 2 alpha`.
+    See the module docstring of `repo_model.ml`. For the same reason the floor
+    is nineteen calibration rows, not nine.
+
+    Mutation record (B51)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` (the worktree's `.venv`: CPython 3.9.6, numpy 2.0.2,
+    scikit-learn 1.6.1), `PYTHONPATH=src:tests` (checked to resolve to the
+    copy's `src/` before every run), `REPO_MODEL_REQUIRE_ML=1`. Each mutation
+    was applied by exact-string replacement whose anchor was found exactly once
+    and confirmed gone, then restored before the next; the file was checked
+    byte-identical to the original at the end. **Scored against this class,
+    not the whole suite**: the suite runs about seventeen minutes in one
+    process, and every mutation touches only code the new name reaches.
+    Unmutated control green before and after. **Each mutation failed exactly
+    one subtest, its own.**
+
+      * **Clause 1, the score sets pooled back into one** -- the upper score
+        set built as `Q_lo - y`. `the edges move by different amounts, off
+        separate score sets`, `AssertionError`: `(2.853, 2.853) != (2.853,
+        1.490)`.
+      * **Clause 1, `conformal`'s rank applied to each side** --
+        `_band_probability(levels)` for both side probabilities in
+        `_asymmetric_widenings`. The same subtest, `AssertionError`: `(1.683,
+        0.700) != (2.853, 1.490)`. This is the one-sided-rank-twice band the
+        module docstring refuses to claim, and it is visibly narrower.
+      * **Clause 2, the edges moved but the tail knots not** -- `_reported`
+        returning `0.0, 0.0` for how far the edges moved. `equal widenings are
+        conformal's band and law, bit for bit`, `AssertionError` on
+        `law_knots`: the lower tail knot at 1.985 against `conformal`'s -0.659.
+        `predict` alone would not have seen it.
+      * **Refusal, the neighbour rule bypassed** -- the outer levels set
+        straight to `Q_lo - down` and `Q_hi + up` without `_banded`. `a
+        negative widening stops each outer level at its neighbour`,
+        `AssertionError`: the lower level at 17.381, above its neighbour at
+        7.371.
+      * **Refusal, `conformal`'s nine-row floor used for the new name** --
+        `_minimum_calibration_rows(grid)` in place of
+        `_minimum_asymmetric_calibration_rows(grid)`. `refusal: fewer
+        calibration rows than either side's rank needs`, `IndexError`: an
+        error, not a failure -- at eighteen rows the per-side rank names the
+        nineteenth score, which does not exist.
+      * **Refusal, the tail accepted** -- the `conformal_asymmetric` tail
+        refusal made unreachable. `refusal: a tail`, `AssertionError:
+        ValueError not raised`.
+      * **The declaration drops the name** -- `model_settings` back to
+        `== "conformal"`. `the declaration names the calibration and its
+        share`, `AssertionError: {} != {'calibration': 'conformal_asymmetric',
+        'calibration_share': 0.25}`: a scored record would have declared the
+        uncalibrated model.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    TRAIN_ROWS = 480
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    @staticmethod
+    def rebuilt(model, calibration, **changes):
+        """`model`'s fitted estimators and state under another calibration and widening."""
+
+        return ml.FittedGradientBoostedQuantiles(
+            model._estimators,
+            model.regressors,
+            model.imputations,
+            model.residuals,
+            model.cutoff,
+            model.levels,
+            model.random_state,
+            ml_libraries=model.ml_libraries,
+            calibration=calibration,
+            calibration_share=model.calibration_share,
+            fit_end=model.fit_end,
+            calibration_start=model.calibration_start,
+            calibration_end=model.calibration_end,
+            **changes,
+        )
+
+    def test_each_edge_moves_by_its_own_score_set(self):
+        """Two score sets, two ranks, two edges; `conformal`'s band at equal widenings; refusals."""
+
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + 40)
+        train = rows[: self.TRAIN_ROWS]
+        feature_rows = rows[self.TRAIN_ROWS - 1 : -1]
+        model = self.fit(train, calibration="conformal_asymmetric", purge_days=0)
+
+        with self.subTest("the edges move by different amounts, off separate score sets"):
+            # Recomputed here: at a zero gap a calibration row's feature row is
+            # the row before it, and the model reads it as the fit did.
+            first = self.TRAIN_ROWS - int(ml.DEFAULT_CALIBRATION_SHARE * self.TRAIN_ROWS)
+            self.assertEqual(model.calibration_start, train[first].date)
+            lower_scores, upper_scores = [], []
+            for index in range(first, self.TRAIN_ROWS):
+                vector = model._quantile_vector(model.design_row(train[index - 1]))
+                actual = train[index].spread_bps
+                lower_scores.append(vector[0] - actual)
+                upper_scores.append(actual - vector[-1])
+            self.assertNotEqual(
+                sorted(lower_scores),
+                sorted(upper_scores),
+                msg="the fixture: identical score sets cannot show the edges separating",
+            )
+            count = len(lower_scores)
+            lower_rank = math.ceil(
+                (1 - Fraction(repr(QUANTILE_LEVELS[0]))) * (count + 1)
+            )
+            upper_rank = math.ceil(Fraction(repr(QUANTILE_LEVELS[-1])) * (count + 1))
+            down = sorted(lower_scores)[lower_rank - 1]
+            up = sorted(upper_scores)[upper_rank - 1]
+            self.assertNotEqual(down, up)
+            self.assertEqual(model.edge_widenings, (down, up))
+            self.assertEqual(model.widening, 0.0)
+            for feature in feature_rows:
+                fitted = model._quantile_vector(model.design_row(feature))
+                reported = model.predict(feature)
+                self.assertEqual(reported[1:-1], fitted[1:-1])
+                self.assertEqual(reported[0], min(fitted[0] - down, fitted[1]))
+                self.assertEqual(reported[-1], max(fitted[-1] + up, fitted[-2]))
+
+        with self.subTest("equal widenings are conformal's band and law, bit for bit"):
+            conformal = self.fit(train, calibration="conformal", purge_days=0)
+            widening = conformal.widening
+            equal = self.rebuilt(
+                conformal,
+                "conformal_asymmetric",
+                edge_widenings=(widening, widening),
+            )
+            self.assertEqual(
+                ml._asymmetric_widenings(lower_scores, lower_scores, QUANTILE_LEVELS)[0],
+                ml._asymmetric_widenings(lower_scores, lower_scores, QUANTILE_LEVELS)[1],
+            )
+            for feature in feature_rows:
+                self.assertEqual(equal.predict(feature), conformal.predict(feature))
+                self.assertEqual(equal.law_knots(feature), conformal.law_knots(feature))
+                self.assertEqual(
+                    equal.predict_stress(feature, EXCEEDANCE_TAUS),
+                    conformal.predict_stress(feature, EXCEEDANCE_TAUS),
+                )
+
+        with self.subTest("a negative widening stops each outer level at its neighbour"):
+            feature = feature_rows[0]
+            fitted = model._quantile_vector(model.design_row(feature))
+            past = -2.0 * (fitted[-1] - fitted[0]) - 1.0
+            only_lower = self.rebuilt(
+                model, "conformal_asymmetric", edge_widenings=(past, 0.0)
+            ).predict(feature)
+            self.assertEqual(only_lower, (fitted[1],) + fitted[1:])
+            only_upper = self.rebuilt(
+                model, "conformal_asymmetric", edge_widenings=(0.0, past)
+            ).predict(feature)
+            self.assertEqual(only_upper, fitted[:-1] + (fitted[-2],))
+
+        with self.subTest("refusal: fewer calibration rows than either side's rank needs"):
+            # 18 is a quarter of 75: enough for conformal's nine, not for nineteen.
+            with self.assertRaisesRegex(
+                ValueError,
+                r"conformal_asymmetric calibration needs at least 19 calibration "
+                r"rows, got 18",
+            ):
+                self.fit(rows[:75], calibration="conformal_asymmetric", purge_days=0)
+            self.assertEqual(
+                self.fit(
+                    rows[:76], calibration="conformal_asymmetric", purge_days=0
+                ).calibration_start,
+                rows[57].date,
+            )
+
+        with self.subTest("refusal: a tail"):
+            with self.assertRaisesRegex(
+                ValueError, r"not wired for calibration 'conformal_asymmetric'"
+            ):
+                self.fit(
+                    rows[:120],
+                    calibration="conformal_asymmetric",
+                    purge_days=0,
+                    tail="gpd",
+                )
+
+        with self.subTest("the declaration names the calibration and its share"):
+            self.assertEqual(
+                dict(model.model_settings),
+                {"calibration": "conformal_asymmetric", "calibration_share": 0.25},
+            )
 
 
 def business_day_frame(count, seed=20260911):
