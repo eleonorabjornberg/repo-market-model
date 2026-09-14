@@ -172,6 +172,51 @@ def load_reproduction():
     return module
 
 
+class ReproductionComparisonDirectionTests(unittest.TestCase):
+    """`_differences` is asymmetric, and the asymmetry is the clause it holds.
+
+    Milestone A's clause is that no figure the published record states
+    disagrees with a rebuild from the tracked inputs. Two one-sided keys are
+    not the same event under that clause:
+
+    * a key the **published record** carries and the rebuild does not is the
+      record claiming a figure this code cannot produce, which is the failure
+      the reproduction exists to catch;
+    * a key the **rebuild** carries and the published record does not is the
+      scoring path having gained a field since that record was scored. No
+      figure the record publishes disagrees, and the record is simply older
+      than the code.
+
+    Treating the second as a failure made the reproduction stricter than its
+    own docstring, and it blocked B50 before a single published figure had
+    moved: adding `misses_below` to the calibration document turned this red
+    with `metrics.interval_calibration.misses_below: present on one side only`.
+
+    The first case keeps its own guard below, because narrowing a check
+    without a case that still fails it is how a guard becomes a comment.
+    """
+
+    def test_a_key_only_the_rebuild_carries_is_not_a_disagreement(self):
+        published = {"metrics": {"mae_bps": 1.0}}
+        rebuilt = {"metrics": {"mae_bps": 1.0, "misses_below": 3}}
+        self.assertEqual(load_reproduction()._differences(published, rebuilt), [])
+
+    def test_a_key_only_the_published_record_carries_is_a_disagreement(self):
+        published = {"metrics": {"mae_bps": 1.0, "resolution": 0.5}}
+        rebuilt = {"metrics": {"mae_bps": 1.0}}
+        found = load_reproduction()._differences(published, rebuilt)
+        self.assertEqual(len(found), 1, msg=repr(found))
+        self.assertIn("metrics.resolution", found[0])
+        self.assertIn("published", found[0])
+
+    def test_a_value_that_moved_is_still_a_disagreement(self):
+        published = {"metrics": {"mae_bps": 1.0}}
+        rebuilt = {"metrics": {"mae_bps": 1.5}}
+        found = load_reproduction()._differences(published, rebuilt)
+        self.assertEqual(len(found), 1, msg=repr(found))
+        self.assertIn("mae_bps", found[0])
+
+
 class MilestoneAReproductionTests(unittest.TestCase):
     """Milestone A's reproduction clause, held true on every run of the suite.
 

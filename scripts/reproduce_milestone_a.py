@@ -109,8 +109,16 @@ def _differences(published, rebuilt, prefix=""):
         found = []
         for key in sorted(set(published) | set(rebuilt)):
             where = "%s.%s" % (prefix, key) if prefix else str(key)
-            if key not in published or key not in rebuilt:
-                found.append("%s: present on one side only" % where)
+            if key not in published:
+                # The rebuild computes a field this record was scored before.
+                # No figure the record publishes disagrees, so under Milestone
+                # A's clause this is the record being older than the code and
+                # not a reproduction failure. The converse below is.
+                continue
+            elif key not in rebuilt:
+                found.append(
+                    "%s: present only in the published record" % where
+                )
             else:
                 found.extend(_differences(published[key], rebuilt[key], where))
         return found
