@@ -38,6 +38,26 @@
         "revision_policy": "never_revised",
         "timezone": "America/New_York",
         "unit": "calendar_days"
+      },
+      "WRESBAL": {
+        "available_time": "16:30",
+        "basis": "record_date",
+        "days": 1,
+        "note": "Declared 14 September 2026, when the never-revised claim was measured rather than argued. The H.4.1 is published Thursdays at 16:30 New York time for the week ending the previous Wednesday, and the observation dates are those Wednesdays, so the lag is one calendar day. The lag rests on that published schedule and not on the snapshots, which bound it only loosely: the 2019-09-16 vintage already carried 2019-09-11, consistent with a Thursday release but also with a slower one. VALUE UNIT: the series is served in MILLIONS of US dollars as of the 2026 vintage, having been served in billions through the 2024 vintage. That is recorded in prose because the registry's `unit` key is the unit of the release lag, not of the value; a value-unit key would be a change to contract.py, which is human-owned and was not made for this.",
+        "revision_evidence": "Four ALFRED vintages of WRESBAL -- 2019-09-16, 2021-07-27, 2024-09-24 and 2026-09-12, tracked under tests/fixtures/snapshots/alfred-wresbal/ -- carry no restatement of any value. `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-wresbal/WRESBAL_2019-09-16.csv tests/fixtures/snapshots/alfred-wresbal/WRESBAL_2021-07-27.csv tests/fixtures/snapshots/alfred-wresbal/WRESBAL_2024-09-24.csv` re-runs the comparison across the three pre-rescale vintages and exits 1 if an observation is ever restated; it exits 0 today, on every observation the three share back to the 1980s. The 2026-09-12 vintage differs from all three, and differs on EVERY shared observation by EXACTLY a factor of one thousand -- 874, 971 and 1136 observations respectively, without exception -- which is a units rescale from billions to millions, not a revision. That classification is what separates this field from RRPONTSYD, whose differences are not a constant ratio: it was restated on 2020-02-19 from 5.149 to 0.095, and on 2020-11-18 from 0.103 to 0.000 and back to 0.103, so RRPONTSYD remains refused.",
+        "revision_policy": "never_revised",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      },
+      "WTREGEN": {
+        "available_time": "16:30",
+        "basis": "record_date",
+        "days": 1,
+        "note": "Declared 14 September 2026, when the never-revised claim was measured rather than argued. The H.4.1 is published Thursdays at 16:30 New York time for the week ending the previous Wednesday, and the observation dates are those Wednesdays, so the lag is one calendar day. The lag rests on that published schedule and not on the snapshots, which bound it only loosely: the 2019-09-16 vintage already carried 2019-09-11, consistent with a Thursday release but also with a slower one. VALUE UNIT: the series is served in MILLIONS of US dollars as of the 2026 vintage, having been served in billions through the 2024 vintage. That is recorded in prose because the registry's `unit` key is the unit of the release lag, not of the value; a value-unit key would be a change to contract.py, which is human-owned and was not made for this.",
+        "revision_evidence": "Four ALFRED vintages of WTREGEN -- 2019-09-16, 2021-07-27, 2024-09-24 and 2026-09-12, tracked under tests/fixtures/snapshots/alfred-wtregen/ -- carry no restatement of any value. `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-wtregen/WTREGEN_2019-09-16.csv tests/fixtures/snapshots/alfred-wtregen/WTREGEN_2021-07-27.csv tests/fixtures/snapshots/alfred-wtregen/WTREGEN_2024-09-24.csv` re-runs the comparison across the three pre-rescale vintages and exits 1 if an observation is ever restated; it exits 0 today, on every observation the three share back to the 1980s. The 2026-09-12 vintage differs from all three, and differs on EVERY shared observation by EXACTLY a factor of one thousand -- 874, 971 and 1136 observations respectively, without exception -- which is a units rescale from billions to millions, not a revision. That classification is what separates this field from RRPONTSYD, whose differences are not a constant ratio: it was restated on 2020-02-19 from 5.149 to 0.095, and on 2020-11-18 from 0.103 to 0.000 and back to 0.103, so RRPONTSYD remains refused.",
+        "revision_policy": "never_revised",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
       }
     },
     "fields": [

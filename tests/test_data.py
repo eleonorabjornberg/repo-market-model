@@ -3414,21 +3414,25 @@ class RequestedColumnsBuildTests(unittest.TestCase):
             self.assertIn("is not a panel column", text)
 
             # A panel column this build cannot price is refused rather than
-            # silently absent. `reserve_balances` is a declared column and is
-            # in the manifest's `refused_columns`; asked for by name it must
-            # not come back as a panel without it. It was `on_rrp` until A30,
-            # which prices a snapshot column from the rows the build can see,
-            # and `quarter_end` until A31, which computes the calendar columns
-            # from the date. `reserve_balances` is refused by the tracked
-            # registry's own declaration -- `WRESBAL` declares no
-            # `revision_policy` -- whatever the rows.
-            self.assertIn("reserve_balances", manifest["refused_columns"])
+            # silently absent. `mmf_assets` is a declared column and is in the
+            # manifest's `refused_columns`; asked for by name it must not come
+            # back as a panel without it. The exemplar keeps moving as columns
+            # become priceable: `on_rrp` until A30, which prices a snapshot
+            # column from the rows the build can see; `quarter_end` until A31,
+            # which computes the calendar columns from the date; and
+            # `reserve_balances` until WRESBAL was vintage-verified and
+            # declared `never_revised`. `mmf_assets` is refused by the tracked
+            # registry's own declaration -- `sec_nmfp` carries no
+            # `revision_policy` for `mmf_net_assets`, and N-MFP filings are
+            # superseded by later filings, so it is the one least likely to
+            # move next.
+            self.assertIn("mmf_assets", manifest["refused_columns"])
             code, text = self.run_build(
-                Path(tmp) / "unpriced.csv", "sofr", "reserve_balances"
+                Path(tmp) / "unpriced.csv", "sofr", "mmf_assets"
             )
             self.assertEqual(code, 2, text)
             self.assertIn("cannot price", text)
-            self.assertIn("reserve_balances", text)
+            self.assertIn("mmf_assets", text)
 
 
 class FR2004EraIdentityTests(unittest.TestCase):
@@ -5393,8 +5397,9 @@ class SnapshotBasisPricingTests(unittest.TestCase):
             # The licence the rows path needs since the revision-only block
             # landed: no lag of its own, and the one declaration that lets a
             # latest-vintage source be priced from rows. The tracked registry
-            # makes no such declaration for WRESBAL, which is why
-            # `reserve_balances` is refused there and built here.
+            # now makes this declaration for WRESBAL too, on four ALFRED
+            # vintages; this fixture keeps its own so the test does not depend
+            # on that staying true.
             "WRESBAL": {
                 "revision_policy": "never_revised",
                 "revision_evidence": "fixture: stands for an ALFRED vintage comparison",
