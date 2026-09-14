@@ -111,7 +111,7 @@
   "nyfed_fr2004": {
     "access": "public",
     "availability_provenance": {
-      "note": "Read on the human side and recorded 12 September 2026; the project has no network route to the New York Fed, so this is a human-supplied reading and not something any code here fetched. The snapshot cannot corroborate it -- the tracked fixture's manifest records a null retrieved_at and a null url -- which is why the release_lag note already rests the six-business-day gap on the schedule rather than on the file. This object makes the publication claim behind the early available_time machine-readable, as registry.check_availability_provenance requires of any instant earlier than the end-of-day convention.",
+      "note": "Read on the human side and recorded 12 September 2026; it is a human-supplied reading and not something any code here fetched. The clause this replaces said the project has no network route to the New York Fed, which is no longer true -- a job running natively on the user's machine does reach it, and the adapter added in A34 fetches this source from there. What has not changed is the part the provenance rests on: no code reads the release schedule this note cites, so the availability claim is still a human reading and the snapshot still cannot corroborate it. The snapshot cannot corroborate it -- the tracked fixture's manifest records a null retrieved_at and a null url -- which is why the release_lag note already rests the six-business-day gap on the schedule rather than on the file. This object makes the publication claim behind the early available_time machine-readable, as registry.check_availability_provenance requires of any instant earlier than the end-of-day convention.",
       "publication": "New York Fed Primary Dealer Statistics release schedule: the FR 2004 series for a Wednesday as-of date is published on the Thursday of the following week, six business days later, which is the calendar-week-plus-a-day gap the schedule describes. 16:30 ET is the conservative instant taken within that publication day."
     },
     "coverage": [
@@ -521,7 +521,7 @@
   "treasury_bill_rates": {
     "access": "public",
     "availability_provenance": {
-      "note": "Read on the human side and recorded 11 September 2026; the project has no network route to Treasury or the Board, so this is a human-supplied reading and not something any code here fetched. It replaces a release_lag note that recorded no publication time at all and said checking it was a human-side step.",
+      "note": "Read on the human side and recorded 11 September 2026; it is a human-supplied reading and not something any code here fetched. The clause this replaces said the project has no network route to Treasury or the Board, which is no longer true of a job running natively on the user's machine -- the adapter added in A34 fetches the daily bill rates from there. The publication time itself is still read by a human and not by any code, which is what this object records. It replaces a release_lag note that recorded no publication time at all and said checking it was a human-side step.",
       "publication": "Federal Reserve Statistical Release H.15, Selected Interest Rates: the daily bulk data file, published at 16:30 ET. The interactive H.15 page publishes at 16:15 ET, and the indicative closing quotations these rates are taken from are struck at about 15:30 ET."
     },
     "coverage": [
