@@ -7926,10 +7926,14 @@ class IntervalCalibrationTests(unittest.TestCase):
         # and the two must agree, or the statement has no unambiguous `n`.
         self.assertEqual(metrics["forecast_count"], origins)
 
-        # What the record cannot supply: the interval. It is a function of the
-        # indicator *series*, and the record publishes the series' mean and its
-        # length and no per-origin rows. Asserted as the absence it is, so that
-        # a later block which publishes them has to come back here and say so.
+        # When this test was written the record carried the series' mean and
+        # length and nothing per origin. It has since been re-scored and carries
+        # the indicator series (`CalibrationDocumentTests`), and since B50 the
+        # code also writes per-origin rows -- but inside
+        # `metrics.interval_calibration.origins`, never as a top-level
+        # `forecasts`, and this record predates B50 and carries none until a
+        # human re-scores it. The assertion below is about the top-level key
+        # only, and it stays true either way.
         self.assertNotIn("forecasts", record)
         self.assertEqual(set(record["folds"]), {"count", "first", "last"})
 
@@ -8013,11 +8017,14 @@ class CalibrationDocumentTests(unittest.TestCase):
     bound so the claim cannot decay into an assurance.
 
     **One bit per origin is not a forecast row.** `PairedComparisonTests`
-    records keeping intermediates off a publication as a deliberate decision and
-    that decision stands: nothing added here publishes a prediction, a quantile
-    or an actual. What is published is whether each origin's actual fell inside
-    its own interval, which is the whole of what a coverage statement is over,
-    and it is the least a record can carry and still be resampled.
+    records keeping intermediates off a publication as a deliberate decision,
+    and when this block landed nothing it added published a prediction, a
+    quantile or an actual: only whether each origin's actual fell inside its own
+    interval, the least a record can carry and still be resampled. **That is no
+    longer true of the record since B50**, by the user's decision:
+    `PerOriginCalibrationTests` holds the per-origin block -- date, side,
+    actual, prediction and quantile vector -- that now sits beside the series.
+    The series itself is unchanged and is still what the interval resamples.
 
     **The declared length is redundant and checked anyway.** The runs sum to it,
     so it derives nothing -- and that is the reason it is compared rather than
@@ -8563,6 +8570,293 @@ class CalibrationDocumentTests(unittest.TestCase):
         self.assertAlmostEqual(
             narrow["metrics"]["interval_calibration"]["declared_probability"], 0.80
         )
+
+
+#: `PerOriginCalibrationTests`' fixture: which origins miss below their band,
+#: which miss above it, and the one whose actual sits exactly on its lower bound.
+PER_ORIGIN_BELOW = (2, 3)
+PER_ORIGIN_ABOVE = (8,)
+PER_ORIGIN_ON_LOWER_BOUND = 5
+PER_ORIGIN_ORIGINS = 12
+
+
+class PerOriginCalibrationTests(unittest.TestCase):
+    """B50: the calibration statement says which way each origin missed, and by how much.
+
+    The measurement this makes reproducible
+    ---------------------------------------
+
+    One bit per origin says whether the band missed and not in which
+    direction, and the direction is the finding. On the control gbm+conformal
+    run -- 2039 origins, nominal 90% -- the 2018-21 origins cover 89.2% (6.2%
+    of origins below the band, 4.6% above, median width 13.07 bp, mean bias
+    +0.95 bp); 2022-23 covers 79.7% (20.3% below, **0.0% above**, 36.01 bp,
+    -3.98); 2024-26 covers 85.0% (5.1% below, 9.9% above, 15.39 bp, -0.27).
+    Bias is actual minus predicted throughout. None of those sub-period figures
+    could be recomputed from a record before this block: the record published
+    the indicator series, and a miss below and a miss above are the same `0`.
+    They are quoted here as the measurement that motivated the shape, not
+    asserted; the published records in `docs/runs/` predate the block and
+    carry no per-origin rows until a human re-scores them.
+
+    The shape
+    ---------
+
+    `metrics.interval_calibration.origins` carries, per scored origin,
+    `scored_date`, `side` (`below`, `inside` or `above`, both bounds closed),
+    `actual_bps`, `predicted_bps` and `quantiles_bps`, and the statement gains
+    `misses_below`, `misses_above` and `mean_bias_bps`. **One walk:**
+    `interval_calibration` zips folds and forecasts once into
+    `IntervalCalibration.origins`, and the coverage series and all three
+    aggregates are read off that tuple by `baseline._origin_aggregates`;
+    `_calibration_document` only writes them out.
+
+    The trap
+    --------
+
+    A second walk is the cheap version and passes almost everything. A bias
+    computed again from the report's forecasts, from anything other than the
+    `actual_bps` and `predicted_bps` the block publishes, agrees with the
+    block's length, its dates, its hit sequence and its miss counts, and
+    publishes a number the block does not support. So the acceptance test has
+    five clauses, one per way the block and the statement can come apart, and
+    each is a mutation target of its own. The fixture's prediction sits one
+    basis point off the median quantile so that "bias against the median" and
+    "bias against the prediction" are different numbers, and one origin sits
+    exactly on its lower bound so that an open bound on either the side or the
+    miss count moves a count.
+
+    Mutation record
+    ---------------
+
+    Disposable copies under `$HOME`, built from `git ls-files --cached --others
+    --exclude-standard`, one copy per mutation, `__pycache__` cleared before
+    each run. `PYTHONDONTWRITEBYTECODE=1`, `python -B`, Python 3.9.6. Scored on
+    `test_baseline` plus `test_ml.GbmExceedanceTests`: a run of `test_baseline`
+    alone is red on
+    `test_every_exceedance_predictor_in_the_package_runs_the_conformance_suite`,
+    because the conformance case for `ml.gbm_exceedance` lives in `test_ml`,
+    and that is a property of the targeted run and not of this block.
+    Unmutated control **green before and after**, zero `expectedFailure`. Each
+    mutation was confirmed present in the copy's `baseline.py` before the run.
+    Kills are named with the assertion that fired; skip counts mean nothing.
+
+      1. **The block written one origin short** -- `_calibration_document`
+         writes `calibration.origins[:-1]`. Clause 1 fires in the acceptance
+         test, `AssertionError: 11 != 12`. Also red, and expected:
+         `test_a_statement_read_back_from_the_record_carries_the_block` and
+         `CalibrationDocumentTests`' round trip, each `AssertionError` on
+         object inequality, because the reader decodes the short block.
+      2. **The block dated by `feature_date`** instead of `scored_date`, in
+         `_origin_coverage`. Kills only the acceptance test, at clause 2:
+         `AssertionError: Lists differ: ['2026-03-02', ...] != ['2026-03-05',
+         ...]`. The round trip survives it -- a wrong date round-trips -- which
+         is why clause 2 compares against the fold grid and not the reader.
+      3. **The series from a second walk, bounds open at the lower end** --
+         `interval_calibration` reads the aggregates off `origins` and the
+         coverage series off `forecasts` again with `lower < actual <= upper`.
+         The acceptance test fires at clause 3, `AssertionError: Lists differ:
+         [... 1.0 ...] != [... 0.0 ...]` at the on-bound origin. Also red:
+         `IntervalCalibrationTests`'
+         `test_an_actual_on_its_own_bound_is_covered_as_the_backtest_counts_it`,
+         `AssertionError: 0.5 != 1.0`.
+      4. **`misses_below` from a second walk, `actual <= lower`.** Clauses 1-3
+         pass; clause 4 fires, `AssertionError: 13.0 != 12` -- the on-bound
+         origin counted covered and missed. Also red: the read-back round trip,
+         `AssertionError` on `misses_below=2` against `3`, because the reader
+         recomputes the counts from the block.
+      5. **The trap: `mean_bias_bps` from a second walk, against the median
+         quantile** rather than the prediction. Clauses 1-4 pass, as the brief
+         said they would; clause 5 fires, `AssertionError: -1.0 != -2.0`. Also
+         red: the read-back round trip, `AssertionError` on
+         `mean_bias_bps=-2.0` against `-1.0`.
+      6. **The fold-count refusal removed** (`if False:`), so `zip` silently
+         truncates. Kills exactly
+         `test_a_report_whose_folds_and_forecasts_disagree_in_count_is_refused`,
+         `AssertionError: ValueError not raised`. A guard of this block's own,
+         outside the acceptance criterion, and recorded as such.
+      7. **Re-run, because this block moved its code: the upper bound opened**
+         -- `_origin_coverage` scoring `actual >= upper` as `above`. The closed
+         indicator used to live in `_coverage_indicators`, which B50 deleted,
+         and `IntervalCalibrationTests`' mutation 6 and
+         `CalibrationDocumentTests`' mutation 4 name that function. Kills
+         exactly `test_an_actual_on_its_own_bound_is_covered_as_the_backtest_counts_it`,
+         `AssertionError: 0.5 != 1.0`: the earlier record stands at its new
+         address. The acceptance test survives this one -- its on-bound origin
+         is on the *lower* bound -- which is why the upper bound keeps its own
+         guard.
+    """
+
+    PURGE = 2
+    HALF_WIDTH = 5.0
+    #: The prediction's offset from the centre of its band -- and so from the
+    #: median quantile. Non-zero so the two are not interchangeable.
+    PREDICTION_OFFSET = 1.0
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.panel = self.root / "panel.csv"
+        self.panel.write_text("date,spread_bps\n2026-03-02,1.0\n", encoding="utf-8")
+        self.registry = self.root / "sources.json"
+        self.registry.write_text(
+            json.dumps({"sources": {}}, indent=2) + "\n", encoding="utf-8"
+        )
+
+    def _report(self):
+        forecasts = []
+        for position in range(PER_ORIGIN_ORIGINS):
+            centre = 10.0 + position
+            lower = centre - self.HALF_WIDTH
+            upper = centre + self.HALF_WIDTH
+            if position in PER_ORIGIN_BELOW:
+                actual = lower - 3.0
+            elif position in PER_ORIGIN_ABOVE:
+                actual = upper + 4.0
+            elif position == PER_ORIGIN_ON_LOWER_BOUND:
+                actual = lower
+            else:
+                actual = centre
+            span = upper - lower
+            forecasts.append(
+                Forecast(
+                    actual,
+                    centre + self.PREDICTION_OFFSET,
+                    lower,
+                    upper,
+                    (lower, lower + span / 4.0, centre, upper - span / 4.0, upper),
+                )
+            )
+        start = date(2026, 3, 2)
+        folds = tuple(
+            ScoredFold(
+                train_start=start,
+                train_end=start + timedelta(days=index),
+                train_rows=20 + index,
+                feature_date=start + timedelta(days=index),
+                scored_date=start + timedelta(days=index + CALIBRATION_HORIZON_DAYS),
+            )
+            for index in range(PER_ORIGIN_ORIGINS)
+        )
+        covered = sum(
+            item.lower_bps <= item.actual_bps <= item.upper_bps for item in forecasts
+        )
+        return BacktestReport(
+            forecasts=forecasts,
+            mae_bps=sum(abs(item.actual_bps - item.predicted_bps) for item in forecasts)
+            / len(forecasts),
+            interval_coverage=covered / len(forecasts),
+            folds=folds,
+            quantile_levels=tuple(QUANTILE_LEVELS),
+            features=FEATURES,
+            sources=("fred_macro_latest_vintage",),
+            field_sources=(("fred_macro_latest_vintage", "DGS10"),),
+            purge_days=self.PURGE,
+            decision_time=DECISION_TIME,
+            panel_rows=len(forecasts),
+            panel_first_date=start,
+            panel_last_date=start + timedelta(days=len(forecasts)),
+        )
+
+    def _document(self, report):
+        return json.loads(
+            json.dumps(
+                backtest_document(
+                    report,
+                    panel_path=self.panel,
+                    registry_path=self.registry,
+                    model="persistence",
+                )
+            )
+        )
+
+    def test_the_per_origin_block_agrees_with_the_statement_it_sits_in(self):
+        """The acceptance criterion, and the mutation target for all five clauses.
+
+        Everything is read off the record through JSON, and every expected value
+        is either another field of the same record or the report's fold grid --
+        never a number pinned from a run.
+        """
+
+        report = self._report()
+        document = self._document(report)
+        metrics = document["metrics"]
+        statement = metrics["interval_calibration"]
+        block = statement["origins"]
+        series = baseline._decode_indicator_runs(
+            statement["coverage_series"]["runs"],
+            statement["coverage_series"]["length"],
+        )
+
+        # The fixture is what it says: one actual exactly on its lower bound.
+        on_bound = block[PER_ORIGIN_ON_LOWER_BOUND]
+        self.assertEqual(on_bound["actual_bps"], on_bound["quantiles_bps"][0])
+
+        # 1. One entry per scored forecast.
+        self.assertEqual(len(block), metrics["forecast_count"])
+
+        # 2. The fold grid's scored dates, in order.
+        self.assertEqual(
+            [entry["scored_date"] for entry in block],
+            [fold.scored_date.isoformat() for fold in report.folds],
+        )
+
+        # 3. The hit sequence the sides imply is the published coverage series.
+        self.assertEqual(
+            [1.0 if entry["side"] == "inside" else 0.0 for entry in block], series
+        )
+
+        # 4. Every origin is covered or missed on exactly one side.
+        self.assertEqual(
+            statement["misses_below"] + statement["misses_above"] + sum(series),
+            metrics["forecast_count"],
+        )
+
+        # 5. The bias recomputes from the block's own actuals and predictions.
+        self.assertEqual(
+            statement["mean_bias_bps"],
+            sum(entry["actual_bps"] - entry["predicted_bps"] for entry in block)
+            / len(block),
+        )
+
+    def test_a_statement_read_back_from_the_record_carries_the_block(self):
+        """The round trip `CalibrationDocumentTests` holds, on a fixture with sides.
+
+        `calibration_from_document` decodes the origins and recomputes the
+        three aggregates from them; the result equals the run's own object.
+        """
+
+        report = self._report()
+        seed = baseline._report_seed(
+            report, hashlib.sha256(self.panel.read_bytes()).hexdigest()
+        )
+        expected = interval_calibration(report, seed=seed)
+
+        self.assertEqual(calibration_from_document(self._document(report)), expected)
+
+    def test_a_record_written_before_the_block_reads_back_without_it(self):
+        """Absent, not invented: a pre-B50 record still resamples."""
+
+        document = self._document(self._report())
+        statement = document["metrics"]["interval_calibration"]
+        for key in ("origins", "misses_below", "misses_above", "mean_bias_bps"):
+            del statement[key]
+
+        recomputed = calibration_from_document(document)
+
+        self.assertIsNone(recomputed.origins)
+        self.assertIsNone(recomputed.misses_below)
+        self.assertIsNone(recomputed.misses_above)
+        self.assertIsNone(recomputed.mean_bias_bps)
+
+    def test_a_report_whose_folds_and_forecasts_disagree_in_count_is_refused(self):
+        """Pairing positionally across a mismatch would date every origin wrongly."""
+
+        report = dataclasses.replace(self._report(), folds=self._report().folds[:-1])
+
+        with self.assertRaises(ValueError):
+            interval_calibration(report, seed=CALIBRATION_SEED)
 
 
 class BacktestRecordSeedTests(unittest.TestCase):
