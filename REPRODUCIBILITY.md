@@ -133,6 +133,8 @@ PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-sofr
 PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-tgcr
 PYTHONPATH=src python3 -m repo_model.cli fetch nyfed-bgcr
 PYTHONPATH=src python3 -m repo_model.cli fetch fred-macro
+PYTHONPATH=src python3 -m repo_model.cli fetch treasury-bill-rates
+PYTHONPATH=src python3 -m repo_model.cli fetch fr2004
 ```
 
 Downloads are written beneath `data/raw/` with a retrieval timestamp, SHA-256
