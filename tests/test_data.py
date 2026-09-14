@@ -3448,7 +3448,7 @@ class FR2004EraIdentityTests(unittest.TestCase):
     `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` carries 700
     weekly as-of dates from 2013-04-03, and only 243 of them -- 2022-01-05
     onwards -- carry all thirteen. On the other 457 the identity came back
-    `not_evaluable`, which is honest and is also five sixths of the history
+    `not_evaluable`, which is honest and is also about two thirds of the history
     behind a guard that could not fail. The source's vocabulary has a history:
     there is no floating-rate-note bucket (`PDPOSGS-BFRN`) before 2015-01-07, and
     the over-eleven-year nominal coupon bucket is one series (`PDPOSGSC-G11`)
@@ -3853,6 +3853,73 @@ class FR2004ExtractCountProseTests(unittest.TestCase):
        failure, this test, `AssertionError: Lists differ`, naming two
        contradictions at `tests/test_data.py:FR2004EraIdentityTests`:
        `says '1960'` and `says '244'`.
+
+    Shares
+    ------
+
+    The acceptance criterion of A39 is
+    `test_no_prose_site_states_a_share_the_extract_counts_contradict`. The
+    `IdentityEra` and `FR2004EraIdentityTests` sites said the 457 uncovered
+    dates were "five sixths" of the history. They are 457/700 = 0.653, about
+    two thirds; five sixths is 0.833. Nothing in the counts test could see it,
+    because it reads digits and the claim was in words. Both sites now say
+    "about two thirds". Five sixths was not true of the export either: 1716 of
+    its 1960 dates lack the current terms, 0.876, nearer seven eighths.
+
+    **Recomputed, never pinned.** The shares come from `measured()`, the same
+    counterfactual evaluation the counts test uses: covered / total and
+    uncovered / total. A stated share passes if it lies within
+    `SHARE_TOLERANCE` of either. No wording is matched as a string; a site
+    that said "65%" or "two-thirds" passes for the same reason "about two
+    thirds" does, and "two thirds" would fail the day the extract's shares
+    moved away from it.
+
+    **The tolerance is 0.025**, because the prose rounds a share to a vulgar
+    fraction and the guard has to accept the rounding while refusing the
+    neighbours. Today's shares are 0.347 and 0.653. One third and two thirds
+    sit 0.014 from them, inside. The nearest other fraction the guard reads,
+    with any denominator up to ten, is three eighths or five eighths at 0.028,
+    outside; one half is 0.153 off and five sixths 0.180. A whole-percent
+    figure rounds by at most 0.005, inside. A wider tolerance would let
+    five eighths pass for two thirds; a narrower one would refuse the plain
+    reading of 457 of 700.
+
+    **Forms read**, after whitespace is collapsed: a plural fraction with a
+    numerator from `one` to `nine` and a denominator from `thirds` to `tenths`,
+    `quarters` or `fourths`, spaced or hyphenated ("two thirds",
+    "five-sixths"); a singular fraction after `a` or `one` *followed by `of`*
+    ("a third of"), since without the `of`, "a third era" is an ordinal; "a
+    half", "one half", "half of" and "half the"; and a percentage, `N%`,
+    `N per cent` or `N percent`. **Not read:** a share as digits ("457/700",
+    "0.65") -- the counts test reads "457 of 700" as a pair, which is the form
+    the sites use; a singular fraction with no `of`; "halves", "twice",
+    "one in three", "three to one"; and a quantifier with no number in it --
+    "most", "the majority", "nearly all". A share of something other than the
+    extract's dates is also read as one, and would fail loudly, not pass. The
+    test cannot tell *which* side a share describes: "a third of the history
+    left unchecked" would pass, because a third is the covered share.
+
+    Mutation record, 14 September 2026, set up exactly as the counts record
+    above (disposable copy under `$HOME` from `git ls-files`, python3 3.9.6
+    `-B`, `PYTHONDONTWRITEBYTECODE=1`, this class run with `tests/` on the
+    path). Each script asserted the replaced text occurred exactly once and
+    that the mutated text was present and the file changed before scoring;
+    each reverted and confirmed the file byte-identical to the mount's.
+    Unmutated control green before the first and after the last. Each writes
+    back the ratio A39 corrected:
+
+    1. **`src/repo_model/data.py`, `IdentityEra`** -- "also about two thirds
+       of the history left unchecked" to "also five sixths of the history left
+       unchecked". One failure, this test, `AssertionError: Lists differ`:
+       `src/repo_model/data.py:IdentityEra: says 'five sixths' (0.833), but
+       the extract covers 243/700 = 0.347 of its as-of dates and leaves
+       457/700 = 0.653`. The counts test stayed green.
+    2. **`tests/test_data.py`, `FR2004EraIdentityTests`** -- "is also about
+       two thirds of the history behind a guard" to "is also five sixths of
+       the history behind a guard". One failure, this test,
+       `AssertionError: Lists differ`, the same message at
+       `tests/test_data.py:FR2004EraIdentityTests`. The counts test stayed
+       green.
     """
 
     ROOT = Path(__file__).parents[1]
@@ -3935,6 +4002,73 @@ class FR2004ExtractCountProseTests(unittest.TestCase):
 
         # Not vacuous: a moved site or a rewritten pattern would otherwise pass
         # by reading nothing.
+        self.assertGreater(claims, 0)
+        self.assertEqual(contradictions, [], "\n".join(contradictions))
+
+    #: Share tolerance, in the share's own units. Justified in the class
+    #: docstring, "Shares".
+    SHARE_TOLERANCE = 0.025
+
+    NUMERATORS = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    }
+    DENOMINATORS = {
+        "third": 3, "quarter": 4, "fourth": 4, "fifth": 5, "sixth": 6,
+        "seventh": 7, "eighth": 8, "ninth": 9, "tenth": 10,
+    }
+    # "a third of", "one quarter of": singular needs "of", or "a third era"
+    # would read as a share. "two thirds", "five-sixths": plural is never an
+    # ordinal, so it stands alone.
+    SINGULAR_SHARE = re.compile(
+        r"\b(a|one)[\s-]+(" + "|".join(DENOMINATORS) + r")\s+of\b",
+        re.IGNORECASE,
+    )
+    PLURAL_SHARE = re.compile(
+        r"\b(" + "|".join(NUMERATORS) + r")[\s-]+("
+        + "|".join(DENOMINATORS) + r")s\b",
+        re.IGNORECASE,
+    )
+    HALF_SHARE = re.compile(r"\b(?:(?:a|one)[\s-]+half|half\s+(?:of|the))\b",
+                            re.IGNORECASE)
+    PERCENT_SHARE = re.compile(
+        r"(?<![\w.])(\d{1,3}(?:\.\d+)?)\s*(?:%|per\s?cent\b)", re.IGNORECASE
+    )
+
+    def stated_shares(self, text):
+        """Yield (matched text, stated share) for every share `text` states."""
+        for match in self.SINGULAR_SHARE.finditer(text):
+            yield match.group(0), 1 / self.DENOMINATORS[match.group(2).lower()]
+        for match in self.PLURAL_SHARE.finditer(text):
+            yield match.group(0), (
+                self.NUMERATORS[match.group(1).lower()]
+                / self.DENOMINATORS[match.group(2).lower()]
+            )
+        for match in self.HALF_SHARE.finditer(text):
+            yield match.group(0), 0.5
+        for match in self.PERCENT_SHARE.finditer(text):
+            yield match.group(0), float(match.group(1)) / 100
+
+    def test_no_prose_site_states_a_share_the_extract_counts_contradict(self):
+        total, covered, uncovered = self.measured()
+        shares = (covered / total, uncovered / total)
+        where = (
+            f"the extract covers {covered}/{total} = {shares[0]:.3f} of its "
+            f"as-of dates and leaves {uncovered}/{total} = {shares[1]:.3f}"
+        )
+
+        claims = 0
+        contradictions = []
+        for site, text in self.sites():
+            text = " ".join(text.split())
+            for said, stated in self.stated_shares(text):
+                claims += 1
+                if all(abs(stated - share) > self.SHARE_TOLERANCE for share in shares):
+                    contradictions.append(
+                        f"{site}: says {said!r} ({stated:.3f}), but {where}"
+                    )
+
+        # Not vacuous, as for counts.
         self.assertGreater(claims, 0)
         self.assertEqual(contradictions, [], "\n".join(contradictions))
 
