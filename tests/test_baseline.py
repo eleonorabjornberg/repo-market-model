@@ -8751,5 +8751,152 @@ class SeedMaterialTests(unittest.TestCase):
         self.assertTrue(checked, "no published record carries an exceedance seed")
 
 
+class SiblingSeedMaterialTests(unittest.TestCase):
+    """B47: the comparison and exceedance material pinned, as B46 pinned the backtest's.
+
+    B46 left two survivors, stated in `SeedMaterialTests`: dropping the sort from
+    `_comparison_seed_material` or from `_exceedance_seed_material` keeps the
+    whole suite green. The reason is specific. **No published comparison or
+    exceedance record lists its features out of order**, so the record tests
+    feed each material step only sorted lists, and on sorted input a sorted join
+    and an unsorted one are the same string. The material is identical on every
+    record we have; it differs only on input we have never written -- a run
+    declaring `spread_bps,sofr_volume` would publish a seed its own record could
+    not reproduce. A golden test over deliberately unsorted input is the one
+    thing that can see it, so each test here fixes its material over such a
+    list.
+
+    The decision time carries seconds, `16:00:07`, for the matching reason.
+    Every published record's decision time is whole minutes, so the record tests
+    see a seconds component that is always `:00`, and a material step that
+    zeroed the seconds would agree with every record we have.
+
+    Mutations, in a disposable copy built from `git ls-files`, with
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`. Each was applied inside the
+    named function only, and the mutated text confirmed present in that function
+    before the run. The unmutated control -- the whole suite, and the subset
+    `SiblingSeedMaterialTests`, `SeedMaterialTests`, `BacktestRecordSeedTests` --
+    was green before; the subset was green after.
+
+    1. **Drop the sort from `_comparison_seed_material`** -- `sorted(features_`
+       to `(features_`, both lists. Whole suite: one failure,
+       `test_the_comparison_material_is_these_bytes`, `AssertionError`,
+       `'spread_bps,sofr_volume' != 'sofr_volume,spread_bps'` in the tuple
+       comparison. Nothing else fires. Each list alone (only `features_a`, only
+       `features_b`), subset only: the same test, `AssertionError`, on that
+       list's component (`'tgcr_rate,spread_bps' != 'spread_bps,tgcr_rate'` for
+       `features_b`), so both sorts are pinned, not one.
+    2. **Drop the sort from `_exceedance_seed_material`** -- `",".join(features)`.
+       Whole suite: one failure, `test_the_exceedance_material_is_these_bytes`,
+       `AssertionError`, `'spread_bps,sofr_volume' != 'sofr_volume,spread_bps'`.
+       Nothing else fires.
+    3. **Drop the seconds from `_comparison_seed_material`** --
+       `decision_time.isoformat(timespec="minutes")`. Whole suite:
+       `test_the_comparison_material_is_these_bytes`, `AssertionError`,
+       `'16:00' != '16:00:07'`, and B46's
+       `test_every_published_comparison_seed_recomputes_from_its_record`, one
+       `AssertionError` per record.
+    4. **Drop the seconds from `_exceedance_seed_material`** -- the same edit.
+       Whole suite: `test_the_exceedance_material_is_these_bytes`,
+       `AssertionError`, `'16:00' != '16:00:07'`, and B46's
+       `test_every_published_exceedance_seed_recomputes_from_its_record`, one
+       `AssertionError` per seed.
+
+    **Mutations 3 and 4 were never survivors.** B46 recorded them killed by its
+    record tests, and they still are: the golden tests add a second, direct
+    witness, not the only one. What the seconds in the input add is mutations 5
+    and 6, which the record tests cannot see:
+
+    5. **Zero the seconds in `_comparison_seed_material`** --
+       `decision_time.replace(second=0).isoformat()`. Subset:
+       `test_the_comparison_material_is_these_bytes` alone, `AssertionError`,
+       `'16:00:00' != '16:00:07'`; B46's record test stays green.
+    6. **Zero the seconds in `_exceedance_seed_material`** -- the same edit.
+       Subset: `test_the_exceedance_material_is_these_bytes` alone,
+       `AssertionError`, `'16:00:00' != '16:00:07'`.
+    """
+
+    DIGEST = "0123456789abcdef" * 4
+
+    def test_the_comparison_material_is_these_bytes(self):
+        """`_comparison_seed_material`'s exact output, and its digest.
+
+        Both feature lists are passed out of order -- `spread_bps` before
+        `sofr_volume`, `tgcr_rate` before `spread_bps` -- so each sort is
+        observable on its own, and the decision time carries seconds, `16:00:07`,
+        so the component is not one a minutes form could agree with by accident.
+        Every other property is a literal too: the component order (panel,
+        model a, features a, model b, features b, decision time), the `\\x00`
+        join, and the seed those bytes digest to.
+        """
+
+        material = baseline._comparison_seed_material(
+            self.DIGEST,
+            "ridge",
+            ["spread_bps", "sofr_volume"],
+            "persistence",
+            ["tgcr_rate", "spread_bps"],
+            time(16, 0, 7),
+        )
+
+        self.assertEqual(
+            material,
+            (
+                self.DIGEST,
+                "ridge",
+                "sofr_volume,spread_bps",
+                "persistence",
+                "spread_bps,tgcr_rate",
+                "16:00:07",
+            ),
+        )
+        self.assertEqual(
+            "\x00".join(material).encode("utf-8"),
+            b"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            b"\x00ridge\x00sofr_volume,spread_bps\x00persistence"
+            b"\x00spread_bps,tgcr_rate\x0016:00:07",
+        )
+        self.assertEqual(baseline._seed_from(material), 1846424258)
+
+    def test_the_exceedance_material_is_these_bytes(self):
+        """`_exceedance_seed_material`'s exact output, and its digest.
+
+        The feature list is passed out of order and the decision time carries
+        seconds, for the reasons the comparison test gives. The rest is literal
+        as well: the component order (panel, model, features, gap, decision
+        time, taus, tau), the `str` of the gap, the `:g` taus -- `5.0` and
+        `10.0` in, `"5,10"` and `"10"` out --, the `\\x00` join, and the seed.
+        """
+
+        material = baseline._exceedance_seed_material(
+            self.DIGEST,
+            "logistic",
+            ["spread_bps", "sofr_volume"],
+            6,
+            time(16, 0, 7),
+            [5.0, 10.0],
+            10.0,
+        )
+
+        self.assertEqual(
+            material,
+            (
+                self.DIGEST,
+                "logistic",
+                "sofr_volume,spread_bps",
+                "6",
+                "16:00:07",
+                "5,10",
+                "10",
+            ),
+        )
+        self.assertEqual(
+            "\x00".join(material).encode("utf-8"),
+            b"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            b"\x00logistic\x00sofr_volume,spread_bps\x006\x0016:00:07\x005,10\x0010",
+        )
+        self.assertEqual(baseline._seed_from(material), 1925368273)
+
+
 if __name__ == "__main__":
     unittest.main()
