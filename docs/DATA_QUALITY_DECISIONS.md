@@ -560,11 +560,17 @@ concordance rather than by matching series names. From 2013-04-03 the total equa
 date, in three eras whose component sets differ: no FRN bucket until 2015-01-07, and one
 `PDPOSGSC-G11` bucket until 2021-12-29, split into `-G11L21` and `-G21` from 2022-01-05.
 So the thirteen components are the current era's, and the identity is declared per
-era (`eras` in `metadata/sources.json`): each week is checked against its own era's terms. The export stays gitignored under
-`data/raw/fr2004/`; `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` is
-the tracked extract (the total and every non-`C` component, lines copied byte for byte),
-made and re-checked by `scripts/extract_fr2004.py`, whose sidecar records the export's
-digest and the three eras.
+era (`eras` in `metadata/sources.json`): each week is checked against its own era's terms. Two files now carry FR 2004 and they must not be taken for each other.
+`tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv` is the tracked **extract**
+(the total and every non-`C` component, lines copied byte for byte), made and re-checked by
+`scripts/extract_fr2004.py`, whose sidecar records the export's digest and the three eras; it
+is what every figure here about weekly as-of dates describes. The **export** it is cut from is
+no longer only gitignored under `data/raw/fr2004/`: the adapter's own fetched copy is tracked
+beside the other funding snapshots under
+`tests/fixtures/snapshots/funding_inputs/nyfed_fr2004/`, and it carries every series the report
+has published since 1998-01-28, so its as-of date count is larger and is not the extract's.
+`FR2004ExtractCountProseTests` recomputes the extract's counts and fails any prose site that
+states a different one.
 
 Wired: the `nyfed_fr2004` adapter supplies the column through `contract.FEATURE_FIELDS`,
 millions converted to billions. It dates each series by its own as-of date, never the
