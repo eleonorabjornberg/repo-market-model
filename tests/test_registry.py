@@ -715,13 +715,14 @@ class RegistryProseAgainstTrackedSidecarsTests(unittest.TestCase):
        year-reading rule would be a Treasury rule, not a registry rule.
 
     What it does not reach, and these are findings rather than omissions:
-    numerical claims about a fixture's contents. `nyfed_fr2004.identities[0]`
-    `eras_note` still says the identity is evaluable on "243 of the tracked
-    extract's 700 weekly as-of dates"; the promoted extract carries 1960 as-of
-    dates from 1998-01-28 and the thirteen current terms are all present on 244
-    of them. That is a different field from the two this block was queued for,
-    it is restated in `src/repo_model/data.py` and `tests/test_data.py`, and it
-    is left for its own block. The same field's `tolerance_note` still holds on
+    numerical claims about a fixture's contents. This block reported
+    `nyfed_fr2004.identities[0].eras_note`'s "243 of the tracked extract's 700
+    weekly as-of dates" as stale against the promoted export's 1960 as-of dates
+    and 244 covered ones. That was a misreading, corrected by A38: the note
+    describes `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv`,
+    a different tracked file, on which both figures hold.
+    `tests/test_data.py`'s `FR2004ExtractCountProseTests` now recomputes them
+    for all three sites that state them. The same field's `tolerance_note` still holds on
     the promoted file: the residual at 2026-08-26 is 5.7e-14 and the globbed
     sum is 492637 against 477607 millions.
 
