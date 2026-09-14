@@ -73,5 +73,16 @@ before the decision date rather than the realised record.
 This is coverage of the days that motivated the feature. **It is not evidence that the model scores
 better.** Every feature this repository had previously built made the exceedance metric worse at
 every declared threshold — see the single-feature records in `docs/runs/`. The prior for a new
-feature here is that it does not help. The rebuild and the re-score decide it; nothing above should
-be read as anticipating them.
+feature here is that it does not help. The rebuild and the re-score have since decided it, and they decided it against that prior.
+Scored like for like against the control -- same panel, same purge, same fold count, because
+these columns are computed from the scored date and declare no source -- the calendar set is the
+first this repository has built that improves the threshold-weighted metric rather than degrading
+it. It improves the skill at the two widest declared thresholds and costs the narrower one, and it
+makes the log score unavailable at one threshold, which is the same trade the fitted tail makes.
+The comparison is `docs/runs/exceedance_gbm_conformal_calendar_mh61.json` against
+`docs/runs/exceedance_gbm_conformal_mh61.json`; the records carry the numbers.
+
+The prior stated above was the right prior to hold and it was wrong here. Both halves of that are
+worth keeping: the sentence about every previously built feature is still true of every feature
+*derived from the target* -- the lags, the GARCH variance, the ARX forecast -- and the funding and
+market columns remain unscored, because they were declared and empty. Three cases, three answers.
