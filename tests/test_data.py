@@ -1,6 +1,8 @@
+import ast
 import contextlib
 import hashlib
 import io
+import re
 import sys
 import tempfile
 import unittest
@@ -3779,6 +3781,162 @@ class FR2004EraIdentityTests(unittest.TestCase):
             DataContractError, r"must restate its most recent era"
         ):
             self.evaluate(rows, drifted)
+
+
+class FR2004ExtractCountProseTests(unittest.TestCase):
+    """No prose site states an as-of-date count the tracked FR 2004 extract contradicts.
+
+    The acceptance criterion of A38. Three places say how many weekly as-of
+    dates the extract carries and on how many of them the identity, declared
+    over the current thirteen terms alone, can be evaluated:
+    `nyfed_fr2004.identities[0].eras_note` in `metadata/sources.json`, the
+    `IdentityEra` docstring in `src/repo_model/data.py`, and the
+    `FR2004EraIdentityTests` docstring above. `tests/test_docs_freshness.py`
+    does not read a registry note or a docstring, so a figure retyped there is
+    right when it is typed and unguarded afterwards.
+
+    The finding that closes the question
+    ------------------------------------
+
+    A38 was queued to correct the figure: A37 had reported the three sites
+    stale, because the promoted export
+    `tests/fixtures/snapshots/funding_inputs/nyfed_fr2004/` carries 1960 as-of
+    dates from 1998-01-28 and all thirteen current terms on 244 of them. **The
+    sites were not stale.** They describe the extract, and the extract is a
+    different tracked file:
+    `tests/fixtures/snapshots/fr2004/pdposgst_tot_and_components.csv`, the one
+    `scripts/extract_fr2004.py` writes, `FR2004EraIdentityTests.EXTRACT` reads
+    and the third site names by path. Measured on 14 September 2026 it carries
+    700 weekly as-of dates from 2013-04-03, the identity over the current terms
+    is evaluable on 243 of them from 2022-01-05, and `not_evaluable` on the
+    other 457 -- every figure the three sites state. The export is the full
+    New York Fed timeseries file: its 1960 dates are the dates of *any* series
+    since 1998, `PDPOSGST-TOT` appears on 701 of them, and the one extra
+    covered week is 2026-09-02, published after the extract was cut. No prose
+    was changed; this test is what stops the next reading of either file from
+    changing it wrongly.
+
+    **Recomputed, never pinned.** The counts come from the extract through
+    `parse_snapshots` and `validate_accounting_identities`, with the identity's
+    `eras` removed so it is declared over its top-level terms alone -- the
+    counterfactual the prose describes. A claim is a standalone integer that
+    reads as a count of dates: followed within four words by `weekly`,
+    `as-of`, `date(s)`, `week(s)`, `them` or `times`, suffixed `-week`, or
+    preceded by `other`. Each must equal the total, the covered or the
+    uncovered count, and an "N of ... M" pair must put a covered or uncovered
+    count against the total. A count spelled in words is not read.
+
+    Mutation record, 14 September 2026. Each mutation applied in a disposable
+    copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`,
+    `PYTHONDONTWRITEBYTECODE=1`, python3 3.9.6 `-B`, this class run with
+    `tests/` on the path. Each script asserted the mutated text present in the
+    file before running and exited non-zero otherwise; each was reverted and the
+    file confirmed byte-identical to the mount's before the next. Unmutated
+    control green before the first and after the last. Each mutation writes the
+    export's figures into a site -- the correction A38's brief asked for.
+
+    1. **`metadata/sources.json`, `eras_note`** -- "243 of the tracked
+       extract's 700 weekly as-of dates" to "244 of the tracked extract's 1960
+       weekly as-of dates". One failure, this test, `AssertionError: Lists
+       differ`, naming two contradictions at
+       `nyfed_fr2004/identities/0/eras_note`: `says '1960'` and the pair
+       `says "244 of the tracked extract's 1960"`. The 244 is read only as the
+       pair's part, so it is not named on its own.
+    2. **`src/repo_model/data.py`, `IdentityEra`** -- "243 of the tracked
+       extract's 700 weekly dates" to "244 of the tracked extract's 1960 weekly
+       dates". One failure, this test, `AssertionError: Lists differ`, naming
+       the same two contradictions at `src/repo_model/data.py:IdentityEra`.
+    3. **`tests/test_data.py`, `FR2004EraIdentityTests`** -- "carries 700
+       weekly as-of dates from 2013-04-03, and only 243 of them" to "carries
+       1960 weekly as-of dates from 2013-04-03, and only 244 of them". One
+       failure, this test, `AssertionError: Lists differ`, naming two
+       contradictions at `tests/test_data.py:FR2004EraIdentityTests`:
+       `says '1960'` and `says '244'`.
+    """
+
+    ROOT = Path(__file__).parents[1]
+
+    #: (file, class name) whose docstring is a site. The registry site is
+    #: separate because it is a JSON path, not a docstring.
+    DOCSTRING_SITES = (
+        ("src/repo_model/data.py", "IdentityEra"),
+        ("tests/test_data.py", "FR2004EraIdentityTests"),
+    )
+    REGISTRY_SITE = ("nyfed_fr2004", "identities", 0, "eras_note")
+
+    WORD = r"(?!\d)\S+\s+"
+    COUNT_CLAIM = re.compile(
+        r"(?<![\w.-])(\d{2,})(?!\w|\.\d)"
+        r"(?:-weeks?\b|(?=\s+(?:" + WORD + r"){0,4}?"
+        r"(?:weekly|as-of|dates?|weeks?|them|times)\b))"
+    )
+    OTHER_CLAIM = re.compile(r"\bother (\d{2,})(?!\w|\.\d)")
+    PAIR_CLAIM = re.compile(
+        r"(?<![\w.-])(\d{2,}) of (?:" + WORD + r"){0,4}?(\d{2,})(?!\w|\.\d|-\d)"
+    )
+
+    def measured(self):
+        era_tests = FR2004EraIdentityTests(
+            "test_every_fr2004_week_is_checked_against_its_own_eras_components"
+        )
+        rows = era_tests.extract_rows()
+        registry = era_tests.registry()
+        del era_tests.identity(registry)["eras"]
+        evaluation = validate_accounting_identities(rows, registry)[era_tests.KEY]
+        total = len({row.ref_date for row in rows})
+        covered = evaluation.evaluated_ref_dates
+        uncovered = len({item.ref_date for item in evaluation.unevaluated})
+        self.assertEqual(evaluation.violations, ())
+        self.assertEqual(covered + uncovered, total)
+        return total, covered, uncovered
+
+    def sites(self):
+        registry = json.loads(
+            (self.ROOT / "metadata" / "sources.json").read_text(encoding="utf-8")
+        )
+        note = registry
+        for key in self.REGISTRY_SITE:
+            note = note[key]
+        yield "/".join(str(key) for key in self.REGISTRY_SITE), note
+        for relative, name in self.DOCSTRING_SITES:
+            tree = ast.parse((self.ROOT / relative).read_text(encoding="utf-8"))
+            found = [
+                node for node in ast.walk(tree)
+                if isinstance(node, ast.ClassDef) and node.name == name
+            ]
+            self.assertEqual(len(found), 1, f"{relative}:{name}")
+            docstring = ast.get_docstring(found[0], clean=False)
+            self.assertIsNotNone(docstring, f"{relative}:{name}")
+            yield f"{relative}:{name}", docstring
+
+    def test_no_prose_site_contradicts_the_extract_counts(self):
+        total, covered, uncovered = self.measured()
+        counts = {total, covered, uncovered}
+        where = f"the extract has {total} as-of dates, {covered} covered, {uncovered} not"
+
+        claims = 0
+        contradictions = []
+        for site, text in self.sites():
+            text = " ".join(text.split())
+            for pattern in (self.COUNT_CLAIM, self.OTHER_CLAIM):
+                for match in pattern.finditer(text):
+                    claims += 1
+                    if int(match.group(1)) not in counts:
+                        contradictions.append(
+                            f"{site}: says {match.group(0)!r}, but {where}"
+                        )
+            for match in self.PAIR_CLAIM.finditer(text):
+                part, whole = int(match.group(1)), int(match.group(2))
+                if whole != total or part not in (covered, uncovered):
+                    contradictions.append(
+                        f"{site}: says {match.group(0)!r}, but {where}"
+                    )
+
+        # Not vacuous: a moved site or a rewritten pattern would otherwise pass
+        # by reading nothing.
+        self.assertGreater(claims, 0)
+        self.assertEqual(contradictions, [], "\n".join(contradictions))
 
 
 class TreasurySettlementZeroTests(unittest.TestCase):
