@@ -63,6 +63,19 @@ TREASURY_AUCTIONS_BASE = (
     "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/"
     "v1/accounting/od/auctions_query"
 )
+#: Treasury's "Daily Treasury Bill Rates" export, one CSV per calendar year. The
+#: year is both a path segment and a query value; `fetch_treasury_bill_rates`
+#: builds the rest of the query with `urlencode`.
+TREASURY_BILL_RATES_BASE = (
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/"
+    "daily-treasury-rates.csv"
+)
+#: The New York Fed's Primary Dealer Statistics export of every series, every
+#: as-of date: the file `scripts/extract_fr2004.py` cuts the tracked FR 2004
+#: extract from, in the `As Of Date,Time Series,Value (millions)` shape
+#: `_fr2004_rows` reads. Not `list/timeseries.json`, which is the catalogue of
+#: series names and carries no values.
+NYFED_FR2004_EXPORT_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
 #: The declared set of Form N-MFP archives that constitutes the `sec_nmfp`
 #: source. Committed, because `data/raw/` is not: without it a checkout with an
@@ -331,6 +344,85 @@ def fetch_treasury_auctions(
             payload=payload,
             output_root=output_root,
             suffix="json",
+        )
+    ]
+
+
+def fetch_treasury_bill_rates(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch Treasury's daily bill rates, one snapshot per calendar year in range.
+
+    Treasury publishes the export a year at a time, and `_treasury_bill_rate_rows`
+    reads each year by its own header, so each year is saved as its own
+    unmodified snapshot rather than joined into one file.
+    """
+
+    # Validate before interpolating caller-provided dates into a URL.
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("Treasury bill-rate start date must not follow end date")
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        query = urlencode(
+            {
+                "type": "daily_treasury_bill_rates",
+                "field_tdr_date_value": str(year),
+                "_format": "csv",
+            }
+        )
+        url = f"{TREASURY_BILL_RATES_BASE}/{year}/all?{query}"
+        payload = downloader(url)
+        header = next(csv.reader(io.StringIO(payload.decode("utf-8-sig"))), None)
+        if not header or header[0].strip() != "Date":
+            raise ValueError(
+                f"Treasury bill-rate response for {year} is not the expected CSV "
+                f"format; its first column must be Date"
+            )
+        artifacts.append(
+            _save_snapshot(
+                source_id=TREASURY_BILL_RATES_SOURCE_ID,
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="csv",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
+def fetch_nyfed_fr2004(
+    output_root: Path,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the New York Fed's whole Primary Dealer Statistics export.
+
+    One file, every series and every as-of date. It takes no date range because
+    the endpoint takes none; `_fr2004_rows` reads only the declared series and
+    dates each row by its own `As Of Date`.
+    """
+
+    url = NYFED_FR2004_EXPORT_URL
+    payload = downloader(url)
+    reader = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")))
+    if not reader.fieldnames or not set(FR2004_COLUMNS).issubset(reader.fieldnames):
+        raise ValueError(
+            "New York Fed primary-dealer response is not the expected CSV format; "
+            f"it must carry the columns {list(FR2004_COLUMNS)}"
+        )
+    return [
+        _save_snapshot(
+            source_id=FR2004_SOURCE_ID,
+            url=url,
+            payload=payload,
+            output_root=output_root,
+            suffix="csv",
         )
     ]
 

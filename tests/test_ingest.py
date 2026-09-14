@@ -14,6 +14,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
@@ -58,7 +59,9 @@ from repo_model.ingest import (
     fetch_fred_macro,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp,
+    fetch_nyfed_fr2004,
     fetch_treasury_auctions,
+    fetch_treasury_bill_rates,
     load_snapshot_manifest,
     observations_from_snapshots,
 )
@@ -6861,6 +6864,12 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
         macro_calls = []
         real_rate = cli_data.fetch_nyfed_reference_rate
         real_macro = cli_data.fetch_fred_macro
+        # The bill-rate and FR 2004 fetchers are replaced outright so a trap
+        # subtest over them never reaches the network; what they write is
+        # `TreasuryBillRateAndFr2004FetchTests`' business, not this class's.
+        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004"):
+            self.addCleanup(setattr, cli_data, name, getattr(cli_data, name))
+            setattr(cli_data, name, lambda **_kwargs: [])
 
         def transport(url):
             # Answers any rate name, including one a mutation invents, so a
@@ -6956,7 +6965,9 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
                 # a request to a secured-rates endpoint that does not exist.
                 rate_calls, macro_calls = self.run_fetch(source)
                 self.assertEqual(rate_calls, [])
-                self.assertEqual(len(macro_calls), 1)
+                # `fred-macro` is the fall-through branch; the two sources
+                # added on 13 Sep have their own and must not reach it.
+                self.assertEqual(len(macro_calls), int(source == "fred-macro"))
 
         with self.subTest("an unrecognised source is argparse's refusal"):
             # Refused by the parser's own `choices`, so the refusal cannot
@@ -6964,6 +6975,201 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
             with contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit):
                     cli.main(["fetch", "nyfed-obfr"])
+
+
+class TreasuryBillRateAndFr2004FetchTests(unittest.TestCase):
+    """`fetch` reaches `treasury_bill_rates` and `nyfed_fr2004`.
+
+    ### The finding this class records
+
+    Three panel columns -- `dealer_treasury_position`, `tbill_4w` and
+    `tbill_13w` -- were declared, mapped in `contract.py` and read by adapters
+    that existed (`_fr2004_rows`, `_treasury_bill_rate_rows`), and were empty on
+    every row, because no fetcher could download either source: the only
+    snapshots were tracked fixtures, placed by hand. The same shape as
+    `NyFedRateSourceChoiceTests`' finding, one layer further down: there the
+    fetcher existed and the CLI could not name it, here there was no fetcher.
+
+    What the endpoints return, measured with a real network on 13 Sep 2026 and
+    not assumed:
+
+    * The bill-rate URL recorded in the tracked 2018 fixture's manifest carries
+      a bare `page` key, which `urlencode` cannot write. Dropped, and the
+      download **byte-matched the tracked 2018 fixture** (13875 bytes), as did
+      the form with `page=`. The adapter's URL is that measured form, and a
+      live `fetch treasury-bill-rates` for 2018-2026 byte-matched every tracked
+      year from 2018 through 2025; 2026 differs, the year in progress, as the
+      registry's `limitation` already records.
+    * `markets.newyorkfed.org/api/pd/list/timeseries.json` -- the endpoint the
+      brief for this block named -- is the **catalogue of series names**
+      (`seriesbreak`, `keyid`, `description`) and carries no values;
+      `_fr2004_rows` cannot read it. `api/pd/get/all/timeseries.csv` is the
+      every-series history export in exactly the `As Of Date`, `Time Series`,
+      `Value (millions)` shape the reader requires: 26.7 MB, 1998-01-28 to
+      2026-09-02, with `PDPOSGST-TOT` from 2013-04-03 and the retired
+      `PDPOSGSC-G11` through 2021-12-29 -- the same export the tracked extract
+      was cut from, one week later. The adapter fetches that.
+
+    Each test drives `cli.main(["fetch", ...])` with only the transport
+    replaced, feeds the fake downloader the tracked fixture's own bytes, and
+    then parses what was written with the real reader, so "the adapter writes
+    what the reader consumes" is asserted rather than argued.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Each was confirmed applied
+    (`grep -cF` == 1 on the mutated text before running), run in a disposable
+    copy under `$HOME` built from `git ls-files`, with
+    `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, unmutated control green before
+    and after.
+
+    * **MT** (`test_treasury_bill_rates_fetch_writes_one_encoded_snapshot_per_year`)
+      -- `"field_tdr_date_value": str(year)` in `fetch_treasury_bill_rates`
+      becomes `str(start_date.year)`, so every year's request asks Treasury for
+      the first year's rates under the right path. Kills the test with
+      `AssertionError` on the exact-URL assertion for 2019.
+    * **MF** (`test_fr2004_fetch_writes_the_every_series_export`) --
+      `NYFED_FR2004_EXPORT_URL` becomes the catalogue URL
+      `.../api/pd/list/timeseries.json`. Kills the test with `AssertionError`
+      on the exact-URL assertion; the fake transport answers any URL, so it is
+      the assertion and not a transport error that catches it.
+    """
+
+    BILL_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "snapshots" / "treasury_bills"
+    FR2004_FIXTURE = (
+        REPO_ROOT
+        / "tests"
+        / "fixtures"
+        / "snapshots"
+        / "fr2004"
+        / "pdposgst_tot_and_components.csv"
+    )
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.output_root = Path(self.directory.name) / "raw"
+
+    def run_fetch(self, source, fetcher_name, transport, *extra):
+        """`fetch <source>` through `cli.main`, the real fetcher, a fake transport."""
+
+        real = getattr(cli_data, fetcher_name)
+        self.addCleanup(setattr, cli_data, fetcher_name, real)
+        setattr(
+            cli_data,
+            fetcher_name,
+            lambda **kwargs: real(downloader=transport, **kwargs),
+        )
+        argv = ["fetch", source, *extra, "--output-root", str(self.output_root)]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(argv), 0)
+
+    def assert_snapshot_and_sidecar(self, source_id, url, payload):
+        """Exactly one snapshot for `url`, at `<source_id>/<stamp>_<digest12>.csv`."""
+
+        digest = hashlib.sha256(payload).hexdigest()
+        snapshots = [
+            path
+            for path in (self.output_root / source_id).iterdir()
+            if path.name.endswith(".csv") and digest[:12] in path.name
+        ]
+        self.assertEqual(len(snapshots), 1)
+        snapshot = snapshots[0]
+        self.assertRegex(snapshot.name, r"^\d{8}T\d{6}Z_[0-9a-f]{12}\.csv$")
+        self.assertEqual(snapshot.name.split("_", 1)[1], f"{digest[:12]}.csv")
+        self.assertEqual(snapshot.read_bytes(), payload)
+        sidecar = json.loads(
+            snapshot.with_name(snapshot.name + ".manifest.json").read_text("utf-8")
+        )
+        self.assertEqual(sidecar["url"], url)
+        self.assertEqual(sidecar["sha256"], digest)
+        self.assertEqual(sidecar["source_id"], source_id)
+        self.assertEqual(sidecar["path"], f"{source_id}/{snapshot.name}")
+        datetime.fromisoformat(sidecar["retrieved_at"])
+        return load_snapshot_manifest(
+            snapshot.with_name(snapshot.name + ".manifest.json")
+        )
+
+    def test_treasury_bill_rates_fetch_writes_one_encoded_snapshot_per_year(self):
+        payloads = {
+            year: (self.BILL_FIXTURES / f"daily_treasury_bill_rates_{year}.csv").read_bytes()
+            for year in (2018, 2019)
+        }
+        requested = []
+
+        def transport(url):
+            requested.append(url)
+            year = int(parse_qs(urlparse(url).query)["field_tdr_date_value"][0])
+            return payloads.get(year, payloads[2018])
+
+        self.run_fetch(
+            "treasury-bill-rates",
+            "fetch_treasury_bill_rates",
+            transport,
+            "--start",
+            "2018-06-01",
+            "--end",
+            "2019-02-01",
+        )
+
+        expected = {
+            year: (
+                "https://home.treasury.gov/resource-center/data-chart-center/"
+                f"interest-rates/daily-treasury-rates.csv/{year}/all"
+                f"?type=daily_treasury_bill_rates&field_tdr_date_value={year}"
+                "&_format=csv"
+            )
+            for year in (2018, 2019)
+        }
+        self.assertEqual(requested, [expected[2018], expected[2019]])
+        artifacts = [
+            self.assert_snapshot_and_sidecar(
+                "treasury_bill_rates", expected[year], payloads[year]
+            )
+            for year in (2018, 2019)
+        ]
+        rows = observations_from_snapshots(artifacts)
+        for field in ("tbill_4w_coupon_equivalent", "tbill_13w_coupon_equivalent"):
+            self.assertEqual(
+                {row.ref_date.year for row in rows if row.series_id == field},
+                {2018, 2019},
+            )
+
+        with self.subTest("a non-CSV answer is refused before anything is written"):
+            with self.assertRaisesRegex(ValueError, "first column must be Date"):
+                fetch_treasury_bill_rates(
+                    Path(self.directory.name) / "refused",
+                    "2020-01-01",
+                    "2020-01-02",
+                    lambda _url: b"<html>maintenance</html>",
+                )
+            self.assertFalse((Path(self.directory.name) / "refused").exists())
+
+    def test_fr2004_fetch_writes_the_every_series_export(self):
+        payload = self.FR2004_FIXTURE.read_bytes()
+        requested = []
+
+        def transport(url):
+            # Answers any URL, so a wrong endpoint is caught by the assertion.
+            requested.append(url)
+            return payload
+
+        self.run_fetch("fr2004", "fetch_nyfed_fr2004", transport)
+
+        url = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+        self.assertEqual(requested, [url])
+        artifact = self.assert_snapshot_and_sidecar(FR2004_SOURCE_ID, url, payload)
+        self.assertEqual(artifact.source_id, FR2004_SOURCE_ID)
+        rows = observations_from_snapshots([artifact])
+        self.assertIn("PDPOSGST-TOT", {row.series_id for row in rows})
+
+        with self.subTest("the series catalogue is refused, not saved"):
+            with self.assertRaisesRegex(ValueError, "not the expected CSV format"):
+                fetch_nyfed_fr2004(
+                    Path(self.directory.name) / "refused",
+                    lambda _url: b'{"pd": {"timeseries": []}}',
+                )
+            self.assertFalse((Path(self.directory.name) / "refused").exists())
 
 
 class SnapshotManifestPortabilityTests(unittest.TestCase):
