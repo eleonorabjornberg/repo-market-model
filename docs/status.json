@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "360d6d8",
+  "commit": "7f6429b",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -54,6 +54,7 @@
     "exceedance_arx_mh61.json",
     "exceedance_funding_climatology.json",
     "exceedance_gbm_conformal_arx.json",
+    "exceedance_gbm_conformal_calendar_mh61.json",
     "exceedance_gbm_conformal_garch11.json",
     "exceedance_gbm_conformal_lags3.json",
     "exceedance_gbm_conformal_mh61.json",
