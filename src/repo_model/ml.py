@@ -2756,8 +2756,9 @@ def gbm_exceedance(
     **The gap reaches the fit from the fold loop.** `fit_predict` names
     `purge_days`, so `rolling_exceedance_backtest` hands over the gap it
     derived, as `baseline._fit_at_origin` does for `backtest`; a calibration
-    needs it and `none` reads nothing. A caller that passes none --
-    `event_eval` -- gets the fitter's refusal under a calibration.
+    needs it and `none` reads nothing. `event_eval.evaluate_event_window`
+    hands over the gap it derived by the same rule since B52; a caller that
+    passes none gets the fitter's refusal under a calibration.
 
     **Before B39 the tail could not be measured.** `backtest` and `compare`
     score the quantile vector, which a tail by design never moves, and this

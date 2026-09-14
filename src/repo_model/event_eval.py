@@ -141,6 +141,7 @@ from .baseline import (
     _derive_purge,
     _feature_index,
     _ml_libraries,
+    _reads_purge_days,
     _validate_prediction,
     _validate_taus,
 )
@@ -500,7 +501,10 @@ def evaluate_event_window(
             `rolling_persistence_backtest` scores; a second target argument
             could disagree with the panel it was aligned to, and now cannot.
         fit_predict: an `ExceedancePredictor`, called once with the training
-            rows, the feature rows and `taus`. Returns `ExceedanceCurves`.
+            rows, the feature rows and `taus` -- and with `purge_days=` the
+            derived gap when its signature names that parameter, by
+            `baseline._reads_purge_days`, as the rolling exceedance path does
+            (B52). Returns `ExceedanceCurves`.
         window: the declared knowledge-holdout window, inclusive at both ends.
             An `EventWindow`, not loose dates, and the reason is the checksum.
             `load_event_windows` refuses a declaration without one; taking the
@@ -592,11 +596,17 @@ def evaluate_event_window(
     ]
     _assert_feature_rows_clear_the_gap(ordered_dates, feature_index, scored_index, purge)
 
-    prediction = fit_predict(
-        tuple(rows[i] for i in train_index),
-        tuple(rows[i] for i in feature_index),
-        tau_family,
-    )
+    # `rolling_exceedance_backtest`'s rule on this path (B52): a predictor that
+    # names `purge_days` -- `ml.gbm_exceedance`, whose calibration splits its
+    # training rows by date -- is handed the gap derived above, and every other
+    # predictor is called exactly as it always was. Before this, a calibrated
+    # fit could not be scored here at all: the fitter refuses a defaulted gap.
+    train_rows = tuple(rows[i] for i in train_index)
+    feature_rows = tuple(rows[i] for i in feature_index)
+    if _reads_purge_days(fit_predict):
+        prediction = fit_predict(train_rows, feature_rows, tau_family, purge_days=purge)
+    else:
+        prediction = fit_predict(train_rows, feature_rows, tau_family)
     exceedance = _validate_prediction(prediction, len(scored_index), tau_family)
     _check_fitter_stayed_inside(
         prediction.features_read, declared, sources, purge
