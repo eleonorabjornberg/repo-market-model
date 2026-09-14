@@ -6316,6 +6316,262 @@ class WeeklyCarryForwardTests(unittest.TestCase):
             self.assertNotIn("carried_forward", manifest)
 
 
+class PanelYear2025DiagnosticTests(unittest.TestCase):
+    """Is 2025 different in the panel, or only in the target? (A40)
+
+    The acceptance criterion and every mutation target is
+    `test_2025_moves_the_target_and_not_the_panels_quality`.
+
+    The model track's weakest year is 2025 under every configuration it tried,
+    with misses on both sides of the interval. This block asks whether the data
+    explains that, and answers from the published build. The figures are in the
+    A40 report, not here: what this test holds is the structural shape of the
+    answer, so that a rebuild which makes the answer false fails here rather
+    than leaving a stale reading standing.
+
+    **What the manifest does and does not record.** A40's brief said the
+    manifest records, per built column, its holes, its rule 8 settlement zeros
+    and its rule 10 carried values. It records the first only, and only as a
+    total over the whole panel: `settlement_zeros` and `carried_forward` are
+    kept out of the file manifest on purpose (A27, A36), and nothing records
+    any of the three per year. So the per-year counts are recomputed, from
+    the same build the manifest describes: the tracked `funding_inputs/`
+    fixtures, built with the manifest's own columns, cutoff and decision time.
+    That build reproduces the manifest's digest, which is the first subtest and
+    what makes the rest a statement about the published panel rather than about
+    a panel. The gitignored panel file is never read.
+
+    **The answer, in three clauses**, after the premise above.
+
+    1. *The panel's quality does not move in 2025.* No built column has a hole
+       in a 2025 row. The share of rows that are rule 8 zeros, and the share
+       that are rule 10 carries, lie inside the range the comparison years span,
+       column by column. This negative result is the finding that hands the
+       question back to the model track.
+    2. *SOFR does not move against its own repo peer in 2025; the repo complex
+       moves against IORB.* The mean absolute day-to-day change of
+       `sofr - tgcr` in 2025 is no larger than in every comparison year, while
+       that of `tgcr - iorb` is larger than in each of them. Whatever moved the
+       target moved TGCR with it, which is the market's signature and not a
+       defect in one source. A distribution shift is stated here, not offered
+       as an explanation.
+    3. *The target is more dispersed day to day in 2025*: the mean absolute
+       change of `spread_bps` between consecutive rows of the year is larger
+       than in each comparison year -- and stays larger on the days IORB did
+       not move, so it is not carried by the three policy-rate steps.
+
+    **The comparison years** are the years other than 2025 whose every row
+    takes its administered leg from the `IORB` series rather than the `IOER`
+    splice, read off the rows the build joined rather than typed. Before that
+    the target is a different spread, and 2019's September is in it.
+
+    **Mutation record, 14 September 2026.** In a disposable copy under
+    `$HOME`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class alone;
+    unmutated control green before and after. A clause guards a *rebuild*, so
+    every mutation but the first moves `data.py` and then republishes the
+    copy's manifest `sha256` and `holes` from a `repo_model.cli build` with the
+    manifest's columns -- the premise passes, and the clause has to fire on its
+    own. Each was confirmed applied (one mutation marker in `data.py`, the
+    manifest digest moved) before it was scored, and each turned exactly its
+    own subtest red, `AssertionError` every time and no other subtest:
+
+    * premise -- the manifest's digest one hex digit off: "the build read is
+      the published panel", digest inequality.
+    * clause 1 -- rule 10 skips `tga` in December 2025, so those rows are
+      holes: "the panel's quality does not move in 2025", on `tga`'s 2025 hole
+      count.
+    * clause 2 -- `tgcr` three basis points lower on alternate 2025 dates:
+      "SOFR holds against TGCR in 2025...", `sofr - tgcr` outside the
+      comparison years' range.
+    * clause 3 -- `sofr` three basis points higher on alternate 2024 dates:
+      "the target is more dispersed day to day in 2025", 2024 overtakes 2025.
+      Clause 2 stays green under it because a noisier comparison year only
+      widens the range 2025 has to sit inside.
+    """
+
+    def published_build(self):
+        """The manifest's build over the tracked inputs, and the rows it joined."""
+
+        from repo_model import data
+        from repo_model.ingest import load_snapshot_manifest, load_source_registry
+
+        root = Path(__file__).parents[1]
+        manifest = json.loads(
+            (root / "metadata" / "funding_panel_manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        registry_path = root / "metadata" / "sources.json"
+        artifacts = [
+            load_snapshot_manifest(path)
+            for path in sorted(
+                (root / "tests" / "fixtures" / "snapshots" / "funding_inputs").glob(
+                    "*/*.manifest.json"
+                )
+            )
+        ]
+        joined = {}
+        real_carries = data._carry_forward_values
+        real_zeros = data._settlement_zero_dates
+
+        def carries(latest, built, grid):
+            joined["latest"] = latest
+            joined["carries"] = real_carries(latest, built, grid)
+            return joined["carries"]
+
+        def zeros(*args):
+            joined["zeros"] = real_zeros(*args)
+            return joined["zeros"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            long_path = Path(tmp) / "long.csv"
+            snapshot = build_point_in_time_snapshot(
+                artifacts, long_path, registry_path=registry_path
+            )
+            with unittest.mock.patch.object(
+                data, "_carry_forward_values", carries
+            ), unittest.mock.patch.object(data, "_settlement_zero_dates", zeros):
+                build = build_daily_panel(
+                    load_point_in_time_panel(long_path),
+                    load_source_registry(registry_path),
+                    build_cutoff=datetime.fromisoformat(manifest["build_cutoff"]),
+                    decision_time=time.fromisoformat(manifest["decision_time"]),
+                    columns=tuple(manifest["built_columns"]),
+                    snapshot_retrieved_at={
+                        artifact.sha256: artifact.retrieved_at
+                        for artifact in artifacts
+                    },
+                )
+            panel_path = Path(tmp) / "panel.csv"
+            write_daily_panel(build, panel_path, source_shas=snapshot.source_shas)
+            digest = hashlib.sha256(panel_path.read_bytes()).hexdigest()
+        return manifest, build, digest, joined
+
+    @staticmethod
+    def mean_abs_change(rows, value):
+        """Mean |value(today) - value(previous row)| over consecutive rows."""
+
+        changes = [
+            abs(value(today) - value(previous))
+            for previous, today in zip(rows, rows[1:])
+        ]
+        return sum(changes) / len(changes)
+
+    def test_2025_moves_the_target_and_not_the_panels_quality(self):
+        """A40's acceptance criterion and mutation target. See the class docstring."""
+
+        from fractions import Fraction
+
+        from repo_model.data import CALENDAR_COLUMN_RULES, SETTLEMENT_ZERO_COLUMNS
+
+        manifest, build, digest, joined = self.published_build()
+        latest = joined["latest"]
+        by_year = {}
+        for observation in build.observations:
+            by_year.setdefault(observation.date.year, []).append(observation)
+
+        with self.subTest("the build read is the published panel"):
+            self.assertEqual(digest, manifest["sha256"])
+            self.assertEqual(dict(build.holes), manifest["holes"])
+
+        iorb_era = {
+            year
+            for year, rows in by_year.items()
+            if all(latest[("iorb", row.date)].series_id == "IORB" for row in rows)
+        }
+        comparison = sorted(iorb_era - {2025})
+        # The premise: 2025 is itself an IORB year, and it has neighbours on
+        # both sides to be compared with.
+        self.assertIn(2025, iorb_era)
+        self.assertTrue(min(comparison) < 2025 < max(comparison), comparison)
+
+        # Every cell of a built, non-calendar column is exactly one of an
+        # observation, a rule 8 zero, a rule 10 carry or a hole -- classified
+        # in the order the join writes them.
+        tally = {}
+        for observation in build.observations:
+            for column in build.built_columns:
+                if column in CALENDAR_COLUMN_RULES:
+                    continue
+                if observation.values[column] is None:
+                    kind = "hole"
+                elif latest.get((column, observation.date)) is not None:
+                    kind = "observed"
+                elif observation.date in joined["zeros"].get(column, ()):
+                    kind = "zero"
+                elif observation.date in joined["carries"].get(column, {}):
+                    kind = "carry"
+                else:
+                    self.fail(f"{column} on {observation.date} is none of the four")
+                key = (column, observation.date.year, kind)
+                tally[key] = tally.get(key, 0) + 1
+
+        with self.subTest("the panel's quality does not move in 2025"):
+            totals = {"hole": build.holes, "zero": build.settlement_zeros,
+                      "carry": build.carried_forward}
+            for kind, recorded in totals.items():
+                for column in recorded:
+                    if column in CALENDAR_COLUMN_RULES:
+                        continue
+                    self.assertEqual(
+                        sum(tally.get((column, year, kind), 0) for year in by_year),
+                        recorded[column],
+                        (kind, column),
+                    )
+            for column in build.built_columns:
+                if column in CALENDAR_COLUMN_RULES:
+                    continue
+                self.assertEqual(tally.get((column, 2025, "hole"), 0), 0, column)
+            for column, kind in [
+                *((name, "zero") for name in SETTLEMENT_ZERO_COLUMNS),
+                *((name, "carry") for name in CARRY_FORWARD_COLUMNS),
+            ]:
+                share = {
+                    year: Fraction(tally.get((column, year, kind), 0), len(by_year[year]))
+                    for year in [*comparison, 2025]
+                }
+                others = [share[year] for year in comparison]
+                self.assertTrue(
+                    min(others) <= share[2025] <= max(others),
+                    (column, kind, {year: float(value) for year, value in share.items()}),
+                )
+
+        def spread(a, b):
+            return lambda row: 100.0 * (row.values[a] - row.values[b])
+
+        with self.subTest("SOFR holds against TGCR in 2025; the repo complex moves against IORB"):
+            sofr_tgcr = {
+                year: self.mean_abs_change(by_year[year], spread("sofr", "tgcr"))
+                for year in [*comparison, 2025]
+            }
+            tgcr_iorb = {
+                year: self.mean_abs_change(by_year[year], spread("tgcr", "iorb"))
+                for year in [*comparison, 2025]
+            }
+            self.assertLessEqual(
+                sofr_tgcr[2025], max(sofr_tgcr[year] for year in comparison), sofr_tgcr
+            )
+            for year in comparison:
+                self.assertGreater(tgcr_iorb[2025], tgcr_iorb[year], tgcr_iorb)
+
+        with self.subTest("the target is more dispersed day to day in 2025"):
+            def dispersion(rows, held_only):
+                changes = [
+                    abs(today.spread_bps - previous.spread_bps)
+                    for previous, today in zip(rows, rows[1:])
+                    if not held_only or today.values["iorb"] == previous.values["iorb"]
+                ]
+                return sum(changes) / len(changes)
+
+            for held_only in (False, True):
+                target = {
+                    year: dispersion(by_year[year], held_only)
+                    for year in [*comparison, 2025]
+                }
+                for year in comparison:
+                    self.assertGreater(target[2025], target[year], (held_only, target))
+
+
 def replace_observation(observation, ref_date):
     """One observation moved to another reference date, availability with it.
 
