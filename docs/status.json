@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "ba381bb",
+  "commit": "6a167c6",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -28,7 +28,9 @@
     "backtest_gbm_arx_declared_conformal_mh61.json",
     "backtest_gbm_arx_declared_cross_conformal_mh61.json",
     "backtest_gbm_arx_declared_none_mh61.json",
+    "backtest_gbm_conformal_asymmetric_share035_mh61.json",
     "backtest_gbm_conformal_mh61.json",
+    "backtest_gbm_conformal_share035_mh61.json",
     "backtest_gbm_cross_conformal_mh61.json",
     "backtest_gbm_mh61.json",
     "backtest_persistence_mh61.json",
