@@ -122,6 +122,28 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
   `sys.path` -- what `discover -s tests` arranges and what the dotted form does
   not. The dotted form fails with an import error that reads like a red control.
 
+- **Run the full suite in ONE process, in a copy under `$HOME` -- not in the worktree.**
+  A whole-suite run now exceeds the time limit an agent's shell tool allows, so in the
+  worktree it is killed or moved to the background and the run you report is not the run
+  that happened. Build the copy from the exact tree you are committing and run `discover`
+  there once:
+
+  ```
+  W="$HOME/suite-copy"; rm -rf "$W"; mkdir -p "$W"
+  git ls-files -z | xargs -0 tar -c | tar -x -C "$W"
+  cd "$W" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -B -m unittest discover -s tests
+  ```
+
+  Check that nothing differs between the copy and your tree but gitignored noise, and say
+  in your report that you did.
+
+- **Splitting the suite into groups is not a substitute for that**, and it manufactures
+  failures. Some classes pass only when another is loaded in the same run --
+  `ExceedancePredictorCoverageTests`'s conformance suite needs `test_ml.GbmExceedanceTests`
+  beside it -- so a split produces a red that the split caused, and the block then spends
+  its report explaining a failure that is not there. If the run will not fit anywhere,
+  **say so** rather than splitting it.
+
 - **Zero `expectedFailure` is load-bearing.** Skip counts vary by checkout and mean
   nothing. **Never put a count of any kind in an acceptance criterion**, or in a published
   document — `tests/test_docs_freshness.py` refuses it.
