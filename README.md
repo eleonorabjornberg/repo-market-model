@@ -66,7 +66,7 @@ on the previous business day.
 **Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `d8b716cf5d76`.
 
 **Evaluation.** Purged rolling origin, 6-day purge, **2080 forecast origins**,
-first scored 2018-05-07, last scored 2026-09-03. Run at `4533277`.
+first scored 2018-05-07, last scored 2026-09-03. Run at `ba381bb`.
 
 | Measure | Benchmark | Value | 90% interval |
 |---|---|---|---|
@@ -112,12 +112,14 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`) | 90% | 86.3% | 83.9% to 88.4% | 1.516 bp |
 | gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`) | 90% | 93.8% | 92.3% to 95.2% | 1.367 bp |
 | gbm (arx feature `declared`) | 90% | 63.8% | 61.3% to 66.1% | 0.944 bp |
+| gbm (calibration `conformal_asymmetric`, calibration share `0.35`) | 90% | 88.6% | 86.4% to 90.6% | 1.302 bp |
 | gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.1% to 87.8% | 1.294 bp |
+| gbm (calibration `conformal`, calibration share `0.35`) | 90% | 84.2% | 81.4% to 86.8% | 1.459 bp |
 | gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.5% to 94.7% | 1.130 bp |
 | gbm | 90% | 65.8% | 63.3% to 68.1% | 0.943 bp |
 | persistence | 90% | 81.6% | 78.7% to 84.2% | 0.889 bp |
 
-A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `conformal`, calibration share `0.35`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 
