@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "ab5e6ef",
+  "commit": "589bb92",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -61,6 +61,8 @@
     "exceedance_gbm_conformal_lags3.json",
     "exceedance_gbm_conformal_mh61.json",
     "exceedance_gbm_conformal_tail_gpd_mh61.json",
+    "exceedance_gbm_cross_conformal_funding_mh61.json",
+    "exceedance_gbm_cross_conformal_mh61.json",
     "exceedance_gbm_mh61.json",
     "funding_panel.manifest.json",
     "persistence_funding.json"
