@@ -832,5 +832,161 @@ class RegistryProseAgainstTrackedSidecarsTests(unittest.TestCase):
         self.assertEqual(contradictions, [], "\n".join(contradictions))
 
 
+TRACKED_RUNS = REPO_ROOT / "docs" / "runs"
+
+
+class CandidateColumnPairingRecordTests(unittest.TestCase):
+    """A42: four candidate columns priced, and why the paired-evidence gate was not built.
+
+    Written 14 September 2026 against the registry and the records of that day.
+    Nothing here builds, declares or scores a column.
+
+    **Half 1 -- the gate each candidate faces.**
+
+    * ON RRP (`RRPONTSYD`) is a revision-policy question, and the answer is
+      already on record as *no*. The brief framed it as whether `IOER`-style
+      evidence can be assembled. It has been measured, and it refutes the claim:
+      `metadata/sources.json`, `fred_macro_latest_vintage.field_release_lags.
+      WRESBAL.revision_evidence`, says RRPONTSYD's differences "are not a
+      constant ratio: it was restated on 2020-02-19 from 5.149 to 0.095, and on
+      2020-11-18 from 0.103 to 0.000 and back to 0.103, so RRPONTSYD remains
+      refused" (also `tests/test_baseline.py`, the `on_rrp` refusal docstring).
+      A latest-vintage FRED series with measured restatements cannot declare
+      `never_revised`. The only route is a point-in-time source of the facility's
+      own results, which no source declares: a new-adapter question, unpriced.
+    * IORB - EFFR: the IORB leg is priced (`IORB` and `IOER` declare
+      `never_revised`, `record_date`, one day). The EFFR leg is `DFF` on the same
+      latest-vintage source, with no `field_release_lags` entry, and
+      `registry.max_release_lag_days` refuses it with the same message as
+      `RRPONTSYD`. A revision-policy question on the `IOER` precedent, with no
+      evidence either way in the tree: no `alfred-dff` fixture is tracked.
+    * SRF usage / primary credit rate: a new-adapter question. No source in the
+      registry covers either; a case-insensitive search for standing repo, SRF,
+      primary credit and discount window over `src/`, `metadata/` and `tests/`
+      finds nothing.
+    * Bill supply net of maturities: already declared. `treasury_auctions` is a
+      `record_date` source at zero days, and the tracked refetch
+      (`funding_inputs/treasury_auctions`, `issue_date` from 2017-01-03) carries
+      `maturity_date` and `total_accepted` on every bill.
+      `est_pub_held_mat_by_type_amt` is null only on cash
+      management bills, so it cannot stand in for the maturing leg. The adapter
+      reads only `offering_amt` and `soma_accepted` today, so it needs adapter
+      work and a `contract.FEATURE_FIELDS` column (human-owned), but no new
+      source and no new lag. The brief's "net of settlement" is read here as net
+      of maturing bills; a column dated at *announcement* to capture forward
+      issuance pressure would be a different, earlier availability basis on this
+      source and is the human's declaration, not this one.
+
+    **Half 2 -- the price.** Every published record runs at a six-day purge
+    (`derived.purge_days`, the `nyfed_sofr` worst case). `max_release_lag_days`
+    on the real registry, over the four-feature declaration's fields plus the
+    candidate's: `treasury_auctions.treasury_settlement_bill` leaves it at six;
+    `DFF`, given an in-memory copy of `IOER`'s declaration (the file is not
+    edited), leaves it at six; `RRPONTSYD` and bare `DFF` are refused;
+    `nyfed_fr2004.PDPOSGST-TOT`, for comparison, moves it to eleven. So neither
+    priceable candidate moves the fold grid. `scripts/purge_availability_audit.py`
+    could not be run: its default panel, `data/processed/funding_panel.csv`, is
+    gitignored and absent from this worktree. Span: `DFF` has a value on every
+    weekday of the published panel span, 2018-04-03 to 2026-09-03; net bill
+    supply needs issues up to a year before the panel starts, which the 2017
+    refetch covers (cash management bills are shorter). Ranking, which reverses
+    the order named: net bill supply (build only once a paired record can be
+    published for it), IORB - EFFR (build only if ALFRED vintages of `DFF` show
+    no restatement -- a human fetch), SRF / primary credit (do not build until a
+    source is declared), ON RRP (do not build from FRED; the evidence refutes it).
+
+    **Half 3 -- the gate was not built, because the records do not pair.** The
+    brief asked for a test failing when a column in a record's
+    `declaration.features` has no sibling record that is the same configuration
+    with that column absent. Anchored on `docs/runs/` that gate cries wolf in
+    three ways, each readable from the records:
+
+    1. `spread_bps` is in every record's `declaration.features`, and it is the
+       target's own column. It can never be absent, so the gate needs an
+       exemption, and the records carry no `target` field to anchor one.
+    2. `declaration.features` is the set the purge is sized over, not the set a
+       model reads. `backtest_persistence_mh61.json` declares `sofr_volume`,
+       `sofr_p25` and `sofr_p75`, and `baseline.fit` takes no regressor at all.
+       A persistence record would be flagged for columns it cannot use.
+    3. A group ablation is invisible to a per-column gate. The calendar columns
+       were scored paired -- `exceedance_gbm_conformal_calendar_mh61.json`
+       against `exceedance_gbm_conformal_mh61.json`, same declaration, panel and
+       holdout, the three calendar columns absent together -- and a gate asking
+       for a sibling missing exactly one column flags all three. This test holds
+       that fact.
+
+    The brief's "nine were scored paired" is also not what the records show:
+    of the nine columns the rebuild added (DATA_QUALITY_DECISIONS, "The rebuild
+    takes all nine"), only the calendar three appear in any record's
+    `declaration.features`, and only as that one group. And `built_columns` sits
+    at `panel.build_manifest.built_columns`, not `panel.built_columns`.
+
+    For the gate to be mechanical a record would have to carry, in `declaration`:
+    `ablation_of`, naming the sibling record and the columns withheld from it (so
+    a group counts for each member and the sibling is named, not inferred by
+    matching declarations whose keys differ by record kind); `target`, the column
+    that is never ablated; and, in `derived`, the columns the fitted model
+    actually consumed, distinct from those the gap was sized over.
+
+    **Red here** means a group-ablated column acquired a sibling missing it
+    alone, or the group sibling left the view: re-open the gate question, do not
+    edit the assertion.
+
+    Mutation record (disposable copy under `$HOME` from `git ls-files`,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; class control green before and
+    after): `docs/runs/exceedance_gbm_conformal_mh61.json` deleted from the copy
+    -- the calendar columns' paired sibling removed from the test's view, the
+    deletion confirmed with `ls` before scoring. This test fails with
+    `AssertionError` (`set() == set()`, "no record ablates a column only as part
+    of a group").
+    """
+
+    @staticmethod
+    def _configuration(record):
+        declaration = {
+            key: value
+            for key, value in record["declaration"].items()
+            if key != "features"
+        }
+        return json.dumps(
+            {
+                "kind": sorted(record),
+                "holdout_role": record.get("holdout_role"),
+                "declaration": declaration,
+                "purge_days": record["derived"]["purge_days"],
+                "panel": record["panel"]["sha256"],
+            },
+            sort_keys=True,
+        )
+
+    def test_a_column_scored_paired_as_a_group_has_no_per_column_sibling(self):
+        by_configuration = {}
+        for path in sorted(TRACKED_RUNS.glob("*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            features = (record.get("declaration") or {}).get("features")
+            if features is None:
+                continue  # comparisons and the build manifest declare per model
+            by_configuration.setdefault(self._configuration(record), []).append(
+                frozenset(features)
+            )
+
+        group_only = set()
+        for feature_sets in by_configuration.values():
+            for features in feature_sets:
+                smaller = [other for other in feature_sets if other < features]
+                for column in features:
+                    lacking = [other for other in smaller if column not in other]
+                    alone = [other for other in lacking if features - other == {column}]
+                    if lacking and not alone:
+                        group_only.add(column)
+
+        self.assertNotEqual(
+            group_only,
+            set(),
+            "no record ablates a column only as part of a group; a per-column "
+            "paired-evidence gate may now be mechanical -- see this docstring",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
