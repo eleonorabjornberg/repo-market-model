@@ -287,11 +287,33 @@ residual ever seen and then an exceedance of exactly `0.0`.
   `xi` lands at or below the lower end of `GPD_SHAPE_BOUNDS` is not used: the
   fold takes the same exponential fallback, and the record says `refused`, not
   `fallback`, so the two can be counted apart. See `_fit_gpd_pwm`.
-* **Refused under `none` and `cross_conformal`.** `none` holds nothing out, so
-  its only sample is rows the estimators were fitted on --- an in-sample tail.
-  `cross_conformal` holds every row out in some block, and the coherent sample
-  there is a different construction that is not wired; a mixed-provenance tail
-  in the meantime would be worse than the refusal.
+* **Refused under `none`, `cross_conformal` and `conformal_asymmetric`.**
+  `none` holds nothing out, so its only sample is rows the estimators were
+  fitted on --- an in-sample tail. `conformal_asymmetric` moves the two edges
+  by two widenings and the tail's knot is `conformal`'s one. `cross_conformal`
+  holds every row out in some block, and the coherent sample there is a
+  different construction that is not wired; a mixed-provenance tail in the
+  meantime would be worse than the refusal. `cli_eval` refuses the same three
+  at selection, before a fit is attempted.
+* **Why `cross_conformal` cannot simply be wired (B53).** `conformal`'s sample
+  holds two properties at once: each excess is read by a map fitted on no row
+  it measures, and that map --- `Q_hi` of the fit rows plus one widening --- is
+  the very one the tail is attached at. Under CV+ no held-out row can have
+  both. The knot the tail would be attached at is CV+'s upper edge, an order
+  statistic of `Q_hi_-k(i)(x) + s_i` over *every* block's excluding model read
+  at the forecast's row. Read at a held-out row's own feature row, all but its
+  own block's model were fitted on that row's pair, feature row and target: an
+  in-sample tail, as under `none`, diluted by one block in `calibration_folds`.
+  The out-of-sample alternative, each row read by its own block's excluding
+  model alone, is measured against a threshold that is not the attached one;
+  and there is no per-block calibrated top quantile to measure against, since
+  an `_ExcludingModel` keeps its pooled scores and CV+ never forms a per-block
+  widening. Pooling five blocks' thresholds into one fit is the mixed
+  provenance, and attaching it at CV+'s edge is the jump at the join. A
+  coherent CV+ tail would have to be rebuilt per forecast row, from
+  `Q_hi_-k(i)(x)` and each row's own excess, and so would no longer be the one
+  per-fit `tail_fit` that `tail_account` records per fold: a redesign, not a
+  wiring. `GpdCrossConformalSampleTests` holds the premise.
 
 Absent is the default and is today's gbm, bit for bit. The tail is stdlib
 arithmetic.
