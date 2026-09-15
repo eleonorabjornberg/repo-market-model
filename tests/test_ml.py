@@ -87,6 +87,10 @@ What is covered here
   recorded fit, is fitted to the calibration rows' excesses above that same
   quantile, attaches nothing when there are none, leaves the default law
   saturating, and its three refusals.
+* `GpdCrossConformalSampleTests` -- B53: the tail stays refused under
+  `cross_conformal`, and the reason holds on the fit: the CV+ edge a tail would
+  be attached at reads, at every held-out row, excluding models fitted on that
+  row.
 * `TailLowerBoundRefusalTests` -- B44: a shape at the lower end of
   `GPD_SHAPE_BOUNDS` is refused and takes the exponential fallback, recorded as
   `refused`; the upper clamp is kept. Needs no `require_extra`.
@@ -3900,6 +3904,124 @@ class GpdTailWiringTests(unittest.TestCase):
             with self.assertRaises(ValueError) as caught:
                 self.fit(rows, calibration="cross_conformal", tail="gpd")
             self.assertIn("not wired for calibration 'cross_conformal'", str(caught.exception))
+
+
+class GpdCrossConformalSampleTests(unittest.TestCase):
+    """B53: the fitted tail stays refused under `cross_conformal`, and why.
+
+    **The question.** The model work moves to `cross_conformal`, and the tail
+    was refused there. B53 was to wire it if a coherent sample exists, and to
+    say so with its reasoning if not. It does not; see the module docstring of
+    `repo_model.ml`, "Why `cross_conformal` cannot simply be wired".
+
+    **What the refusal rests on, checked on a fit.** `conformal`'s sample is
+    coherent because one map, fitted on no calibration row, both measures the
+    excesses and carries the knot. Under CV+ the knot is the upper edge, read
+    off every excluding model at the forecast's row. So the refusal rests on
+    one fact about the fitted blocks: at a held-out row's feature row, every
+    other block's excluding model --- unless that block holds the feature row
+    itself --- was fitted on that row's pair. If that ever stopped being true
+    the reason would have moved, and this test says so before a later block
+    wires on a premise that has gone.
+
+    The fixture has no lags and no purge, so a block's model trains on exactly
+    the rows outside it, a pair of consecutive such rows is one of its training
+    pairs, and a held-out row's feature row is the row before it.
+    `training_dates` is read for both dates of the pair, and the block's own
+    held-out range for neither.
+
+    **One criterion, two clauses:** the refusal is raised on the calibration's
+    name, and the premise holds.
+
+    Mutation record
+    ---------------
+
+    Run in disposable copies under `$HOME`, one per mutation plus an unmutated
+    control, each built from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1` and `REPO_MODEL_REQUIRE_ML=1`, whole suite per run in
+    one process, on CPython 3.9.6 with numpy 2.0.2 and scikit-learn 1.6.1
+    through the mount's `.venv/bin/python`; `repo_model` confirmed to resolve
+    to the copy's `src/`. Unmutated control green before and after, zero
+    `expectedFailure`. Each target was found exactly once as an exact substring
+    and the replacement confirmed present and the original gone.
+
+    1. **The refusal, by name** --- `calibration == "cross_conformal"` ->
+       `calibration == "cross_conformal_unwired"` in the fitter's tail
+       refusal. Kills the refusal subtest here and `GpdTailWiringTests` part 5,
+       both `AssertionError: ValueError not raised`, and nothing else.
+    2. **The premise, by operator** --- in the cross-conformal block plan,
+       `position >= stop` -> `position > stop`, so an excluding model no longer
+       trains on the first row after its block. Kills the premise subtest here
+       alone, `AssertionError`: block 1 did not train on the feature row of
+       block 2's first scored row. **Nothing else in the suite sees it**,
+       `GradientBoostedCrossConformalTests` included: that class holds that
+       no excluding model trains *inside* its block and purge gaps, and this
+       mutation only trains on less. It is the safe direction --- no leak ---
+       which is why it went unguarded, and it is recorded here as found.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    ROWS = 60
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_cross_conformal_edge_reads_models_fitted_on_every_held_out_row_so_the_tail_stays_refused(
+        self,
+    ):
+        """The refusal stands, and every held-out row is in-sample to the CV+ edge."""
+
+        rows = heteroscedastic_frame(self.ROWS)
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+            "calibration": "cross_conformal",
+            "purge_days": 0,
+        }
+
+        with self.subTest("the refusal, on the calibration's name"):
+            with self.assertRaises(ValueError) as caught:
+                ml.fit_gradient_boosted_quantiles(rows, self.REGRESSORS, tail="gpd", **options)
+            self.assertIn("not wired for calibration 'cross_conformal'", str(caught.exception))
+
+        fit = ml.fit_gradient_boosted_quantiles(rows, self.REGRESSORS, **options)
+        blocks = fit.calibration_blocks
+        dates = [row.date for row in rows]
+        scored = 0
+        with self.subTest("every held-out row's pair trains every other block's model"):
+            for number, block in enumerate(blocks):
+                for when in block.scored_dates:
+                    scored += 1
+                    feature = dates[dates.index(when) - 1]
+                    trained_on_it = 0
+                    for other_number, other in enumerate(blocks):
+                        if other_number == number:
+                            self.assertNotIn(
+                                when,
+                                other.training_dates,
+                                msg=f"block {number + 1} trained on its own row {when}",
+                            )
+                            continue
+                        if other.held_out_start <= feature <= other.held_out_end:
+                            continue
+                        self.assertIn(
+                            feature,
+                            other.training_dates,
+                            msg=f"block {other_number + 1} did not train on {feature}, "
+                            f"the feature row of block {number + 1}'s held-out {when}",
+                        )
+                        self.assertIn(
+                            when,
+                            other.training_dates,
+                            msg=f"block {other_number + 1} did not train on {when}, "
+                            f"held out by block {number + 1}",
+                        )
+                        trained_on_it += 1
+                    expected = len(blocks) - 1 - (feature < block.held_out_start)
+                    self.assertEqual(trained_on_it, expected, msg=f"held-out {when}")
+            # Every row but the frame's first has a feature row, so is scored.
+            self.assertEqual(scored, len(rows) - 1)
 
 
 class TailLowerBoundRefusalTests(unittest.TestCase):
