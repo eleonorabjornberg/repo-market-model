@@ -1181,7 +1181,51 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
     shorter than a measured first print, in the direction that leaks. No
     published purge moves -- 6 either way, for the reason above -- but the
     declarations are wrong, and correcting them is the human's decision, not
-    this block's. This test does not pin them.
+    this block's. A45 did not pin them; **A46 does, below.**
+
+    ---
+
+    **A46, 15 September 2026: the correction, and the guard over the release.**
+
+    Eleonora took the decision A45 handed her: `WRESBAL` and `WTREGEN` are
+    corrected from one day to **five**, the measured floor exactly, and their
+    notes now record the holiday shift instead of denying it. Five and not six
+    because six is not free: over the nine features
+    `docs/runs/exceedance_gbm_cross_conformal_funding_mh61.json` declares, at
+    its 16:00 decision time, `max_release_lag_days` is 6 at every lag from 1 to
+    5 and 7 at six. `test_the_h41_release_is_declared_at_its_measured_first_print`
+    checks that, on the real registry and the published record, so the "the
+    correction is free" claim is a run of the code and not a line of the report.
+
+    `DFF` is untouched: its floor is A44's open question and this block does not
+    reach into it.
+
+    The guard is no longer about one field. `H41_FIELDS` names the release and
+    `NOT_H41_FIELDS` names what is deliberately outside it; together they must
+    cover every field `fred_macro_latest_vintage` declares, so a field added to
+    this source cannot be swept into -- or quietly out of -- the H.4.1 without a
+    line saying which release it comes from.
+
+    **A finding against this block's brief.** The brief calls `IOER` and `IORB`
+    "H.15, a different release at a different time". They are not H.15. FRED
+    serves both from release `rid=185`, "Interest Rate on Reserve Balances";
+    `rid=18` is H.15 Selected Interest Rates, which is where `DFF` comes from
+    (fetched 15 September 2026 from `fred.stlouisfed.org/series/<ID>`). The
+    exclusion the brief asked for is right and `NOT_H41_FIELDS` makes it; only
+    its stated reason was wrong, and the constant carries the measured one.
+
+    **`WTREGEN` has no first-print fixture, and does not need one.** Its
+    membership is not measured here, it is the release it comes from, which two
+    independent artefacts fix. FRED lists it under `rid=20`, H.4.1 Factors
+    Affecting Reserve Balances. And the Board's own
+    `releases/h41/20201228/` -- "Release Date: December 28, 2020", for the week
+    ended December 23, the release whose lateness this whole correction is
+    about -- carries "U.S. Treasury, General Account" at 1,602,407 beside
+    "Reserve balances with Federal Reserve Banks" at 3,143,041, which are
+    `WTREGEN`'s and `WRESBAL`'s 2020-12-23 values to the million as FRED serves
+    them today. The line that was late on 28 December 2020 is the line
+    `WTREGEN` copies, so its first print is that release's, whatever ALFRED
+    vintage happens to be tracked for it.
 
     **Route B -- the Desk's operation results. Reachable, not amended in value,
     and its release time is not established.**
@@ -1267,22 +1311,91 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
     Route B is daily and its values are sound, but it is a new adapter with no
     publication time to declare. Route A first.
 
-    **Red here** means `WLRRAOL` was declared with fewer days than a first
-    print the tracked H.4.1 vintages show, or those vintages stopped showing a
-    first print later than a day. Re-open the lag, do not edit the assertion.
+    **Red here** means one of four things, and none of them is an assertion to
+    edit: an H.4.1 field was declared with fewer days than a first print the
+    tracked vintages show; those vintages stopped showing a first print later
+    than a day; a field appeared on this source that neither constant
+    classifies, so nobody has said which release it is on; or the published
+    funding record's six-day purge stopped being what the registry prices,
+    which is a history-losing change to every run that reads it.
 
     Mutation record (disposable copy under `$HOME` from `git ls-files`,
     `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; class control green before and
-    after): `metadata/sources.json` given a `WLRRAOL` entry copying `WRESBAL`'s
-    declaration -- `record_date`, one day, 16:30, `never_revised`, with
-    evidence -- the declaration Route A would make if the H.4.1 schedule were
-    taken at its word. This test fails with `AssertionError`
-    (`1 not greater than or equal to 5`).
+    after):
+
+    * A45: `metadata/sources.json` given a `WLRRAOL` entry copying `WRESBAL`'s
+      declaration -- `record_date`, one day, 16:30, `never_revised`, with
+      evidence -- the declaration Route A would make if the H.4.1 schedule were
+      taken at its word. The test then failed with `AssertionError`
+      (`1 not greater than or equal to 5`). **Re-run under A46's extended
+      guard** (CLAUDE.md: a mutation whose guard changed is re-run): it still
+      fails, now naming the field -- `AssertionError: 1 not greater than or
+      equal to 5 : WLRRAOL is declared 1 days, shorter than the 5-day first
+      print the tracked H.4.1 vintages show: rid=20, Table 1, ...`.
+    * A46, the correction itself: `WRESBAL`'s `days` set back to `1` fails with
+      `AssertionError: 1 not greater than or equal to 5 : WRESBAL is declared
+      1 days, shorter than the 5-day first print the tracked H.4.1 vintages
+      show: ...`; `WTREGEN`'s set back to `1` fails the same way naming
+      `WTREGEN`. Each is the declaration this block corrected, put back.
+    * A46, the membership set: `"WSHOMCB"` appended to the source's `fields`,
+      a real H.4.1 line nobody has classified. `AssertionError: Items in the
+      second set but not the first: 'WSHOMCB' : ['WSHOMCB'] on
+      fred_macro_latest_vintage belong to no named release: say which one in
+      H41_FIELDS or NOT_H41_FIELDS before declaring a lag`.
+    * A46, the purge: `WRESBAL` at **six** days rather than five -- the choice
+      the brief rejected. `AssertionError: 6 != 7 :
+      exceedance_gbm_cross_conformal_funding_mh61.json was published at a purge
+      this registry no longer prices ...`. That is the measurement behind "five
+      is free and six is not", run rather than asserted.
     """
 
     #: Two vintages further apart than this are not a first-print measurement:
     #: an observation between them could have appeared on any day in the gap.
     ADJACENT_DAYS = 7
+
+    SOURCE_ID = "fred_macro_latest_vintage"
+
+    #: The H.4.1 membership set: every field of `SOURCE_ID` that is a line of
+    #: the Board's H.4.1, and therefore inherits that release's schedule --
+    #: including the holiday shift -- whatever its own vintages happen to show.
+    #: One line each for how membership is known. FRED release ids were read
+    #: from `fred.stlouisfed.org/series/<ID>` on 15 September 2026; `rid=20` is
+    #: "H.4.1 Factors Affecting Reserve Balances".
+    H41_FIELDS = {
+        "WRESBAL": "rid=20; its 2020-12-23 value 3143041 is the 'Reserve "
+        "balances with Federal Reserve Banks' line of the Board's "
+        "releases/h41/20201228/ to the million; first-print vintages tracked "
+        "under alfred-h41-first-print/",
+        "WTREGEN": "rid=20; its 2020-12-23 value 1602407 is the 'U.S. "
+        "Treasury, General Account' line of that same 28 December 2020 "
+        "release to the million. No first-print fixture of its own: its "
+        "membership is the release, not a measurement in this tree",
+        "WLRRAOL": "rid=20, Table 1, the 'Others' reverse-repo line; "
+        "first-print vintages tracked under alfred-h41-first-print/ show the "
+        "same 2020-12-28 first print as WRESBAL (A45)",
+        "TREAST": "rid=20, Table 1, Treasury securities held outright, "
+        "Wednesday level. Carried by this source and declared no lag, so the "
+        "refusal below is what prices it",
+    }
+
+    #: Deliberately outside the H.4.1, with the release each is actually on.
+    #: Written down rather than left silent so a later declaration cannot be
+    #: swept into the wrong release by resembling one.
+    NOT_H41_FIELDS = {
+        "IOER": "rid=185, 'Interest Rate on Reserve Balances' -- an "
+        "administered rate announced ahead of its effective date, not a "
+        "weekly balance-sheet line, and NOT H.15",
+        "IORB": "rid=185, 'Interest Rate on Reserve Balances' -- same "
+        "release as IOER, which it abuts at 2021-07-29, and NOT H.15",
+        "DFF": "rid=18, H.15 Selected Interest Rates. This is the release "
+        "the H.15 name belongs to",
+        "RRPONTSYD": "rid=379, Temporary Open Market Operations -- the Desk's "
+        "operation results, not the H.4.1's Wednesday outstanding level",
+        "RRPONTSYAWARD": "rid=379, Temporary Open Market Operations",
+    }
+
+    #: The published funding record the correction had to leave alone.
+    FUNDING_RECORD = "exceedance_gbm_cross_conformal_funding_mh61.json"
 
     @staticmethod
     def _vintage(path):
@@ -1295,12 +1408,13 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
         }
         return series, vintage, carried
 
-    def test_no_wlrraol_lag_is_declared_shorter_than_its_measured_first_print(self):
+    def test_the_h41_release_is_declared_at_its_measured_first_print(self):
         by_series = {}
         for path in TRACKED_ALFRED_H41_FIRST_PRINT.glob("*.csv"):
             series, vintage, carried = self._vintage(path)
             by_series.setdefault(series, []).append((vintage, carried))
         self.assertEqual(set(by_series), {"WLRRAOL", "WRESBAL"})
+        self.assertLessEqual(set(by_series), set(self.H41_FIELDS))
 
         floors = {}
         for series, vintages in by_series.items():
@@ -1313,20 +1427,64 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
             )
         # One release: both lines first appear on the same day.
         self.assertEqual(floors["WLRRAOL"], floors["WRESBAL"])
+        # Not hardcoded: a longer first print in the fixtures tightens the
+        # floor every H.4.1 field below is held to.
         floor = floors["WLRRAOL"]
         self.assertGreater(floor, 1, "no tracked H.4.1 vintage shows a first print later than a day")
 
         registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
-        source_id = "fred_macro_latest_vintage"
-        declared = registry[source_id].get("field_release_lags", {}).get("WLRRAOL")
-        if declared is None:
-            with self.assertRaisesRegex(
-                RegistryContractError,
-                f"^{source_id}: a snapshot_retrieved_at source is priced from rows only",
-            ):
-                max_release_lag_days(registry, [(source_id, "WLRRAOL")], decision_time=time(16))
-        else:
-            self.assertGreaterEqual(declared.get("days", 0), floor)
+        source_id = self.SOURCE_ID
+        source = registry[source_id]
+        field_lags = source.get("field_release_lags") or {}
+
+        # Nothing on this source is on neither list: a new field must be said
+        # to be on the H.4.1 or said not to be, with the release it is on.
+        classified = set(self.H41_FIELDS) | set(self.NOT_H41_FIELDS)
+        unclassified = (set(source.get("fields") or ()) | set(field_lags)) - classified
+        self.assertEqual(
+            set(),
+            unclassified,
+            f"{sorted(unclassified)} on {source_id} belong to no named release: "
+            "say which one in H41_FIELDS or NOT_H41_FIELDS before declaring a lag",
+        )
+
+        # The release, not one field: every H.4.1 line this source declares.
+        for field in sorted(self.H41_FIELDS):
+            declared = field_lags.get(field)
+            if declared is None:
+                with self.assertRaisesRegex(
+                    RegistryContractError,
+                    f"^{source_id}: a snapshot_retrieved_at source is priced from rows only",
+                ):
+                    max_release_lag_days(
+                        registry, [(source_id, field)], decision_time=time(16)
+                    )
+            else:
+                self.assertGreaterEqual(
+                    declared.get("days", 0),
+                    floor,
+                    f"{field} is declared {declared.get('days', 0)} days, shorter than "
+                    f"the {floor}-day first print the tracked H.4.1 vintages show: "
+                    f"{self.H41_FIELDS[field]}",
+                )
+
+        # A46: the correction is free. The published funding record's purge is
+        # what this registry prices over the fields that record declares.
+        record = json.loads(
+            (TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8")
+        )
+        hour, minute = record["declaration"]["decision_time"].split(":")
+        self.assertEqual(
+            record["derived"]["purge_days"],
+            max_release_lag_days(
+                registry,
+                [tuple(name.split(".", 1)) for name in record["derived"]["fields"]],
+                decision_time=time(int(hour), int(minute)),
+            ),
+            f"{self.FUNDING_RECORD} was published at a purge this registry no "
+            "longer prices: a declaration moved it, which costs history on "
+            "every run that reads these columns",
+        )
 
 
 if __name__ == "__main__":
