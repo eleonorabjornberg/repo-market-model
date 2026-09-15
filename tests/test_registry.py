@@ -1104,5 +1104,230 @@ class DffFirstPrintRecordTests(unittest.TestCase):
             self.assertGreaterEqual(declared.get("days", 0), floor)
 
 
+TRACKED_ALFRED_H41_FIRST_PRINT = (
+    REPO_ROOT / "tests" / "fixtures" / "snapshots" / "alfred-h41-first-print"
+)
+
+
+class OnRrpRoutesRecordTests(unittest.TestCase):
+    """A45: two routes to ON RRP, priced from fetched evidence. Neither is built.
+
+    Written 15 September 2026 from ALFRED vintages, the Board's H.4.1 archive
+    and the New York Fed's markets API, all fetched that day. Nothing here
+    declares, builds or scores a column; `on_rrp` stays refused.
+
+    **Route A -- the H.4.1 line. It does not restate; its lag is not one day.**
+
+    1. *The series is `WLRRAOL`*, "Liabilities and Capital: Liabilities: Reverse
+       Repurchase Agreements: Others: Wednesday Level", release H.4.1 (FRED
+       `rid=20`, Table 1). It is not `WLRRAL`, the H.4.1's *total* reverse-repo
+       line: `WLRRAL = WLRRAFOIAL + WLRRAOL` on every observation of the
+       2026-09-10 vintages, and `WLRRAFOIAL` is the foreign official and
+       international pool (357217 USD millions on 2026-09-02, against 525 in
+       `WLRRAOL`), which is not the facility. `WLRRAOL` is the facility, and
+       not the Desk's operational series `RRPONTSYD` (FRED `rid=379`, Temporary
+       Open Market Operations), because it is a Wednesday *outstanding* level:
+       it equals the New York Fed's accepted ON RRP total for that Wednesday to
+       the million on every panel-span Wednesday with an operation but two, and
+       both are outstanding-versus-accepted: 2019-11-20 is 26097 = 26026 + the
+       71 of the 2019-11-19 small value exercise, which matured 2019-11-21;
+       2024-10-16 is one million short of the accepted sum, the unsettled
+       trade the Desk's note on that exercise records. On holiday Wednesdays
+       with no operation it carries the prior operation still outstanding
+       (2018-12-05 is the two-day 2018-12-04 operation's 3135).
+    2. *It has not restated.* Ten vintages under `alfred-wlrraol/` -- 2019-09-19,
+       2020-01-02, 2020-03-26, 2020-11-27, 2021-07-29, 2024-09-26, 2026-09-03,
+       2026-09-08, 2026-09-09, 2026-09-10 -- and
+       `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-wlrraol/*.csv`
+       exits 0: every pair identical on every shared observation (875 of 875
+       from 2002-12-18 between the first and the last; 1137 of 1137 between
+       2024-09-26 and 2026-09-10). No units rescale either: unlike `WRESBAL` the
+       line has been served in millions throughout. `alfred-wlrral/` and
+       `alfred-wlrrafoial/`, the same ten dates, also exit 0.
+    3. *The lag.* The Board: "released each Thursday, generally at 4:30 p.m.
+       Publication may be shifted to the next business day when the regular
+       publication date falls on a federal holiday." Wednesday data, so one
+       calendar day in an ordinary week -- and the shift is real. ALFRED
+       lists `WLRRAOL` vintages since 2018 on Thursdays, fifteen Fridays and one
+       Monday; consecutive-day vintages under `alfred-h41-first-print/` date
+       the first appearance exactly, for `WLRRAOL` and `WRESBAL` alike:
+
+       * 2020-12-23 (Wed) is absent from the 2020-12-24 and 2020-12-27 vintages
+         and first carried by 2020-12-28 (Mon): **5 days**. The Board's archive
+         has `releases/h41/20201228/`, "Release Date: December 28, 2020", for
+         the week ended December 23; `releases/h41/20201224/` is a 404.
+       * 2025-11-26 (Wed, Thanksgiving week) first carried 2025-11-28 (Fri):
+         2 days; `releases/h41/20251128/` exists and `20251127/` is a 404.
+       * 2026-09-09 first carried 2026-09-10: 1 day. (The 2026-09-09 vintage
+         itself adds no observation.)
+
+       Two days recurs every Thanksgiving and on Thursday holidays (July 4,
+       Juneteenth 2025, 2025-01-09, Veterans Day 2021). Five is also
+       2014-12-29, before the panel. Five is a floor from history, not a worst
+       case: the stated rule allows more if a Thursday closure meets a longer
+       run of holidays.
+    4. *The price.* An honest declaration is `record_date`, at least 5 days,
+       16:30. At the published records' decision time, 16:00, that contributes
+       6 -- exactly the six `nyfed_sofr` already imposes, so for a run that
+       declared `on_rrp` beside the current nine the purge stays 6 (computed
+       with an in-memory copy of the registry; the file is not edited). At
+       one day it would contribute 2 and still leave 6. `nyfed_fr2004` moves
+       it to 11.
+
+    **Finding outside this block: `WRESBAL` and `WTREGEN` are declared one
+    day.** They are H.4.1 lines on the same release. `alfred-h41-first-print/`
+    shows `WRESBAL`'s 2020-12-23 first carried on 2020-12-28, as `WLRRAOL`'s
+    was, so their `days: 1` and their note ("the lag is one calendar day") are
+    shorter than a measured first print, in the direction that leaks. No
+    published purge moves -- 6 either way, for the reason above -- but the
+    declarations are wrong, and correcting them is the human's decision, not
+    this block's. This test does not pin them.
+
+    **Route B -- the Desk's operation results. Reachable, not amended in value,
+    and its release time is not established.**
+
+    1. *Endpoint.* `https://markets.newyorkfed.org/api/rp/results/search.json?
+       startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` returns
+       `{"repo": {"operations": [...]}}`, repo and reverse repo together; each
+       operation carries `operationId`, `operationDate`, `settlementDate`,
+       `maturityDate`, `operationType`, `operationMethod`, `term`,
+       `termCalenderDays` (sic), `closeTime`, `releaseTime` (absent before
+       2021-09-20), `lastUpdated`, `note`, `totalAmtSubmitted`,
+       `totalAmtAccepted` in US dollars, `details` by security type and
+       `propositions` by counterparty type. It reaches back at least to the
+       facility's September 2013 test operations, so it covers the panel's
+       2018-04-02 start. The path
+       `rp/reverserepo/all/results/search.json` answers 400 to a date search,
+       though its `lastTwoWeeks` and `last/N` siblings answer. Samples as served
+       are under `nyfed-rrp-results/`, one operation date each.
+    2. *Release time.* The claimed "about 1:15 PM" is the operation's *close*,
+       not a publication time: the Desk's FAQ gives the schedule "from 12:45
+       p.m. to 1:15 p.m." and says only that "after the completion of a reverse
+       repo operation, the Desk publishes a summary of results", with no clock
+       time. The one timestamp in the data is `lastUpdated`, a last-write time
+       and not a publication time. Across the regular operations since 2018
+       with no note and a same-day `lastUpdated`, it runs from 13:15:15 to
+       14:38:54 (2021-08-16), median 13:15:50; a delayed operation (2023-07-17,
+       closing 14:00) reads 14:43:00; a small value exercise annotated later in
+       the day (2024-10-16) reads 16:50:30. So `available_time` cannot be
+       established from published artefacts. It is bounded below by 13:15, and
+       any number above that is a human decision.
+    3. *Amendments.* Tested two ways. (a) Nine reverse-repo records carry a
+       `lastUpdated` after their operation date: 2018-12-04, 2019-04-18,
+       2020-04-09, 2020-07-02 and 2021-04-01 (all rewritten 2023-09-27),
+       2021-09-03 and 2021-09-10 (2021-09-16), 2023-01-05 (2023-01-13, a note
+       that $3.6 billion did not settle) and 2022-11-17's exercise
+       (2024-11-13). So records *are* touched later, and the FAQ says
+       propositions by counterparty type "are added ... each month with data
+       lagged by one month". (b) Whether a *value* moved: 35 ALFRED vintages of
+       `RRPONTSYD` under `alfred-rrpontsyd/`, 2018-12-31 to 2026-09-15 and
+       including one the day before each later rewrite (2021-09-15, 2023-01-12,
+       2023-09-26, 2024-11-12), are dated copies of the Desk's numbers. On
+       every single-operation day each vintage carries, the vintage equals
+       today's `totalAmtAccepted` to the million, none differing -- and that
+       covers seven of the nine rewritten records from before their rewrite;
+       2018-12-04 and 2019-04-18 are not in `RRPONTSYD` at all, and 2018-12-04
+       agrees with the H.4.1's 2018-12-05 level. No accepted amount has been
+       amended. One same-day amendment is on record: the 2020-02-19 exercise,
+       whose note says its results "were updated at 2:00 PM ET".
+    4. *What A42's restatement actually is.* `alfred_vintages.py` over
+       `alfred-rrpontsyd/` restates exactly two dates, 2020-02-19 and
+       2020-11-18, and both are days with two operations: an early small value
+       exercise and the regular operation (95 + 5054 = 5149; 103 + 0 = 103).
+       FRED has alternated between the sum and one leg -- 0.095 or 5.149, and
+       0.103 or 0.000. It is FRED's aggregation over a two-operation day, not
+       the Desk revising a print. `RRPONTSYD` stays refused, since it did
+       change, but the refusal's reason is this, and the Desk's own series
+       does not have it.
+    5. *The price.* A `record_date` source at zero days contributes 0 at 13:20
+       or 15:00 against 16:00, and 1 at 17:00; beside the current nine the
+       purge stays 6 in every case.
+    6. *What the adapter would do.* Fetch
+       `rp/results/search.json` in yearly windows (a year is at most 0.6 MB)
+       into a `nyfed_on_rrp` snapshot; keep `operationType == "Reverse Repo"`;
+       sum `totalAmtAccepted` over *every* reverse-repo operation of the
+       `operationDate`, exercises included, because that is what
+       `WLRRAOL` agrees with and what FRED got wrong; read neither
+       `propositions` (added a month later) nor `note`. A `record_date` source
+       like `treasury_auctions`, and the fetch is `fetch_nyfed_reference_rate`'s
+       shape (`startDate`/`endDate` JSON from the same host) with a different
+       path and a list under `repo.operations` rather than `refRates`. Business
+       daily: the panel since 2018-04-02 has 95 weekdays with no operation --
+       federal holidays and the 2018-12-05 closure -- and gaps between
+       operation dates of up to 4 calendar days. Rule 10 does not apply as it
+       stands: `CARRY_FORWARD_COLUMNS` is a weekly carry, and a no-operation
+       holiday is not a missed print. Whether the facility balance on a
+       holiday is carried (the H.4.1 shows it outstanding) or a hole is the
+       human's rule. Its `available_time` is item 2's open question.
+
+    **Recommendation.** Route A is buildable on an adapter that already
+    passed the gate, once a human declares at least five days -- and it should
+    not be declared before `WRESBAL` and `WTREGEN` are corrected to the same
+    number, or three lines of one release will carry two lags. It is weekly.
+    Route B is daily and its values are sound, but it is a new adapter with no
+    publication time to declare. Route A first.
+
+    **Red here** means `WLRRAOL` was declared with fewer days than a first
+    print the tracked H.4.1 vintages show, or those vintages stopped showing a
+    first print later than a day. Re-open the lag, do not edit the assertion.
+
+    Mutation record (disposable copy under `$HOME` from `git ls-files`,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; class control green before and
+    after): `metadata/sources.json` given a `WLRRAOL` entry copying `WRESBAL`'s
+    declaration -- `record_date`, one day, 16:30, `never_revised`, with
+    evidence -- the declaration Route A would make if the H.4.1 schedule were
+    taken at its word. This test fails with `AssertionError`
+    (`1 not greater than or equal to 5`).
+    """
+
+    #: Two vintages further apart than this are not a first-print measurement:
+    #: an observation between them could have appeared on any day in the gap.
+    ADJACENT_DAYS = 7
+
+    @staticmethod
+    def _vintage(path):
+        with open(path, newline="", encoding="utf-8") as handle:
+            rows = list(csv.reader(handle))
+        series, stamp = re.fullmatch(r"(\w+?)_(\d{8})", rows[0][1].strip()).groups()
+        vintage = date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:]))
+        carried = {
+            date.fromisoformat(ref) for ref, value in rows[1:] if value.strip() not in ("", ".")
+        }
+        return series, vintage, carried
+
+    def test_no_wlrraol_lag_is_declared_shorter_than_its_measured_first_print(self):
+        by_series = {}
+        for path in TRACKED_ALFRED_H41_FIRST_PRINT.glob("*.csv"):
+            series, vintage, carried = self._vintage(path)
+            by_series.setdefault(series, []).append((vintage, carried))
+        self.assertEqual(set(by_series), {"WLRRAOL", "WRESBAL"})
+
+        floors = {}
+        for series, vintages in by_series.items():
+            vintages.sort()
+            floors[series] = max(
+                (earlier + timedelta(days=1) - ref).days
+                for (earlier, before), (later, after) in zip(vintages, vintages[1:])
+                if (later - earlier).days <= self.ADJACENT_DAYS
+                for ref in after - before
+            )
+        # One release: both lines first appear on the same day.
+        self.assertEqual(floors["WLRRAOL"], floors["WRESBAL"])
+        floor = floors["WLRRAOL"]
+        self.assertGreater(floor, 1, "no tracked H.4.1 vintage shows a first print later than a day")
+
+        registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        source_id = "fred_macro_latest_vintage"
+        declared = registry[source_id].get("field_release_lags", {}).get("WLRRAOL")
+        if declared is None:
+            with self.assertRaisesRegex(
+                RegistryContractError,
+                f"^{source_id}: a snapshot_retrieved_at source is priced from rows only",
+            ):
+                max_release_lag_days(registry, [(source_id, "WLRRAOL")], decision_time=time(16))
+        else:
+            self.assertGreaterEqual(declared.get("days", 0), floor)
+
+
 if __name__ == "__main__":
     unittest.main()
