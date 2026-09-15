@@ -1,7 +1,8 @@
+import csv
 import json
 import re
 import unittest
-from datetime import time, timezone
+from datetime import date, time, timedelta, timezone
 from pathlib import Path
 
 from repo_model.contract import END_OF_DAY
@@ -986,6 +987,121 @@ class CandidateColumnPairingRecordTests(unittest.TestCase):
             "no record ablates a column only as part of a group; a per-column "
             "paired-evidence gate may now be mechanical -- see this docstring",
         )
+
+
+TRACKED_ALFRED_DFF = (
+    REPO_ROOT / "tests" / "fixtures" / "snapshots" / "alfred-dff",
+    REPO_ROOT / "tests" / "fixtures" / "snapshots" / "alfred-dff-first-print",
+)
+
+
+class DffFirstPrintRecordTests(unittest.TestCase):
+    """A43: `DFF` through the IOER gate. Never revised, and still refused.
+
+    Written 15 September 2026 from ALFRED vintages fetched that day, as ALFRED
+    serves them (`alfredgraph.csv?id=DFF&vintage_date=...`). Nothing here
+    declares, builds or scores a column.
+
+    **The revision half is clean.** Three vintages, chosen so a restatement had
+    somewhere to hide, under `tests/fixtures/snapshots/alfred-dff/`:
+
+    * 2020-01-15 -- before March 2020, so any later restatement of the history
+      it carries would show against both later vintages;
+    * 2023-06-30 -- spanning the 2020 dislocation and 2021-2023, when
+      RRPONTSYD's restatements landed, so the latest vintage is compared with an
+      earlier one over those years and not only over the calm ones;
+    * 2026-09-01 -- recent.
+
+    `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-dff/*.csv`
+    exits 0: 23939 identical of 23939 shared between 2020-01-15 and each later
+    vintage (1954-07-01 to 2020-01-14), and 25201 identical of 25201 between
+    2023-06-30 and 2026-09-01 (1954-07-01 to 2023-06-29). With
+    `alfred-dff-first-print/` added it still exits 0, and 2020-03-20 -- the
+    first print of 2020-03-16 to 2020-03-19, the cut to 0.25 and the 0.20 that
+    followed -- agrees with every later vintage on all 24004 shared
+    observations. No difference at all, so neither the WRESBAL case (a constant
+    ratio, a units rescale) nor the RRPONTSYD case (a restatement) arises.
+
+    **The lag half is not.** The brief held that EFFR for a day is published the
+    following morning, so a one-day `record_date` lag is the honest floor. That
+    is true only of a business day followed by a business day, and DFF is
+    `calendar_daily`. Consecutive-day vintages under `alfred-dff-first-print/`
+    date each observation's first appearance exactly:
+
+    * 2026-08-31 (Mon) first carries 2026-08-28 (Fri): 3 days. 2026-08-30 did not.
+    * 2026-09-01 (Tue) first carries 2026-08-29 (Sat), 2026-08-30 (Sun) and
+      2026-08-31 (Mon): 3, 2 and 1 days.
+    * 2026-09-08 (Tue, after Labor Day) first carries 2026-09-04 (Fri) to
+      2026-09-07 (Mon): 4, 3, 2 and 1 days. The 2026-09-07 vintage ends at
+      2026-09-03.
+
+    So a one-day declaration would date a Friday's value to Saturday when the
+    vintages first show it on Monday, or Tuesday across a holiday: a look-ahead,
+    in the direction that leaks. `DFF` is therefore NOT declared. The longest
+    measured gap is four days; that is a floor from one holiday weekend, not a
+    worst case (an unscheduled market closure could exceed it), and the vintage
+    date carries no time of day, so `available_time` is unmeasured too. The
+    number is the human's decision, as `IORB`'s was.
+
+    The brief also asked, for this case, for DFF's own refusal note in
+    `field_release_lags`. The contract cannot hold one:
+    `contract.validate_field_release_lag` accepts no block without a basis and
+    a revision policy, and a revision-only block would *license* DFF on rows
+    rather than refuse it. The refusal is recorded here instead.
+
+    **Red here** means a `DFF` lag was declared shorter than a first-print gap
+    the tracked vintages show, or the vintages stopped showing any gap longer
+    than a day. Re-open the lag, do not edit the assertion.
+
+    Mutation record (disposable copy under `$HOME` from `git ls-files`,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; class control green before and
+    after): `metadata/sources.json` given a `DFF` entry copying `IOER`'s
+    declaration -- `record_date`, one day, 16:15, `never_revised`, with
+    evidence -- which is the declaration the brief asked for. This test fails
+    with `AssertionError` (`1 not greater than or equal to 4`).
+    """
+
+    @staticmethod
+    def _vintage(path):
+        with open(path, newline="", encoding="utf-8") as handle:
+            rows = list(csv.reader(handle))
+        stamp = re.fullmatch(r"DFF_(\d{8})", rows[0][1].strip()).group(1)
+        vintage = date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:]))
+        carried = {
+            date.fromisoformat(ref) for ref, value in rows[1:] if value.strip() not in ("", ".")
+        }
+        return vintage, carried
+
+    def test_no_dff_lag_is_declared_shorter_than_its_measured_first_print(self):
+        vintages = sorted(
+            self._vintage(path)
+            for directory in TRACKED_ALFRED_DFF
+            for path in directory.glob("DFF_*.csv")
+        )
+        self.assertGreaterEqual(len(vintages), 2, f"no DFF vintages under {TRACKED_ALFRED_DFF}")
+
+        # An observation absent from one vintage and present in the next was
+        # first published after the earlier vintage date: a lower bound on its
+        # lag, exact when the two vintages are a day apart.
+        floor = max(
+            (earlier + timedelta(days=1) - ref).days
+            for (earlier, before), (_later, after) in zip(vintages, vintages[1:])
+            for ref in after - before
+        )
+        self.assertGreater(floor, 1, "no tracked DFF vintage shows a first print later than a day")
+
+        registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        source_id = "fred_macro_latest_vintage"
+        declared = registry[source_id].get("field_release_lags", {}).get("DFF")
+        if declared is None:
+            # The generic source-level refusal, not "unknown source".
+            with self.assertRaisesRegex(
+                RegistryContractError,
+                f"^{source_id}: a snapshot_retrieved_at source is priced from rows only",
+            ):
+                max_release_lag_days(registry, [(source_id, "DFF")], decision_time=time(8))
+        else:
+            self.assertGreaterEqual(declared.get("days", 0), floor)
 
 
 if __name__ == "__main__":
