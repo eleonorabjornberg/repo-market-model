@@ -55,6 +55,10 @@ What is covered here
   interior is the full fit's bit for bit, every excluding model trains only
   outside its block and the purge gaps around it and scores only its own
   block, and the refusals.
+* `GradientBoostedCrossAsymmetricConformalTests` -- `calibration=
+  "cross_conformal_asymmetric"` (B54): `cross_conformal`'s excluding models
+  with each CV+ edge taken off its own side's signed scores at its own side's
+  exact rank, the full fit's interior, and the refusals.
 * `GradientBoostedArxFeatureTests` -- `arx_feature="declared"`: the column is
   `baseline.fit_arx`'s own one-step forecast, fitted per fold on the fit rows,
   read from rows at or before its row, never refitted on calibration rows,
@@ -813,6 +817,14 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
     `conformal` to 3.8% under `cross_conformal`, and that could be either. This
     calibration keeps `conformal`'s split exactly and separates only the score
     sets, so a scored run of it answers which.
+
+    **Corrected by B54: it does not.** `cross_conformal`'s two order statistics
+    are over one pooled score at the band's rate -- where every excluding model
+    agrees at `x` its edges are `conformal`'s pooled widening exactly -- so it
+    never separated the score sets, and the drop in misses below was its fit's
+    alone. This class stays right about what `conformal_asymmetric` *is*; the
+    premise above is what was wrong. See the module docstring of
+    `repo_model.ml`, "The calibrations, taken apart".
 
     **What this test asserts, and what it cannot.** That the two edges move by
     the two score sets' own order statistics, at each side's own rank,
@@ -2331,6 +2343,209 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
         with self.subTest("refusal: cross_conformal with no gap"):
             with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
                 self.fit(rows[:40], calibration="cross_conformal")
+
+
+class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
+    """`calibration="cross_conformal_asymmetric"`: B54's acceptance criterion and its mutation target.
+
+    **The question.** Whether the fourth cell of split-vs-CV+ against
+    pooled-vs-per-side exists, or `cross_conformal` already fills it. It does
+    not: `cross_conformal` ranks one pooled score at the band's `alpha`, which
+    is (CV+, pooled). The cell is CV+ with two signed scores per held-out row,
+    each edge at its own side's rank, and it needs no sample the fit does not
+    already hold -- every excluding model scores its own block, and a signed
+    score is read off the same vector the pooled one is. So it is built, not
+    declined as B53's tail was. See the module docstring of `repo_model.ml`.
+
+    **What this test asserts, and what it cannot.** That each edge is rebuilt
+    here from every excluding model's own outer level at the forecast's row and
+    its own side's signed scores, at `floor(lo (n + 1))` and `ceil(hi (n +
+    1))`; that the fixture separates it from `cross_conformal`; that the rank is
+    exact; and the refusals. No coverage figure: CV+'s per-side guarantee is
+    `2 x` the side's miss rate in the worst case, and a fixture figure would
+    not be evidence about the funding panel.
+
+    **The exact rank, and why it is tested off the declared grid.** On the
+    declared `0.05`-`0.95` grid a float side probability gives the same two
+    ranks as the exact one at every count from nineteen to three thousand,
+    checked when this block was written: a float-rate mutation there cannot
+    die, and would be recorded as surviving for no reason. At `(0.1, 0.5, 0.55)`
+    and ninety-nine scores it is off at both ends -- `0.55 x 100` is
+    `55.00000000000001`, ceiling `56`, and `(1 - (1 - 0.1)) x 100` is
+    `9.999999999999998`, floor `9` -- so the subtest reads the helper there.
+
+    Mutation record (B54)
+    ---------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`,
+    `python3 -B` (the worktree's `.venv`: CPython 3.9.6), `PYTHONPATH=src:tests`
+    (checked to resolve to the copy's `src/`), `REPO_MODEL_REQUIRE_ML=1`,
+    `OMP_NUM_THREADS=1`. Each mutation by exact-string replacement whose anchor
+    was found exactly once, **asserted applied** -- the anchor gone and the
+    replacement present -- then restored, and the file checked byte-identical
+    at the end. Scored against this class; unmutated control green before and
+    after, and `GradientBoostedCrossConformalTests`,
+    `GradientBoostedAsymmetricConformalTests` and
+    `GpdCrossConformalSampleTests` green beside it. No threshold was mutated by
+    its value: each mutation changes a name read or an operator.
+
+      * **Per side, not pooled** -- the lower edge reading `block.scores` for
+        `block.lower_scores` in `_reported`. `each edge is CV+'s ...`,
+        `AssertionError`: the lower edge at 2.046 against 3.456, the upper
+        unchanged.
+      * **Each side's own rate, not the band's** -- `_band_probability` for
+        `_side_probabilities` in `_cross_conformal_asymmetric_edges`, which is
+        CV+'s pooled ranks on the signed scores. `each edge is CV+'s ...`,
+        `AssertionError` (5.240, 11.880 against 3.456, 12.692: narrower at
+        both ends), and `the ranks are exact ...`, `AssertionError`.
+      * **Exact rates** -- `1 - float(levels[0]), float(levels[-1])` for
+        `_side_probabilities(levels)`. `the ranks are exact ...` only,
+        `AssertionError: (8.0, 155.0) != (9.0, 154.0)`. On the declared grid
+        this mutation is equivalent; see above.
+      * **The signed scores themselves** -- `lower_scores` built as
+        `y - Q_hi`. `each edge is CV+'s ...`, `AssertionError`: the pooled
+        score is no longer their maximum.
+      * **The floor** -- `_minimum_calibration_rows` for
+        `_minimum_asymmetric_calibration_rows` under the new name. `refusal:
+        fewer held-out scores ...`, `AssertionError: ValueError not raised`.
+        Not an `IndexError`: the ranks are read at forecast time, so the fit
+        with eighteen scores succeeds and would publish a lower edge read at
+        index -1, the largest low.
+      * **The tail refusal** made unreachable. `refusal: a tail`,
+        `AssertionError: ValueError not raised`.
+      * **The fitter's dispatch** -- `== "cross_conformal"` for
+        `in _CROSS_CALIBRATIONS`. Four subtests, all `AssertionError`: the name
+        fell through to the *split* branch and fitted `conformal` under a
+        declaration of `cross_conformal_asymmetric` with `calibration_folds`
+        `None` -- the silent mis-fit this subtest set exists for.
+      * **The declaration** -- `model_settings` reading `== "cross_conformal"`.
+        `the declaration names ...`, `AssertionError: {} != {...}`.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    TRAIN_ROWS = 480
+    FORECAST_ROWS = 40
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def design(self, row):
+        """A row as the design reads it, built here: the spread, then each regressor."""
+
+        return [float(row.spread_bps)] + [float(row.values[name]) for name in self.REGRESSORS]
+
+    @staticmethod
+    def sorted_levels(estimators, design):
+        """One design row read at every level and sorted, off the estimators directly."""
+
+        return sorted(float(estimator.predict([design])[0]) for estimator in estimators)
+
+    def test_each_cv_plus_edge_is_taken_off_its_own_side_at_its_own_rank(self):
+        """Per-side CV+ edges rebuilt here, the full fit's interior, exact ranks, refusals."""
+
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + self.FORECAST_ROWS)
+        train = rows[: self.TRAIN_ROWS]
+        forecasts = rows[self.TRAIN_ROWS - 1 : -1]
+        model = self.fit(train, calibration="cross_conformal_asymmetric", purge_days=0)
+        pooled = self.fit(train, calibration="cross_conformal", purge_days=0)
+
+        with self.subTest("each edge is CV+'s over its own side's signed scores, at its own rank"):
+            blocks = model.calibration_blocks
+            self.assertEqual(len(blocks), ml.DEFAULT_CALIBRATION_FOLDS)
+            for block, other in zip(blocks, pooled.calibration_blocks):
+                # The same excluding models as cross_conformal's, whose scores
+                # `GradientBoostedCrossConformalTests` rescores; the two signed
+                # sets are the pooled score taken apart, not pooled again.
+                self.assertEqual(block.scores, other.scores)
+                self.assertEqual(
+                    block.scores,
+                    tuple(max(lo, hi) for lo, hi in zip(block.lower_scores, block.upper_scores)),
+                )
+                self.assertNotEqual(block.lower_scores, block.upper_scores)
+            count = sum(len(block.scores) for block in blocks)
+            lower_rank = math.floor(Fraction(repr(QUANTILE_LEVELS[0])) * (count + 1))
+            upper_rank = math.ceil(Fraction(repr(QUANTILE_LEVELS[-1])) * (count + 1))
+            separated = 0
+            for row in forecasts:
+                lows, highs = [], []
+                for block in blocks:
+                    excluded = self.sorted_levels(block.estimators, self.design(row))
+                    lows.extend(excluded[0] - score for score in block.lower_scores)
+                    highs.extend(excluded[-1] + score for score in block.upper_scores)
+                fitted = model._quantile_vector(model.design_row(row))
+                reported = model.predict(row)
+                self.assertEqual(reported[1:-1], fitted[1:-1])
+                self.assertEqual(reported[1:-1], pooled.predict(row)[1:-1])
+                self.assertEqual(
+                    (reported[0], reported[-1]),
+                    (
+                        min(sorted(lows)[lower_rank - 1], fitted[1]),
+                        max(sorted(highs)[upper_rank - 1], fitted[-2]),
+                    ),
+                    msg=f"the band forecast from {row.date} is not per-side CV+'s",
+                )
+                other = pooled.predict(row)
+                separated += (reported[0], reported[-1]) != (other[0], other[-1])
+            self.assertGreater(
+                separated,
+                0,
+                msg="the fixture: every band equals cross_conformal's, so it cannot tell the two apart",
+            )
+
+        with self.subTest("the ranks are exact, on a grid where a float rank is one off"):
+            # Exact: the 10th smallest low and the 55th smallest high.
+            lows = [float(value) for value in range(99)]
+            highs = [float(value) + 100.0 for value in range(99)]
+            self.assertEqual(
+                ml._cross_conformal_asymmetric_edges(lows, highs, (0.1, 0.5, 0.55)),
+                (9.0, 154.0),
+            )
+
+        with self.subTest("refusal: fewer held-out scores than either side's rank needs"):
+            # 18 scores clear cross_conformal's nine and not the per-side nineteen.
+            with self.assertRaisesRegex(
+                ValueError,
+                r"cross_conformal_asymmetric calibration needs at least 19 held-out "
+                r"scores, got 18",
+            ):
+                self.fit(rows[:19], minimum_history=19,
+                         calibration="cross_conformal_asymmetric",
+                         calibration_folds=2, purge_days=0)
+            # And nineteen is enough.
+            edge = self.fit(rows[:20], calibration="cross_conformal_asymmetric",
+                            calibration_folds=2, purge_days=0)
+            self.assertEqual(sum(len(block.scores) for block in edge.calibration_blocks), 19)
+
+        with self.subTest("refusal: a tail"):
+            with self.assertRaisesRegex(
+                ValueError, r"not wired for calibration 'cross_conformal_asymmetric'"
+            ):
+                self.fit(rows[:120], calibration="cross_conformal_asymmetric",
+                         purge_days=0, tail="gpd")
+
+        with self.subTest("refusal: a calibration_share"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"calibration_share 0.25 was given, but calibration "
+                r"'cross_conformal_asymmetric'",
+            ):
+                self.fit(rows[:40], calibration="cross_conformal_asymmetric",
+                         calibration_share=0.25, purge_days=0)
+
+        with self.subTest("the declaration names the calibration and its folds"):
+            self.assertEqual(
+                dict(model.model_settings),
+                {"calibration": "cross_conformal_asymmetric", "calibration_folds": 5},
+            )
 
 
 def arx_frame(count, seed=20260911):

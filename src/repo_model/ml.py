@@ -122,10 +122,13 @@ regression, done causally inside the one training frame a fold hands over:
 Runtime is the full fit plus one fit per block, and every forecast reads each
 excluding model once more.
 
-**Asymmetric split-conformal, opt-in (B51).** `cross_conformal` changes two
-things at once: it keeps the full fit, and it takes its two band edges from
-separate order statistics. `calibration="conformal_asymmetric"` changes only the
-second, so the two can be told apart. It is `conformal` in everything but how the
+**Asymmetric split-conformal, opt-in (B51).** B51 introduced this as the half of
+`cross_conformal`'s change that is not the fit, on the reading that CV+ takes its
+two edges from separate order statistics. **That reading was an equivocation;
+see the taxonomy below (B54).** CV+'s two order statistics are over *one pooled
+score* at the *band* rate, so `conformal` to `cross_conformal` changes the fit
+and not the score, and `conformal_asymmetric` isolates a change `cross_conformal`
+never made. What it is stands: `conformal` in everything but how the
 calibration scores are reduced -- the same split, the same fit rows only and no
 refit, the same feature rows, the same `calibration_share` -- and then:
 
@@ -157,6 +160,91 @@ refit, the same feature rows, the same `calibration_share` -- and then:
   `conformal`'s nine, and the fitter refuses below it;
 * no tail: `tail` is refused with it, as under `cross_conformal`, because the
   tail's threshold is `conformal`'s single widening and is not wired here.
+
+**The calibrations, taken apart (B54).** What each one varies, read off the code
+-- fit rows; what is ordered; the rate a rank is taken at; the floor on scores
+for the declared band; the guarantee claimed:
+
+* `none` -- the frame; nothing; no rank; no floor; no guarantee.
+* `conformal` -- the fit rows; one pooled score per calibration row, reduced to
+  one scalar widening; the band's `alpha`; nine; band coverage `>= 1 - alpha`.
+* `conformal_asymmetric` -- the fit rows; two signed scores per row, reduced to
+  two scalar widenings; each side's own miss rate; nineteen; each side misses
+  at most its own rate.
+* `cross_conformal` -- the frame, plus one excluding model per block; edges
+  `Q_lo_-k(i)(x) - s_i` and `Q_hi_-k(i)(x) + s_i` over one pooled `s_i`; the
+  band's `alpha` on both edges; nine; band coverage `>= 1 - 2 alpha`.
+* `cross_conformal_asymmetric` -- the frame, plus one excluding model per
+  block; the same edges over two signed scores; each side's own miss rate;
+  nineteen; each side misses at most twice its own rate.
+
+Why that is two axes and not three:
+
+* **The ordered quantity and the fit are one axis, not two.** A split fit is
+  read once, so its scores reduce to a scalar widening of that one fit; a CV+
+  fit has an excluding model per block, so its order statistic is an edge in
+  level space with each model's own read at `x` inside it. A full fit moved by
+  a scalar widening of out-of-block scores is neither: its scores come from
+  models it is not, and it has no guarantee -- B25 recorded it as a mutation,
+  not a calibration.
+* **The rank rate and the score are one axis, not two.** A pooled score
+  `max(Q_lo - y, y - Q_hi)` already counts both misses in one number, so it is
+  ranked at the band's `alpha`; two signed scores count one miss each, so each
+  is ranked at its own side's miss rate. Pairing them the other way round is
+  the error `conformal_asymmetric`'s bullets refuse.
+* **CV+'s rank is `conformal`'s, not a per-side one.** `floor(alpha (n + 1))`
+  on `a - s_i` is `a - ` the `ceil((1 - alpha)(n + 1))`-th smallest `s_i`,
+  since `n + 1 - floor(alpha (n + 1)) = ceil((1 - alpha)(n + 1))`. So where
+  every excluding model agrees at `x`, `cross_conformal`'s edges are exactly
+  `conformal`'s pooled widening: each edge is taken at the full band `alpha`
+  on the pooled score, not at half of it and not at the side's own rate. Its
+  two order statistics differ only through the excluding models' spread at
+  `x`, which is the fit axis.
+* **So the grid is square, and its fourth cell was empty.** Split or CV+,
+  against pooled score at the band rate or signed scores at the side rates.
+  `cross_conformal` is (CV+, pooled), not (CV+, separate); the queue sheet's
+  "`cross_conformal` (full, separate)" was the equivocation, and "separate
+  edges" named two different things in the two calibrations. The empty cell
+  is `cross_conformal_asymmetric`, below. B51's published comparison of
+  `conformal` with `conformal_asymmetric` therefore attributes nothing about
+  `cross_conformal`'s lower misses: that change was the fit's.
+* **CV+'s guarantee is the factor-two one.** Barber et al.'s CV+ bound is
+  `1 - 2 alpha` less a K-fold term; `cross_conformal` claims no more, and
+  `tests/test_ml.py` holds it to `1 - alpha` only on a stationary fixture,
+  where it attains that.
+
+**Asymmetric cross-conformal, opt-in (B54).** `calibration=
+"cross_conformal_asymmetric"` is `cross_conformal` in everything but how the
+held-out scores are reduced -- the same full fit reported, the same purged date
+blocks and excluding models, the same held-out rows and feature rows, the same
+`calibration_folds` -- and then:
+
+* each held-out row keeps **two** signed scores off its own block's excluding
+  model, `s_lo = Q_lo_-k(i) - y` and `s_hi = y - Q_hi_-k(i)`, never pooled;
+* the lower edge is the `floor(lo (n + 1))`-th smallest of
+  `Q_lo_-k(i)(x) - s_lo_i` and the upper the `ceil(hi (n + 1))`-th smallest of
+  `Q_hi_-k(i)(x) + s_hi_i`, with `lo` and `hi` the declared outer levels exact
+  by `_side_probabilities`, every excluding model read at the forecast's own
+  feature row. The full fit's outer levels move there through `_banded`, and
+  the tail knots move with them, as under `cross_conformal`;
+* **the guarantee is CV+'s, per side.** CV+'s argument never uses that the
+  score is two-sided: a miss above the upper edge means the test row's `s_hi`
+  beats `s_hi_i` for at least `ceil(hi (n + 1))` rows, and the tournament bound
+  gives `P(y > upper) <= 2 (1 - hi)` less the K-fold term; below, by the same
+  count with `n + 1 - floor(lo (n + 1)) = ceil((1 - lo)(n + 1))`,
+  `P(y < lower) <= 2 lo`. The reported band's misses are disjoint -- `_banded`
+  keeps `lower <= upper` -- so the band's worst case is `1 - 2 alpha`, as
+  `cross_conformal`'s is. The per-side statement is what is new, and it is
+  CV+'s factor two weaker than `conformal_asymmetric`'s, exactly as
+  `cross_conformal`'s band is than `conformal`'s;
+* **its floor is nineteen held-out scores, derived.** `floor(lo (n + 1)) >= 1`
+  exactly when `n >= (1 - lo) / lo`, and `ceil(hi (n + 1)) <= n` exactly when
+  `n >= hi / (1 - hi)`: `_minimum_asymmetric_calibration_rows`' bound, which is
+  that same `p / (1 - p)` at each side's probability. The fitter refuses below
+  it, as `cross_conformal` refuses below nine;
+* no tail, for `cross_conformal`'s reason (B53) twice over: the knot would be
+  an order statistic over every excluding model, and now of a side score set
+  no `conformal` widening ever formed.
 
 **Lagged spread changes, opt-in (B23).** `spread_change_lags=k` adds `k`
 regressors, `spread_change_lag_1` .. `spread_change_lag_k`: the change in
@@ -287,10 +375,12 @@ residual ever seen and then an exceedance of exactly `0.0`.
   `xi` lands at or below the lower end of `GPD_SHAPE_BOUNDS` is not used: the
   fold takes the same exponential fallback, and the record says `refused`, not
   `fallback`, so the two can be counted apart. See `_fit_gpd_pwm`.
-* **Refused under `none`, `cross_conformal` and `conformal_asymmetric`.**
+* **Refused under `none`, `cross_conformal`, `conformal_asymmetric` and
+  `cross_conformal_asymmetric`.**
   `none` holds nothing out, so its only sample is rows the estimators were
   fitted on --- an in-sample tail. `conformal_asymmetric` moves the two edges
-  by two widenings and the tail's knot is `conformal`'s one. `cross_conformal`
+  by two widenings and the tail's knot is `conformal`'s one.
+  `cross_conformal_asymmetric` has both of the other two reasons. `cross_conformal`
   holds every row out in some block, and the coherent sample there is a
   different construction that is not wired; a mixed-provenance tail in the
   meantime would be worse than the refusal. `cli_eval` refuses the same three
@@ -313,7 +403,9 @@ residual ever seen and then an exceedance of exactly `0.0`.
   coherent CV+ tail would have to be rebuilt per forecast row, from
   `Q_hi_-k(i)(x)` and each row's own excess, and so would no longer be the one
   per-fit `tail_fit` that `tail_account` records per fold: a redesign, not a
-  wiring. `GpdCrossConformalSampleTests` holds the premise.
+  wiring. `GpdCrossConformalSampleTests` holds the premise. `cli_eval`'s
+  selection refusal names the first three; the fitter refuses
+  `cross_conformal_asymmetric` itself.
 
 Absent is the default and is today's gbm, bit for bit. The tail is stdlib
 arithmetic.
@@ -396,10 +488,20 @@ _MINIMUM_TAIL = 1e-9
 
 #: The band calibrations a fit can be asked for. `none` first: it is the
 #: default, and the model every published record was produced with. See the
-#: module docstring for `conformal`, `cross_conformal` and
-#: `conformal_asymmetric`, which is appended rather than slotted beside
-#: `conformal` so no existing name's position moves.
-CALIBRATIONS = ("none", "conformal", "cross_conformal", "conformal_asymmetric")
+#: module docstring for `conformal`, `cross_conformal`, `conformal_asymmetric`
+#: and `cross_conformal_asymmetric`, each appended rather than slotted beside
+#: its sibling so no existing name's position moves.
+CALIBRATIONS = (
+    "none",
+    "conformal",
+    "cross_conformal",
+    "conformal_asymmetric",
+    "cross_conformal_asymmetric",
+)
+
+#: The calibrations that report the full fit and calibrate it with excluding
+#: models over `calibration_folds` purged date blocks.
+_CROSS_CALIBRATIONS = ("cross_conformal", "cross_conformal_asymmetric")
 
 #: The share of a training frame held out as calibration rows when
 #: `calibration="conformal"` names none. A quarter: at `--minimum-history 61`
@@ -890,6 +992,25 @@ def _cross_conformal_edges(
     return lower, upper
 
 
+def _cross_conformal_asymmetric_edges(
+    lows: Sequence[float], highs: Sequence[float], levels: Sequence[float]
+) -> Tuple[float, float]:
+    """CV+'s edges from `Q_lo_-k(i)(x) - s_lo_i` and `Q_hi_-k(i)(x) + s_hi_i`, per side.
+
+    The `floor(lo (n + 1))`-th smallest low and the `ceil(hi (n + 1))`-th
+    smallest high, `lo` and `hi` the outer levels exact by
+    `_side_probabilities`. Both ranks name an entry exactly when
+    `n >= _minimum_asymmetric_calibration_rows(levels)`, which the fitter
+    refuses below.
+    """
+
+    lower_p, upper_p = _side_probabilities(levels)
+    count = len(lows)
+    lower = sorted(lows)[math.floor((1 - lower_p) * (count + 1)) - 1]
+    upper = sorted(highs)[math.ceil(upper_p * (count + 1)) - 1]
+    return lower, upper
+
+
 @dataclass(frozen=True)
 class FittedTail:
     """A generalised Pareto fit to a sample of excesses, and how it was got.
@@ -1067,7 +1188,10 @@ class _ExcludingModel:
       origin or as a target, ascending. Carried so the purge can be checked
       against a calendar rather than taken on trust.
     * `scored_dates`, `scores` --- the held-out rows this model scored, and
-      their scores, in date order.
+      their pooled scores `max(Q_lo - y, y - Q_hi)`, in date order.
+    * `lower_scores`, `upper_scores` --- the same rows' two signed scores,
+      `Q_lo - y` and `y - Q_hi`, in the same order. Read only under
+      `cross_conformal_asymmetric`; `scores` is their elementwise maximum.
     """
 
     __slots__ = (
@@ -1078,9 +1202,11 @@ class _ExcludingModel:
         "held_out_end",
         "held_out_start",
         "imputations",
+        "lower_scores",
         "scored_dates",
         "scores",
         "training_dates",
+        "upper_scores",
     )
 
     def __init__(
@@ -1096,7 +1222,11 @@ class _ExcludingModel:
         scored_dates: Sequence[date],
         scores: Sequence[float],
         arx: Optional[FittedArx] = None,
+        lower_scores: Sequence[float] = (),
+        upper_scores: Sequence[float] = (),
     ) -> None:
+        self.lower_scores: Tuple[float, ...] = tuple(lower_scores)
+        self.upper_scores: Tuple[float, ...] = tuple(upper_scores)
         self.arx: Optional[FittedArx] = arx
         self.estimators: Tuple[Any, ...] = tuple(estimators)
         self.imputations: Mapping[str, float] = MappingProxyType(dict(imputations))
@@ -1210,8 +1340,8 @@ class FittedGradientBoostedQuantiles:
       calendar rather than take it on trust. Under `cross_conformal` the fit
       rows are the whole frame and the calibration dates are the first and
       last held-out rows scored.
-    * `calibration_folds`, `calibration_blocks` --- under `cross_conformal`,
-      how many blocks the frame was split into and one `_ExcludingModel` per
+    * `calibration_folds`, `calibration_blocks` --- under `cross_conformal`
+      and `cross_conformal_asymmetric`, how many blocks the frame was split into and one `_ExcludingModel` per
       block, in date order (`None` and empty otherwise).
     * `spread_change_lags`, `_history_dates`, `_history_spreads` --- how many
       lagged spread changes the design carries (`None` when it carries none),
@@ -1438,7 +1568,8 @@ class FittedGradientBoostedQuantiles:
         `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
         the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal` and
-        `conformal_asymmetric`, `calibration_folds` for `cross_conformal`.
+        `conformal_asymmetric`, `calibration_folds` for `cross_conformal` and
+        `cross_conformal_asymmetric`.
 
         `tail` is what the command declared, not evidence that a shape was
         fitted: a rolling backtest refits at every origin, so what each fold's
@@ -1450,7 +1581,7 @@ class FittedGradientBoostedQuantiles:
         if self.calibration in ("conformal", "conformal_asymmetric"):
             settings["calibration"] = self.calibration
             settings["calibration_share"] = self.calibration_share
-        elif self.calibration == "cross_conformal":
+        elif self.calibration in _CROSS_CALIBRATIONS:
             settings["calibration"] = self.calibration
             settings["calibration_folds"] = self.calibration_folds
         if self.spread_change_lags is not None:
@@ -1655,14 +1786,17 @@ class FittedGradientBoostedQuantiles:
         its two outer levels. Under `cross_conformal` the edges are CV+'s, read
         off every excluding model at this feature row. Under
         `conformal_asymmetric` each edge moves by its own `edge_widenings`
-        entry, through `_banded`'s neighbour rule.
+        entry, through `_banded`'s neighbour rule. Under
+        `cross_conformal_asymmetric` the edges are CV+'s over each block's two
+        signed score sets, at each side's own rank.
         """
 
         vector = self._quantile_vector(self.design_row(feature_row))
         if self.calibration == "conformal_asymmetric":
             down, up = self.edge_widenings
             return _banded(vector, vector[0] - down, vector[-1] + up), down, up
-        if self.calibration == "cross_conformal":
+        if self.calibration in _CROSS_CALIBRATIONS:
+            asymmetric = self.calibration == "cross_conformal_asymmetric"
             lows: List[float] = []
             highs: List[float] = []
             for block in self.calibration_blocks:
@@ -1680,9 +1814,17 @@ class FittedGradientBoostedQuantiles:
                         )
                     ],
                 )[0]
+                if asymmetric:
+                    lows.extend(excluded[0] - score for score in block.lower_scores)
+                    highs.extend(excluded[-1] + score for score in block.upper_scores)
+                    continue
                 lows.extend(excluded[0] - score for score in block.scores)
                 highs.extend(excluded[-1] + score for score in block.scores)
-            lower, upper = _cross_conformal_edges(lows, highs, self.levels)
+            lower, upper = (
+                _cross_conformal_asymmetric_edges(lows, highs, self.levels)
+                if asymmetric
+                else _cross_conformal_edges(lows, highs, self.levels)
+            )
             return _banded(vector, lower, upper), vector[0] - lower, upper - vector[-1]
         if not self.widening:
             return vector, 0.0, 0.0
@@ -2080,7 +2222,10 @@ def fit_gradient_boosted_quantiles(
             `"cross_conformal"` reports the full fit and moves its band to
             CV+'s edges over `calibration_folds` purged date blocks;
             `"conformal_asymmetric"` splits as `"conformal"` does and moves
-            each edge by its own side's score. See the module docstring.
+            each edge by its own side's score;
+            `"cross_conformal_asymmetric"` blocks as `"cross_conformal"` does
+            and takes each edge off its own side's signed scores at its own
+            side's rank. See the module docstring.
         calibration_share: the share of the frame held out as calibration rows,
             strictly inside `(0, 1)`. `None` means `DEFAULT_CALIBRATION_SHARE`
             under `conformal`, and is the only value `none` accepts: a share
@@ -2102,9 +2247,9 @@ def fit_gradient_boosted_quantiles(
             published gbm record was produced with. `"garch11"` fits a
             GARCH(1,1) on the fit rows' spread changes and adds its one-step
             conditional variance. See the module docstring.
-        calibration_folds: the contiguous date blocks `cross_conformal` splits
-            the frame into, an int of at least 2. `None` means
-            `DEFAULT_CALIBRATION_FOLDS` under `cross_conformal`, and is the
+        calibration_folds: the contiguous date blocks `cross_conformal` and
+            `cross_conformal_asymmetric` split the frame into, an int of at
+            least 2. `None` means `DEFAULT_CALIBRATION_FOLDS` under both, and is the
             only value the other calibrations accept, for `calibration_share`'s
             reason; `calibration_share` is refused under `cross_conformal` by
             the same rule.
@@ -2163,10 +2308,11 @@ def fit_gradient_boosted_quantiles(
             on the rows it is handed -- fewer than its default minimum, a
             singular design -- propagates as it raised it; and, for the tail,
             if `tail` is not one of `TAIL_FAMILIES`, or is given with
-            calibration `none` (an in-sample tail), `cross_conformal` or
-            `conformal_asymmetric` (not wired). Under `conformal_asymmetric`
-            the calibration-row floor is its own per-side one, not
-            `conformal`'s.
+            calibration `none` (an in-sample tail), `cross_conformal`,
+            `conformal_asymmetric` or `cross_conformal_asymmetric` (not
+            wired). Under `conformal_asymmetric` and
+            `cross_conformal_asymmetric` the score floor is the per-side one,
+            not `conformal`'s or `cross_conformal`'s.
     """
 
     grid = _validate_levels(levels)
@@ -2188,12 +2334,13 @@ def fit_gradient_boosted_quantiles(
             f"would publish the in-sample band under a record that asked for "
             f"another"
         )
-    if calibration_folds is not None and calibration != "cross_conformal":
+    if calibration_folds is not None and calibration not in _CROSS_CALIBRATIONS:
         raise ValueError(
             f"calibration_folds {calibration_folds} was given, but calibration "
             f"{calibration!r} splits the frame into no blocks; only "
-            f"'cross_conformal' does. A setting that is accepted and ignored is "
-            f"read by the next person as a setting that took effect"
+            f"'cross_conformal' and 'cross_conformal_asymmetric' do. A setting "
+            f"that is accepted and ignored is read by the next person as a "
+            f"setting that took effect"
         )
     folds: Optional[int] = None
     if calibration == "none":
@@ -2205,11 +2352,11 @@ def fit_gradient_boosted_quantiles(
                 f"that took effect"
             )
         share: Optional[float] = None
-    elif calibration == "cross_conformal":
+    elif calibration in _CROSS_CALIBRATIONS:
         if calibration_share is not None:
             raise ValueError(
                 f"calibration_share {calibration_share} was given, but "
-                f"calibration 'cross_conformal' holds out every row in turn, "
+                f"calibration {calibration!r} holds out every row in turn, "
                 f"not a share of them; its setting is calibration_folds. A "
                 f"setting that is accepted and ignored is read by the next "
                 f"person as a setting that took effect"
@@ -2304,6 +2451,14 @@ def fit_gradient_boosted_quantiles(
             f"this calibration moves the two edges by two. A tail attached at "
             f"the wrong knot would put a jump in the curve at the join. Use "
             f"calibration 'conformal'"
+        )
+    if tail is not None and calibration == "cross_conformal_asymmetric":
+        raise ValueError(
+            f"tail {tail!r} is not wired for calibration "
+            f"'cross_conformal_asymmetric': the knot would be a per-side CV+ "
+            f"edge over every excluding model, which has cross_conformal's "
+            f"missing sample and conformal_asymmetric's second widening both. "
+            f"Use calibration 'conformal'"
         )
 
     names = tuple(str(name) for name in regressors)
@@ -2532,10 +2687,14 @@ def fit_gradient_boosted_quantiles(
                 )
             )
         count = sum(len(plan[-1]) for plan in plans)
-        needed = _minimum_calibration_rows(grid)
+        needed = (
+            _minimum_asymmetric_calibration_rows(grid)
+            if calibration == "cross_conformal_asymmetric"
+            else _minimum_calibration_rows(grid)
+        )
         if count < needed:
             raise ValueError(
-                f"cross-conformal calibration needs at least {needed} held-out "
+                f"{calibration} calibration needs at least {needed} held-out "
                 f"scores, got {count} over {folds} blocks of {len(rows)} training "
                 f"rows; below {needed} CV+'s ranks for a "
                 f"{float(_band_probability(grid))} band name no score, and a band "
@@ -2676,6 +2835,12 @@ def fit_gradient_boosted_quantiles(
                 scores=[
                     max(vector[0] - target, target - vector[-1])
                     for vector, (_, target, _) in zip(vectors, held_out)
+                ],
+                lower_scores=[
+                    vector[0] - target for vector, (_, target, _) in zip(vectors, held_out)
+                ],
+                upper_scores=[
+                    target - vector[-1] for vector, (_, target, _) in zip(vectors, held_out)
                 ],
             )
         )
