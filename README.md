@@ -143,11 +143,12 @@ The interval is a stationary bootstrap, block length 5, 2000 replications, on th
 | gbm (calibration `conformal_asymmetric`, calibration share `0.35`) | 90% | 88.6% | 86.4% to 90.6% | 1.302 bp |
 | gbm (calibration `conformal`, calibration share `0.25`) | 90% | 85.5% | 83.1% to 87.8% | 1.294 bp |
 | gbm (calibration `conformal`, calibration share `0.35`) | 90% | 84.2% | 81.4% to 86.8% | 1.459 bp |
+| gbm (calibration `cross_conformal_asymmetric`, calibration folds `5`) | 90% | 92.8% | 91.1% to 94.3% | 1.021 bp |
 | gbm (calibration `cross_conformal`, calibration folds `5`) | 90% | 93.1% | 91.5% to 94.7% | 1.130 bp |
 | gbm | 90% | 65.8% | 63.3% to 68.1% | 0.943 bp |
 | persistence | 90% | 81.6% | 78.7% to 84.2% | 0.889 bp |
 
-A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `conformal`, calibration share `0.35`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm (arx feature `declared`, calibration `conformal`, calibration share `0.25`), gbm (arx feature `declared`, calibration `cross_conformal`, calibration folds `5`), gbm (arx feature `declared`), gbm (calibration `conformal`, calibration share `0.25`), gbm (calibration `conformal`, calibration share `0.35`), gbm (calibration `cross_conformal_asymmetric`, calibration folds `5`), gbm (calibration `cross_conformal`, calibration folds `5`), gbm, persistence.
 
 **The control that licenses every future skill number.** A climatology scored against climatology must show no skill. Over the same 2080 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one. Any skill this repository later reports rests on that having been true first.
 
