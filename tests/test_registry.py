@@ -1037,29 +1037,129 @@ class DffFirstPrintRecordTests(unittest.TestCase):
 
     So a one-day declaration would date a Friday's value to Saturday when the
     vintages first show it on Monday, or Tuesday across a holiday: a look-ahead,
-    in the direction that leaks. `DFF` is therefore NOT declared. The longest
+    in the direction that leaks. A43 therefore declared nothing. The longest
     measured gap is four days; that is a floor from one holiday weekend, not a
     worst case (an unscheduled market closure could exceed it), and the vintage
     date carries no time of day, so `available_time` is unmeasured too. The
-    number is the human's decision, as `IORB`'s was.
+    number was left to the human, as `IORB`'s was.
 
-    The brief also asked, for this case, for DFF's own refusal note in
+    A43 also asked, for this case, for DFF's own refusal note in
     `field_release_lags`. The contract cannot hold one:
     `contract.validate_field_release_lag` accepts no block without a basis and
     a revision policy, and a revision-only block would *license* DFF on rows
-    rather than refuse it. The refusal is recorded here instead.
+    rather than refuse it. The refusal was recorded here instead.
 
-    **Red here** means a `DFF` lag was declared shorter than a first-print gap
-    the tracked vintages show, or the vintages stopped showing any gap longer
-    than a day. Re-open the lag, do not edit the assertion.
+    ---
+
+    **A47, 15 September 2026: the declaration, and the number held at both
+    ends.**
+
+    Eleonora took the decision A43 handed her. `DFF` is declared `record_date`,
+    `never_revised` on the eight vintages above, 16:15, at the floor those
+    vintages measure plus `HEADROOM_DAYS` -- one deliberate day above what is
+    measured.
+
+    **A44 was sent to write that and refused, correctly.** The assertion then
+    read `declared.days >= floor`, which the new number passes and the old
+    floor passes too: the extra day would have sat in the registry defended by
+    nothing, and a later edit back down to the floor would have passed every
+    test in the suite. The assertion is now an *equality* against
+    `floor + HEADROOM_DAYS`, so the declaration is red in both directions -- a
+    retreat to the floor and a drift a day past it are each a failure -- and
+    the decision is legible in the tree rather than only in a report.
+
+    `HEADROOM_DAYS` is the stored decision, not a measurement. Moving it does
+    not defeat this guard; it states a different decision, which is exactly what
+    the constant exists to make explicit. It is not a mutation target.
+
+    **The extra day is free, and the second test below runs that rather than
+    asserting it in prose.** The (source, field) pairs come from
+    `derived.fields` of the published funding record -- the eleven pairs behind its nine features, which is what
+    the purge was actually sized over. Not from the panel manifest, whose
+    `built_columns` is a list of column names with no map to sources, and is a
+    different question. At the record's own 16:00 decision time a run reading
+    those pairs *and* `DFF` purges exactly what the record already publishes,
+    while one day further would not. Measured over the declaration and the
+    record as committed: `DFF` alone prices 5, 6 and 7 days at four, five and
+    six; beside the published pairs it prices 6, 6 and 7. That is where the
+    headroom stopped.
+
+    **Red here** means one of four things, and none of them is an assertion to
+    edit: `DFF` declared at something other than the tracked vintages' floor
+    plus the stored headroom; those vintages stopping showing a first print
+    later than a day; no `DFF` declaration on the source at all, so the
+    source-level snapshot refusal prices it instead of this number; or the
+    published funding record's purge no longer being what this registry prices
+    once `DFF` joins it, which costs history on every run that reads those
+    columns.
 
     Mutation record (disposable copy under `$HOME` from `git ls-files`,
     `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; class control green before and
-    after): `metadata/sources.json` given a `DFF` entry copying `IOER`'s
-    declaration -- `record_date`, one day, 16:15, `never_revised`, with
-    evidence -- which is the declaration the brief asked for. This test fails
-    with `AssertionError` (`1 not greater than or equal to 4`).
+    after):
+
+    * A43: `metadata/sources.json` given a `DFF` entry copying `IOER`'s
+      declaration -- `record_date`, one day, 16:15, `never_revised`, with
+      evidence -- which is the declaration A43's brief asked for. It then failed
+      with `AssertionError` (`1 not greater than or equal to 4`). **Re-run under
+      A47's equality** (CLAUDE.md: a mutation whose guard changed is re-run): it
+      still fails, and now both tests do -- `AssertionError: 5 != 1 : DFF is
+      declared 1 days; the tracked vintages measure a 4-day first-print floor
+      and Eleonora's decision of 15 September 2026 adds HEADROOM_DAYS=1. ...`,
+      and `AssertionError: 6 == 6 : a day beyond DFF's declared lag no longer
+      moves the published purge ...`, which is the headroom claim failing
+      because at one day the day after it is still free.
+    * A47, the retreat to the floor: `DFF`'s `days` set to 4 -- the edit A44
+      said the tree could not refuse, and could not, under `>=`.
+      `AssertionError: 5 != 4 : DFF is declared 4 days; the tracked vintages
+      measure a 4-day first-print floor and Eleonora's decision of 15 September
+      2026 adds HEADROOM_DAYS=1. Fewer leaks: an unscheduled closure longer than
+      the one Labor Day weekend behind the floor would be dated before it was
+      published. More costs a day of purge on every run that reads this column.
+      Neither is an assertion to edit`. The second test fails too, with the
+      `6 == 6` above.
+    * A47, the drift past it: `DFF`'s `days` set to 6.
+      `AssertionError: 5 != 6 : DFF is declared 6 days; ...` (same message), and
+      the second test fails with `AssertionError: 6 != 7 : declaring DFF at its
+      stored lag moves the purge of
+      exceedance_gbm_cross_conformal_funding_mh61.json: the headroom is no
+      longer free, and taking it costs a day of history on every run that reads
+      these columns`. That is the "six is not free" measurement, run.
+    * A47, the removal: the `DFF` entry deleted from `field_release_lags`
+      entirely, which is the state A43 left, and the state a fallthrough to
+      `declared.get(...)` on `None` would have reported as an `AttributeError`.
+      Both tests fail with `AssertionError: 'DFF' not found in ['IOER', 'IORB',
+      'WRESBAL', 'WTREGEN'] : fred_macro_latest_vintage declares no DFF release
+      lag. Eleonora declared one on 15 September 2026; without it the field
+      falls back to the source-level snapshot_retrieved_at refusal and this
+      number is not in the tree at all`.
+
+    Each mutation applied (the edit was checked to change the entry before the
+    run) and each failed; the class control was green before and after all four.
     """
+
+    #: The cushion above the measured first-print floor at which `DFF` is
+    #: declared. **Eleonora's decision of 15 September 2026, and a decision
+    #: rather than a measurement.** The floor is what the tracked vintages
+    #: happen to show -- four days, from one Labor Day weekend -- and a floor is
+    #: not a proven worst case: an unscheduled closure appended to a holiday
+    #: weekend would print later than anything in these fixtures, and a
+    #: declaration at the floor would date that value before it existed. This
+    #: day is the cushion for exactly that. It stops here rather than a day
+    #: higher because the second test below measures that one more day would
+    #: move the published funding record's purge, and this one does not.
+    #:
+    #: Changing this constant is not a mutation of the guard: it states a
+    #: different decision, which is what the constant is here to make explicit.
+    HEADROOM_DAYS = 1
+
+    SOURCE_ID = "fred_macro_latest_vintage"
+    FIELD = "DFF"
+
+    #: The published record whose purge the headroom had to leave alone. Its
+    #: `derived.fields` are (source, field) pairs and are what the purge was
+    #: sized over; the panel manifest's `built_columns` are column names with no
+    #: map to a source, and are not the same question.
+    FUNDING_RECORD = "exceedance_gbm_cross_conformal_funding_mh61.json"
 
     @staticmethod
     def _vintage(path):
@@ -1072,7 +1172,7 @@ class DffFirstPrintRecordTests(unittest.TestCase):
         }
         return vintage, carried
 
-    def test_no_dff_lag_is_declared_shorter_than_its_measured_first_print(self):
+    def _measured_floor(self):
         vintages = sorted(
             self._vintage(path)
             for directory in TRACKED_ALFRED_DFF
@@ -1089,19 +1189,78 @@ class DffFirstPrintRecordTests(unittest.TestCase):
             for ref in after - before
         )
         self.assertGreater(floor, 1, "no tracked DFF vintage shows a first print later than a day")
+        return floor
 
+    def _declaration(self, registry):
+        field_lags = registry[self.SOURCE_ID].get("field_release_lags") or {}
+        # Against the sorted keys, not the mapping: a missing declaration should
+        # name itself, not print four notes at the reader.
+        self.assertIn(
+            self.FIELD,
+            sorted(field_lags),
+            f"{self.SOURCE_ID} declares no {self.FIELD} release lag. Eleonora "
+            f"declared one on 15 September 2026; without it the field falls back "
+            f"to the source-level snapshot_retrieved_at refusal and this number "
+            f"is not in the tree at all",
+        )
+        return field_lags[self.FIELD]
+
+    def test_dff_is_declared_at_its_measured_first_print_plus_stored_headroom(self):
+        floor = self._measured_floor()
         registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
-        source_id = "fred_macro_latest_vintage"
-        declared = registry[source_id].get("field_release_lags", {}).get("DFF")
-        if declared is None:
-            # The generic source-level refusal, not "unknown source".
-            with self.assertRaisesRegex(
-                RegistryContractError,
-                f"^{source_id}: a snapshot_retrieved_at source is priced from rows only",
-            ):
-                max_release_lag_days(registry, [(source_id, "DFF")], decision_time=time(8))
-        else:
-            self.assertGreaterEqual(declared.get("days", 0), floor)
+        declared = self._declaration(registry)
+
+        # Equality, not a lower bound: a lower bound leaves the headroom day
+        # undefended upward and the floor still passing, which is what A44
+        # refused to commit.
+        self.assertEqual(
+            floor + self.HEADROOM_DAYS,
+            declared.get("days"),
+            f"{self.FIELD} is declared {declared.get('days')!r} days; the tracked "
+            f"vintages measure a {floor}-day first-print floor and Eleonora's "
+            f"decision of 15 September 2026 adds HEADROOM_DAYS="
+            f"{self.HEADROOM_DAYS}. Fewer leaks: an unscheduled closure longer "
+            f"than the one Labor Day weekend behind the floor would be dated "
+            f"before it was published. More costs a day of purge on every run "
+            f"that reads this column. Neither is an assertion to edit",
+        )
+
+    def test_the_declared_dff_headroom_costs_the_published_funding_run_nothing(self):
+        registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        declared = self._declaration(registry)
+
+        record = json.loads((TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
+        hour, minute = record["declaration"]["decision_time"].split(":")
+        decision_time = time(int(hour), int(minute))
+        published = [tuple(name.split(".", 1)) for name in record["derived"]["fields"]]
+        with_dff = published + [(self.SOURCE_ID, self.FIELD)]
+
+        # What the record was published at, still priced by this registry.
+        without = max_release_lag_days(registry, published, decision_time=decision_time)
+        self.assertEqual(record["derived"]["purge_days"], without, self.FUNDING_RECORD)
+
+        self.assertEqual(
+            without,
+            max_release_lag_days(registry, with_dff, decision_time=decision_time),
+            f"declaring {self.FIELD} at its stored lag moves the purge of "
+            f"{self.FUNDING_RECORD}: the headroom is no longer free, and taking "
+            f"it costs a day of history on every run that reads these columns",
+        )
+
+        # And one day further is not free. This is where the headroom stopped,
+        # measured rather than asserted.
+        dearer = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        dearer[self.SOURCE_ID]["field_release_lags"][self.FIELD] = dict(
+            declared, days=declared["days"] + 1
+        )
+        self.assertNotEqual(
+            without,
+            max_release_lag_days(dearer, with_dff, decision_time=decision_time),
+            f"a day beyond {self.FIELD}'s declared lag no longer moves the "
+            f"published purge, so 'the headroom was taken where it was free and "
+            f"stopped before it was not' has stopped being true of this registry. "
+            f"The note on the declaration must be re-derived, not the assertion",
+        )
 
 
 TRACKED_ALFRED_H41_FIRST_PRINT = (
