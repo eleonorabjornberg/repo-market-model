@@ -58,6 +58,7 @@ FRED_MACRO_SERIES = (
     "DFF",        # effective federal funds rate
     "RRPONTSYAWARD",  # overnight reverse-repo award rate
     "TREAST",     # Treasury securities held outright by the Federal Reserve
+    "WLRRAOL",    # H.4.1 reverse-repurchase agreements, "Others" (the ON RRP facility)
 )
 TREASURY_AUCTIONS_BASE = (
     "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/"

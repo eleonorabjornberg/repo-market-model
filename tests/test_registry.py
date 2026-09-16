@@ -1683,10 +1683,11 @@ class WlrraolFirstPrintRecordTests(unittest.TestCase):
     declares.
 
     **A finding against nothing in this tree, and outside this block:**
-    `ingest.FRED_MACRO_SERIES`, the list the FRED fetcher requests, does not
-    name `WLRRAOL`. The declaration is complete as a registry entry, but a
-    `fred_macro_latest_vintage` snapshot fetched today would not carry the
-    series until that list names it. Building the column is not this block.
+    `ingest.FRED_MACRO_SERIES`, the list the FRED fetcher requests, did not
+    name `WLRRAOL`, so a snapshot fetched then would not have carried the
+    series. Closed by A49, which added it and guards the set relation in
+    `test_ingest.FredFetchCoversDeclaredFieldsTests`. Building the column is
+    not this block.
 
     **Red here** means one of four things, and none of them is an assertion
     to edit: `WLRRAOL` declared at anything other than the first-print floor
