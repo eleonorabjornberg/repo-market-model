@@ -15,6 +15,7 @@
       "RRPONTSYAWARD": "business_daily",
       "RRPONTSYD": "business_daily",
       "TREAST": "weekly",
+      "WLRRAOL": "weekly",
       "WRESBAL": "weekly",
       "WTREGEN": "weekly"
     },
@@ -49,6 +50,16 @@
         "timezone": "America/New_York",
         "unit": "calendar_days"
       },
+      "WLRRAOL": {
+        "available_time": "16:30",
+        "basis": "record_date",
+        "days": 5,
+        "note": "Declared 16 September 2026. WHAT THIS IS: the H.4.1's reverse-repurchase-agreements line, \"Liabilities and Capital: Liabilities: Reverse Repurchase Agreements: Others: Wednesday Level\" (FRED release rid=20, Table 1) -- the Wednesday OUTSTANDING level of the overnight reverse repo facility. It is NOT the Desk's operational ON RRP series RRPONTSYD (FRED rid=379, Temporary Open Market Operations), which stays refused, and it is not WLRRAL, the H.4.1's total reverse-repo line, which also carries the foreign official and international pool (WLRRAFOIAL). Declaring this field builds no column: the on_rrp column still maps to RRPONTSYD in contract.py, which is human-owned. WHY FIVE DAYS: the H.4.1 is published Thursdays, generally at 16:30 New York time, for the week ending the previous Wednesday, and the observation dates are those Wednesdays, so an ordinary week is one calendar day. But the Board's own rule is that publication \"may be shifted to the next business day when the regular publication date falls on a federal holiday\", and the shift is measured rather than hypothetical: the week ending Wednesday 2020-12-23 is absent from the 2020-12-24 and 2020-12-27 ALFRED vintages of WLRRAOL and first carried by the 2020-12-28 one -- five calendar days -- exactly as for WRESBAL, under tests/fixtures/snapshots/alfred-h41-first-print/. The Board's archive agrees: releases/h41/20201228/ exists, \"Release Date: December 28, 2020\", for the week ended December 23, and releases/h41/20201224/ is a 404; its Wednesday-level \"Reverse repurchase agreements ... Others\" line for that week is 857, which is this series' 2020-12-23 value to the million (re-fetched 16 September 2026). Five is that measured floor exactly and not a cushion above it, the same number WRESBAL and WTREGEN carry, so the three lines of one release carry one lag. Five is a floor from the tracked vintages, not a worst case -- the stated rule allows longer if a Thursday closure meets a longer run of holidays. THE DECISION: job 651 priced this declaration on the merged tree in memory without declaring it, and Eleonora decided on 16 September 2026 to build it, at five days. FIVE IS FREE AND SIX IS NOT: over the eleven (source, field) pairs the published funding record docs/runs/exceedance_gbm_cross_conformal_funding_mh61.json declares in derived.fields, at its 16:00 decision time, the purge is 6 without WLRRAOL, 6 with WLRRAOL at any lag from 1 to 5, and 7 at six -- six would cost a day of history. VALUE UNIT: MILLIONS of US dollars in every tracked vintage; unlike WRESBAL and WTREGEN this line was never served in billions, so no rescale separates its vintages. That is recorded in prose because the registry's `unit` key is the unit of the release lag, not of the value. The number is held at both ends by test_registry.WlrraolFirstPrintRecordTests, which asserts this entry equals the first-print floor computed from the tracked vintages and that it leaves the published funding record's purge where it was while a day more would not.",
+        "revision_evidence": "Ten ALFRED vintages of WLRRAOL -- 2019-09-19, 2020-01-02, 2020-03-26, 2020-11-27, 2021-07-29, 2024-09-26, 2026-09-03, 2026-09-08, 2026-09-09 and 2026-09-10, tracked under tests/fixtures/snapshots/alfred-wlrraol/ -- carry no restatement of any value. `python3 scripts/alfred_vintages.py tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2019-09-19.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2020-01-02.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2020-03-26.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2020-11-27.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2021-07-29.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2024-09-26.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2026-09-03.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2026-09-08.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2026-09-09.csv tests/fixtures/snapshots/alfred-wlrraol/WLRRAOL_2026-09-10.csv` re-runs the comparison over all 45 pairs and exits 1 if an observation is ever restated; it exits 0 today (re-run 16 September 2026), identical on every shared observation -- 875 of 875 from 2002-12-18 between the 2019-09-19 vintage and every later one, and 1137 of 1137 between 2024-09-26 and each 2026 vintage. Unlike WRESBAL there is no units rescale in any pair, and unlike RRPONTSYD there is no differing observation at all: RRPONTSYD was restated on 2020-02-19 and 2020-11-18, two-operation days on which FRED alternated between the sum and one leg, so RRPONTSYD remains refused.",
+        "revision_policy": "never_revised",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      },
       "WRESBAL": {
         "available_time": "16:30",
         "basis": "record_date",
@@ -78,7 +89,8 @@
       "RRPONTSYD",
       "DFF",
       "RRPONTSYAWARD",
-      "TREAST"
+      "TREAST",
+      "WLRRAOL"
     ],
     "frequency": "mixed daily and weekly",
     "identities": [],
