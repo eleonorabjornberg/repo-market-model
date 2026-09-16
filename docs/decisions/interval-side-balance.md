@@ -1,7 +1,8 @@
 # Decision: which side the intervals miss on, and what the asymmetric variant corrects
 
 **Status: measured and published. The four records are in `docs/runs/`; the reading is emitted by
-`scripts/emit_interval_sides.py` and is not transcribed here.**
+`scripts/emit_interval_sides.py` and is not transcribed here. Decided: both asymmetric calibrations
+are retired -- see the Decision section.**
 
 ## The question
 
@@ -70,3 +71,24 @@ Nothing here decides what to do about it.
 The seed, mean block length, replication count and interval level are module constants, so the
 intervals reproduce. A record that changes without this reading changing is a contradiction the
 records will show.
+
+## Decision
+
+Eleonora's decision, taken on this reading: **both asymmetric calibrations are retired** --
+`conformal_asymmetric` and `cross_conformal_asymmetric`.
+
+Retired means that no new block, scoring run or comparison uses either variant, and neither is
+offered as a default. It does not mean deleted: the implementations stay in `src/repo_model/ml.py`
+with their tests, and the two published records above stay where they are, so this reading and
+every figure drawn from them still reproduces from the tree. Removing the code would be a separate
+decision, and would first have to say what happens to those records.
+
+The reason is the one this record states. The model work is on `cross_conformal`, and under
+cross-conformal the side imbalance the asymmetric calibration answers is not present. Under split
+conformal the imbalance is real and the variant does reduce it, but split conformal is not the
+calibration the model work uses, so keeping a split-conformal default for it buys nothing the
+project needs.
+
+What this leaves open is the second fact above: both cross-conformal cells miss under their
+declared share on both sides. That is a width complaint rather than a placement one, and nothing
+here decides it.
