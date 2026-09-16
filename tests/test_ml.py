@@ -59,6 +59,12 @@ What is covered here
   "cross_conformal_asymmetric"` (B54): `cross_conformal`'s excluding models
   with each CV+ edge taken off its own side's signed scores at its own side's
   exact rank, the full fit's interior, and the refusals.
+* `ScaledCrossConformalTests` -- `calibration="cross_conformal_scaled"`
+  (B-SCALED): per-regime coverage on a regime-switching fixture where
+  `cross_conformal` over-covers the calm regime and under-covers the stressed
+  one, a scale that reads nothing after its row's feature row, the floor on a
+  flat stretch, the scaled CV+ band rebuilt, `cross_conformal` unchanged, and
+  the refusals.
 * `GradientBoostedArxFeatureTests` -- `arx_feature="declared"`: the column is
   `baseline.fit_arx`'s own one-step forecast, fitted per fold on the fit rows,
   read from rows at or before its row, never refitted on calibration rows,
@@ -2546,6 +2552,492 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
                 dict(model.model_settings),
                 {"calibration": "cross_conformal_asymmetric", "calibration_folds": 5},
             )
+
+
+#: `regime_frame`'s noise scales, in basis points, and the order its blocks of
+#: `REGIME_ROWS` rows take them in: two calm blocks to one stressed.
+CALM_SD = 1.0
+STRESSED_SD = 4.0
+REGIME_PATTERN = (CALM_SD, CALM_SD, STRESSED_SD)
+REGIME_ROWS = 100
+
+
+def regime_sd(index):
+    """The noise scale `regime_frame` draws row `index` at."""
+
+    return REGIME_PATTERN[(index // REGIME_ROWS) % len(REGIME_PATTERN)]
+
+
+def regime_frame(count, seed=20260916, flat=()):
+    """Calendar-day rows whose spread is `10 + sd z`, `sd` switching by regime.
+
+    Independent draws about 10 bp, so the only thing that differs between a
+    calm row and a stressed one is the noise scale, and a band that is right on
+    one is wrong on the other unless it scales. Box-Muller off
+    `random.Random(seed).random()`, as `heteroscedastic_frame` draws, so the
+    sequence is fixed across the declared Python versions. Rows in `flat`
+    carry exactly 10 bp: a flat stretch, every change inside it zero.
+    `sofr_volume` moves with nothing and is the declared regressor.
+    """
+
+    rng = random.Random(seed)
+    rows = []
+    for index in range(count):
+        first, second = rng.random(), rng.random()
+        shock = math.sqrt(-2.0 * math.log(1.0 - first)) * math.cos(2.0 * math.pi * second)
+        spread = 10.0 if index in flat else 10.0 + regime_sd(index) * shock
+        rows.append(
+            DailyObservation(
+                date(2020, 1, 1) + timedelta(days=index),
+                {
+                    "sofr": 4.30 + spread / 100.0,
+                    "iorb": 4.30,
+                    "sofr_volume": 2000.0 + rng.random(),
+                },
+            )
+        )
+    return rows
+
+
+class ConstantQuantile:
+    """A stand-in for `HistGradientBoostingRegressor`: the training targets' `quantile`, on every row.
+
+    Takes the keywords `ml._fitted_levels` passes and ignores all but the
+    level. The regime subtests read the *calibration*, and a base model that
+    cannot see the regime is the case the calibration exists for -- it is also
+    what gbm is on a regime its design carries no column for. And it is fast
+    enough to refit at every origin of a rolling loop, which a boosted fit is
+    not at this length.
+    """
+
+    def __init__(self, *, loss, quantile, early_stopping, random_state, min_samples_leaf):
+        self.quantile = quantile
+        self.value = None
+
+    def fit(self, design, targets):
+        ordered = sorted(targets)
+        self.value = ordered[min(len(ordered) - 1, int(self.quantile * len(ordered)))]
+        return self
+
+    def predict(self, design):
+        return [self.value] * len(design)
+
+
+class ScaledCrossConformalTests(unittest.TestCase):
+    """`calibration="cross_conformal_scaled"`: B-SCALED's acceptance criterion and its mutation target.
+
+    **The defect.** Job 657 read the published
+    `docs/runs/backtest_gbm_cross_conformal_mh61.json` apart: 6.87% missed
+    against 10% declared, but by a trailing volatility known before each
+    origin the calm third missed 3.1% and the stressed third 10.1%. The band's
+    width does not move with the regime. This class shows the same defect on a
+    fixture built to have it, and the repair.
+
+    **The fixture.** `regime_frame`: independent draws about 10 bp, calm
+    (`sd` 1 bp) for two blocks of a hundred rows and stressed (`sd` 4 bp) for
+    one, repeated. The regime subtest refits at every origin of a rolling loop
+    on a sliding 300-row frame -- always two calm blocks' worth and one
+    stressed -- with `ConstantQuantile` for the boosted fit, and scores the
+    row `PURGE + 1` days on. An origin is counted for a regime when its scale
+    window and its target both lie inside one block of it; the rest are
+    forecast and not counted, since their regime is not one thing.
+
+    **The tolerance, from the sample size.** B22's and B25's:
+    `3 sqrt(q (1 - q) (1 / T + 1 / (n + 2)))` about the nominal miss rate
+    `1 - q = 0.10`, two-sided, with `T` the counted origins of the regime and
+    `n` the held-out scores of the last fold's fit. The `1 / T` term is the
+    binomial spread of `T` misses; the `1 / (n + 2)` term is the spread of a
+    band's coverage given its own `n` calibration scores, taken as if every
+    origin shared one set -- conservative, since a sliding frame renews its set
+    as it moves. Five periods make `T` 780 calm and 390 stressed origins and
+    `n` 278, so the tolerance is about 0.063 calm and 0.071 stressed. CV+'s
+    worst case is `2 alpha`; the test holds it to `alpha`, which it attains on
+    exchangeable rows, as B25 does. **The defect is asserted on the same
+    tolerance**: `cross_conformal` must miss below its lower edge in the calm
+    regime and above its upper edge in the stressed one, or this fixture
+    cannot tell a scaled band from an unscaled one.
+
+    **The leak, and what can see it.** A scale over the whole frame, or a
+    window centred on the feature row, passes the regime subtest as well as the
+    trailing one does -- better, since it sees the regime it is forecasting.
+    Only a perturbation can tell them apart: moving every spread after a date
+    must leave the scale of every held-out row whose target is on or before it
+    bit-identical, and must move some later one (the control). At a 6-day gap,
+    so a window ending at the target instead of the feature row reads six rows
+    it may not.
+
+    Mutation record (B-SCALED)
+    --------------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python -B` (the `.venv`: CPython 3.9.6,
+    numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src:tests` (checked to
+    resolve to each sub-copy), `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`.
+    Each mutation by exact-string replacement whose anchor was found exactly
+    once, asserted applied, in `repo_model/ml.py`. Scored against this class;
+    unmutated control green before and after.
+
+      1. **Scale forced to a constant 1** -- `_trailing_scale` returns `1.0`.
+         `each regime misses ...`, `AssertionError`: 0.0000 of 780 calm
+         origins against 0.10 +/- 0.0627 -- the scaled band is
+         `cross_conformal`'s defect again. Also `AssertionError` in the
+         held-out leak subtest (its control: no scale moved), the forecast
+         subtest, the floor (`1.0 != 0.2236`) and the rebuilt residuals.
+      2. **The window moved off the feature row**, three ways:
+          - **centred** on it (`position - SCALE_WINDOW // 2 : position +
+            SCALE_WINDOW // 2 + 1`). **The regime subtest passes** -- the
+            trap. `a held-out row's scale reads nothing after its feature
+            row`, `AssertionError`: block 3's row scored on 2020-05-28 moved
+            when only spreads after 2020-05-30 did. The forecast subtest also
+            fails, `AssertionError`, but on the rebuilt definition and not
+            on the leak: `_origin_scale` hands over no row after the feature
+            row, so a centred window there is short, not leaky. Also the floor
+            and the rebuilt residuals, `AssertionError`;
+          - **the whole frame** (`window = spreads`). The held-out leak
+            subtest, `AssertionError` (a row scored on 2020-01-28 moved). **The
+            regime subtest fails too** (0.0000 calm): a whole-frame scale is one
+            number per frame, which is the constant of mutation 1 per fold,
+            not a regime reading. The brief's "passes the regime test
+            beautifully" holds for the centred window and not for this one;
+          - **seven rows later**, the 6-day gap's worth, so the window ends at
+            the target side. The held-out leak subtest, `AssertionError`; the
+            regime subtest passes.
+      3. **The floor removed** -- `math.sqrt(...)` without the `max`. `a flat
+         stretch takes the floor` alone, `AssertionError: 0.0 != 0.2236...: a
+         window whose every change is zero is not given the floor`. The named
+         failure is the right one: the same fit reached without that
+         assertion raises `ZeroDivisionError` out of the scaled residual,
+         which reads as an incidental error, and a window that is merely
+         nearly flat would raise nothing and publish a band scaled by
+         almost zero.
+      4. **`cross_conformal` routed through the scale** -- the fitter's
+         `scaled` flag and `_reported`'s branch both widened to
+         `("cross_conformal", "cross_conformal_scaled")`. This class,
+         `AssertionError` three times: `cross_conformal is unchanged ...`
+         (its blocks carry scales), the band subtest (`0 != 20`: no band
+         separates any more) and the regime subtest's control
+         (`cross_conformal` misses 0.0846 calm). Scored beside it:
+         `GradientBoostedCrossConformalTests` **errors**, `ValueError` (a
+         forecast off the frame has no scale), and
+         `tests/test_generated_results.py` **stays green**: it re-scores the
+         published records and fits nothing, so it cannot see a fitter
+         defect. The equality subtest here is the guard.
+    """
+
+    REGRESSORS = ("sofr_volume",)
+    FRAME_ROWS = 300
+    PERIODS = 5
+    PURGE = 1
+    #: The gap the leak subtests are run at: the published declaration's.
+    LEAK_PURGE = 6
+    #: Where the leak subtests move every later spread, and how far.
+    PERTURB_AT = 150
+    PERTURB_BPS = 3.0
+    #: The boosted fit the band is rebuilt from: long enough that its trees
+    #: split, short enough to fit twice.
+    TRAIN_ROWS = 240
+    FORECAST_ROWS = 20
+    NAME = "cross_conformal_scaled"
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+            "calibration": self.NAME,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
+
+    def constant_fit(self, frame, **overrides):
+        with mock.patch.object(ml, "_estimator_class", return_value=ConstantQuantile):
+            return self.fit(frame, **overrides)
+
+    @staticmethod
+    def rms_scale(frame, position):
+        """The scale at `frame[position]`, built here from its definition."""
+
+        spreads = [row.spread_bps for row in frame]
+        squares = [
+            (spreads[k] - spreads[k - 1]) ** 2
+            for k in range(position - ml.SCALE_WINDOW + 1, position + 1)
+        ]
+        return max(
+            math.sqrt(math.fsum(squares) / len(squares)),
+            1.0 / math.sqrt(ml.SCALE_WINDOW),
+        )
+
+    @staticmethod
+    def sorted_levels(estimators, frame):
+        """Every row of `frame` read at every level and sorted, off the estimators directly."""
+
+        designs = [[float(row.spread_bps), float(row.values["sofr_volume"])] for row in frame]
+        columns = [[float(value) for value in estimator.predict(designs)] for estimator in estimators]
+        return [sorted(column[index] for column in columns) for index in range(len(designs))]
+
+    @staticmethod
+    def perturbed(frame, after, bps):
+        """`frame` with every spread after position `after` moved by `+bps` or `-bps`, alternately."""
+
+        return [
+            with_spread_shifted(row, bps if index % 2 else -bps) if index > after else row
+            for index, row in enumerate(frame)
+        ]
+
+    def test_the_scaled_band_covers_each_regime_and_reads_nothing_after_its_decision(self):
+        """Per-regime coverage where cross_conformal fails it, no leak, the floor, the band, the declaration."""
+
+        q = Fraction("0.95") - Fraction("0.05")
+        nominal = float(1 - q)
+
+        with self.subTest("each regime misses its nominal rate, and cross_conformal's does not"):
+            count = self.FRAME_ROWS + self.PERIODS * REGIME_ROWS * len(REGIME_PATTERN) + self.PURGE + 1
+            rows = regime_frame(count)
+            misses = {}
+            scores = None
+            for calibration in ("cross_conformal", self.NAME):
+                tally = {CALM_SD: [0, 0], STRESSED_SD: [0, 0]}
+                for origin in range(self.FRAME_ROWS - 1, count - self.PURGE - 1):
+                    frame = rows[origin - self.FRAME_ROWS + 1 : origin + 1]
+                    model = self.constant_fit(
+                        frame, calibration=calibration, purge_days=self.PURGE
+                    )
+                    band = model.predict(rows[origin])
+                    target = origin + self.PURGE + 1
+                    if (origin - ml.SCALE_WINDOW) // REGIME_ROWS != target // REGIME_ROWS:
+                        continue
+                    outcome = rows[target].spread_bps
+                    counted = tally[regime_sd(target)]
+                    counted[0] += not band[0] <= outcome <= band[-1]
+                    counted[1] += 1
+                misses[calibration] = {sd: (m / t, t) for sd, (m, t) in tally.items()}
+                if calibration == self.NAME:
+                    scores = sum(len(block.scaled_residuals) for block in model.calibration_blocks)
+            for sd, label in ((CALM_SD, "calm"), (STRESSED_SD, "stressed")):
+                rate, origins = misses[self.NAME][sd]
+                before, _ = misses["cross_conformal"][sd]
+                tolerance = 3.0 * math.sqrt(
+                    nominal * (1.0 - nominal) * (1.0 / origins + 1.0 / (scores + 2))
+                )
+                self.assertLessEqual(
+                    abs(rate - nominal),
+                    tolerance,
+                    msg=(
+                        f"the scaled band misses {rate:.4f} of {origins} {label} "
+                        f"origins against {nominal:.2f} +/- {tolerance:.4f} "
+                        f"(cross_conformal {before:.4f})"
+                    ),
+                )
+                # The control: the defect, in this fixture, on this tolerance.
+                control = (
+                    f"the control: cross_conformal misses {before:.4f} of {origins} "
+                    f"{label} origins, not outside {nominal:.2f} +/- {tolerance:.4f}"
+                )
+                if sd == CALM_SD:
+                    self.assertLess(before, nominal - tolerance, msg=control)
+                else:
+                    self.assertGreater(before, nominal + tolerance, msg=control)
+
+        with self.subTest("a held-out row's scale reads nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            moved = self.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
+            opens = frame[self.PERTURB_AT].date
+            before = self.constant_fit(frame, purge_days=self.LEAK_PURGE)
+            after = self.constant_fit(moved, purge_days=self.LEAK_PURGE)
+            checked = changed = 0
+            for number, (one, two) in enumerate(
+                zip(before.calibration_blocks, after.calibration_blocks), start=1
+            ):
+                self.assertEqual(one.scored_dates, two.scored_dates)
+                self.assertEqual(len(one.scales), len(one.scored_dates))
+                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
+                    if when <= opens:
+                        checked += 1
+                        self.assertEqual(
+                            left,
+                            right,
+                            msg=(
+                                f"block {number}: the scale of the row scored on {when} "
+                                f"moved when only spreads after {opens} did"
+                            ),
+                        )
+                    else:
+                        changed += left != right
+            self.assertGreater(checked, 100)
+            self.assertGreater(
+                changed, 0, msg="the control: moving the later spreads moved no scale at all"
+            )
+            # And the scale is the trailing window at the feature row, rebuilt
+            # here: the row the 6-day gap chooses, seven calendar rows back.
+            block = before.calibration_blocks[2]
+            for when, scale in zip(block.scored_dates, block.scales):
+                index = (when - frame[0].date).days
+                self.assertEqual(scale, self.rms_scale(frame, index - self.LEAK_PURGE - 1))
+
+        with self.subTest("a forecast's scale and band read nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            model = self.constant_fit(frame, purge_days=self.LEAK_PURGE)
+            row = frame[self.PERTURB_AT]
+            scale, band = model._origin_scale(row), model.predict(row)
+            self.assertEqual(scale, self.rms_scale(frame, self.PERTURB_AT))
+            history = model._history_spreads
+            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
+                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
+            )
+            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
+            # The control: a spread inside the window moves both.
+            model._history_spreads = (
+                history[: self.PERTURB_AT - 3]
+                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
+                + history[self.PERTURB_AT - 2 :]
+            )
+            self.assertNotEqual(model._origin_scale(row), scale)
+            self.assertNotEqual(model.predict(row), band)
+
+        with self.subTest("a flat stretch takes the floor"):
+            self.assertEqual(ml.SCALE_FLOOR_BPS, 1.0 / math.sqrt(ml.SCALE_WINDOW))
+            self.assertEqual(
+                ml._trailing_scale([10.0] * 25, 22),
+                ml.SCALE_FLOOR_BPS,
+                msg="a window whose every change is zero is not given the floor",
+            )
+            flat = range(120, 160)
+            frame = regime_frame(self.FRAME_ROWS, flat=flat)
+            model = self.constant_fit(frame, purge_days=self.PURGE)
+            floored = 0
+            for block in model.calibration_blocks:
+                for when, scale, score in zip(block.scored_dates, block.scales, block.scaled_residuals):
+                    self.assertTrue(math.isfinite(score))
+                    feature = (when - frame[0].date).days - self.PURGE - 1
+                    if feature - ml.SCALE_WINDOW >= flat[0] and feature < flat[-1] + 1:
+                        floored += 1
+                        self.assertEqual(scale, ml.SCALE_FLOOR_BPS)
+            self.assertGreater(floored, 10)
+            band = model.predict(frame[flat[-1]])
+            self.assertEqual(model._origin_scale(frame[flat[-1]]), ml.SCALE_FLOOR_BPS)
+            self.assertTrue(all(math.isfinite(value) for value in band))
+            self.assertLess(band[0], band[-1])
+
+        rows = heteroscedastic_frame(self.TRAIN_ROWS)
+        forecasts = rows[-self.FORECAST_ROWS :]
+        model = self.fit(rows, purge_days=0)
+        cross = self.fit(rows, calibration="cross_conformal", purge_days=0)
+
+        with self.subTest("the band is CV+'s over scaled residuals, and the interior the full fit's"):
+            blocks = model.calibration_blocks
+            self.assertEqual(len(blocks), ml.DEFAULT_CALIBRATION_FOLDS)
+            for block, other in zip(blocks, cross.calibration_blocks):
+                # The same excluding models as cross_conformal's; only the
+                # scores differ, and they are rebuilt here.
+                self.assertEqual(
+                    self.sorted_levels(block.estimators, forecasts),
+                    self.sorted_levels(other.estimators, forecasts),
+                )
+                indices = [(when - rows[0].date).days for when in block.scored_dates]
+                levels = self.sorted_levels(block.estimators, [rows[i - 1] for i in indices])
+                rebuilt = [
+                    abs(rows[i].spread_bps - read[2]) / self.rms_scale(rows, i - 1)
+                    for i, read in zip(indices, levels)
+                ]
+                self.assertEqual(list(block.scaled_residuals), rebuilt)
+            count = sum(len(block.scaled_residuals) for block in blocks)
+            low_rank = math.floor((1 - q) * (count + 1))
+            high_rank = math.ceil(q * (count + 1))
+            separated = 0
+            reads = [self.sorted_levels(block.estimators, forecasts) for block in blocks]
+            for number, row in enumerate(forecasts):
+                scale = self.rms_scale(rows, (row.date - rows[0].date).days)
+                lows, highs = [], []
+                for block, read in zip(blocks, reads):
+                    middle = read[number][2]
+                    lows.extend(middle - scale * score for score in block.scaled_residuals)
+                    highs.extend(middle + scale * score for score in block.scaled_residuals)
+                fitted = model._quantile_vector(model.design_row(row))
+                reported = model.predict(row)
+                self.assertEqual(reported[1:-1], fitted[1:-1])
+                self.assertEqual(reported[1:-1], cross.predict(row)[1:-1])
+                self.assertEqual(
+                    (reported[0], reported[-1]),
+                    (
+                        min(sorted(lows)[low_rank - 1], fitted[1]),
+                        max(sorted(highs)[high_rank - 1], fitted[-2]),
+                    ),
+                    msg=f"the band forecast from {row.date} is not scaled CV+'s",
+                )
+                other = cross.predict(row)
+                separated += (reported[0], reported[-1]) != (other[0], other[-1])
+            self.assertEqual(separated, len(forecasts))
+
+        with self.subTest("cross_conformal is unchanged: no scale, and its band is unscaled CV+'s"):
+            count = sum(len(block.scores) for block in cross.calibration_blocks)
+            low_rank = math.floor((1 - q) * (count + 1))
+            high_rank = math.ceil(q * (count + 1))
+            for block in cross.calibration_blocks:
+                self.assertEqual((block.scales, block.scaled_residuals), ((), ()))
+            reads = [self.sorted_levels(block.estimators, forecasts) for block in cross.calibration_blocks]
+            for number, row in enumerate(forecasts):
+                lows, highs = [], []
+                for block, read in zip(cross.calibration_blocks, reads):
+                    excluded = read[number]
+                    lows.extend(excluded[0] - score for score in block.scores)
+                    highs.extend(excluded[-1] + score for score in block.scores)
+                fitted = cross._quantile_vector(cross.design_row(row))
+                reported = cross.predict(row)
+                self.assertEqual(
+                    (reported[0], reported[-1]),
+                    (
+                        min(sorted(lows)[low_rank - 1], fitted[1]),
+                        max(sorted(highs)[high_rank - 1], fitted[-2]),
+                    ),
+                    msg=f"cross_conformal's band forecast from {row.date} is not CV+'s",
+                )
+
+        with self.subTest("the declaration names the calibration, and the command line reaches it"):
+            self.assertEqual(
+                dict(model.model_settings),
+                {"calibration": self.NAME, "calibration_folds": 5},
+            )
+            self.assertIn(self.NAME, ml.CALIBRATIONS)
+            parser = cli.build_parser()
+            backtest = parser.parse_args(
+                ["backtest", "panel.csv", "--registry", "registry.json",
+                 "--decision-time", DECISION_TIME, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "gbm",
+                 "--calibration", self.NAME]
+            )
+            _, fitter = cli_eval._select_fitter(backtest)
+            self.assertEqual(fitter.keywords, {"regressors": (), "calibration": self.NAME})
+
+        with self.subTest("refusal: a forecast from a row with no scale, or off the frame"):
+            with self.assertRaisesRegex(ValueError, r"has no scale: .* its frame has 10 row\(s\) before it"):
+                model.predict(rows[10])
+            beyond = heteroscedastic_frame(self.TRAIN_ROWS + 1)[-1]
+            with self.assertRaisesRegex(ValueError, r"is not a row of the frame"):
+                model.predict(beyond)
+
+        with self.subTest("refusal: fewer scaled scores than CV+'s ranks need"):
+            # A row is scored only once its feature row has a full window
+            # before it: rows 21 to 28 of 29 are eight.
+            with self.assertRaisesRegex(
+                ValueError, r"cross_conformal_scaled calibration needs at least 9 held-out scores, got 8"
+            ):
+                self.fit(rows[:29], calibration_folds=2, purge_days=0)
+            edge = self.fit(rows[:30], calibration_folds=2, purge_days=0)
+            self.assertEqual(sum(len(block.scaled_residuals) for block in edge.calibration_blocks), 9)
+
+        with self.subTest("refusal: a tail, and a calibration_share"):
+            with self.assertRaisesRegex(
+                ValueError, r"not wired for calibration 'cross_conformal_scaled'"
+            ):
+                self.fit(rows[:120], purge_days=0, tail="gpd")
+            with self.assertRaisesRegex(
+                ValueError,
+                r"calibration_share 0.25 was given, but calibration 'cross_conformal_scaled'",
+            ):
+                self.fit(rows[:40], calibration_share=0.25, purge_days=0)
 
 
 def arx_frame(count, seed=20260911):

@@ -1612,7 +1612,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "0.05-0.95 band by the conformal score of its most recent rows; or "
         "cross_conformal, which reports the fit on every row and moves its "
         "0.05-0.95 band to the CV+ edges of models fitted without each of "
-        "--calibration-folds purged date blocks. Refused for every model but gbm",
+        "--calibration-folds purged date blocks; cross_conformal_asymmetric; or "
+        "cross_conformal_scaled, cross_conformal with each residual divided by "
+        "the trailing spread-change volatility at its own feature row. Refused "
+        "for every model but gbm",
     )
     backtest.add_argument(
         "--calibration-share",
@@ -1737,7 +1740,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             metavar="NAME",
             default=None,
             help=f"how the {side} model's gbm band is calibrated: none, the "
-            f"default, conformal or cross_conformal; refused for "
+            f"default, conformal, cross_conformal, cross_conformal_asymmetric "
+            f"or cross_conformal_scaled; refused for "
             f"--model-{side} other than gbm",
         )
         compare.add_argument(
@@ -1868,7 +1872,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help="how the gbm law the curve is read off is calibrated: none, the "
         "default and the model every published exceedance record was produced "
-        "with; conformal; or cross_conformal, as on backtest. Refused for every "
+        "with; conformal; cross_conformal; cross_conformal_asymmetric; or "
+        "cross_conformal_scaled, as on backtest. Refused for every "
         "model but gbm",
     )
     exceedance.add_argument(
