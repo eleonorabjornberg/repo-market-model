@@ -1646,5 +1646,190 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
         )
 
 
+class WlrraolFirstPrintRecordTests(unittest.TestCase):
+    """A48: `WLRRAOL` declared at the H.4.1's measured first print, and held there.
+
+    Job 651 priced Route A of `OnRrpRoutesRecordTests` on the merged tree
+    (`ed33b566`) in memory, declaring nothing. **Eleonora's ruling, 16 September
+    2026: build it, at five days.** This block declares it on
+    `fred_macro_latest_vintage` -- a `field_release_lags` entry, a `weekly`
+    frequency and membership in `fields` -- and nothing else. No column is
+    built: `on_rrp` still maps to `RRPONTSYD` in `contract.py`, which is
+    human-owned, and `RRPONTSYD` stays refused.
+
+    **Five is measured, not headroom.** Unlike `DFF`, whose fifth day is a
+    stored cushion over a four-day floor, five here is the floor itself:
+    `alfred-h41-first-print/` shows `WLRRAOL`'s 2020-12-23 absent from the
+    2020-12-24 and 2020-12-27 vintages and first carried by 2020-12-28, exactly
+    as `WRESBAL`'s. Re-derived 16 September 2026 from the tracked files, and
+    again from the Board's archive, re-fetched that day:
+    `releases/h41/20201228/` answers 200, "Release Date: December 28, 2020",
+    and its Wednesday-level "Reverse repurchase agreements ... Others" line is
+    857, `WLRRAOL`'s 2020-12-23 value; `releases/h41/20201224/` answers 404.
+    So the test computes the floor from the fixtures and asserts the
+    declaration **equal** to it. No literal 5 appears: a longer first print in
+    the fixtures moves the number this declaration is held to.
+
+    **Five is free, six is not.** The published funding record's
+    `derived.fields` are eleven `(source, field)` pairs (read from the record,
+    not the panel manifest's `built_columns`, which are names with no source).
+    At its 16:00 decision time they purge 6. Measured over the committed
+    registry, in memory: with `WLRRAOL` beside them the purge is 6 at every lag
+    from 0 to 5, 7 at six and 8 at seven; `WLRRAOL` alone prices 1 at zero and
+    one more per day. The test checks the record's own pairs, the declared lag
+    and a day more. That the pairs are eleven was checked before this block
+    wrote anything and is not asserted here: CLAUDE.md keeps counts out of an
+    acceptance criterion, and the test prices whatever pairs the record
+    declares.
+
+    **A finding against nothing in this tree, and outside this block:**
+    `ingest.FRED_MACRO_SERIES`, the list the FRED fetcher requests, does not
+    name `WLRRAOL`. The declaration is complete as a registry entry, but a
+    `fred_macro_latest_vintage` snapshot fetched today would not carry the
+    series until that list names it. Building the column is not this block.
+
+    **Red here** means one of four things, and none of them is an assertion
+    to edit: `WLRRAOL` declared at anything other than the first-print floor
+    the tracked H.4.1 vintages show; no `WLRRAOL` declaration, frequency or
+    `fields` membership on the source, so the snapshot refusal or the
+    frequency check prices it instead of this number; the published funding
+    record's purge no longer being what this registry prices; or the declared
+    lag moving that record's purge, or a day
+    more no longer moving it, so "five is free and six is not" has stopped
+    being true and the note must be re-derived.
+
+    Mutation record (disposable copy under `$HOME` from `git ls-files`,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`; control
+    `test_registry test_generated_results test_docs_freshness` green before
+    and after; each edit checked to change `metadata/sources.json` before the
+    run):
+
+    * `WLRRAOL`'s `days` set to 4 -- one short of the holiday shift.
+      `AssertionError: 5 != 4 : WLRRAOL is declared 4 days; the tracked H.4.1
+      vintages under alfred-h41-first-print/ measure a 5-day first print, and
+      Eleonora's decision of 16 September 2026 is that floor exactly. Fewer
+      dates a holiday-shifted release before it was published; more costs
+      purge nobody decided to pay. Neither is an assertion to edit`.
+      `OnRrpRoutesRecordTests` fails too, on its `>=`: `AssertionError: 4 not
+      greater than or equal to 5 : WLRRAOL is declared 4 days, shorter than
+      the 5-day first print ...`.
+    * `WLRRAOL`'s `days` set to 6 -- a cushion the brief refused.
+      `AssertionError: 5 != 6 : WLRRAOL is declared 6 days; ...`, the same
+      message, and this test is the only failure: A46's `>=` passes six.
+    * The `WLRRAOL` entry deleted from `field_release_lags`, the only failure:
+      `AssertionError: 'WLRRAOL' not found in ['DFF', 'IOER', 'IORB',
+      'WRESBAL', 'WTREGEN'] : fred_macro_latest_vintage declares no WLRRAOL
+      release lag. Eleonora decided on 16 September 2026 to build it at the
+      H.4.1's measured first print; without it the field falls back to the
+      source-level snapshot_retrieved_at refusal and this number is not in the
+      tree`. (A46's guard accepts an undeclared H.4.1 field by design.)
+    * `WLRRAOL` removed from the source's `fields`:
+      `AssertionError: 'WLRRAOL' not found in ['DFF', 'IOER', 'IORB',
+      'RRPONTSYAWARD', 'RRPONTSYD', 'TREAST', 'WRESBAL', 'WTREGEN'] : WLRRAOL
+      is not in fred_macro_latest_vintage's fields: the declaration Eleonora
+      decided on 16 September 2026 is incomplete`. Also red, incidentally:
+      `test_generated_results.MilestoneAReproductionTests` with
+      `AssertionError: the reproduction did not run: repo_model.cli build
+      exited 2`, because `field_frequencies` then names a field `fields` does
+      not.
+
+    Each mutation applied and each failed this test with `AssertionError`;
+    none was a load or parse error.
+    """
+
+    SOURCE_ID = "fred_macro_latest_vintage"
+    FIELD = "WLRRAOL"
+    FUNDING_RECORD = OnRrpRoutesRecordTests.FUNDING_RECORD
+
+    def _measured_floor(self):
+        vintages = sorted(
+            OnRrpRoutesRecordTests._vintage(path)[1:]
+            for path in TRACKED_ALFRED_H41_FIRST_PRINT.glob(f"{self.FIELD}_*.csv")
+        )
+        self.assertGreaterEqual(
+            len(vintages), 2, f"no {self.FIELD} vintages under {TRACKED_ALFRED_H41_FIRST_PRINT}"
+        )
+        floor = max(
+            (earlier + timedelta(days=1) - ref).days
+            for (earlier, before), (later, after) in zip(vintages, vintages[1:])
+            if (later - earlier).days <= OnRrpRoutesRecordTests.ADJACENT_DAYS
+            for ref in after - before
+        )
+        self.assertGreater(
+            floor, 1, f"no tracked {self.FIELD} vintage shows a first print later than a day"
+        )
+        return floor
+
+    def test_wlrraol_is_declared_at_its_measured_first_print_and_costs_the_funding_run_nothing(self):
+        floor = self._measured_floor()
+        registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        source = registry[self.SOURCE_ID]
+
+        # All three parts of the declaration, each naming itself when absent.
+        self.assertIn(
+            self.FIELD,
+            sorted(source.get("fields") or ()),
+            f"{self.FIELD} is not in {self.SOURCE_ID}'s fields: the declaration "
+            "Eleonora decided on 16 September 2026 is incomplete",
+        )
+        self.assertEqual(
+            "weekly",
+            (source.get("field_frequencies") or {}).get(self.FIELD),
+            f"{self.FIELD} is a Wednesday level on the weekly H.4.1",
+        )
+        field_lags = source.get("field_release_lags") or {}
+        self.assertIn(
+            self.FIELD,
+            sorted(field_lags),
+            f"{self.SOURCE_ID} declares no {self.FIELD} release lag. Eleonora "
+            "decided on 16 September 2026 to build it at the H.4.1's measured "
+            "first print; without it the field falls back to the source-level "
+            "snapshot_retrieved_at refusal and this number is not in the tree",
+        )
+        declared = field_lags[self.FIELD]
+
+        # Equality: fewer leaks a holiday-shifted print, more is a cushion
+        # nobody decided on.
+        self.assertEqual(
+            floor,
+            declared.get("days"),
+            f"{self.FIELD} is declared {declared.get('days')!r} days; the tracked "
+            f"H.4.1 vintages under alfred-h41-first-print/ measure a {floor}-day "
+            f"first print, and Eleonora's decision of 16 September 2026 is that "
+            f"floor exactly. Fewer dates a holiday-shifted release before it was "
+            f"published; more costs purge nobody decided to pay. Neither is an "
+            f"assertion to edit",
+        )
+
+        record = json.loads((TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
+        hour, minute = record["declaration"]["decision_time"].split(":")
+        decision_time = time(int(hour), int(minute))
+        published = [tuple(name.split(".", 1)) for name in record["derived"]["fields"]]
+        with_field = published + [(self.SOURCE_ID, self.FIELD)]
+
+        without = max_release_lag_days(registry, published, decision_time=decision_time)
+        self.assertEqual(record["derived"]["purge_days"], without, self.FUNDING_RECORD)
+        self.assertEqual(
+            without,
+            max_release_lag_days(registry, with_field, decision_time=decision_time),
+            f"declaring {self.FIELD} at its stored lag moves the purge of "
+            f"{self.FUNDING_RECORD}, which costs a day of history on every run "
+            "that reads these columns",
+        )
+
+        dearer = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
+        dearer[self.SOURCE_ID]["field_release_lags"][self.FIELD] = dict(
+            declared, days=declared["days"] + 1
+        )
+        self.assertNotEqual(
+            without,
+            max_release_lag_days(dearer, with_field, decision_time=decision_time),
+            f"a day beyond {self.FIELD}'s declared lag no longer moves the "
+            f"published purge, so 'five is free and six is not' has stopped "
+            "being true of this registry. The note on the declaration must be "
+            "re-derived, not the assertion",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
