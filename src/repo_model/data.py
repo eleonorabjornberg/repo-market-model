@@ -29,6 +29,7 @@ OPTIONAL_NUMERIC_FIELDS = (
     "reserve_balances",
     "tga",
     "on_rrp",
+    "on_rrp_h41",
     "treasury_settlement",
     "treasury_settlement_bills",
     "treasury_settlement_coupons",
@@ -2292,7 +2293,7 @@ def audit_panel(observations: Iterable[DailyObservation]) -> AuditReport:
         if values.get("sofr_p25") is not None and values.get("sofr_p75") is not None:
             if values["sofr_p25"] > values["sofr_p75"]:  # type: ignore[operator]
                 warnings.append(f"{row.date}: SOFR p25 exceeds p75")
-        for field in ("sofr_volume", "reserve_balances", "tga", "on_rrp"):
+        for field in ("sofr_volume", "reserve_balances", "tga", "on_rrp", "on_rrp_h41"):
             if values.get(field) is not None and values[field] < 0:  # type: ignore[operator]
                 warnings.append(f"{row.date}: {field} is negative")
         for field in ("quarter_end", "tax_date"):
@@ -2399,14 +2400,15 @@ WEEKLY_CARRY_MAX_STALENESS_DAYS = (
 
 #: Carry column -> its maximum staleness in calendar days. Every entry is a
 #: column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
-#: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
-#: `WTREGEN`. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
+#: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL`,
+#: `WTREGEN` and `WLRRAOL`. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
 #: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
 #: not an absence, and a calendar column is never a hole.
 CARRY_FORWARD_COLUMNS = MappingProxyType(
     {
         "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "on_rrp_h41": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
     }
 )

@@ -290,6 +290,12 @@ FEATURE_FIELDS = MappingProxyType(
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
         "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
+        # The ON RRP facility from the H.4.1 instead (human decision, 16 Sep
+        # 2026): WLRRAOL, the Wednesday level of reverse repos "Others", weekly
+        # and carried like `reserve_balances`/`tga`, USD millions. `on_rrp` stays
+        # on RRPONTSYD, which is refused; this is a separate column, built into a
+        # side panel first.
+        "on_rrp_h41": (("fred_macro_latest_vintage", "WLRRAOL"),),
         "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
         # The split as panel columns (human decision, 11 Sep 2026): a gross
         # aggregate hides three different pressures. Bill settlements drain cash
