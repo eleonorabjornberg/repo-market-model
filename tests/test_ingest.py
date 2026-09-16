@@ -7331,5 +7331,96 @@ class SnapshotManifestPortabilityTests(unittest.TestCase):
             self.assertIn(str(sidecar), str(caught.exception))
 
 
+class FredFetchCoversDeclaredFieldsTests(unittest.TestCase):
+    """A49: the FRED fetcher requests every field its source declares.
+
+    A48 declared `WLRRAOL` on `fred_macro_latest_vintage` and found that
+    `ingest.FRED_MACRO_SERIES`, the list `fetch_fred_macro` requests, did not
+    name it: no new snapshot would carry a series the registry declares.
+    **Eleonora's ruling, 16 September 2026: close that gap.**
+
+    The test reads both sides from the tree and names neither. The requested
+    set is the `id` parameter of the URL `fetch_fred_macro` builds, captured by
+    a fake downloader; the declared set is the `fields` list of the source the
+    fetch's own snapshot names. "`WLRRAOL` is in `FRED_MACRO_SERIES`" would
+    pass today and guard nothing for the next field declared.
+
+    **The direction is declared <= requested,** the defect A48 found. The
+    reverse, requested <= declared, also holds on this tree -- the two sets are
+    equal -- and is deliberately not asserted here. The registry does not
+    express a refusal by leaving a series out of `fields`: `RRPONTSYD`,
+    `RRPONTSYAWARD` and `TREAST` are in `fields` and in `field_frequencies`,
+    and are refused by having no `field_release_lags` entry. So "fetched but
+    refused" is no counterexample to requested <= declared; it would be one to
+    requested <= `field_release_lags`, which is false by design and must not be
+    asserted. Whether requested <= declared should be guarded is a finding for
+    a later block, not a second criterion in this one: `_fred_rows` parses
+    every column the CSV carries, so an undeclared requested series would
+    reach the observations with no frequency or lag declared for it.
+
+    **The tracked fixture is not made inconsistent.**
+    `tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage/`
+    records a fetch of 6 September 2026 whose manifest URL names six series --
+    before `RRPONTSYAWARD`, `TREAST` and `WLRRAOL` were requested. It is a
+    record of the request made then, no test compares it with the current
+    list, and it is not rewritten.
+
+    **Red here** means the registry declares a field on this source that the
+    fetcher does not request, or that the test read no declared fields at all.
+    The fix is the fetcher's series list, or a finding about the declaration;
+    never an edit to this assertion.
+
+    Mutations, run 16 September 2026 in a disposable copy under `$HOME`,
+    unmutated control green before and after:
+
+    * `WLRRAOL` commented out of `FRED_MACRO_SERIES`:
+      `AssertionError: Lists differ: ['WLRRAOL'] != [] :
+      fred_macro_latest_vintage declares ['WLRRAOL'] in its fields, but
+      fetch_fred_macro requests only ['DFF', 'IOER', 'IORB', 'RRPONTSYAWARD',
+      'RRPONTSYD', 'TREAST', 'WRESBAL', 'WTREGEN']`.
+    * `DUMMYA49` appended to the source's `fields` in the copy's
+      `sources.json`: `AssertionError: Lists differ: ['DUMMYA49'] != [] :
+      fred_macro_latest_vintage declares ['DUMMYA49'] in its fields, ...`.
+    * The registry read under the wrong key (`artifact.source_id + "_x"`),
+      so the declared set is empty: `AssertionError: [] is not true :
+      fred_macro_latest_vintage declares no fields in sources.json; the
+      comparison would pass without comparing anything` -- the vacuity guard,
+      not a pass. The message names the fetch's source id, not the key the
+      mutation read.
+
+    Each is the one failure in this class, an `AssertionError`, with no error.
+    """
+
+    def test_every_declared_field_is_requested(self):
+        urls = []
+
+        def downloader(url: str) -> bytes:
+            urls.append(url)
+            return b"observation_date\n"
+
+        with tempfile.TemporaryDirectory() as directory:
+            (artifact,) = fetch_fred_macro(Path(directory), downloader)
+        self.assertEqual(len(urls), 1)
+        (requested_ids,) = parse_qs(urlparse(urls[0]).query)["id"]
+        requested = set(requested_ids.split(","))
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        source = registry.get(artifact.source_id, {})
+        declared = [str(field) for field in source.get("fields", ())]
+        self.assertTrue(
+            declared,
+            f"{artifact.source_id} declares no fields in {SOURCE_REGISTRY.name}; "
+            "the comparison would pass without comparing anything",
+        )
+
+        missing = [field for field in declared if field not in requested]
+        self.assertEqual(
+            missing,
+            [],
+            f"{artifact.source_id} declares {missing} in its fields, but "
+            f"fetch_fred_macro requests only {sorted(requested)}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
