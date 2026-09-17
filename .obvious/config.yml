@@ -1,7 +1,7 @@
 # Repository policy for obvious agents working in
 # eleonorabjornberg/repo-market-model. Values detected from the GitHub
 # repository settings on 2026-09-17.
-defaultBranch: main
+defaultBranch: improvements
 # All three merge methods are enabled in the repository settings; the
 # project's own history integrates track branches with merge commits, so
 # "merge" matches observed practice.
