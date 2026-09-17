@@ -1520,18 +1520,58 @@ class HoldoutCalibrationSettingsTests(ConditionalModelHarness):
     `PYTHONDONTWRITEBYTECODE=1`, through the worktree's `.venv`
     (CPython 3.11.16, numpy 2.0.2, scikit-learn 1.6.1),
     `REPO_MODEL_REQUIRE_ML=1`, whole suite per run. Unmutated control green
-    before and after.
+    before the mutations (`Ran 945 tests in 784.994s -- OK (skipped=7)`),
+    and after the last revert the committed tree ran the whole suite again
+    (`Ran 945 tests in 802.320s -- OK (skipped=7)`, exit 0); every
+    intermediate mutation run rebuilt from the reverted tree and its
+    non-target results were green, each run's failures being only its own
+    intended targets.
 
     1. **The `model_config` recording dropped** -- the two share/folds
        conditionals deleted from `_event_holdout`, so a given share or folds
-       reached the fitter but not the journal hash. Observed: pending.
+       reached the fitter but not the journal hash. Observed: the mutant run
+       reports `Ran 945 tests in 797.605s`, `FAILED (failures=1,
+       skipped=7)`, exit 1. The kill is
+       `test_calibration_settings_reach_the_journal_hash_and_the_stdout_record`:
+       `AssertionError: 'ced272b305e6d10425272383e3f79f5fafa93e4d017003b5f223ec5a8feaba03'
+       != 'de5c7fa4793fcb430b8e667901dee320fb04725ea73b9835636408c0500537e8'`
+       -- the folds run's `model_config` no longer names the folds, so two
+       `cross_conformal` runs over one feature set differing only in the
+       fold count would hash identically while splitting the training frame
+       differently. Reverted after the run.
     2. **The stdout recording dropped** -- the two share/folds conditionals
        deleted from the per-window record, so the journal hash named the
-       settings and stdout did not. Observed: pending.
+       settings and stdout did not. Observed: the mutant run reports
+       `Ran 945 tests in 835.525s`, `FAILED (errors=1, skipped=7)`, exit 1.
+       The kill is the same test, now as `KeyError: 'calibration_folds'` at
+       `tests/test_cli_eval.py:1562` of the recorded run's tree, commit
+       `7bdcf64` (`self.assertEqual(folds_report["calibration_folds"],
+       3)`) -- the journal still hashed the settings, so the digest
+       comparison passed, but the folds run's stdout record no longer names
+       the folds. The journal alone is provenance's half; stdout is the
+       reader's. Reverted after the run.
     3. **The pass-through reverted** -- `_select_model(args,
        settings_flags=True)` back to `_select_model(args)` on the
        event-holdout path, which is the tree before the wiring while the
-       parser still offers the flags. Observed: pending.
+       parser still offers the flags. Observed: the mutant run reports
+       `Ran 945 tests in 819.940s`, `FAILED (failures=2, skipped=7)`, exit
+       1. The kills are the two refusal guards dying of one cause -- the
+       settings never reach `_calibration`, so a settings flag given to a
+       model that takes none is silently accepted:
+       `test_settings_are_refused_for_a_model_that_takes_none` with
+       `AssertionError: 0 != 2` at `tests/test_cli_eval.py:1626` of that
+       tree, and
+       `HoldoutCalibrationTests.test_calibration_is_refused_for_a_model_that_takes_none`,
+       PR #10's guard, with `AssertionError: 0 != 2` at
+       `tests/test_cli_eval.py:1378`. The reachability test does **not**
+       fail, and the reason is the finding: conditional recording reads the
+       namespace, which argparse binds under this mutation too, so a
+       recorded-but-never-applied setting is the distinct failure mode this
+       third guard exists to catch, and it did not fire because recording is
+       wired independently of the pass-through. The refusal path is what
+       makes the pass-through observable; it is the guard this block plants
+       for it. The mutations lived in copies; the worktree was never
+       touched.
     """
 
     def test_calibration_settings_reach_the_journal_hash_and_the_stdout_record(self):
