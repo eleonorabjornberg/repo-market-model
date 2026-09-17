@@ -344,6 +344,7 @@ import contextlib
 import dataclasses
 import hashlib
 import importlib
+import importlib.util
 import inspect
 import json
 import math
@@ -3082,6 +3083,35 @@ class FittedThresholdTests(unittest.TestCase):
        having such a row rather than assumed to. This block added a model. It
        moved nothing.
     """
+
+    def test_the_duplicated_all_hole_refusal_is_live_in_fit_threshold_too(self):
+        """The `fit_threshold` twin of `FittedArxTests`' degenerate-regressor pin.
+
+        The all-hole refusal is not shared code: `fit_arx` and `fit_threshold`
+        each carry their own copy of the same check
+        (`src/repo_model/baseline.py:1849-1855` and `:2556-2562`), and only
+        the `fit_arx` copy had ever been seen to fail -- and a guard that has
+        never been seen to fail is a comment. This pins the second copy the
+        way the first was pinned: on the checked-in sample panel, where
+        `mmf_assets` is one of the columns empty in every row, so there is
+        nothing to fit an imputation from and filling it with 0.0 would be
+        the coercion contract test 5 prohibits. `tgcr` is the threshold
+        variable this class fits on; the refusal fires while the design is
+        still being built, before any threshold is chosen.
+
+        Mutation record: in a disposable copy of this tree, the
+        `if not seen: raise ValueError(...)` block at
+        `src/repo_model/baseline.py:2556-2562` was deleted -- control run
+        green first, and the one-hunk diff confirmed exactly that block
+        removed. This test then failed with `ZeroDivisionError: division by
+        zero` out of `imputations[name] = sum(seen) / len(seen)`, not the
+        declared `ValueError`, so the pin holds the refusal itself rather
+        than an incidental crash. Reverted.
+        """
+
+        rows = load_daily_panel(SAMPLE_PANEL)
+        with self.assertRaisesRegex(ValueError, "unobserved on every row"):
+            fit_threshold(rows, ("mmf_assets",), "tgcr", minimum_history=10)
 
     MINIMUM_HISTORY = 20
 
@@ -9647,6 +9677,158 @@ class UndeclaredAvailabilityFallbackTests(unittest.TestCase):
         self.assertIn(
             "the 2-day purge is stated against the scored date", message
         )
+
+
+class AuditScriptEquivalenceTests(unittest.TestCase):
+    """`_declared_availability` and the audit script answer identically.
+
+    `baseline._declared_availability`'s docstring (`baseline.py:2851`) claims
+    its arithmetic mirrors `scripts/purge_availability_audit.py:field_availability`
+    line for line, so the evaluation path and the audit cannot answer
+    differently. Until this test the claim was enforced by the docstring
+    alone: nothing imported the script, so an edit to either copy could move
+    the two answers silently, which is the writer-versus-reader trap `B30`
+    recorded one artifact over. The script is imported read-only with
+    `importlib`: its module level declares constants and imports
+    `repo_model.splits`, which the suite environment already provides, and
+    `main` is never called. Both unit arms are exercised -- `business_days`
+    counted on the panel's own dates and `calendar_days` counted from the
+    row -- beside the arms that make no row-relative claim: a
+    `snapshot_retrieved_at` basis, a declaration with no `days`, and the
+    shared end-of-day default (`contract.END_OF_DAY` is the string "23:59",
+    the same value the script hardcodes).
+
+    Mutation record: in a disposable copy of this tree, line 69 of the
+    copy's `scripts/purge_availability_audit.py` (`i = index[row] + days`)
+    was changed to `i = index[row] + days + 1` -- control run green first,
+    one-line diff confirmed. This test then failed with three
+    `AssertionError: datetime.datetime(...) != datetime.datetime(...)`
+    subTests, every one a `business_days` case -- `bd_source` at positions
+    0 and 4 and the `field_override` per-field lag -- while the
+    `calendar_days`, snapshot, no-`days` and default-time cases still
+    agreed. Reverted; the tracked `scripts/purge_availability_audit.py` is
+    unmodified in this commit.
+    """
+
+    SCRIPT = Path(__file__).parents[1] / "scripts" / "purge_availability_audit.py"
+
+    DATES = [date(2026, 1, 26) + timedelta(days=offset) for offset in range(10)]
+
+    REGISTRY = {
+        "bd_source": {
+            "release_lag": {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 2,
+                "available_time": "16:00",
+            }
+        },
+        "bd_off_panel": {
+            "release_lag": {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 40,
+                "available_time": "09:30",
+            }
+        },
+        "cal_source": {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": 3,
+                "available_time": "09:30",
+            }
+        },
+        "snap_source": {
+            # Three days declared against the schema: the same deliberate
+            # malformation `UndeclaredAvailabilityFallbackTests` uses, so the
+            # snapshot branch is reached rather than merely nearby.
+            "release_lag": {
+                "basis": "snapshot_retrieved_at",
+                "days": 3,
+                "available_time": "16:00",
+            }
+        },
+        "no_days_source": {
+            "release_lag": {
+                "basis": "ref_date",
+                "unit": "calendar_days",
+                "available_time": "16:00",
+            }
+        },
+        "field_override": {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": 1,
+                "available_time": "12:00",
+            },
+            "field_release_lags": {
+                "REVISED_FIELD": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 4,
+                    "available_time": "18:00",
+                }
+            },
+        },
+        "default_time_source": {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": 1,
+            }
+        },
+    }
+
+    def audit_script(self):
+        """The script imported read-only, under a name nothing else claims."""
+
+        spec = importlib.util.spec_from_file_location(
+            "purge_availability_audit_under_test", self.SCRIPT
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_field_availability_agrees_with_the_module_copy_on_every_arm(self):
+        """Same declarations in, same answers out, per case and arm."""
+
+        script = self.audit_script()
+        index = {value: position for position, value in enumerate(self.DATES)}
+        cases = [
+            ("bd_source", "SOFR", 0),
+            ("bd_source", "SOFR", 4),
+            ("bd_off_panel", "SOFR", 3),  # runs off the panel: the sentinel
+            ("cal_source", "IORB", 0),
+            ("cal_source", "IORB", 6),  # past the last panel date
+            ("snap_source", "SOFR", 2),  # None: no row-relative claim
+            ("no_days_source", "IORB", 2),  # None: no day count
+            ("field_override", "REVISED_FIELD", 1),
+            ("field_override", "UNDECLARED_FIELD", 1),
+            ("default_time_source", "IORB", 1),
+        ]
+        for source_id, field, position in cases:
+            with self.subTest(source=source_id, field=field, position=position):
+                declared = _declared_availability(
+                    self.REGISTRY, source_id, field, self.DATES, position
+                )
+                audited = script.field_availability(
+                    self.REGISTRY,
+                    source_id,
+                    field,
+                    self.DATES[position],
+                    self.DATES,
+                    index,
+                )
+                self.assertEqual(declared, audited)
+
+        # The default-time case above agrees; pin that the agreed answer is
+        # the end-of-day convention itself, not two Nones or two errors.
+        agreed = _declared_availability(
+            self.REGISTRY, "default_time_source", "IORB", self.DATES, 1
+        )
+        self.assertEqual(agreed.time(), time(23, 59))
 
 
 if __name__ == "__main__":
