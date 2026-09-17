@@ -6,7 +6,9 @@ defaultBranch: main
 # project's own history integrates track branches with merge commits, so
 # "merge" matches observed practice.
 mergeMethod: merge
-# When false, the platform may submit the merge itself once GitHub reports
-# the pull request merge-ready. Human review remains the gate for setup
-# pull requests like the one that introduced this file.
-requireHumanMerge: false
+# True after the onboarding review: this repository integrates every change
+# by hand (README: "every merge reviewed and integrated by hand"), and
+# .obvious/ sits outside every ownership list, so a future agent pull
+# request could rewrite these governance keys with no gate surfacing it.
+# A human merge click is the backstop for that scenario.
+requireHumanMerge: true
