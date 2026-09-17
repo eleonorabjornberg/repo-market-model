@@ -1127,6 +1127,362 @@ class ModelSelectorTests(ConditionalModelHarness):
         self.assertNotIn(cli_eval._AUTOREGRESSIVE_TERM, model.regressors)
 
 
+#: What `event-holdout` printed for a no-flag climatology run on this file's
+#: fixture, captured at the branch point (`69ad231`, the `improvements` base).
+#: The climatology is stdlib-only and the fixture's dates are fixed, so these
+#: bytes do not depend on which numpy or scikit-learn the optional extra
+#: resolves to -- which is why the pin is taken on this run and not on the
+#: gbm one, whose curve floats move with the fitter's versions. The digest
+#: below is asserted alongside, so an edit that made the literal match a
+#: regression would itself fail the test.
+HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
+    '[' + '\n'
+    '  {' + '\n'
+    '    "days": [' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-14",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9791666666666666,' + '\n'
+    '          0.5416666666666666,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-07",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-15",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9791666666666666,' + '\n'
+    '          0.5416666666666666,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-08",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-16",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9791666666666666,' + '\n'
+    '          0.5416666666666666,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-09",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-19",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9791666666666666,' + '\n'
+    '          0.5416666666666666,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-12",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-20",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9791666666666666,' + '\n'
+    '          0.5416666666666666,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-13",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      }' + '\n'
+    '    ],' + '\n'
+    '    "features": [' + '\n'
+    '      "on_rrp",' + '\n'
+    '      "spread_bps"' + '\n'
+    '    ],' + '\n'
+    '    "fields": [' + '\n'
+    '      "fred_macro_latest_vintage.IOER",' + '\n'
+    '      "fred_macro_latest_vintage.IORB",' + '\n'
+    '      "fred_macro_latest_vintage.RRPONTSYD",' + '\n'
+    '      "nyfed_sofr.SOFR"' + '\n'
+    '    ],' + '\n'
+    '    "holdout_role": "knowledge",' + '\n'
+    '    "last_train_date": "2026-01-07",' + '\n'
+    '    "model": "climatology",' + '\n'
+    '    "purge_days": 6,' + '\n'
+    '    "sources": [' + '\n'
+    '      "fred_macro_latest_vintage",' + '\n'
+    '      "nyfed_sofr"' + '\n'
+    '    ],' + '\n'
+    '    "taus_bp": [' + '\n'
+    '      5.0,' + '\n'
+    '      10.0,' + '\n'
+    '      20.0,' + '\n'
+    '      50.0' + '\n'
+    '    ],' + '\n'
+    '    "train_rows": 48,' + '\n'
+    '    "window": {' + '\n'
+    '      "checksum": "d6e443c91c06c63c5237369684444d6ac79a9453183260d2d9834c51f3aea908",' + '\n'
+    '      "end": "2026-01-20",' + '\n'
+    '      "name": "smoke-window",' + '\n'
+    '      "start": "2026-01-14"' + '\n'
+    '    }' + '\n'
+    '  }' + '\n'
+    ']' + '\n'
+)
+
+#: The `--calibration` help strings on the two commands that already offered
+#: the flag, captured at the same branch point. The refactor that put the
+#: argparse plumbing into one helper must not have moved a byte of them, and
+#: the pin travels through `format_help()` (wrapped, so compared with
+#: whitespace collapsed) as well as through the raw attribute.
+BACKTEST_CALIBRATION_HELP_AT_69AD231 = (
+    "how the gbm band is calibrated: none, the default and the model every "
+    "published gbm record was produced with; conformal, which fits on the "
+    "earlier rows of each fold's training frame and widens the 0.05-0.95 band "
+    "by the conformal score of its most recent rows; or cross_conformal, "
+    "which reports the fit on every row and moves its 0.05-0.95 band to the "
+    "CV+ edges of models fitted without each of --calibration-folds purged "
+    "date blocks; cross_conformal_asymmetric; cross_conformal_scaled, "
+    "cross_conformal with each residual divided by the trailing "
+    "spread-change volatility at its own feature row; or "
+    "cross_conformal_partial, cross_conformal with each score divided by the "
+    "square root of that volatility and the fit's own edges kept. Refused "
+    "for every model but gbm"
+)
+
+EXCEEDANCE_CALIBRATION_HELP_AT_69AD231 = (
+    "how the gbm law the curve is read off is calibrated: none, the default "
+    "and the model every published exceedance record was produced with; "
+    "conformal; cross_conformal; cross_conformal_asymmetric; "
+    "cross_conformal_scaled; or cross_conformal_partial, as on backtest. "
+    "Refused for every model but gbm"
+)
+
+
+class HoldoutCalibrationTests(ConditionalModelHarness):
+    """`--calibration` reaches event-holdout, is recorded, and is silent when absent.
+
+    **The premise, checked against the tree.** The evaluator side has been
+    ready since B52: `evaluate_event_window` hands the derived purge gap to a
+    predictor whose signature names `purge_days`, so a calibrated gbm fit
+    runs on this path (`tests/test_ml.py`'s `EventHoldoutCalibrationGapTests`
+    proved the split and says the flags were the block after it). This is
+    that block. Until it, `--calibration conformal event-holdout ...` died in
+    argparse -- the parser offered no such option -- and the parser-level
+    refusal below is the same claim made against the fixed tree for a model
+    that takes no calibration.
+
+    **What is recorded follows the `regime_variable` precedent.** When the
+    flag is given, `"calibration"` joins `model_config` -- so it hashes into
+    the journal's `config_sha256`, and two gbm runs over one feature set can
+    no longer hash identically while reading different laws -- and joins each
+    stdout per-window record, because the journal carries the hash and not
+    the config. When the flag is not given, nothing is added: the no-flag
+    stdout bytes and the no-flag `config_sha256` are pinned below against the
+    tree this block branched from, because every existing journal record has
+    to stay readable as a comparison.
+
+    **And no aggregate is computed**, on purpose. `AGENT_CONTRACT.md`,
+    "Metrics": "Event windows get the exceedance curve and realized path. No
+    aggregate Brier or reliability number on a single event window." A
+    calibrated window reports the curve it was read off; its calibration
+    evidence is audited on the rolling path, where there are hundreds of
+    scored days to read it from.
+
+    Mutation record
+    ===============
+
+    Run in a per-branch, per-commit copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, through the worktree's `.venv`
+    (CPython 3.11.16, numpy 2.0.2, scikit-learn 1.6.1),
+    `REPO_MODEL_REQUIRE_ML=1`, whole suite per run. Unmutated control green
+    before and after.
+
+    1. **The pass-through reverted** -- `_select_model(args, settings_flags=True)`
+       back to `_select_model(args)` on the event-holdout path, which is the
+       tree before this block's wiring while the parser still offers the
+       flag. Observed: the mutant run reports `Ran 900 tests in 747.329s`,
+       `FAILED (failures=1, skipped=7)`, exit 1. The kill is
+       `test_calibration_is_refused_for_a_model_that_takes_none`:
+       `AssertionError: 0 != 2` -- the resolver never ran, so nothing
+       refused the flag for climatology, the run appended a record and
+       exited 0. The recording test did **not** fail, and the reason is the
+       finding: conditional recording reads `args.calibration` off the
+       namespace, which argparse binds under this mutation too, so a run
+       whose fit was silently left uncalibrated still printed
+       `"calibration": "conformal"` in stdout and hashed it into the
+       journal -- indistinguishable from the wired tree on the record
+       alone. The refusal path is what makes the pass-through observable;
+       it is the guard this block plants for it. Reverted after the run;
+       control green again.
+    """
+
+    def test_a_calibrated_gbm_run_records_the_calibration_it_asked_for(self):
+        """The acceptance criterion: exposed, recorded in stdout and in the hash.
+
+        Two runs of one window over one declaration, differing only in
+        `--calibration`. The calibrated run's stdout record must name what it
+        asked for, and the journal must be able to tell the two runs apart --
+        which it can only do through `config_sha256`, since the record carries
+        the hash of `model_config` and not `model_config` itself. The digests
+        are rebuilt here from the declarations, as `expected_config` does, so
+        the comparison is a claim about what the command recorded.
+        """
+
+        if not _extra_installed():
+            self.skipTest("--model gbm needs the optional ml extra")
+
+        calibrated_journal = self.tmp / "journal-calibrated.jsonl"
+        report = self.scored(
+            "--calibration", "conformal", model="gbm", journal=calibrated_journal
+        )[0]
+        self.assertEqual(report["model"], "gbm")
+        self.assertEqual(report["calibration"], "conformal")
+
+        expected = self.expected_config("gbm", self.FEATURES)
+        expected["calibration"] = "conformal"
+        calibrated, = read_journal(calibrated_journal)
+        self.assertEqual(
+            calibrated["config_sha256"],
+            config_digest(expected),
+            msg="the calibrated run does not hash a config that names the "
+            "calibration; two gbm runs over one feature set would hash "
+            "identically while reading different laws",
+        )
+
+        # The same inputs, uncalibrated: the digests must differ, and the
+        # uncalibrated one must still be the digest a no-flag run always
+        # hashed.
+        self.run_command(model="gbm")
+        uncalibrated, = read_journal(self.journal)
+        self.assertEqual(
+            uncalibrated["config_sha256"],
+            config_digest(self.expected_config("gbm", self.FEATURES)),
+        )
+        self.assertNotEqual(
+            calibrated["config_sha256"], uncalibrated["config_sha256"]
+        )
+
+    def test_calibration_is_refused_for_a_model_that_takes_none(self):
+        """The refusal path, with `backtest`'s message, before the panel is read.
+
+        `_calibration` is the shared resolver, so the refusal and its wording
+        are the rolling path's, not a second one. The assertion that nothing
+        was scored -- empty stdout, empty journal -- is the same half every
+        refusal test here carries: a record on disk is a claim that a
+        scoring happened.
+        """
+
+        code, out, err = self.run_command("--calibration", "conformal", model="arx")
+        self.assertEqual(code, 2)
+        self.assertIn("--calibration conformal", err)
+        self.assertIn("only gbm does", err)
+        self.assertEqual(out, "")
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_the_default_run_prints_exactly_what_the_base_printed(self):
+        """No flag, no new key: the stdout bytes are pinned to the branch point.
+
+        The conditional key is the whole compatibility contract of this block,
+        so it is pinned on the bytes, not on the parsed shape -- a key that
+        appeared unconditionally would fail here rather than in a review.
+        Pinned on the climatology run because its curve is stdlib-only
+        arithmetic; the gbm run's pin lives on the journal hash below, which
+        no fitter version can move.
+        """
+
+        code, out, err = self.run_command(model="climatology")
+        self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
+        self.assertEqual(out, HOLDOUT_DEFAULT_STDOUT_AT_69AD231)
+        self.assertEqual(
+            hashlib.sha256(out.encode("utf-8")).hexdigest(),
+            "8f05f5787f44f4bbf3ab334d991275fe30f39f6cb29257de3be9bea776943cbe",
+            msg="the pinned stdout literal was edited; re-capture it from the "
+            "base rather than copying what the command prints now",
+        )
+
+        record, = read_journal(self.journal)
+        self.assertEqual(
+            record["config_sha256"],
+            config_digest(self.expected_config("climatology", self.FEATURES)),
+            msg="the no-flag config hash moved; a new key joined model_config "
+            "on the default path",
+        )
+        self.assertEqual(
+            record["config_sha256"],
+            "79783d3ffbae0c5a75a8ee18824ce91c448ebe177ef48527dcd14735b9aab283",
+            msg="the no-flag config hash is not the digest the branch point "
+            "produced",
+        )
+
+    def test_the_default_gbm_run_hashes_what_the_base_hashed(self):
+        """Same pin as the climatology run, on the model the flag is for.
+
+        The gbm curve's floats move with numpy and scikit-learn, so its
+        stdout bytes are not pinned across interpreters -- but the journal
+        digest is a hash of the declared config and no fitter version can
+        move it. If this changes, the default path grew a config key, and
+        every journal record published before this block stopped comparing.
+        """
+
+        if not _extra_installed():
+            self.skipTest("--model gbm needs the optional ml extra")
+
+        self.run_command(model="gbm")
+        record, = read_journal(self.journal)
+        self.assertEqual(
+            record["config_sha256"],
+            config_digest(self.expected_config("gbm", self.FEATURES)),
+        )
+        self.assertEqual(
+            record["config_sha256"],
+            "f24b7e07c87e9e8c8b1dd6bb8eaa8b67533dc38ad90b970c595af5397badbc6c",
+            msg="the no-flag gbm config hash is not the digest the branch "
+            "point produced",
+        )
+
+    def _calibration_action(self, command_name):
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        subparser = command.choices[command_name]
+        action = next(a for a in subparser._actions if a.dest == "calibration")
+        return subparser, action
+
+    def test_the_backtest_calibration_help_is_byte_identical(self):
+        """The shared helper must not have moved `backtest`'s help text.
+
+        The literals below were captured at the branch point through the
+        parser's own rendering (`format_help()` is what a user reads; the
+        raw attribute is what renders). The wrapping in `format_help()`
+        depends on the terminal width, so the rendered comparison collapses
+        whitespace; the attribute comparison does not.
+        """
+
+        subparser, action = self._calibration_action("backtest")
+        self.assertEqual(action.option_strings, ["--calibration"])
+        self.assertEqual(action.metavar, "NAME")
+        self.assertIsNone(action.default)
+        self.assertEqual(action.help, BACKTEST_CALIBRATION_HELP_AT_69AD231)
+        self.assertIn(
+            " ".join(BACKTEST_CALIBRATION_HELP_AT_69AD231.split()),
+            " ".join(subparser.format_help().split()),
+        )
+
+    def test_the_exceedance_backtest_calibration_help_is_byte_identical(self):
+        """Same pin, other command, same reasoning."""
+
+        subparser, action = self._calibration_action("exceedance-backtest")
+        self.assertEqual(action.option_strings, ["--calibration"])
+        self.assertEqual(action.metavar, "NAME")
+        self.assertIsNone(action.default)
+        self.assertEqual(action.help, EXCEEDANCE_CALIBRATION_HELP_AT_69AD231)
+        self.assertIn(
+            " ".join(EXCEEDANCE_CALIBRATION_HELP_AT_69AD231.split()),
+            " ".join(subparser.format_help().split()),
+        )
+
+
 class RollingBacktestHarness(unittest.TestCase):
     """The sample panel, one registry pricing two feature sets differently.
 
