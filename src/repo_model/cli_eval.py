@@ -288,11 +288,12 @@ def _select_model(
     them** (B39). `settings_flags` is true on the command whose parser offers
     `--calibration`, `--calibration-share`, `--calibration-folds`, `--tail`,
     and since B42 `--spread-change-lags`, `--volatility-feature` and
-    `--arx-feature` -- `exceedance-backtest` -- and false on `event-holdout`,
-    which offers none of them yet. Its evaluator did not hand a predictor the
-    gap either, so a calibrated fit there would have been refused; since B52
-    `evaluate_event_window` hands it over as the rolling path does, and the
-    flags are the block after it.
+    `--arx-feature` -- `exceedance-backtest`, and since the calibration block
+    `event-holdout`, whose parser offers only `--calibration` and defaults
+    the rest to `None`, which is what its resolvers read and return `{}` on.
+    Before that block it was false on `event-holdout`: its evaluator had
+    handed a predictor the gap only since B52, and the flags were the block
+    after it.
     `_calibration`, `_tail`, `_spread_change_lags`, `_volatility_feature` and
     `_arx_feature` then refuse each flag given to a model that does not take
     it, with the messages `backtest` already gives.
@@ -1301,7 +1302,11 @@ def _event_holdout(args: argparse.Namespace) -> int:
     invent an answer it was not given either.
     """
 
-    model_name, fit_predict = _select_model(args)
+    # settings_flags=True: this parser now offers --calibration, so the
+    # selector resolves it through the same resolvers `backtest` refuses by,
+    # before the panel is read -- a refused flag must leave no journal
+    # record, for the reason a refused --model leaves none.
+    model_name, fit_predict = _select_model(args, settings_flags=True)
 
     rows = load_daily_panel(args.panel)
 
@@ -1354,6 +1359,15 @@ def _event_holdout(args: argparse.Namespace) -> int:
         # does not, so two threshold runs over one feature set would otherwise
         # hash identically while fitting different models.
         model_config["regime_variable"] = args.regime_variable
+
+    if args.calibration is not None:
+        # The regime_variable precedent: recorded only when declared, so a
+        # no-flag run hashes to exactly what it hashed to before -- every
+        # existing journal record stays readable as a comparison. It is
+        # carried because it is the one thing a reader cannot recover from
+        # the fields above: two gbm runs over one feature set would otherwise
+        # hash identically while reading different laws.
+        model_config["calibration"] = args.calibration
 
     reported = []
     for window in windows:
@@ -1424,6 +1438,13 @@ def _event_holdout(args: argparse.Namespace) -> int:
                 ],
             }
         )
+        if args.calibration is not None:
+            # The same conditional key `model_config` carries, and for the
+            # same reason: the journal holds only the hash of that config, so
+            # a reader of stdout should not have to open it to see which law
+            # this window's curve was read off. Absent when the flag is, so
+            # the no-flag bytes are what they were.
+            reported[-1]["calibration"] = args.calibration
 
     print(json.dumps(reported, indent=2, sort_keys=True))
     return 0
@@ -1554,6 +1575,22 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     return 0
 
 
+def _add_calibration_argument(parser: argparse.ArgumentParser, *, help: str) -> None:
+    """Add the shared `--calibration` flag to one subparser, spelled once.
+
+    Three commands offer it -- `backtest`, `exceedance-backtest` and, since
+    the calibration block, `event-holdout` -- and until this helper each
+    spelled its own argparse literal, so the plumbing (option name, metavar,
+    default) could drift while the help text disagreed about nothing. The
+    help text stays each command's own: `backtest` enumerates the choices,
+    the other two cross-reference it, and every caller passes its string
+    through unchanged -- `tests/test_cli_eval.py` pins the two pre-existing
+    ones byte-identical.
+    """
+
+    parser.add_argument("--calibration", metavar="NAME", default=None, help=help)
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
@@ -1602,10 +1639,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "statement about. Not spelled --window, which means a declared event "
         "window on event-holdout",
     )
-    backtest.add_argument(
-        "--calibration",
-        metavar="NAME",
-        default=None,
+    _add_calibration_argument(
+        backtest,
         help="how the gbm band is calibrated: none, the default and the model "
         "every published gbm record was produced with; conformal, which "
         "fits on the earlier rows of each fold's training frame and widens the "
@@ -1868,10 +1903,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     # spelled and resolved as on `backtest`. `backtest` and `compare` score the
     # quantile vector, which a tail never moves; this command scores the curve,
     # which it does.
-    exceedance.add_argument(
-        "--calibration",
-        metavar="NAME",
-        default=None,
+    _add_calibration_argument(
+        exceedance,
         help="how the gbm law the curve is read off is calibrated: none, the "
         "default and the model every published exceedance record was produced "
         "with; conformal; cross_conformal; cross_conformal_asymmetric; "
@@ -2001,7 +2034,29 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         metavar="NAME",
         help="score only this declared window, repeatable; default is all of them",
     )
+    _add_calibration_argument(
+        holdout,
+        help="how the gbm law each window's curve is read off is calibrated: "
+        "none, the default; or one of exceedance-backtest's choices, spelled "
+        "there rather than copied here. Refused for every model but gbm",
+    )
     holdout.add_argument("--minimum-history", type=int, default=20)
     # No --purge and no --source. See _event_holdout. `--model` carries no
     # default either, and for a reason of the same kind: see _select_model.
+    #
+    # The settings flags the selector's resolvers read off the namespace
+    # whether or not this parser offers them: `_calibration`,
+    # `_spread_change_lags`, `_volatility_feature`, `_arx_feature` and `_tail`
+    # each read `args.<flag>` directly and return `{}` on `None`, so a run
+    # naming none of the flags binds nothing and the fitter's defaults decide.
+    # `--calibration` itself is bound by `_add_calibration_argument` above;
+    # these five are not offered here, only defaulted.
+    holdout.set_defaults(
+        calibration_share=None,
+        calibration_folds=None,
+        spread_change_lags=None,
+        volatility_feature=None,
+        arx_feature=None,
+        tail=None,
+    )
     holdout.set_defaults(handler=_event_holdout)
