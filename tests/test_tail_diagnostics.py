@@ -42,6 +42,7 @@ The lower-bound refusal's mutations are recorded on
 """
 
 import json
+import re
 import unittest
 from unittest import mock
 
@@ -189,6 +190,109 @@ class TailRecordReadingTests(unittest.TestCase):
             knots[0]["probabilities"] = [0.05, 0.0, 0.0]
             with self.assertRaises(ValueError):
                 tail_diagnostics.check_knots(record, knots)
+
+
+class TailRecordRefusalMessageTests(unittest.TestCase):
+    """The fold/knot consistency refusals, message for message.
+
+    `TailRecordReadingTests.test_inputs_that_do_not_describe_the_record_are_refused`
+    holds the refusals in place -- it asserts that they fire. This class pins
+    what they *say*, because the message is how a mismatched record gets
+    repaired: a reader holding a record and knots that disagree needs to be
+    told which fold and which kind of disagreement, not that something was
+    "inconsistent". Each assertion is the refusal's full text.
+
+    Stdlib throughout: the fixtures are the hand-written record and knots
+    already defined at module level, and no case reaches the `ml` extra.
+
+    Mutation record (E5, coverage audit): disposable copy under `$HOME` built
+    from `git ls-files -z --cached --others --exclude-standard` at the branch
+    head, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, unmutated control green
+    before and after.
+
+    1. **The absent-tail guard removed** -- `if "tail" not in folds:` ->
+       `if False:` in `_tail_entries`. Kills
+       `test_a_record_without_folds_tail_names_what_is_missing` with
+       `KeyError: 'tail'` (the test errors) where it requires the
+       `the record has no folds.tail` refusal. Mutation confirmed applied by
+       diff.
+    2. **The duplicate-knot message reworded** -- `two knots for one fold` ->
+       `two knots for a single fold`. Kills
+       `test_two_knots_for_one_fold_are_refused` on its exact-string
+       assertion. Mutation confirmed applied by diff.
+    """
+
+    def test_a_record_without_folds_tail_names_what_is_missing(self):
+        with self.assertRaises(ValueError) as caught:
+            tail_diagnostics._tail_entries(
+                {"declaration": {"taus_bp": [5.0]}, "folds": {"count": 1}}
+            )
+        self.assertEqual(
+            str(caught.exception),
+            "the record has no folds.tail; it is not a --tail run, or it was "
+            "written before tail accounts were recorded",
+        )
+
+        # The same refusal reaches the public readers unchecked, so the
+        # message a caller sees is this one and not a KeyError beneath it.
+        record = _record()
+        del record["folds"]["tail"]
+        with self.assertRaisesRegex(
+            ValueError, re.escape("the record has no folds.tail")
+        ):
+            tail_diagnostics.state_counts(record)
+
+    def test_a_tail_not_one_entry_per_fold_is_refused_with_both_counts(self):
+        record = _record()
+        record["folds"]["count"] = len(record["folds"]["tail"]) + 1
+        with self.assertRaises(ValueError) as caught:
+            tail_diagnostics._tail_entries(record)
+        self.assertEqual(
+            str(caught.exception),
+            "folds.tail has 6 entries for 7 folds",
+        )
+
+    def test_a_knot_for_a_fold_the_record_does_not_have_is_refused(self):
+        record = _record()
+        knots = _knots(record)
+        stray = dict(knots[0], scored_date="2030-01-01")
+        with self.assertRaises(ValueError) as caught:
+            tail_diagnostics.check_knots(record, [stray])
+        self.assertEqual(
+            str(caught.exception),
+            "2030-01-01: a knot for a fold the record does not have",
+        )
+
+    def test_two_knots_for_one_fold_are_refused(self):
+        record = _record()
+        knots = _knots(record)
+        with self.assertRaises(ValueError) as caught:
+            tail_diagnostics.check_knots(record, [knots[0], knots[0]])
+        self.assertEqual(
+            str(caught.exception),
+            "2024-01-01: two knots for one fold",
+        )
+
+    def test_a_knot_whose_tail_account_is_not_the_recorded_fit_is_refused(self):
+        record = _record()
+        knots = _knots(record)
+        # A `fallback` fold's account carries sigma; moving it makes the knot a
+        # different fit than the one the record scored.
+        knots[1]["tail_account"] = dict(
+            knots[1]["tail_account"], sigma=knots[1]["tail_account"]["sigma"] + 1.0
+        )
+        with self.assertRaises(ValueError) as caught:
+            tail_diagnostics.check_knots(record, knots)
+        self.assertEqual(
+            str(caught.exception),
+            "2024-01-02: the refit is not the fit the record scored",
+        )
+
+    def test_the_unmutated_knots_still_pass_the_same_check(self):
+        """Control for the refusals above: the module's own fixtures are valid."""
+
+        record = _record()
+        tail_diagnostics.check_knots(record, _knots(record))
 
 
 class KnotRefitTests(unittest.TestCase):

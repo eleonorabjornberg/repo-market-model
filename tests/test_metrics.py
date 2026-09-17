@@ -1629,5 +1629,209 @@ class MutationRecordTests(unittest.TestCase):
             corp_reliability_curve([0.4, 0.4, 0.4], [0, 1, 1], block_length=2, seed=1)
 
 
+class ValidationGuardMessageTests(unittest.TestCase):
+    """The level/grid/probability/outcome/bootstrap refusals, message for message.
+
+    The scoring guards were built arm by arm across earlier blocks and each arm
+    carries a sentence of contract in its message -- what a wrong threshold
+    grid, a soft label, or an unseeded interval would do to every score below.
+    Several arms were already held by behaviour-level tests (`exceedance rises`,
+    `all weights are 0`, `not a probability`); this class pins the *text* of the
+    arms whose messages had no assertion, so a reworded refusal -- which is a
+    changed claim about why the input is wrong -- fails the build rather than
+    drifting quietly. Probability and level bounds are stated once in this
+    repository (`repo_model.metrics._validate_levels` is also what the ml fitter
+    reads), which is why the exact wording is worth a test.
+
+    Every case was probed against the module before being written here; the
+    expected strings are the refusals as they stand, not a wish.
+
+    Mutation record (E1-E3, coverage audit): disposable copy under `$HOME`
+    built from `git ls-files -z --cached --others --exclude-standard` at the
+    branch head, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, unmutated control
+    green before and after. Each mutation was applied, observed to fail its
+    target, and reverted with `git checkout -- src/repo_model/metrics.py`.
+
+    1. **The level-boundary message reworded** -- `must be in (0, 1)` ->
+       `must be within (0, 1)` in `_validate_levels`. Kills
+       `test_quantile_level_guards` at both boundary subTests (two failures,
+       one per excluded endpoint).
+    2. **The grid-count message mangled** -- the curve length in `{len(grid)}
+       thresholds against {len(curve)} probabilities` replaced by the grid
+       length. Kills `test_threshold_grid_guards`' curve-coverage subTest.
+    3. **The bootstrap level message reworded** -- `level must be in (0, 1),
+       got` -> `coverage must be in (0, 1), got` in the interval's coverage
+       check. Kills `test_bootstrap_argument_guards` at both level subTests.
+    """
+
+    def test_quantile_level_guards(self):
+        with self.subTest("no levels at all"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_levels(())
+            self.assertEqual(str(caught.exception), "no quantile levels declared")
+
+        for level in (0.0, 1.0):
+            with self.subTest("a level on the excluded boundary", level=level):
+                with self.assertRaises(MetricError) as caught:
+                    metrics._validate_levels((level,))
+                self.assertEqual(
+                    str(caught.exception),
+                    f"level 0 is {level}, must be in (0, 1)",
+                )
+
+        with self.subTest("a level grid that does not ascend"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_levels((0.5, 0.25))
+            self.assertEqual(
+                str(caught.exception), "quantile levels must be strictly ascending"
+            )
+
+    def test_threshold_grid_guards(self):
+        with self.subTest("a single threshold cannot be integrated over"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_grid((5.0,), (0.5,))
+            self.assertEqual(
+                str(caught.exception),
+                "a threshold grid needs at least two thresholds to integrate over",
+            )
+
+        with self.subTest("thresholds that do not ascend"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_grid((10.0, 5.0), (0.5, 0.4))
+            self.assertEqual(str(caught.exception), "thresholds must be strictly ascending")
+
+        for bad in (float("nan"), float("inf")):
+            with self.subTest("a non-finite threshold", threshold=bad):
+                with self.assertRaises(MetricError) as caught:
+                    metrics._validate_grid((5.0, bad), (0.5, 0.4))
+                self.assertEqual(str(caught.exception), "thresholds must be finite")
+
+        with self.subTest("the exceedance curve must cover the grid"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_grid((5.0, 10.0), (0.5,))
+            self.assertEqual(str(caught.exception), "2 thresholds against 1 probabilities")
+
+    def test_integration_weight_guards(self):
+        with self.subTest("a weight vector that does not match the grid"):
+            with self.assertRaises(MetricError) as caught:
+                threshold_weighted_crps(
+                    (5.0, 10.0, 20.0), (0.5, 0.4, 0.3), 12.0, (1.0, 1.0)
+                )
+            self.assertEqual(str(caught.exception), "3 thresholds against 2 weights")
+
+        with self.subTest("a non-numeric observed value"):
+            with self.assertRaises(MetricError) as caught:
+                threshold_weighted_crps((5.0, 10.0), (0.5, 0.4), "12", (1.0, 1.0))
+            self.assertEqual(str(caught.exception), "observed is not numeric: '12'")
+
+        with self.subTest("a non-finite observed value"):
+            with self.assertRaises(MetricError) as caught:
+                threshold_weighted_crps(
+                    (5.0, 10.0), (0.5, 0.4), float("nan"), (1.0, 1.0)
+                )
+            self.assertEqual(str(caught.exception), "observed is not finite")
+
+    def test_bootstrap_argument_guards(self):
+        rng = random.Random(7)
+
+        for bad in (True, 0, 10.0):
+            with self.subTest("n that is not a positive int", n=bad):
+                with self.assertRaises(MetricError) as caught:
+                    stationary_bootstrap_indices(bad, 2.0, rng)
+                self.assertEqual(
+                    str(caught.exception), f"n must be a positive int, got {bad!r}"
+                )
+
+        for bad in (True, "2"):
+            with self.subTest("block_length that is not a number", block_length=bad):
+                with self.assertRaises(MetricError) as caught:
+                    stationary_bootstrap_indices(10, bad, rng)
+                self.assertEqual(
+                    str(caught.exception),
+                    f"block_length must be a number, got {bad!r}",
+                )
+
+        with self.subTest("block_length below 1"):
+            with self.assertRaises(MetricError) as caught:
+                stationary_bootstrap_indices(10, 0.5, rng)
+            self.assertEqual(
+                str(caught.exception),
+                "block_length must be at least 1, got 0.5; below 1 the restart "
+                "probability exceeds 1 and the geometric length is undefined",
+            )
+
+        for bad in (1, True):
+            with self.subTest("replications below 2", replications=bad):
+                with self.assertRaises(MetricError) as caught:
+                    stationary_bootstrap_interval(
+                        lambda indices: 0.0, 10, block_length=2.0, seed=7,
+                        replications=bad,
+                    )
+                self.assertEqual(
+                    str(caught.exception),
+                    f"replications must be an int >= 2, got {bad!r}",
+                )
+
+        for bad in (0.0, 1.0):
+            with self.subTest("a coverage level outside (0, 1)", level=bad):
+                with self.assertRaises(MetricError) as caught:
+                    stationary_bootstrap_interval(
+                        lambda indices: 0.0, 10, block_length=2.0, seed=7, level=bad
+                    )
+                self.assertEqual(
+                    str(caught.exception), f"level must be in (0, 1), got {bad}"
+                )
+
+    def test_probability_guards(self):
+        for bad in (-0.1, 1.1):
+            with self.subTest("a probability outside the unit interval", p=bad):
+                with self.assertRaises(MetricError) as caught:
+                    metrics._validate_probabilities((bad,), "p")
+                self.assertEqual(str(caught.exception), f"p[0] is not a probability: {bad}")
+
+        with self.subTest("a forecast that is not numeric"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_probabilities(("x",), "p")
+            self.assertEqual(str(caught.exception), "p[0] is not numeric: 'x'")
+
+        with self.subTest("an empty forecast set"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_probabilities((), "p")
+            self.assertEqual(str(caught.exception), "p is empty")
+
+    def test_outcome_guards(self):
+        with self.subTest("a soft label"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_outcomes((0.5,))
+            self.assertEqual(
+                str(caught.exception),
+                "outcomes[0] must be 0 or 1, got 0.5; a soft or probabilistic "
+                "label changes what every score below means",
+            )
+
+        with self.subTest("an empty outcome set"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._validate_outcomes(())
+            self.assertEqual(str(caught.exception), "outcomes is empty")
+
+        with self.subTest("a bool is accepted as its 0/1 value"):
+            self.assertEqual(metrics._validate_outcomes((True, False)), (1, 0))
+
+    def test_quantile_helpers_own_guards_and_interpolation(self):
+        with self.subTest("an empty ordered sample"):
+            with self.assertRaises(MetricError) as caught:
+                metrics._quantile((), 0.5)
+            self.assertEqual(str(caught.exception), "quantile requires at least one value")
+
+        with self.subTest("a probability that hits an index returns that value"):
+            # position = 0.5 * (3 - 1) = 1.0 exactly: no interpolation, the
+            # ordered value itself.
+            self.assertEqual(metrics._quantile((1.0, 2.0, 3.0), 0.5), 2.0)
+
+        with self.subTest("a probability between indices interpolates linearly"):
+            # position = 0.25 * (4 - 1) = 0.75: 1.0 * 0.25 + 2.0 * 0.75.
+            self.assertEqual(metrics._quantile((1.0, 2.0, 3.0, 4.0), 0.25), 1.75)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -7631,5 +7631,353 @@ class EventHoldoutCalibrationGapTests(unittest.TestCase):
         )
 
 
+class GpdSampleRefusalTests(unittest.TestCase):
+    """`_fit_gpd_pwm` refuses a sample it cannot fit, message for message (D1).
+
+    The PWM estimator needs non-negative finite excesses to form its moments.
+    An empty sample has no moments at all; a negative or non-finite excess is
+    not an excess above the threshold and would poison `a_0 - 2 a_1` downstream.
+    Both are refused with the sample size in the message, because at tail sizes
+    the size is the first thing a caller debugging a fold wants to know.
+
+    No `require_extra`, on `FittedTailPwmTests`' precedent: the estimator is
+    sorting and sums, and these refusals fire before any moment is formed.
+
+    Mutation record
+    ---------------
+
+    Phase 4 (coverage audit specs D1), disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard` at the branch head,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` through the `.venv`
+    (CPython 3.11.16), unmutated control green before and after.
+
+    1. **The empty-sample refusal deleted** -- `if count == 0:` -> `if False:`
+       in `_fit_gpd_pwm`. Kills `test_an_empty_sample_is_refused_with_its_size`:
+       `ZeroDivisionError: float division by zero` from `math.fsum(ordered) /
+       count` where the test requires `ValueError` matching `cannot fit a tail
+       to an empty sample`. Mutation confirmed applied by diff.
+    2. **The value check deleted** -- `if not math.isfinite(value) or value < 0.0:`
+       -> `if False:`. Kills
+       `test_a_negative_or_non_finite_excess_is_refused` at every subTest (one
+       failure each): `AssertionError: ValueError not raised` -- no exception
+       raises and the fit proceeds instead. Mutation confirmed applied by diff.
+    """
+
+    def test_an_empty_sample_is_refused_with_its_size(self):
+        with self.assertRaises(ValueError) as caught:
+            ml._fit_gpd_pwm([])
+        self.assertEqual(
+            str(caught.exception),
+            "cannot fit a tail to an empty sample; sample size 0",
+        )
+
+    def test_a_negative_or_non_finite_excess_is_refused(self):
+        for bad in (-1.0, float("nan"), float("inf")):
+            with self.subTest(excess=bad):
+                with self.assertRaises(ValueError) as caught:
+                    ml._fit_gpd_pwm([bad, 2.0, 3.0])
+                self.assertEqual(
+                    str(caught.exception),
+                    f"excesses must be non-negative and finite; got {bad!r} in a "
+                    f"sample of size 3",
+                )
+
+
+class GarchCriterionGuardTests(unittest.TestCase):
+    """`_garch_criterion` skips holes; the parameter search never crosses its constraints (D2).
+
+    Two guards, one seam. `_garch_criterion` is the quasi-likelihood the GARCH
+    search minimises; a squared change that is `None` -- the first row, or a
+    hole in the panel -- carries no information and must contribute no term.
+    And the search's own criterion refuses, with `math.inf`, any vertex outside
+    the parameter constraints (`alpha + beta < 1`, `|scale| < 700`), so the
+    optimiser treats an explosive or degenerate parameterisation as the worst
+    possible fit rather than crashing on it: `math.exp` overflows above 700 and
+    `alpha + beta >= 1` has no finite maximum to find.
+
+    No `require_extra`: the criterion, the recursion and the search are
+    `math`-only, and a checkout without the extra runs them.
+
+    Mutation record
+    ---------------
+
+    Phase 4 (coverage audit spec D2), disposable copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard` at the branch head,
+    `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` through the `.venv`
+    (CPython 3.11.16), unmutated control green before and after.
+
+    1. **The hole skip removed** -- `if square is not None:` -> `if True:` in
+       `_garch_criterion`. Kills
+       `test_a_hole_contributes_no_term_to_the_log_likelihood`: the test errors
+       with `TypeError: unsupported operand type(s) for /: 'NoneType' and
+       'float'` when it calls the mutated criterion on the None-containing
+       squares. The same mutation also takes down
+       `test_a_sequence_that_is_all_holes_scores_zero`, which requires an
+       all-holes sequence to score a quiet 0.0. Mutation confirmed applied by
+       diff.
+    2. **The constraint arm removed** -- the two guard lines
+       (`if not (alpha >= 0.0 and beta >= 0.0 and alpha + beta < 1.0):` /
+       `return math.inf`) replaced by `if False:` in `_fit_garch11`'s local
+       `criterion`. Kills
+       `test_the_search_never_evaluates_the_criterion_outside_its_constraints`:
+       with the arm gone the search's opening simplex evaluates its two axis
+       vertices -- `(alpha, beta)` = `(0.1, 0.9)` (`alpha + step`) and
+       `(0.05, 0.95)` (`beta + step`), each with `alpha + beta == 1.0` -- so
+       the recorder records them and the in-constraint assertion fails with
+       `AssertionError: 1.0 not less than 1.0`, twice. Unmutated, the arm
+       answers `math.inf` before `_garch_criterion` is reached, so the recorder
+       never sees such a vertex. Mutation confirmed applied by diff.
+    """
+
+    SQUARES = (1.0, None, 4.0, 9.0)
+    PARAMETERS = (0.1, 0.05, 0.85)
+    INITIAL = 2.0
+
+    def test_a_hole_contributes_no_term_to_the_log_likelihood(self):
+        squares = list(self.SQUARES)
+        variances = ml._garch_variances(squares, self.PARAMETERS, self.INITIAL)
+
+        # Restated in the same arithmetic order rather than read from the
+        # module, so agreement is bit for bit (the precedent of
+        # `recursion_variances` in this file): the claim under test is which
+        # terms the criterion sums, not that Python can add.
+        expected = 0.0
+        for variance, square in zip(variances, squares[1:]):
+            if square is not None:
+                expected += math.log(variance) + square / variance
+
+        total = ml._garch_criterion(squares, self.PARAMETERS, self.INITIAL)
+        self.assertEqual(total, expected)
+
+        # A hole is skipped, not read as a zero shock: a zero square would
+        # still contribute its log-variance term, and a None must not.
+        filled = [1.0, 0.0, 4.0, 9.0]
+        self.assertNotEqual(
+            total, ml._garch_criterion(filled, self.PARAMETERS, self.INITIAL)
+        )
+
+    def test_a_sequence_that_is_all_holes_scores_zero(self):
+        self.assertEqual(
+            ml._garch_criterion(
+                [None, None, None], self.PARAMETERS, self.INITIAL
+            ),
+            0.0,
+        )
+
+    def test_the_search_never_evaluates_the_criterion_outside_its_constraints(self):
+        """The constraint arm returns `math.inf` without evaluating the criterion.
+
+        The recorder stands in for `_garch_criterion` during a real fit and
+        fails the test if the search ever hands it a vertex outside the
+        constraints -- the only externally visible effect of the arm, since the
+        arm's whole job is that such vertices are never evaluated. The start
+        simplex's `beta + step` vertex is `alpha + beta == 1.0`, so a search
+        with the arm removed is caught on its first round.
+        """
+
+        spreads = garch_spreads(60)
+        real = ml._garch_criterion
+        evaluated = []
+
+        def recorder(squares, parameters, initial):
+            omega, alpha, beta = parameters
+            scale = math.log(omega / initial)
+            evaluated.append((alpha, beta, scale))
+            return real(squares, parameters, initial)
+
+        with mock.patch.object(ml, "_garch_criterion", recorder):
+            (omega, alpha, beta), _f_minus1 = ml._fit_garch11(spreads, "fixture")
+
+        self.assertTrue(
+            evaluated,
+            msg="the search never evaluated the criterion, so the recorder "
+            "below asserts nothing",
+        )
+        for alpha_seen, beta_seen, scale_seen in evaluated:
+            with self.subTest(alpha=alpha_seen, beta=beta_seen, scale=scale_seen):
+                self.assertGreaterEqual(alpha_seen, 0.0)
+                self.assertGreaterEqual(beta_seen, 0.0)
+                self.assertLess(alpha_seen + beta_seen, 1.0)
+                self.assertGreater(scale_seen, -700.0)
+                self.assertLess(scale_seen, 700.0)
+
+        # And the fit the search returns is itself inside the constraints.
+        self.assertGreaterEqual(alpha, 0.0)
+        self.assertGreaterEqual(beta, 0.0)
+        self.assertLess(alpha + beta, 1.0)
+
+
+class FittedEnsembleShapeRefusalTests(unittest.TestCase):
+    """One fitted estimator per declared level, or refuse (D3).
+
+    The reported quantile vector is the per-level fits rearranged; an estimator
+    count that disagrees with the level count means some level has no fit or
+    some fit has no level, and the "vector" would be read off whatever pairing
+    zip happens to produce. The refusal names both counts.
+
+    Mutation record
+    ---------------
+
+    Phase 4 (coverage audit spec D3), disposable copy under `$HOME`, control
+    green before and after, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`.
+
+    1. **The length check removed** -- `if len(self._estimators) != len(self.levels):`
+       -> `if False:` in `FittedGradientBoostedQuantiles.__init__`. Kills
+       `test_an_estimator_count_that_disagrees_with_the_level_count_is_refused`
+       at both subTests (`AssertionError: ValueError not raised`, two
+       failures): no exception raises and the model is constructed with the
+       mismatched ensemble. Mutation confirmed applied by diff.
+    """
+
+    class _StubEstimator:
+        def predict(self, design):
+            return [0.0]
+
+    def _construct(self, estimator_count, level_count):
+        return ml.FittedGradientBoostedQuantiles(
+            estimators=[self._StubEstimator() for _ in range(estimator_count)],
+            regressors=("sofr_volume",),
+            imputations={"sofr_volume": 1.0},
+            residuals=[0.1, 0.2],
+            cutoff=date(2026, 1, 1),
+            levels=QUANTILE_LEVELS[:level_count],
+            ml_libraries={"numpy": "2.0.2", "scikit-learn": "1.6.1"},
+        )
+
+    def test_an_estimator_count_that_disagrees_with_the_level_count_is_refused(self):
+        for estimator_count, level_count in ((2, 5), (6, 5)):
+            with self.subTest(estimators=estimator_count, levels=level_count):
+                with self.assertRaises(ValueError) as caught:
+                    self._construct(estimator_count, level_count)
+                self.assertEqual(
+                    str(caught.exception),
+                    f"{estimator_count} fitted estimators against "
+                    f"{level_count} declared levels; one fit per level is what "
+                    f"makes the reported vector a quantile vector",
+                )
+
+
+class GradientBoostedFitRefusalTests(unittest.TestCase):
+    """The fitter's own argument refusals, message for message (D4, D5).
+
+    `GradientBoostedQuantileTests` holds two of the fitter's refusals (a level
+    outside (0, 1), too few rows) because they are that class's criterion's
+    neighbours. These four stand on their own: the median level, the declared
+    regressors, and a regressor the training window never observed. Each
+    message carries the reasoning -- the median is the point forecast and has
+    no honest substitute; an empty regressor list is an omitted decision; a
+    column split on itself has no individual importance; an imputation needs
+    something to impute from -- so the text is the contract and is asserted
+    whole.
+
+    Mutation record
+    ---------------
+
+    Phase 4 (coverage audit specs D4, D5), disposable copy under `$HOME`,
+    control green before and after, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`.
+
+    1. **The median-level check removed** -- `if _MEDIAN_LEVEL not in grid:` ->
+       `if False:` in `fit_gradient_boosted_quantiles`. Kills
+       `test_levels_without_the_median_are_refused`: `AssertionError: ValueError
+       not raised` -- the fit completes and returns a model where the test
+       requires the refusal. Mutation confirmed applied by diff.
+    2. **The empty-regressor check removed** -- `if not names:` -> `if False and
+       not names:`. Kills `test_no_declared_regressors_is_refused`:
+       `AssertionError: ValueError not raised` -- the fitter accepts an empty
+       regressor tuple and completes the fit with a zero-column design, where
+       the test requires the `no regressors declared` refusal. Mutation
+       confirmed applied by diff.
+    3. **The duplicate-regressor check removed** -- `if duplicates:` ->
+       `if False:`. Kills `test_a_regressor_declared_twice_is_refused`:
+       `AssertionError: ValueError not raised` -- the fit completes with both
+       design columns carrying the same series. Mutation confirmed applied by
+       diff.
+    4. **The unobserved-regressor check removed** -- `if not seen:` ->
+       `if False and not seen:` in the imputation loop over `names`. Kills
+       `test_a_regressor_unobserved_on_every_training_row_is_refused`:
+       `ZeroDivisionError: division by zero` from `sum(seen) / len(seen)` on
+       the empty list, where the test requires the unobserved-regressor
+       refusal. Mutation confirmed applied by diff.
+    """
+
+    def test_levels_without_the_median_are_refused(self):
+        rows = crossing_frame(30)
+        with self.assertRaises(ValueError) as caught:
+            ml.fit_gradient_boosted_quantiles(
+                rows,
+                ("sofr_volume",),
+                minimum_history=20,
+                levels=(0.05, 0.25, 0.75, 0.95),
+            )
+        self.assertEqual(
+            str(caught.exception),
+            "the declared levels [0.05, 0.25, 0.75, 0.95] do not carry 0.5; the "
+            "point forecast is the rearranged median and there is no honest "
+            "substitute for it -- an average of the two levels straddling the "
+            "middle is a centre no fit produced",
+        )
+
+    def test_no_declared_regressors_is_refused(self):
+        rows = crossing_frame(30)
+        with self.assertRaises(ValueError) as caught:
+            ml.fit_gradient_boosted_quantiles(rows, (), minimum_history=20)
+        self.assertEqual(
+            str(caught.exception),
+            "no regressors declared; an empty list is how a caller omits the "
+            "decision rather than makes it. Name the regressors, even if the "
+            "honest answer is one of them",
+        )
+
+    def test_a_regressor_declared_twice_is_refused(self):
+        rows = crossing_frame(30)
+        with self.assertRaises(ValueError) as caught:
+            ml.fit_gradient_boosted_quantiles(
+                rows, ("sofr_volume", "sofr_volume"), minimum_history=20
+            )
+        self.assertEqual(
+            str(caught.exception),
+            "regressors declared more than once: ['sofr_volume']; a column "
+            "handed to the ensemble twice splits on itself and its importance "
+            "is meaningless individually",
+        )
+
+    def test_a_regressor_unobserved_on_every_training_row_is_refused(self):
+        """A None on every row is not zero and not imputable: refuse with the window.
+
+        `_raw_regressor` returns `None` for a leg the row carries as `None` --
+        an observed hole, distinct from an absent key, which raises its own
+        refusal. The message names the training window's dates, so they are
+        asserted too: they are `origins`' span, one row short of the frame's
+        last (a one-step design has no pair into the final row).
+        """
+
+        rows = [
+            DailyObservation(
+                date(2026, 1, 1) + timedelta(days=index),
+                {
+                    "sofr": 4.30 + (index % 7) / 100.0,
+                    "iorb": 4.30,
+                    "sofr_volume": 2100.0 + index,
+                    "on_rrp": None,
+                },
+            )
+            for index in range(40)
+        ]
+        window = (
+            f"{rows[0].date.isoformat()}..{rows[-2].date.isoformat()}"
+        )
+        with self.assertRaises(ValueError) as caught:
+            ml.fit_gradient_boosted_quantiles(
+                rows, ("sofr_volume", "on_rrp"), minimum_history=20
+            )
+        self.assertEqual(
+            str(caught.exception),
+            "regressor 'on_rrp' is unobserved on every row of the training "
+            f"window ({window}); there is nothing to fit an imputation from, "
+            "and filling it with 0.0 would be the coercion contract test 5 "
+            "prohibits",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

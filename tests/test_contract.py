@@ -245,6 +245,7 @@ from repo_model.contract import (
     validate_field_release_lag,
     validate_identity_tolerance,
     validate_registry_identity_tolerances,
+    validate_registry_release_lags,
     validate_release_lag,
 )
 from repo_model.data import (
@@ -2648,6 +2649,232 @@ def _planted_unsourced_feature():
             {**contract.UNSOURCED_FEATURES, PLANTED_UNSOURCED: PLANTED_REASON}
         ),
     )
+
+
+class ReleaseLagRefusalMessageTests(unittest.TestCase):
+    """The source-level release-lag refusals, message for message.
+
+    `SourceRegistryTests` holds the *declared* registry to `validate_release_lag`
+    returning an empty list, and `FieldReleaseLagCoverageTests` holds the field
+    half of the schema. What nothing pinned is the text a malformed declaration
+    is refused with: each refusal is a ruling -- a weekend plus three holidays,
+    naive times across zones, a day count on a source that contributes no purge
+    -- and a reworded refusal is a weakened one. Every case here asserts the
+    validator's complete return, so a second problem appended or dropped by a
+    later edit also fails.
+
+    Every expected string was probed against `contract.py` before being written
+    here; none of them is a wish. Stdlib only; no `ml` extra, no files.
+
+    Mutation record (E6, coverage audit): disposable copy under `$HOME` built
+    from `git ls-files -z --cached --others --exclude-standard` at the branch
+    head, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, unmutated control green
+    before and after. Each mutation was applied, observed to fail its target,
+    and reverted with `git checkout -- src/repo_model/contract.py`.
+
+    1. **The not-an-object message reworded** -- `release_lag must be an
+       object` -> `release_lag must be a mapping`. Kills
+       `test_a_release_lag_that_is_not_an_object_is_refused` at both subTests
+       (two failures, one per payload kind).
+    2. **The aggregation made first-offender-only** -- `if problems:` ->
+       `if problems and not offenders:` in `validate_registry_release_lags`
+       (the mutation was scoped to that function: a sibling validator ends in
+       the same lines, so a whole-file replace matches twice). Kills
+       `test_registry_validation_returns_every_offender_keyed_by_source`: the
+       mutated validator reports only the first offender and the observed dict
+       is missing `bad_two`. Mutation confirmed applied by diff (one line).
+    """
+
+    def test_a_release_lag_that_is_not_an_object_is_refused(self):
+        for payload, kind in (("nope", "str"), (["nope"], "list")):
+            with self.subTest(payload=payload):
+                self.assertEqual(
+                    validate_release_lag("src", payload),
+                    [f"src: release_lag must be an object, got {kind}"],
+                )
+
+    def test_an_unknown_basis_is_refused(self):
+        self.assertEqual(
+            validate_release_lag("src", {"basis": "refdate"}),
+            [
+                "src: basis must be one of ['ref_date', 'record_date', "
+                "'snapshot_retrieved_at'], got 'refdate'"
+            ],
+        )
+
+    def test_a_snapshot_source_declaring_a_day_count_is_refused(self):
+        """`days: 0` on a snapshot source is the mapping-to-zero, written as data."""
+
+        self.assertEqual(
+            validate_release_lag(
+                "src", {"basis": "snapshot_retrieved_at", "days": 0}
+            ),
+            [
+                "src: a snapshot_retrieved_at source must not declare 'days'; it "
+                "contributes no purge, and a day count here is the "
+                "mapping-to-zero the contract prohibits"
+            ],
+        )
+
+    def test_a_worst_case_below_days_plus_five_is_refused(self):
+        self.assertEqual(
+            validate_release_lag(
+                "src",
+                {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 2,
+                    "worst_case_calendar_days": 5,
+                },
+            ),
+            [
+                "src: worst_case_calendar_days 5 is below days + 5 (7); a weekend "
+                "plus three consecutive holidays is the floor, and a bound that "
+                "is too small makes every purge sized from it too small"
+            ],
+        )
+
+        # The floor is inclusive: days + 5 exactly is the declared minimum, and
+        # the same declaration one day lower is the refusal above.
+        self.assertEqual(
+            validate_release_lag(
+                "src",
+                {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 2,
+                    "worst_case_calendar_days": 7,
+                },
+            ),
+            [],
+        )
+
+    def test_a_record_date_source_without_available_time_is_refused(self):
+        self.assertEqual(
+            validate_release_lag(
+                "src", {"basis": "record_date", "unit": "calendar_days", "days": 1}
+            ),
+            [
+                "src: a record_date source must declare available_time; the rule "
+                "adds a day when it falls after decision_time, which cannot be "
+                "evaluated without it (use '23:59' for a source whose intraday "
+                "publication time is unknown)"
+            ],
+        )
+
+    def test_an_available_time_without_a_timezone_is_refused(self):
+        for timezone in (None, ""):
+            with self.subTest(timezone=timezone):
+                block = {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 1,
+                    "available_time": "16:00",
+                }
+                if timezone is not None:
+                    block["timezone"] = timezone
+                self.assertEqual(
+                    validate_release_lag("src", block),
+                    [
+                        "src: available_time requires a timezone; comparing naive "
+                        "times across declared zones is a leakage bug, not a "
+                        "formatting one"
+                    ],
+                )
+
+    def test_an_unrecognized_iana_zone_is_refused(self):
+        self.assertEqual(
+            validate_release_lag(
+                "src",
+                {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 1,
+                    "available_time": "16:00",
+                    "timezone": "Mars/Olympus",
+                },
+            ),
+            ["src: timezone 'Mars/Olympus' is not an IANA zone"],
+        )
+
+    def test_a_field_level_snapshot_block_is_refused(self):
+        self.assertEqual(
+            validate_field_release_lag(
+                "src",
+                "THING",
+                {"basis": "snapshot_retrieved_at"},
+                "snapshot_retrieved_at",
+            ),
+            [
+                "src.THING: a field-level snapshot_retrieved_at block says nothing "
+                "the source did not already say; remove it rather than restating "
+                "the source's basis at field level"
+            ],
+        )
+
+    def test_a_revision_only_block_on_a_real_basis_source_is_refused(self):
+        self.assertEqual(
+            validate_field_release_lag(
+                "src",
+                "THING",
+                {"revision_policy": "never_revised", "revision_evidence": "x"},
+                "record_date",
+            ),
+            [
+                "src.THING: a revision-only block licenses pricing from rows on a "
+                "snapshot_retrieved_at source; on a record_date source it "
+                "licenses nothing and will never be read"
+            ],
+        )
+
+    def test_a_revision_policy_without_evidence_is_refused(self):
+        self.assertEqual(
+            validate_field_release_lag(
+                "src",
+                "THING",
+                {"revision_policy": "never_revised"},
+                "snapshot_retrieved_at",
+            ),
+            [
+                "src.THING: revision_policy must carry a non-empty "
+                "revision_evidence naming what establishes it. A claim with no "
+                "evidence attached is indistinguishable from an assumption"
+            ],
+        )
+
+    def test_registry_validation_returns_every_offender_keyed_by_source(self):
+        """Aggregation is complete: every offender, keyed, never the first only.
+
+        A validator that stopped at the first broken source would repair one
+        declaration per run -- and a registry with three faults would take three
+        runs to come clean. The `good` source asserts the aggregation is by
+        offence, not membership: a conforming source appears nowhere.
+        """
+
+        registry = {
+            "good": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 1,
+                    "worst_case_calendar_days": 6,
+                }
+            },
+            "bad_one": {"release_lag": {"basis": "nope"}},
+            "bad_two": {"release_lag": "not-an-object"},
+            "bad_three": {"no_lag": True},
+        }
+        self.assertEqual(
+            validate_registry_release_lags(registry),
+            {
+                "bad_one": [
+                    "bad_one: basis must be one of ['ref_date', 'record_date', "
+                    "'snapshot_retrieved_at'], got 'nope'"
+                ],
+                "bad_two": ["bad_two: release_lag must be an object, got str"],
+                "bad_three": ["bad_three: no release_lag declared"],
+            },
+        )
 
 
 class FeatureSourceMapCoverageTests(unittest.TestCase):
