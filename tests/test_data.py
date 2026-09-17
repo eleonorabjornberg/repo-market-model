@@ -20,6 +20,10 @@ from repo_model.data import (
     CARRY_FORWARD_COLUMNS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
+    WITHHELD_FIELD_REASONS,
+    WITHHELD_NO_FED_COUNTERPARTY,
+    WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT,
+    CrossSectionCoverage,
     build_daily_panel,
     write_daily_panel,
     DataContractError,
@@ -1121,6 +1125,68 @@ class StructuralZeroPeriodGrammarTests(unittest.TestCase):
         message = str(caught.exception)
         self.assertIn("2013-08-31", message)
         self.assertIn("2010-11-30", message)
+
+
+class WithheldFieldVocabularyTests(unittest.TestCase):
+    """The withheld-field vocabulary is closed, and `superseded_without_replacement` is in it.
+
+    `data.py` owns the words a coverage record may give for a field of an
+    admitted cross-section that wrote no row, and refuses a word it does not
+    declare -- the same closed set `exclusion_reason` is judged against, one
+    level down. `CrossSectionCoverageTests` in `tests/test_ingest.py` proves
+    the wiring on a parsed archive; this class pins the vocabulary itself,
+    because a reason a reader cannot find declared is exactly the hole the
+    closed set exists to close.
+
+    `superseded_without_replacement` joined on 17 Sep 2026 (Eleonora): a dirty
+    cell no active submission supplies is supersession -- its contributors left
+    between vintages -- and never a valid zero, so the word has to be in the
+    vocabulary for the adapter to reach for.
+    """
+
+    FIELDS = dict(
+        source_id="sec_nmfp",
+        ref_date=date(2026, 7, 31),
+        entity_unit="reporting series",
+        entity_count=3,
+        declared_floor=3,
+        admitted=True,
+        row_count=1,
+        era_id="test",
+    )
+
+    def test_superseded_without_replacement_is_accepted(self):
+        record = CrossSectionCoverage(
+            **self.FIELDS,
+            withheld_fields=(
+                ("mmf_treasury_holdings", WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT),
+            ),
+        )
+        self.assertEqual(
+            record.withheld_fields,
+            (("mmf_treasury_holdings", WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT),),
+        )
+
+    def test_every_declared_word_is_accepted(self):
+        # The control for the refusal below: every word the vocabulary
+        # declares constructs, so a refusal can only be about the word.
+        for reason in WITHHELD_FIELD_REASONS:
+            with self.subTest(reason=reason):
+                record = CrossSectionCoverage(
+                    **self.FIELDS, withheld_fields=(("mmf_on_rrp", reason),)
+                )
+                self.assertEqual(
+                    record.withheld_fields, (("mmf_on_rrp", reason),)
+                )
+
+    def test_an_unknown_reason_is_refused(self):
+        with self.assertRaises(ValueError) as refused:
+            CrossSectionCoverage(
+                **self.FIELDS, withheld_fields=(("mmf_on_rrp", "quiet_month"),)
+            )
+        self.assertIs(type(refused.exception), ValueError)
+        self.assertIn("'quiet_month'", str(refused.exception))
+
 
 class RealSnapshotCoverageTests(unittest.TestCase):
     """The coverage floor, against the extract in `data/raw/` rather than a fixture.

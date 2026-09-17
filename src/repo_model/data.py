@@ -154,8 +154,21 @@ EXCLUSION_REASONS = (EXCLUSION_BELOW_FLOOR, EXCLUSION_NO_REPO_ROWS)
 #                        Reserve counterparty among them, so the derivation that
 #                        supplies `mmf_on_rrp` had inputs and matched none of
 #                        them
+#   superseded_without_replacement
+#                        the cell was dirtied by a changed or restated accession
+#                        and no active submission supplies it, so every
+#                        contributor left between vintages: the observation was
+#                        superseded and nothing replaced it. Decided 17 Sep 2026
+#                        (Eleonora) -- such a cell is always supersession and
+#                        never a valid zero, because dirt requires a contributor
+#                        to have left and a first vintage has no contributor to
+#                        lose: its structural zeros are never dirty
 WITHHELD_NO_FED_COUNTERPARTY = "no_fed_counterparty"
-WITHHELD_FIELD_REASONS = (WITHHELD_NO_FED_COUNTERPARTY,)
+WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT = "superseded_without_replacement"
+WITHHELD_FIELD_REASONS = (
+    WITHHELD_NO_FED_COUNTERPARTY,
+    WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT,
+)
 
 
 @dataclass(frozen=True)

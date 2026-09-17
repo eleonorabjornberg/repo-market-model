@@ -26,6 +26,7 @@ from repo_model.data import (
     EXCLUSION_REASONS,
     WITHHELD_FIELD_REASONS,
     WITHHELD_NO_FED_COUNTERPARTY,
+    WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT,
     CrossSectionCoverage,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
@@ -3161,17 +3162,25 @@ class NmfpFedCounterpartyAmendmentTests(unittest.TestCase):
     vintage carried, so a first vintage that never matched the Fed records the
     old one and an empty `withheld_fields`.
 
-    **The sibling defect, found and not repaired (it is a different criterion).**
-    The withholding is keyed by `NMFP_WITHHELD_DERIVED_REASONS`, so it reaches
-    `mmf_on_rrp` and nothing else. A field with no declared derivation whose last
-    contributor is superseded -- an amendment that refiles every Treasury holding
-    under another category, say -- still re-totals to `0.0` in its vintage, on
-    this tree and after this block. It is the same mechanism and the same family
-    of zero; naming its cause needs a sentence this adapter cannot currently
-    write, because outside a declared derivation "the rows went away" is the
-    mechanism rather than the reason. The last subtest below pins that behaviour
-    as it stands, so the day it is decided, the decision moves a test rather than
-    discovering an unrecorded assumption.
+    **The sibling defect, closed by decision (17 Sep 2026).** The withholding
+    was keyed by `NMFP_WITHHELD_DERIVED_REASONS`, so it reached `mmf_on_rrp`
+    and nothing else, and a field with no declared derivation whose last
+    contributor is superseded -- an amendment that refiles every Treasury
+    holding under another category, say -- still re-totalled to `0.0` in its
+    vintage. Eleonora authorized the repair on 17 September 2026 with the word
+    `superseded_without_replacement`, on this invariant: a dirty cell is dirty
+    because a changed or restated accession touched it, and an entering
+    accession supplies its own cells -- so a dirty cell nothing active supplies
+    was dirtied by contributors that left the active set between vintages. It
+    had a supplier in the vintage before and none now, which is supersession
+    and never a valid zero; a first-vintage structural zero is never dirty, so
+    the rule cannot reach it. `NMFP_WITHHELD_DERIVED_REASONS` stays as the
+    override map: a field whose cause this adapter can name keeps its own word
+    (`mmf_on_rrp`: `no_fed_counterparty`) and everything else takes the
+    default. The subtest that pinned the old behaviour as it stands moved
+    rather than died -- `test_an_amendment_that_supersedes_the_last_contributor_of_a_field_with_no_declared_derivation_withholds_the_field_without_replacement`
+    now pins the new contract, and two siblings beside it pin the override and
+    the first vintage.
 
     **On the published record.** `AmendedRepoVintageTests` measured, over all 97
     declared archives, that no `sec_nmfp` repo row is `0.0` -- `mmf_on_rrp`
@@ -3393,25 +3402,128 @@ class NmfpFedCounterpartyAmendmentTests(unittest.TestCase):
             self.assertEqual(self.values(restored_rows, "mmf_on_rrp"), [2.0])
             self.assertEqual(self.rows_from(again, amended), [])
 
-        with self.subTest("a field with no declared derivation still re-totals; recorded, not repaired"):
-            # The sibling defect, pinned as it stands. `mmf_treasury_holdings`
-            # is in no declared derivation, so an amendment that refiles it
-            # under another category re-totals the cell to 0.0 and emits it.
-            # This is a finding about the tree, not a rule this block adopted.
+    def test_an_amendment_that_supersedes_the_last_contributor_of_a_field_with_no_declared_derivation_withholds_the_field_without_replacement(self):
+        """The F-3 decision, 17 Sep 2026: supersession withholds, it does not zero.
+
+        Moves the subtest that pinned the sibling defect: the same amendment
+        -- Treasury holdings refiled under another category -- previously
+        re-totalled the cell to `0.0` and emitted it. Every not-supplied
+        dirty cell is now withheld, with the default word
+        `superseded_without_replacement`; the override map keeps
+        `no_fed_counterparty` for the field whose cause this adapter can
+        name.
+        """
+
+        registry = self.registry()
+        original = self.archive(self.filers("O"))
+        alone = parse_snapshots([original], registry=registry)
+        swapped = self.archive(
+            self.filers("W", amended=True), treasury_category=self.NON_REPO_CATEGORY
+        )
+        moved = parse_snapshots([original, swapped], registry=registry)
+        swapped_rows = self.rows_from(moved, swapped)
+        record = self.records(moved)[-1]
+
+        with self.subTest(
+            "the amended vintage writes no row for the superseded field, and no zero"
+        ):
+            # The premise, as in the Fed-counterparty test: the amendments
+            # superseded all three originals, the month is admitted, and the
+            # field has no declared derivation -- so this is genuinely the
+            # dirty-cell case, and nothing else refuses the field.
+            self.assertTrue(record.admitted)
+            self.assertIsNone(record.exclusion_reason)
             self.assertNotIn("mmf_treasury_holdings", NMFP_WITHHELD_DERIVED_REASONS)
-            swapped = self.archive(
-                self.filers("W", amended=True), treasury_category=self.NON_REPO_CATEGORY
+            self.assertEqual(self.values(swapped_rows, "mmf_treasury_holdings"), [])
+            self.assertNotIn(0.0, [row.value for row in swapped_rows])
+            self.assertEqual(
+                [
+                    row
+                    for row in moved.rows
+                    if row.series_id == "mmf_treasury_holdings" and row.value == 0.0
+                ],
+                [],
             )
-            moved = parse_snapshots([original, swapped], registry=registry)
-            swapped_rows = self.rows_from(moved, swapped)
-            record = self.records(moved)[-1]
+
+        with self.subTest("its record names the supersession, in the declared vocabulary"):
+            self.assertEqual(
+                record.withheld_fields,
+                (("mmf_treasury_holdings", WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT),),
+            )
+
+        with self.subTest(
+            "the earlier vintage keeps its rows and the as-of read sees the old value"
+        ):
+            self.assertEqual(self.rows_from(moved, original), list(alone.rows))
+            # 2.0 per series across the three; the point is that the as-of
+            # value is the vintage's own, unmoved by the supersession.
+            self.assertEqual(
+                self.values(self.rows_from(moved, original), "mmf_treasury_holdings"),
+                [6.0],
+            )
+
+    def test_the_field_with_a_declared_derivation_keeps_its_override_reason_over_the_default(self):
+        """`mmf_on_rrp` still withholds as `no_fed_counterparty`: the override wins."""
+
+        registry = self.registry()
+        original = self.archive(self.filers("O"))
+        amended = self.archive(
+            self.filers("R", amended=True, repo_counterparty=FIXTURE_DEALER_COUNTERPARTY)
+        )
+        parsed = parse_snapshots([original, amended], registry=registry)
+        record = self.records(parsed)[-1]
+
+        with self.subTest("the override map wins over the default word"):
+            # Both words are in the vocabulary now. The derivation sentence is
+            # the more specific one, so the field whose cause this adapter can
+            # name must keep its own word and not the supersession default.
+            self.assertNotEqual(
+                WITHHELD_NO_FED_COUNTERPARTY, WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT
+            )
+            self.assertEqual(
+                record.withheld_fields,
+                (("mmf_on_rrp", WITHHELD_NO_FED_COUNTERPARTY),),
+            )
+
+        with self.subTest("and no zero is written for it"):
+            self.assertEqual(
+                [
+                    row
+                    for row in parsed.rows
+                    if row.series_id == "mmf_on_rrp" and row.value == 0.0
+                ],
+                [],
+            )
+
+    def test_a_first_vintage_with_nothing_superseded_neither_withholds_nor_fabricates(self):
+        """A first vintage is never dirty-and-unsupplied: no contributor has left."""
+
+        registry = self.registry()
+        never = self.archive(
+            self.filers("N", repo_counterparty=FIXTURE_DEALER_COUNTERPARTY)
+        )
+        first_only = parse_snapshots([never], registry=registry)
+        record = self.records(first_only)[-1]
+
+        with self.subTest("nothing is withheld: no cell had a supplier before"):
             self.assertTrue(record.admitted)
             self.assertEqual(record.withheld_fields, ())
             self.assertEqual(
-                self.values(swapped_rows, "mmf_treasury_holdings"),
-                [0.0],
-                "the sibling defect; see this class's docstring",
+                record.unmatched_derived_fields,
+                (("mmf_on_rrp", DERIVED_ABSENCE_UNDECLARED),),
             )
+
+        with self.subTest("and nothing is fabricated: the holdings fields stand as filed"):
+            self.assertEqual(self.values(first_only.rows, "mmf_treasury_holdings"), [6.0])
+            self.assertEqual(self.values(first_only.rows, "mmf_repo_holdings"), [3.0])
+            # The only zeros in the vintage are the balance-sheet zeros the
+            # fixture itself files -- cash, liabilities, other assets -- which
+            # is the zero this rule must never touch. The derived field that
+            # matched nothing writes no row at all, never a zero.
+            self.assertEqual(self.values(first_only.rows, "mmf_cash"), [0.0])
+            self.assertEqual(self.values(first_only.rows, "mmf_liabilities"), [0.0])
+            self.assertEqual(self.values(first_only.rows, "mmf_other_assets"), [0.0])
+            self.assertEqual(self.values(first_only.rows, "mmf_on_rrp"), [])
 
 
 class CoverageEraTests(unittest.TestCase):
