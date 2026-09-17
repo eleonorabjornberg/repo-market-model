@@ -437,6 +437,17 @@ def fetch_nyfed_fr2004(
     ]
 
 
+def _is_official_sec_url(url: str) -> bool:
+    """True only for an https URL whose host is exactly www.sec.gov.
+
+    Parsed-host equality rather than a prefix match: the requirement is that
+    the URL's host is the official one, so the check reads the parsed host
+    instead of a string prefix.
+    """
+    parsed = urlparse(url)
+    return parsed.scheme.lower() == "https" and parsed.netloc.lower() == "www.sec.gov"
+
+
 def fetch_sec_nmfp(
     output_root: Path,
     url: str,
@@ -450,7 +461,7 @@ def fetch_sec_nmfp(
     the discovered official URL is explicit input and is preserved in provenance.
     """
 
-    if not url.lower().startswith("https://www.sec.gov/"):
+    if not _is_official_sec_url(url):
         raise ValueError("Form N-MFP URL must be an official https://www.sec.gov/ URL")
     if downloader is None:
         if not contact_email:
@@ -817,7 +828,7 @@ def fetch_sec_nmfp_archives(
 
     updated = []
     for index, record in enumerate(records):
-        if not record.url.lower().startswith("https://www.sec.gov/"):
+        if not _is_official_sec_url(record.url):
             raise ValueError(
                 f"Form N-MFP URL must be an official https://www.sec.gov/ URL: "
                 f"{record.url}"
