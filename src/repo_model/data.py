@@ -1158,7 +1158,10 @@ def expected_ref_dates_from_registry(
     Within each source and cadence, the most complete series is the reference
     calendar. This avoids comparing a weekly series with a daily series or a
     2018-start series with a 1954-start series. It also respects actual source
-    holidays without silently inventing a holiday calendar.
+    holidays without silently inventing a holiday calendar. A present peer is
+    bounded by its own first observed date and by nothing above: a peer that
+    stops printing while its anchor continues is reported missing across the
+    tail, never silently covered.
     """
 
     rows = list(observations)
@@ -1207,9 +1210,9 @@ def expected_ref_dates_from_registry(
                 if frequency == "event":
                     expected[field] = tuple(sorted(own_dates))
                     continue
-                start, end = min(own_dates), max(own_dates)
+                start = min(own_dates)
                 expected[field] = tuple(
-                    sorted(value for value in anchor_dates if start <= value <= end)
+                    sorted(value for value in anchor_dates if value >= start)
                 )
 
     for series_id, observed in dates_by_series.items():
