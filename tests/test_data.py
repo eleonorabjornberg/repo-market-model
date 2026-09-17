@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
     CARRY_FORWARD_COLUMNS,
+    DailyObservation,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     build_daily_panel,
@@ -6737,3 +6738,242 @@ def replace_observation(observation, ref_date):
         ref_date=ref_date,
         available_at=observation.available_at + shift,
     )
+
+
+class DailyPanelLoadRefusalTests(unittest.TestCase):
+    """A9: the seven `load_daily_panel` refusals, each pinned to its exact message.
+
+    The panel CSV is the modeling input, and every refusal below is a silent
+    contract violation caught at the door: a file that is not a CSV at all, a
+    header that lost a required column, a date that cannot be one, a value
+    that is not finite or not numeric or is required and blank, and a file
+    that holds a header and nothing else. Each message carries its row number
+    where one exists, because a panel with three years of daily rows is
+    unreadable from the traceback alone.
+
+    ### A recorded discrepancy with the audit's spec
+
+    The audit spec wrote the non-finite refusal as `row 2: sofr must be
+    finite`. The code reports the field with `!r`, so the actual message --
+    the one this suite asserts -- is ``row 2: 'sofr' must be finite``. The
+    quoted form is what every other `_parse_float` refusal emits, so the
+    audit's unquoted spelling cannot occur.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Confirmed applied before
+    running, in a disposable copy under `$HOME` built from `git ls-files`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the unmutated control
+    green before and after.
+
+    * **MA9a** (`test_an_empty_file_has_no_header`) -- the refusal reworded to
+      `"CSV has no header row"`. Kills the test with `AssertionError` on the
+      exact message. The mutation anchor has to name `load_daily_panel`'s
+      raise specifically: `data.py` carries a second, byte-identical
+      `"CSV has no header"` refusal in the point-in-time loader, and a
+      bare-string match hits both (count 2, correctly refused by the
+      apply-once check).
+    * **MA9b** (`test_a_non_finite_sofr_is_refused`) -- the finite guard's
+      `f"row {row_number}: {field!r} must be finite"` changed to unquoted
+      `{field}`. Kills the test with `AssertionError` on the exact message;
+      the quoted spelling is the contract.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+    def csv_with(self, contents, name="panel.csv"):
+        path = self.root / name
+        path.write_text(contents, encoding="utf-8")
+        return path
+
+    def assertLoadRefused(self, path, message):
+        with self.assertRaises(DataContractError) as caught:
+            load_daily_panel(path)
+        self.assertEqual(str(caught.exception), message)
+
+    def test_an_empty_file_has_no_header(self):
+        self.assertLoadRefused(self.csv_with(""), "CSV has no header")
+
+    def test_a_missing_date_column_is_named_in_the_refusal(self):
+        self.assertLoadRefused(
+            self.csv_with("sofr,iorb\n4.31,4.30\n"),
+            "missing required columns: date",
+        )
+
+    def test_an_impossible_date_is_refused_with_the_row_number(self):
+        self.assertLoadRefused(
+            self.csv_with("date,sofr,iorb\n2024-13-01,4.31,4.30\n"),
+            "row 2: date must use YYYY-MM-DD",
+        )
+
+    def test_a_non_finite_sofr_is_refused(self):
+        self.assertLoadRefused(
+            self.csv_with("date,sofr,iorb\n2024-01-02,nan,4.30\n"),
+            "row 2: 'sofr' must be finite",
+        )
+
+    def test_a_non_numeric_sofr_is_refused_with_the_raw_value(self):
+        self.assertLoadRefused(
+            self.csv_with("date,sofr,iorb\n2024-01-02,abc,4.30\n"),
+            "row 2: 'sofr' must be numeric, got 'abc'",
+        )
+
+    def test_a_blank_required_cell_is_refused_by_its_field_name(self):
+        with self.subTest(field="sofr"):
+            self.assertLoadRefused(
+                self.csv_with("date,sofr,iorb\n2024-01-02,,4.30\n"),
+                "row 2: 'sofr' is required",
+            )
+        with self.subTest(field="iorb"):
+            self.assertLoadRefused(
+                self.csv_with("date,sofr,iorb\n2024-01-02,4.31,\n"),
+                "row 2: 'iorb' is required",
+            )
+
+    def test_a_header_only_csv_contains_no_observations(self):
+        self.assertLoadRefused(
+            self.csv_with("date,sofr,iorb\n"),
+            "CSV contains no observations",
+        )
+
+
+class AuditPanelMessageTests(unittest.TestCase):
+    """A10: `audit_panel`'s refusals and its whole warning set, exact strings.
+
+    The audit JSON is a published artifact: its warnings are transcribed into
+    data-quality decisions, so a reworded warning is a silent change to what
+    the project has said in public. The refusal messages are asserted exactly,
+    and the warning set is asserted as an ordered list for a row that carries
+    one of each violation, so a warning that stops being emitted, starts being
+    emitted twice, or changes its wording, is a red test rather than a quiet
+    edit of a published figure.
+
+    ### A recorded discrepancy with the audit's spec
+
+    The audit spec wrote the duplicate-dates refusal as
+    `duplicate dates: 2024-01-02, 2024-01-02`. The code reports each duplicated
+    date once -- `duplicates` is a `set` of the values seen more than once --
+    so the actual message, the one this suite asserts, is
+    `duplicate dates: 2024-01-02`. The audit's spelling cannot occur: two
+    dates in it, one value.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Confirmed applied before
+    running, in a disposable copy under `$HOME` built from `git ls-files`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the unmutated control
+    green before and after.
+
+    * **MA10a** (`test_duplicate_dates_are_reported_once_each`) -- the refusal
+      prefix `"duplicate dates: "` reworded to `"duplicated: "`. Kills the
+      test with `AssertionError` on the exact message.
+    * **MA10b** (`test_the_warning_set_is_exact`) -- the percentile warning
+      reworded to `"SOFR p25 above p75"`. Kills the test with
+      `AssertionError` on the ordered warning list.
+    * **MA10c** (`test_an_empty_panel_is_refused`) -- the empty refusal
+      reworded to `"panel is empty"`. Kills the test with `AssertionError` on
+      the exact message.
+    """
+
+    def observation(self, year, month, day, **values):
+        return DailyObservation(date(year, month, day), values)
+
+    def test_an_empty_panel_is_refused(self):
+        with self.assertRaises(DataContractError) as caught:
+            audit_panel([])
+        self.assertEqual(str(caught.exception), "panel contains no observations")
+
+    def test_unsorted_dates_are_refused(self):
+        rows = [
+            self.observation(2024, 1, 3, sofr=4.31, iorb=4.30),
+            self.observation(2024, 1, 2, sofr=4.31, iorb=4.30),
+        ]
+        with self.assertRaises(DataContractError) as caught:
+            audit_panel(rows)
+        self.assertEqual(str(caught.exception), "dates must be sorted in ascending order")
+
+    def test_duplicate_dates_are_reported_once_each(self):
+        rows = [
+            self.observation(2024, 1, 2, sofr=4.31, iorb=4.30),
+            self.observation(2024, 1, 2, sofr=4.31, iorb=4.30),
+            self.observation(2024, 1, 3, sofr=4.31, iorb=4.30),
+            self.observation(2024, 1, 3, sofr=4.31, iorb=4.30),
+        ]
+        with self.assertRaises(DataContractError) as caught:
+            audit_panel(rows)
+        self.assertEqual(
+            str(caught.exception),
+            "duplicate dates: 2024-01-02, 2024-01-03",
+        )
+
+    def test_the_warning_set_is_exact(self):
+        """One row with one of each violation, then a boundary control row.
+
+        The control row holds each field at its nearest legal value -- `0` and
+        `1` for the flags, `30` and `0` for the countdown, a non-negative
+        volume, an ordered percentile pair -- so the guard is pinned to
+        exactly the illegal side of each boundary and not to the fields
+        merely being present.
+        """
+
+        violating = self.observation(
+            2024,
+            1,
+            2,
+            sofr=4.31,
+            iorb=4.30,
+            sofr_p25=4.35,
+            sofr_p75=4.30,
+            sofr_volume=-1.0,
+            reserve_balances=-2.0,
+            tga=-3.0,
+            on_rrp=-4.0,
+            quarter_end=0.5,
+            tax_date=2.0,
+            days_to_month_end=31.0,
+        )
+        boundary = self.observation(
+            2024,
+            1,
+            3,
+            sofr=4.31,
+            iorb=4.30,
+            sofr_p25=4.30,
+            sofr_p75=4.35,
+            sofr_volume=0.0,
+            reserve_balances=0.0,
+            tga=0.0,
+            on_rrp=0.0,
+            quarter_end=1.0,
+            tax_date=0.0,
+            days_to_month_end=30.0,
+        )
+
+        report = audit_panel([violating, boundary])
+
+        self.assertEqual(
+            report.warnings,
+            [
+                "2024-01-02: SOFR p25 exceeds p75",
+                "2024-01-02: sofr_volume is negative",
+                "2024-01-02: reserve_balances is negative",
+                "2024-01-02: tga is negative",
+                "2024-01-02: on_rrp is negative",
+                "2024-01-02: quarter_end should be 0 or 1",
+                "2024-01-02: tax_date should be 0 or 1",
+                "2024-01-02: days_to_month_end is 31.0, outside 0..30",
+            ],
+        )
+
+    def test_a_countdown_below_zero_is_warned_like_one_above_thirty(self):
+        """Both sides of the countdown's range are arithmetic errors, not anomalies."""
+
+        below = self.observation(2024, 1, 2, sofr=4.31, iorb=4.30, days_to_month_end=-1.0)
+        report = audit_panel([below])
+        self.assertEqual(
+            report.warnings,
+            ["2024-01-02: days_to_month_end is -1.0, outside 0..30"],
+        )
