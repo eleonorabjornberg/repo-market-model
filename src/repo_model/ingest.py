@@ -22,7 +22,16 @@ from pathlib import Path
 # Imported by name, not as a module: `datetime.time` above already holds that
 # name, and `import time` would shadow it.
 from time import sleep as _sleep
-from typing import Callable, Iterable, List, Mapping, Optional, Sequence, Union
+from typing import (
+    AbstractSet,
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
@@ -1284,9 +1293,20 @@ FRED_ABSENT_TOKENS = {"": ABSENCE_BLANK, ".": ABSENCE_DOT}
 def _fred_rows(
     artifact: SnapshotArtifact,
     payload: bytes,
+    declared_fields: AbstractSet[str],
     *,
     absent_cells: Optional[AbsentCellSink] = None,
 ):
+    """One observation per cell of every column the source declares.
+
+    `declared_fields` is the source's registry `fields`, and nothing else of the
+    registry. A column outside it is refused, not dropped: it would otherwise
+    become an observation with no frequency and no release lag declared for it
+    -- `validate_publication_gaps` skips a series it has no bound for -- and
+    reach the long point-in-time panel. A dropped column would hide a
+    declaration that is missing; a refusal names it.
+    """
+
     from .data import PointInTimeObservation
 
     available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
@@ -1295,6 +1315,16 @@ def _fred_rows(
         reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
         if not reader.fieldnames or "observation_date" not in reader.fieldnames:
             raise ValueError("FRED snapshot is not the expected CSV format")
+        undeclared = [
+            series_id
+            for series_id in reader.fieldnames
+            if series_id != "observation_date" and series_id not in declared_fields
+        ]
+        if undeclared:
+            raise ValueError(
+                f"{artifact.source_id} snapshot {artifact.path} carries {undeclared}, "
+                f"which {artifact.source_id} does not declare in its registry fields"
+            )
         for record_number, record in enumerate(reader, start=2):
             try:
                 ref_date = date.fromisoformat(record["observation_date"])
@@ -3230,7 +3260,15 @@ def parse_snapshots(
         elif artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "fred_macro_latest_vintage":
-            parsed_rows = _fred_rows(artifact, payload, absent_cells=absent_cells)
+            parsed_rows = _fred_rows(
+                artifact,
+                payload,
+                frozenset(
+                    str(field)
+                    for field in registry.get(artifact.source_id, {}).get("fields", ())
+                ),
+                absent_cells=absent_cells,
+            )
         elif artifact.source_id == "treasury_auctions":
             parsed_rows = _treasury_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == TREASURY_BILL_RATES_SOURCE_ID:
