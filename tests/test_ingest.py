@@ -316,6 +316,46 @@ class IngestTests(unittest.TestCase):
         )
         self.assertEqual(artifacts[0].source_id, "sec_nmfp")
 
+    def test_sec_adapter_accepts_the_official_bare_host_url(self):
+        # The official host with no path: scheme https, netloc www.sec.gov.
+        # Written failing first against the prefix check, which required the
+        # trailing slash; the parsed-host check accepts it.
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("FUND.tsv", "ACCESSION_NUMBER\tTOTAL_ASSETS\n")
+        artifacts = fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov",
+            lambda url: buffer.getvalue(),
+        )
+        self.assertEqual(artifacts[0].source_id, "sec_nmfp")
+
+    def test_sec_adapter_refuses_lookalike_sec_hosts(self):
+        # Behavior pin, not a failing-first test: the old prefix match refused
+        # these too, because a prefix ending in "/" pins the authority, so a
+        # dot-host or userinfo lookalike never matched. The pins stay so the
+        # parsed-host refactor cannot quietly loosen the refusal.
+        lookalikes = (
+            "https://www.sec.gov.evil.com/files/dera/data/form-n-mfp-data-sets/x.zip",
+            "https://www.sec.gov@evil.com/files/dera/data/form-n-mfp-data-sets/x.zip",
+        )
+        for lookalike in lookalikes:
+            with self.assertRaisesRegex(ValueError, "official https://www.sec.gov/"):
+                fetch_sec_nmfp(
+                    self.output_root,
+                    lookalike,
+                    lambda url: b"unreached",
+                )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("FUND.tsv", "ACCESSION_NUMBER\tTOTAL_ASSETS\n")
+        artifacts = fetch_sec_nmfp(
+            self.output_root,
+            "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/x.zip",
+            lambda url: buffer.getvalue(),
+        )
+        self.assertEqual(artifacts[0].source_id, "sec_nmfp")
+
     def test_sec_live_download_requires_a_contact_identity(self):
         with self.assertRaisesRegex(ValueError, "contact_email"):
             fetch_sec_nmfp(
@@ -699,6 +739,36 @@ class ArchiveManifestTests(unittest.TestCase):
             return payloads[url]
 
         return downloader, calls
+
+    def test_the_archive_fetch_refuses_lookalike_sec_hosts(self):
+        # Behavior pin for the manifest loop's per-record host check. As in
+        # test_sec_adapter_refuses_lookalike_sec_hosts: the old prefix match
+        # refused these too, so this passes before and after the parsed-host
+        # refactor, and stays so the refactor cannot loosen the refusal.
+        lookalikes = (
+            "https://www.sec.gov.evil.com/files/dera/data/form-n-mfp-data-sets/renamed.zip",
+            "https://www.sec.gov@evil.com/files/dera/data/form-n-mfp-data-sets/renamed.zip",
+        )
+        for lookalike in lookalikes:
+            with self.assertRaisesRegex(ValueError, "official https://www.sec.gov/"):
+                fetch_sec_nmfp_archives(
+                    self.output_root,
+                    [ArchiveRecord(url=lookalike)],
+                    downloader=lambda url: b"unreached",
+                    pause_seconds=0,
+                )
+        # The official URL itself is untouched by the guard: one record
+        # fetched, read, and admitted end to end.
+        url = f"{self.SEC_URL}renamed.zip"
+        downloader, calls = self._serve({url: self.readable})
+        updated = fetch_sec_nmfp_archives(
+            self.output_root,
+            [ArchiveRecord(url=url)],
+            downloader=downloader,
+            pause_seconds=0,
+        )
+        self.assertEqual(calls, [url])
+        self.assertTrue(updated[0].admitted)
 
     def test_an_archive_the_parser_cannot_read_never_reaches_the_raw_tree(self):
         url = f"{self.SEC_URL}renamed.zip"
