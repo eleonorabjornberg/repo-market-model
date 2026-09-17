@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import zipfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -38,6 +39,8 @@ from repo_model.ingest import (
     ArchiveRecord,
     ArchiveRefusal,
     FR2004_SOURCE_ID,
+    FRED_GRAPH_BASE,
+    FRED_MACRO_SERIES,
     NYFED_BASE,
     NMFP_CATEGORY_FIELDS,
     NMFP_DERIVED_FROM_MATCH,
@@ -46,12 +49,19 @@ from repo_model.ingest import (
     REFUSAL_ABSENT_FIELDS,
     REFUSAL_UNREADABLE,
     SnapshotArtifact,
+    TREASURY_AUCTIONS_BASE,
+    TREASURY_BILL_RATES_BASE,
+    USER_AGENT,
+    _atomic_write,
     _decode_transport,
+    _download,
+    _download_sec,
     _nmfp_number,
     _save_snapshot,
     _sec_nmfp_rows,
     fetch_sec_nmfp_archives,
     load_sec_nmfp_archive_manifest,
+    load_source_registry,
     nmfp_schema_refusals,
     write_sec_nmfp_archive_manifest,
     build_point_in_time_snapshot,
@@ -65,7 +75,8 @@ from repo_model.ingest import (
     load_snapshot_manifest,
     observations_from_snapshots,
 )
-from repo_model import cli, cli_data
+from repo_model.registry import RegistryContractError
+from repo_model import cli, cli_data, ingest
 from zoneinfo import ZoneInfo
 
 
@@ -7605,6 +7616,621 @@ class FredParseRefusesUndeclaredFieldsTests(unittest.TestCase):
                 for field, value in zip(self.declared, values)
             ),
         )
+
+
+class _FakeTransportResponse:
+    """The sliver of `urlopen`'s response the download seam reads."""
+
+    def __init__(self, payload, headers=None):
+        self._payload = payload
+        self.headers = {} if headers is None else headers
+
+    def read(self):
+        return self._payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+
+class AtomicWriteFailureTests(unittest.TestCase):
+    """A1: a failed `_atomic_write` removes its temp file and leaves the target alone.
+
+    `_atomic_write` is the write path for every raw snapshot and manifest in
+    `data/raw/`. Its failure cleanup runs under `except BaseException`, so a
+    failed `fsync` or a failed rename must not just propagate -- it must also
+    remove the `.{name}.{rand}` temp file `mkstemp` already created, and leave
+    the target path exactly as it was. A temp file that survives the failure is
+    litter in the raw tree that the next manifest glob may or may not trip
+    over; a half-written target would be worse.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Each was confirmed applied
+    (the mutated text located before running), run in a disposable copy under
+    `$HOME` built from `git ls-files`, with `PYTHONDONTWRITEBYTECODE=1` and
+    `python3 -B`, the unmutated control green before and after.
+
+    * **MA1** (`test_a_failed_fsync_removes_the_temp_file_and_propagates`) --
+      the cleanup's `os.unlink(temporary_name)` replaced with `pass`. Kills
+      the test with `AssertionError` on the temp-file listing: the parent
+      directory is left holding the `.snapshot.json.` temp file.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+    def test_a_failed_fsync_removes_the_temp_file_and_propagates(self):
+        target = self.root / "src" / "snapshot.json"
+        target.parent.mkdir(parents=True)
+
+        with unittest.mock.patch("os.fsync", side_effect=RuntimeError("fsync failed")):
+            with self.assertRaises(RuntimeError):
+                _atomic_write(target, b"x")
+
+        self.assertFalse(target.exists(), "a failed write must not leave the target")
+        self.assertEqual(
+            list(target.parent.iterdir()),
+            [],
+            "a failed write must not leave its temp file behind",
+        )
+
+    def test_a_successful_write_replaces_the_target(self):
+        """The control: the same call, unmutated, writes and replaces cleanly."""
+
+        target = self.root / "src" / "snapshot.json"
+        target.parent.mkdir(parents=True)
+
+        _atomic_write(target, b"first")
+        _atomic_write(target, b"second")
+
+        self.assertEqual(target.read_bytes(), b"second")
+        self.assertEqual(
+            sorted(entry.name for entry in target.parent.iterdir()), ["snapshot.json"]
+        )
+
+
+class DownloadTransportTests(unittest.TestCase):
+    """A2/A3/A4: the download seam's identity headers and its decode arms.
+
+    `_download` and `_download_sec` are the only raw-data entry points. SEC
+    fair-access policy makes the User-Agent a declared contact, not a courtesy:
+    `_download_sec` builds `repo-market-model/0.1 {email}` from the caller's
+    contact address, refuses an address that cannot be one, and accepts
+    `application/zip, application/octet-stream`, the two archive shapes the
+    N-MFP endpoint serves. The generic `_download` sends the module's
+    `USER_AGENT` and `Accept: */*`.
+
+    ### The A4 discrepancy the audit's literal spec cannot be tested as written
+
+    The audit asked for: a payload WITHOUT the gzip magic bytes whose response
+    header still says `Content-Encoding: gzip`, asserting it is gunzipped.
+    Verified empirically on this tree: that scenario raises
+    `gzip.BadGzipFile`, because `_decode_transport` decides the header means
+    the payload *is* a gzip stream and `gzip.decompress` refuses the bytes.
+    The header arm is therefore only reachable with a genuine gzip stream,
+    which is what is tested below: `_decode_transport(genuine, "gzip")` takes
+    the header's short-circuit `True` (the condition evaluates the header
+    first). One consequence is recorded honestly: with a genuine gzip stream
+    the header arm and the magic-byte arm are behaviorally indistinguishable
+    (a payload with magic bytes decodes under either), so the mutation that
+    kills this test is the decompress call itself, not the header condition --
+    dropping only the header condition leaves the magic-byte arm decoding the
+    same bytes and the test green.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Each was confirmed applied
+    before running, run in a disposable copy under `$HOME` built from
+    `git ls-files`, with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the
+    unmutated control green before and after.
+
+    * **MA2a** (`test_sec_download_refuses_an_email_that_cannot_be_a_contact`) --
+      the guard's regex replaced with `r".*"`, so every address passes. Kills
+      all five subTest addresses with `AssertionError` (`ValueError` not
+      raised). The guard test's transport fake raises if it is ever reached,
+      so the mutated run stays off the network -- the first attempt, without
+      the fake, failed only by way of a real HTTPS 403 from sec.gov, which is
+      not a kill to rely on.
+    * **MA2b** (`test_sec_download_declares_the_contact_and_the_archive_accept`) --
+      the User-Agent f-string cut to the bare `"repo-market-model/0.1"`. Kills
+      the test with `AssertionError` on the exact header value.
+    * **MA3a** (`test_download_declares_the_shared_user_agent_and_generic_accept`) --
+      `_download`'s `Accept` header changed to `"application/json"`. Kills the
+      test with `AssertionError` on the exact header value.
+    * **MA3b** (`test_download_decodes_a_gzip_encoded_response`) --
+      `_download`'s `_decode_transport(payload, encoding)` call replaced with
+      `payload`. Kills the test with `AssertionError`: the compressed bytes
+      come back undecoded.
+    * **MA4** (`test_a_gzip_declared_response_is_decoded_by_its_header`) --
+      `_decode_transport`'s body replaced with `return payload`. Kills two
+      tests with `AssertionError`: the header-arm test and
+      `test_download_decodes_a_gzip_encoded_response`.
+    """
+
+    CONTACT_EMAIL = "research@example.org"
+
+    @staticmethod
+    def _transport(payload, headers=None):
+        captured = {}
+
+        def fake_urlopen(request, timeout=None):
+            captured["url"] = request.full_url
+            captured["headers"] = {
+                key.lower(): value for key, value in request.headers.items()
+            }
+            return _FakeTransportResponse(payload, headers)
+
+        return fake_urlopen, captured
+
+    def test_sec_download_refuses_an_email_that_cannot_be_a_contact(self):
+        for address in ("not-an-email", "", "  ", "no-at.example.org", "@example.org"):
+            with self.subTest(address=address):
+                def refused_transport(request, timeout=None):
+                    raise AssertionError(
+                        "a refused email must not reach the transport at all"
+                    )
+
+                with unittest.mock.patch.object(ingest, "urlopen", refused_transport):
+                    with self.assertRaises(ValueError) as caught:
+                        _download_sec("https://www.sec.gov/x.zip", address)
+                self.assertEqual(
+                    str(caught.exception),
+                    "SEC downloads require a valid contact email",
+                )
+
+    def test_sec_download_declares_the_contact_and_the_archive_accept(self):
+        fake_urlopen, captured = self._transport(b"archive-bytes")
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            payload = _download_sec(
+                "https://www.sec.gov/x.zip", f"  {self.CONTACT_EMAIL} "
+            )
+
+        self.assertEqual(payload, b"archive-bytes")
+        self.assertEqual(captured["url"], "https://www.sec.gov/x.zip")
+        # The address is stripped before it is declared: SEC fair access names
+        # a contact, and a padded one is the same contact.
+        self.assertEqual(
+            captured["headers"]["user-agent"],
+            f"repo-market-model/0.1 {self.CONTACT_EMAIL}",
+        )
+        self.assertEqual(
+            captured["headers"]["accept"],
+            "application/zip, application/octet-stream",
+        )
+
+    def test_download_declares_the_shared_user_agent_and_generic_accept(self):
+        fake_urlopen, captured = self._transport(b"payload")
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            payload = _download("https://example.invalid/data")
+
+        self.assertEqual(payload, b"payload")
+        self.assertEqual(captured["headers"]["user-agent"], USER_AGENT)
+        self.assertEqual(captured["headers"]["accept"], "*/*")
+
+    def test_download_decodes_a_gzip_encoded_response(self):
+        """`_download` routes the payload through `_decode_transport`, header in hand."""
+
+        expected = b"observation_date,IORB\n2026-01-01,4.30\n"
+        fake_urlopen, captured = self._transport(
+            gzip.compress(expected), {"Content-Encoding": "gzip"}
+        )
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            payload = _download("https://example.invalid/data.csv")
+
+        self.assertEqual(payload, expected)
+
+    def test_a_gzip_declared_response_is_decoded_by_its_header(self):
+        """The header arm: `Content-Encoding: gzip` decides, before the magic bytes.
+
+        The payload is a genuine gzip stream, so the header's short-circuit
+        `True` is the arm under test (see the class docstring for why the
+        audit's literal no-magic-bytes scenario is `BadGzipFile`, not a
+        decode).
+        """
+
+        expected = b"observation_date,IORB\n2026-01-01,4.30\n"
+        encoded = gzip.compress(expected)
+        self.assertEqual(_decode_transport(encoded, "gzip"), expected)
+        self.assertEqual(_decode_transport(encoded, "GZIP"), expected)
+        # The pass-through arm either side of the guard: no header, no magic.
+        self.assertEqual(_decode_transport(expected, ""), expected)
+
+
+class SourceRegistryLoaderTests(unittest.TestCase):
+    """A5: `load_source_registry` is the one door a registry document comes through.
+
+    So it is the place where a registry that asserts an availability instant it
+    cannot support is refused: a mapping goes through
+    `registry.check_availability_provenance`, a document whose JSON does not
+    parse is reported as a registry-load failure, and a top-level JSON list is
+    not a registry document at all -- it is returned as it stands, with no
+    provenance check, because `check_availability_provenance` reads
+    `registry.items()` and a list has none to read.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Each was confirmed applied
+    before running, run in a disposable copy under `$HOME` built from
+    `git ls-files`, with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the
+    unmutated control green before and after.
+
+    * **MA5a** (`test_an_early_available_time_without_provenance_is_refused`) --
+      the mapping dispatch `if isinstance(registry, Mapping):` replaced with
+      `if False:`, so the provenance check never runs. Kills the test with
+      `AssertionError` (`RegistryContractError` not raised).
+    * **MA5b** (`test_a_top_level_list_is_returned_without_a_provenance_check`) --
+      the same guard replaced with an unconditional
+      `check_availability_provenance(registry)`. Kills the test with
+      `AttributeError`: a list has no `.items()` to iterate.
+    * **MA5c** (`test_invalid_json_is_reported_as_a_registry_load_failure`) --
+      the wrapper message reworded to `"unreadable source registry: ..."`.
+      Kills the test with `AssertionError` on the reported prefix.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+    def write(self, text, name="sources.json"):
+        path = self.root / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_invalid_json_is_reported_as_a_registry_load_failure(self):
+        path = self.write("{ not json")
+
+        with self.assertRaises(ValueError) as caught:
+            load_source_registry(path)
+
+        self.assertTrue(
+            str(caught.exception).startswith("cannot load source registry:"),
+            str(caught.exception),
+        )
+
+    def test_an_early_available_time_without_provenance_is_refused(self):
+        path = self.write(
+            json.dumps(
+                {
+                    "src": {
+                        "release_lag": {
+                            "basis": "record_date",
+                            "days": 1,
+                            "available_time": "06:00",
+                        }
+                    }
+                }
+            )
+        )
+
+        with self.assertRaises(RegistryContractError) as caught:
+            load_source_registry(path)
+
+        self.assertIn("available_time '06:00' is earlier than the end-of-day", str(caught.exception))
+
+    def test_a_conforming_registry_is_returned_as_its_document(self):
+        """The control: provenance named, the same document comes back."""
+
+        registry = {
+            "src": {
+                "release_lag": {
+                    "basis": "record_date",
+                    "days": 1,
+                    "available_time": "06:00",
+                },
+                "availability_provenance": {
+                    "publication": "fixture: the source's own published schedule"
+                },
+            }
+        }
+        path = self.write(json.dumps(registry))
+
+        self.assertEqual(load_source_registry(path), registry)
+
+    def test_a_top_level_list_is_returned_without_a_provenance_check(self):
+        """A list is not a registry document: no check runs, the list is returned.
+
+        The member is chosen to be a refusal if anyone ever runs the check on
+        it: an early `available_time` and no provenance.
+        """
+
+        payload = [
+            {"release_lag": {"available_time": "06:00"}},
+            {"release_lag": {"available_time": "17:00"}},
+        ]
+        path = self.write(json.dumps(payload))
+
+        self.assertEqual(load_source_registry(path), payload)
+
+
+class SnapshotManifestMalformedTests(unittest.TestCase):
+    """A6: an unreadable snapshot manifest is refused in one wrapped `ValueError`.
+
+    `load_snapshot_manifest` rehydrates a raw snapshot from its sidecar. A
+    manifest whose JSON does not parse, or whose JSON is missing a required
+    key, is refused the same way -- one `ValueError` naming the manifest and
+    the underlying fault -- rather than leaking `JSONDecodeError` or `KeyError`
+    to a caller that asked for a snapshot.
+
+    ### The traversal finding, recorded and deliberately not tested
+
+    The audit's spec for this gap also asked for a test that a manifest whose
+    stored path escapes the raw root through a relative `..` component is
+    refused. Verified empirically on this tree, it is **not** refused:
+    `_resolve_snapshot_path`'s rule-1 branch returns `raw_root / candidate`
+    whenever that path names an existing file, and `raw_root / "../secret.csv"`
+    names a file outside the raw root as readily as one inside it. With a
+    payload whose sha256 matches the manifest, `load_snapshot_manifest` fully
+    loads a snapshot from outside the raw root (observed on 17 Sep 2026:
+    `artifact.path` was `<scratch>/raw/../secret.csv` and the checksum passed).
+    That contradicts the resolver's docstring, whose rule 1 reads the path
+    "under the raw root" and whose rule 4 says "anything else is refused".
+    No test here asserts either behavior: refusing is the stated intent, and
+    a test that asserts the acceptance would bless the bug. The production fix
+    is a human decision -- the tracked fixtures and the fetchers' own relative
+    writes are the cases a fix must not break -- so the finding is recorded in
+    this docstring, in the PR, and in the task report instead.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Confirmed applied before
+    running, in a disposable copy under `$HOME` built from `git ls-files`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the unmutated control
+    green before and after.
+
+    * **MA6** (`test_malformed_manifest_json_is_wrapped_in_one_value_error`) --
+      the wrapper message reworded to `"unreadable snapshot manifest ..."`.
+      Kills both tests of the class with `AssertionError` on the reported
+      prefix -- the missing-key case reads the same wrapper, which is the
+      point being pinned.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.raw_root = Path(directory.name) / "data" / "raw"
+        self.snapshot_directory = self.raw_root / "src"
+        self.snapshot_directory.mkdir(parents=True)
+
+    def manifest(self, text):
+        path = self.snapshot_directory / "f.manifest.json"
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_malformed_manifest_json_is_wrapped_in_one_value_error(self):
+        path = self.manifest("{ not json")
+
+        with self.assertRaises(ValueError) as caught:
+            load_snapshot_manifest(path)
+
+        self.assertTrue(
+            str(caught.exception).startswith(f"invalid snapshot manifest {path}:"),
+            str(caught.exception),
+        )
+
+    def test_a_manifest_missing_a_required_key_is_wrapped_the_same_way(self):
+        path = self.manifest(
+            json.dumps(
+                {
+                    "source_id": "src",
+                    # `sha256` missing: the rehydration cannot verify anything.
+                    "path": "src/snapshot.json",
+                    "retrieved_at": "2026-09-12T13:55:51+00:00",
+                    "url": "https://example.invalid/src.json",
+                    "byte_count": 5,
+                }
+            )
+        )
+
+        with self.assertRaises(ValueError) as caught:
+            load_snapshot_manifest(path)
+
+        self.assertTrue(
+            str(caught.exception).startswith(f"invalid snapshot manifest {path}:"),
+            str(caught.exception),
+        )
+
+
+class FetcherUrlAndDispatchTests(unittest.TestCase):
+    """A7: the five fetcher wrappers, against recorded payloads at the transport seam.
+
+    The fetchers are the only raw-data mutation entry points. Existing classes
+    drive them with an explicit `downloader=` callable; the default binding --
+    `downloader=_download`, bound once at function definition -- is the arm
+    the coverage audit found uncovered. A fetcher that takes the default must
+    still run against bytes on disk, so these tests sit one layer lower than
+    the fetcher's own parameter: `ingest.urlopen` is faked, the default
+    `_download` runs for real against it, and every request's URL is recorded.
+    The fake answers only the exact recorded URLs, so a wrong URL fails the
+    test instead of silently feeding the wrong fixture.
+
+    Per fetcher, the assertions are the built URL (exact) and the adapter
+    dispatch (source id, suffix, and the payload preserved byte for byte).
+    `fetch_sec_nmfp` builds no URL -- its URL is caller-declared provenance --
+    so its URL assertion is the official-host guard plus the pass-through to
+    `_download_sec`.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Confirmed applied before
+    running, in a disposable copy under `$HOME` built from `git ls-files`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the unmutated control
+    green before and after.
+
+    * **MA7a** (`test_nyfed_reference_rate_builds_one_url_per_observation_type`) --
+      the rate query's `"type"` value changed to `"rates"`. Kills the test
+      with `AssertionError`: the fake answers only exact URLs.
+    * **MA7b** (`test_fred_macro_requests_the_declared_series_in_one_query`) --
+      `','.join(FRED_MACRO_SERIES)` cut to its first series. Kills the test
+      with `AssertionError` on the exact URL.
+    * **MA7c** (`test_treasury_auctions_filter_encodes_the_date_range`) --
+      the filter string's `lte` clause dropped. Kills the test with
+      `AssertionError` on the exact URL.
+    * **MA7d** (`test_treasury_bill_rates_fetch_one_url_per_calendar_year`) --
+      the path segment `f"/{year}/all"` changed to a bare `"/all"`. Kills the
+      test with `AssertionError` on the second year's URL.
+    * **MA7e** (`test_sec_nmfp_requires_an_official_host_and_declares_its_contact`) --
+      the host guard's `startswith("https://www.sec.gov/")` loosened to
+      `"https://"`. Kills the test with `AssertionError`
+      (`ValueError` not raised for the lookalike host).
+    """
+
+    # The exact URLs the fetchers must build, transcribed once from
+    # `urlencode`'s output rather than re-derived in the test, so a change in
+    # the query construction is a visible assertion failure and not a silent
+    # tautology.
+    NYFED_RATE_URL = (
+        NYFED_BASE
+        + "/sofr/search.json?startDate=2026-01-01&endDate=2026-01-03&type=rate"
+    )
+    NYFED_VOLUME_URL = (
+        NYFED_BASE
+        + "/sofr/search.json?startDate=2026-01-01&endDate=2026-01-03&type=volume"
+    )
+    FRED_URL = (
+        FRED_GRAPH_BASE
+        + "?id=IORB%2CIOER%2CWRESBAL%2CWTREGEN%2CRRPONTSYD%2CDFF"
+        + "%2CRRPONTSYAWARD%2CTREAST%2CWLRRAOL"
+    )
+    AUCTIONS_URL = (
+        TREASURY_AUCTIONS_BASE
+        + "?filter=issue_date%3Agte%3A2026-01-01%2Cissue_date%3Alte%3A2026-01-31"
+        + "&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
+    )
+    BILL_2018_URL = (
+        TREASURY_BILL_RATES_BASE
+        + "/2018/all?type=daily_treasury_bill_rates&field_tdr_date_value=2018"
+        + "&_format=csv"
+    )
+    BILL_2019_URL = (
+        TREASURY_BILL_RATES_BASE
+        + "/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019"
+        + "&_format=csv"
+    )
+    SEC_URL = "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/2026-01.zip"
+
+    NYFED_RATE = b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31}]}'
+    NYFED_VOLUME = (
+        b'{"refRates":[{"effectiveDate":"2026-01-02","volumeInBillions":2000}]}'
+    )
+    FRED_CSV = b"observation_date,IORB\n2026-01-01,4.30\n"
+    AUCTIONS_JSON = b'{"data":[{"issue_date":"2026-01-05"}]}'
+    BILL_CSV = b"Date,4 WEEKS BANK DISCOUNT\n2018-01-02,1.23\n"
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.output_root = Path(directory.name)
+
+    @staticmethod
+    def archive_payload():
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("FUND.tsv", "ACCESSION_NUMBER\tTOTAL_ASSETS\n")
+        return buffer.getvalue()
+
+    def transport(self, payloads):
+        """A fake `urlopen` that answers only the recorded URLs, and records."""
+
+        calls = []
+
+        def fake_urlopen(request, timeout=None):
+            url = request.full_url
+            calls.append(url)
+            if url not in payloads:
+                raise AssertionError(f"fetcher built an unrecorded URL: {url}")
+            return _FakeTransportResponse(payloads[url])
+
+        return fake_urlopen, calls
+
+    def test_nyfed_reference_rate_builds_one_url_per_observation_type(self):
+        fake_urlopen, calls = self.transport(
+            {self.NYFED_RATE_URL: self.NYFED_RATE, self.NYFED_VOLUME_URL: self.NYFED_VOLUME}
+        )
+
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            artifacts = fetch_nyfed_reference_rate(
+                self.output_root, "sofr", "2026-01-01", "2026-01-03"
+            )
+
+        self.assertEqual(
+            calls, [self.NYFED_RATE_URL, self.NYFED_VOLUME_URL], "rate before volume"
+        )
+        self.assertEqual([artifact.source_id for artifact in artifacts], ["nyfed_sofr", "nyfed_sofr"])
+        self.assertEqual(
+            [artifact.path.read_bytes() for artifact in artifacts],
+            [self.NYFED_RATE, self.NYFED_VOLUME],
+        )
+
+    def test_fred_macro_requests_the_declared_series_in_one_query(self):
+        fake_urlopen, calls = self.transport({self.FRED_URL: self.FRED_CSV})
+
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            artifacts = fetch_fred_macro(self.output_root)
+
+        self.assertEqual(calls, [self.FRED_URL])
+        self.assertEqual(artifacts[0].source_id, "fred_macro_latest_vintage")
+        self.assertEqual(artifacts[0].path.suffix, ".csv")
+        self.assertEqual(artifacts[0].path.read_bytes(), self.FRED_CSV)
+
+    def test_treasury_auctions_filter_encodes_the_date_range(self):
+        fake_urlopen, calls = self.transport({self.AUCTIONS_URL: self.AUCTIONS_JSON})
+
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            artifacts = fetch_treasury_auctions(
+                self.output_root, "2026-01-01", "2026-01-31"
+            )
+
+        self.assertEqual(calls, [self.AUCTIONS_URL])
+        self.assertEqual(artifacts[0].source_id, "treasury_auctions")
+        self.assertEqual(artifacts[0].path.suffix, ".json")
+        self.assertEqual(artifacts[0].path.read_bytes(), self.AUCTIONS_JSON)
+
+    def test_treasury_bill_rates_fetch_one_url_per_calendar_year(self):
+        fake_urlopen, calls = self.transport(
+            {self.BILL_2018_URL: self.BILL_CSV, self.BILL_2019_URL: self.BILL_CSV}
+        )
+
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            artifacts = fetch_treasury_bill_rates(
+                self.output_root, "2018-06-01", "2019-06-30"
+            )
+
+        self.assertEqual(calls, [self.BILL_2018_URL, self.BILL_2019_URL])
+        self.assertEqual(
+            [artifact.source_id for artifact in artifacts],
+            ["treasury_bill_rates", "treasury_bill_rates"],
+        )
+        for artifact in artifacts:
+            self.assertEqual(artifact.path.suffix, ".csv")
+            self.assertEqual(artifact.path.read_bytes(), self.BILL_CSV)
+
+    def test_sec_nmfp_requires_an_official_host_and_declares_its_contact(self):
+        payload = self.archive_payload()
+        fake_urlopen, calls = self.transport({self.SEC_URL: payload})
+
+        with unittest.mock.patch.object(ingest, "urlopen", fake_urlopen):
+            with self.assertRaisesRegex(ValueError, "official https://www.sec.gov/"):
+                fetch_sec_nmfp(
+                    self.output_root,
+                    "https://www.sec-gov.example.invalid/2026-01.zip",
+                    contact_email=DownloadTransportTests.CONTACT_EMAIL,
+                )
+            artifacts = fetch_sec_nmfp(
+                self.output_root,
+                self.SEC_URL,
+                contact_email=DownloadTransportTests.CONTACT_EMAIL,
+            )
+
+        self.assertEqual(calls, [self.SEC_URL])
+        self.assertEqual(artifacts[0].source_id, "sec_nmfp")
+        self.assertEqual(artifacts[0].path.suffix, ".zip")
+        self.assertEqual(artifacts[0].path.read_bytes(), payload)
 
 
 if __name__ == "__main__":

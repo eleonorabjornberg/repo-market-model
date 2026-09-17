@@ -2,7 +2,7 @@ import csv
 import json
 import re
 import unittest
-from datetime import date, time, timedelta, timezone
+from datetime import date, time, timedelta, timezone, tzinfo
 from pathlib import Path
 
 from repo_model.contract import END_OF_DAY
@@ -1829,6 +1829,90 @@ class WlrraolFirstPrintRecordTests(unittest.TestCase):
             f"published purge, so 'five is free and six is not' has stopped "
             "being true of this registry. The note on the declaration must be "
             "re-derived, not the assertion",
+        )
+
+
+class SelectionArgumentTypeTests(unittest.TestCase):
+    """A8: the argument seam's two `TypeError`s and the unnamed-timezone refusal.
+
+    `max_release_lag_days` parses its arguments before it reads the registry:
+    `decision_time` must be a `datetime.time`, an aware one must name its zone
+    (a `tzinfo` with no `key` and no `tzname` cannot be compared to a declared
+    zone, and comparing naive times across declared zones is the leakage bug
+    the registry exists to prevent), and `sources` must be an iterable of
+    source IDs or a source-to-rows mapping -- a bare string is a mapping-shaped
+    mistake that would silently iterate its characters as source IDs. Each
+    refusal is pinned to its exact message.
+
+    ### Recorded mutations
+
+    Each target is the acceptance test named. Confirmed applied before
+    running, in a disposable copy under `$HOME` built from `git ls-files`,
+    with `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`, the unmutated control
+    green before and after.
+
+    * **MA8a** (`test_string_sources_are_refused`) -- the
+      `isinstance(sources, (str, bytes))` arm dropped from the refusal
+      condition. Kills both the string and the bytes tests: the string
+      iterates as characters (the bytes as integers) and each becomes a
+      "source id", so the call dies with
+      `RegistryContractError: unknown source: s` (the bytes variant:
+      `unknown source: 115`) propagating out of `assertRaises(TypeError)` --
+      the silent character-iteration hazard the guard exists to refuse,
+      surfacing one lookup later and by a different name.
+    * **MA8b** (`test_a_string_decision_time_is_refused`) -- the
+      `isinstance(decision_time, time)` raise removed. Kills the test with
+      `AttributeError: 'str' object has no attribute 'tzinfo'` from
+      `_decision_timezone`: a different failure, about a different mistake,
+      one function downstream -- and uncaught, because
+      `assertRaises(TypeError)` does not catch it.
+    * **MA8c** (`test_an_unnamed_timezone_is_refused`) -- the unnamed guard's
+      `if not name:` replaced with `if False:`. Kills the test with
+      `AssertionError` (`RegistryContractError` not raised).
+    """
+
+    def test_string_sources_are_refused(self):
+        with self.assertRaises(TypeError) as caught:
+            max_release_lag_days({}, "sofr", decision_time=time(8))
+        self.assertEqual(
+            str(caught.exception),
+            "sources must be an iterable of source IDs or a source-to-rows mapping",
+        )
+
+    def test_bytes_sources_are_refused_the_same_way(self):
+        """`bytes` iterates as ints; the guard refuses it beside `str`."""
+
+        with self.assertRaises(TypeError) as caught:
+            max_release_lag_days({}, b"sofr", decision_time=time(8))
+        self.assertEqual(
+            str(caught.exception),
+            "sources must be an iterable of source IDs or a source-to-rows mapping",
+        )
+
+    def test_a_string_decision_time_is_refused(self):
+        with self.assertRaises(TypeError) as caught:
+            max_release_lag_days({}, ["sofr"], decision_time="08:00")
+        self.assertEqual(
+            str(caught.exception), "decision_time must be a datetime.time"
+        )
+
+    def test_an_unnamed_timezone_is_refused(self):
+        class UnnamedTimezone(tzinfo):
+            def utcoffset(self, dt):
+                return timedelta(0)
+
+            def dst(self, dt):
+                return timedelta(0)
+
+            def tzname(self, dt):
+                return None
+
+        with self.assertRaises(RegistryContractError) as caught:
+            max_release_lag_days(
+                {}, ["sofr"], decision_time=time(8, tzinfo=UnnamedTimezone())
+            )
+        self.assertEqual(
+            str(caught.exception), "decision_time has an unnamed timezone"
         )
 
 
