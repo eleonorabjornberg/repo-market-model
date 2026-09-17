@@ -1852,8 +1852,8 @@ NMFP_CATEGORY_FIELDS = NMFP_TABLE_FIELDS["NMFP_SCHPORTFOLIOSECURITIES.tsv"]
 #: down.
 NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
 
-#: Why a derived field writes no row in a vintage that would otherwise have
-#: re-totalled it to `0.0`, per field. Values are from
+#: A withheld reason of this adapter's own, per field, over the default
+#: `data.WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT`. Values are from
 #: `data.WITHHELD_FIELD_REASONS`, which is where the vocabulary is declared and
 #: where a reason outside it is refused; this maps a field of *this adapter* onto
 #: one of them. Decided 11 Sep -- `docs/DATA_QUALITY_DECISIONS.md`, "An empty
@@ -1874,12 +1874,14 @@ NMFP_DERIVED_FROM_MATCH = {"mmf_on_rrp": "mmf_repo_holdings"}
 #: `CrossSectionCoverage.withheld_fields` -- the same shape as `no_repo_rows`,
 #: one level down, and never a zero.
 #:
-#: Keyed by derived field rather than applied to every field that loses its last
-#: contributor, because the reason names a cause and this adapter can only state
-#: the cause for a field whose derivation it declares. `mmf_on_rrp`'s cause is
-#: the counterparty match in `_nmfp_archive_scan`; a field with no declared
-#: derivation has no sentence to write here, and a shared one would say only
-#: "the rows went away", which is the mechanism and not the reason.
+#: The map is an override, not the gate, since 17 Sep 2026 (Eleonora): every
+#: dirty cell no active submission supplies is withheld, with this map's word
+#: where the field has one and the default elsewhere. The reason names a cause,
+#: and this adapter can state the cause only for a field whose derivation it
+#: declares -- `mmf_on_rrp`'s cause is the counterparty match in
+#: `_nmfp_archive_scan` -- so a field with no declared derivation takes the
+#: default, which states the outcome ("superseded and nothing replaced it")
+#: rather than inventing a cause.
 NMFP_WITHHELD_DERIVED_REASONS = {"mmf_on_rrp": "no_fed_counterparty"}
 
 #: The holdings field a cross-section is not admitted without, once the archive
@@ -2844,23 +2846,26 @@ def _assemble_sec_nmfp(
     the month. The floor is not re-judged that way: the count it reads only
     grows, so a month once over its floor stays over it.
 
-    A derived field can lose every submission that supplied it while the
-    cross-section around it stays rightly admitted -- an amendment that keeps the
-    repo rows and files a dealer counterparty where the original filed the
-    Federal Reserve. Re-totalling that cell over what is left writes `0.0` for a
-    field nothing observed, which is the same zero the per-vintage exclusion
-    declines for a whole month and which that exclusion cannot reach, because
-    there is nothing to exclude. Such a cell writes no row for that vintage and
-    its cause goes in the record's `withheld_fields`; see
-    `NMFP_WITHHELD_DERIVED_REASONS`. The earlier vintage keeps its row, a later
-    archive that files the Fed counterparty again re-emits the field, and
-    `unmatched_derived_fields` reads the same either way -- the derivation ran
-    over rows that were there and matched none of them.
+    A field can lose every submission that supplied it while the cross-section
+    around it stays rightly admitted -- an amendment that keeps the repo rows
+    and files a dealer counterparty where the original filed the Federal
+    Reserve, or one that refiles a holding under another category. Re-totalling
+    such a cell over what is left writes `0.0` for a field nothing observed,
+    which is the same zero the per-vintage exclusion declines for a whole month
+    and which that exclusion cannot reach, because there is nothing to exclude.
+    Such a cell writes no row for that vintage and its reason goes in the
+    record's `withheld_fields` -- `NMFP_WITHHELD_DERIVED_REASONS` where the
+    derivation declares a cause, `superseded_without_replacement` otherwise.
+    The earlier vintage keeps its row, a later archive that restores a
+    contributor re-emits the field, and `unmatched_derived_fields` reads the
+    same either way -- the derivation ran over rows that were there and matched
+    none of them.
     """
 
     from .data import (
         EXCLUSION_BELOW_FLOOR,
         EXCLUSION_NO_REPO_ROWS,
+        WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT,
         CrossSectionCoverage,
         PointInTimeObservation,
         declared_coverage_floor,
@@ -3117,7 +3122,9 @@ def _assemble_sec_nmfp(
             for cell in contributions.get(accession, ()):
                 dirty.add(panel_cell(cell))
         # Per month, the `(field, reason)` pairs this archive declined to write
-        # a row for. See `NMFP_WITHHELD_DERIVED_REASONS`.
+        # a row for. The word is this adapter's own where the field has one --
+        # see `NMFP_WITHHELD_DERIVED_REASONS` -- and
+        # `data.WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT` everywhere else.
         withheld = {}
         emitted = set()
         for target in dirty:
@@ -3132,13 +3139,26 @@ def _assemble_sec_nmfp(
             # contributors all went away, and its total is `0.0` by arithmetic
             # rather than by observation -- the same zero the `withdrawn` set
             # above declines to write for an excluded month, reached one field at
-            # a time in a month that is rightly admitted. Where this adapter can
-            # name the cause it writes no row and records it; where it cannot,
-            # the row still goes out as it always has, which is a defect of the
-            # same family and not this one.
-            if not supplied and target[0] in NMFP_WITHHELD_DERIVED_REASONS:
+            # a time in a month that is rightly admitted. Such a cell is always
+            # supersession and never a valid zero: an accession that is still
+            # active supplies its own cells, so a dirty cell nothing active
+            # supplies was dirtied by contributors that left the active set
+            # between vintages -- it had a supplier in the vintage before and
+            # none now. A first vintage has no contributor to lose, so its
+            # structural zeros are never dirty, and the rule cannot reach them.
+            # The row is therefore withheld for every field, with the adapter's
+            # own word where the derivation declares one and
+            # `superseded_without_replacement` otherwise. Decided 17 Sep 2026
+            # (Eleonora); the subtest that pinned the old fall-through is
+            # recorded in `NmfpFedCounterpartyAmendmentTests`.
+            if not supplied:
                 withheld.setdefault(_nmfp_cross_section(target[1]), set()).add(
-                    (target[0], NMFP_WITHHELD_DERIVED_REASONS[target[0]])
+                    (
+                        target[0],
+                        NMFP_WITHHELD_DERIVED_REASONS.get(
+                            target[0], WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT
+                        ),
+                    )
                 )
                 continue
             assembled[target] = total
