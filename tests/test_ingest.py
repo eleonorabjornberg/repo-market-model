@@ -5817,6 +5817,14 @@ class AbsentValueReasonTests(unittest.TestCase):
     run-shape and expansion subtests, `AssertionError` (no runs at all), and
     its refusal subtest, `IndexError`, because the FRED report it tampers with
     has no run left to tamper with.
+
+    Mutation 3 re-run under A50, 16 September 2026, in a disposable copy under
+    `$HOME`, with this class, `FredFetchCoversDeclaredFieldsTests` and
+    `FredParseRefusesUndeclaredFieldsTests` loaded. A50 made `_fred_rows` take
+    the source's declared fields, so the two direct calls above now pass
+    them. The mutation still kills this test's `fred` subtest, `AssertionError`
+    ("Lists differ: [] != ..."), and its vocabulary refusal subtest,
+    `AssertionError` ("ValueError not raised"), as recorded above.
     """
 
     RETRIEVED_AT = "2026-09-11T12:00:00+00:00"
@@ -5921,6 +5929,7 @@ class AbsentValueReasonTests(unittest.TestCase):
         )
 
         registry = load_source_registry()
+        fred_fields = frozenset(registry["fred_macro_latest_vintage"]["fields"])
         nmfp_url = "https://www.sec.gov/files/dera/data/form-n-mfp-data-sets/a18.zip"
 
         # The vocabulary is closed, and these are its members.
@@ -6281,7 +6290,7 @@ class AbsentValueReasonTests(unittest.TestCase):
                 "fred_macro_latest_vintage", "fred.csv", payload, "fred"
             )
             with self.assertRaisesRegex(ValueError, "FRED IORB is not numeric"):
-                _fred_rows(artifact, payload)
+                _fred_rows(artifact, payload, fred_fields)
 
         with self.subTest(refusal="treasury_auctions unknown token"):
             payload = treasury_payload(
@@ -6310,7 +6319,7 @@ class AbsentValueReasonTests(unittest.TestCase):
                 with self.assertRaisesRegex(
                     ValueError, r"absence reason 'missing' is outside the vocabulary"
                 ):
-                    _fred_rows(artifact, fred_payload, absent_cells=[])
+                    _fred_rows(artifact, fred_payload, fred_fields, absent_cells=[])
 
 
 class AbsentCellRunTests(unittest.TestCase):
@@ -7345,18 +7354,18 @@ class FredFetchCoversDeclaredFieldsTests(unittest.TestCase):
     fetch's own snapshot names. "`WLRRAOL` is in `FRED_MACRO_SERIES`" would
     pass today and guard nothing for the next field declared.
 
-    **The direction is declared <= requested,** the defect A48 found. The
-    reverse, requested <= declared, also holds on this tree -- the two sets are
-    equal -- and is deliberately not asserted here. The registry does not
-    express a refusal by leaving a series out of `fields`: `RRPONTSYD`,
-    `RRPONTSYAWARD` and `TREAST` are in `fields` and in `field_frequencies`,
-    and are refused by having no `field_release_lags` entry. So "fetched but
-    refused" is no counterexample to requested <= declared; it would be one to
-    requested <= `field_release_lags`, which is false by design and must not be
-    asserted. Whether requested <= declared should be guarded is a finding for
-    a later block, not a second criterion in this one: `_fred_rows` parses
-    every column the CSV carries, so an undeclared requested series would
-    reach the observations with no frequency or lag declared for it.
+    **The direction is declared <= requested,** the defect A48 found.
+    `test_every_requested_field_is_declared` (A50) asserts the reverse,
+    requested <= declared, from the same two sets derived the same way, so
+    the pair is set equality. The registry does not express a refusal by
+    leaving a series out of `fields`: `RRPONTSYD`, `RRPONTSYAWARD` and
+    `TREAST` are in `fields` and in `field_frequencies`, and are refused by
+    having no `field_release_lags` entry. So "fetched but refused" is no
+    counterexample to requested <= declared; it would be one to requested <=
+    `field_release_lags`, which is false by design and must not be asserted.
+    A49 left requested <= declared as a finding because `_fred_rows` parsed
+    every column the CSV carries; A50 guards it here and, at parse time, in
+    `FredParseRefusesUndeclaredFieldsTests`.
 
     **The tracked fixture is not made inconsistent.**
     `tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage/`
@@ -7389,6 +7398,25 @@ class FredFetchCoversDeclaredFieldsTests(unittest.TestCase):
       mutation read.
 
     Each is the one failure in this class, an `AssertionError`, with no error.
+
+    A50's mutations of `test_every_requested_field_is_declared`, run 16
+    September 2026 in a disposable copy under `$HOME` built from `git
+    ls-files`, the venv interpreter with `REPO_MODEL_REQUIRE_ML=1`, with this
+    class, `FredParseRefusesUndeclaredFieldsTests` and
+    `AbsentValueReasonTests` loaded; each replacement asserted to occur once
+    and confirmed present before the run; the unmutated control green before
+    and after:
+
+    * `"DUMMYA50"` added to `FRED_MACRO_SERIES`: `AssertionError: Lists
+      differ: ['DUMMYA50'] != [] : fetch_fred_macro requests ['DUMMYA50'],
+      which fred_macro_latest_vintage does not declare in its fields ...`.
+    * The registry read under the wrong key (`artifact.source_id + "_x"`) in
+      `requested_and_declared`: `AssertionError: [] is not true :
+      fred_macro_latest_vintage declares no fields in sources.json; the
+      comparison would pass without comparing anything` -- the vacuity guard,
+      not a pass.
+
+    Each is the one failure among the loaded classes, an `AssertionError`.
     """
 
     def test_every_declared_field_is_requested(self):
@@ -7419,6 +7447,163 @@ class FredFetchCoversDeclaredFieldsTests(unittest.TestCase):
             [],
             f"{artifact.source_id} declares {missing} in its fields, but "
             f"fetch_fred_macro requests only {sorted(requested)}",
+        )
+
+    def test_every_requested_field_is_declared(self):
+        """A50: the reverse inclusion, so the pair reads as set equality."""
+
+        requested, source_id, declared = self.requested_and_declared()
+        undeclared = sorted(requested - set(declared))
+        self.assertEqual(
+            undeclared,
+            [],
+            f"fetch_fred_macro requests {undeclared}, which {source_id} does "
+            f"not declare in its fields {sorted(declared)}",
+        )
+
+    def requested_and_declared(self):
+        """The fetch's requested ids, its source id, and that source's fields.
+
+        Derived exactly as `test_every_declared_field_is_requested` derives
+        them, and refusing the same vacuous case: an empty side on either
+        hand fails here rather than passing the comparison.
+        """
+
+        urls = []
+
+        def downloader(url: str) -> bytes:
+            urls.append(url)
+            return b"observation_date\n"
+
+        with tempfile.TemporaryDirectory() as directory:
+            (artifact,) = fetch_fred_macro(Path(directory), downloader)
+        self.assertEqual(len(urls), 1)
+        (requested_ids,) = parse_qs(urlparse(urls[0]).query)["id"]
+        requested = set(requested_ids.split(","))
+        self.assertTrue(
+            requested - {""}, "fetch_fred_macro requests no series at all"
+        )
+
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        source = registry.get(artifact.source_id, {})
+        declared = [str(field) for field in source.get("fields", ())]
+        self.assertTrue(
+            declared,
+            f"{artifact.source_id} declares no fields in {SOURCE_REGISTRY.name}; "
+            "the comparison would pass without comparing anything",
+        )
+        return requested, artifact.source_id, declared
+
+
+class FredParseRefusesUndeclaredFieldsTests(unittest.TestCase):
+    """A50: a FRED snapshot column its source does not declare is refused.
+
+    **The defect.** `_fred_rows` turned every column of a FRED CSV into a
+    `PointInTimeObservation`. A column the source does not declare in its
+    registry `fields` had no frequency and no release lag declared for it,
+    and nothing downstream refused it: `data.validate_publication_gaps` skips
+    a series it has no bound for, and `build_point_in_time_snapshot` writes
+    every parsed row into the long point-in-time panel. It did **not** reach
+    the wide daily panel: `data.build_daily_panel` maps a row to a column
+    only through `contract.FEATURE_FIELDS` (`column_for_series.get(...)`,
+    then `continue` on `None`), and drops anything else. That lookup is
+    keyed on the field name alone, not on `(source_id, field)`, so an
+    undeclared FRED column spelled like another source's declared field
+    would have joined that field's column. `_fred_rows` now takes the
+    source's declared field set -- only the set, threaded from
+    `parse_snapshots`, not the registry -- and raises `ValueError` naming the
+    columns and the source rather than dropping them.
+
+    **The tracked inputs carry no undeclared column.** Checked read-only
+    before the refusal was written, over every tracked snapshot this parser
+    reads: `data/raw/` tracks none, and under `tests/fixtures/` the only
+    `fred_macro_latest_vintage` snapshot is
+    `snapshots/funding_inputs/fred-macro-latest-vintage/20260906T195909Z_359621178c04.zip`,
+    whose three CSVs carry `IORB, IOER, DFF`, `RRPONTSYD` and `WRESBAL,
+    WTREGEN` -- all declared. The `alfred-*` fixtures are ALFRED vintage
+    CSVs whose columns are `SERIES_YYYYMMDD`; they are read by their own
+    `csv.reader` in `test_registry` and `scripts/alfred_vintages.py`, never
+    by `_fred_rows`. `test_data.RequestedColumnsBuildTests` and
+    `test_data.PanelYear2025DiagnosticTests` still reproduce the published
+    panel digest with the refusal in place.
+
+    **Red here** means an undeclared column parsed, or a declared one did not
+    parse to its observation. The fix is the parser or a declaration in the
+    registry; never this assertion.
+
+    Mutations, run 16 September 2026, by the procedure recorded in
+    `FredFetchCoversDeclaredFieldsTests`:
+
+    * The refusal's comparison made vacuous -- `series_id not in
+      declared_fields` replaced by `series_id not in reader.fieldnames`:
+      `test_an_undeclared_column_is_refused_naming_series_and_source` fails,
+      `AssertionError: ValueError not raised`, the one failure among the
+      loaded classes.
+    * Unmutated, that test's snapshot raises `ValueError:
+      fred_macro_latest_vintage snapshot <path> carries ['A50_UNDECLARED'],
+      which fred_macro_latest_vintage does not declare in its registry
+      fields`.
+    * The control, `test_declared_columns_parse_to_their_observations`, a
+      snapshot of every declared column and no other, is green unmutated and
+      under the mutation above: a declared column parses to the same
+      observation, value, availability, vintage and source digest as before.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        registry = json.loads(SOURCE_REGISTRY.read_text(encoding="utf-8"))
+        self.source_id = "fred_macro_latest_vintage"
+        self.declared = sorted(
+            str(field) for field in registry.get(self.source_id, {}).get("fields", ())
+        )
+        self.assertTrue(
+            self.declared,
+            f"{self.source_id} declares no fields in {SOURCE_REGISTRY.name}",
+        )
+
+    def snapshot(self, header, values):
+        payload = (
+            ",".join(["observation_date", *header])
+            + "\n2026-01-02,"
+            + ",".join(values)
+            + "\n"
+        ).encode("utf-8")
+        (artifact,) = fetch_fred_macro(self.root, lambda url: payload)
+        self.assertEqual(artifact.source_id, self.source_id)
+        return artifact
+
+    def test_an_undeclared_column_is_refused_naming_series_and_source(self):
+        undeclared = "A50_UNDECLARED"
+        self.assertNotIn(undeclared, self.declared)
+        artifact = self.snapshot([self.declared[0], undeclared], ["4.30", "1.0"])
+
+        with self.assertRaises(ValueError) as caught:
+            parse_snapshots([artifact])
+        message = str(caught.exception)
+        self.assertIn(repr([undeclared]), message)
+        self.assertIn(self.source_id, message)
+
+    def test_declared_columns_parse_to_their_observations(self):
+        """The control: every declared column still becomes an observation."""
+
+        values = [f"{index}.5" for index, _ in enumerate(self.declared)]
+        artifact = self.snapshot(self.declared, values)
+
+        parsed = parse_snapshots([artifact])
+        available_at = datetime.fromisoformat(artifact.retrieved_at)
+        self.assertEqual(
+            sorted(
+                (row.series_id, row.ref_date, row.value, row.available_at,
+                 row.vintage_id, row.source_sha)
+                for row in parsed.rows
+            ),
+            sorted(
+                (field, date(2026, 1, 2), float(value), available_at,
+                 artifact.retrieved_at, artifact.sha256)
+                for field, value in zip(self.declared, values)
+            ),
         )
 
 
