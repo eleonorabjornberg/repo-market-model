@@ -1950,5 +1950,100 @@ class PanelValidationTests(EvaluatorHarness):
             self.assertNotIn(gone, parameters)
 
 
+class JournalFileTests(unittest.TestCase):
+    """`append_record` / `read_journal` at the file level (audit spec C7).
+
+    `RunOnceJournalTests` covers the journal through the evaluator; the lines
+    the audit found uncovered are the file plumbing under it, and they carry
+    the journal's one promise: never rewritten, never deduplicated. A rerun
+    is meant to be visible -- "Suppressing it here would hide the thing the
+    journal exists to show" -- so the same record appended twice is two
+    identical lines, and the second append is the finding, not an error.
+
+    Mutation record (disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * `path.open("a", ...)` changed to `path.open("w", ...)` in
+      `append_record`. Fails 2 -- `test_two_appends_are_two_json_lines_in_
+      write_order`, `AssertionError: 1 != 2`, and
+      `test_a_rerun_of_the_same_record_is_written_again_not_deduplicated`,
+      the file then holding only the second record. The parent-directory
+      test stays green under it, correctly: one append survives a truncate.
+      Reverted.
+
+    * The parent `mkdir` guard removed from `append_record`. Fails (errors)
+      1 -- `test_the_parent_directory_is_created`,
+      `FileNotFoundError: [Errno 2] No such file or directory:
+      .../runs/feb-2026/journal.jsonl`, from the open against the missing
+      parent. The other two stay green: their journals sit in an existing
+      tmp directory. Reverted.
+    """
+
+    @staticmethod
+    def _record(window_name):
+        return event_eval.EvaluationRecord(
+            evaluated_at="2026-09-17T12:00:00+00:00",
+            git_rev="unknown",
+            config_sha256="0" * 64,
+            holdout_role=KNOWLEDGE_HOLDOUT,
+            window_name=window_name,
+            # Shaped like the digests the loader verifies, so a reader of the
+            # fixture never mistakes it for a different kind of value.
+            window_checksum="e" * 64,
+            window_start="2026-02-01",
+            window_end="2026-02-28",
+            purge_days=3,
+            train_rows=10,
+            scored_rows=5,
+        )
+
+    def test_the_parent_directory_is_created(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = Path(tmp) / "runs" / "feb-2026" / "journal.jsonl"
+            self.assertFalse(journal.parent.exists())
+
+            append_record(journal, self._record("feb-2026"))
+
+            self.assertTrue(journal.exists())
+            self.assertEqual(len(read_journal(journal)), 1)
+
+    def test_two_appends_are_two_json_lines_in_write_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = Path(tmp) / "journal.jsonl"
+            append_record(journal, self._record("feb-2026"))
+            append_record(journal, self._record("mar-2020"))
+
+            lines = journal.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(lines), 2)
+            self.assertEqual(
+                [json.loads(line)["window_name"] for line in lines],
+                ["feb-2026", "mar-2020"],
+            )
+            # read_journal returns them in the order written.
+            self.assertEqual(
+                [entry["window_name"] for entry in read_journal(journal)],
+                ["feb-2026", "mar-2020"],
+            )
+
+    def test_a_rerun_of_the_same_record_is_written_again_not_deduplicated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            journal = Path(tmp) / "journal.jsonl"
+            record = self._record("feb-2026")
+
+            append_record(journal, record)
+            append_record(journal, record)
+
+            # Exactly two standalone lines, identical, in the file: the rerun
+            # is written like the first, byte for byte.
+            self.assertEqual(
+                journal.read_text(encoding="utf-8"),
+                record.as_json_line() + "\n" + record.as_json_line() + "\n",
+            )
+            entries = read_journal(journal)
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(entries[0], entries[1])
+
+
 if __name__ == "__main__":
     unittest.main()
