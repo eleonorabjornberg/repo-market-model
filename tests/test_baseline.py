@@ -9257,5 +9257,397 @@ class SiblingSeedMaterialTests(unittest.TestCase):
         self.assertEqual(baseline._seed_from(material), 1925368273)
 
 
+class BuildManifestBindingRefusalTests(unittest.TestCase):
+    """B1: the two refusals that fire before any extent value is compared.
+
+    `RunProvenanceTests` covers the disagreement arms -- extent values that
+    differ, a digest that is not the scored panel's -- and both binding
+    kinds. What no fixture of a well-formed build reaches are the loop's two
+    other raises (`src/repo_model/baseline.py:4080-4088`): a manifest missing
+    an extent field, and a record missing the counterpart key. A manifest
+    with no `row_count` is not a disagreeing claim, it is one that cannot be
+    checked at all, and the binder refuses it rather than skipping the pair
+    -- per the function's own docstring, "a manifest that cannot be checked
+    must not be published as provenance". Both arms are asserted against
+    `_bind_build_manifest` directly, with hand-built dicts, for the same
+    reason the recordless case there is: neither public builder can emit
+    either shape.
+
+    Mutation record -- run in a disposable copy under `$HOME`, never in the
+    mount, made from `git ls-files -z` piped through `tar`;
+    `PYTHONDONTWRITEBYTECODE=1` and `python -B`, CPython 3.11.16 in `.venv`
+    with the `ml` extra. Unmutated control green in the copy before the
+    first mutation and again after the last was reverted; each mutation was
+    applied to a freshly restored copy, the branch carries none of them, and
+    the worktree was never touched. The same conditions and controls cover
+    every mutation record below in this file.
+
+    1. **The manifest-side missing-extent refusal made a no-op** --
+       `if manifest_key not in manifest:` weakened to `if False and ...`.
+       Kills `test_a_manifest_missing_an_extent_field_is_refused_not_bound`
+       alone, as an **error**: `KeyError: 'row_count'`. With the refusal
+       gone the loop compares what the manifest does declare and the
+       binder's binding step reads the extent it never validated -- the
+       pair is neither refused nor bound, and the function dies mid-record.
+
+    2. **The record-side missing-counterpart refusal made a no-op** --
+       `if record_key not in panel:` weakened the same way. Kills
+       `test_a_record_missing_the_manifests_counterpart_key_is_refused`
+       alone, as an **error**: `KeyError: 'first_date'` -- the loop reads
+       the record's absent extent directly. The two mutations are the two
+       halves of the loop's missing-key symmetry; neither refusal is
+       shadowed by anything behind it.
+    """
+
+    def test_a_manifest_missing_an_extent_field_is_refused_not_bound(self):
+        """The manifest side of the pair is absent; the binder refuses."""
+
+        panel = {
+            "path": "panel.csv",
+            "row_count": 3,
+            "first_date": "2026-01-02",
+            "last_date": "2026-01-06",
+        }
+        manifest = {
+            "path": "panel.csv",
+            "start_date": "2026-01-02",
+            "end_date": "2026-01-06",
+        }
+        with self.assertRaises(ProvenanceMismatchError) as caught:
+            baseline._bind_build_manifest(panel, manifest)
+        self.assertIn(
+            "carries no 'row_count', so the record cannot bind it",
+            str(caught.exception),
+        )
+        self.assertIn("panel.csv", str(caught.exception))
+
+    def test_a_record_missing_the_manifests_counterpart_key_is_refused(self):
+        """The record side of the pair is absent; nothing is dropped quietly."""
+
+        panel = {"path": "panel.csv", "row_count": 3}
+        manifest = {
+            "path": "panel.csv",
+            "row_count": 3,
+            "start_date": "2026-01-02",
+            "end_date": "2026-01-06",
+        }
+        with self.assertRaises(ProvenanceMismatchError) as caught:
+            baseline._bind_build_manifest(panel, manifest)
+        self.assertIn(
+            "cannot be bound to what was scored",
+            str(caught.exception),
+        )
+        self.assertIn("panel.csv", str(caught.exception))
+
+
+class IndicatorRunCodecRefusalTests(unittest.TestCase):
+    """B2: the five refusals of the run-length coverage codec, by message.
+
+    `_decode_indicator_runs` decodes a published record's coverage series
+    back into the 0/1 arrangement an interval is a resample of. Its happy
+    path runs in `PerOriginCalibrationTests`, and the length disagreement is
+    exercised transitively, through `calibration_from_document`
+    (`CalibrationDocumentTests.
+    test_a_declared_length_that_disagrees_with_the_runs_is_refused` asserts
+    the raise, not the message). No test asserts any of the five messages.
+    That is a gap worth closing in words and not only in kind: a hand-edited
+    `runs` array is a record someone has touched, and each refusal says
+    which edit it refuses. The empty case is called with a nonzero declared
+    length on purpose: the empty-series refusal precedes the length
+    comparison, so a truncated record cannot present itself as merely
+    mislabelled.
+
+    Mutation record -- same conditions and controls as
+    `BuildManifestBindingRefusalTests` (same copy, same run).
+
+    1. **The pair-shape refusal made a no-op** -- `if len(pair) != 2:`
+       weakened to `... and False:`. Kills
+       `test_a_run_that_is_not_a_pair_is_refused` alone, on the
+       **message**: the decoder still dies, but with an unpacking error
+       whose text names no run and no shape -- `'run 1 carries 1 value(s);
+       a run-length pair is [value, length]' not found in 'not enough
+       values to unpack (expected 2, got 1)'`.
+
+    2. **The bit-set refusal widened past its own set** -- `if bit not in
+       (0, 1):` made `... not in (0, 1, 2):`. Kills
+       `test_a_run_carrying_a_value_other_than_0_or_1_is_refused` alone,
+       `AssertionError: ValueError not raised` -- a run carrying 2 decodes
+       cleanly, so nothing downstream objects; the check is the only thing
+       between a corrupted bit and a coverage series.
+
+    3. **The run-length floor lowered to zero** -- `count < 1:` made
+       `count < 0:`. Kills `test_a_run_of_zero_length_is_refused` alone on
+       the **message**: still refused, one check later, by the empty-series
+       guard -- `'run 0 declares length 0; a run spans at least one origin'
+       not found in 'the record encodes an empty coverage series, ...'` --
+       a refusal that no longer names the run or the zero.
+
+    4. **The empty-series refusal made a no-op** -- `if not series:`
+       weakened to `... and False:`. Kills
+       `test_an_empty_series_is_refused_whatever_length_it_declares` alone
+       on the **message**: the length comparison answers instead -- `'the
+       record encodes an empty coverage series' not found in "the record's
+       runs decode to 0 origins and it declares 3; ..."` -- a truncated
+       record presenting itself as merely mislabelled, the ordering the
+       empty case's nonzero declared length pins.
+
+    5. **The declared-length disagreement made a no-op** -- `if len(series)
+       != length:` weakened to `... and False:`. Kills
+       `test_a_total_that_disagrees_with_the_declared_length_is_refused`
+       alone, `AssertionError: ValueError not raised` -- a series decoding
+       to fewer origins than the record declares comes back as a clean
+       arrangement from the codec.
+    """
+
+    def test_a_run_that_is_not_a_pair_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            baseline._decode_indicator_runs([[0, 2], [1]], 3)
+        self.assertIn(
+            "run 1 carries 1 value(s); a run-length pair is [value, length]",
+            str(caught.exception),
+        )
+
+    def test_a_run_carrying_a_value_other_than_0_or_1_is_refused(self):
+        # Declared length 2 on purpose: a guard weakened past this check
+        # decodes cleanly, so the kill is "no exception", not a downstream
+        # one wearing its clothes.
+        with self.assertRaises(ValueError) as caught:
+            baseline._decode_indicator_runs([[2, 2]], 2)
+        self.assertIn(
+            "run 0 carries value 2, not 0 or 1", str(caught.exception)
+        )
+
+    def test_a_run_of_zero_length_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            baseline._decode_indicator_runs([[0, 0]], 1)
+        self.assertIn(
+            "run 0 declares length 0; a run spans at least one origin",
+            str(caught.exception),
+        )
+
+    def test_an_empty_series_is_refused_whatever_length_it_declares(self):
+        with self.assertRaises(ValueError) as caught:
+            baseline._decode_indicator_runs([], 3)
+        self.assertIn(
+            "the record encodes an empty coverage series",
+            str(caught.exception),
+        )
+
+    def test_a_total_that_disagrees_with_the_declared_length_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            baseline._decode_indicator_runs([[0, 2]], 3)
+        self.assertIn(
+            "decode to 2 origins and it declares 3", str(caught.exception)
+        )
+
+
+class ExceedanceRecordSeedRefusalTests(unittest.TestCase):
+    """B3: the seed reader's refusals, and the determinism they sit under.
+
+    `exceedance_record_seed` derives the per-threshold seed every published
+    Brier-skill interval and reliability band states. `SeedMaterialTests.
+    test_every_published_exceedance_seed_recomputes_from_its_record`
+    witnesses the derivation on every record under `docs/runs/` -- all of
+    them well-formed. The two refusals are what a partial or hand-edited
+    record meets: a `tau_bp` the declaration never scored is refused, and a
+    record with no panel raises `KeyError` rather than deriving a seed from
+    nothing. The third test pins what makes the reader worth having: the
+    seed is a pure function of the record's own fields, so a published band
+    can be recomputed by anyone who holds the record.
+
+    Mutation record -- same conditions and controls as
+    `BuildManifestBindingRefusalTests` (same copy, same run).
+
+    1. **The undeclared-tau refusal made a no-op** -- `if tau_bp not in
+       taus:` weakened to `... and False:`. Kills
+       `test_a_tau_the_record_did_not_declare_is_refused` alone,
+       `AssertionError: ValueError not raised` -- tau 7 derives a seed from
+       material the record never scored, silently.
+
+    2. **The missing-panel guard bypassed** -- the
+       `record["panel"]["sha256"]` lookup in `exceedance_record_seed`
+       replaced by `record.get("panel", {}).get("sha256")`, so a record
+       with no panel seeds from `None`. Kills
+       `test_a_record_with_no_panel_raises_keyerror` alone, as an **error**
+       one step later: `TypeError: sequence item 0: expected str instance,
+       NoneType found` in the digest join -- not a refusal, a crash wearing
+       the reader's clothes.
+    """
+
+    DIGEST = "0123456789abcdef" * 4
+
+    def record(self):
+        return {
+            "panel": {"sha256": self.DIGEST},
+            "declaration": {
+                "model": "persistence",
+                "features": ["spread_bps"],
+                "decision_time": "16:00",
+                "taus_bp": [5.0, 10.0, 20.0, 50.0],
+            },
+            "derived": {"purge_days": 6},
+        }
+
+    def test_a_tau_the_record_did_not_declare_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            exceedance_record_seed(self.record(), 7)
+        self.assertIn(
+            "tau_bp 7 is not among the record's declared taus_bp",
+            str(caught.exception),
+        )
+
+    def test_a_record_with_no_panel_raises_keyerror(self):
+        record = self.record()
+        del record["panel"]
+        with self.assertRaises(KeyError) as caught:
+            exceedance_record_seed(record, 10.0)
+        self.assertIn("panel", str(caught.exception))
+
+    def test_the_same_record_and_tau_seed_the_same_way(self):
+        record = self.record()
+        self.assertEqual(
+            exceedance_record_seed(record, 10.0),
+            exceedance_record_seed(record, 10.0),
+        )
+
+
+class UndeclaredAvailabilityFallbackTests(unittest.TestCase):
+    """B6: what the decision-relative guard says about a source it cannot check.
+
+    `DecisionRelativeAvailabilityTests` refuses a fold whose declared lag
+    misses the decision instant, and refuses a business-day count that runs
+    off the end of the panel. Not reached there -- the branches the audit
+    measured as `src/repo_model/baseline.py:2896-2900` and `2970-2971` -- are
+    the arms for a source that makes **no row-relative claim**: a
+    `snapshot_retrieved_at` basis, a declaration carrying no `days`, and the
+    scored-row-zero fold that has no decision instant to miss. None of the
+    three is a pass; the guard is silent about them rather than clearing
+    them, per the docstring's "not this guard's question". Silence is what
+    these tests pin -- and the last one pairs the early return with the raise
+    the same fixture produces one row later, so a green there means the arm
+    answered, not that the registry never had a leak in it.
+
+    Mutation record -- same conditions and controls as
+    `BuildManifestBindingRefusalTests` (same copy, same run).
+
+    1. **The snapshot-basis early return made a no-op** -- `if lag.get("basis")
+       == "snapshot_retrieved_at":` weakened to `if False and ...`. Kills
+       `test_a_snapshot_basis_makes_no_row_relative_claim` alone,
+       `AssertionError: datetime.datetime(2026, 2, 5, 16, 0) is not None` --
+       the malformed source (three days declared against the schema) falls
+       into the business-day arithmetic and returns a real instant, exactly
+       the injection the basis check exists to make impossible.
+
+    2. **The no-days early return made a no-op** -- `if days is None:`
+       weakened to `... and False:`. Kills
+       `test_a_declaration_with_no_days_makes_no_claim`, both subTests, as
+       an **error**: `TypeError: int() argument must be a string, a
+       bytes-like object or a real number, not 'NoneType'` -- a declaration
+       that makes no claim crashes instead of dating nothing.
+
+    3. **The scored-row-zero early return made a no-op** -- `if scored_index
+       == 0:` weakened to `... and False:`. Kills
+       `test_the_first_scored_row_has_no_decision_instant_to_miss`, as an
+       **error**: `LookAheadError: nyfed_sofr.SOFR for 2026-02-02 is first
+       observable at 2026-02-04 23:59:00, after the 2026-02-04 16:00:00
+       decision that scores 2026-02-02; ...` -- with the arm gone,
+       `dates[scored_index - 1]` wraps to the panel's last date and the
+       fold at scored row zero acquires a decision instant it never had.
+       This is the record that forced the fixture's sizing: the first
+       attempt leaked one day at 23:59 and the widened deadline absorbed
+       it, so the mutation survived a green run; the leak now overruns the
+       widened deadline too.
+    """
+
+    DATES = (date(2026, 2, 2), date(2026, 2, 3), date(2026, 2, 4))
+
+    def test_a_snapshot_basis_makes_no_row_relative_claim(self):
+        """Silent even when the malformed declaration also carries a day count.
+
+        The registry schema forbids `days` on a `snapshot_retrieved_at`
+        source; this one declares three anyway. The snapshot answer comes
+        first, so a declaration that violates the schema cannot inject a lag
+        through the guard -- the arm's stated clause, and the reason the
+        basis is read before `days`.
+        """
+
+        registry = {
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "snapshot_retrieved_at",
+                    "days": 3,
+                    "available_time": "16:00",
+                }
+            }
+        }
+        self.assertIsNone(
+            _declared_availability(registry, "nyfed_sofr", "SOFR", self.DATES, 0)
+        )
+
+    def test_a_declaration_with_no_days_makes_no_claim(self):
+        """A basis without a day count dates nothing; so does no declaration."""
+
+        declared_without_days = {
+            "fred_macro": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "calendar_days",
+                    "available_time": "16:00",
+                }
+            }
+        }
+        self.assertIsNone(
+            _declared_availability(
+                declared_without_days, "fred_macro", "IORB", self.DATES, 0
+            )
+        )
+        self.assertIsNone(
+            _declared_availability(
+                {"fred_macro": {}}, "fred_macro", "IORB", self.DATES, 0
+            )
+        )
+
+    def test_the_first_scored_row_has_no_decision_instant_to_miss(self):
+        """Silent at scored row zero, leaking one row later: the early return.
+
+        The leak is sized to overrun even the deadline the control flow
+        computes without the arm: with no early return, `scored_index - 1`
+        wraps to the panel's last date and the deadline widens to
+        2026-02-04 16:00, which a two-day lag at 23:59 still clears -- so a
+        green here is the arm's early return, not a leak the widened
+        deadline happened to absorb.
+        """
+
+        late = {
+            "nyfed_sofr": {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 2,
+                    "available_time": "23:59",
+                }
+            }
+        }
+        pairs = (("nyfed_sofr", "SOFR"),)
+        _check_decision_relative_availability(
+            late, pairs, self.DATES, 0, 0, purge=2, decision_time=time(16, 0)
+        )
+        with self.assertRaises(LookAheadError) as caught:
+            _check_decision_relative_availability(
+                late, pairs, self.DATES, 0, 1, purge=2, decision_time=time(16, 0)
+            )
+        message = str(caught.exception)
+        self.assertIn(
+            "nyfed_sofr.SOFR for 2026-02-02 is first observable", message
+        )
+        self.assertIn(
+            "after the 2026-02-02 16:00:00 decision that scores 2026-02-03",
+            message,
+        )
+        self.assertIn(
+            "the 2-day purge is stated against the scored date", message
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

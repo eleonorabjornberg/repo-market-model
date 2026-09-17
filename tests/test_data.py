@@ -32,6 +32,7 @@ from repo_model.data import (
     fixed_bp_stress_label_columns,
     load_daily_panel,
     load_point_in_time_panel,
+    load_stress_thresholds,
     stress_label_threshold,
     validate_publication_gaps,
     validate_accounting_identities,
@@ -1178,6 +1179,351 @@ class RealSnapshotCoverageTests(unittest.TestCase):
             msg=f"monthly rows survive on reference dates no archive admitted "
             f"{surviving}",
         )
+
+
+class StressThresholdsLoaderTests(unittest.TestCase):
+    """B4: every way a stress-threshold declaration fails, and the shipped one.
+
+    `load_stress_thresholds` defines what a stress target is -- the fixed
+    5/10/20/50 bp taus, and the trailing pre-label secondary rule whose
+    full-sample form AGENT_CONTRACT.md prohibits outright. No test called it:
+    the published commands reach it through `cli_eval`, whose runs load the
+    shipped `metadata/stress_thresholds.json` and nothing else, so every
+    refusal below was asserted nowhere. One tmp file per guard, each asserting
+    `DataContractError` and the exact message -- the messages name the rule a
+    reader must fix, and the labels built from this declaration are published
+    artifacts. The happy path loads the shipped file and pins its declared
+    content, so an edit to the metadata cannot move the tau family without
+    this file saying so.
+
+    Mutation record -- run in a disposable copy under `$HOME`, never in the
+    mount, made from `git ls-files -z` piped through `tar`;
+    `PYTHONDONTWRITEBYTECODE=1` and `python -B`, CPython 3.11.16 in `.venv`.
+    Unmutated control green in the copy before the first mutation and again
+    after the last was reverted; each mutation was applied to a freshly
+    restored copy, the branch carries none of them, and the worktree was
+    never touched. Same conditions and controls as the records in
+    `tests/test_baseline.py`.
+
+    1. **The unreadable-file refusal narrowed** -- `except (OSError,
+       json.JSONDecodeError) as exc:` made `except NotImplementedError as
+       exc:`. Kills both subTests of
+       `test_an_unreadable_file_is_refused_with_its_reason`, as **errors**:
+       `json.decoder.JSONDecodeError: Expecting property name enclosed in
+       double quotes: line 1 column 3 (char 2)` and `FileNotFoundError: ...
+       absent.json`. The loader's contract for an unreadable file is a
+       `DataContractError` naming it, not a raw decode error.
+
+    2. **The object check made a no-op** -- `if not isinstance(declaration,
+       dict):` weakened to `if False:`. Kills
+       `test_a_json_list_is_not_a_declaration` alone, as an **error**:
+       `AttributeError: 'list' object has no attribute 'get'` -- a JSON
+       list crashes the loader instead of being refused as a shape.
+
+    3. **The version guard's bool hole reopened** -- the isinstance pair
+       collapsed to `if not isinstance(declaration.get("version"), int):`,
+       accepting `True`, which `isinstance` calls an `int`. Kills the
+       **bool** subTest of `test_the_version_must_be_an_integer` alone,
+       `AssertionError: DataContractError not raised`; the string subTest
+       still dies on the mutated guard, which is why both are declared.
+
+    4. **The primary-rule check made a no-op** -- `if declaration.get
+       ("primary_rule") != "fixed_bp":` weakened to `if False:`. Kills
+       `test_the_primary_rule_is_fixed_bp` alone, `AssertionError:
+       DataContractError not raised` -- a pct-declared file loads, and the
+       labels are built from a rule the loader does not implement.
+
+    5. **The taus-list check made a no-op** -- `if not isinstance(raw_taus,
+       list):` weakened to `if False:`. Kills `test_taus_bp_must_be_a_list`
+       alone on the **message**: still refused, one check later, by the
+       float conversion's guard -- `'stress threshold metadata needs a
+       taus_bp list' not found in 'stress thresholds must be numeric'` --
+       the shape refusal replaced by a value refusal.
+
+    6. **The numeric refusal's message replaced** -- `"stress thresholds
+       must be numeric"` made `"x"`. Kills `test_the_taus_must_be_numeric`
+       alone, `'stress thresholds must be numeric' not found in 'x'` -- the
+       acceptance criterion is the text; the exception type is unchanged.
+
+    7. **The exact-taus check made a no-op** -- `if taus != (5.0, 10.0,
+       20.0, 50.0):` weakened to `if False:`. Kills
+       `test_the_taus_are_exactly_the_four_declared` on the **message**:
+       still refused, downstream, by the label-column derivation --
+       `'stress thresholds must be exactly 5, 10, 20, and 50 bp' not found
+       in 'stress label_columns must match the declared taus_bp'` -- the
+       tau family no longer named.
+
+    8. **The label-columns check made a no-op** -- `if declaration.get
+       ("label_columns") != expected_columns:` weakened to `if False:`.
+       Kills `test_the_label_columns_must_match_the_declared_taus` alone,
+       `AssertionError: DataContractError not raised` -- a declaration whose
+       labels do not match its taus loads, and nothing else in the loader
+       reads `label_columns`.
+
+    9. **The secondary-rule declaration check made a no-op** -- `if not
+       isinstance(secondary, dict):` weakened to `if False:`. Kills both
+       subTests of `test_the_secondary_rule_must_be_a_declaration`, as
+       **errors**: `AttributeError: 'NoneType' object has no attribute
+       'get'` and `AttributeError: 'str' object has no attribute 'get'` --
+       an absent or string rule crashes the loader instead of being
+       refused.
+
+    10. **The secondary-type check made a no-op** -- `if secondary.get
+        ("type") != "trailing_percentile":` weakened to `if False:`. Kills
+        `test_the_secondary_rule_type_is_trailing_percentile` alone,
+        `AssertionError: DataContractError not raised` -- a `full_sample`
+        type loads, the one form AGENT_CONTRACT.md prohibits outright.
+
+    11. **The pre-label history check made a no-op** -- `if secondary.get
+        ("history") != "rows_strictly_before_label_row":` weakened to `if
+        False:`. Kills
+        `test_the_secondary_rule_must_use_only_pre_label_rows` alone,
+        `AssertionError: DataContractError not raised` -- an `all_rows`
+        history loads.
+
+    12. **The full-sample prohibition made a no-op** -- `if secondary.get
+        ("full_sample_allowed") is not False:` weakened to `if False:`.
+        Kills both subTests of `test_full_sample_percentiles_are_prohibited`,
+        `AssertionError: DataContractError not raised` twice -- the
+        prohibition the contract states in words is this guard's `is not
+        False`, and accepting `True` or an absent key is the full-sample
+        form it outlaws.
+    """
+
+    REAL_THRESHOLDS = (
+        Path(__file__).parents[1] / "metadata" / "stress_thresholds.json"
+    )
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+    @staticmethod
+    def declaration(**overrides):
+        declaration = {
+            "version": 1,
+            "primary_rule": "fixed_bp",
+            "taus_bp": [5.0, 10.0, 20.0, 50.0],
+            "label_columns": [
+                "stress_gt_5bp",
+                "stress_gt_10bp",
+                "stress_gt_20bp",
+                "stress_gt_50bp",
+            ],
+            "secondary_rule": {
+                "type": "trailing_percentile",
+                "history": "rows_strictly_before_label_row",
+                "full_sample_allowed": False,
+            },
+        }
+        declaration.update(overrides)
+        return declaration
+
+    def write(self, payload):
+        path = self.root / "stress_thresholds.json"
+        if isinstance(payload, str):
+            path.write_text(payload, encoding="utf-8")
+        else:
+            path.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        return path
+
+    def refused(self, path, fragment):
+        with self.assertRaises(DataContractError) as caught:
+            load_stress_thresholds(path)
+        self.assertIn(fragment, str(caught.exception))
+
+    def test_an_unreadable_file_is_refused_with_its_reason(self):
+        for label, path in (
+            ("not json", self.write("{ not json")),
+            ("missing", self.root / "absent.json"),
+        ):
+            with self.subTest(case=label):
+                self.refused(path, "cannot load stress threshold metadata")
+
+    def test_a_json_list_is_not_a_declaration(self):
+        self.refused(
+            self.write([5.0, 10.0, 20.0, 50.0]),
+            "stress threshold metadata must be an object",
+        )
+
+    def test_the_version_must_be_an_integer(self):
+        """A string version, and a bool: `True` is an `int` to `isinstance`."""
+
+        for label, version in (("string", "1"), ("bool", True)):
+            with self.subTest(case=label):
+                self.refused(
+                    self.write(self.declaration(version=version)),
+                    "stress threshold metadata needs an integer version",
+                )
+
+    def test_the_primary_rule_is_fixed_bp(self):
+        self.refused(
+            self.write(self.declaration(primary_rule="pct")),
+            "stress threshold primary_rule must be 'fixed_bp'",
+        )
+
+    def test_taus_bp_must_be_a_list(self):
+        self.refused(
+            self.write(self.declaration(taus_bp="5,10,20,50")),
+            "stress threshold metadata needs a taus_bp list",
+        )
+
+    def test_the_taus_must_be_numeric(self):
+        self.refused(
+            self.write(self.declaration(taus_bp=["a"])),
+            "stress thresholds must be numeric",
+        )
+
+    def test_the_taus_are_exactly_the_four_declared(self):
+        self.refused(
+            self.write(self.declaration(taus_bp=[5.0, 10.0, 20.0])),
+            "stress thresholds must be exactly 5, 10, 20, and 50 bp",
+        )
+
+    def test_the_label_columns_must_match_the_declared_taus(self):
+        self.refused(
+            self.write(self.declaration(label_columns=["stress_gt_5bp"])),
+            "stress label_columns must match the declared taus_bp",
+        )
+
+    def test_the_secondary_rule_must_be_a_declaration(self):
+        for label, secondary in (("absent", None), ("string", "trailing")):
+            with self.subTest(case=label):
+                self.refused(
+                    self.write(self.declaration(secondary_rule=secondary)),
+                    "stress threshold metadata needs a secondary_rule",
+                )
+
+    def test_the_secondary_rule_type_is_trailing_percentile(self):
+        self.refused(
+            self.write(
+                self.declaration(
+                    secondary_rule={
+                        "type": "full_sample",
+                        "history": "rows_strictly_before_label_row",
+                        "full_sample_allowed": False,
+                    }
+                )
+            ),
+            "secondary stress rule must be 'trailing_percentile'",
+        )
+
+    def test_the_secondary_rule_must_use_only_pre_label_rows(self):
+        self.refused(
+            self.write(
+                self.declaration(
+                    secondary_rule={
+                        "type": "trailing_percentile",
+                        "history": "all_rows",
+                        "full_sample_allowed": False,
+                    }
+                )
+            ),
+            "trailing stress rule must use only pre-label rows",
+        )
+
+    def test_full_sample_percentiles_are_prohibited(self):
+        """`True`, and an absent key: the declaration must state `False`."""
+
+        for label, allowed in (("true", True), ("absent", None)):
+            with self.subTest(case=label):
+                self.refused(
+                    self.write(
+                        self.declaration(
+                            secondary_rule={
+                                "type": "trailing_percentile",
+                                "history": "rows_strictly_before_label_row",
+                                "full_sample_allowed": allowed,
+                            }
+                        )
+                    ),
+                    "full-sample stress percentiles are prohibited",
+                )
+
+    def test_the_shipped_declaration_loads_and_says_what_it_declares(self):
+        loaded = load_stress_thresholds(self.REAL_THRESHOLDS)
+        self.assertEqual(
+            loaded,
+            json.loads(self.REAL_THRESHOLDS.read_text(encoding="utf-8")),
+        )
+        self.assertEqual(loaded["version"], 1)
+        self.assertEqual(loaded["primary_rule"], "fixed_bp")
+        self.assertEqual(loaded["taus_bp"], [5.0, 10.0, 20.0, 50.0])
+        self.assertEqual(
+            loaded["label_columns"],
+            [
+                "stress_gt_5bp",
+                "stress_gt_10bp",
+                "stress_gt_20bp",
+                "stress_gt_50bp",
+            ],
+        )
+        self.assertEqual(
+            loaded["secondary_rule"],
+            {
+                "type": "trailing_percentile",
+                "history": "rows_strictly_before_label_row",
+                "full_sample_allowed": False,
+            },
+        )
+
+
+class PanelManifestParsingRefusalTests(unittest.TestCase):
+    """B5: the two JSON-shape refusals that precede every digest comparison.
+
+    `PanelDigestTests` refuses a manifest with no digest, a malformed digest
+    and a digest that is not the panel's bytes. Not reached there are the two
+    arms that fire before any of that: a manifest file that is not JSON at
+    all, and one that parses to a JSON list. Both are `DataContractError`, and
+    both messages name the manifest, because "is it valid JSON" is the first
+    question a verifier asks and the answer must say which file failed. The
+    panel here is opaque bytes on purpose: the refusal precedes any read of
+    them, and a fixture with real columns would claim the guard looks at
+    content it never opens.
+
+    Mutation record -- same conditions and controls as
+    `StressThresholdsLoaderTests` (same copy, same run).
+
+    1. **The not-JSON refusal narrowed** -- `except json.JSONDecodeError as
+       exc:` made `except NotImplementedError as exc:`. Kills
+       `test_a_manifest_that_is_not_json_is_refused` alone, as an
+       **error**: `json.decoder.JSONDecodeError: Expecting property name
+       enclosed in double quotes: line 1 column 3 (char 2)` -- the
+       verifier's contract for an unreadable manifest is a
+       `DataContractError` naming the file, not a raw decode error.
+
+    2. **The object check made a no-op** -- `if not isinstance(manifest,
+       dict):` weakened to `if False:`. Kills
+       `test_a_manifest_that_is_a_json_list_is_refused` alone, as an
+       **error**: `AttributeError: 'list' object has no attribute 'get'` --
+       the digest path is never reached with a shape worth reading.
+    """
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.panel = self.root / "panel.csv"
+        self.panel.write_bytes(b"date,sofr,iorb\n2026-01-02,4.30,4.40\n")
+
+    def refused(self, text, fragment):
+        manifest_path = self.root / "panel.manifest.json"
+        manifest_path.write_text(text, encoding="utf-8")
+        with self.assertRaises(DataContractError) as caught:
+            verify_daily_panel(self.panel, manifest_path)
+        message = str(caught.exception)
+        self.assertIn(fragment, message)
+        self.assertIn(str(manifest_path), message)
+
+    def test_a_manifest_that_is_not_json_is_refused(self):
+        self.refused("{ not json", "manifest is not valid JSON")
+
+    def test_a_manifest_that_is_a_json_list_is_refused(self):
+        self.refused(json.dumps([1, 2, 3]), "manifest is not a JSON object")
 
 
 if __name__ == "__main__":
