@@ -65,6 +65,14 @@ What is covered here
   one, a scale that reads nothing after its row's feature row, the floor on a
   flat stretch, the scaled CV+ band rebuilt, `cross_conformal` unchanged, and
   the refusals.
+* `PartialCrossConformalTests` -- `calibration="cross_conformal_partial"`
+  (B-PARTIAL): `cross_conformal`'s score over the trailing scale to the power
+  one half, on the fit's own edges; per-regime misses between
+  `cross_conformal`'s and `cross_conformal_scaled`'s on a fixture whose base
+  band tracks the regime, `cross_conformal`'s band exactly at exponent zero, no
+  leak, a reference scale that cancels, the other two unchanged, and the
+  refusals. Its docstring records why B-SCALED's own fixture cannot show the
+  interpolation.
 * `GradientBoostedArxFeatureTests` -- `arx_feature="declared"`: the column is
   `baseline.fit_arx`'s own one-step forecast, fitted per fold on the fit rows,
   read from rows at or before its row, never refitted on calibration rows,
@@ -3038,6 +3046,498 @@ class ScaledCrossConformalTests(unittest.TestCase):
                 r"calibration_share 0.25 was given, but calibration 'cross_conformal_scaled'",
             ):
                 self.fit(rows[:40], calibration_share=0.25, purge_days=0)
+
+
+#: How much of a declared band `NarrowRegimeQuantile` fits: the outer levels
+#: pulled toward the median to this share of their distance from it.
+NARROW_SHARE = 0.6
+
+
+class NarrowRegimeQuantile:
+    """A stand-in for `HistGradientBoostingRegressor` whose band tracks the regime and is too narrow.
+
+    Reads design column 1, a regressor carrying the row's regime, and predicts
+    the training targets of that regime at `0.5 + NARROW_SHARE (level - 0.5)`:
+    the declared `0.05`-`0.95` band fitted as `0.23`-`0.77`. Its edges move
+    with the regime and carry its shape, and its width is wrong in both -- the
+    case a correction scaled by the regime is for. See
+    `PartialCrossConformalTests` on why `ConstantQuantile` is not that case.
+    """
+
+    def __init__(self, *, loss, quantile, early_stopping, random_state, min_samples_leaf):
+        self.level = 0.5 + (quantile - 0.5) * NARROW_SHARE
+        self.values = {}
+
+    def _quantile(self, targets):
+        ordered = sorted(targets)
+        return ordered[min(len(ordered) - 1, int(self.level * len(ordered)))]
+
+    def fit(self, design, targets):
+        groups = {}
+        for row, target in zip(design, targets):
+            groups.setdefault(float(row[1]), []).append(target)
+        self.values = {regime: self._quantile(group) for regime, group in groups.items()}
+        return self
+
+    def predict(self, design):
+        return [self.values[float(row[1])] for row in design]
+
+
+def skewed_frame(count, seed=20260916):
+    """Calendar-day rows whose spread is `10 + (1 + x)(E - 1)`, `E` standard exponential.
+
+    `x` is the declared regressor `on_rrp`, uniform on `[0, 1)`, so the
+    conditional law is right-skewed with a scale that moves with `x`: its
+    `0.05` quantile sits about `0.64 (1 + x)` below the median and its `0.95`
+    quantile about `2.3 (1 + x)` above. A band rebuilt about the median loses
+    that shape; one built on the fit's own edges keeps it.
+    """
+
+    rng = random.Random(seed)
+    rows = []
+    for index in range(count):
+        on_rrp = rng.random()
+        spread = 10.0 + (1.0 + on_rrp) * (-math.log(1.0 - rng.random()) - 1.0)
+        rows.append(
+            DailyObservation(
+                date(2020, 1, 1) + timedelta(days=index),
+                {"sofr": 4.30 + spread / 100.0, "iorb": 4.30, "on_rrp": on_rrp},
+            )
+        )
+    return rows
+
+
+class PartialCrossConformalTests(unittest.TestCase):
+    """`calibration="cross_conformal_partial"`: B-PARTIAL's acceptance criterion and its mutation target.
+
+    **Why.** Job 662 scored `cross_conformal_scaled` against the published
+    `cross_conformal` record: fully proportional scaling over-corrected (calm
+    missed 13.4%, stressed 4.1%), and centring on the median lost the gbm's
+    lower-tail skew in calm stretches. The ruling of 16 September 2026: keep
+    `cross_conformal`'s score and the fit's own edges, and divide the score by
+    `sigma ** PARTIAL_SCALE_EXPONENT`, `gamma = 0.5` fixed in advance.
+
+    **The premise, tested and found false on B-SCALED's own fixture.** The
+    brief asked for the interpolation on `regime_frame` with
+    `ConstantQuantile`. Measured before this class was written, over the same
+    five periods (780 calm and 390 stressed origins), per-regime miss rates
+    calm / stressed: `cross_conformal` 0.0000 / 0.3179, `cross_conformal_scaled`
+    0.0846 / 0.0795, and `cross_conformal_partial` 0.0000 / 0.3462 at
+    `gamma = 0.5`, 0.0013 / 0.3487 at 1 and 0.0000 / 0.3564 at 0. Not between,
+    at any exponent. The reason is structural, not a tuning miss: a base band
+    that does not move with the regime is too wide on every calm row and too
+    thin on every stressed one, so `cross_conformal`'s score is negative on the
+    first and positive on the second. Dividing by a positive factor keeps every
+    sign, so CV+'s rank still lands among the stressed rows' scores and the
+    correction cannot shrink a calm band or reach the stressed tail; only a
+    score that makes the two regimes exchangeable -- `cross_conformal_scaled`'s
+    residual about the median over the scale -- can. A stand-in whose edges
+    only half-track the regime (quantiles split on today's spread deviation)
+    did no better: stressed 0.2615 at 0.5 against `cross_conformal`'s 0.2462,
+    worse as `gamma` grew. **So on the panel, this calibration can only help to
+    the extent the gbm's own edges already move with the regime**; the scoring
+    run is the measurement of that, and this fixture is not a prediction of it.
+
+    **The fixture used instead.** `regime_frame` with the row's regime carried
+    as the regressor `regime_sd`, and `NarrowRegimeQuantile` as the base: edges
+    that track the regime, a band too narrow in both. There the correction is
+    positive in both regimes and in proportion to the noise, and a partial
+    scale lands between none and full. Refitted at every origin of B-SCALED's
+    rolling loop (a sliding 300-row frame, the row `PURGE + 1` days on), an
+    origin counted for a regime when its scale window and target both lie in
+    one block of it. Measured: calm 11 / 38 / 63 misses of 780 for
+    `cross_conformal` / partial / scaled, stressed 93 / 75 / 33 of 390.
+
+    **The tolerance, from the sample.** The three bands are scored on the
+    same origins, so the comparison is paired: with `D` the origins on which
+    exactly one of two bands misses, their miss counts differ by a sign-test
+    sum whose standard deviation is `sqrt(D)` when the two rates are equal.
+    Each ordering is asserted with a gap of more than `3 sqrt(D)`: measured
+    27 against 15.6 and 25 against 18.2 calm, 18 against 12.7 and 42 against
+    19.4 stressed. Origins of a sliding frame are not independent, so this is
+    a threshold for "not a tie", not a significance level.
+
+    **Edges kept, exactly.** On `skewed_frame` with the real boosted fit, with
+    `PARTIAL_SCALE_EXPONENT` patched to `0.0` every factor is `1.0` exactly, so
+    each candidate is `Q_lo - 1.0 * (s / 1.0)`, bit-identical to
+    `cross_conformal`'s, and the band must equal it with `assertEqual`. Both
+    fits carry `spread_change_lags=SCALE_WINDOW`: a held-out row with no scale
+    is not scored under the partial calibration, and on a hole-free frame that
+    is exactly the row whose lags would reach before the frame, so the two
+    score the same rows. The fixture's skew is asserted, not assumed: the
+    median over the forecast rows of the fitted upper half-width over the
+    lower must exceed 1.5, against about 3.6 in the population (`2.3 / 0.64`)
+    and 2.1 measured -- a row-by-row check would not hold, since twenty lag
+    columns on 400 rows leave single rows' fitted edges noisy.
+
+    **The reference cancels.** `(s_o / ref) ** g / (s_i / ref) ** g = (s_o /
+    s_i) ** g` for one `ref` shared by the held-out rows and the forecast,
+    which is how this implementation reads it: `_partial_factor` has no
+    reference, and the subtest refits and forecasts with it replaced by
+    `(s / ref) ** gamma` for three references and compares bands. The
+    tolerance is `1e-9` bp: each edge is `Q - f_o (s / f_i)`, three
+    floating-point operations on values under 100 bp on this fixture, each
+    off by at most a few units in the last place (about `1e-15` relative), so
+    the rounding reaches about `1e-13` bp, and an order statistic moves by no
+    more than the values it is chosen from. The control applies a reference
+    at the forecast alone, which is the non-shared case, and must move the band.
+
+    **The leak.** As B-SCALED's: at a 6-day gap, moving every spread after a
+    date must leave the scale of every held-out row whose target is on or
+    before it bit-identical, and move a later one; and moving the frame's
+    spreads after a forecast's feature row must leave that row's scale and
+    band bit-identical, while a spread inside its window moves both.
+
+    Mutation record (B-PARTIAL)
+    ---------------------------
+
+    The per-branch, per-commit copy under `$HOME` from `git ls-files -z
+    --cached --others --exclude-standard`, one sub-copy per mutation,
+    `PYTHONDONTWRITEBYTECODE=1`, `python -B` (the `.venv`: CPython 3.9.6,
+    numpy 2.0.2, scikit-learn 1.6.1), `PYTHONPATH=src:tests`,
+    `REPO_MODEL_REQUIRE_ML=1`, `OMP_NUM_THREADS=1`. Each mutation by
+    exact-string replacement in `repo_model/ml.py` whose anchor was found
+    exactly once, asserted applied. Unmutated control green before and after.
+
+      1. **`PARTIAL_SCALE_EXPONENT = 1.0`.** `interpolation`,
+         `AssertionError`: calm misses 11 / 63 / 63 -- the partial band is the
+         scaled one's, a gap of 0. Also the exponent's own assertion
+         (`1.0 != 0.5`).
+      2. **`PARTIAL_SCALE_EXPONENT = 0.0`.** `interpolation`,
+         `AssertionError`: calm 11 / 10 / 63, a gap of -1. **The exponent-zero
+         equality subtest passes**, as it must under its own setting. Also
+         `AssertionError` in the band rebuild's separation count (`0 != 20`),
+         both controls that need a factor to move (the forecast leak's and
+         the reference's), and the exponent's own assertion.
+      3. **The median for the edges** -- `excluded[0]` and `excluded[-1]`
+         replaced by the median in `_reported`'s partial candidates, B-SCALED's
+         centring. `edges kept: at an exponent of zero ...`,
+         `AssertionError` (lower edge 8.910 against `cross_conformal`'s
+         8.321), and the band rebuild, `AssertionError`. Also
+         `interpolation` (calm 179 misses) and the forecast leak's control:
+         the band collapsed onto the interior, so moving a spread in the
+         window no longer moved it.
+      4. **The window centred** in `_trailing_scale`. `leak: a held-out row's
+         scale ...`, `AssertionError`: block 3's row scored on 2020-05-28
+         moved when only spreads after 2020-05-30 did. The forecast leak
+         subtest fails too, `AssertionError`, on the rebuilt scale and not on
+         the leak, for B-SCALED's reason. `ScaledCrossConformalTests`, scored
+         beside it, fails four subtests, `AssertionError`.
+      5. **Another calibration routed through the partial path**, two ways:
+          - **`cross_conformal`** -- the fitter's `partial` and `trailing` and
+            `_reported`'s `partial` widened to take it. `cross_conformal and
+            cross_conformal_scaled are unchanged`, `AssertionError` (its
+            blocks carry partial scores), and the exponent-zero equality,
+            the band rebuild and `interpolation` (a gap of 0), all
+            `AssertionError`. Beside it: `ScaledCrossConformalTests`'
+            `cross_conformal is unchanged`, `AssertionError`, and
+            `GradientBoostedCrossConformalTests` **errors**, `ValueError` (a
+            forecast off the frame has no scale).
+          - **`cross_conformal_scaled`** -- its own branch in `_reported`
+            disabled and both `partial` flags widened to it. `cross_conformal
+            and cross_conformal_scaled are unchanged`, `AssertionError`, and
+            `interpolation` (calm 38 / 38, a gap of 0). Beside it:
+            `ScaledCrossConformalTests`' regime and band subtests,
+            `AssertionError`.
+    """
+
+    NAME = "cross_conformal_partial"
+    FRAME_ROWS = 300
+    PERIODS = 5
+    PURGE = 1
+    LEAK_PURGE = 6
+    PERTURB_AT = 150
+    PERTURB_BPS = 3.0
+    #: The skewed fixture's boosted fit: long enough, and with leaves large
+    #: enough, that its edges carry the skew through twenty lag columns.
+    TRAIN_ROWS = 400
+    SKEW_LEAF = 40
+    FORECAST_ROWS = 20
+    #: The references the cancellation subtest divides every scale by.
+    REFERENCES = (0.25, 3.0, 7.0)
+    REFERENCE_TOLERANCE_BPS = 1e-9
+
+    def setUp(self):
+        require_extra(self)
+
+    def fit(self, frame, regressors, **overrides):
+        options = {
+            "minimum_history": 20,
+            "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
+            "calibration": self.NAME,
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(frame, regressors, **options)
+
+    def stand_in_fit(self, base, frame, regressors, **overrides):
+        with mock.patch.object(ml, "_estimator_class", return_value=base):
+            return self.fit(frame, regressors, **overrides)
+
+    @staticmethod
+    def edges(band):
+        return band[0], band[-1]
+
+    def test_the_partial_band_lies_between_and_keeps_the_fit_edges(self):
+        """Interpolation per regime, the fit's own edges, no leak, ref cancels, the others unchanged."""
+
+        with self.subTest("interpolation: each regime's misses lie between cross_conformal's and scaled's"):
+            count = self.FRAME_ROWS + self.PERIODS * REGIME_ROWS * len(REGIME_PATTERN) + self.PURGE + 1
+            rows = with_column(
+                regime_frame(count), "regime_sd", [regime_sd(index) for index in range(count)]
+            )
+            calibrations = ("cross_conformal", self.NAME, "cross_conformal_scaled")
+            missed = {name: {CALM_SD: [], STRESSED_SD: []} for name in calibrations}
+            for name in calibrations:
+                for origin in range(self.FRAME_ROWS - 1, count - self.PURGE - 1):
+                    target = origin + self.PURGE + 1
+                    if (origin - ml.SCALE_WINDOW) // REGIME_ROWS != target // REGIME_ROWS:
+                        continue
+                    model = self.stand_in_fit(
+                        NarrowRegimeQuantile,
+                        rows[origin - self.FRAME_ROWS + 1 : origin + 1],
+                        ("regime_sd",),
+                        calibration=name,
+                        purge_days=self.PURGE,
+                    )
+                    low, high = self.edges(model.predict(rows[origin]))
+                    outcome = rows[target].spread_bps
+                    missed[name][regime_sd(target)].append(not low <= outcome <= high)
+            partial = missed[self.NAME]
+            for sd, label, fewer, more in (
+                (CALM_SD, "calm", "cross_conformal", "cross_conformal_scaled"),
+                (STRESSED_SD, "stressed", "cross_conformal_scaled", "cross_conformal"),
+            ):
+                for below, above in ((missed[fewer][sd], partial[sd]), (partial[sd], missed[more][sd])):
+                    discordant = sum(one != two for one, two in zip(below, above))
+                    gap = sum(above) - sum(below)
+                    self.assertGreater(
+                        gap,
+                        3.0 * math.sqrt(discordant),
+                        msg=(
+                            f"{label}: misses {fewer} {sum(missed[fewer][sd])}, partial "
+                            f"{sum(partial[sd])}, {more} {sum(missed[more][sd])} of "
+                            f"{len(partial[sd])}; a gap of {gap} over {discordant} "
+                            f"discordant origins is not an ordering"
+                        ),
+                    )
+
+        rows = skewed_frame(self.TRAIN_ROWS)
+        forecasts = rows[-self.FORECAST_ROWS :]
+        skewed = {"purge_days": 0, "spread_change_lags": ml.SCALE_WINDOW, "min_samples_leaf": self.SKEW_LEAF}
+        cross = self.fit(rows, ("on_rrp",), calibration="cross_conformal", **skewed)
+        partial = self.fit(rows, ("on_rrp",), **skewed)
+
+        with self.subTest("edges kept: at an exponent of zero the band is cross_conformal's exactly"):
+            with mock.patch.object(ml, "PARTIAL_SCALE_EXPONENT", 0.0):
+                flat = self.fit(rows, ("on_rrp",), **skewed)
+                bands = [flat.predict(row) for row in forecasts]
+            for block, other in zip(flat.calibration_blocks, cross.calibration_blocks):
+                self.assertEqual(block.scored_dates, other.scored_dates)
+                self.assertEqual(block.partial_scores, other.scores)
+            ratios = []
+            for row, band in zip(forecasts, bands):
+                self.assertEqual(band, cross.predict(row), msg=f"the band forecast from {row.date}")
+                fitted = cross._quantile_vector(cross.design_row(row))
+                ratios.append((fitted[-1] - fitted[2]) / (fitted[2] - fitted[0]))
+            self.assertGreater(
+                sorted(ratios)[len(ratios) // 2],
+                1.5,
+                msg="the fixture: the fitted edges are not right-skewed about the median",
+            )
+
+        with self.subTest("edges kept: the band is CV+'s over each model's own edges and the scaled score"):
+            model = partial
+            q = Fraction("0.95") - Fraction("0.05")
+            count = sum(len(block.partial_scores) for block in model.calibration_blocks)
+            low_rank = math.floor((1 - q) * (count + 1))
+            high_rank = math.ceil(q * (count + 1))
+            for block, other in zip(model.calibration_blocks, cross.calibration_blocks):
+                self.assertEqual(
+                    list(block.partial_scores),
+                    [
+                        score / scale ** ml.PARTIAL_SCALE_EXPONENT
+                        for score, scale in zip(other.scores, block.scales)
+                    ],
+                )
+            separated = 0
+            for row in forecasts:
+                factor = model._origin_scale(row) ** ml.PARTIAL_SCALE_EXPONENT
+                lows, highs = [], []
+                for block in model.calibration_blocks:
+                    read = ml._rearranged(
+                        block.estimators,
+                        [model._design_row(row, block.imputations, None, None, None)],
+                    )[0]
+                    lows.extend(read[0] - factor * score for score in block.partial_scores)
+                    highs.extend(read[-1] + factor * score for score in block.partial_scores)
+                fitted = model._quantile_vector(model.design_row(row))
+                reported = model.predict(row)
+                self.assertEqual(reported[1:-1], fitted[1:-1])
+                self.assertEqual(
+                    self.edges(reported),
+                    (
+                        min(sorted(lows)[low_rank - 1], fitted[1]),
+                        max(sorted(highs)[high_rank - 1], fitted[-2]),
+                    ),
+                    msg=f"the band forecast from {row.date} is not partial CV+'s",
+                )
+                separated += self.edges(reported) != self.edges(cross.predict(row))
+            self.assertEqual(separated, len(forecasts))
+
+        with self.subTest("leak: a held-out row's scale reads nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            moved = ScaledCrossConformalTests.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
+            opens = frame[self.PERTURB_AT].date
+            before = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.LEAK_PURGE)
+            after = self.stand_in_fit(ConstantQuantile, moved, ("sofr_volume",), purge_days=self.LEAK_PURGE)
+            checked = changed = 0
+            for number, (one, two) in enumerate(
+                zip(before.calibration_blocks, after.calibration_blocks), start=1
+            ):
+                self.assertEqual(one.scored_dates, two.scored_dates)
+                self.assertEqual(len(one.scales), len(one.partial_scores))
+                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
+                    if when <= opens:
+                        checked += 1
+                        self.assertEqual(
+                            left,
+                            right,
+                            msg=(
+                                f"block {number}: the scale of the row scored on {when} "
+                                f"moved when only spreads after {opens} did"
+                            ),
+                        )
+                    else:
+                        changed += left != right
+            self.assertGreater(checked, 100)
+            self.assertGreater(changed, 0, msg="the control: no scale moved at all")
+
+        with self.subTest("leak: a forecast's factor and band read nothing after its decision"):
+            frame = regime_frame(self.FRAME_ROWS)
+            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.LEAK_PURGE)
+            row = frame[self.PERTURB_AT]
+            scale, band = model._origin_scale(row), model.predict(row)
+            self.assertEqual(scale, ScaledCrossConformalTests.rms_scale(frame, self.PERTURB_AT))
+            history = model._history_spreads
+            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
+                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
+            )
+            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
+            model._history_spreads = (
+                history[: self.PERTURB_AT - 3]
+                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
+                + history[self.PERTURB_AT - 2 :]
+            )
+            self.assertNotEqual(model._origin_scale(row), scale)
+            self.assertNotEqual(model.predict(row), band)
+
+        with self.subTest("ref cancels: one reference shared by the scores and the forecast moves no band"):
+            frame = regime_frame(self.FRAME_ROWS)
+            points = frame[-self.FORECAST_ROWS :]
+            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.PURGE)
+            bands = [model.predict(row) for row in points]
+            original = ml._partial_factor
+            for reference in self.REFERENCES:
+                def referenced(scale, reference=reference):
+                    return (scale / reference) ** ml.PARTIAL_SCALE_EXPONENT
+
+                with mock.patch.object(ml, "_partial_factor", referenced):
+                    other = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.PURGE)
+                    moved = [other.predict(row) for row in points]
+                for row, one, two in zip(points, bands, moved):
+                    for left, right in zip(self.edges(one), self.edges(two)):
+                        self.assertAlmostEqual(
+                            left, right, delta=self.REFERENCE_TOLERANCE_BPS,
+                            msg=f"ref {reference} moved the band forecast from {row.date}",
+                        )
+            # The control: a reference at the forecast alone does not cancel.
+            with mock.patch.object(ml, "_partial_factor", lambda scale: original(scale / 4.0)):
+                unshared = [model.predict(row) for row in points]
+            self.assertTrue(
+                all(self.edges(one) != self.edges(two) for one, two in zip(bands, unshared))
+            )
+
+        with self.subTest("cross_conformal and cross_conformal_scaled are unchanged"):
+            frame = regime_frame(self.FRAME_ROWS)
+            points = frame[-self.FORECAST_ROWS :]
+            scaled = self.stand_in_fit(
+                ConstantQuantile, frame, ("sofr_volume",),
+                calibration="cross_conformal_scaled", purge_days=self.PURGE,
+            )
+            plain = self.stand_in_fit(
+                ConstantQuantile, frame, ("sofr_volume",),
+                calibration="cross_conformal", purge_days=self.PURGE,
+            )
+            q = Fraction("0.95") - Fraction("0.05")
+            for model, reads in ((plain, "scores"), (scaled, "scaled_residuals")):
+                blocks = model.calibration_blocks
+                for block in blocks:
+                    self.assertEqual(block.partial_scores, ())
+                self.assertEqual(
+                    [block.scales == () for block in blocks],
+                    [model is plain] * len(blocks),
+                )
+                count = sum(len(getattr(block, reads)) for block in blocks)
+                low_rank = math.floor((1 - q) * (count + 1))
+                high_rank = math.ceil(q * (count + 1))
+                for row in points:
+                    lows, highs = [], []
+                    for block in blocks:
+                        read = ml._rearranged(
+                            block.estimators,
+                            [model._design_row(row, block.imputations, None, None, None)],
+                        )[0]
+                        if model is plain:
+                            lows.extend(read[0] - score for score in block.scores)
+                            highs.extend(read[-1] + score for score in block.scores)
+                        else:
+                            scale = model._origin_scale(row)
+                            lows.extend(read[2] - scale * score for score in block.scaled_residuals)
+                            highs.extend(read[2] + scale * score for score in block.scaled_residuals)
+                    fitted = model._quantile_vector(model.design_row(row))
+                    self.assertEqual(
+                        self.edges(model.predict(row)),
+                        (
+                            min(sorted(lows)[low_rank - 1], fitted[1]),
+                            max(sorted(highs)[high_rank - 1], fitted[-2]),
+                        ),
+                        msg=f"{model.calibration}'s band forecast from {row.date} changed",
+                    )
+
+        with self.subTest("the declaration, the exponent, and the command line reaching it"):
+            self.assertEqual(ml.PARTIAL_SCALE_EXPONENT, 0.5)
+            self.assertEqual(ml.CALIBRATIONS[-1], self.NAME)
+            self.assertEqual(
+                dict(partial.model_settings),
+                {"calibration": self.NAME, "calibration_folds": 5, "spread_change_lags": ml.SCALE_WINDOW},
+            )
+            backtest = cli.build_parser().parse_args(
+                ["backtest", "panel.csv", "--registry", "registry.json",
+                 "--decision-time", DECISION_TIME, "--report", "r.json",
+                 "--feature", "spread_bps", "--model", "gbm",
+                 "--calibration", self.NAME]
+            )
+            _, fitter = cli_eval._select_fitter(backtest)
+            self.assertEqual(fitter.keywords, {"regressors": (), "calibration": self.NAME})
+
+        with self.subTest("refusals: a tail, a share, too few scores, a forecast with no scale"):
+            with self.assertRaisesRegex(ValueError, r"not wired for calibration 'cross_conformal_partial'"):
+                self.fit(rows[:120], ("on_rrp",), purge_days=0, tail="gpd")
+            with self.assertRaisesRegex(
+                ValueError, r"calibration_share 0.25 was given, but calibration 'cross_conformal_partial'"
+            ):
+                self.fit(rows[:40], ("on_rrp",), calibration_share=0.25, purge_days=0)
+            with self.assertRaisesRegex(
+                ValueError, r"cross_conformal_partial calibration needs at least 9 held-out scores, got 8"
+            ):
+                self.fit(rows[:29], ("on_rrp",), calibration_folds=2, purge_days=0)
+            early = self.stand_in_fit(
+                ConstantQuantile, regime_frame(self.FRAME_ROWS), ("sofr_volume",), purge_days=self.PURGE
+            )
+            with self.assertRaisesRegex(
+                ValueError, r"has no scale: calibration 'cross_conformal_partial'"
+            ):
+                early.predict(regime_frame(self.FRAME_ROWS)[10])
 
 
 def arx_frame(count, seed=20260911):

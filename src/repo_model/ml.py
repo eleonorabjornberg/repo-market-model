@@ -295,6 +295,38 @@ models, the same held-out rows and feature rows, the same `calibration_folds`
   have, so a flat window is priced as the calmest non-flat one;
 * no tail, for `cross_conformal`'s reason (B53).
 
+**Partially scaled cross-conformal, opt-in (B-PARTIAL).** Job 662 scored
+`cross_conformal_scaled` and found it over-corrects: calm now under-covers and
+stressed over-covers, and centring on the median lost the fit's lower-tail skew
+in calm stretches. `calibration="cross_conformal_partial"` is
+`cross_conformal` in the fit and in the score, and scales only the conformal
+correction, by less:
+
+* **the score** is `cross_conformal`'s own, `s_i = max(Q_lo_-k(i)(x_i) - y_i,
+  y_i - Q_hi_-k(i)(x_i))` off the held-out row's excluding model -- the fit's
+  quantile edges, not the median -- divided by `f_i = sigma(x_i) **
+  PARTIAL_SCALE_EXPONENT`, `sigma(x_i)` `_trailing_scale` at the held-out
+  row's feature row: the same window, floor and purge argument as
+  `cross_conformal_scaled`'s, and the same rule that a row with no scale is
+  not scored;
+* **the band** is CV+'s, at `cross_conformal`'s ranks, over
+  `Q_lo_-k(i)(x) - f(x) s_i / f_i` and `Q_hi_-k(i)(x) + f(x) s_i / f_i`, every
+  excluding model read at the forecast's feature row and `f(x)` that row's
+  factor. The fit's own edges, and so its skew, are kept; only the correction
+  moves with the regime. At an exponent of zero every factor is exactly one
+  and the band is `cross_conformal`'s bit for bit on the rows both score; at
+  one the correction is fully proportional;
+* **no reference scale.** The rule as ruled is `(sigma / ref) ** gamma`. One
+  `ref` is shared by every held-out row and the forecast, so it enters the
+  edge only as `(sigma(x) / ref) ** gamma / (sigma(x_i) / ref) ** gamma =
+  (sigma(x) / sigma(x_i)) ** gamma`: it cancels, and no value is declared for
+  it. `f` is `sigma ** gamma` in basis points, which is `ref = 1 bp`, a unit
+  and not a setting;
+* **the guarantee is CV+'s**, for `cross_conformal_scaled`'s reason: `f` is a
+  fixed function of the history, fitted on nothing, and the exponent was fixed
+  before any fold was scored;
+* no tail, for `cross_conformal`'s reason (B53).
+
 **Lagged spread changes, opt-in (B23).** `spread_change_lags=k` adds `k`
 regressors, `spread_change_lag_1` .. `spread_change_lag_k`: the change in
 `spread_bps` between consecutive rows, the `j`-th ending `j - 1` rows before the
@@ -425,8 +457,9 @@ residual ever seen and then an exceedance of exactly `0.0`.
   fold takes the same exponential fallback, and the record says `refused`, not
   `fallback`, so the two can be counted apart. See `_fit_gpd_pwm`.
 * **Refused under `none`, `cross_conformal`, `conformal_asymmetric`,
-  `cross_conformal_asymmetric` and `cross_conformal_scaled`.** The last for
-  `cross_conformal`'s reason; its knot is also scaled per row.
+  `cross_conformal_asymmetric`, `cross_conformal_scaled` and
+  `cross_conformal_partial`.** The last two for `cross_conformal`'s reason;
+  their knots are also scaled per row.
   `none` holds nothing out, so its only sample is rows the estimators were
   fitted on --- an in-sample tail. `conformal_asymmetric` moves the two edges
   by two widenings and the tail's knot is `conformal`'s one.
@@ -501,6 +534,7 @@ __all__ = [
     "GARCH_MINIMUM_CHANGES",
     "GPD_MINIMUM_EXCESSES",
     "GPD_SHAPE_BOUNDS",
+    "PARTIAL_SCALE_EXPONENT",
     "SCALE_FLOOR_BPS",
     "SCALE_WINDOW",
     "TAIL_FAMILIES",
@@ -541,8 +575,9 @@ _MINIMUM_TAIL = 1e-9
 #: The band calibrations a fit can be asked for. `none` first: it is the
 #: default, and the model every published record was produced with. See the
 #: module docstring for `conformal`, `cross_conformal`, `conformal_asymmetric`,
-#: `cross_conformal_asymmetric` and `cross_conformal_scaled`, each appended
-#: rather than slotted beside its sibling so no existing name's position moves.
+#: `cross_conformal_asymmetric`, `cross_conformal_scaled` and
+#: `cross_conformal_partial`, each appended rather than slotted beside its
+#: sibling so no existing name's position moves.
 CALIBRATIONS = (
     "none",
     "conformal",
@@ -550,6 +585,7 @@ CALIBRATIONS = (
     "conformal_asymmetric",
     "cross_conformal_asymmetric",
     "cross_conformal_scaled",
+    "cross_conformal_partial",
 )
 
 #: The calibrations that report the full fit and calibrate it with excluding
@@ -558,10 +594,25 @@ _CROSS_CALIBRATIONS = (
     "cross_conformal",
     "cross_conformal_asymmetric",
     "cross_conformal_scaled",
+    "cross_conformal_partial",
 )
 
 #: The calibration whose scores are divided by `_trailing_scale`.
 _SCALED_CALIBRATION = "cross_conformal_scaled"
+
+#: The calibration whose scores are divided by `_partial_factor`.
+_PARTIAL_CALIBRATION = "cross_conformal_partial"
+
+#: The calibrations that read `_trailing_scale` at every held-out row and at
+#: the forecast, and score no row without one.
+_TRAILING_SCALE_CALIBRATIONS = (_SCALED_CALIBRATION, _PARTIAL_CALIBRATION)
+
+#: `gamma` in `cross_conformal_partial`'s factor `sigma ** gamma`. One half:
+#: Eleonora's ruling of 16 September 2026, fixed before any fold was scored
+#: under it, after job 662 found the fully proportional `cross_conformal_scaled`
+#: over-corrected in both regimes. A declared rule and not a fitted one: no
+#: grid was searched and no fold chose it.
+PARTIAL_SCALE_EXPONENT = 0.5
 
 #: How many one-step spread changes `_trailing_scale` reads, ending at a feature
 #: row. Twenty: about a month of business days, the trailing window job 657's
@@ -837,6 +888,18 @@ def _trailing_scale(
     if not squares:
         return None
     return max(math.sqrt(math.fsum(squares) / len(squares)), SCALE_FLOOR_BPS)
+
+
+def _partial_factor(scale: float) -> float:
+    """`cross_conformal_partial`'s factor at a row whose `_trailing_scale` is `scale`.
+
+    `scale ** PARTIAL_SCALE_EXPONENT`, the exponent read at call time. No
+    reference scale divides it: one shared reference cancels between a
+    held-out row's factor and the forecast's (see the module docstring). At an
+    exponent of zero it is exactly `1.0`.
+    """
+
+    return scale ** PARTIAL_SCALE_EXPONENT
 
 
 def _squared_changes(spreads: Sequence[Optional[float]]) -> List[Optional[float]]:
@@ -1298,6 +1361,10 @@ class _ExcludingModel:
     * `scales`, `scaled_residuals` --- under `cross_conformal_scaled`, the same
       rows' `_trailing_scale` at their feature rows and their scores
       `|y - m| / scale` about this model's rearranged median, in the same
+      order. Empty under every other calibration. `scales` is carried under
+      `cross_conformal_partial` too.
+    * `partial_scores` --- under `cross_conformal_partial`, the same rows'
+      `scores`, each divided by `_partial_factor` of its scale, in the same
       order. Empty under every other calibration.
     """
 
@@ -1310,6 +1377,7 @@ class _ExcludingModel:
         "held_out_start",
         "imputations",
         "lower_scores",
+        "partial_scores",
         "scaled_residuals",
         "scales",
         "scored_dates",
@@ -1335,7 +1403,9 @@ class _ExcludingModel:
         upper_scores: Sequence[float] = (),
         scales: Sequence[float] = (),
         scaled_residuals: Sequence[float] = (),
+        partial_scores: Sequence[float] = (),
     ) -> None:
+        self.partial_scores: Tuple[float, ...] = tuple(partial_scores)
         self.scales: Tuple[float, ...] = tuple(scales)
         self.scaled_residuals: Tuple[float, ...] = tuple(scaled_residuals)
         self.lower_scores: Tuple[float, ...] = tuple(lower_scores)
@@ -1454,7 +1524,8 @@ class FittedGradientBoostedQuantiles:
       rows are the whole frame and the calibration dates are the first and
       last held-out rows scored.
     * `calibration_folds`, `calibration_blocks` --- under `cross_conformal`,
-      `cross_conformal_asymmetric` and `cross_conformal_scaled`, how many blocks the frame was split into and one `_ExcludingModel` per
+      `cross_conformal_asymmetric`, `cross_conformal_scaled` and
+      `cross_conformal_partial`, how many blocks the frame was split into and one `_ExcludingModel` per
       block, in date order (`None` and empty otherwise).
     * `spread_change_lags`, `_history_dates`, `_history_spreads` --- how many
       lagged spread changes the design carries (`None` when it carries none),
@@ -1682,7 +1753,8 @@ class FittedGradientBoostedQuantiles:
         the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal` and
         `conformal_asymmetric`, `calibration_folds` for `cross_conformal`,
-        `cross_conformal_asymmetric` and `cross_conformal_scaled`.
+        `cross_conformal_asymmetric`, `cross_conformal_scaled` and
+        `cross_conformal_partial`.
 
         `tail` is what the command declared, not evidence that a shape was
         fitted: a rolling backtest refits at every origin, so what each fold's
@@ -1864,7 +1936,7 @@ class FittedGradientBoostedQuantiles:
         )
 
     def _origin_scale(self, feature_row: DailyObservation) -> float:
-        """`cross_conformal_scaled`'s scale at a forecast's feature row.
+        """`cross_conformal_scaled`'s and `cross_conformal_partial`'s scale at a forecast's feature row.
 
         `_trailing_scale` over the fitted frame's spreads *before* the feature
         row, by position as `_design_row` finds it, and the feature row's own
@@ -1880,7 +1952,7 @@ class FittedGradientBoostedQuantiles:
         ):
             raise ValueError(
                 f"feature row for {feature_row.date} is not a row of the frame "
-                f"this model was fitted on; calibration {_SCALED_CALIBRATION!r} "
+                f"this model was fitted on; calibration {self.calibration!r} "
                 f"reads its scale off that frame's own rows by position, and a "
                 f"row the frame does not carry has none"
             )
@@ -1891,7 +1963,7 @@ class FittedGradientBoostedQuantiles:
         if scale is None:
             raise ValueError(
                 f"feature row for {feature_row.date} has no scale: calibration "
-                f"{_SCALED_CALIBRATION!r} reads the {SCALE_WINDOW} spread changes "
+                f"{self.calibration!r} reads the {SCALE_WINDOW} spread changes "
                 f"ending at it, and its frame has {position} row(s) before it or "
                 f"no observed change among them. A made-up scale would be a band "
                 f"with no calibration behind it"
@@ -1939,7 +2011,10 @@ class FittedGradientBoostedQuantiles:
         signed score sets, at each side's own rank. Under
         `cross_conformal_scaled` they are CV+'s over each excluding model's
         median plus and minus this row's scale times its block's scaled
-        residuals, at `cross_conformal`'s ranks.
+        residuals, at `cross_conformal`'s ranks. Under
+        `cross_conformal_partial` they are CV+'s over each excluding model's
+        own lower and upper edges moved out by this row's `_partial_factor`
+        times its block's `partial_scores`, at `cross_conformal`'s ranks.
         """
 
         vector = self._quantile_vector(self.design_row(feature_row))
@@ -1972,6 +2047,10 @@ class FittedGradientBoostedQuantiles:
             return _banded(vector, vector[0] - down, vector[-1] + up), down, up
         if self.calibration in _CROSS_CALIBRATIONS:
             asymmetric = self.calibration == "cross_conformal_asymmetric"
+            partial = self.calibration == _PARTIAL_CALIBRATION
+            factor = (
+                _partial_factor(self._origin_scale(feature_row)) if partial else None
+            )
             lows: List[float] = []
             highs: List[float] = []
             for block in self.calibration_blocks:
@@ -1992,6 +2071,10 @@ class FittedGradientBoostedQuantiles:
                 if asymmetric:
                     lows.extend(excluded[0] - score for score in block.lower_scores)
                     highs.extend(excluded[-1] + score for score in block.upper_scores)
+                    continue
+                if partial:
+                    lows.extend(excluded[0] - factor * score for score in block.partial_scores)
+                    highs.extend(excluded[-1] + factor * score for score in block.partial_scores)
                     continue
                 lows.extend(excluded[0] - score for score in block.scores)
                 highs.extend(excluded[-1] + score for score in block.scores)
@@ -2402,7 +2485,10 @@ def fit_gradient_boosted_quantiles(
             and takes each edge off its own side's signed scores at its own
             side's rank; `"cross_conformal_scaled"` blocks as
             `"cross_conformal"` does and divides each residual by a trailing
-            scale read at its own feature row. See the module docstring.
+            scale read at its own feature row; `"cross_conformal_partial"`
+            blocks as `"cross_conformal"` does, keeps its score and edges, and
+            divides each score by that scale to the power
+            `PARTIAL_SCALE_EXPONENT`. See the module docstring.
         calibration_share: the share of the frame held out as calibration rows,
             strictly inside `(0, 1)`. `None` means `DEFAULT_CALIBRATION_SHARE`
             under `conformal`, and is the only value `none` accepts: a share
@@ -2425,9 +2511,9 @@ def fit_gradient_boosted_quantiles(
             GARCH(1,1) on the fit rows' spread changes and adds its one-step
             conditional variance. See the module docstring.
         calibration_folds: the contiguous date blocks `cross_conformal`,
-            `cross_conformal_asymmetric` and `cross_conformal_scaled` split the
-            frame into, an int of at least 2. `None` means
-            `DEFAULT_CALIBRATION_FOLDS` under all three, and is the
+            `cross_conformal_asymmetric`, `cross_conformal_scaled` and
+            `cross_conformal_partial` split the frame into, an int of at least
+            2. `None` means `DEFAULT_CALIBRATION_FOLDS` under all four, and is the
             only value the other calibrations accept, for `calibration_share`'s
             reason; `calibration_share` is refused under `cross_conformal` by
             the same rule.
@@ -2487,8 +2573,8 @@ def fit_gradient_boosted_quantiles(
             singular design -- propagates as it raised it; and, for the tail,
             if `tail` is not one of `TAIL_FAMILIES`, or is given with
             calibration `none` (an in-sample tail), `cross_conformal`,
-            `conformal_asymmetric`, `cross_conformal_asymmetric` or
-            `cross_conformal_scaled` (not wired). Under `conformal_asymmetric` and
+            `conformal_asymmetric`, `cross_conformal_asymmetric`,
+            `cross_conformal_scaled` or `cross_conformal_partial` (not wired). Under `conformal_asymmetric` and
             `cross_conformal_asymmetric` the score floor is the per-side one,
             not `conformal`'s or `cross_conformal`'s.
     """
@@ -2516,7 +2602,7 @@ def fit_gradient_boosted_quantiles(
         raise ValueError(
             f"calibration_folds {calibration_folds} was given, but calibration "
             f"{calibration!r} splits the frame into no blocks; only "
-            f"'cross_conformal' and 'cross_conformal_asymmetric' do. A setting "
+            f"{', '.join(_CROSS_CALIBRATIONS)} do. A setting "
             f"that is accepted and ignored is read by the next person as a "
             f"setting that took effect"
         )
@@ -2645,7 +2731,16 @@ def fit_gradient_boosted_quantiles(
             f"excluding model, cross_conformal's missing sample, and scaled per "
             f"row besides. Use calibration 'conformal'"
         )
+    if tail is not None and calibration == _PARTIAL_CALIBRATION:
+        raise ValueError(
+            f"tail {tail!r} is not wired for calibration "
+            f"{_PARTIAL_CALIBRATION!r}: the knot would be a CV+ edge over every "
+            f"excluding model, cross_conformal's missing sample, and its "
+            f"correction scaled per row besides. Use calibration 'conformal'"
+        )
     scaled = calibration == _SCALED_CALIBRATION
+    partial = calibration == _PARTIAL_CALIBRATION
+    trailing = calibration in _TRAILING_SCALE_CALIBRATIONS
 
     names = tuple(str(name) for name in regressors)
     if not names:
@@ -2715,12 +2810,12 @@ def fit_gradient_boosted_quantiles(
             )
 
     # Every row's spread, `None` at a hole, for the lags, the variance and the
-    # scaled calibration's scale alone. Over the whole frame, which is the only
+    # trailing scale of the two scaled calibrations alone. Over the whole frame, which is the only
     # history any of them is ever read from; the fit rows are its prefix, so a
     # position in one is the same position in the other.
     spreads = (
         [_observed_spread(row, "training row") for row in rows]
-        if lags or volatility_feature is not None or scaled
+        if lags or volatility_feature is not None or trailing
         else []
     )
 
@@ -2842,8 +2937,8 @@ def fit_gradient_boosted_quantiles(
                 # before this row's target: the held-out row's own
                 # decision-time spreads, and none after them. No scale, no
                 # score.
-                scale = _trailing_scale(spreads, position) if scaled else None
-                if scaled and scale is None:
+                scale = _trailing_scale(spreads, position) if trailing else None
+                if trailing and scale is None:
                     continue
                 held_out.append(
                     (
@@ -3036,12 +3131,18 @@ def fit_gradient_boosted_quantiles(
                 upper_scores=[
                     target - vector[-1] for vector, (_, target, _, _) in zip(vectors, held_out)
                 ],
-                scales=[scale for _, _, _, scale in held_out] if scaled else (),
+                scales=[scale for _, _, _, scale in held_out] if trailing else (),
                 scaled_residuals=[
                     abs(target - vector[centre]) / scale
                     for vector, (_, target, _, scale) in zip(vectors, held_out)
                 ]
                 if scaled
+                else (),
+                partial_scores=[
+                    max(vector[0] - target, target - vector[-1]) / _partial_factor(scale)
+                    for vector, (_, target, _, scale) in zip(vectors, held_out)
+                ]
+                if partial
                 else (),
             )
         )
