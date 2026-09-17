@@ -22,15 +22,18 @@ concurrency:
 
 jobs:
   prepare:
-    # Emits the interpreter matrix and the ml-surface verdict so the two heavy
-    # jobs can be shaped per event. Runs in seconds. On pull requests it
+    # Emits the interpreter matrix, the ml-surface verdict and the
+    # dependency-declaration verdict so the heavy jobs can be shaped per
+    # event. Runs in seconds. On pull requests it
     # replaces ~24 runner-minutes of redundant full-suite work with a
     # merge-base diff; pushes and the weekly schedule keep the full check.
     name: shape the run
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.shape.outputs.matrix }}
       ml-changed: ${{ steps.mlpaths.outputs.changed }}
+      pyproject-changed: ${{ steps.depscan.outputs.changed }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -63,10 +66,29 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Mirrors mlpaths for the dependency declaration. On a non-pull_request
+      # event there is no base to diff against, so the step reports
+      # changed=true and stops early; the pip-audit job's own condition is
+      # what actually keeps pushes from running the audit.
+      - id: depscan
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="origin/${{ github.base_ref }}"
+          changed=$(git diff --name-only "$base"...HEAD -- pyproject.toml)
+          if [ -n "$changed" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   suite:
     name: unit tests (${{ matrix.python-version }})
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Pull requests run the two endpoints of the declared range, 3.9 and 3.11:
     # measured on 7b8f0c9, 3.9.23 and 3.10.20 were green and identical, and the
     # matrix is the honest answer to "should both tracks run the same
@@ -127,6 +149,7 @@ jobs:
     name: unit tests with the ml extra (3.9)
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
 
@@ -153,9 +176,46 @@ jobs:
             PYTHONPATH=src:tests python3 -B -m unittest tests.test_ml tests.test_tail_diagnostics -v
           fi
 
+  pip-audit:
+    # Security audit of what the optional ml extra actually installs, plus the
+    # audit tool itself. Trigger set: the weekly schedule, and pull requests
+    # whose diff touches pyproject.toml (prepare's pyproject-changed output).
+    # On push events the job reports skipped: a push cannot introduce a
+    # dependency that a pull request did not declare first, and the weekly run
+    # bounds the exposure of anything that rots between audits to 7 days.
+    name: dependency audit (pip-audit)
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && needs.prepare.outputs.pyproject-changed == 'true')
+    steps:
+      - uses: actions/checkout@v5
+
+      # 3.11, not 3.12: requires-python = ">=3.9,<3.12" in pyproject.toml
+      # makes `pip install .` refuse a 3.12 interpreter outright. The suite's
+      # own 3.12 refusal (exact float reproduction) is a different guard and
+      # does not apply here: this job runs no tests, it installs the package
+      # and audits what got installed.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install the package with the ml extra, and pip-audit
+        run: python3 -m pip install ".[ml]" pip-audit
+
+      # No flags: pip-audit exits non-zero on a known vulnerability, and that
+      # exit fails the job. A red job is the gate, never a warning.
+      - name: Audit
+        run: python3 -m pip_audit
+
   ownership:
     name: contract ownership
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
