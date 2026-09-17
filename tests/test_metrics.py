@@ -1833,5 +1833,31 @@ class ValidationGuardMessageTests(unittest.TestCase):
             self.assertEqual(metrics._quantile((1.0, 2.0, 3.0, 4.0), 0.25), 1.75)
 
 
+class ResidualGuardArmTests(unittest.TestCase):
+    """Refusal arms left uncovered after the D and E phase batches.
+
+    Each arm exists in the code and had no test; each test's bite is proven by a
+    recorded one-condition mutation (diff, failing run, revert) in the PR that
+    added these.
+    """
+
+    def test_a_boolean_climatology_is_refused(self):
+        # metrics.py: `isinstance(climatology, bool)` arm -- bool must not pass
+        # as a numeric base rate the way it passes as an int elsewhere.
+        with self.assertRaisesRegex(MetricError, r"climatology must be a number, got True"):
+            brier_skill_score([0.5, 0.5, 0.5, 0.5], [0, 1, 0, 1], climatology=True)
+
+    def test_quantiles_that_do_not_match_the_declared_levels_are_refused(self):
+        # metrics.py: the count-mismatch arm of the pinball-identity CRPS.
+        with self.assertRaisesRegex(MetricError, r"3 levels against 2 quantiles"):
+            crps_from_quantiles([0.25, 0.5, 0.75], [0.1, 0.2], 0.3)
+
+    def test_a_non_callable_bootstrap_statistic_is_refused(self):
+        # metrics.py: the interval refuses a statistic that is not callable
+        # before it touches replications or the sample.
+        with self.assertRaisesRegex(MetricError, r"statistic must be callable"):
+            stationary_bootstrap_interval(None, 10, block_length=3, seed=7)
+
+
 if __name__ == "__main__":
     unittest.main()

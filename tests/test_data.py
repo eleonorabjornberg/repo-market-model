@@ -1527,6 +1527,35 @@ class PanelManifestParsingRefusalTests(unittest.TestCase):
         self.refused(json.dumps([1, 2, 3]), "manifest is not a JSON object")
 
 
+class PointInTimeLoaderResidualGuardTests(unittest.TestCase):
+    """Coverage-closure guards in the data layer left after phases A and B.
+
+    Each arm exists in the code and had no test; each test's bite is proven by a
+    recorded one-condition mutation in the PR that added these.
+    """
+
+    def test_a_month_outside_the_quarterly_deadlines_is_refused(self):
+        # data.py `corporate_tax_deadline`: the deadline months are (4, 6, 9, 12);
+        # anything else must be refused, not silently rolled into the next one.
+        from repo_model.data import corporate_tax_deadline
+
+        with self.assertRaisesRegex(
+            ValueError, r"month 7 holds no corporate estimated-tax deadline"
+        ):
+            corporate_tax_deadline(2026, 7)
+
+    def test_a_naive_cutoff_is_refused_before_the_file_is_read(self):
+        # data.py `load_point_in_time_panel`: the UTC-offset requirement fires
+        # ahead of the open, so a caller cannot get a FileNotFoundError where a
+        # contract error is meant to be.
+        from repo_model.data import DataContractError, load_point_in_time_panel
+
+        with self.assertRaisesRegex(DataContractError, r"cutoff must include a UTC offset"):
+            load_point_in_time_panel(
+                Path("/nonexistent/panel.csv"), cutoff=datetime(2026, 3, 1)
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
 

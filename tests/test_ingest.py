@@ -8303,5 +8303,39 @@ class FetcherUrlAndDispatchTests(unittest.TestCase):
         self.assertEqual(artifacts[0].path.read_bytes(), payload)
 
 
+class FetcherDateRangeGuardTests(unittest.TestCase):
+    """Coverage-closure refusals: a fetch range that runs backwards.
+
+    Both fetchers validate their caller-provided dates before interpolating
+    them into a URL, so the refusal must fire before any download is attempted;
+    the downloader fixture asserts that. Each test's bite is proven by a
+    recorded one-condition mutation in the PR that added these.
+    """
+
+    @staticmethod
+    def _no_network(url):
+        raise AssertionError(f"no download may be attempted: {url}")
+
+    def test_an_auction_range_running_backwards_is_refused(self):
+        # ingest.py `fetch_treasury_auctions`: start after end is refused.
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(
+                ValueError, r"Treasury auction start date must not follow end date"
+            ):
+                fetch_treasury_auctions(
+                    Path(tmp), "2024-01-02", "2024-01-01", downloader=self._no_network
+                )
+
+    def test_a_bill_rate_range_running_backwards_is_refused(self):
+        # ingest.py `fetch_treasury_bill_rates`: same refusal, own message.
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(
+                ValueError, r"Treasury bill-rate start date must not follow end date"
+            ):
+                fetch_treasury_bill_rates(
+                    Path(tmp), "2024-01-02", "2024-01-01", downloader=self._no_network
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
