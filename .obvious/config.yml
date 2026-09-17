@@ -1,0 +1,12 @@
+# Repository policy for obvious agents working in
+# eleonorabjornberg/repo-market-model. Values detected from the GitHub
+# repository settings on 2026-09-17.
+defaultBranch: main
+# All three merge methods are enabled in the repository settings; the
+# project's own history integrates track branches with merge commits, so
+# "merge" matches observed practice.
+mergeMethod: merge
+# When false, the platform may submit the merge itself once GitHub reports
+# the pull request merge-ready. Human review remains the gate for setup
+# pull requests like the one that introduced this file.
+requireHumanMerge: false
