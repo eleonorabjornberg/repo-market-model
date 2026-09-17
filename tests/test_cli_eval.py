@@ -92,6 +92,14 @@ edit and surfaces it for review, which is the right handling for it.
 
 No mutation was planted in the report shaping or the journal path; those are
 `event_eval`'s and are recorded in `tests/test_event_eval.py`.
+
+Coverage decision (audit spec C2): the `__main__` shim at the foot of
+`cli.py` -- and `repo_model/__main__.py` with it -- is deliberately left
+untested. Both are entry plumbing reachable only by *running* the package
+(`runpy` or a subprocess), their content is `raise SystemExit(main())` over
+an already-covered `main`, and the audit's recommendation, which this suite
+follows, is to document the decision rather than chase the last percent with
+a `runpy` test. Everything `main()` does once called is covered here.
 """
 
 import argparse
@@ -104,6 +112,7 @@ import inspect
 import io
 import json
 import math
+import os
 import re
 import sys
 import tempfile
@@ -114,7 +123,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repo_model import baseline, cli, cli_eval
+from repo_model import baseline, cli, cli_data, cli_eval
 from repo_model.baseline import (
     BacktestReport,
     Forecast,
@@ -3963,6 +3972,508 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         self.assertIn("7-day gap", err)
         self.assertIn("treasury_settlement", err)
         self.assertFalse(self.last_report.exists())
+
+
+class MissingHandlerTests(unittest.TestCase):
+    """The dispatcher's missing-handler arm (audit spec C1).
+
+    A registration module that adds a subparser but omits
+    `set_defaults(handler=...)` must not surface as a traceback that reads
+    like user error: `cli.main` names the command and the obligation, and
+    exits 2. The registrar here is a module-level function in the shape of
+    the fault it rehearses -- a `register` that forgot its obligation -- and
+    `cli.REGISTRARS` is patched rather than `build_parser` mocked, so the
+    parser is assembled exactly as production assembles it.
+
+    Mutation record (each run in a disposable copy under `$HOME` built from
+    `git ls-files` plus the untracked new tests, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * `return 2` changed to `return 0` in the missing-handler arm. Fails 1 --
+      this test, `AssertionError: 0 != 2`. Reverted.
+    """
+
+    def test_a_command_registered_without_a_handler_exits_2_naming_the_registration(
+        self,
+    ):
+        def register_without_handler(subparsers):
+            subparsers.add_parser("opaque")
+            # The omission is the fault; no set_defaults here.
+
+        err = io.StringIO()
+        with unittest.mock.patch.object(cli, "REGISTRARS", (register_without_handler,)):
+            with contextlib.redirect_stderr(err):
+                code = cli.main(["opaque"])
+
+        self.assertEqual(code, 2)
+        self.assertEqual(
+            err.getvalue(),
+            "error: command 'opaque' registered no handler; its registration "
+            "module must call set_defaults(handler=...)\n",
+        )
+
+
+class AuditCommandTests(unittest.TestCase):
+    """The `audit` wrapper's publication (audit spec C3).
+
+    `audit_panel`'s findings themselves are Track A's and are covered in
+    `tests/test_data.py`. What the command adds is the JSON on stdout, and
+    that JSON is a published artifact shape: the keys, their rendering, and
+    the exit code are asserted here against the tracked sample panel, not a
+    synthetic one.
+
+    Mutation record (disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * `sort_keys=True` dropped from `_audit`'s `json.dumps`. Fails 1 -- this
+      test, `AssertionError` on the byte-equality re-render: what the command
+      printed begins `"rows"`, what `sort_keys` requires begins
+      `"end_date"`. Reverted.
+    """
+
+    SAMPLE = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
+
+    def test_the_audit_subcommand_prints_the_sorted_report_and_exits_0(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = cli.main(["audit", str(self.SAMPLE)])
+
+        self.assertEqual(code, 0)
+        rendered = out.getvalue()
+        report = json.loads(rendered)
+
+        self.assertEqual(
+            set(report),
+            {"rows", "start_date", "end_date", "missing_counts", "warnings"},
+        )
+        # The tracked sample panel's own numbers: 25 rows across January 2026,
+        # three columns absent on every row, nothing warned.
+        self.assertEqual(report["rows"], 25)
+        self.assertEqual(report["start_date"], "2026-01-02")
+        self.assertEqual(report["end_date"], "2026-02-06")
+        self.assertEqual(report["warnings"], [])
+        self.assertEqual(
+            report["missing_counts"],
+            {
+                "bgcr": 0,
+                "dealer_treasury_position": 25,
+                "iorb": 0,
+                "mmf_assets": 25,
+                "on_rrp": 0,
+                "quarter_end": 0,
+                "reserve_balances": 0,
+                "sofr": 0,
+                "sofr_p25": 0,
+                "sofr_p75": 0,
+                "sofr_volume": 0,
+                "tax_date": 0,
+                "tga": 0,
+                "tgcr": 0,
+                "treasury_settlement": 25,
+            },
+        )
+
+        # `indent=2, sort_keys=True` is what the wrapper declares, and the
+        # dict it builds is *not* in sorted order (rows first), so
+        # re-rendering what was printed matches byte for byte only while the
+        # sort is really there.
+        self.assertEqual(rendered, json.dumps(report, indent=2, sort_keys=True) + "\n")
+
+
+class BuildCommandRefusalTests(unittest.TestCase):
+    """The `build` refusals (audit spec C4).
+
+    Two guards refuse here, and the audit's probe of the third case lands on
+    the other one -- probed against the code, not assumed from the audit:
+
+    * `_build` refuses a `raw_root` with no `*/*.manifest.json` before any
+      registry is read; a `--source` filter that drops every manifest is the
+      same refusal from the same arm.
+    * The "any refusal is fatal" rule lives in `_build` (`if args.column and
+      build.refusals`), but a request whose *every* column is refused never
+      reaches it: `build_daily_panel`'s rule-9 guard refuses first, with "no
+      declared column survived pricing". Both refuse with exit 2 and leave
+      no panel behind, so the command-level contract holds either way.
+      Reached through a mixed request -- one priced column, one refused --
+      `_build`'s own arm fires with its documented message, and that is the
+      probe pinned here beside the every-column-refused shape as it actually
+      behaves. Consolidating the two refusals would be a production change
+      and is deliberately not made by this test-only PR.
+
+    Mutation record (disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * The no-manifests refusal deleted from `_build`. Fails 2, both
+      `AssertionError` on the exact stderr: the failure then surfaces one
+      layer down as "error: at least one raw snapshot is required" -- still
+      an exit-2 refusal, but no longer naming the bare raw root, which is
+      the unactionable-message shape the guard exists to prevent. Reverted.
+
+    * `if args.column and build.refusals:` weakened to `if False and ...`.
+      Fails 1 -- `test_a_requested_column_the_build_cannot_price_is_fatal`,
+      `AssertionError: 0 != 2`, the build then succeeding and writing the
+      panel it should have refused. The two no-manifests tests do not reach
+      the clause and the single-column probe dies in `build_daily_panel`
+      first, so both stay green under it; that is correct, one guard, one
+      kill. Reverted.
+    """
+
+    REPO_ROOT = Path(__file__).parents[1]
+    FIXTURE_RAW_ROOT = (
+        Path(__file__).parents[1] / "tests" / "fixtures" / "snapshots" / "funding_inputs"
+    )
+    REGISTRY = Path(__file__).parents[1] / "metadata" / "sources.json"
+
+    def setUp(self):
+        self.assertTrue(
+            self.FIXTURE_RAW_ROOT.exists(),
+            "the tracked snapshot fixtures are missing; the refusal tests "
+            "build from them",
+        )
+
+    def _argv(self, raw_root, output, extra=()):
+        return [
+            "build",
+            "--raw-root",
+            str(raw_root),
+            "--output",
+            str(output),
+            "--registry",
+            str(self.REGISTRY),
+            # The published build's own cutoff; any cutoff-typed value agrees
+            # with the fixtures' 2026-09 snapshots.
+            "--build-cutoff",
+            "2026-09-08T21:31:42+00:00",
+            "--decision-time",
+            "16:00",
+            *extra,
+        ]
+
+    def test_a_raw_root_with_no_manifests_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = Path(tmp) / "raw"
+            raw_root.mkdir()
+            output = Path(tmp) / "panel.csv"
+
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = cli.main(self._argv(raw_root, output))
+
+            self.assertEqual(code, 2)
+            self.assertEqual(
+                err.getvalue(),
+                f"error: no raw snapshot manifests under {raw_root}\n",
+            )
+            self.assertFalse(output.exists())
+
+    def test_a_source_filter_that_drops_every_manifest_is_refused_the_same_way(self):
+        """The registry id is not the snapshot directory name.
+
+        `--source` filters on the snapshot *directory* name; a source id like
+        `sec_nmfp` matches no directory here, which is the realistic way a
+        filter empties the build. The manifest on disk matches the glob and
+        its bytes are never read on this path -- the filter is what empties
+        the build, and the refusal must say the root is bare.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = Path(tmp) / "raw"
+            snapshot_dir = raw_root / "nyfed_sofr"
+            snapshot_dir.mkdir(parents=True)
+            (snapshot_dir / "snapshot.manifest.json").write_text(
+                json.dumps({"source_id": "nyfed_sofr"}), encoding="utf-8"
+            )
+            output = Path(tmp) / "panel.csv"
+
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = cli.main(self._argv(raw_root, output, ("--source", "sec_nmfp")))
+
+            self.assertEqual(code, 2)
+            self.assertEqual(
+                err.getvalue(),
+                f"error: no raw snapshot manifests under {raw_root}\n",
+            )
+            self.assertFalse(output.exists())
+
+    def test_a_requested_column_the_build_cannot_price_is_fatal(self):
+        """The "any refusal is fatal" rule, reached through its own arm.
+
+        The request pairs a column the fixtures price (`sofr`) with one the
+        real registry refuses (`mmf_assets`: the sec_nmfp snapshot source
+        declares fields with no revision policy). A request whose *only*
+        column is refused never reaches this arm -- see the next test.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "panel.csv"
+
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = cli.main(
+                    self._argv(
+                        self.FIXTURE_RAW_ROOT,
+                        output,
+                        ("--column", "sofr", "--column", "mmf_assets"),
+                    )
+                )
+
+            self.assertEqual(code, 2)
+            self.assertTrue(
+                err.getvalue().startswith(
+                    "error: --column asked for a column this build cannot "
+                    "price: mmf_assets: sec_nmfp: "
+                ),
+                err.getvalue(),
+            )
+            self.assertFalse(output.exists())
+
+    def test_a_build_whose_only_column_is_refused_names_the_pricing_guard(self):
+        """The single-column probe, asserted as the code actually behaves.
+
+        `build_daily_panel` refuses a build whose every declared column
+        failed pricing ("no declared column survived pricing", its rule 9)
+        before `_build`'s refusal-is-fatal check runs. The audit's C4
+        reading -- one `--column`, refusal-bearing, refused by `_build` --
+        is right about the outcome (exit 2, no panel written) and lands on
+        the other guard's message. Asserted as it behaves; consolidating the
+        wording is a production decision this test-only PR does not make.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "panel.csv"
+
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = cli.main(
+                    self._argv(self.FIXTURE_RAW_ROOT, output, ("--column", "mmf_assets"))
+                )
+
+            self.assertEqual(code, 2)
+            self.assertTrue(
+                err.getvalue().startswith(
+                    "error: no declared column survived pricing: mmf_assets: sec_nmfp: "
+                ),
+                err.getvalue(),
+            )
+            self.assertFalse(output.exists())
+
+
+class VerifyPanelCommandTests(unittest.TestCase):
+    """The `verify-panel` success path (audit spec C5).
+
+    The pair is a tmp panel plus a manifest recording the digest of its
+    actual bytes. The manifest also carries a `path` pointing elsewhere on
+    purpose: `verify_daily_panel`'s docstring says the manifest's own `path`
+    is deliberately not consulted, and this success run is that claim's
+    test -- a manifest written on another machine verifies the bytes it
+    names.
+
+    Mutation record (disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * `"sha256": digest` removed from `_verify_panel`'s printed payload.
+      Fails 1 -- this test, `AssertionError`: the printed dict lacks the
+      digest key. Reverted.
+    """
+
+    def test_a_panel_that_matches_its_manifest_verifies_and_prints_the_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            panel = Path(tmp) / "daily_panel.csv"
+            panel.write_bytes(
+                b"date,sofr,iorb\n2026-01-02,4.31,4.30\n2026-01-05,4.31,4.30\n"
+            )
+            digest = hashlib.sha256(panel.read_bytes()).hexdigest()
+            manifest = Path(tmp) / "daily_panel.manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "sha256": digest,
+                        # Written on another machine; not consulted.
+                        "path": "/elsewhere/daily_panel.csv",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = cli.main(
+                    ["verify-panel", str(panel), "--manifest", str(manifest)]
+                )
+
+            self.assertEqual(code, 0)
+            payload = json.loads(out.getvalue())
+            self.assertEqual(
+                payload,
+                {"panel": str(panel), "manifest": str(manifest), "sha256": digest},
+            )
+            self.assertEqual(
+                out.getvalue(), json.dumps(payload, indent=2, sort_keys=True) + "\n"
+            )
+
+
+class BackfillNmfpCommandTests(unittest.TestCase):
+    """The `backfill-nmfp` wrapper (audit spec C6).
+
+    The contact email is taken from the environment precisely so it is never
+    typed into a command line, so the guard that fires without it is the
+    wrapper's first act: refused before the manifest is read and before
+    anything is fetched. The counts a run reports are deliberately not one
+    number for "not usable": an archive short a table is admitted and
+    supplies its other fields, a refused one supplies nothing, and the
+    fixture here keeps the two different sizes so one count cannot stand in
+    for the other.
+
+    Mutation record (disposable copy under `$HOME`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, application confirmed by grep before
+    scoring, unmutated control green before and after the runs):
+
+    * `if not contact_email:` weakened to `if False and not contact_email:`.
+      Fails (errors) the guard test in both subtests -- `env='absent'` and
+      `env='blank'` -- with `TypeError: 'Mock' object is not iterable`: the
+      run gets past where the guard stands, into the (mocked) fetch, and
+      dies in the counts comprehension. No refusal, which is the damage; a
+      real invocation would go to SEC with no contact address. Reverted.
+
+    * `"short_a_table": len(short)` redefined as
+      `len(updated) - len(admitted)`, the refused count. Fails 1 --
+      `test_the_backfill_reports_distinct_counts_and_writes_the_declared_
+      index`, `AssertionError: 3 != 1`. Reverted.
+    """
+
+    DECLARED_INDEX_URL = (
+        "https://www.sec.gov/data-research/sec-markets-data/dera-form-n-mfp-data-sets"
+    )
+
+    def _declared_manifest(self, tmp):
+        """A manifest file carrying the index the declared set came from.
+
+        `load_sec_nmfp_archive_manifest` is mocked in these tests; the only
+        thing the handler reads from the bytes unmocked is `index_url`,
+        which is why that key is the fixture's whole payload.
+        """
+
+        manifest = tmp / "sec_nmfp_archives.json"
+        manifest.write_text(
+            json.dumps({"index_url": self.DECLARED_INDEX_URL}), encoding="utf-8"
+        )
+        return manifest
+
+    @staticmethod
+    def _archive(admitted, absent_fields=()):
+        return unittest.mock.Mock(admitted=admitted, absent_fields=absent_fields)
+
+    def _patched_ingest(self, load_return, fetch, writer):
+        """The three ingest seams the wrapper touches, as patchers."""
+
+        return (
+            unittest.mock.patch.object(
+                cli_data, "load_sec_nmfp_archive_manifest", return_value=load_return
+            ),
+            unittest.mock.patch.object(cli_data, "fetch_sec_nmfp_archives", fetch),
+            unittest.mock.patch.object(
+                cli_data, "write_sec_nmfp_archive_manifest", writer
+            ),
+        )
+
+    def test_a_backfill_without_a_contact_email_is_refused_before_anything_is_fetched(
+        self,
+    ):
+        for env_shape in ("absent", "blank"):
+            with self.subTest(env=env_shape):
+                with tempfile.TemporaryDirectory() as tmp:
+                    manifest = self._declared_manifest(Path(tmp))
+                    fetch = unittest.mock.Mock()
+                    writer = unittest.mock.Mock()
+                    err = io.StringIO()
+
+                    with unittest.mock.patch.dict(os.environ):
+                        os.environ.pop("SEC_CONTACT_EMAIL", None)
+                        if env_shape == "blank":
+                            os.environ["SEC_CONTACT_EMAIL"] = "   "
+                        with contextlib.ExitStack() as stack:
+                            for patcher in self._patched_ingest((), fetch, writer):
+                                stack.enter_context(patcher)
+                            stack.enter_context(contextlib.redirect_stderr(err))
+                            code = cli.main(
+                                ["backfill-nmfp", "--manifest", str(manifest)]
+                            )
+
+                    self.assertEqual(code, 2)
+                    self.assertEqual(
+                        err.getvalue(),
+                        "error: set SEC_CONTACT_EMAIL to the address SEC should "
+                        "contact about this traffic; it is sent in the User-Agent "
+                        "and SEC requires it\n",
+                    )
+                    fetch.assert_not_called()
+                    writer.assert_not_called()
+
+    def test_the_backfill_reports_distinct_counts_and_writes_the_declared_index(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            manifest = self._declared_manifest(tmp_path)
+            output_root = tmp_path / "raw"
+            # Six declared archives: two admitted whole, one admitted but
+            # short a table, three refused. `refused` (3) and `short_a_table`
+            # (1) must not be exchangeable numbers.
+            updated = [
+                self._archive(True),
+                self._archive(True),
+                self._archive(True, ("mmf_repo_holdings",)),
+                self._archive(False),
+                self._archive(False),
+                self._archive(False),
+            ]
+            fetch = unittest.mock.Mock(return_value=updated)
+            writer = unittest.mock.Mock()
+            out = io.StringIO()
+
+            with unittest.mock.patch.dict(
+                os.environ, {"SEC_CONTACT_EMAIL": "  ops@example.com "}
+            ):
+                with contextlib.ExitStack() as stack:
+                    for patcher in self._patched_ingest((), fetch, writer):
+                        stack.enter_context(patcher)
+                    stack.enter_context(contextlib.redirect_stdout(out))
+                    code = cli.main(
+                        [
+                            "backfill-nmfp",
+                            "--manifest",
+                            str(manifest),
+                            "--output-root",
+                            str(output_root),
+                        ]
+                    )
+
+            self.assertEqual(code, 0)
+            payload = json.loads(out.getvalue())
+
+            self.assertEqual(payload["declared"], 6)
+            self.assertEqual(payload["admitted"], 3)
+            self.assertEqual(payload["refused"], 3)
+            self.assertEqual(payload["short_a_table"], 1)
+            self.assertEqual(payload["absent_fields"], ["mmf_repo_holdings"])
+            self.assertEqual(payload["manifest"], str(manifest))
+            # Different claims about a file, deliberately different numbers:
+            # if one count were copied from the other this would not hold.
+            self.assertNotEqual(payload["refused"], payload["short_a_table"])
+
+            # The environment value is stripped before it reaches the fetch,
+            # and the declared flag passes through untouched.
+            self.assertEqual(fetch.call_args.args, (output_root, ()))
+            self.assertEqual(fetch.call_args.kwargs["contact_email"], "ops@example.com")
+            self.assertFalse(fetch.call_args.kwargs["recheck"])
+
+            # The manifest is rewritten with the index_url the file declared.
+            writer.assert_called_once_with(
+                updated, manifest, index_url=self.DECLARED_INDEX_URL
+            )
 
 
 if __name__ == "__main__":
