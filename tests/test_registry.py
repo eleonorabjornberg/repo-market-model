@@ -1916,5 +1916,65 @@ class SelectionArgumentTypeTests(unittest.TestCase):
         )
 
 
+class AvailabilityProvenanceResidualArmTests(unittest.TestCase):
+    """Coverage-closure arms of the availability-provenance check and row probe.
+
+    Each arm exists in the code and had no test; each test's bite is proven by a
+    recorded one-condition mutation in the PR that added these.
+    """
+
+    def test_a_malformed_available_time_is_deliberately_not_reported_here(self):
+        # registry.py: the `except ValueError: return []` arm. The docstring
+        # records the division of responsibility -- validate_release_lag already
+        # reports a malformed available_time, and a second message about the
+        # same key would read as two faults where there is one. So this check
+        # must stay silent here.
+        registry = {
+            "src": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "available_time": "when it ships",
+                }
+            }
+        }
+        check_availability_provenance(registry)  # must not raise
+
+    def test_a_non_mapping_availability_provenance_is_refused(self):
+        # registry.py: the provenance-type arm; evidence that is not an object
+        # says nothing and must not read as present.
+        registry = {
+            "src": {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "available_time": "14:00",
+                },
+                # Provenance is read off the source, not the release_lag.
+                AVAILABILITY_PROVENANCE_KEY: 5,
+            }
+        }
+        with self.assertRaisesRegex(
+            RegistryContractError,
+            r"availability_provenance must be an object, got int",
+        ):
+            check_availability_provenance(registry)
+
+    def test_a_mapping_of_rows_is_checked_as_one_row(self):
+        # registry.py: `_rows_have_available_at` accepts a Mapping as a single
+        # candidate row.
+        from repo_model.registry import _rows_have_available_at
+
+        self.assertTrue(
+            _rows_have_available_at({"available_at": "2024-01-02T15:00:00+00:00"})
+        )
+        self.assertFalse(_rows_have_available_at({}))
+
+    def test_a_non_iterable_rows_object_falls_back_to_one_candidate(self):
+        # registry.py: `iter(rows)` TypeError fallback -- a bare scalar becomes
+        # a one-row iteration and then fails the availability probe.
+        from repo_model.registry import _rows_have_available_at
+
+        self.assertFalse(_rows_have_available_at(123))
+
+
 if __name__ == "__main__":
     unittest.main()

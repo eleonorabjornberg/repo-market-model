@@ -3347,5 +3347,47 @@ class IdentityToleranceTests(unittest.TestCase):
 
 
 
+class ReleaseLagResidualArmTests(unittest.TestCase):
+    """Refusal arms of `validate_release_lag` left uncovered after E6's ten.
+
+    E6 scoped the ten highest-value refusal messages; these are two more of the
+    same validator's arms, closed for coverage completeness with the same
+    exact-message assertion style. Each test's bite is proven by a recorded
+    one-condition mutation in the PR that added these.
+    """
+
+    def test_a_non_string_note_is_refused(self):
+        # contract.py: the `note` type arm; the object is otherwise valid, so
+        # the note problem is the only one reported.
+        problems = validate_release_lag(
+            "src",
+            {
+                "basis": "record_date",
+                "days": 1,
+                "unit": "calendar_days",
+                "available_time": "23:59",
+                "timezone": "America/New_York",
+                "note": 5,
+            },
+        )
+        self.assertEqual(problems, ["src: note must be a string"])
+
+    def test_non_integer_days_are_refused(self):
+        # contract.py: the `days` type arm; a string day count is not a count.
+        problems = validate_release_lag(
+            "src",
+            {
+                "basis": "record_date",
+                "days": "3",
+                "unit": "calendar_days",
+                "available_time": "23:59",
+                "timezone": "America/New_York",
+            },
+        )
+        self.assertEqual(
+            problems, ["src: days must be a non-negative integer, got '3'"]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
