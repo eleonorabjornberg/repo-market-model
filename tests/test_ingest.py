@@ -3196,7 +3196,12 @@ class NmfpFedCounterpartyAmendmentTests(unittest.TestCase):
     --exclude-standard`, `python3 -B` with `PYTHONDONTWRITEBYTECODE=1` and
     `OMP_NUM_THREADS=1`, the mutation applied to a fresh copy and confirmed
     applied by grep before the run. Unmutated control green before and after,
-    zero `expectedFailure`. Each run is the whole suite.
+    zero `expectedFailure`. Each run is the whole suite. The 17 September 2026
+    runs (entries 2 and 3) add `REPO_MODEL_REQUIRE_ML=1` with the ml extra
+    installed; each control ran the whole 948-test suite green before and after
+    (`OK (skipped=7)`, 606.272s before, 617.786s after), and the four runs used
+    distinct disposable copies of the same commit, the controls and the
+    mutations running concurrently.
 
     1. **The old behaviour restored** -- the withholding branch in
        `_assemble_sec_nmfp` deleted, so a dirtied cell with no active
@@ -3209,6 +3214,35 @@ class NmfpFedCounterpartyAmendmentTests(unittest.TestCase):
        one `PointInTimeObservation` longer, `value=0.0`. No other test in the
        suite moved, which is the shape the criterion wants: the zero this rule
        declines was reachable nowhere else.
+
+    2. **The fall-through restored** -- the withholding condition in
+       `_assemble_sec_nmfp` reverted to the A24 dict-gated form
+       (`target[0] in NMFP_WITHHELD_DERIVED_REASONS`), so `mmf_on_rrp` alone is
+       withheld and every other not-supplied dirty cell re-totals to `0.0` and
+       is emitted. Two kills, both in
+       `test_an_amendment_that_supersedes_the_last_contributor_of_a_field_with_no_declared_derivation_withholds_the_field_without_replacement`
+       and both `AssertionError` (failures=2 in the 948-test run; nothing else
+       moved): `Lists differ: [0.0] != []` on the amended vintage's
+       `mmf_treasury_holdings` rows -- the fabricated zero -- and
+       `Tuples differ: () != (('mmf_treasury_holdings',
+       'superseded_without_replacement'),)` on `withheld_fields` -- the
+       missing supersession record. The two halves of this block's contract
+       each catch their own half of the regression.
+
+    3. **The vocabulary word removed** --
+       `WITHHELD_SUPERSEDED_WITHOUT_REPLACEMENT` deleted from
+       `WITHHELD_FIELD_REASONS` in `data.py`, closing the vocabulary against
+       the default reason while the ingest still writes it. Two kills, both
+       `ValueError` raised by the closed-vocabulary validation (errors=2 in
+       the 948-test run; nothing else moved):
+       `WithheldFieldVocabularyTests.test_superseded_without_replacement_is_accepted`
+       -- acceptance expected, `ValueError: sec_nmfp 2026-07-31: withheld
+       field 'mmf_treasury_holdings' reason 'superseded_without_replacement'
+       is not one of no_fed_counterparty` raised -- and
+       `test_an_amendment_that_supersedes_the_last_contributor_of_a_field_with_no_declared_derivation_withholds_the_field_without_replacement`,
+       whose withheld pair reaches the same validation through the ingest
+       path. The word cannot fall out of the vocabulary without the panel
+       refusing the record this block exists to write.
 
     **An existing mutation re-run, and it had gone quiet.**
     `AmendedRepoVintageTests` mutation 3 -- the withdrawn submissions'
