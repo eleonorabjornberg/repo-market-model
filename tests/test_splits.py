@@ -20,6 +20,7 @@ about. What is here is the implementation's own coverage.
 """
 
 import inspect
+import re
 import sys
 import unittest
 from datetime import date, timedelta
@@ -403,7 +404,25 @@ class HoldoutRoleTests(unittest.TestCase):
 
 
 class InvalidInputTests(unittest.TestCase):
-    """Arguments are validated eagerly, not on first iteration."""
+    """Arguments are validated eagerly, not on first iteration (E4).
+
+    Mutation record (E4, coverage audit): disposable copy under `$HOME` built
+    from `git ls-files -z --cached --others --exclude-standard` at the branch
+    head, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, unmutated control green
+    before and after.
+
+    1. **The bool clause removed** -- `isinstance(value, bool) or ` deleted
+       from the int check in `_validate_arguments`. Kills
+       `test_boolean_arguments_are_refused_as_ints` -- its class's only
+       failure: `min_train=True` is an `int` instance, validation passes and
+       the split runs. Mutation confirmed applied by diff.
+    2. **The zero messages swapped** -- `min_train must be at least 1` ->
+       `step must be at least 1` in the `min_train < 1` raise. Kills exactly
+       `test_non_positive_min_train_and_step_are_rejected` and
+       `test_zero_bounds_are_refused_with_their_value` (two failures), the
+       class's two min_train message assertions. Mutation confirmed applied by
+       diff.
+    """
 
     def test_unsorted_dates_are_rejected(self):
         dates = business_days(date(2026, 1, 5), 20)
@@ -426,6 +445,48 @@ class InvalidInputTests(unittest.TestCase):
         with self.assertRaisesRegex(SplitError, "min_train must be at least 1"):
             rolling_origin(dates, 0, 3, 0)
         with self.assertRaisesRegex(SplitError, "step must be at least 1"):
+            rolling_origin(dates, 10, 0, 0)
+
+    def test_boolean_arguments_are_refused_as_ints(self):
+        """`isinstance(True, int)` is `True`; the splitter refuses it anyway.
+
+        A bool in an int slot reads as 1 (or 0) everywhere it is used, so a
+        `min_train=True` would silently mean a one-row training window -- the
+        same silent coercion `contract._is_int` refuses for day counts. The
+        refusal fires before `dates` is even looked at, so it is asserted on
+        the panel too: validation is eager, not on first iteration.
+        """
+
+        dates = business_days(date(2026, 1, 5), 20)
+        with self.assertRaisesRegex(
+            SplitError, re.escape("min_train must be an int, got True")
+        ):
+            rolling_origin(dates, True, 3, 0)
+        with self.assertRaisesRegex(
+            SplitError, re.escape("step must be an int, got True")
+        ):
+            rolling_origin(dates, 10, True, 0)
+
+    def test_a_float_argument_is_refused_as_an_int(self):
+        """`min_train=1.0` is a whole number and still not an int."""
+
+        dates = business_days(date(2026, 1, 5), 20)
+        with self.assertRaisesRegex(
+            SplitError, re.escape("min_train must be an int, got 1.0")
+        ):
+            rolling_origin(dates, 1.0, 3, 0)
+
+    def test_zero_bounds_are_refused_with_their_value(self):
+        """The at-least-1 refusals name the value that was handed over."""
+
+        dates = business_days(date(2026, 1, 5), 20)
+        with self.assertRaisesRegex(
+            SplitError, re.escape("min_train must be at least 1, got 0")
+        ):
+            rolling_origin(dates, 0, 3, 0)
+        with self.assertRaisesRegex(
+            SplitError, re.escape("step must be at least 1, got 0")
+        ):
             rolling_origin(dates, 10, 0, 0)
 
     def test_validation_happens_before_iteration(self):
