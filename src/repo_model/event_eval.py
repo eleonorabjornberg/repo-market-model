@@ -137,6 +137,7 @@ from .baseline import (
     KNOWLEDGE_HOLDOUT,
     SCORING_HOLDOUT,
     ExceedancePredictor,
+    _check_decision_relative_availability,
     _check_fitter_stayed_inside,
     _derive_purge,
     _feature_index,
@@ -595,6 +596,22 @@ def evaluate_event_window(
         for index in scored_index
     ]
     _assert_feature_rows_clear_the_gap(ordered_dates, feature_index, scored_index, purge)
+
+    # The second of the two dates each gap has to clear: had the row been
+    # published when the forecast was made. The rolling path answers the same
+    # question first; per scored day here, because only some days follow a
+    # non-trading day, and the knowledge holdout is scored once -- there is no
+    # second run to catch what the first let through.
+    for scored, feature in zip(scored_index, feature_index):
+        _check_decision_relative_availability(
+            registry,
+            field_sources,
+            ordered_dates,
+            feature,
+            scored,
+            purge=purge,
+            decision_time=decision_time,
+        )
 
     # `rolling_exceedance_backtest`'s rule on this path (B52): a predictor that
     # names `purge_days` -- `ml.gbm_exceedance`, whose calibration splits its

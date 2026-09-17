@@ -228,26 +228,24 @@ COVARIATE = "on_rrp"
 FEATURES = ("spread_bps", COVARIATE)
 
 
-def business_days(start, count):
-    days = []
-    cursor = start
-    while len(days) < count:
-        if cursor.weekday() < 5:
-            days.append(cursor)
-        cursor += timedelta(days=1)
-    return days
-
-
-# A panel running into 2026-02-02, a Monday. 2026-01-30 is the Friday exactly
-# three calendar days before it, which is the row a `<` boundary excludes at
-# purge=3 and a `<=` boundary would let through.
-PANEL_DATES = business_days(date(2026, 1, 5), 30)
+# A panel on consecutive days, dense enough that the day before each scored
+# date is on it. The availability guard is wired on this path now, so the
+# default registry's publication day has to land behind the decision instant
+# it is read against: on a weekday-only panel the window's Sunday availability
+# sat after its Friday decision and every run of the default registry was
+# refused -- the wiring working, not a fixture worth keeping. 2026-01-30 is
+# still the row a `<` boundary excludes at purge=3 and a `<=` boundary would
+# let through: it is exactly three calendar days before 2026-02-02, and the
+# gap in the calendar the old panel carried is gone with the re-dating.
+PANEL_DATES = [date(2026, 1, 5) + timedelta(days=step) for step in range(33)]
 EVENT_START = date(2026, 2, 2)
 EVENT_END = date(2026, 2, 6)
 
-#: The three rows that are ever read as a feature row for a day in the window at
-#: `purge=3`: the last training row (2026-01-29), the row inside the gap ahead
-#: of the window (2026-01-30), and the window's own first day (2026-02-02).
+#: The five rows that are ever read as a feature row for a day in the window at
+#: `purge=3`: the last training row (2026-01-29), the two rows inside the gap
+#: ahead of the window (2026-01-30 and 2026-01-31), the Sunday whose
+#: availability the decision-relative guard is about (2026-02-01), and the
+#: window's own first day (2026-02-02).
 #:
 #: **Their spreads are equal and their covariate is not**, and that is the whole
 #: construction. On this panel a model that reads only `spread_bps` produces the
@@ -256,7 +254,7 @@ EVENT_END = date(2026, 2, 6)
 #: reaching the model, rather than about conditioning in general -- and the
 #: acceptance test can be the mutation target it is supposed to be instead of
 #: passing on an ARX whose covariate was dropped.
-FEATURE_ROW_PLATEAU = (18, 19, 20)
+FEATURE_ROW_PLATEAU = (24, 25, 26, 27, 28)
 PLATEAU_SPREAD_BPS = 21.0
 
 
@@ -398,7 +396,7 @@ class PurgeBoundaryTests(EvaluatorHarness):
         """
 
         expected = {
-            1: date(2026, 1, 30),
+            1: date(2026, 1, 31),
             2: date(2026, 1, 30),
             3: date(2026, 1, 29),
             4: date(2026, 1, 28),
@@ -2113,6 +2111,93 @@ class GitRevFallbackTests(unittest.TestCase):
                 event_eval._git_rev(),
                 "0123456789abcdef0123456789abcdef01234567",
             )
+
+class DecisionRelativeAvailabilityTests(EvaluatorHarness):
+    """The decision-relative availability guard, on the knowledge-holdout path.
+
+    `tests/test_baseline.py`'s block of the same name carries the fuller
+    account; what this class holds is that the event path answers the same
+    declaration the same way, instead of scoring a fold the rolling path
+    refuses.
+
+    The harness's own panel cannot carry the refusal. On a panel dense enough
+    that the day before each scored date is on it, the decision instant is
+    always that previous day, and no honest declaration puts a value's first
+    observable instant after it: a `record_date` source at the priced gap reads
+    the row `gap` days back, whose availability is the deadline day itself at
+    or before the instant, and a `ref_date` source priced from its worst case
+    reads even further back. The refusal is a fact about calendars with
+    non-trading days, so this test carries its own -- a weekday calendar, on
+    which the fold scored 2026-02-02 decides on Friday 2026-01-30 while its
+    `spread_bps` row is first observable the Sunday after.
+
+    The pair of declarations is the baseline block's, and prices one gap:
+    `record_date` at six days from midnight, first observable 2026-02-01
+    00:00 -- after the decision that scores it -- against `ref_date` at one
+    business day with a six-day worst case, which prices the same six and is
+    first observable one panel day after the row. A wiring that checked the
+    wrong half of the rule cannot pass this by accident.
+    """
+
+    @staticmethod
+    def _weekday_rows():
+        dates = []
+        cursor = date(2026, 1, 5)
+        while len(dates) < 30:
+            if cursor.weekday() < 5:
+                dates.append(cursor)
+            cursor += timedelta(days=1)
+        return tuple(panel_row(index, when) for index, when in enumerate(dates))
+
+    def test_a_feature_row_published_after_the_decision_instant_is_refused(self):
+        undeliverable = {
+            source: {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 6,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+            for source in contract.sources_for_features(FEATURES)
+        }
+        with self.assertRaises(LookAheadError) as caught:
+            self.evaluate(
+                observations=self._weekday_rows(),
+                registry=undeliverable,
+            )
+        message = str(caught.exception)
+        first_source, first_field = contract.field_sources_for_features(FEATURES)[0]
+        self.assertIn(f"{first_source}.{first_field}", message)
+        # The row that was read, the decision that read it, and the day it
+        # was scoring: the same facts the rolling path's refusal names.
+        self.assertIn("2026-01-26", message)
+        self.assertIn("2026-01-30 16:00:00", message)
+        self.assertIn("2026-02-02", message)
+
+        deliverable = {
+            source: {
+                "release_lag": {
+                    "basis": "ref_date",
+                    "unit": "business_days",
+                    "days": 1,
+                    "worst_case_calendar_days": 6,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+            for source in contract.sources_for_features(FEATURES)
+        }
+        report = self.evaluate(
+            observations=self._weekday_rows(),
+            registry=deliverable,
+        )
+        self.assertEqual(report.purge_days, 6)
+        self.assertEqual(
+            list(report.scored_dates),
+            [date(2026, 2, day) for day in range(2, 7)],
+        )
 
 
 if __name__ == "__main__":

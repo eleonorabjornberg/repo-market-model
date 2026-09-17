@@ -5312,7 +5312,32 @@ def paired_model_comparison(
             settings_b = _model_settings(fitted_b)
             checked = True
 
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        feature_index = _feature_index(dates, train_indices, index, purge)
+        # The second of the two dates the gap has to clear, per side: each
+        # declaration priced the gap over its own fields, so the availability
+        # of the row each side reads is measured against that side's own
+        # declaration. Per fold, because only some folds follow a non-trading
+        # day -- the same strictly earlier instant, and the same strictly
+        # stronger question, the persistence path answers first.
+        _check_decision_relative_availability(
+            registry,
+            field_sources_a,
+            dates,
+            feature_index,
+            index,
+            purge=purge,
+            decision_time=decision_time,
+        )
+        _check_decision_relative_availability(
+            registry,
+            field_sources_b,
+            dates,
+            feature_index,
+            index,
+            purge=purge,
+            decision_time=decision_time,
+        )
+        feature_row = rows[feature_index]
         actual = rows[index].spread_bps
         # The selected loss, applied to each side's own fitted model. Both
         # sides go through the same callable, so a loss that read one model
@@ -6407,7 +6432,21 @@ def rolling_exceedance_backtest(
     ):
         index = test_indices[0]
         train_rows = tuple(rows[i] for i in train_indices)
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        feature_index = _feature_index(dates, train_indices, index, purge)
+        # The second of the two dates the gap has to clear -- had the row been
+        # published when the forecast was made. The persistence path answers
+        # the same question first; per fold here, because only some folds
+        # follow a non-trading day.
+        _check_decision_relative_availability(
+            registry,
+            field_sources,
+            dates,
+            feature_index,
+            index,
+            purge=purge,
+            decision_time=decision_time,
+        )
+        feature_row = rows[feature_index]
         conditioning = (feature_row,)
 
         if reads_purge:

@@ -2795,6 +2795,158 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
             off_the_end, datetime.combine(dates[-1], time(23, 59))
         )
 
+    def test_the_paired_comparison_path_refuses_the_same_fold(self):
+        """The comparison scores each side through one fold loop, wired per side.
+
+        Same declaration, same panel, same fold the rolling path refuses: the
+        persistence-and-offset comparison at `record_date`/six days reads a
+        `spread_bps` row that is first observable the Sunday after the Friday
+        decision that scores it, and `LookAheadError` is the only correct
+        answer. Both sides are checked against their own declaration's fields,
+        because each side's purge was priced over its own field set and a
+        guard checking a shared set would be the correct rule over the wrong
+        set. The message carries the field, the row, the instant, and the
+        scored day -- the same four facts the rolling path's refusal carries,
+        because a caller debugging one fold should not learn a new message
+        shape per path.
+
+        The silent arm holds the comparison's shape, not its numbers: the
+        folds are the twelve origins the persistence path scores at this
+        minimum history, and the gap is the six the deliverable declaration
+        prices.
+        """
+
+        rows = self.rows()
+
+        undeliverable = self.registry(
+            {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        with self.assertRaises(LookAheadError) as caught:
+            paired_model_comparison(
+                rows,
+                model_a="persistence",
+                fit_a=fit,
+                features_a=FEATURES,
+                model_b="persistence-plus-offset",
+                fit_b=offset_fitter(),
+                features_b=FEATURES,
+                registry=undeliverable,
+                decision_time=DECISION_TIME,
+                seed=20260909,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        message = str(caught.exception)
+        first_source, first_field = field_sources_for_features(FEATURES)[0]
+        self.assertIn(f"{first_source}.{first_field}", message)
+        self.assertIn("2026-01-26", message)
+        self.assertIn("2026-01-30 16:00:00", message)
+        self.assertIn("2026-02-02", message)
+
+        deliverable = self.registry(
+            {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 1,
+                "worst_case_calendar_days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        report = paired_model_comparison(
+            rows,
+            model_a="persistence",
+            fit_a=fit,
+            features_a=FEATURES,
+            model_b="persistence-plus-offset",
+            fit_b=offset_fitter(),
+            features_b=FEATURES,
+            registry=deliverable,
+            decision_time=DECISION_TIME,
+            seed=20260909,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(report.purge_days, self.PURGE)
+        self.assertEqual(len(report.folds), 12)
+
+    def test_the_exceedance_path_refuses_the_same_fold(self):
+        """The pooled exceedance backtest runs on the same folds as the rest.
+
+        The persistence path has refused this fold since the guard landed;
+        the exceedance path scored it, because the same declaration answered
+        differently depending on which loop walked the panel. The fixture,
+        the fold and the refusal are the rolling path's: the predictor here
+        is the climatology the report classes use, whose features read is
+        the declared `spread_bps`, so the gap it is scored under is the one
+        the availability check is measured against.
+
+        The silent arm pins the run's shape -- the twelve origins the
+        splitter yields at this minimum history and the six-day gap the
+        deliverable declaration prices -- and not its curves; the pooled
+        statistics have their own tests.
+        """
+
+        rows = self.rows()
+
+        undeliverable = self.registry(
+            {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        with self.assertRaises(LookAheadError) as caught:
+            rolling_exceedance_backtest(
+                rows,
+                predictor=climatology_exceedance(
+                    minimum_history=self.MINIMUM_HISTORY
+                ),
+                model_name="climatology",
+                features=FEATURES,
+                registry=undeliverable,
+                decision_time=DECISION_TIME,
+                taus=EXCEEDANCE_TAUS,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        message = str(caught.exception)
+        first_source, first_field = field_sources_for_features(FEATURES)[0]
+        self.assertIn(f"{first_source}.{first_field}", message)
+        self.assertIn("2026-01-26", message)
+        self.assertIn("2026-01-30 16:00:00", message)
+        self.assertIn("2026-02-02", message)
+
+        deliverable = self.registry(
+            {
+                "basis": "ref_date",
+                "unit": "business_days",
+                "days": 1,
+                "worst_case_calendar_days": self.PURGE,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        )
+        report = rolling_exceedance_backtest(
+            rows,
+            predictor=climatology_exceedance(
+                minimum_history=self.MINIMUM_HISTORY
+            ),
+            model_name="climatology",
+            features=FEATURES,
+            registry=deliverable,
+            decision_time=DECISION_TIME,
+            taus=EXCEEDANCE_TAUS,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        self.assertEqual(report.purge_days, self.PURGE)
+        self.assertEqual(len(report.folds), 12)
+
 
 #: The exogenous regressor a threshold model in this module is fitted on, and
 #: the column its regime is read off. **Deliberately disjoint.** `tgcr` is not a
@@ -7087,9 +7239,17 @@ class PairedComparisonTests(unittest.TestCase):
         published under a heading that names a mean absolute error parses,
         reads correctly, and is a different quantity -- the failure the
         heading-per-loss exists to prevent.
+
+        The panel is re-dated onto consecutive days: the decision-relative
+        availability guard wired on this path refuses the sample panel's Monday
+        fold at a `record_date`/two-day declaration -- its spread row is first
+        observable the Sunday after the Friday decision -- so the fixture runs
+        on a calendar that can deliver the declaration it prices. The
+        assertions read the record against the comparison and are untouched by
+        the re-dating.
         """
 
-        rows = load_daily_panel(SAMPLE_PANEL)
+        rows = on_consecutive_days(load_daily_panel(SAMPLE_PANEL))
         for loss, name, statistic in (
             ("absolute-error", baseline.COMPARISON_LOSS, "mae_bps"),
             ("crps", baseline.CRPS_COMPARISON_LOSS, "crps_bps"),
@@ -7208,9 +7368,17 @@ class PairedComparisonTests(unittest.TestCase):
         check the per-origin losses *absent*; B18 publishes them by the user's
         decision, and what they must be is
         `test_the_record_carries_the_per_origin_losses_its_interval_was_drawn_from`.
+
+        The panel is re-dated onto consecutive days for the reason the loss
+        test records: the wired availability guard refuses the sample panel's
+        Monday fold at the `record_date`/two-day declaration, so the fixture
+        runs on a calendar that can deliver the declaration it prices. The
+        assertions name models and conventions, and no number in them moves.
         """
 
-        comparison = self._comparison(rows=load_daily_panel(SAMPLE_PANEL))
+        comparison = self._comparison(
+            rows=on_consecutive_days(load_daily_panel(SAMPLE_PANEL))
+        )
         document = paired_comparison_document(
             comparison, panel_path=SAMPLE_PANEL, registry_path=REAL_REGISTRY
         )
@@ -7268,12 +7436,19 @@ class PairedComparisonTests(unittest.TestCase):
         would reproduce the mean and the interval exactly and the second
         assertion would pass on the defect it is aimed at.
 
+        The panel is re-dated onto consecutive days for the reason the loss
+        test records: the wired availability guard refuses the sample panel's
+        Monday fold at the `record_date`/two-day declaration, so the fixture
+        runs on a calendar that can deliver the declaration it prices. The
+        three assertions compare the record against the report it was written
+        from, and no number in them moves.
+
         The document is passed through `json.dumps` and `json.loads` first, so
         what is checked is what a reader of the file has, not the dict.
         """
 
         comparison = paired_model_comparison(
-            load_daily_panel(SAMPLE_PANEL),
+            on_consecutive_days(load_daily_panel(SAMPLE_PANEL)),
             model_a="persistence",
             fit_a=fit,
             features_a=FEATURES,
