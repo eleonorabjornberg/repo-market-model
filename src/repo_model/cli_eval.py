@@ -289,9 +289,11 @@ def _select_model(
     `--calibration`, `--calibration-share`, `--calibration-folds`, `--tail`,
     and since B42 `--spread-change-lags`, `--volatility-feature` and
     `--arx-feature` -- `exceedance-backtest`, and since the calibration block
-    `event-holdout`, whose parser offers only `--calibration` and defaults
-    the rest to `None`, which is what its resolvers read and return `{}` on.
-    Before that block it was false on `event-holdout`: its evaluator had
+    `event-holdout`, whose parser offers `--calibration`, `--calibration-share`
+    and `--calibration-folds` and defaults the rest to `None`, which is what
+    its resolvers read and return `{}` on. Before the share/folds block the
+    holdout parser offered only `--calibration`; before the calibration block
+    `settings_flags` was false on `event-holdout`: its evaluator had
     handed a predictor the gap only since B52, and the flags were the block
     after it.
     `_calibration`, `_tail`, `_spread_change_lags`, `_volatility_feature` and
@@ -1302,10 +1304,11 @@ def _event_holdout(args: argparse.Namespace) -> int:
     invent an answer it was not given either.
     """
 
-    # settings_flags=True: this parser now offers --calibration, so the
-    # selector resolves it through the same resolvers `backtest` refuses by,
-    # before the panel is read -- a refused flag must leave no journal
-    # record, for the reason a refused --model leaves none.
+    # settings_flags=True: this parser now offers --calibration,
+    # --calibration-share and --calibration-folds, so the selector resolves
+    # them through the same resolvers `backtest` refuses by, before the panel
+    # is read -- a refused flag must leave no journal record, for the reason
+    # a refused --model leaves none.
     model_name, fit_predict = _select_model(args, settings_flags=True)
 
     rows = load_daily_panel(args.panel)
@@ -1368,6 +1371,14 @@ def _event_holdout(args: argparse.Namespace) -> int:
         # the fields above: two gbm runs over one feature set would otherwise
         # hash identically while reading different laws.
         model_config["calibration"] = args.calibration
+
+    if args.calibration_share is not None:
+        # The same conditional, one per flag rather than one for the pair:
+        # conformal takes only the share, the cross calibrations only the
+        # folds, and a run the fitter refused never reaches a journal.
+        model_config["calibration_share"] = args.calibration_share
+    if args.calibration_folds is not None:
+        model_config["calibration_folds"] = args.calibration_folds
 
     reported = []
     for window in windows:
@@ -1445,6 +1456,12 @@ def _event_holdout(args: argparse.Namespace) -> int:
             # this window's curve was read off. Absent when the flag is, so
             # the no-flag bytes are what they were.
             reported[-1]["calibration"] = args.calibration
+        # The settings flags the config carries, recorded on the same terms:
+        # present only when given, so the no-flag bytes are what they were.
+        if args.calibration_share is not None:
+            reported[-1]["calibration_share"] = args.calibration_share
+        if args.calibration_folds is not None:
+            reported[-1]["calibration_folds"] = args.calibration_folds
 
     print(json.dumps(reported, indent=2, sort_keys=True))
     return 0
@@ -2040,6 +2057,24 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "none, the default; or one of exceedance-backtest's choices, spelled "
         "there rather than copied here. Refused for every model but gbm",
     )
+    holdout.add_argument(
+        "--calibration-share",
+        type=float,
+        metavar="FRACTION",
+        default=None,
+        help="the share of each training frame --calibration conformal holds "
+        "out, strictly inside (0, 1); 0.25 when not given. Refused for every "
+        "model but gbm, and for every other calibration",
+    )
+    holdout.add_argument(
+        "--calibration-folds",
+        type=int,
+        metavar="K",
+        default=None,
+        help="how many purged date blocks --calibration cross_conformal splits "
+        "each training frame into, at least 2; 5 when not given. Refused for "
+        "every model but gbm, and for every other calibration",
+    )
     holdout.add_argument("--minimum-history", type=int, default=20)
     # No --purge and no --source. See _event_holdout. `--model` carries no
     # default either, and for a reason of the same kind: see _select_model.
@@ -2049,11 +2084,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     # `_spread_change_lags`, `_volatility_feature`, `_arx_feature` and `_tail`
     # each read `args.<flag>` directly and return `{}` on `None`, so a run
     # naming none of the flags binds nothing and the fitter's defaults decide.
-    # `--calibration` itself is bound by `_add_calibration_argument` above;
-    # these five are not offered here, only defaulted.
+    # `--calibration`, `--calibration-share` and `--calibration-folds` are
+    # bound by the arguments above; these three are not offered here, only
+    # defaulted.
     holdout.set_defaults(
-        calibration_share=None,
-        calibration_folds=None,
         spread_change_lags=None,
         volatility_feature=None,
         arx_feature=None,

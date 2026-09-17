@@ -1483,6 +1483,202 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         )
 
 
+class HoldoutCalibrationSettingsTests(ConditionalModelHarness):
+    """`--calibration-share` and `--calibration-folds` reach event-holdout.
+
+    **The premise, checked against the tree.** `_calibration` has resolved all
+    three calibration flags since B39, and `exceedance-backtest` has offered
+    the share and the folds since the same block; `event-holdout` was left
+    offering only `--calibration`, with the other two bound to `None` by its
+    `set_defaults` shim -- the resolver reads them off the namespace whether
+    or not the parser offers them. Exposing them here is two argparse
+    literals and the shim entries' removal: the resolver, its refusal and the
+    fitter's own validation are the rolling path's, unchanged, and the tests
+    below hold this command to both.
+
+    **What is recorded follows the `calibration` precedent exactly.** When a
+    flag is given, its key joins `model_config` -- so it hashes into the
+    journal's `config_sha256` -- and joins each stdout per-window record,
+    because the journal carries the hash and not the config. Each key is
+    conditional on its own flag and never on the other two: the fitter
+    refuses a share under the cross calibrations and folds under everything
+    else, so a run that completed cannot be carrying a setting that was
+    ignored. When no flag is given, nothing is added: the no-flag stdout
+    bytes and the no-flag `config_sha256` stay what the branch point
+    produced, pinned by `HoldoutCalibrationTests`' two default-path tests,
+    which run unchanged on this branch.
+
+    **And no aggregate is computed**, on purpose -- the reason is
+    `HoldoutCalibrationTests`' and the contract's, and nothing here reopens
+    it.
+
+    Mutation record
+    ===============
+
+    Run in a per-branch, per-commit copy under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, `-B` with
+    `PYTHONDONTWRITEBYTECODE=1`, through the worktree's `.venv`
+    (CPython 3.11.16, numpy 2.0.2, scikit-learn 1.6.1),
+    `REPO_MODEL_REQUIRE_ML=1`, whole suite per run. Unmutated control green
+    before and after.
+
+    1. **The `model_config` recording dropped** -- the two share/folds
+       conditionals deleted from `_event_holdout`, so a given share or folds
+       reached the fitter but not the journal hash. Observed: pending.
+    2. **The stdout recording dropped** -- the two share/folds conditionals
+       deleted from the per-window record, so the journal hash named the
+       settings and stdout did not. Observed: pending.
+    3. **The pass-through reverted** -- `_select_model(args,
+       settings_flags=True)` back to `_select_model(args)` on the
+       event-holdout path, which is the tree before the wiring while the
+       parser still offers the flags. Observed: pending.
+    """
+
+    def test_calibration_settings_reach_the_journal_hash_and_the_stdout_record(self):
+        """The acceptance criterion: exposed, recorded in stdout and in the hash.
+
+        Three gbm runs over one declaration: one with folds, one with a
+        share, one with no settings flag. A settings run's stdout record must
+        name what it asked for -- each key conditional on its own flag -- and
+        the journal must tell the three runs apart, which it can only do
+        through `config_sha256`, since the record carries the hash of
+        `model_config` and not `model_config` itself. The digests are rebuilt
+        here from the declarations, as `expected_config` does, so the
+        comparison is a claim about what the command recorded. The no-flag
+        run's digest is asserted against the unextended config, so a key that
+        joined the default path fails here rather than in a review.
+        """
+
+        if not _extra_installed():
+            self.skipTest("--model gbm needs the optional ml extra")
+
+        folds_journal = self.tmp / "journal-folds.jsonl"
+        folds_report = self.scored(
+            "--calibration", "cross_conformal", "--calibration-folds", "3",
+            model="gbm", journal=folds_journal,
+        )[0]
+        self.assertEqual(folds_report["model"], "gbm")
+        self.assertEqual(folds_report["calibration"], "cross_conformal")
+        self.assertEqual(folds_report["calibration_folds"], 3)
+        self.assertNotIn("calibration_share", folds_report)
+
+        expected_folds = self.expected_config("gbm", self.FEATURES)
+        expected_folds["calibration"] = "cross_conformal"
+        expected_folds["calibration_folds"] = 3
+        folds_record, = read_journal(folds_journal)
+        self.assertEqual(
+            folds_record["config_sha256"],
+            config_digest(expected_folds),
+            msg="the folds run does not hash a config that names the folds; "
+            "two cross_conformal runs over one feature set differing only in "
+            "the fold count would hash identically while splitting the "
+            "training frame differently",
+        )
+
+        share_journal = self.tmp / "journal-share.jsonl"
+        share_report = self.scored(
+            "--calibration", "conformal", "--calibration-share", "0.4",
+            model="gbm", journal=share_journal,
+        )[0]
+        self.assertEqual(share_report["calibration"], "conformal")
+        self.assertEqual(share_report["calibration_share"], 0.4)
+        self.assertNotIn("calibration_folds", share_report)
+
+        expected_share = self.expected_config("gbm", self.FEATURES)
+        expected_share["calibration"] = "conformal"
+        expected_share["calibration_share"] = 0.4
+        share_record, = read_journal(share_journal)
+        self.assertEqual(
+            share_record["config_sha256"],
+            config_digest(expected_share),
+            msg="the share run does not hash a config that names the share; "
+            "two conformal runs over one feature set differing only in the "
+            "share would hash identically while holding out different rows",
+        )
+
+        # The same inputs with no settings flag: its digest is still the one
+        # the base hashes, and the three runs are three different records.
+        self.run_command(model="gbm")
+        plain, = read_journal(self.journal)
+        self.assertEqual(
+            plain["config_sha256"],
+            config_digest(self.expected_config("gbm", self.FEATURES)),
+            msg="the no-flag config hash moved; a settings key joined "
+            "model_config on the default path",
+        )
+        self.assertNotEqual(share_record["config_sha256"], plain["config_sha256"])
+        self.assertNotEqual(folds_record["config_sha256"], plain["config_sha256"])
+
+    def test_settings_are_refused_for_a_model_that_takes_none(self):
+        """The refusal path, with the rolling path's message, before the panel.
+
+        `_calibration` is the shared resolver, so a settings flag given to a
+        model that takes none is refused exactly as `--calibration` is -- the
+        parser offering the flags is what makes the refusal reachable on this
+        command at all. The assertion that nothing was scored -- empty
+        stdout, empty journal -- is the same half every refusal test here
+        carries: a record on disk is a claim that a scoring happened.
+        """
+
+        code, out, err = self.run_command(
+            "--calibration-folds", "3", model="climatology"
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--calibration-folds 3", err)
+        self.assertIn("only gbm does", err)
+        self.assertEqual(out, "")
+        self.assertEqual(read_journal(self.journal), ())
+
+        code, out, err = self.run_command(
+            "--calibration-share", "0.25", model="arx"
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--calibration-share 0.25", err)
+        self.assertIn("only gbm does", err)
+        self.assertEqual(out, "")
+        self.assertEqual(read_journal(self.journal), ())
+
+        # Both at once: the resolver names them joined, in declaration order.
+        code, out, err = self.run_command(
+            "--calibration-share", "0.25", "--calibration-folds", "3",
+            model="climatology",
+        )
+        self.assertEqual(code, 2)
+        self.assertIn(
+            "--calibration-share 0.25 and --calibration-folds 3", err
+        )
+        self.assertEqual(read_journal(self.journal), ())
+
+    def test_the_settings_flags_are_declared_like_the_rolling_paths(self):
+        """Same plumbing, same literals -- `exceedance-backtest`'s, not a variant.
+
+        The three commands resolve the flags through one resolver, so a
+        difference in the argparse plumbing -- a type, a metavar, a default --
+        would be a second statement of each flag's contract that the resolver
+        cannot see. Pinned through the parser the way the `--calibration`
+        help pins above are.
+        """
+
+        parser = cli.build_parser()
+        command = next(a for a in parser._actions if a.dest == "command")
+        for command_name in ("backtest", "exceedance-backtest", "event-holdout"):
+            subparser = command.choices[command_name]
+            action = next(
+                a for a in subparser._actions if a.dest == "calibration_share"
+            )
+            self.assertEqual(action.option_strings, ["--calibration-share"])
+            self.assertEqual(action.metavar, "FRACTION")
+            self.assertIs(action.type, float)
+            self.assertIsNone(action.default)
+            action = next(
+                a for a in subparser._actions if a.dest == "calibration_folds"
+            )
+            self.assertEqual(action.option_strings, ["--calibration-folds"])
+            self.assertEqual(action.metavar, "K")
+            self.assertIs(action.type, int)
+            self.assertIsNone(action.default)
+
+
 class RollingBacktestHarness(unittest.TestCase):
     """The sample panel, one registry pricing two feature sets differently.
 
