@@ -2044,6 +2044,76 @@ class JournalFileTests(unittest.TestCase):
             self.assertEqual(len(entries), 2)
             self.assertEqual(entries[0], entries[1])
 
+class GitRevFallbackTests(unittest.TestCase):
+    """B7: `_git_rev` never raises, and every failure reads `unknown`.
+
+    The evaluator stamps each record with the revision it ran under; a
+    checkout without a working git -- a tarball, a stripped copy, a broken
+    toolchain -- must not stop the run, and must not write a placeholder that
+    looks like a revision either. The happy path is exercised by every record
+    test in this file
+    (`test_the_record_carries_timestamp_git_rev_and_config_hash` asserts the
+    field is non-empty); the three fallbacks are what this class pins: the
+    subprocess call itself unusable, git exiting nonzero, git printing
+    nothing. Each returns the same literal, so a reader never has to guess
+    which failure produced it.
+
+    Mutation record -- run in a disposable copy under `$HOME`, never in the
+    mount, made from `git ls-files -z` piped through `tar`;
+    `PYTHONDONTWRITEBYTECODE=1` and `python -B`, CPython 3.11.16 in `.venv`
+    with the `ml` extra. Unmutated control green in the copy before the
+    first mutation and again after the last was reverted; each mutation was
+    applied to a freshly restored copy, the branch carries none of them, and
+    the worktree was never touched.
+
+    1. **Both `"unknown"` fallbacks replaced** -- the `return "unknown"` at
+       the subprocess-failure arm and the one at the nonzero-exit arm each
+       made `return "0" * 40`. Kills
+       `test_a_subprocess_failure_is_reported_as_unknown` and
+       `test_git_exiting_nonzero_is_reported_as_unknown`,
+       `AssertionError: '0000...0' != 'unknown'` twice -- a forty-zero
+       placeholder is worse than a refusal: it reads as a revision, and
+       records stamped with it would agree with each other.
+
+    2. **The empty-stdout fallback replaced** -- the trailing `.strip() or
+       "unknown"` made `.strip() or "nowhere"`. Kills
+       `test_git_printing_nothing_is_reported_as_unknown` alone,
+       `AssertionError: 'nowhere' != 'unknown'`. The fourth test -- the
+       stripped-rev control -- stayed green through every mutation in this
+       group, which is what makes the class a guard and not a tautology.
+    """
+
+    def test_a_subprocess_failure_is_reported_as_unknown(self):
+        with mock.patch.object(
+            event_eval.subprocess, "run", side_effect=OSError("no git")
+        ):
+            self.assertEqual(event_eval._git_rev(), "unknown")
+
+    def test_git_exiting_nonzero_is_reported_as_unknown(self):
+        finished = mock.Mock(
+            returncode=1, stdout=b"", stderr=b"fatal: not a git repository"
+        )
+        with mock.patch.object(event_eval.subprocess, "run", return_value=finished):
+            self.assertEqual(event_eval._git_rev(), "unknown")
+
+    def test_git_printing_nothing_is_reported_as_unknown(self):
+        finished = mock.Mock(returncode=0, stdout=b"")
+        with mock.patch.object(event_eval.subprocess, "run", return_value=finished):
+            self.assertEqual(event_eval._git_rev(), "unknown")
+
+    def test_the_revision_is_the_stripped_stdout(self):
+        """The control the three refusals need: a real rev passes through."""
+
+        finished = mock.Mock(
+            returncode=0,
+            stdout=b"0123456789abcdef0123456789abcdef01234567\n",
+        )
+        with mock.patch.object(event_eval.subprocess, "run", return_value=finished):
+            self.assertEqual(
+                event_eval._git_rev(),
+                "0123456789abcdef0123456789abcdef01234567",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
