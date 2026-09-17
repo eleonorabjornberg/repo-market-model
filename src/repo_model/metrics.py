@@ -628,6 +628,10 @@ def corp_reliability_curve(
 
     Returns:
         A `ReliabilityCurve` sorted by forecast probability.
+
+    Raises:
+        MetricError: on a `level` outside the open interval (0, 1), before any
+            bootstrap work.
     """
 
     forecast, realized = _paired(probabilities, outcomes)
@@ -644,6 +648,8 @@ def corp_reliability_curve(
             "without the other is a request for an interval that is either not "
             "block-bootstrapped or not reproducible"
         )
+    if not 0.0 < level < 1.0:
+        raise MetricError(f"level must be in (0, 1), got {level}")
 
     _require_decomposable(forecast, realized)
     rng = random.Random(seed)

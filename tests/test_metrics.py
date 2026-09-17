@@ -568,6 +568,32 @@ class RealizedDiscriminationTests(unittest.TestCase):
 
 
 class ReliabilityCurveTests(unittest.TestCase):
+    """The curve's shape properties, the band's reproducibility, and the
+    band-argument guards.
+
+    Level guard. `corp_reliability_curve` rejects a band `level` outside the
+    open interval (0, 1) before any bootstrap work -- `MetricError`, "level
+    must be in" -- mirroring `pinball_loss` and
+    `stationary_bootstrap_interval`. Before the guard, `level` fed
+    `(1.0 - level) / 2.0` and the module-internal `_quantile` unvalidated:
+    -0.5 returned an inverted band, 1.5 raised a raw `IndexError` out of
+    `_quantile`, and 0 and 1 were silently accepted. The two
+    `test_a_band_rejects_*` tests pin the refusal.
+
+    Mutation record. The guard deleted from `corp_reliability_curve` (its two
+    lines, `if not 0.0 < level < 1.0:` and the `raise`) in a disposable copy
+    under `$HOME` built from
+    `git ls-files -z --cached --others --exclude-standard`, run with `-B` and
+    `PYTHONDONTWRITEBYTECODE=1`; unmutated control green before and after.
+    Kills, with exception types: `level=-0.5` -> `AssertionError`
+    ("MetricError not raised"); `level=0.0` -> `AssertionError`; `level=1.0`
+    -> `AssertionError`; `level=1.5` -> `IndexError`; `level=90.0` ->
+    `IndexError`. All five land in the two `test_a_band_rejects_*` tests;
+    against the full suite the same five were the only non-skips that moved
+    (failures=3, errors=2), so the guard has no collateral and no other test
+    depends on its absence.
+    """
+
     def test_the_curve_is_non_decreasing_in_the_forecast(self):
         probabilities, outcomes = synthetic()
         curve = corp_reliability_curve(probabilities, outcomes)
@@ -588,6 +614,41 @@ class ReliabilityCurveTests(unittest.TestCase):
             corp_reliability_curve(probabilities, outcomes, block_length=5)
         with self.assertRaisesRegex(MetricError, "both block_length and seed"):
             corp_reliability_curve(probabilities, outcomes, seed=1)
+
+    def test_a_band_rejects_a_level_outside_the_open_unit_interval(self):
+        """A level below 0, above 1, or a percent-for-proportion slip is a
+        `MetricError`, not an inverted band or a raw `IndexError` from
+        `_quantile`."""
+
+        probabilities, outcomes = synthetic(n=80)
+        for level in (-0.5, 1.5, 90.0):
+            with self.subTest(level=level):
+                with self.assertRaisesRegex(MetricError, "level must be in"):
+                    corp_reliability_curve(
+                        probabilities,
+                        outcomes,
+                        block_length=5,
+                        seed=1,
+                        replications=40,
+                        level=level,
+                    )
+
+    def test_a_band_rejects_the_degenerate_levels_zero_and_one(self):
+        """level 0 is coverage of no interval and level 1 is certainty; both
+        were silently accepted and produced a degenerate band."""
+
+        probabilities, outcomes = synthetic(n=80)
+        for level in (0.0, 1.0):
+            with self.subTest(level=level):
+                with self.assertRaisesRegex(MetricError, "level must be in"):
+                    corp_reliability_curve(
+                        probabilities,
+                        outcomes,
+                        block_length=5,
+                        seed=1,
+                        replications=40,
+                        level=level,
+                    )
 
     def test_no_band_is_returned_when_none_was_asked_for(self):
         probabilities, outcomes = synthetic(n=80)
