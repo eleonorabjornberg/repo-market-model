@@ -5,28 +5,84 @@ on:
     branches: [main, improvements]
   push:
     branches: [main, improvements]
+  # Weekly all-versions parity check. The pull-request matrix runs only the
+  # declared range's endpoints (3.9 and 3.11); this schedule is what catches a
+  # mid-range (3.10-only) regression between one merge and the next Monday.
+  schedule:
+    - cron: "0 5 * * 1"
 
 permissions:
   contents: read
 
+# A superseded push (force-push, rapid follow-up commit) makes the in-progress
+# run worthless; stop it instead of stacking up to four ~12-minute jobs.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  prepare:
+    # Emits the interpreter matrix and the ml-surface verdict so the two heavy
+    # jobs can be shaped per event. Runs in seconds. On pull requests it
+    # replaces ~24 runner-minutes of redundant full-suite work with a
+    # merge-base diff; pushes and the weekly schedule keep the full check.
+    name: shape the run
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.shape.outputs.matrix }}
+      ml-changed: ${{ steps.mlpaths.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The ml verdict diffs against the merge base, which a shallow
+          # clone does not have. Same reason the ownership job needs history.
+          fetch-depth: 0
+
+      - id: shape
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo 'matrix=["3.9", "3.11"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=["3.9", "3.10", "3.11"]' >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: mlpaths
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            # Pushes and the weekly schedule always get the full check: a bad
+            # merge must never be under-tested on the way into a branch.
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="origin/${{ github.base_ref }}"
+          changed=$(git diff --name-only "$base"...HEAD -- \
+            src/repo_model/ml.py pyproject.toml tests/test_ml.py tests/test_tail_diagnostics.py)
+          if [ -n "$changed" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   suite:
     name: unit tests (${{ matrix.python-version }})
+    needs: prepare
     runs-on: ubuntu-latest
-    # Every interpreter the declaration admits, and both of the two the tracks
-    # actually run. This job was pinned to a single "3.12" until 10 Sep, on
-    # which the suite runs all 700 tests and fails exactly one -- the guard that
+    # Pull requests run the two endpoints of the declared range, 3.9 and 3.11:
+    # measured on 7b8f0c9, 3.9.23 and 3.10.20 were green and identical, and the
+    # matrix is the honest answer to "should both tracks run the same
+    # interpreter" -- parity by decree was never the check. The weekly schedule
+    # above still runs all three declared versions, so a mid-range-only
+    # regression surfaces within a week instead of on every pull request.
+    # History: this job was pinned to a single "3.12" until 10 Sep, on which
+    # the suite ran all 700 tests and failed exactly one -- the guard that
     # enforces requires-python = ">=3.9,<3.11" -- so the badge at the top of
     # README.md was red for a version the project does not claim to support,
-    # and no CI run had ever exercised 3.9 at all. A matrix is also the honest
-    # answer to "should both tracks run the same interpreter": measured on
-    # 7b8f0c9, 3.9.23 and 3.10.20 are green and identical, so parity by decree
-    # was never the check -- this is. 3.11 joined on 10 Sep, when the range
-    # widened to <3.12; 3.12 is still out, on the exact reproduction.
+    # and no CI run had ever exercised 3.9 at all. 3.11 joined on 10 Sep, when
+    # the range widened to <3.12; 3.12 is still out, on the exact reproduction.
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v5
 
@@ -61,7 +117,15 @@ jobs:
     # the extra did not install: the core job above cannot see those tests,
     # and a skip nothing can see is not a test. 3.9 because it is the floor the
     # extra's version bounds were chosen for.
+    #
+    # On a pull request that does not touch the ml surface (ml.py, the version
+    # bounds in pyproject.toml, or the two ml-dependent test modules), the
+    # honest minimal check is those two modules only: test_tail_diagnostics.py
+    # imports test_ml, and everything else is re-proven by the matrix job above
+    # in the same run. Touching any of the four paths, or pushing to a branch,
+    # runs the whole suite as before.
     name: unit tests with the ml extra (3.9)
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -69,6 +133,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.9"
+          cache: pip
+          # Key the wheel cache on the file that pins the versions, so a bump
+          # of the ml extra's bounds invalidates it.
+          cache-dependency-path: pyproject.toml
 
       - name: Install the ml extra
         run: python3 -m pip install ".[ml]"
@@ -78,7 +146,12 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
           REPO_MODEL_REQUIRE_ML: "1"
-        run: python3 -B -m unittest discover -s tests -v
+        run: |
+          if [ "${{ needs.prepare.outputs.ml-changed }}" = "true" ]; then
+            python3 -B -m unittest discover -s tests -v
+          else
+            PYTHONPATH=src:tests python3 -B -m unittest tests.test_ml tests.test_tail_diagnostics -v
+          fi
 
   ownership:
     name: contract ownership
