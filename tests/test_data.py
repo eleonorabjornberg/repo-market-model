@@ -509,6 +509,129 @@ class PointInTimeDataContractTests(unittest.TestCase):
         )
 
 
+class ExpectedRefDatesTrailingBoundTests(unittest.TestCase):
+    """A trailing gap in a present peer is missing coverage, never a shorter grid.
+
+    For a present non-event peer, `expected_ref_dates_from_registry` builds the
+    expected grid as the anchor's dates bounded below by the peer's own first
+    observed date. The leading bound is documented intent: a series is not
+    penalised for the anchor's dates before it began. A trailing clause
+    `<= max(own_dates)` applied the same bound where it does not belong, and it
+    hid a defect: a peer that stops printing while its anchor continues got an
+    expected grid truncated at its own last print, so the quality report wrote
+    `missing_reference_dates=0` / `missing_rate=0.0` across a tail the source
+    never printed -- absence reading as full coverage. The trailing clause is
+    gone; the leading bound and the event-frequency rule (a grid is the peer's
+    own observed dates) are pinned here so the repair cannot swing past them.
+
+    Mutation record (disposable copy under `$HOME` built from git's own file
+    list `git ls-files -z --cached --others --exclude-standard`,
+    `PYTHONDONTWRITEBYTECODE=1`, `.venv/bin/python -B`, Python 3.11.16;
+    unmutated control green before and after, byte-identical after revert):
+
+    1. **The trailing filter restored** -- the surviving bound re-widened to
+       `min(own_dates) <= value <= max(own_dates)`, the pre-fix clause. The
+       mutation applied (shown in the run diff). One failure of four, this
+       class's
+       `test_a_peer_that_stops_printing_while_its_anchor_continues_counts_the_trailing_dates_missing`,
+       with `AssertionError: Lists differ: ['2026-01-01', '2026-01-08',
+       '2026-01-15'] != ['2026-01-01', '2026-01-08', '2026-01-15',
+       '2026-01-22', '2026-01-29']`. The leading-bound, event-frequency and
+       mid-gap guards pass unchanged on the mutant: they hold other edges of
+       the same clause, and this is the one test that moves with it. Reverted;
+       control green after.
+    """
+
+    SHA = "b" * 64
+
+    def observation(self, series, ref_date):
+        return PointInTimeObservation(
+            series_id=series,
+            ref_date=ref_date,
+            available_at=datetime(2026, 2, 2, 12, 0, tzinfo=timezone.utc),
+            value=1.0,
+            vintage_id="v1",
+            source_sha=self.SHA,
+        )
+
+    def weekly_registry(self):
+        return {
+            "source": {
+                "fields": ["anchor_w", "peer_w"],
+                "field_frequencies": {"anchor_w": "weekly", "peer_w": "weekly"},
+            }
+        }
+
+    def test_a_peer_that_stops_printing_while_its_anchor_continues_counts_the_trailing_dates_missing(
+        self,
+    ):
+        anchor_dates = [
+            date(2026, 1, 1),
+            date(2026, 1, 8),
+            date(2026, 1, 15),
+            date(2026, 1, 22),
+            date(2026, 1, 29),
+        ]
+        peer_dates = anchor_dates[:3]
+        rows = [self.observation("anchor_w", d) for d in anchor_dates]
+        rows += [self.observation("peer_w", d) for d in peer_dates]
+
+        expected = expected_ref_dates_from_registry(rows, self.weekly_registry())
+        report = audit_point_in_time_panel(rows, expected_ref_dates=expected)
+
+        self.assertEqual(
+            [d.isoformat() for d in expected["peer_w"]],
+            ["2026-01-01", "2026-01-08", "2026-01-15", "2026-01-22", "2026-01-29"],
+        )
+        self.assertEqual(report.series["peer_w"].missing_reference_dates, 2)
+        self.assertAlmostEqual(report.series["peer_w"].missing_rate, 0.4)
+
+    def test_a_peer_starting_later_than_its_anchor_is_not_penalised_for_the_anchors_earlier_dates(
+        self,
+    ):
+        anchor_dates = [date(2026, 1, 1), date(2026, 1, 8), date(2026, 1, 15)]
+        late_peer_dates = anchor_dates[1:]
+        rows = [self.observation("anchor_w", d) for d in anchor_dates]
+        rows += [self.observation("peer_w", d) for d in late_peer_dates]
+
+        expected = expected_ref_dates_from_registry(rows, self.weekly_registry())
+        report = audit_point_in_time_panel(rows, expected_ref_dates=expected)
+
+        self.assertEqual(
+            [d.isoformat() for d in expected["peer_w"]], ["2026-01-08", "2026-01-15"]
+        )
+        self.assertEqual(report.series["peer_w"].missing_reference_dates, 0)
+        self.assertEqual(report.series["peer_w"].missing_rate, 0.0)
+
+    def test_an_event_frequency_peer_grid_is_its_own_observed_dates(self):
+        rows = [
+            self.observation("event_a", date(2026, 1, 1)),
+            self.observation("event_a", date(2026, 1, 8)),
+            self.observation("event_a", date(2026, 1, 15)),
+            self.observation("event_a", date(2026, 1, 22)),
+            self.observation("event_b", date(2026, 1, 5)),
+            self.observation("event_b", date(2026, 1, 20)),
+        ]
+        registry = {
+            "source": {
+                "fields": ["event_a", "event_b"],
+                "field_frequencies": {"event_a": "event", "event_b": "event"},
+            }
+        }
+
+        expected = expected_ref_dates_from_registry(rows, registry)
+        report = audit_point_in_time_panel(rows, expected_ref_dates=expected)
+
+        self.assertEqual(
+            [d.isoformat() for d in expected["event_a"]],
+            ["2026-01-01", "2026-01-08", "2026-01-15", "2026-01-22"],
+        )
+        self.assertEqual(
+            [d.isoformat() for d in expected["event_b"]], ["2026-01-05", "2026-01-20"]
+        )
+        self.assertEqual(report.series["event_b"].missing_reference_dates, 0)
+
+
 class StressLabelTests(unittest.TestCase):
     def test_fixed_bp_labels_use_strict_exceedance(self):
         declaration = {"primary_rule": "fixed_bp", "taus_bp": [5, 10, 20, 50]}
