@@ -51,8 +51,7 @@ state below comes with the command that checks it, and the command's output wins
 1. [`01`](directives/01-as-of-information-set.md): implement the as-of information set.
 2. `02`, streamline the front door: done in PR #24.
 3. [`03`](directives/03-rescore-publish.md): re-score and publish, after 01 merges.
-4. [`04`](directives/04-retire-legacy-gates.md): retire the legacy ownership gates. CI side in PR #30; the `.claude/` hook
-   awaits Eleonora.
+4. [`04`](directives/04-retire-legacy-gates.md): retire the legacy ownership gates: done in PR #30.
 5. [`05`](directives/05-review-ci-and-tests.md): review CI and the test suite, after 04.
 6. The rest of [`plan.md`](plan.md) §7, each drafted as a directive when its turn comes.
 

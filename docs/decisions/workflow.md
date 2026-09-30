@@ -63,6 +63,4 @@ that step's line in the same pull request, so the plan never lags the tree.
 
 ## Legacy gates
 
-The ownership gate (`.github/check_ownership.py`) and its CI job are retired, by directive 04. The Claude Code hook
-that imported the gate is still tracked under `.claude/` until Eleonora removes it; with the gate gone it allows every
-edit. Neither constrains this workflow.
+The ownership gate, its CI job and its Claude Code hook are retired, by directive 04.
