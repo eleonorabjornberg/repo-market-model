@@ -1,111 +1,67 @@
 # repo-market-model — standing rules
 
-Read this first, then `AGENT_CONTRACT.md`. **This file summarises; the tracked decision
-documents decide.** Where this disagrees with `AGENT_CONTRACT.md`, `PLAN.md`,
-`docs/DATA_QUALITY_DECISIONS.md` or `REPRODUCIBILITY.md`, they win and this file is the
-bug.
+Read this first. **This file summarises; the tracked decision documents decide.** Where it
+disagrees with `docs/decisions/`, `AGENT_CONTRACT.md`, `PLAN.md`,
+`docs/DATA_QUALITY_DECISIONS.md` or `REPRODUCIBILITY.md`, they win and this file is the bug.
 
-## Which checkout am I in?
+## How work happens
 
-Your branch says. Run it before anything else:
+`docs/decisions/workflow.md` decides this, and replaces the two-track workflow.
 
-```
-git rev-parse --abbrev-ref HEAD
-```
+- **One session, one branch, one pull request.** Branch from `origin/main` and give it a
+  name that says what it does, never `feature/data-layer` or `feature/model-eval`. Push only
+  your own branch, as `git push origin HEAD`, and open a PR. **Never push to `main`.**
+- **`main` is the only integration point.** A PR merges when CI (`tests.yml`) is green and
+  Eleonora has reviewed it. There are no tracks, no round closes, no lanes and no queues.
+- **The PR description is the record of the work.** It carries what changed, the base SHA,
+  the panel digest if a panel was built, the result tables, what was checked, and what was
+  *not* checked.
+- **Judgement calls are hers.** Anything that changes what the project claims or how it
+  decides — a new rule, a threshold, a data meaning, a published figure — goes to an issue
+  labelled `needs-eleonora`, or to a clearly marked question in the PR. Do not settle it in
+  code.
+- **`docs/decisions/` records her decisions.** A PR may *draft* a decision record for her to
+  review, and must say so in its description. A decision is in force only once she has merged
+  it.
+- **Publishing a record** follows `docs/decisions/publish-rule.md`. A publish is a PR that adds
+  the records and regenerates the pages rendered from them (`python scripts/emit_results.py`)
+  in the same commit. Those generated blocks are never hand-edited.
 
-| Branch | Where | Who you are |
-|---|---|---|
-| `main` | `repo-market-model` | the **integration checkout** — no track work happens here |
-| `feature/data-layer` | `../rmm-data` | **Track A**, the data layer |
-| `feature/model-eval` | `../rmm-model` | **Track B**, model and evaluation |
+## The science rules
 
-**If you are on `main` and you were asked to do track work, you are in the wrong folder.
-Say so and stop.** Do not switch branches and do not create a worktree to get around it.
-What legitimately happens on `main`: reading history, inspecting both branches, running the
-suite, and human-authored edits to the documents and files reserved for the human.
+- **Information set:** `docs/decisions/information-set.md`. A forecast uses exactly what was
+  public at its decision instant, read per field. Leakage guards and staleness guards both
+  have to hold.
+- **Benchmarks.** A headline claim is stated against as-of persistence (for a distribution)
+  or climatology and a persistence-logistic model (for a pressure probability). It is paired,
+  carries a bootstrap interval, and is split by regime and by pressure-day type. A pooled
+  figure alone is not a result.
+- **Never edit a published record in place.** `docs/runs/` holds runs that happened. Re-score
+  and publish anew, or archive with a note saying why.
+- **Point-in-time data rules are unchanged**: `AGENT_CONTRACT.md` (panel schema, the as-of rule,
+  the forecast and splitter interfaces) and `docs/DATA_QUALITY_DECISIONS.md`.
+- Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
+- **Dependencies:** `src/` is stdlib-only, except `src/repo_model/ml.py` and `tests/test_ml.py`,
+  which may use the `ml` extra (numpy, scikit-learn). `tests/test_dependency_boundary.py`
+  enforces this. Notebooks may use pandas and matplotlib. A new package in `src/` is her
+  decision.
+- **Python:** whatever `pyproject.toml` declares. Changing that ceiling is a decision about
+  exact versus tolerant reproduction, not a side effect of a PR.
 
-## Step 0 — ownership, before you read the rest of a brief
+## Tests
 
-List every file the block will create or modify and check each one against
-`.github/check_ownership.py`, **using the gate's own `matches()`, not by eye.** Run the gate
-as `python3 .github/check_ownership.py origin/main feature/<your-branch>`: a ref not named like
-a track branch (`HEAD`) is skipped, and the skip exits 0. If any is
-`HUMAN_ONLY`, or is in your track's forbidden list, **stop and report before writing
-anything.**
-
-Do not relocate the acceptance criterion into a module you do own. That is a different
-criterion, and it hides the defect instead of surfacing it. `AGENT_CONTRACT.md`: an agent
-that believes the contract is wrong stops and says so; it does not edit around it.
-
-This step exists because a block was once queued to a track whose three files were all
-human-owned, and **every stated precondition passed** — branch, merge base, greps, a green
-suite. All of them described the state of the tree and none asked who was allowed to change
-it. A `PreToolUse` hook now refuses such an edit before it happens
-(`.claude/hooks/ownership_guard.py`), but the hook cannot see a write performed through
-`Bash`, so this step is still yours.
-
-## The block protocol
-
-One block, then stop and report. Never two.
-
-1. Run the block's **preconditions** first, exactly as written. If any disagrees with its
-   stated expectation, **stop and report which one.** Do not adapt the block to the
-   repository you found.
-2. `grep -c` **exits 1 when it counts none.** An `expect 0` line printing `0` is the
-   precondition *passing*, not a failing command. Only the printed number decides.
-3. Each brief greps for a class the previous block was required to create. That is "the
-   block before this one landed", made mechanical. A `0` there is worth more than starting.
-4. **One acceptance criterion per block, named by module path and test name, and it is also
-   the mutation target.** If implementing block *n* appears to require a change block *n+1*
-   owns, that is a stop-and-report, not a judgement call.
-5. Read only the block you were given. Reading ahead is how two criteria end up in one
-   block.
-6. **A brief that asks you to fix a defect carries a command that shows the defect on the
-   current tree.** Run it with the preconditions. If it shows nothing, the defect is not
-   there: stop and report, and do not go looking for a version of it that is.
-7. **A negative result is a finding.** "The defect is not there", "the data is complete",
-   "the premise is false" -- whatever closes a question goes into a tracked document or a
-   tracked test docstring in the commit that closes it. A gitignored memo is where a
-   finding goes to be re-derived by the next block.
-
-## Mutations are the evidence, and they are not optional
-
-Every new guard gets a recorded mutation.
-
-- Run it in a **disposable copy under `$HOME`**, never in the mount.
-- Make the copy from **git's own file list**, not from a list of directories:
-
-  ```
-  BR="$(git rev-parse --abbrev-ref HEAD | tr / -)"; rm -rf "$HOME/mutation-copy-$BR"-*
-  COPY="$HOME/mutation-copy-$BR-$(git rev-parse --short HEAD)"; mkdir -p "$COPY"
-  git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - | tar -xf - -C "$COPY"
-  ```
-
-  The path is per branch and per commit because both tracks run mutations at once: a
-  shared `$HOME/mutation-copy` was rebuilt by one track in the middle of the other's run,
-  and scored a mutation against the wrong branch. The branch is the part that isolates —
-  after a round's fast-forward both tracks sit on the same commit — and the first line
-  clears only your own track's stale copies.
-
-  That is every tracked file as your working tree has it, plus your new untracked files,
-  and nothing gitignored -- no `.venv/`, no frozen panel. A hand-kept list of directories
-  here was short twice: first `.claude/` (seven errors in an otherwise green control),
-  then `notebooks/`, `examples/` and `pyproject.toml`. Every omission was a red control
-  that looked like a finding and was a missing path, and both tracks reported and worked
-  around each one. The copy is not a git work tree; guards that ask git skip or fall back
-  there, which is why the copy has to be right by construction.
-- `PYTHONDONTWRITEBYTECODE=1` and `python3 -B`. **Unmutated control green before and
-  after.**
-- Record the **exception type**, not just that something went red. A mutation that kills
-  seven tests may be one incidental `ValueError` seven times.
-- **The acceptance test and the mutation target must be the same test.** If they come
-  apart, that is a finding to report, not a second test to add.
-- If you change a fixture that an existing mutation record names, **re-run that mutation.**
-  One had gone quiet under a new rule and the suite stayed green over a blunted guard.
-
-The record goes in the **tracked test-module or class docstring** — not in a `RECORD.md`,
-and not in a `docs/block-*/` folder, which is gitignored and would leave the record in one
-checkout that no later session can read.
+- **Write the test first and watch it fail.** A new leakage, availability or staleness guard
+  also gets one recorded mutation that kills it: the mutated line, and the exception type the
+  failing test raised. The record goes in the test's docstring. Other code needs no mutation
+  ritual; CI and review cover it.
+- **Run the full suite in one process before you ask for review.** If it outlasts your shell's
+  time limit, run it in the background and wait for it. Do not split it: some classes pass only
+  when another class is loaded in the same run.
+- **Zero `expectedFailure` is load-bearing.** Skip counts vary by environment and mean nothing.
+- **Never put a count in an acceptance criterion or a published page.**
+  `tests/test_docs_freshness.py` also refuses a hand-written future date, a `repo_model.cli`
+  command that no longer parses, and a Python version other than the declared one. Run it
+  after any edit to Markdown.
 
 ## Commands
 
@@ -115,75 +71,15 @@ PYTHONPATH=src:tests python3 -m unittest test_module.ClassName
 PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 ```
 
-- **A class-targeted run needs `tests/` on the path and the bare module name.**
-  `-m unittest tests.test_module.ClassName` cannot import `test_baseline`,
-  `test_data`, `test_event_eval` or `test_ml`: each does a module-level
-  `from test_contract import ...`, which resolves only with `tests/` on
-  `sys.path` -- what `discover -s tests` arranges and what the dotted form does
-  not. The dotted form fails with an import error that reads like a red control.
-
-- **Run the full suite in ONE process, in a copy under `$HOME` -- not in the worktree.**
-  A whole-suite run now exceeds the time limit an agent's shell tool allows, so in the
-  worktree it is killed or moved to the background and the run you report is not the run
-  that happened. Build the copy from the exact tree you are committing and run `discover`
-  there once:
-
-  ```
-  W="$HOME/suite-copy"; rm -rf "$W"; mkdir -p "$W"
-  git ls-files -z | xargs -0 tar -c | tar -x -C "$W"
-  cd "$W" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -B -m unittest discover -s tests
-  ```
-
-  Check that nothing differs between the copy and your tree but gitignored noise, and say
-  in your report that you did.
-
-- **Splitting the suite into groups is not a substitute for that**, and it manufactures
-  failures. Some classes pass only when another is loaded in the same run --
-  `ExceedancePredictorCoverageTests`'s conformance suite needs `test_ml.GbmExceedanceTests`
-  beside it -- so a split produces a red that the split caused, and the block then spends
-  its report explaining a failure that is not there. If the run will not fit anywhere,
-  **say so** rather than splitting it.
-
-- **Zero `expectedFailure` is load-bearing.** Skip counts vary by checkout and mean
-  nothing. **Never put a count of any kind in an acceptance criterion**, or in a published
-  document — `tests/test_docs_freshness.py` refuses it.
-- Any edit to published Markdown must run `tests/test_docs_freshness.py`. It also refuses a
-  hand-written future date, a `repo_model.cli` command that no longer parses, and a stated
-  Python version other than the one `pyproject.toml` declares.
+- A class-targeted run needs `tests/` on the path and the bare module name. The dotted form
+  (`tests.test_module.ClassName`) fails on the modules that import from `test_contract`.
+- The published panel builds from the tracked fixtures in seconds, with no network. The exact
+  build and verify commands are in `REPRODUCIBILITY.md`.
 - `build --source` takes the snapshot **directory** name, not the registry id.
-
-## Working rules
-
-- **Stdlib only, except `src/repo_model/ml.py` and `tests/test_ml.py`**, which may use the
-  optional `ml` extra (numpy, scikit-learn) -- `AGENT_CONTRACT.md`, working rules, and
-  `tests/test_dependency_boundary.py`. A new package is the human's decision. Where a
-  worktree has a `.venv/`, run the suite with `.venv/bin/python` in place of `python3`.
-- **Python 3.9, 3.10 or 3.11**, which is what
-  `pyproject.toml` declares -- `requires-python = ">=3.9,<3.12"`. Measured 10 Sep: 3.9.23,
-  3.10 and 3.11.15 run the whole suite green; 3.12 and 3.13 fail the exact Milestone A
-  reproduction, because 3.12's `sum()` rounds floats differently. That ceiling is a
-  decision about exact versus tolerant reproduction, and not something to change inside
-  a block.
-- Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
-- **The frozen funding panel is gitignored and is not in your worktree.** No block may
-  depend on reading it. Fixtures only.
-- **Do not move a published figure.** `docs/runs/` holds records of runs that happened. If
-  a change would alter what a re-run produces, that is a report, not a rewrite of the
-  record.
-- **Your base, at session start and only then:** `git fetch origin`, then
-  `git merge --ff-only origin/main`, before you edit anything. It either fast-forwards or
-  refuses. A refusal means your branch holds commits `main` does not -- **stop and report
-  it; do not merge, rebase or repair.** No other merge, ever, and never a rebase. The
-  fast-forward carries CI's `docs/status.json` commits with it, which is why the base is
-  yours to take rather than the human's to prepare: a human fast-forward was stale the
-  moment CI committed behind it.
-- **Push your own branch only**, as `git push origin HEAD`. Never `main`. If the push is
-  refused, the commit stands; say so and hand the human the command.
-- You have no network route to the NY Fed, FRED or ALFRED. Fetches are the human's.
+- Fetching needs network access to the NY Fed, FRED, ALFRED or Treasury. FRED serves the
+  latest revised vintage, so a re-fetch does not reproduce an old snapshot's bytes.
 
 ## This file, and `.claude/`
 
-Both are `HUMAN_ONLY`. An agent that can edit its own standing rules, or the hook that
-enforces the contract, can edit around the contract — which is the one thing
-`AGENT_CONTRACT.md` forbids outright. If a rule here is wrong, **say so in your report.**
-That is a human edit, not an exception you grant yourself.
+Both are Eleonora's. A PR may propose changes to them, and must say so in its description.
+Nothing here is changed without her review.

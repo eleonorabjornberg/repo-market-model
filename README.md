@@ -8,6 +8,12 @@
 **An auditable research pipeline for estimating funding pressure in the U.S. Treasury
 repurchase-agreement market.**
 
+> **Status: results under re-measurement.** Every figure below was scored with each input read 4–5 business
+> days before the day being forecast. That is a conservative purge applied as the information set, and it handicaps
+> the persistence benchmark in the same way. The project has adopted an as-of information rule
+> ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)) and is re-scoring under it. Until then,
+> read the figures as measurements of that stale design. See [`docs/pivot/`](docs/pivot) for the finding and the plan.
+
 **In one sentence.** A gradient-boosted model forecasts the next day's repo funding
 spread as a distribution rather than a point, beats the "tomorrow looks like today"
 benchmark on average error across eight years of out-of-sample days, and has **no skill
