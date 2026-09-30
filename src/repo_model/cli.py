@@ -1,30 +1,15 @@
-"""Command-line entry point. Owned by the human, and by neither track.
+"""Command-line entry point.
 
 This file is a dispatcher and nothing else. It names no subcommand, imports no
-handler, and carries no track's vocabulary. Every command is contributed by a
-track-owned registration module:
+handler, and carries no command logic. Every command is contributed by a
+registration module:
 
-    src/repo_model/cli_data.py   Track A (data layer)
-    src/repo_model/cli_eval.py   Track B (model and evaluation)
+    src/repo_model/cli_data.py   the data layer's commands
+    src/repo_model/cli_eval.py   the model and evaluation commands
 
-### Why this file is split
-
-It previously belonged to nobody. It was in no track's `forbidden` list and not
-in `SHARED`, so the ownership gate neither blocked an edit to it nor surfaced
-one for review: both tracks could add a subcommand and nothing would say so
-until the merge. That is the same hole as a field named in prose without a key
-name -- the failure this project has now paid for four times.
-
-Assigning the whole file to one track would only move the hole. `audit` and
-`fetch` stand on the data layer; `backtest` stands on the benchmark side; and
-the two subcommands next in line -- Track A's download adapters and Track B's
-event holdout -- belong to different tracks. So the file is split at the seam
-instead, which is what this project does with every shared shape: name it, make
-it executable, and put it out of both tracks' reach.
-
-The property that closes the hole: **adding a subcommand is a change to exactly
-one track-owned module and requires no edit here.** `tests/test_contract.py`
-asserts it, by checking that this file calls `add_parser` nowhere.
+The property: **adding a subcommand is a change to exactly one registration
+module and requires no edit here.** `tests/test_contract.py` asserts it, by
+checking that this file calls `add_parser` nowhere.
 
 Stdlib only, by contract.
 """

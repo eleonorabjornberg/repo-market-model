@@ -1,11 +1,8 @@
 """Track A's command-line surface: the data layer's subcommands.
 
-Owned by **Track A (data layer)**. The ownership gate fails a
-`feature/model-eval` branch that touches this file.
-
 `src/repo_model/cli.py` is a dispatcher that names no command. To add one, add
 it here: build the subparser and call `set_defaults(handler=...)` on it. Nothing
-outside this file changes -- not the dispatcher, not the contract, not the gate.
+outside this file changes -- not the dispatcher, not the contract.
 A handler takes the parsed namespace and returns an exit code; it may raise
 `OSError` or any `ValueError` subclass (`DataContractError` is one) and the
 dispatcher will print it and exit 2.
