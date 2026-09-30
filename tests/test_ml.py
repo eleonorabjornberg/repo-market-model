@@ -203,6 +203,7 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import functools
 import importlib.util
 import io
 import json
@@ -370,6 +371,34 @@ def crossing_frame(count=48, seed=20260911):
 #: vector is the same on every row, and nothing about a *conditional* quantile
 #: model would be under test. Not a tuned value -- tuning is not this block's.
 FIXTURE_MIN_SAMPLES_LEAF = 3
+
+#: Boosting iterations per level fit in the fold-loop tests that call
+#: `fewer_boosting_iterations`. scikit-learn's default is 100.
+FIXTURE_MAX_ITER = 10
+
+
+def fewer_boosting_iterations(case: unittest.TestCase, max_iter=FIXTURE_MAX_ITER):
+    """Fit every level with `max_iter` boosting iterations for the rest of `case`.
+
+    For the classes that refit a gradient-boosted model at every fold of a
+    rolling loop and assert what the loop *did* with each fit: which rows it
+    read, which fit a record's fold came from, how a calibration was ranked,
+    what state a tail was in. None of those depends on how far the boosting
+    ran, and each fit's cost does, almost linearly at fixture size, where the
+    per-iteration overhead dominates the rows. Before this, those classes were
+    most of the ML job's wall time (#29).
+
+    Patched at `ml._estimator_class`, the seam every fit goes through, with
+    the real class and every other argument unchanged. Every fit a test in
+    `case` makes, including a refit it compares against, uses the same
+    estimator. A test whose property depends on the fit converging does not
+    call this.
+    """
+
+    estimator = functools.partial(ml._estimator_class(), max_iter=max_iter)
+    patcher = mock.patch.object(ml, "_estimator_class", return_value=estimator)
+    patcher.start()
+    case.addCleanup(patcher.stop)
 
 
 class GradientBoostedQuantileTests(unittest.TestCase):
@@ -2044,7 +2073,9 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
     PURGE = 6
     #: The fold loop's panel and minimum: every fold's frame is over a hundred
     #: rows, so its excluding models' trees split. See the class docstring.
-    PANEL_ROWS = 130
+    #: Three folds: each is asserted on its own, and a fourth adds fits, not
+    #: another kind of fold (#29).
+    PANEL_ROWS = 124
     MINIMUM_HISTORY = 120
     #: The block the behavioural probe moves rows around: a middle one, with a
     #: purge gap on both sides.
@@ -2167,6 +2198,13 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                 [fitted[1:-1] for fitted in plain],
                 msg="the control: block 1's excluding model reports the full fit's interior",
             )
+
+        # From here on no assertion depends on how far the boosting ran: which
+        # rows each excluding model trained on, which model scored each row,
+        # and whether a moved row moves a model. The coverage subtest above
+        # does -- its control needs an uncalibrated band that undercovers --
+        # so its fits keep the estimator's default.
+        fewer_boosting_iterations(self)
 
         with self.subTest("every excluding model trains outside its block and its purge gaps"):
             panel = heteroscedastic_frame(self.PANEL_ROWS)
@@ -2493,6 +2531,7 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
 
     def setUp(self):
         require_extra(self)
+        fewer_boosting_iterations(self)
 
     def fit(self, frame, **overrides):
         options = {
@@ -3733,6 +3772,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
 
     def setUp(self):
         require_extra(self)
+        fewer_boosting_iterations(self)
         with tempfile.TemporaryDirectory() as directory:
             self.registry = json.loads(
                 declared_registry_file(
@@ -5726,6 +5766,7 @@ class TailAccountTests(unittest.TestCase):
 
     def setUp(self):
         require_extra(self)
+        fewer_boosting_iterations(self)
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.registry_path = declared_registry_file(
@@ -6358,6 +6399,7 @@ class ExceedanceTailAccountTests(unittest.TestCase):
 
     def setUp(self):
         require_extra(self)
+        fewer_boosting_iterations(self)
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.registry_path = declared_registry_file(

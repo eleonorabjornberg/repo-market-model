@@ -303,6 +303,8 @@ class KnotRefitTests(unittest.TestCase):
         self.case = test_ml.ExceedanceTailAccountTests(
             "test_an_exceedance_run_with_a_tail_records_what_its_tail_was_at_every_fold"
         )
+        # The case's setUp caps boosting iterations too, and its cleanups lift
+        # the cap: the scored run and its refit use the same estimator.
         self.case.setUp()
         self.addCleanup(self.case.doCleanups)
 
