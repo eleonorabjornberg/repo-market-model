@@ -1,5 +1,11 @@
 # Agent contract
 
+> **Status:** the two-track workflow this contract was written for is retired, see
+> [`docs/decisions/workflow.md`](docs/decisions/workflow.md). "Tracks and ownership" and every
+> "Ownership" subsection below are historical. The panel schema, the as-of rule, the interfaces and
+> the data decisions still apply. "The purge stays a scalar" is superseded wherever the purge chooses
+> what a forecast reads: see [`docs/decisions/information-set.md`](docs/decisions/information-set.md).
+
 Single source of truth for both coding agents. `CLAUDE.md` and `AGENTS.md`
 each point here. Do not duplicate rules into those files — they drift.
 

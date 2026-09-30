@@ -1,5 +1,9 @@
 # Implementation plan
 
+> **Status:** re-based. This page's phases and horizons predate the as-of information rule
+> ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)). The current sequence is
+> [`docs/pivot/plan.md`](docs/pivot/plan.md), and this page is revised once the re-score lands.
+
 ## Objective and scope
 
 Build a reproducible model of U.S. Treasury repo-market pressure that starts with
