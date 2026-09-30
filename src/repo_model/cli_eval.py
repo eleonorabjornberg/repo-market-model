@@ -934,21 +934,13 @@ def _derived_sources(args: argparse.Namespace) -> tuple[str, ...]:
 
 
 def _backtest(args: argparse.Namespace) -> int:
-    """Run the purged rolling-origin benchmark and report what sized the gap.
+    """Run the as-of rolling benchmark and report what it read.
 
-    **There is no `--purge` here either.** The event path has not had one since
-    it was written, and the two paths now mean the same thing by a gap and take
-    the number from the same place -- which was already written down in
-    `_event_holdout` and is only now true. A hand-set gap on this path would be
-    reached for at exactly the moment it must not be: the purge drops training
-    rows, a short panel then has fewer origins, and the flag would be right
-    there.
-
-    **And there is no `--source`.** The gap is derived from the sources, and the
-    sources are derived from the declared feature set. A caller who could name
-    the sources by hand could name a set that did not cover what the model
-    reads; the purge would then be computed correctly over the wrong evidence,
-    and nothing downstream could tell. `--feature` is the one declaration, and
+    **There is no `--purge`, and no `--source`.** What each forecast reads is
+    the as-of rule's (`repo_model.asof`), over the fields of the declared
+    feature set. A caller who could name the sources by hand could name a set
+    that did not cover what the model reads, and nothing downstream could
+    tell. `--refit-every` sets the refit cadence, and the record declares it. `--feature` is the one declaration, and
     everything else follows from it.
 
     **There is a `--model`, and it is required.** This command used to call
@@ -963,13 +955,10 @@ def _backtest(args: argparse.Namespace) -> int:
     come out of `--feature` rather than beside it, so what the fitter is handed
     and what the run declared are the same set by construction.
 
-    `features`, `sources`, `fields` and `purge_days` are reported beside the
-    metrics for the reason `model_config` carries them on the event path: a
-    benchmark whose gap came from somewhere an auditor cannot follow is not a
-    benchmark. All four are read off the report rather than recomputed here, so
-    what is printed is what shaped the run. `fields` is the one the gap is
-    actually sized over since the field-priced-purge block, and `sources` is
-    the projection of it: on `fred_macro_latest_vintage` the source name alone
+    `features`, `sources`, `fields` and `refit_every` are reported beside the
+    metrics, read off the report rather than recomputed here, so what is
+    printed is what shaped the run. `fields` is what the rule reads, and
+    `sources` is the projection of it: on `fred_macro_latest_vintage` the source name alone
     cannot say whether the number came from a field that prices or a field
     that would have been refused.
 
@@ -1010,6 +999,7 @@ def _backtest(args: argparse.Namespace) -> int:
         decision_time=time.fromisoformat(args.decision_time),
         minimum_history=args.minimum_history,
         fit_model=fit_model,
+        refit_every=args.refit_every,
     )
 
     # `--registry` is passed to the record as well as to the run: the record
@@ -1042,7 +1032,7 @@ def _backtest(args: argparse.Namespace) -> int:
                 "mae_bps": round(report.mae_bps, 4),
                 "interval_coverage": round(report.interval_coverage, 4),
                 "features": sorted(report.features),
-                "purge_days": report.purge_days,
+                "refit_every": report.refit_every,
                 "sources": sorted(report.sources),
                 # The pairs the gap was actually sized over, in the same
                 # `source.field` form and from the same report field the
@@ -1197,6 +1187,7 @@ def _compare(args: argparse.Namespace) -> int:
         seed=seed,
         minimum_history=args.minimum_history,
         loss=args.loss,
+        refit_every=args.refit_every,
     )
 
     document = paired_comparison_document(
@@ -1236,7 +1227,7 @@ def _compare(args: argparse.Namespace) -> int:
                 "difference_interval_bps": [round(lower, 4), round(upper, 4)],
                 "interval_level": comparison.level,
                 "block_length": comparison.block_length,
-                "purge_days": comparison.purge_days,
+                "refit_every": comparison.refit_every,
                 "minimum_history": args.minimum_history,
                 "report": str(args.report),
             },
@@ -1260,18 +1251,14 @@ def _event_holdout(args: argparse.Namespace) -> int:
     * **The tau family** comes from `data.load_stress_thresholds`, whose path is
       `--thresholds`. `AGENT_CONTRACT.md` declares `{5, 10, 20, 50}` bp and
       Track A's file carries it; this module contains no tau.
-    * **The purge gap** comes from `registry.max_release_lag_days` over the
-      `(source, field)` pairs `contract.field_sources_for_features` derives
-      from `--feature`, exactly as the rolling path sizes it -- literally the
-      same `baseline._derive_purge` call. The two evaluation paths mean the same thing
-      by a gap and take the number from the same place, by the same derivation
-      -- and, since this block, in the same place: `evaluate_event_window`
-      derives it, and this command passes the declaration rather than the gap.
+    * **What each forecast may read** comes from the as-of rule
+      (`repo_model.asof`) over the `(source, field)` pairs
+      `contract.field_sources_for_features` derives from `--feature`, exactly
+      as on the rolling paths: `evaluate_event_window` builds the rule, and
+      this command passes the declaration.
 
-    **There is no `--purge`.** A flag that set it by hand would be a way to
-    shrink the gap at the one moment shrinking it is tempting -- when the
-    training set that cleared it turned out to be too short -- and the row it
-    would admit is a row published after the window opened.
+    **There is no `--purge`.** There is no purge: the training set is every
+    label observable before the window opens, by the registry's declarations.
 
     **And no `--source`.** The gap is a function of which sources the features
     come from, and which sources the features come from is a function of the
@@ -1324,11 +1311,9 @@ def _event_holdout(args: argparse.Namespace) -> int:
             )
         windows = tuple(declared[name] for name in args.window)
 
-    # The gap is no longer computed here. `evaluate_event_window` derives it
-    # from the declared feature set -- over `(source, field)` pairs, through
-    # `baseline._derive_purge`, which the rolling path calls too -- so the
-    # number in `model_config` and the number the run was purged at cannot be
-    # two numbers. The sources are still derived here, and now *only* for the
+    # Nothing about the information set is computed here. `evaluate_event_window`
+    # builds the as-of rule from the declared feature set, as the rolling path
+    # does. The sources are still derived here, and now *only* for the
     # hash: `_derived_sources` stays on `contract.sources_for_features`
     # deliberately, because the hash identifies a scoring run and moving it
     # would make every existing journal record look like a different run for a
@@ -1397,7 +1382,7 @@ def _event_holdout(args: argparse.Namespace) -> int:
                 # not, because the journal carries the hash of `model_config`
                 # rather than `model_config` itself.
                 "model": model_name,
-                "purge_days": report.purge_days,
+                "information_rule": report.record.information_rule,
                 # The declaration and what it resolved to, beside the gap they
                 # produced. The journal carries them inside the hashed
                 # `model_config`; a reader of stdout should not have to open the
@@ -1524,6 +1509,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         decision_time=time.fromisoformat(args.decision_time),
         taus=taus,
         minimum_history=args.minimum_history,
+        refit_every=args.refit_every,
     )
 
     # Both declaration files the run opened, identified in the record by the
@@ -1560,7 +1546,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                     for metric in report.metrics
                 },
                 "features": sorted(report.features),
-                "purge_days": report.purge_days,
+                "refit_every": report.refit_every,
                 "sources": sorted(report.sources),
                 "fields": [
                     f"{source}.{field}" for source, field in sorted(report.field_sources)
@@ -1591,12 +1577,32 @@ def _add_calibration_argument(parser: argparse.ArgumentParser, *, help: str) -> 
     parser.add_argument("--calibration", metavar="NAME", default=None, help=help)
 
 
+def _add_refit_every(parser: argparse.ArgumentParser) -> None:
+    """`--refit-every N`: scored rows per fit, recorded in the declaration.
+
+    Defaults to 1, a refit at every scored row, which is what every command
+    here did before the cadence was a setting. The re-scored records declare
+    21 (`docs/decisions/information-set.md`, "Decided with it").
+    """
+
+    parser.add_argument(
+        "--refit-every",
+        type=int,
+        default=1,
+        metavar="N",
+        help="refit the model every N scored rows, at the decision instant of "
+        "the first row of each block (default 1: every row); recorded in the "
+        "record's declaration",
+    )
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
     backtest = subparsers.add_parser(
-        "backtest", help="run the purged rolling-origin benchmark"
+        "backtest", help="run the as-of rolling benchmark"
     )
+    _add_refit_every(backtest)
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
     backtest.add_argument("--registry", type=Path, required=True)
@@ -1606,7 +1612,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         required=True,
         metavar="COLUMN",
         help="a panel column the model reads, repeatable; these derive the "
-        "sources, which size the purge gap",
+        "fields the as-of rule reads and guards",
     )
     backtest.add_argument("--decision-time", required=True, metavar="HH:MM")
     backtest.add_argument(
@@ -1728,6 +1734,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="score two continuous models at the same origins and interval "
         "the paired difference",
     )
+    _add_refit_every(compare)
     compare.add_argument("path", type=Path)
     compare.add_argument("--minimum-history", type=int, default=20)
     compare.add_argument("--registry", type=Path, required=True)
@@ -1864,8 +1871,9 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
     exceedance = subparsers.add_parser(
         "exceedance-backtest",
-        help="score an exceedance predictor at every purged rolling origin",
+        help="score an exceedance predictor at every row of the as-of grid",
     )
+    _add_refit_every(exceedance)
     exceedance.add_argument("--panel", type=Path, required=True)
     exceedance.add_argument("--thresholds", type=Path, required=True)
     exceedance.add_argument("--registry", type=Path, required=True)
@@ -1875,7 +1883,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         required=True,
         metavar="COLUMN",
         help="a panel column the model reads, repeatable; these derive the "
-        "sources, which size the purge gap",
+        "fields the as-of rule reads and guards",
     )
     exceedance.add_argument("--decision-time", required=True, metavar="HH:MM")
     exceedance.add_argument(
@@ -2005,7 +2013,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         required=True,
         metavar="COLUMN",
         help="a panel column the model reads, repeatable; these derive the "
-        "sources, which size the purge gap",
+        "fields the as-of rule reads and guards",
     )
     holdout.add_argument("--decision-time", required=True, metavar="HH:MM")
     holdout.add_argument(

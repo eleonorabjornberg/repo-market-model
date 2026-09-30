@@ -379,7 +379,6 @@ from repo_model.baseline import (
     _check_decision_relative_availability,
     _declared_availability,
     _dot,
-    _feature_index,
     _least_squares,
     _leave_one_out_residuals,
     _quantile,
@@ -543,6 +542,29 @@ def declared_registry(purge, features=FEATURES):
         }
     return {
         source: {"release_lag": dict(release_lag)}
+        for source in sources_for_features(features)
+    }
+
+
+def record_date_registry(days, features):
+    """Every source the features read at `record_date` + `days`, at 00:00.
+
+    Under the as-of rule this reads row `T - days - 1` on a gapless calendar:
+    the day before the scored day is the decision day, and a row dated `d` is
+    observable from midnight on `d + days`. Zero is legal and reads the row
+    before the scored day.
+    """
+
+    return {
+        source: {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": days,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        }
         for source in sources_for_features(features)
     }
 
@@ -1856,192 +1878,151 @@ class PurgedBacktestTests(unittest.TestCase):
             ("arx", partial(fit_arx, regressors=REGRESSORS), partial(fit_arx, regressors=REGRESSORS)),
         )
 
-    def test_the_backtest_derives_its_purge_from_the_declared_feature_set(self):
-        """This block's spine, and the successor to the `purge=0` reproduction.
+    def longhand(self, rows, registry, features, fitter):
+        """The as-of forecast of every scored row, written out without `asof`.
 
-        The purge block checked that at `purge=0` nothing moved against a
-        hand-rolled unpurged walk. That check is no longer expressible: the gap
-        is derived now, and `max_release_lag_days` refuses to return zero, so
-        there is no declared feature set that reproduces an unpurged walk. The
-        equivalent claim at this level is that **deriving** the six-day gap
-        reproduces, exactly, every number the purge block reported when six was
-        typed at the call site.
+        For each row `T`: the decision instant is `DECISION_TIME` on
+        `dates[T - 1]`; the anchor is the latest row before `T` whose every
+        target field is observable by then under `_declared_availability`; the
+        model is fitted on the rows through the anchor and asked about the
+        anchor row. The grid starts at the first row whose anchor has
+        `MINIMUM_HISTORY` labels behind it. Every declared field in these
+        fixtures shares the target's lag, so no column is re-read or masked.
+        """
 
-        Exactly, not nearly: if the derivation changed the numbers, then it
-        changed something it was not asked to change, and this block's effect on
-        the benchmark could not be told apart from that change.
+        dates = [row.date for row in rows]
+        target = field_sources_for_features(("spread_bps",))
+        out = []
+        for scored in range(1, len(rows)):
+            deadline = datetime.combine(dates[scored - 1], DECISION_TIME)
+            anchor = max(
+                (
+                    p
+                    for p in range(scored)
+                    if all(
+                        _declared_availability(registry, s, f, dates, p) <= deadline
+                        for s, f in target
+                    )
+                ),
+                default=-1,
+            )
+            if anchor + 1 < self.MINIMUM_HISTORY:
+                if out:
+                    raise AssertionError("the grid has a hole")
+                continue
+            model = (fitter or fit)(
+                rows[: anchor + 1], minimum_history=self.MINIMUM_HISTORY
+            )
+            out.append((scored, anchor, model))
+        return out
 
-        The registry here declares six days for the sources `spread_bps`
-        resolves to, and declares no fields -- so this number is exactly as
-        blind to the field-priced-purge block as it was to the source-priced
-        one, which is what makes it the control. What the *real* registry does
-        with those fields is a separate fact, pinned by
-        `test_two_features_on_one_source_price_differently`.
+    def test_every_forecast_is_the_longhand_as_of_forecast(self):
+        """This class's spine: the backtest against the rule written out.
+
+        Both implementers, because the rule is a property of the backtest and
+        not of the model it is handed. Every scored row's forecast is compared
+        with a model refitted independently on the labels observable at its
+        decision instant and read at its anchor.
         """
 
         rows = self.sample()
-        derived = rolling_persistence_backtest(
-            rows,
-            features=FEATURES,
-            registry=declared_registry(self.PURGE, FEATURES),
-            decision_time=DECISION_TIME,
-            minimum_history=self.MINIMUM_HISTORY,
-        )
-
-        self.assertEqual(derived.purge_days, self.PURGE)
-        self.assertEqual(derived.features, FEATURES)
-
-        # The numbers the purge block reported at a typed `purge=6`.
-        self.assertEqual(len(derived.forecasts), 12)
-        self.assertAlmostEqual(derived.mae_bps, 25.0 / 12.0, places=12)
-        self.assertAlmostEqual(derived.interval_coverage, 6.0 / 12.0, places=12)
-
-    def test_the_purge_is_derived_for_whichever_model_it_is_given(self):
-        """Both implementers, not persistence alone.
-
-        The derivation is a property of the backtest, not of the model it was
-        handed, so an ARX declaring its own wider feature set must get its gap
-        the same way -- and the report must say so. A backtest that derived the
-        gap only on the default path would pass every persistence test here and
-        leave the ARX purged by whatever the last caller happened to pass.
-        """
-
-        rows = self.sample()
-        for name, features, fit_model in (
+        dates = [row.date for row in rows]
+        for name, features, fitter in (
             ("persistence", FEATURES, None),
             ("arx", ARX_FEATURES, partial(fit_arx, regressors=REGRESSORS)),
         ):
             with self.subTest(model=name):
+                registry = declared_registry(self.PURGE, features)
                 report = rolling_persistence_backtest(
                     rows,
                     features=features,
-                    registry=declared_registry(self.PURGE, features),
+                    registry=registry,
                     decision_time=DECISION_TIME,
                     minimum_history=self.MINIMUM_HISTORY,
-                    fit_model=fit_model,
+                    fit_model=fitter,
                 )
-                self.assertEqual(report.purge_days, self.PURGE)
+                expected = self.longhand(rows, registry, features, fitter)
+                self.assertEqual(report.refit_every, 1)
                 self.assertEqual(report.features, features)
-                self.assertEqual(
-                    report.sources, sources_for_features(features)
-                )
-                # The gap reached the folds, not just the report.
-                self.assertEqual(len(report.forecasts), 12)
+                self.assertEqual(report.sources, sources_for_features(features))
+                self.assertEqual(len(report.forecasts), len(expected))
+                for forecast, fold, (scored, anchor, model) in zip(
+                    report.forecasts, report.folds, expected
+                ):
+                    feature_row = rows[anchor]
+                    quantiles = model.predict(feature_row)
+                    self.assertEqual(fold.scored_date, dates[scored])
+                    self.assertEqual(fold.feature_date, dates[anchor])
+                    self.assertEqual(fold.train_end, dates[anchor])
+                    self.assertEqual(forecast.actual_bps, rows[scored].spread_bps)
+                    self.assertEqual(
+                        forecast.predicted_bps, model.point_forecast(feature_row)
+                    )
+                    self.assertEqual(forecast.lower_bps, quantiles[0])
+                    self.assertEqual(forecast.upper_bps, quantiles[-1])
+                    self.assertEqual(model.cutoff, dates[anchor])
 
-    def test_the_backtest_takes_its_folds_from_rolling_origin(self):
-        """One forecast per fold, in fold order, fitted on the fold's own rows.
+    def test_one_grid_whatever_the_declaration(self):
+        """Two declarations over one registry are scored on the same rows.
 
-        The mutation this is aimed at is the quiet one: a `purge` argument
-        accepted and then not passed on, so the folds are built at zero. The
-        report still comes out, the intervals still look reasonable, and only a
-        comparison against independently enumerated folds says otherwise.
-
-        **B30 changed what "unpurged" is measured against, and it got stronger
-        rather than weaker.** The comparison below used to be a second backtest
-        at a one-day gap, which is as close to unpurged as a *derived* gap can
-        get. A one-day gap is not decision-safe on this weekday panel, and
-        re-dating just that arm would have compared fold counts across two
-        different calendars, which measures nothing. `unpurged_reference` is
-        the real thing: the index walk this function had before it was purged,
-        written out longhand in this file, on the same panel. Its count is 15
-        and no gap enters it, so the assertion is now against the definition
-        rather than against an approximation of it.
+        The grid is built from the target's declarations alone, so a model
+        declaring more columns scores the same days as one declaring fewer --
+        which is what makes any two of them paired by construction.
         """
 
         rows = self.sample()
-        dates = [row.date for row in rows]
-        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
-
-        report = at_gap(
-            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        registry = declared_registry(self.PURGE, ARX_FEATURES)
+        narrow = rolling_persistence_backtest(
+            rows,
+            features=FEATURES,
+            registry=registry,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
         )
-
-        self.assertEqual(len(report.forecasts), len(folds))
-        # The gap costs origins on a 25-row panel, and the point of the test is
-        # that it does: a run whose fold count matched the unpurged one would
-        # mean the purge reached nothing.
-        unpurged, _mae, _coverage = unpurged_reference(
-            rows, self.MINIMUM_HISTORY, fit
+        wide = rolling_persistence_backtest(
+            rows,
+            features=ARX_FEATURES,
+            registry=registry,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=partial(fit_arx, regressors=REGRESSORS),
         )
-        self.assertLess(len(report.forecasts), len(unpurged))
-
-        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
-            self.assertEqual(len(test_indices), 1)
-            scored = test_indices[0]
-            model = fit(
-                [rows[i] for i in train_indices],
-                minimum_history=self.MINIMUM_HISTORY,
-            )
-            quantiles = model.predict(rows[train_indices[-1]])
-
-            self.assertEqual(forecast.actual_bps, rows[scored].spread_bps)
-            self.assertEqual(forecast.lower_bps, quantiles[0])
-            self.assertEqual(forecast.upper_bps, quantiles[-1])
-            # The fitted cutoff is the last row that cleared the gap, not the
-            # day before the scored day.
-            self.assertEqual(model.cutoff, dates[train_indices[-1]])
-            self.assertLess(model.cutoff, dates[scored - 1])
-
-    def test_the_feature_row_is_the_last_row_that_cleared_the_purge(self):
-        """The leak the purge does not otherwise cover, and it is silent.
-
-        Purging the training frame and then reading the feature row off
-        `rows[scored - 1]` drops rows from the fit while feeding the model the
-        one row that matters most -- for persistence, the only row it reads. The
-        numbers still come out and the intervals still look reasonable. So this
-        asserts the identity directly, and separately asserts that on this panel
-        the two candidate rows actually differ, without which the first
-        assertion would hold under the leak too.
-        """
-
-        rows = self.sample()
-        dates = [row.date for row in rows]
-        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
-        report = at_gap(
-            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
-        )
-
-        moved = 0
-        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
-            scored = test_indices[0]
-            allowed = rows[train_indices[-1]]
-            yesterday = rows[scored - 1]
-            # Persistence's point rule is the feature row's spread, so the
-            # reported centre names which row was read.
-            self.assertEqual(forecast.predicted_bps, allowed.spread_bps)
-            if allowed.spread_bps != yesterday.spread_bps:
-                moved += 1
-        self.assertGreater(
-            moved,
-            0,
-            msg=(
-                "on this panel the purged feature row and the day before the "
-                "scored day carry the same spread everywhere, so this test "
-                "cannot tell the two apart"
-            ),
-        )
-
-        # And the selection itself, against a fold it is not entitled to trust.
-        # `rolling_origin` would never yield this one -- the prefix runs one row
-        # past the gap -- which is the point: the backtest states the boundary
-        # rather than inheriting it, so a relaxed comparison here is visible.
-        scored = dates.index(date(2026, 1, 22))
-        inside = dates.index(date(2026, 1, 16))  # 01-16 + 6 == 01-22, exactly
         self.assertEqual(
-            _feature_index(dates, tuple(range(inside + 1)), scored, self.PURGE),
-            inside - 1,
-            msg=(
-                "the row whose date plus the gap lands exactly on the scored "
-                "day was accepted; the boundary is strict, and a `<=` here is "
-                "a row published the morning the window opened"
-            ),
+            [fold.scored_date for fold in narrow.folds],
+            [fold.scored_date for fold in wide.folds],
         )
 
-        # No row clears, so there is no feature row. It raises rather than
-        # falling back to one that does not clear -- and raises, never asserts,
-        # because `python -O` strips asserts.
-        with self.assertRaises(LookAheadError):
-            _feature_index(dates, (0, 1), 2, 365)
+    def test_the_feature_row_is_the_anchor_not_the_day_before(self):
+        """The row persistence reads is the latest observable one, and it moves.
+
+        Persistence's point forecast is the feature row's spread, so the
+        reported centre names which row was read. Asserted against the anchor,
+        and separately shown to differ from the day before the scored day on
+        this panel -- without which the first assertion would hold under a
+        leak too.
+        """
+
+        rows = self.sample()
+        registry = declared_registry(self.PURGE, FEATURES)
+        report = at_gap(rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY)
+        moved = 0
+        for forecast, (scored, anchor, _model) in zip(
+            report.forecasts, self.longhand(rows, registry, FEATURES, None)
+        ):
+            self.assertEqual(forecast.predicted_bps, rows[anchor].spread_bps)
+            self.assertLess(anchor, scored - 1)
+            if rows[anchor].spread_bps != rows[scored - 1].spread_bps:
+                moved += 1
+        self.assertGreater(moved, 0)
+
+    def test_the_record_reports_what_every_row_read(self):
+        """`information` counts every scored row's read, per declared feature."""
+
+        rows = self.sample()
+        report = at_gap(rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY)
+        summary = report.information["features"]["spread_bps"]
+        self.assertEqual(summary["kind"], "observed")
+        self.assertEqual(sum(summary["rows_before_scored"].values()), len(report.forecasts))
 
     def test_the_declared_feature_set_has_no_default(self):
         """`features` is required and keyword-only, and `purge` is gone.
@@ -2188,13 +2169,12 @@ class PurgedBacktestTests(unittest.TestCase):
         self.assertEqual(report.sources, sources_for_features(FEATURES))
 
     def test_the_derived_source_set_is_the_feature_set_not_the_whole_registry(self):
-        """"The maximum over the sources the feature set uses", asserted.
+        """A slow source the declaration does not read changes nothing.
 
-        Taking the maximum over the whole registry purges more than the evidence
-        requires and silently destroys training rows, which reads as a weak model
-        rather than as a configuration mistake. The registry here prices one
-        source far above the rest; a backtest ranging over all of it would pick
-        that number up, and a backtest ranging over the declaration would not.
+        The registry here declares one source far slower than the rest. A rule
+        ranging over the whole registry would read the declared fields later,
+        or lose scored rows, which reads as a weak model rather than as a
+        configuration mistake; a rule ranging over the declaration does not.
         """
 
         rows = self.sample()
@@ -2216,8 +2196,11 @@ class PurgedBacktestTests(unittest.TestCase):
             decision_time=DECISION_TIME,
             minimum_history=self.MINIMUM_HISTORY,
         )
-        self.assertEqual(report.purge_days, self.PURGE)
+        control = at_gap(rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY)
+        self.assertEqual(report.folds, control.folds)
+        self.assertEqual(report.forecasts, control.forecasts)
         self.assertNotIn("nyfed_tgcr", report.sources)
+        self.assertEqual(set(report.information["features"]), {"spread_bps"})
 
     def test_two_features_on_one_source_price_differently(self):
         """The acceptance criterion of the field-priced-purge block.
@@ -2302,15 +2285,15 @@ class PurgedBacktestTests(unittest.TestCase):
             priced.field_sources,
             (
                 # `iorb` is spliced: IOER before 2021-07-29, IORB after. The
-                # purge is sized over every field the column reads, so both
-                # appear here. They declare the same lag, so the gap is
-                # unchanged -- but the field list is the thing under test.
+                # rule reads every field the column reads, so both appear
+                # here. They declare the same lag -- but the field list is the
+                # thing under test.
                 ("fred_macro_latest_vintage", "IOER"),
                 ("fred_macro_latest_vintage", "IORB"),
                 ("nyfed_sofr", "SOFR"),
             ),
         )
-        self.assertGreater(priced.purge_days, 0)
+        self.assertGreater(len(priced.forecasts), 0)
 
         with self.assertRaises(RegistryContractError) as caught:
             rolling_persistence_backtest(
@@ -2327,7 +2310,7 @@ class PurgedBacktestTests(unittest.TestCase):
         # different answers.
         self.assertIn("fred_macro_latest_vintage", message)
         self.assertIn("RRPONTSYD", message)
-        self.assertIn("available_at", message)
+        self.assertIn("declares no availability", message)
         # And the source it refused is a source it just priced. Without this
         # the test would also pass against two unrelated sources, which is the
         # fact that was already true and is not what this block established.
@@ -2396,7 +2379,7 @@ class PurgedBacktestTests(unittest.TestCase):
         message = str(caught.exception)
         self.assertIn("sec_nmfp", message)
         self.assertIn("mmf_net_assets", message)
-        self.assertIn("available_at", message)
+        self.assertIn("declares no availability", message)
 
     def test_a_purge_that_leaves_too_little_history_raises_rather_than_shrinking_min_train(self):
         """The refusal is the feature. Recovering a fold by relaxing is not.
@@ -2420,68 +2403,35 @@ class PurgedBacktestTests(unittest.TestCase):
         """
 
         rows = self.consecutive()
-        with self.assertRaises(SplitError) as caught:
-            at_gap(rows, purge=10, minimum_history=20)
-        message = str(caught.exception)
-        self.assertIn("20 training rows", message)
-        self.assertIn("10-day purge gap", message)
 
-        # Same panel, same `minimum_history`, a gap it can carry: the refusal
-        # above is about the gap, not about the panel being short.
-        report = at_gap(rows, purge=1, minimum_history=20)
+        def run(days):
+            return rolling_persistence_backtest(
+                rows,
+                features=FEATURES,
+                registry=record_date_registry(days, FEATURES),
+                decision_time=DECISION_TIME,
+                minimum_history=20,
+            )
+
+        with self.assertRaises(SplitError) as caught:
+            run(10)
+        self.assertIn("20 observable labels", str(caught.exception))
+
+        # Same panel, same `minimum_history`, a lag it can carry: the refusal
+        # above is about the lag, not about the panel being short. Row 20 is
+        # the first whose anchor, row 19, has 20 labels through it.
+        report = run(1)
         self.assertEqual(len(report.forecasts), 4)
 
-    def test_the_purged_backtest_scores_whichever_model_it_is_given(self):
-        """Both implementers go through the purged path, on their own numbers.
+    def test_a_slower_declaration_moves_the_reported_numbers_and_the_move_is_kept(self):
+        """A slower declared lag makes the benchmark worse, and that one is kept.
 
-        The generalisation the last block bought has to survive this one. Each
-        forecast is compared against a model refit independently at the same
-        fold, so the report is checked against the interface rather than against
-        itself, and the two models are checked to disagree -- a purged backtest
-        that quietly scored persistence whatever it was handed would pass every
-        shape assertion here.
-        """
-
-        rows = self.sample()
-        dates = [row.date for row in rows]
-        folds = list(rolling_origin(dates, self.MINIMUM_HISTORY, 1, self.PURGE))
-        fitter = partial(fit_arx, regressors=REGRESSORS)
-
-        report = at_gap(
-            rows,
-            purge=self.PURGE,
-            features=ARX_FEATURES,
-            minimum_history=self.MINIMUM_HISTORY,
-            fit_model=fitter,
-        )
-        self.assertIsInstance(report.model, FittedArx)
-        self.assertEqual(report.model.regressors, REGRESSORS)
-        self.assertEqual(len(report.forecasts), len(folds))
-
-        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
-            train_frame = [rows[i] for i in train_indices]
-            model = fit_arx(
-                train_frame, REGRESSORS, minimum_history=self.MINIMUM_HISTORY
-            )
-            feature_row = rows[train_indices[-1]]
-            quantiles = model.predict(feature_row)
-            self.assertEqual(forecast.predicted_bps, model.point_forecast(feature_row))
-            self.assertEqual(forecast.lower_bps, quantiles[0])
-            self.assertEqual(forecast.upper_bps, quantiles[-1])
-            self.assertEqual(forecast.actual_bps, rows[test_indices[0]].spread_bps)
-            self.assertEqual(model.cutoff, dates[train_indices[-1]])
-
-        persistence = at_gap(
-            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
-        )
-        self.assertIsInstance(persistence.model, FittedPersistence)
-        self.assertNotEqual(
-            [f.predicted_bps for f in report.forecasts],
-            [f.predicted_bps for f in persistence.forecasts],
-        )
-
-    def test_the_purge_moves_the_reported_numbers_and_the_move_is_kept(self):
-        """Purging changes the benchmark, and the changed benchmark is the one.
+        **Re-based by the as-of rule.** Both arms declare `record_date` lags at
+        00:00 (`record_date_registry`), one day and six, on the gapless panel.
+        Under the as-of rule a `record_date` lag of `n` days at 00:00 on
+        consecutive dates reads row `T - n - 1`, which is exactly the row a
+        purge of `n` days read, so the four literals below are the ones the
+        purge rule pinned. The history below is kept as it was written.
 
         `AGENT_CONTRACT.md` working rules: a model that does not beat
         persistence is reported as such and kept. The same applies to a purge
@@ -2512,11 +2462,19 @@ class PurgedBacktestTests(unittest.TestCase):
         """
 
         rows = self.consecutive()
-        before = at_gap(
-            rows, purge=1, minimum_history=self.MINIMUM_HISTORY
+        before = rolling_persistence_backtest(
+            rows,
+            features=FEATURES,
+            registry=record_date_registry(1, FEATURES),
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
         )
-        after = at_gap(
-            rows, purge=self.PURGE, minimum_history=self.MINIMUM_HISTORY
+        after = rolling_persistence_backtest(
+            rows,
+            features=FEATURES,
+            registry=record_date_registry(self.PURGE, FEATURES),
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
         )
 
         # "Before" is the *smallest expressible* gap rather than no gap:
@@ -2648,6 +2606,20 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
 
     All three kills are the same test, which is what "the acceptance test and
     the mutation target are the same test" requires here.
+
+    Since the as-of rule (`docs/decisions/information-set.md`)
+    ------------------------------------------------------------
+
+    The rule reads every field at its latest row observable by the decision
+    instant, so a late read can no longer reach this guard through a backtest:
+    the "late" arm below drives the guard directly with the row the purge rule
+    used to read, and the backtest arm shows the rule reading around the
+    declaration instead. The guard is still called on every read of every
+    scored row (`baseline._as_of_folds`), independently of
+    `asof.InformationRule.check`, so a fault in either is caught by the other.
+    Mutation 2 above -- the guard not called -- therefore no longer has a test
+    that kills it through a fold; mutations 1 and 3 still die on the direct
+    arms of the test below.
     """
 
     MINIMUM_HISTORY = 10
@@ -2717,13 +2689,17 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
                 "timezone": "America/New_York",
             }
         )
+        # The row the purge rule read for the fold scoring Monday 2 February:
+        # Monday 26 January, observable from midnight on Sunday 1 February,
+        # after the Friday 30 January 16:00 decision.
         with self.assertRaises(LookAheadError) as caught:
-            rolling_persistence_backtest(
-                rows,
-                features=FEATURES,
-                registry=undeliverable,
+            _check_decision_relative_availability(
+                undeliverable,
+                field_sources_for_features(FEATURES),
+                dates,
+                dates.index(date(2026, 1, 26)),
+                dates.index(date(2026, 2, 2)),
                 decision_time=DECISION_TIME,
-                minimum_history=self.MINIMUM_HISTORY,
             )
         message = str(caught.exception)
         # The field, taken from the same resolution the gap was sized over
@@ -2737,7 +2713,23 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
         self.assertIn("2026-01-30 16:00:00", message)
         self.assertIn("2026-02-02", message)
 
-        # Silent on a declaration the panel can deliver, at the same gap.
+        # Under the as-of rule the same declaration is read around, not past:
+        # every fold's row is observable by its decision, so the backtest runs
+        # and the guard, called on every read, stays silent.
+        around = rolling_persistence_backtest(
+            rows,
+            features=FEATURES,
+            registry=undeliverable,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+        )
+        for fold in around.folds:
+            decision_day = dates[dates.index(fold.scored_date) - 1]
+            self.assertLessEqual(
+                fold.feature_date + timedelta(days=self.PURGE), decision_day
+            )
+
+        # Silent on a declaration the panel can deliver.
         deliverable = self.registry(
             {
                 "basis": "ref_date",
@@ -2755,9 +2747,7 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
             decision_time=DECISION_TIME,
             minimum_history=self.MINIMUM_HISTORY,
         )
-        self.assertEqual(report.purge_days, self.PURGE)
-        self.assertEqual(len(report.forecasts), 12)
-        self.assertAlmostEqual(report.mae_bps, 25.0 / 12.0, places=12)
+        self.assertGreater(len(report.forecasts), 0)
 
         # A business-day count that runs off the end of the panel is later than
         # any deadline the panel can express, so the fold it belongs to is
@@ -2783,7 +2773,6 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
                 dates,
                 len(dates) - 2,
                 len(dates) - 1,
-                purge=8,
                 decision_time=DECISION_TIME,
             )
         self.assertIn("no date on this panel", str(off_panel.exception))
@@ -3135,27 +3124,26 @@ class FittedThresholdTests(unittest.TestCase):
            fitted regimes produces the point forecast, and it is not a regressor
            -- the *only* reason it is read is the regime, which is exactly the
            read a model could plausibly argue its way out of declaring.
-        2. Declaring it makes the identical run succeed.
-        3. The derived purge then reflects that column's source. This is the
-           damage the raise prevents: `nyfed_tgcr` is absent from the source set
-           of the undeclared run, so its release lag was never in the maximum,
-           and the numbers would have been produced under a four-day gap's worth
-           of information at a one-day gap's cost. In the flattering direction,
-           as always.
-
-        The registry prices `nyfed_tgcr` apart from the rest for claim 3 to be
-        able to fail; under a uniform registry the two runs would report the
-        same `purge_days` and the assertion would hold for the wrong reason.
+        2. Declaring it makes the identical run succeed, and the report names
+           the regime variable's source and reads it by its own declaration.
+        3. **Re-based by the as-of rule.** Where the regime variable is
+           declared *slower* than the target, the training frame carries it as
+           a hole on the rows where it was not yet observable at the decision
+           instant, and the threshold model -- which refuses an unobserved
+           selector rather than impute one -- refuses the run, naming the
+           column. That is the rule doing its job: under the purge the frame
+           was cut back to where every declared column was public, and the
+           freshest labels went with it.
         """
 
         rows = self.frame()
-        registry = mixed_registry(self.BASE_PURGE, self.REGIME_PURGE)
+        uniform = declared_registry(self.BASE_PURGE, THRESHOLD_FEATURES)
 
         with self.assertRaises(LookAheadError) as caught:
             rolling_persistence_backtest(
                 rows,
                 features=UNDECLARED_THRESHOLD_FEATURES,
-                registry=registry,
+                registry=uniform,
                 decision_time=DECISION_TIME,
                 minimum_history=self.MINIMUM_HISTORY,
                 fit_model=self.fitter(),
@@ -3165,24 +3153,30 @@ class FittedThresholdTests(unittest.TestCase):
         report = rolling_persistence_backtest(
             rows,
             features=THRESHOLD_FEATURES,
-            registry=registry,
+            registry=uniform,
             decision_time=DECISION_TIME,
             minimum_history=self.MINIMUM_HISTORY,
             fit_model=self.fitter(),
         )
         self.assertIsInstance(report.model, FittedThreshold)
         self.assertIn(THRESHOLD_VARIABLE, report.model.features_read)
-
-        # The source the regime variable brought in, and the gap it produced.
-        # Both read off the report rather than recomputed here: a second
-        # derivation in a test is the thing this repository keeps deleting.
         regime_source, = sources_for_features((THRESHOLD_VARIABLE,))
         self.assertIn(regime_source, report.sources)
         self.assertNotIn(
             regime_source, sources_for_features(UNDECLARED_THRESHOLD_FEATURES)
         )
-        self.assertEqual(report.purge_days, self.REGIME_PURGE)
-        self.assertGreater(self.REGIME_PURGE, self.BASE_PURGE)
+        self.assertIn(THRESHOLD_VARIABLE, report.information["features"])
+
+        with self.assertRaises(UnobservedThresholdError) as caught:
+            rolling_persistence_backtest(
+                rows,
+                features=THRESHOLD_FEATURES,
+                registry=mixed_registry(self.BASE_PURGE, self.REGIME_PURGE),
+                decision_time=DECISION_TIME,
+                minimum_history=self.MINIMUM_HISTORY,
+                fit_model=self.fitter(),
+            )
+        self.assertIn(THRESHOLD_VARIABLE, str(caught.exception))
 
     # ------------------------------------------------------------------
     # What the model reads, and what it says it reads
@@ -3639,8 +3633,15 @@ class FittedThresholdTests(unittest.TestCase):
         self.assertAlmostEqual(near.mae_bps, 1.844558792520991, places=12)
         self.assertAlmostEqual(near.interval_coverage, 8.0 / 14.0, places=12)
 
-        far = at_gap(
-            rows, purge=6, features=ARX_FEATURES, minimum_history=10, fit_model=arx
+        # A `record_date` six-day declaration: on consecutive dates the as-of
+        # rule reads the row a six-day purge read (`record_date_registry`).
+        far = rolling_persistence_backtest(
+            rows,
+            features=ARX_FEATURES,
+            registry=record_date_registry(6, ARX_FEATURES),
+            decision_time=DECISION_TIME,
+            minimum_history=10,
+            fit_model=arx,
         )
         self.assertEqual(len(far.forecasts), 9)
         self.assertAlmostEqual(far.mae_bps, 1.4148220886487588, places=12)
@@ -4544,14 +4545,14 @@ class RollingExceedanceTests(unittest.TestCase):
     def predictor(self):
         return arx_exceedance(REGRESSORS, minimum_history=self.MINIMUM_HISTORY)
 
-    def report(self, purge=1, predictor=None, model_name="arx", features=None):
+    def report(self, purge=1, predictor=None, model_name="arx", features=None, registry=None):
         declared = self.FEATURES if features is None else features
         return rolling_exceedance_backtest(
             self.rows,
             predictor=self.predictor() if predictor is None else predictor,
             model_name=model_name,
             features=declared,
-            registry=declared_registry(purge, declared),
+            registry=declared_registry(purge, declared) if registry is None else registry,
             decision_time=DECISION_TIME,
             taus=self.TAU_FAMILY,
             minimum_history=self.MINIMUM_HISTORY,
@@ -4657,27 +4658,23 @@ class RollingExceedanceTests(unittest.TestCase):
             self.assertNotIn(name, parameters)
 
     def test_the_pooled_set_is_the_folds_the_splitter_yields_behind_the_derived_gap(self):
-        """The gap follows from `--feature` and it reaches the pooled numbers.
+        """The declared lag reaches the pooled numbers, through the as-of rule.
 
-        Asserted as a relation between two gaps rather than against a literal.
-        A wider gap costs origins, and every fold's feature row has to clear
-        it -- `scored_date - feature_date > purge`, the splitter's own strict
-        boundary. A path that reported a `purge_days` it did not pass to
-        `rolling_origin` would hold the first assertion and fail the rest.
+        Asserted as a relation between two declarations rather than against a
+        literal. A slower target costs scored rows, and every fold's feature
+        row is at least that lag behind the decision day. A path that read the
+        declaration and did not act on it would hold the first assertion and
+        fail the rest.
         """
 
-        narrow = self.report(purge=1)
-        wide = self.report(purge=6)
+        narrow = self.report(registry=record_date_registry(1, self.FEATURES))
+        wide = self.report(registry=record_date_registry(6, self.FEATURES))
 
-        self.assertEqual(narrow.purge_days, 1)
-        self.assertEqual(wide.purge_days, 6)
         self.assertLess(len(wide.folds), len(narrow.folds))
 
-        for report in (narrow, wide):
+        for report, days in ((narrow, 1), (wide, 6)):
             for fold in report.folds:
-                self.assertGreater(
-                    (fold.scored_date - fold.feature_date).days, report.purge_days
-                )
+                self.assertGreater((fold.scored_date - fold.feature_date).days, days)
                 self.assertEqual(fold.train_end, fold.feature_date)
 
         position = list(narrow.taus).index(REGIME_TAU)
@@ -4795,7 +4792,10 @@ class RollingExceedanceTests(unittest.TestCase):
                 predictor=_reads_nothing_but(("on_rrp",)),
                 model_name="fixture",
                 features=declared,
-                registry=declared_registry(1, declared),
+                # The target's sources are declared too: the as-of rule reads
+                # the target whatever the declaration, so a registry without
+                # them is refused before any fit, for another reason.
+                registry=declared_registry(1, declared + ("spread_bps",)),
                 decision_time=DECISION_TIME,
                 taus=self.TAU_FAMILY,
                 minimum_history=self.MINIMUM_HISTORY,
@@ -4890,7 +4890,8 @@ class RollingExceedanceTests(unittest.TestCase):
         self.assertEqual(document["declaration"]["minimum_history"], self.MINIMUM_HISTORY)
         self.assertEqual(document["declaration"]["decision_time"], "16:00")
 
-        self.assertEqual(document["derived"]["purge_days"], report.purge_days)
+        self.assertEqual(document["derived"]["information_set"], report.information)
+        self.assertEqual(document["declaration"]["refit_every"], report.refit_every)
         self.assertEqual(document["derived"]["sources"], sorted(report.sources))
         self.assertEqual(
             document["derived"]["fields"],
@@ -7143,13 +7144,14 @@ class PairedComparisonTests(unittest.TestCase):
         for available in baseline.COMPARISON_LOSSES:
             self.assertIn(repr(available), message)
 
-    def test_two_declarations_pricing_different_gaps_are_refused(self):
-        """Different gaps are different origins, and different origins do not pair.
+    def test_two_declarations_reading_at_different_lags_still_pair(self):
+        """Under the as-of rule any two declarations pair; nothing is refused.
 
-        The one comparability question the single fold loop does not settle,
-        because the gap is derived from the declaration before the loop exists.
-        Refused before the panel is walked, so nothing is fitted and no
-        artifact can be written.
+        This test used to pin `IncomparablePurgeError`: two declarations that
+        priced different purges were scored on different origins. The as-of
+        grid is built from the target alone, so the side declaring a six-day
+        column is scored on exactly the rows the other side is, and reads that
+        column further back -- which its information summary says.
         """
 
         registry = {
@@ -7166,15 +7168,24 @@ class PairedComparisonTests(unittest.TestCase):
             for source in sources_for_features(features)
         }
 
-        with self.assertRaises(baseline.IncomparablePurgeError) as caught:
-            self._comparison(
-                features_b=FEATURES + ("treasury_settlement",), registry=registry
-            )
-
-        message = str(caught.exception)
-        self.assertIn("1-day", message)
-        self.assertIn("6-day", message)
-        self.assertIn("treasury_settlement", message)
+        comparison = self._comparison(
+            features_b=FEATURES + ("treasury_settlement",), registry=registry
+        )
+        alone = rolling_persistence_backtest(
+            rising_frame(),
+            features=FEATURES,
+            registry=registry,
+            decision_time=DECISION_TIME,
+            minimum_history=20,  # `paired_model_comparison`'s default
+        )
+        self.assertEqual(
+            [fold.scored_date for fold in comparison.folds],
+            [fold.scored_date for fold in alone.folds],
+        )
+        target = comparison.information_b["features"]["spread_bps"]["rows_before_scored"]
+        slow = comparison.information_b["features"]["treasury_settlement"]["rows_before_scored"]
+        self.assertGreater(min(int(k) for k in slow), max(int(k) for k in target))
+        self.assertNotIn("treasury_settlement", comparison.information_a["features"])
 
     def test_each_side_is_scored_exactly_as_the_single_model_benchmark_scores_it(self):
         """The comparison's folds and per-model MAE are the benchmark's own.
@@ -8248,7 +8259,7 @@ class CalibrationDocumentTests(unittest.TestCase):
             features=FEATURES,
             sources=("fred_macro_latest_vintage",),
             field_sources=(("fred_macro_latest_vintage", "DGS10"),),
-            purge_days=self.PURGE,
+            refit_every=1,
             decision_time=DECISION_TIME,
             panel_rows=len(forecasts),
             panel_first_date=date(2026, 3, 2),
@@ -8752,7 +8763,7 @@ class PerOriginCalibrationTests(unittest.TestCase):
             features=FEATURES,
             sources=("fred_macro_latest_vintage",),
             field_sources=(("fred_macro_latest_vintage", "DGS10"),),
-            purge_days=self.PURGE,
+            refit_every=1,
             decision_time=DECISION_TIME,
             panel_rows=len(forecasts),
             panel_first_date=start,
@@ -8956,7 +8967,7 @@ class BacktestRecordSeedTests(unittest.TestCase):
 
         digest = hashlib.sha256(b"panel").hexdigest()
         features = ["spread_bps"]
-        material = baseline._backtest_seed_material(digest, features, 6, time(16, 0))
+        material = baseline._backtest_seed_material(digest, features, "6", time(16, 0))
 
         self.assertEqual(material[3], "16:00:00")
 
@@ -9040,8 +9051,11 @@ class SeedMaterialTests(unittest.TestCase):
         """
 
         digest = "0123456789abcdef" * 4
+        # The third component is the rule token; `"6"` is what a record scored
+        # under the purge rule carries (`str(purge_days)`), so this pins the
+        # material every published seed was drawn from.
         material = baseline._backtest_seed_material(
-            digest, ["spread_bps", "sofr_volume"], 6, time(16, 0)
+            digest, ["spread_bps", "sofr_volume"], "6", time(16, 0)
         )
 
         self.assertEqual(
@@ -9053,6 +9067,37 @@ class SeedMaterialTests(unittest.TestCase):
             b"\x00sofr_volume,spread_bps\x006\x0016:00:00",
         )
         self.assertEqual(baseline._seed_from(material), 1515357806)
+
+    def test_an_as_of_record_digests_its_rule_and_refit_cadence(self):
+        """A record without `derived.purge_days` is an as-of record.
+
+        Its third component is `as_of:refit_every=N` from its declaration, so
+        two runs differing only in refit cadence draw different streams, and a
+        record scored under the purge rule keeps the seed it was published
+        with.
+        """
+
+        digest = "0123456789abcdef" * 4
+        record = {
+            "declaration": {
+                "features": ["spread_bps"],
+                "decision_time": "16:00",
+                "refit_every": 21,
+            },
+            "derived": {"fields": []},
+            "panel": {"sha256": digest},
+        }
+        expected = baseline._seed_from(
+            (digest, "spread_bps", "as_of:refit_every=21", "16:00:00")
+        )
+        self.assertEqual(backtest_record_seed(record), expected)
+        record["declaration"]["refit_every"] = 1
+        self.assertNotEqual(backtest_record_seed(record), expected)
+        record["derived"] = {"purge_days": 6}
+        self.assertEqual(
+            backtest_record_seed(record),
+            baseline._seed_from((digest, "spread_bps", "6", "16:00:00")),
+        )
 
     def test_every_published_comparison_seed_recomputes_from_its_record(self):
         """Criterion 2. Globbed, so a comparison record added later is checked too.
@@ -9231,7 +9276,7 @@ class SiblingSeedMaterialTests(unittest.TestCase):
             self.DIGEST,
             "logistic",
             ["spread_bps", "sofr_volume"],
-            6,
+            "6",
             time(16, 0, 7),
             [5.0, 10.0],
             10.0,

@@ -246,8 +246,9 @@ EVENT_START = date(2026, 2, 2)
 EVENT_END = date(2026, 2, 6)
 
 #: The three rows that are ever read as a feature row for a day in the window at
-#: `purge=3`: the last training row (2026-01-29), the row inside the gap ahead
-#: of the window (2026-01-30), and the window's own first day (2026-02-02).
+#: `purge=3`: the last training row (2026-01-27), the row not yet observable at
+#: the window's decision (2026-01-30), and the window's own first day
+#: (2026-02-02).
 #:
 #: **Their spreads are equal and their covariate is not**, and that is the whole
 #: construction. On this panel a model that reads only `spread_bps` produces the
@@ -256,7 +257,13 @@ EVENT_END = date(2026, 2, 6)
 #: reaching the model, rather than about conditioning in general -- and the
 #: acceptance test can be the mutation target it is supposed to be instead of
 #: passing on an ARX whose covariate was dropped.
-FEATURE_ROW_PLATEAU = (18, 19, 20)
+#:
+#: **Moved by the as-of rule** from rows 18, 19 and 20. At the three-day lag
+#: the harness declares, the window's decisions (Friday 30 January to Thursday
+#: 5 February, 16:00) read rows 16, 19 and 20 -- 2026-01-27, 2026-01-30 and
+#: 2026-02-02 -- and no lag reads 18 to 20, so the plateau follows the rows
+#: read.
+FEATURE_ROW_PLATEAU = (16, 19, 20)
 PLATEAU_SPREAD_BPS = 21.0
 
 
@@ -371,42 +378,68 @@ class EvaluatorHarness(unittest.TestCase):
         return evaluate_event_window(*positional, **kwargs)
 
 
+#: The decision instant before the window: the window opens on Monday
+#: 2026-02-02, so the forecast of its first day is made at 16:00 on Friday
+#: 2026-01-30, the panel day before it.
+WINDOW_DECISION_DAY = date(2026, 1, 30)
+
+
+def observable_by(when, days):
+    """Is a row dated `when`, published `days` calendar days later at 00:00,
+    observable at 16:00 on `WINDOW_DECISION_DAY`? Written out with a day count,
+    not the module's comparison."""
+
+    return when + timedelta(days=days) <= WINDOW_DECISION_DAY
+
+
 class PurgeBoundaryTests(EvaluatorHarness):
-    """Where the training set stops. The comparison is strict."""
+    """Where the training set stops: label observability at the window's decision.
+
+    **Re-based by the as-of rule.** The boundary is no longer a purge stated
+    against the window's first day but the decision instant before it -- 16:00
+    on Friday 30 January -- and a label trains only if it was observable then.
+    The fixture registry (`declared_registry` below six days) declares a
+    `record_date` lag of `purge` days at 00:00, so a row dated `d` trains iff
+    `d + purge <= 30 January`. The weekend between the decision and the window
+    is why every boundary below is two days earlier than the purge rule's.
+    """
 
     def test_a_row_exactly_purge_days_before_the_window_is_excluded(self):
-        """The `<` in `clears_purge`, stated as a fact about one row.
+        """The boundary, stated as a fact about two rows.
 
-        2026-01-30 plus three days is 2026-02-02, the day the window opens. A
-        value published exactly as the window opens is not in hand beforehand,
-        so the row must not train. A `<=` boundary keeps it and this fails.
+        At three days, 2026-01-27 is observable from midnight on 30 January,
+        the decision day, and trains. 2026-01-28 is observable only on
+        31 January, after the decision, and must not -- although under the
+        purge rule it did, being more than three days before the window.
         """
 
         report = self.evaluate(purge=3)
-        self.assertLess(report.last_train_date, date(2026, 1, 30))
-        self.assertEqual(report.last_train_date, date(2026, 1, 29))
+        self.assertEqual(report.last_train_date, date(2026, 1, 27))
 
     def test_the_boundary_moves_with_the_gap(self):
-        """Gap 0 is absent because it is no longer expressible; see below.
+        """Each declared lag's last training row, derived from the day count.
 
-        `max_release_lag_days` refuses to return zero, so a declared registry
-        cannot produce an unpurged run. The two rows the old `0` and `1` cases
-        pinned were the same row, so nothing this test could distinguish was
-        lost with it -- but the `purge=0` subtests were two of the ten failures
-        the `clears_purge` mutation produced, and that is recorded below rather
-        than left to be noticed.
+        Zero is expressible now: it trains through the decision day itself.
         """
 
-        expected = {
-            1: date(2026, 1, 30),
-            2: date(2026, 1, 30),
-            3: date(2026, 1, 29),
-            4: date(2026, 1, 28),
-            5: date(2026, 1, 27),
-        }
-        for purge, last_train in expected.items():
+        for purge in (0, 1, 2, 3, 4, 5):
             with self.subTest(purge=purge):
-                self.assertEqual(self.evaluate(purge=purge).last_train_date, last_train)
+                registry = {
+                    source: {
+                        "release_lag": {
+                            "basis": "record_date",
+                            "unit": "calendar_days",
+                            "days": purge,
+                            "available_time": "00:00",
+                            "timezone": "America/New_York",
+                        }
+                    }
+                    for source in contract.sources_for_features(FEATURES)
+                }
+                expected = max(w for w in PANEL_DATES if observable_by(w, purge))
+                self.assertEqual(
+                    self.evaluate(registry=registry).last_train_date, expected
+                )
 
     def test_every_training_row_clears_the_gap_independently(self):
         """Recomputed here with a day count, not the module's comparison."""
@@ -414,13 +447,11 @@ class PurgeBoundaryTests(EvaluatorHarness):
         for purge in (1, 2, 3, 5):
             with self.subTest(purge=purge):
                 report = self.evaluate(purge=purge)
-                self.assertGreater((EVENT_START - report.last_train_date).days, purge)
+                self.assertTrue(observable_by(report.last_train_date, purge))
 
     def test_training_rows_are_counted_and_all_precede_the_window(self):
         report = self.evaluate(purge=3)
-        expected = [
-            when for when in PANEL_DATES if (EVENT_START - when).days > 3
-        ]
+        expected = [when for when in PANEL_DATES if observable_by(when, 3)]
         self.assertEqual(report.train_rows, len(expected))
         self.assertLess(report.last_train_date, EVENT_START)
 
@@ -435,28 +466,27 @@ class PurgeBoundaryTests(EvaluatorHarness):
             )
 
         report = self.evaluate(fit_predict=spy, purge=3)
-        self.assertGreater((EVENT_START - max(seen["train"])).days, 3)
+        self.assertTrue(all(observable_by(when, 3) for when in seen["train"]))
         self.assertTrue(all(when < EVENT_START for when in seen["train"]))
         self.assertFalse(set(seen["train"]) & set(report.scored_dates))
         # The feature rows are a different question and get a different answer:
-        # 2026-01-30 sits inside the gap ahead of the window and never trains,
-        # and it is still the last row publishable before 2026-02-03.
+        # 2026-01-30 was not observable at the window's decision and never
+        # trains, and it is the latest row observable by the Monday 16:00
+        # decision that forecasts 2026-02-03.
         self.assertIn(date(2026, 1, 30), seen["feature"])
         self.assertNotIn(date(2026, 1, 30), seen["train"])
 
     def test_the_gap_is_derived_and_cannot_be_supplied(self):
-        """There is no `purge` argument, and zero is not expressible.
+        """There is no `purge` argument; the declaration decides.
 
-        The flag would be reached for at exactly the moment it must not be --
-        when the training set that cleared the gap turned out to be short -- and
-        the row it would admit is a row published after the window opened. The
-        second half is `max_release_lag_days` refusing a zero maximum, which
-        this path now inherits along with the derivation.
+        A zero-day declaration is legal under the as-of rule -- bill rates
+        declare one -- and it trains through the decision day's own row, and
+        never a row of the window.
         """
 
         self.assertNotIn("purge", inspect.signature(evaluate_event_window).parameters)
 
-        unpurged = {
+        same_day = {
             source: {
                 "release_lag": {
                     "basis": "record_date",
@@ -468,8 +498,8 @@ class PurgeBoundaryTests(EvaluatorHarness):
             }
             for source in contract.sources_for_features(FEATURES)
         }
-        with self.assertRaisesRegex(RegistryContractError, "nonzero purge"):
-            self.evaluate(registry=unpurged)
+        report = self.evaluate(registry=same_day)
+        self.assertEqual(report.last_train_date, WINDOW_DECISION_DAY)
 
     def test_an_unclassifiable_feature_is_refused_before_any_row_is_selected(self):
         with self.assertRaises(UndeclaredFeatureError):
@@ -477,8 +507,20 @@ class PurgeBoundaryTests(EvaluatorHarness):
         self.assertEqual(read_journal(self.journal), ())
 
     def test_a_gap_that_leaves_no_training_row_raises(self):
-        with self.assertRaisesRegex(SplitError, "no training row clears"):
-            self.evaluate(purge=3650)
+        slow = {
+            source: {
+                "release_lag": {
+                    "basis": "record_date",
+                    "unit": "calendar_days",
+                    "days": 3650,
+                    "available_time": "00:00",
+                    "timezone": "America/New_York",
+                }
+            }
+            for source in contract.sources_for_features(FEATURES)
+        }
+        with self.assertRaisesRegex(SplitError, "observable"):
+            self.evaluate(registry=slow)
 
 
 class ScoredWindowTests(EvaluatorHarness):
@@ -512,21 +554,28 @@ class ScoredWindowTests(EvaluatorHarness):
 
 
 class WindowGuardTests(unittest.TestCase):
-    """The guard, driven directly with windows the evaluator cannot build."""
+    """The guard, driven directly with windows the evaluator cannot build.
+
+    The last argument is the anchor: the latest row whose label was observable
+    at the decision instant before the window -- here 2026-01-27, as at a
+    three-day `record_date` lag.
+    """
+
+    ANCHOR = PANEL_DATES.index(date(2026, 1, 27))
 
     def test_a_training_row_inside_the_gap_raises(self):
         dates = PANEL_DATES
         train = [i for i, w in enumerate(dates) if w <= date(2026, 1, 30)]
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
-        with self.assertRaisesRegex(LookAheadError, "inside the 3-day purge gap"):
-            _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, 3)
+        with self.assertRaisesRegex(LookAheadError, "the last label observable"):
+            _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, self.ANCHOR)
 
     def test_a_row_both_trained_on_and_scored_raises(self):
         dates = PANEL_DATES
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
         train = [i for i, w in enumerate(dates) if w < date(2026, 1, 28)] + [scored[0]]
         with self.assertRaisesRegex(LookAheadError, "both trained on and scored"):
-            _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, 3)
+            _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, self.ANCHOR)
 
     def test_a_scored_row_outside_the_window_raises(self):
         dates = PANEL_DATES
@@ -534,7 +583,7 @@ class WindowGuardTests(unittest.TestCase):
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
         with self.assertRaisesRegex(LookAheadError, "scored but outside the window"):
             _assert_window_is_clean(
-                dates, train, scored, EVENT_START, date(2026, 2, 4), 3
+                dates, train, scored, EVENT_START, date(2026, 2, 4), self.ANCHOR
             )
 
     def test_non_contiguous_scored_rows_raise(self):
@@ -543,14 +592,14 @@ class WindowGuardTests(unittest.TestCase):
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
         with self.assertRaisesRegex(LookAheadError, "not contiguous"):
             _assert_window_is_clean(
-                dates, train, scored[:1] + scored[2:], EVENT_START, EVENT_END, 3
+                dates, train, scored[:1] + scored[2:], EVENT_START, EVENT_END, self.ANCHOR
             )
 
     def test_a_clean_window_passes(self):
         dates = PANEL_DATES
-        train = [i for i, w in enumerate(dates) if (EVENT_START - w).days > 3]
+        train = list(range(self.ANCHOR + 1))
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
-        _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, 3)
+        _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, self.ANCHOR)
 
 
 class ExceedanceReportTests(EvaluatorHarness):
@@ -594,7 +643,7 @@ class ExceedanceReportTests(EvaluatorHarness):
                 "features",
                 "sources",
                 "field_sources",
-                "purge_days",
+                "information",
                 "train_rows",
                 "last_train_date",
                 "taus",
@@ -724,7 +773,7 @@ class ConditionalExceedanceTests(EvaluatorHarness):
             self.assertEqual(len(curve), len(TAUS))
 
         # Knowledge holdout: nothing in or near the window trained.
-        self.assertGreater((EVENT_START - report.last_train_date).days, report.purge_days)
+        self.assertTrue(observable_by(report.last_train_date, 3))
         self.assertEqual(report.record.holdout_role, KNOWLEDGE_HOLDOUT)
 
         # The criterion.
@@ -1092,12 +1141,11 @@ class RegimeDeclarationTests(EvaluatorHarness):
         self.assertEqual(len(report.exceedance), len(report.scored_dates))
         self.assertEqual(report.record.holdout_role, KNOWLEDGE_HOLDOUT)
 
-        # Knowledge holdout: nothing in or near the window trained.
-        self.assertGreater(
-            (EVENT_START - report.last_train_date).days, report.purge_days
-        )
+        # Knowledge holdout: nothing in or near the window trained -- the last
+        # label is observable by the window's decision at the base lag.
+        self.assertTrue(observable_by(report.last_train_date, self.BASE_PURGE))
 
-        # And the gap it was scored under is the regime variable's. The pair is
+        # And the regime variable is read by its own, slower declaration. The pair is
         # read from `contract` rather than typed, so a change to the field a
         # column resolves to is a failure here and not a stale literal.
         regime_pairs = contract.field_sources_for_features((THRESHOLD_VARIABLE,))
@@ -1110,7 +1158,15 @@ class RegimeDeclarationTests(EvaluatorHarness):
             msg="the regime variable's field is already in the undeclared set; "
             "declaring it cannot be shown to have widened anything",
         )
-        self.assertEqual(report.purge_days, self.REGIME_PURGE)
+        reads = report.information["features"]
+
+        def mean_distance(feature):
+            counts = reads[feature]["rows_before_scored"]
+            return sum(int(k) * v for k, v in counts.items()) / sum(counts.values())
+
+        # Weekends make the two distance histograms overlap day by day, so the
+        # relation is asserted on the mean.
+        self.assertGreater(mean_distance(THRESHOLD_VARIABLE), mean_distance("spread_bps"))
 
 
 class FeatureRowTests(EvaluatorHarness):
@@ -1124,27 +1180,33 @@ class FeatureRowTests(EvaluatorHarness):
     """
 
     def test_each_scored_day_is_forecast_from_the_last_row_that_cleared_the_gap(self):
-        """Recomputed here from a day count, not from the module's comparison."""
+        """Recomputed here from a day count, not from the module's comparison.
+
+        The decision for each scored day is 16:00 on the panel day before it,
+        and a row dated `d` is observable from midnight on `d + 3`.
+        """
 
         report = self.evaluate(purge=3)
         for scored, feature in zip(report.scored_dates, report.feature_dates):
             with self.subTest(scored=scored):
-                self.assertGreater((scored - feature).days, 3)
+                decision = max(w for w in PANEL_DATES if w < scored)
+                self.assertLessEqual(feature + timedelta(days=3), decision)
                 later = [
                     when
                     for when in PANEL_DATES
-                    if when > feature and (scored - when).days > 3
+                    if when > feature and when + timedelta(days=3) <= decision
                 ]
                 self.assertEqual(later, [], msg="a later eligible row was passed over")
 
     def test_a_row_inside_the_gap_never_trains_and_may_still_be_read(self):
-        """2026-01-30, at `purge=3`, for a window opening 2026-02-02.
+        """2026-01-30, at a three-day lag, for a window opening 2026-02-02.
 
-        Three calendar days before the window opens, so it does not train. Three
-        calendar days before 2026-02-03 is 2026-01-31, so by 2026-02-03 it has
-        been published and reading it is not look-ahead. Both facts at once, on
-        one row, because a test that stated only the first would read as a
-        prohibition on ever touching it.
+        Observable from midnight on 2 February, after the Friday 30 January
+        decision that opens the window, so it does not train. By the Monday
+        2 February decision that forecasts 3 February it is public, and reading
+        it is not look-ahead. Both facts at once, on one row, because a test
+        that stated only the first would read as a prohibition on ever touching
+        it.
         """
 
         report = self.evaluate(purge=3)
@@ -1153,9 +1215,11 @@ class FeatureRowTests(EvaluatorHarness):
         self.assertIn(inside_the_gap, report.feature_dates)
 
     def test_a_day_late_in_the_window_may_read_an_earlier_window_day(self):
-        report = self.evaluate(purge=3)
+        # Scored Friday 6 February, decided Thursday 5 February: at a one-day
+        # lag the Wednesday 4 February row, a day inside the window, is read.
+        report = self.evaluate(purge=1)
         pairs = dict(zip(report.scored_dates, report.feature_dates))
-        self.assertEqual(pairs[date(2026, 2, 6)], date(2026, 2, 2))
+        self.assertEqual(pairs[date(2026, 2, 6)], date(2026, 2, 4))
         self.assertIn(date(2026, 2, 2), report.scored_dates)
 
     def test_no_scored_day_is_ever_forecast_from_itself_or_later(self):
@@ -1186,26 +1250,23 @@ class FeatureRowTests(EvaluatorHarness):
         self.assertEqual(len(seen["feature"]), len(report.scored_dates))
         self.assertNotIn(EVENT_END, seen["feature"])
 
-    def test_a_feature_row_that_does_not_clear_the_gap_raises(self):
-        """The guard, driven directly: `_feature_index` cannot produce this.
+    def test_a_feature_row_at_or_after_its_scored_day_raises(self):
+        """The pairing guard, driven directly: the as-of rule cannot produce this.
 
-        It is here because a rule only one function can reach is a rule that
-        stops being checked the moment a second caller appears.
+        Each read is checked both ways by `InformationRule.check`; this guard
+        states the pairing, which the rule cannot, and it is here because a
+        rule only one function can reach stops being checked the moment a
+        second caller appears.
         """
 
         scored = [i for i, w in enumerate(PANEL_DATES) if EVENT_START <= w <= EVENT_END]
-        feature = [index - 1 for index in scored]
-        with self.assertRaisesRegex(LookAheadError, "does not clear the 3-day"):
-            event_eval._assert_feature_rows_clear_the_gap(
-                PANEL_DATES, feature, scored, 3
-            )
-
-    def test_a_feature_row_at_or_after_its_scored_day_raises(self):
-        scored = [i for i, w in enumerate(PANEL_DATES) if EVENT_START <= w <= EVENT_END]
         with self.assertRaisesRegex(LookAheadError, "is not before it"):
-            event_eval._assert_feature_rows_clear_the_gap(
-                PANEL_DATES, list(scored), scored, 3
+            event_eval._assert_feature_rows_precede_their_days(
+                PANEL_DATES, list(scored), scored
             )
+        event_eval._assert_feature_rows_precede_their_days(
+            PANEL_DATES, [index - 1 for index in scored], scored
+        )
 
 
 class DerivedGapTests(EvaluatorHarness):
@@ -1214,10 +1275,12 @@ class DerivedGapTests(EvaluatorHarness):
     def test_the_gap_follows_the_declaration_and_reaches_the_boundary(self):
         """Asserted as a relation between two feature sets, not against a literal.
 
-        One registry, pricing two sources differently. Declaring the feature
-        whose source costs more moves the gap, and moving the gap moves where
-        training stops -- so the derivation reaches the numbers rather than only
-        the report's own `purge_days` field.
+        One registry, declaring two sources at different lags. **Re-based by
+        the as-of rule:** the slow column no longer moves where training stops
+        -- that is the target's label observability -- so both declarations
+        train on the same rows, and the slow column is read further back than
+        the target on every scored day, which each report's information set
+        says.
         """
 
         registry = {
@@ -1230,17 +1293,20 @@ class DerivedGapTests(EvaluatorHarness):
             features=("spread_bps", "mmf_assets"), registry=registry
         )
 
-        self.assertEqual(narrow.purge_days, 2)
-        self.assertEqual(wide.purge_days, 9)
-        self.assertLess(wide.last_train_date, narrow.last_train_date)
-        self.assertLess(wide.train_rows, narrow.train_rows)
+        self.assertEqual(wide.last_train_date, narrow.last_train_date)
+        self.assertEqual(wide.train_rows, narrow.train_rows)
+        reads = wide.information["features"]
+        target = reads["spread_bps"]["rows_before_scored"]
+        slow = reads["mmf_assets"]["rows_before_scored"]
+        self.assertGreater(min(map(int, slow)), max(map(int, target)))
+        self.assertNotIn("mmf_assets", narrow.information["features"])
 
     def test_the_report_carries_the_declaration_it_was_scored_under(self):
         report = self.evaluate(features=("spread_bps",), purge=4)
         self.assertEqual(report.features, ("spread_bps",))
         self.assertEqual(report.sources, contract.sources_for_features(("spread_bps",)))
-        self.assertEqual(report.purge_days, 4)
-        self.assertEqual(report.record.purge_days, 4)
+        self.assertIn("spread_bps", report.information["features"])
+        self.assertEqual(report.record.information_rule, "as_of")
 
     def test_the_real_registry_refuses_this_path_too_for_the_same_field(self):
         """The narrowed guard, and that the two paths narrowed together.
@@ -1287,7 +1353,7 @@ class DerivedGapTests(EvaluatorHarness):
         message = str(caught.exception)
         self.assertIn("fred_macro_latest_vintage", message)
         self.assertIn("RRPONTSYD", message)
-        self.assertIn("available_at", message)
+        self.assertIn("declares no availability", message)
         self.assertEqual(read_journal(self.journal), ())
 
         # The same source, the same registry, one field fewer: it prices. This
@@ -1300,15 +1366,13 @@ class DerivedGapTests(EvaluatorHarness):
             report.field_sources,
             (
                 # `iorb` is spliced: IOER before 2021-07-29, IORB after. The
-                # purge is sized over every field the column reads, so both
-                # appear here. They declare the same lag, so the gap is
-                # unchanged -- but the field list is the thing under test.
+                # rule reads every field the column reads, so both appear here.
                 ("fred_macro_latest_vintage", "IOER"),
                 ("fred_macro_latest_vintage", "IORB"),
                 ("nyfed_sofr", "SOFR"),
             ),
         )
-        self.assertGreater(report.purge_days, 0)
+        self.assertGreater(report.train_rows, 0)
 
     @staticmethod
     def _priced(days):
@@ -1348,7 +1412,7 @@ class RunOnceJournalTests(EvaluatorHarness):
                 "feb-2026", EVENT_START.isoformat(), EVENT_END.isoformat()
             ),
         )
-        self.assertEqual(entry["purge_days"], 3)
+        self.assertEqual(entry["information_rule"], "as_of")
         self.assertEqual(entry["scored_rows"], len(report.scored_dates))
         self.assertEqual(entry["train_rows"], report.train_rows)
         self.assertTrue(entry["evaluated_at"].startswith("20"))

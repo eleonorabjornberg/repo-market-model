@@ -31,8 +31,8 @@ from contextlib import contextmanager
 from datetime import time
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
-from .baseline import _derive_purge, _feature_index, _reads_purge_days
-from .splits import rolling_origin
+from .asof import InformationRule
+from .baseline import _as_of_folds, _reads_information
 
 __all__ = [
     "absolute_ceilings",
@@ -311,9 +311,12 @@ def refit_knots(
 ) -> List[Dict[str, Any]]:
     """Refit the chosen folds of `record` and return their knots, in fold order.
 
-    The fold loop is `baseline.rolling_exceedance_backtest`'s: the same purge
-    from `_derive_purge`, the same `rolling_origin`, the same `_feature_index`
-    and the same `purge_days` rule. Only folds whose `scored_date` is in
+    The fold loop is `baseline.rolling_exceedance_backtest`'s: the same as-of
+    rule, grid and refit blocks (`baseline._as_of_folds`), and the same
+    `information` hand-over. A record scored under the purge rule (its
+    `derived` carries `purge_days`) is refused: its folds are not the ones
+    this loop builds, and refitting them under another rule would attribute
+    new numbers to an old record. Only folds whose `scored_date` is in
     `scored_dates` are fitted (all folds when `None`), so a long run can be
     split across processes. `predictor` is the one the record was made with,
     for example `ml.gbm_exceedance(...)`.
@@ -322,32 +325,45 @@ def refit_knots(
 
     Raises:
         ValueError: a fit made more or fewer than one `predict_stress` call,
-            which means the predictor is not one this wrapper can read.
+            which means the predictor is not one this wrapper can read; or the
+            record was scored under the purge rule.
     """
 
     declaration = record["declaration"]
+    if "purge_days" in record.get("derived", {}):
+        raise ValueError(
+            "the record was scored under the purge rule (derived.purge_days); "
+            "its folds are not the as-of rule's, so they cannot be refitted here. "
+            "Re-score it under the as-of rule first"
+        )
     features = tuple(declaration["features"])
     minimum_history = int(declaration["minimum_history"])
     taus = tuple(_taus(record))
-    _, _, purge = _derive_purge(
+    rule = InformationRule(
         registry,
         features,
         decision_time=time.fromisoformat(declaration["decision_time"]),
     )
     wanted = None if scored_dates is None else set(scored_dates)
-    reads_purge = _reads_purge_days(predictor)
-    dates = [row.date for row in rows]
+    reads_information = _reads_information(predictor)
     knots: List[Dict[str, Any]] = []
-    for train_indices, test_indices in rolling_origin(dates, minimum_history, 1, purge):
-        index = test_indices[0]
+    train_rows: tuple = ()
+    for fold in _as_of_folds(
+        rows,
+        rule,
+        minimum_history=minimum_history,
+        refit_every=int(declaration.get("refit_every", 1)),
+    ):
+        index = fold.index
+        if fold.frame is not None:
+            train_rows = tuple(fold.frame)
         scored = rows[index].date.isoformat()
         if wanted is not None and scored not in wanted:
             continue
-        train_rows = tuple(rows[i] for i in train_indices)
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+        feature_row = fold.feature_row
         with capture_knots() as captured:
-            if reads_purge:
-                predictor(train_rows, (feature_row,), taus, purge_days=purge)
+            if reads_information:
+                predictor(train_rows, (feature_row,), taus, information=rule)
             else:
                 predictor(train_rows, (feature_row,), taus)
         if len(captured) != 1:

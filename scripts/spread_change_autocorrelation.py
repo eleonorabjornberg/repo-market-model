@@ -18,9 +18,9 @@ Two parts, both printed as JSON:
   improvable?); autocorrelation in `|d|` and `d^2` is clustering.
 
 * **Persistence's error at the scored horizon.** The comparisons do not score a
-  one-day change: each origin's forecast is conditioned on the last row that
-  clears the purge gap, several rows before the scored day. This part walks
-  `splits.rolling_origin` with the gap `baseline._derive_purge` prices for the
+  one-day change: each origin's forecast is conditioned on the anchor row the
+  as-of rule reads, two or three rows before the scored day. This part walks
+  the as-of folds (`baseline._as_of_folds`) the rule builds for the
   declared features -- the construction `paired_model_comparison` uses -- and
   takes `e = s(scored) - s(feature)` at every origin. Two errors whose origins
   are at most the widest window apart share increments, or share an endpoint
@@ -55,10 +55,10 @@ import sys
 from datetime import time
 from pathlib import Path
 
-from repo_model.baseline import _derive_purge, _feature_index, panel_sha256
+from repo_model.asof import InformationRule
+from repo_model.baseline import _as_of_folds, panel_sha256
 from repo_model.data import load_daily_panel
 from repo_model.ingest import load_source_registry
-from repo_model.splits import rolling_origin
 
 #: The gbm and threshold comparisons' declaration; persistence's gap is priced
 #: over the same set in every published CRPS record.
@@ -123,16 +123,15 @@ def main(argv=None):
 
     features = tuple(sorted(args.feature or DEFAULT_FEATURES))
     decision_time = time.fromisoformat(args.decision_time)
-    _fields, _sources, purge = _derive_purge(
+    rule = InformationRule(
         load_source_registry(args.registry), features, decision_time=decision_time
     )
-    dates = [row.date for row in rows]
     errors, widths = [], []
-    for train_indices, test_indices in rolling_origin(
-        dates, args.minimum_history, 1, purge
+    for fold in _as_of_folds(
+        rows, rule, minimum_history=args.minimum_history, refit_every=1
     ):
-        scored = test_indices[0]
-        feature = _feature_index(dates, train_indices, scored, purge)
+        scored = fold.index
+        feature = fold.info.anchor
         errors.append(spreads[scored] - spreads[feature])
         widths.append(scored - feature)
     width = max(widths)
@@ -154,7 +153,7 @@ def main(argv=None):
         },
         "persistence_error_at_scored_horizon": {
             "features": list(features),
-            "purge_days": purge,
+            "information_rule": "as_of",
             "minimum_history": args.minimum_history,
             "origins": len(errors),
             "window_rows": {"min": min(widths), "max": width},

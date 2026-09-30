@@ -392,19 +392,20 @@ class EventHoldoutReportTests(EventHoldoutHarness):
             self.assertAlmostEqual(day["realized_bps"], self.EVENT_BPS, places=6)
 
     def test_training_stops_clear_of_the_purge_gap_the_registry_sized(self):
-        """The gap is the registry's number, and the boundary is strict.
+        """Training stops at the last label observable before the window.
 
-        The purge is not asserted as a literal -- that would be this file
-        restating `metadata/sources.json`. What is asserted is the relation the
-        contract states: the last training row plus the reported gap still falls
-        before the window opens.
+        Under the as-of rule the training set is every label observable at the
+        decision instant before the window's first day -- the declared time on
+        the panel day before it. So the last training row is strictly before
+        that decision day: its label is published a day after it at the
+        earliest under this registry's declaration.
         """
 
         entry = self.scored()[0]
-        gap = entry["purge_days"]
-        self.assertGreater(gap, 0)
+        self.assertEqual(entry["information_rule"], "as_of")
         last_train = date.fromisoformat(entry["last_train_date"])
-        self.assertLess(last_train + timedelta(days=gap), self.window_start)
+        decision_day = max(d for d in self.days if d < self.window_start)
+        self.assertLess(last_train, decision_day)
         self.assertEqual(entry["train_rows"], sum(1 for d in self.days if d <= last_train))
 
     def test_a_climatology_that_never_saw_the_event_reports_zeros(self):
@@ -878,7 +879,7 @@ class ModelSelectorTests(ConditionalModelHarness):
         # gap, so nothing but the model can account for a difference.
         self.assertEqual(arx["window"], climatology["window"])
         self.assertEqual(arx["features"], climatology["features"])
-        self.assertEqual(arx["purge_days"], climatology["purge_days"])
+        self.assertEqual(arx["information_rule"], climatology["information_rule"])
         self.assertEqual(arx["train_rows"], climatology["train_rows"])
         self.assertEqual(arx["model"], "arx")
         self.assertEqual(climatology["model"], "climatology")
@@ -1142,41 +1143,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-14",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9791666666666666,' + '\n'
-    '          0.5416666666666666,' + '\n'
-    '          0.0,' + '\n'
-    '          0.0' + '\n'
-    '        ],' + '\n'
-    '        "feature_date": "2026-01-07",' + '\n'
-    '        "realized_bps": 35.00000000000006' + '\n'
-    '      },' + '\n'
-    '      {' + '\n'
-    '        "date": "2026-01-15",' + '\n'
-    '        "exceedance": [' + '\n'
-    '          0.9791666666666666,' + '\n'
-    '          0.5416666666666666,' + '\n'
-    '          0.0,' + '\n'
-    '          0.0' + '\n'
-    '        ],' + '\n'
-    '        "feature_date": "2026-01-08",' + '\n'
-    '        "realized_bps": 35.00000000000006' + '\n'
-    '      },' + '\n'
-    '      {' + '\n'
-    '        "date": "2026-01-16",' + '\n'
-    '        "exceedance": [' + '\n'
-    '          0.9791666666666666,' + '\n'
-    '          0.5416666666666666,' + '\n'
-    '          0.0,' + '\n'
-    '          0.0' + '\n'
-    '        ],' + '\n'
-    '        "feature_date": "2026-01-09",' + '\n'
-    '        "realized_bps": 35.00000000000006' + '\n'
-    '      },' + '\n'
-    '      {' + '\n'
-    '        "date": "2026-01-19",' + '\n'
-    '        "exceedance": [' + '\n'
-    '          0.9791666666666666,' + '\n'
-    '          0.5416666666666666,' + '\n'
+    '          0.9803921568627451,' + '\n'
+    '          0.5490196078431373,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1184,14 +1152,47 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '        "realized_bps": 35.00000000000006' + '\n'
     '      },' + '\n'
     '      {' + '\n'
-    '        "date": "2026-01-20",' + '\n'
+    '        "date": "2026-01-15",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9791666666666666,' + '\n'
-    '          0.5416666666666666,' + '\n'
+    '          0.9803921568627451,' + '\n'
+    '          0.5490196078431373,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
     '        "feature_date": "2026-01-13",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-16",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9803921568627451,' + '\n'
+    '          0.5490196078431373,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-14",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-19",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9803921568627451,' + '\n'
+    '          0.5490196078431373,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-15",' + '\n'
+    '        "realized_bps": 35.00000000000006' + '\n'
+    '      },' + '\n'
+    '      {' + '\n'
+    '        "date": "2026-01-20",' + '\n'
+    '        "exceedance": [' + '\n'
+    '          0.9803921568627451,' + '\n'
+    '          0.5490196078431373,' + '\n'
+    '          0.0,' + '\n'
+    '          0.0' + '\n'
+    '        ],' + '\n'
+    '        "feature_date": "2026-01-16",' + '\n'
     '        "realized_bps": 35.00000000000006' + '\n'
     '      }' + '\n'
     '    ],' + '\n'
@@ -1206,9 +1207,9 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      "nyfed_sofr.SOFR"' + '\n'
     '    ],' + '\n'
     '    "holdout_role": "knowledge",' + '\n'
-    '    "last_train_date": "2026-01-07",' + '\n'
+    '    "information_rule": "as_of",' + '\n'
+    '    "last_train_date": "2026-01-12",' + '\n'
     '    "model": "climatology",' + '\n'
-    '    "purge_days": 6,' + '\n'
     '    "sources": [' + '\n'
     '      "fred_macro_latest_vintage",' + '\n'
     '      "nyfed_sofr"' + '\n'
@@ -1219,7 +1220,7 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      20.0,' + '\n'
     '      50.0' + '\n'
     '    ],' + '\n'
-    '    "train_rows": 48,' + '\n'
+    '    "train_rows": 51,' + '\n'
     '    "window": {' + '\n'
     '      "checksum": "d6e443c91c06c63c5237369684444d6ac79a9453183260d2d9834c51f3aea908",' + '\n'
     '      "end": "2026-01-20",' + '\n'
@@ -1390,6 +1391,13 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         Pinned on the climatology run because its curve is stdlib-only
         arithmetic; the gbm run's pin lives on the journal hash below, which
         no fitter version can move.
+
+        **Re-captured under the as-of rule**, on the branch that introduced it,
+        not at `69ad231` as the constant's name says: the rule moves every
+        `feature_date` from five panel rows before the scored day to two, which
+        moves the climatology's training rows and so its curve, and
+        `purge_days` became `information_rule`. The journal hash below did not
+        move -- `model_config` carries no information-set key.
         """
 
         code, out, err = self.run_command(model="climatology")
@@ -1397,7 +1405,7 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         self.assertEqual(out, HOLDOUT_DEFAULT_STDOUT_AT_69AD231)
         self.assertEqual(
             hashlib.sha256(out.encode("utf-8")).hexdigest(),
-            "8f05f5787f44f4bbf3ab334d991275fe30f39f6cb29257de3be9bea776943cbe",
+            "c5b6e6c23fa43bbef84b7dcf1d7ad58f9c2f007a68d5fab22a8ba0b2ac21b60c",
             msg="the pinned stdout literal was edited; re-capture it from the "
             "base rather than copying what the command prints now",
         )
@@ -1534,6 +1542,22 @@ class RollingBacktestHarness(unittest.TestCase):
             encoding="utf-8",
         )
 
+    def slow_registry(self):
+        """The harness registry with the target's own sources at six days."""
+
+        path = self.tmp / "registry-slow.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "nyfed_sofr": self._lag(6),
+                    "fred_macro_latest_vintage": self._lag(6),
+                    "treasury_auctions": self._lag(6),
+                }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
     @staticmethod
     def _lag(days):
         return {
@@ -1635,31 +1659,34 @@ class RollingBacktestCommandTests(RollingBacktestHarness):
     """
 
     def test_the_rolling_command_takes_its_purge_from_the_declared_features(self):
-        """The gap follows from `--feature`, and it reaches the reported numbers.
+        """`--feature` decides what is read, and from which row; not the grid.
 
         Asserted as a relation between two feature sets rather than against a
-        literal. The two resolve to sources the registry prices differently, so
-        naming the slower one must widen the gap; a wider gap costs origins and
-        moves the metrics. A command that reported a `purge_days` it did not
-        pass on -- the plausible mistake, since the field would still look right
-        -- would hold the first assertion and fail the second.
+        literal. The two resolve to sources the registry declares at different
+        lags. Under the as-of rule the slower declaration is scored on the same
+        rows -- the grid is the target's -- and reads its slow column further
+        back than the target, which the record's information set shows. A
+        command that ignored the declaration would report the slow column at
+        the target's distance.
         """
 
+        slow = self.published(*self.SLOW_FEATURES)
+        fast = self.published(*self.FAST_FEATURES)
+
+        self.assertEqual(slow["folds"]["count"], fast["folds"]["count"])
+        self.assertEqual(slow["folds"]["first"], fast["folds"]["first"])
+        reads = slow["derived"]["information_set"]["features"]
+        target = reads["spread_bps"]["rows_before_scored"]
+        settlement = reads["treasury_settlement"]["rows_before_scored"]
+        self.assertGreater(min(map(int, settlement)), max(map(int, target)))
+        self.assertNotIn(
+            "treasury_settlement", fast["derived"]["information_set"]["features"]
+        )
         slow = self.scored(*self.SLOW_FEATURES)
         fast = self.scored(*self.FAST_FEATURES)
 
-        self.assertGreater(fast["purge_days"], 0)
-        self.assertGreater(slow["purge_days"], fast["purge_days"])
-
-        # The gap reached the run: a wider one leaves fewer origins and a
-        # different benchmark, not merely a different field in the report.
-        self.assertLess(slow["forecast_count"], fast["forecast_count"])
-        self.assertNotEqual(slow["mae_bps"], fast["mae_bps"])
-
-        # The wider declaration takes the maximum over the union of its
-        # sources, which is what "the purge for a backtest is the maximum over
-        # the sources the feature set uses" means. Declaring more never narrows
-        # the gap.
+        # The wider declaration reads the union of its sources. Declaring more
+        # never reads less.
         self.assertEqual(
             slow["sources"],
             sorted(set(fast["sources"]) | {"treasury_auctions"}),
@@ -1682,7 +1709,7 @@ class RollingBacktestCommandTests(RollingBacktestHarness):
             report["sources"],
             ["fred_macro_latest_vintage", "nyfed_sofr"],
         )
-        self.assertEqual(report["purge_days"], 1)
+        self.assertEqual(report["refit_every"], 1)
 
         # And the same three on the event path, per scored window.
         holdout = EventHoldoutHarness("run_command")
@@ -1693,7 +1720,7 @@ class RollingBacktestCommandTests(RollingBacktestHarness):
         self.assertEqual(
             window["sources"], ["fred_macro_latest_vintage", "nyfed_sofr"]
         )
-        self.assertEqual(window["purge_days"], 6)
+        self.assertEqual(window["information_rule"], "as_of")
 
     def test_an_undeclared_feature_is_refused_before_any_fold_is_built(self):
         """A name the map does not classify is refused, naming the column.
@@ -1973,48 +2000,56 @@ class PublishedReportTests(RollingBacktestHarness):
         panel does.
         """
 
+        # **Re-based by the as-of rule.** A slower *column* no longer moves the
+        # grid or persistence's numbers -- the grid is the target's -- so the
+        # two runs now differ in the target's own declared lag: the harness
+        # registry at one day, and a second one at six.
+        slow_registry = self.slow_registry()
+
         # Each run is a full invocation: the console summary and the artifact
         # come out of the same command, so a report that carried another run's
         # numbers disagrees with the summary printed beside it.
-        slow_summary = self.scored(*self.SLOW_FEATURES)
+        slow_summary = self.scored(
+            *self.FAST_FEATURES,
+            registry=slow_registry,
+            report=self.tmp / "report-slow.json",
+        )
         slow = json.loads(self.last_report.read_text(encoding="utf-8"))
         fast_summary = self.scored(*self.FAST_FEATURES)
         fast = json.loads(self.last_report.read_text(encoding="utf-8"))
 
+        def distances(report):
+            counts = report["derived"]["information_set"]["features"]["spread_bps"]
+            return [int(k) for k in counts["rows_before_scored"]]
+
         self.assertNotEqual(
-            slow["derived"]["purge_days"],
-            fast["derived"]["purge_days"],
-            msg="both reports published the same gap; a constant would do this",
+            slow["derived"]["information_set"],
+            fast["derived"]["information_set"],
+            msg="both reports published the same information set; a constant would do this",
         )
-        self.assertGreater(
-            slow["derived"]["purge_days"], fast["derived"]["purge_days"]
-        )
-        self.assertGreater(fast["derived"]["purge_days"], 0)
+        self.assertGreater(min(distances(slow)), max(distances(fast)))
 
-        # Each report's gap is its own run's, not the other's and not a fixed
-        # one: it agrees with what that invocation reported to the console.
-        self.assertEqual(slow["derived"]["purge_days"], slow_summary["purge_days"])
-        self.assertEqual(fast["derived"]["purge_days"], fast_summary["purge_days"])
+        # Each report's cadence is its own run's: it agrees with what that
+        # invocation reported to the console.
+        self.assertEqual(slow["declaration"]["refit_every"], slow_summary["refit_every"])
+        self.assertEqual(fast["declaration"]["refit_every"], fast_summary["refit_every"])
 
-        # The gap reached the run rather than only the record. A wider gap
-        # leaves fewer origins, so a report whose gap was stamped on afterwards
-        # would hold the assertions above and fail here.
+        # The lag reached the run rather than only the record. A slower target
+        # leaves fewer scored rows, so a report whose information set was
+        # stamped on afterwards would hold the assertions above and fail here.
         self.assertLess(slow["folds"]["count"], fast["folds"]["count"])
-        # One fold per scored forecast, in each report. A fold count that had
-        # been stamped on rather than counted could disagree with the metrics
-        # computed beside it.
+        # One fold per scored forecast, in each report.
         self.assertEqual(slow["folds"]["count"], slow["metrics"]["forecast_count"])
         self.assertEqual(fast["folds"]["count"], fast["metrics"]["forecast_count"])
 
         # And the metrics moved with it -- every one of them, not only the
-        # headline. A report that carried one run's metrics under another run's
-        # gap is the failure this test is named for.
+        # headline.
         for metric in ("mae_bps", "interval_coverage", "crps_bps"):
             with self.subTest(metric=metric):
                 self.assertNotEqual(
                     slow["metrics"][metric],
                     fast["metrics"][metric],
-                    msg=f"{metric} did not move with the gap",
+                    msg=f"{metric} did not move with the declared lag",
                 )
         self.assertNotEqual(
             slow["metrics"]["pinball_loss"], fast["metrics"]["pinball_loss"]
@@ -2023,8 +2058,8 @@ class PublishedReportTests(RollingBacktestHarness):
         # Each set of metrics belongs to the run that emitted it. The console
         # summary rounds and the artifact does not, so this is the comparison
         # the two can be held to.
-        for report, summary in ((slow, slow_summary), (fast, fast_summary)):
-            with self.subTest(purge=report["derived"]["purge_days"]):
+        for report, summary, days in ((slow, slow_summary, 6), (fast, fast_summary, 1)):
+            with self.subTest(lag=days):
                 self.assertEqual(
                     round(report["metrics"]["mae_bps"], 4), summary["mae_bps"]
                 )
@@ -2040,13 +2075,9 @@ class PublishedReportTests(RollingBacktestHarness):
                     report["declaration"]["features"], summary["features"]
                 )
 
-        # The gap is visible on the calendar, on the fold where it applies.
-        # This is the gap as a fact about dates rather than as a field: a
-        # report that named a wider purge while scoring the day after its
-        # feature row would pass every assertion above.
-        for report in (slow, fast):
-            purge = report["derived"]["purge_days"]
-            with self.subTest(purge=purge):
+                # The lag is visible on the calendar, on the fold where it
+                # applies: the row read is at least the declared lag before the
+                # scored day.
                 for position in ("first", "last"):
                     fold = report["folds"][position]
                     span = (
@@ -2055,10 +2086,10 @@ class PublishedReportTests(RollingBacktestHarness):
                     ).days
                     self.assertGreater(
                         span,
-                        purge,
+                        days,
                         msg=f"the {position} fold scored a day only {span} "
                         f"days after the row it was conditioned on, under a "
-                        f"declared gap of {purge}",
+                        f"declared lag of {days}",
                     )
                     self.assertEqual(fold["train_end"], fold["feature_date"])
 
@@ -2143,11 +2174,17 @@ class PublishedReportTests(RollingBacktestHarness):
         """
 
         fast = self.published(*self.FAST_FEATURES)
-        slow = self.published(*self.SLOW_FEATURES)
+        # The slower run declares the target itself slower; a slower extra
+        # column no longer moves the grid or the horizon (the as-of rule).
+        slow = self.published(
+            *self.FAST_FEATURES,
+            registry=self.slow_registry(),
+            report=self.tmp / "report-slow.json",
+        )
 
         for report in (fast, slow):
             interval = report["metrics"]["mae_bps_interval"]
-            with self.subTest(purge=report["derived"]["purge_days"]):
+            with self.subTest(slow=report is slow):
                 self.assertLessEqual(interval["lower"], report["metrics"]["mae_bps"])
                 self.assertLessEqual(report["metrics"]["mae_bps"], interval["upper"])
                 self.assertLess(interval["lower"], interval["upper"])
@@ -2975,7 +3012,13 @@ class ContinuousModelSelectorTests(ContinuousModelHarness):
     #: inside the 24 residuals a 25-row minimum frame carries, so the first
     #: origin can fill it; a window the first fold cannot fill is
     #: `fit_rolling_residual_law`'s refusal and is tested there.
-    RESIDUAL_WINDOW = 10
+    #:
+    #: Was 10 until the as-of rule. The rule reads each fold's spread two rows
+    #: back instead of five, and at 10 the windowed law's coverage on this
+    #: fixture happened to equal the full-sample law's (11/32 both), so the
+    #: test could no longer tell the two laws apart -- the case its own
+    #: failure message names. 6 separates them; nothing about the model moved.
+    RESIDUAL_WINDOW = 6
 
     def test_the_windowed_model_is_reachable_by_name_and_the_record_says_so(self):
         """`--model rolling-residual` runs, and carries its own law's numbers.
@@ -3305,7 +3348,7 @@ class RealRegistryTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("fred_macro_latest_vintage", err)
         self.assertIn("RRPONTSYD", err)
-        self.assertIn("available_at", err)
+        self.assertIn("declares no availability", err)
         self.assertEqual(
             out,
             "",
@@ -3344,11 +3387,11 @@ class RealRegistryTests(unittest.TestCase):
             ],
         )
         self.assertEqual(written["derived"]["sources"], sorted(written["derived"]["sources"]))
-        self.assertGreater(written["derived"]["purge_days"], 0)
+        self.assertIn("spread_bps", written["derived"]["information_set"]["features"])
 
         summary = json.loads(out)
         self.assertEqual(summary["fields"], written["derived"]["fields"])
-        self.assertEqual(summary["purge_days"], written["derived"]["purge_days"])
+        self.assertEqual(summary["refit_every"], written["declaration"]["refit_every"])
         self.assertEqual(summary["sources"], written["derived"]["sources"])
 
     def test_the_refusal_is_the_snapshot_source_and_not_the_whole_registry(self):
@@ -3636,22 +3679,46 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
             self.assertNotIn(banned, options)
 
     def test_the_gap_follows_from_the_declared_features_and_reaches_the_numbers(self):
-        """A wider gap costs origins and moves the pooled table.
+        """A slower declared target costs scored rows and moves the pooled table.
 
         A relation between two runs rather than a literal: a command that
-        reported a `purge_days` it did not pass on would hold the first
-        assertion and fail the rest.
+        recorded a declaration it did not act on would hold the first
+        assertion and fail the rest. The wide registry declares four business
+        days where the narrow one declares one.
         """
 
         narrow = self.published()
         wide_path = self.tmp / "wide.json"
-        self.registry = declared_registry_file(
-            self.tmp, purge=9, features=(FEATURE,)
+        from repo_model.contract import sources_for_features
+
+        registry = self.tmp / "registry-wide.json"
+        registry.write_text(
+            json.dumps(
+                {
+                    source: {
+                        "release_lag": {
+                            "basis": "ref_date",
+                            "unit": "business_days",
+                            "days": 4,
+                            "worst_case_calendar_days": 9,
+                            "available_time": "00:00",
+                            "timezone": "America/New_York",
+                        }
+                    }
+                    for source in sources_for_features((FEATURE,))
+                }
+            ),
+            encoding="utf-8",
         )
+        self.registry = registry
         self.report_path = wide_path
         wide = self.published()
 
-        self.assertGreater(wide["derived"]["purge_days"], narrow["derived"]["purge_days"])
+        def distances(report):
+            counts = report["derived"]["information_set"]["features"]["spread_bps"]
+            return [int(k) for k in counts["rows_before_scored"]]
+
+        self.assertGreater(min(distances(wide)), max(distances(narrow)))
         self.assertLess(wide["folds"]["count"], narrow["folds"]["count"])
         self.assertNotEqual(
             wide["metrics"]["by_tau"]["5"]["brier"],
@@ -4265,7 +4332,14 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
         )
 
     def test_two_declarations_pricing_different_gaps_are_refused_by_the_command(self):
-        """`baseline`'s refusal reaches the caller as exit 2 and no artifact.
+        """Two declarations at different lags pair, through the command.
+
+        **Inverted by the as-of rule.** This test pinned `IncomparablePurgeError`
+        reaching the caller as exit 2. The as-of grid is the target's, so the
+        two declarations below are scored on the same rows and the command
+        writes the record; the side declaring the slower column reads it
+        further back, which its information set shows. The paragraph below is
+        why the registry is written here, and it still holds.
 
         The command does not restate the rule -- it declares two feature sets
         and lets the run price them -- so what is asserted here is that the
@@ -4314,11 +4388,16 @@ class PairedComparisonCommandTests(ContinuousModelHarness):
             registry=registry,
         )
 
-        self.assertEqual(code, 2)
-        self.assertIn("2-day purge gap", err)
-        self.assertIn("7-day gap", err)
-        self.assertIn("treasury_settlement", err)
-        self.assertFalse(self.last_report.exists())
+        self.assertEqual(code, 0, msg=err)
+        record = json.loads(self.last_report.read_text(encoding="utf-8"))
+        side_b = record["derived"]["model_b"]["information_set"]["features"]
+        target = side_b["spread_bps"]["rows_before_scored"]
+        slow = side_b["treasury_settlement"]["rows_before_scored"]
+        self.assertGreater(min(map(int, slow)), max(map(int, target)))
+        self.assertNotIn(
+            "treasury_settlement",
+            record["derived"]["model_a"]["information_set"]["features"],
+        )
 
 
 if __name__ == "__main__":

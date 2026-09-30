@@ -272,10 +272,28 @@ class MilestoneAReproductionTests(unittest.TestCase):
     """
 
     def test_the_published_persistence_run_reproduces_from_tracked_inputs(self):
+        """The record reproduces -- or, until it is re-scored, its panel does.
+
+        `docs/runs/persistence_funding.json` was scored under the purge rule,
+        which the as-of pull request replaced. Until the re-scoring pull
+        request publishes it anew, the panel it was scored on must still
+        rebuild and verify, and the script must refuse the backtest step by
+        name rather than compare a new rule's numbers against an old record.
+        The moment the record carries no `derived.purge_days`, the full
+        comparison below runs again, with no edit here.
+        """
+
         import tempfile
 
         script = load_reproduction()
+        record = json.loads(script.RECORD.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as workdir:
+            if script.scored_under_purge_rule(record):
+                with self.assertRaises(script.PrePurgeRuleRecord) as caught:
+                    script.reproduce(workdir)
+                self.assertIn("purge rule", str(caught.exception))
+                self.assertTrue((Path(workdir) / "funding_panel.csv").exists())
+                return
             try:
                 found = script.reproduce(workdir)
             except script.ReproductionError as exc:
