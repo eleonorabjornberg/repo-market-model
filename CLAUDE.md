@@ -6,13 +6,13 @@ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
 
 ## How work happens
 
-`docs/decisions/workflow.md` decides this, and replaces the two-track workflow.
+`docs/decisions/workflow.md` decides this.
 
 - **One session, one branch, one pull request.** Branch from `origin/main` and give it a
-  name that says what it does, never `feature/data-layer` or `feature/model-eval`. Push only
+  name that says what it does. Push only
   your own branch, as `git push origin HEAD`, and open a PR. **Never push to `main`.**
 - **`main` is the only integration point.** A PR merges when CI (`tests.yml`) is green and
-  Eleonora has reviewed it. There are no tracks, no round closes, no lanes and no queues.
+  Eleonora has reviewed it.
 - **The PR description is the record of the work.** It carries what changed, the base SHA,
   the panel digest if a panel was built, the result tables, what was checked, and what was
   *not* checked.

@@ -3,7 +3,7 @@
 **30 September 2026.** Written in a Cowork cloud session from a read-only clone of `origin/main` at
 `f88be75`. The panel was rebuilt from the tracked fixtures and verified against the manifest (digest
 `d8b716cf…`, 4 s). The numbers below come from scouting scripts, not records. Scripts and raw output
-are in `notebooks/scouting/`. Every figure has to be reproduced through the repository's own code
+are in `docs/pivot/scouting/`. Every figure has to be reproduced through the repository's own code
 before it appears anywhere public.
 
 ## 1. Root cause: one conversion, applied to every day
@@ -136,7 +136,7 @@ leakage guarantee, reproducibility, seeds, provenance and the panel digest.
 1. **Per-field as-of reads.** For each declared (source, field), read the latest row whose `_declared_availability(…)`
    is at or before the decision instant: 16:00 on the panel day before T. This reuses the registry's existing
    declarations, and nothing new is assumed. Under them, daily NY Fed rates and bills land at T−2 and H.4.1 weekly
-   series at their latest print. This is your 19 Sep `on_rrp_h41` ruling (b), applied to every field.
+   series at their latest print. It is the 19 Sep `on_rrp_h41` ruling (b), applied to every field.
 2. **Scheduled inputs are a declared class.** A value that refers to the scored date but is announced earlier: the
    calendar (always known), FOMC meeting schedules (`docs/decisions/fomc-point-in-time.md` already dates a schedule by when it became
    public), and settlements (from the auction
@@ -161,16 +161,11 @@ leakage guarantee, reproducibility, seeds, provenance and the panel digest.
 The per-field as-of join is the standard treatment of the "ragged edge" in real-time forecasting (Giannone, Reichlin &
 Small 2008; Bańbura et al. 2013). It is also what the registry's per-field declarations were built to support.
 
-## 6. What must happen, in order
+## 6. What follows
 
-1. **Your rulings.** The information-set rule goes in `docs/decisions/` (draft in the plan). Rule on the settlement
-   declaration, record handling and refit cadence (questions pending).
-2. **Implementation PR.** As-of reads, scheduled class, label purge and one grid, with the staleness guard written red
-   first. `_check_decision_relative_availability` must still pass on every fold.
-3. **Re-score the fleet on the new rule, in the cloud.** Minimum set: persistence, gbm with none and cross_conformal,
-   the published funding declaration, and the pressure-probability baselines (climatology, persistence-logistic).
-   Then re-diagnose calibration by regime and tercile before any calibration verdict is repeated.
-4. **Archive the 44 old records under a labelled folder.** Regenerate the README, and correct every next-day
-   statement listed in §4.
-5. **Re-open the verdicts only after the re-score.** That covers the calendar, dealer positions, `on_rrp_h41` (now
-   admissible) and the tail line.
+The rule is decided in `docs/decisions/information-set.md`. The work is sequenced as directives in
+[`plan.md`](plan.md) §7:
+- **01** implements it.
+- **03** re-scores and publishes, and archives the old records.
+- **The verdicts in §4 re-open only after 03.** That covers the calendar, dealer positions, `on_rrp_h41` (now
+  admissible) and the tail line.
