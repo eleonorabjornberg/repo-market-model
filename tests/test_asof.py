@@ -422,3 +422,79 @@ class DeclarationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SettlementScheduleGuardTests(unittest.TestCase):
+    """The load-time refusal behind the `treasury_auctions` declaration.
+
+    The declaration says a settlement for date d is public at 15:00 New York
+    time on the panel day before d. `ingest.check_settlement_schedule` refuses
+    any auction settling inside the panel window that closed later than that
+    -- which includes one settling on its own auction date -- so the claim is
+    checked against every build's own auctions rather than trusted.
+
+    Recorded mutation (CLAUDE.md), run with `-B` and
+    `PYTHONDONTWRITEBYTECODE=1`: in `ingest.check_settlement_schedule`, the
+    refusal condition `if closed > deadline:` mutated to `if False:`. Three
+    tests here then fail with `AssertionError: ValueError not raised`:
+    `test_a_same_day_settlement_inside_the_window_is_refused`,
+    `test_a_close_after_the_declared_instant_the_day_before_is_refused` and
+    `test_a_close_that_leaves_no_panel_day_between_is_measured_on_the_panel`.
+    """
+
+    BLOCK = REGISTRY["treasury_auctions"]["scheduled_availability"]
+    # Mon 5 Jan .. ; the panel skips MLK Monday 19 Jan.
+    PANEL = DATES
+
+    @staticmethod
+    def auction(held, settled, close="11:30 AM", cusip="TEST00001"):
+        return {
+            "cusip": cusip,
+            "auction_date": held.isoformat(),
+            "issue_date": settled.isoformat(),
+            "closing_time_comp": close,
+        }
+
+    def check(self, *records):
+        from repo_model.ingest import check_settlement_schedule
+
+        check_settlement_schedule(list(records), self.PANEL, self.BLOCK)
+
+    def test_an_ordinary_auction_passes(self):
+        self.check(self.auction(date(2026, 1, 13), date(2026, 1, 15), "01:00 PM"))
+
+    def test_a_same_day_settlement_inside_the_window_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "TEST00001"):
+            self.check(self.auction(date(2026, 1, 15), date(2026, 1, 15)))
+
+    def test_a_close_after_the_declared_instant_the_day_before_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "15:00"):
+            self.check(self.auction(date(2026, 1, 14), date(2026, 1, 15), "03:30 PM"))
+
+    def test_a_close_that_leaves_no_panel_day_between_is_measured_on_the_panel(self):
+        # Settles Tuesday 20 January; MLK Monday is not a panel date, so the
+        # panel day before is Friday 16 January, and an auction held on the
+        # Monday holiday closed after that day's 15:00.
+        with self.assertRaises(ValueError):
+            self.check(self.auction(date(2026, 1, 19), date(2026, 1, 20)))
+
+    def test_an_auction_settling_outside_the_panel_window_is_not_judged(self):
+        # The tracked snapshot's same-day cash management bills of 2017 and
+        # early 2018 settle before the panel begins; the declaration makes no
+        # claim about them.
+        self.check(self.auction(date(2025, 12, 1), date(2025, 12, 1)))
+        self.check(self.auction(date(2026, 12, 1), date(2026, 12, 1)))
+
+    def test_an_auction_with_no_closing_time_is_refused(self):
+        record = self.auction(date(2026, 1, 13), date(2026, 1, 15))
+        record["closing_time_comp"] = "null"
+        with self.assertRaisesRegex(ValueError, "closing_time_comp"):
+            self.check(record)
+
+    def test_the_build_command_runs_it(self):
+        """Wired: `repo_model.cli build` calls it on every build's auctions."""
+
+        from repo_model import cli_data
+
+        source = Path(cli_data.__file__).read_text(encoding="utf-8")
+        self.assertIn("check_scheduled_settlements(", source)

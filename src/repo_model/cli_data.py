@@ -32,6 +32,7 @@ from .ingest import (
     DEFAULT_SOURCE_REGISTRY,
     SEC_NMFP_ARCHIVE_MANIFEST,
     build_point_in_time_snapshot,
+    check_scheduled_settlements,
     fetch_fred_macro,
     fetch_nyfed_fr2004,
     fetch_nyfed_reference_rate,
@@ -270,10 +271,16 @@ def _build(args: argparse.Namespace) -> int:
                 f"{name}: {reason}" for name, reason in sorted(build.refusals.items())
             )
         )
+    dates = [observation.date for observation in build.observations]
+    # The scheduled settlement declaration, checked against this build's own
+    # auctions before anything is written: an auction in the panel window
+    # that closed after the declared instant refuses the build.
+    check_scheduled_settlements(
+        artifacts, dates, load_source_registry(args.registry)
+    )
     manifest_path = write_daily_panel(
         build, args.output, source_shas=snapshot.source_shas
     )
-    dates = [observation.date for observation in build.observations]
     print(
         json.dumps(
             {

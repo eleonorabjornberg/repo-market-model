@@ -2785,6 +2785,59 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
         )
 
 
+    def test_the_guard_passes_on_every_read_of_every_fold(self):
+        """Brief item 4: the guard still runs, and passes, on every as-of fold.
+
+        Against the tracked registry, over a declaration reading each kind of
+        input -- the target (SOFR with IORB/IOER), a daily NY Fed field, the
+        H.4.1 weeklies, a scheduled settlement and a calendar column --
+        `_check_decision_relative_availability` is called once per read per
+        scored row, and never raises: the backtest completes.
+
+        Recorded mutation (CLAUDE.md), run with `-B` and
+        `PYTHONDONTWRITEBYTECODE=1`: the per-read call to
+        `_check_decision_relative_availability` removed from
+        `baseline._as_of_folds`. This test then fails, `AssertionError: 0 !=`
+        the expected call count; it is the test that kills mutation 2 of this
+        class's record now that the rule itself never produces a late read.
+        """
+
+        from unittest import mock
+
+        rows = self.rows()
+        registry = json.loads(REAL_REGISTRY.read_text(encoding="utf-8"))
+        features = (
+            "spread_bps",
+            "sofr_volume",
+            "reserve_balances",
+            "tga",
+            "treasury_settlement",
+            "tax_date",
+        )
+        guard = baseline._check_decision_relative_availability
+        calls = []
+
+        def counted(*args, **kwargs):
+            calls.append(args[4])
+            return guard(*args, **kwargs)
+
+        with mock.patch.object(baseline, "_check_decision_relative_availability", counted):
+            report = rolling_persistence_backtest(
+                rows,
+                features=features,
+                registry=registry,
+                decision_time=DECISION_TIME,
+                minimum_history=self.MINIMUM_HISTORY,
+            )
+        reads = len(report.information["features"])
+        self.assertEqual(reads, len(features))
+        self.assertEqual(len(calls), len(report.folds) * reads)
+        dates = [row.date for row in rows]
+        self.assertEqual(
+            sorted(set(calls)), [dates.index(f.scored_date) for f in report.folds]
+        )
+
+
 #: The exogenous regressor a threshold model in this module is fitted on, and
 #: the column its regime is read off. **Deliberately disjoint.** `tgcr` is not a
 #: regressor, so the only reason it is read at all is to choose a regime -- which
