@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           # The ml verdict diffs against the merge base, which a shallow
-          # clone does not have. Same reason the ownership job needs history.
+          # clone does not have.
           fetch-depth: 0
 
       - id: shape
@@ -153,23 +153,3 @@ jobs:
             PYTHONPATH=src:tests python3 -B -m unittest tests.test_ml tests.test_tail_diagnostics -v
           fi
 
-  ownership:
-    name: contract ownership
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          # Full history: the check diffs against the merge base, which a
-          # shallow clone does not have.
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Check the track ownership split
-        run: |
-          python3 .github/check_ownership.py \
-            "origin/${{ github.base_ref }}" \
-            "${{ github.head_ref }}"

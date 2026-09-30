@@ -1,5 +1,8 @@
 # History, consolidated: 7–30 September 2026
 
+> **Archived.** This is the account of the project before 30 September 2026. It is not binding. The current state is
+> in `docs/pivot/`.
+
 This file consolidates the project's round log, error log and handoff up to the pivot. The raw logs
 stay, frozen, in the Cowork project "v2 Model Repo Market" (`claude/round-log.md`,
 `claude/error-log.md`). They are not copied here because they transcribe suite sizes, which
@@ -29,7 +32,7 @@ what changed. This file is the record of what it meant.
 ## 2. What was measured, and where it stands after the pivot
 
 Every model figure below was scored with inputs read 4–5 business days before the scored day. See
-[`lag-assessment.md`](lag-assessment.md).
+[`lag-assessment.md`](../pivot/lag-assessment.md).
 
 | Finding (as published or reported) | Status now |
 |---|---|

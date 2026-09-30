@@ -66,7 +66,7 @@ tripwire the same way.
 
   * **The handler moved into the human-owned dispatcher** -- `_orphan` defined
     in `cli.py` and registered from here -- for
-    `test_contract.CommandLineOwnershipTests`'s new
+    `test_contract.CommandLineDispatcherTests`'s new
     `test_every_registered_command_comes_from_a_track_module`. Fails that test
     by name, plus most of this file, since the command then does nothing.
 
@@ -80,7 +80,7 @@ tripwire the same way.
     named test appears in the output, not merely that the run went red.
 
 Not a mutation, but recorded here because it is a change to a `SHARED` file:
-`test_contract.CommandLineOwnershipTests.test_the_split_preserved_the_three_existing_subcommands`
+`test_contract.CommandLineDispatcherTests.test_the_split_preserved_the_three_existing_subcommands`
 asserted set *equality* over the registered commands, so it failed the moment a
 fourth was added -- a test named for preservation blocking the growth the seam
 exists to enable. Loosened to a subset, with the half of the equality worth

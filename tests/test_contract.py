@@ -199,7 +199,6 @@ import inspect
 import json
 import pkgutil
 import re
-import subprocess
 import sys
 import textwrap
 import tempfile
@@ -2126,30 +2125,16 @@ def _subparsers(parser):
     raise AssertionError("parser declares no subcommands")
 
 
-class CommandLineOwnershipTests(unittest.TestCase):
-    """The CLI seam, from AGENT_CONTRACT.md "Decided: who owns the CLI".
+class CommandLineDispatcherTests(unittest.TestCase):
+    """The CLI seam: `cli.py` dispatches, the `cli_*.py` modules register.
 
-    `src/repo_model/cli.py` is a human-owned dispatcher and the two `cli_*.py`
-    modules are track-owned. The property that closes the ownership hole is not
-    that the file got assigned -- it is that **adding a subcommand never
-    requires editing the human-owned file**. A docstring cannot fail a build, so
-    that property is asserted here.
-
-    The last test is the tripwire for the next `cli.py`: it fails when any
-    module under `src/repo_model/` is not accounted for by the ownership lists.
-    Both holes this project found -- `cli.py` and `baseline.py` -- were found by
-    a person reading the gate, twice, months apart. This finds the third one on
-    the branch that introduces it.
+    `src/repo_model/cli.py` names no subcommand; every command is contributed
+    by a registration module (`cli_data.py`, `cli_eval.py`). The property is
+    that **adding a subcommand never requires editing the dispatcher**, and
+    that every command is handled from a registration module rather than from
+    `cli.py` or from anywhere else. A docstring cannot fail a build, so both
+    are asserted here.
     """
-
-    GATE = REPO_ROOT / ".github" / "check_ownership.py"
-
-    @classmethod
-    def _gate(cls):
-        spec = importlib.util.spec_from_file_location("_ownership_gate", cls.GATE)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
 
     def test_the_dispatcher_registers_no_subcommand_of_its_own(self):
         """`cli.py` must contain no `add_parser` call.
@@ -2171,8 +2156,8 @@ class CommandLineOwnershipTests(unittest.TestCase):
             [],
             "cli.py calls add_parser at lines "
             f"{offenders}. A subcommand registered in the dispatcher is a "
-            "subcommand a track cannot add without a human edit, which is the "
-            "hole the split closed.",
+            "subcommand that cannot be added without editing the dispatcher, "
+            "which is what the registration modules exist to avoid.",
         )
 
     def test_every_registered_subcommand_declares_a_handler(self):
@@ -2227,10 +2212,10 @@ class CommandLineOwnershipTests(unittest.TestCase):
         The half of the old equality worth keeping, stated as the property
         instead of as a count. Every subcommand -- the three the split inherited
         and every one added since -- must carry a handler defined in a
-        track-owned registration module, so that adding one is always a change
-        the ownership gate can see. A command handled from `cli.py` itself, or
-        from a module in neither track's list, is the ownership hole reopening
-        one subcommand at a time.
+        registration module, so that adding one is always a change to that
+        module. A command handled from `cli.py` itself, or from some other
+        module, is the dispatcher growing command logic one subcommand at a
+        time.
         """
 
         owned = {"repo_model.cli_data", "repo_model.cli_eval"}
@@ -2244,15 +2229,15 @@ class CommandLineOwnershipTests(unittest.TestCase):
                     handler.__module__,
                     owned,
                     msg=f"{name!r} is handled from {handler.__module__}, which is "
-                    "not a track-owned registration module",
+                    "not a registration module",
                 )
 
     def test_the_dispatcher_names_neither_track_module_beyond_importing_it(self):
         """`cli.py` may import the registration modules and nothing more.
 
         It holds `REGISTRARS`, which is a list of `register` callables. If it
-        starts reaching into a track module for anything else, the seam has
-        started leaking track vocabulary back into the human-owned file.
+        starts reaching into a registration module for anything else, the seam
+        has started leaking command logic back into the dispatcher.
         """
 
         tree = ast.parse(Path(cli.__file__).read_text())
@@ -2268,136 +2253,6 @@ class CommandLineOwnershipTests(unittest.TestCase):
             {"register"},
             f"cli.py reaches into the track modules for {sorted(reached)}; only "
             "'register' is part of the seam.",
-        )
-
-    # Every path this gate is expected to have an answer for. Enumerated from
-    # the filesystem rather than from `git ls-files`, because a mutation
-    # control is a `cp` of the tree into $HOME with no `.git` in it, and a
-    # guard that errors in every control run is a guard that gets deleted
-    # rather than repaired.
-    GOVERNED = (
-        "src/repo_model/*.py",
-        "tests/*.py",
-        "scripts/*.py",
-        "metadata/*.json",
-        "data/*",
-        "docs/*.md",
-        "docs/status.json",
-        "docs/runs/*",
-        "docs/figures/*",
-        "examples/*",
-        "notebooks/*",
-        ".github/*",
-        ".claude/*",
-        "*.md",
-        "*.toml",
-        "LICENSE",
-        ".gitignore",
-    )
-
-    def _governed_paths(self):
-        paths = set()
-        for pattern in self.GOVERNED:
-            for child in REPO_ROOT.glob(pattern):
-                if child.is_file() and "__pycache__" not in child.parts:
-                    paths.add(child.relative_to(REPO_ROOT).as_posix())
-        # Ask git which of those are tracked. An ignored memo sitting in
-        # `docs/` is not a path this gate owes an answer for, and flagging one
-        # would train a reader to skim the list. Returns None when git cannot
-        # answer, and the caller skips: the first draft of this guard fell back
-        # to the unfiltered filesystem list instead, and the mutation control
-        # -- a tree copied under $HOME with no `.git` in it -- went red on two
-        # ignored files. A guard that fails in every control run is a guard
-        # that gets deleted rather than repaired. Same idiom and same reason as
-        # the git-state tests in tests/test_baseline.py.
-        try:
-            listed = subprocess.run(
-                ["git", "ls-files"],
-                cwd=str(REPO_ROOT),
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout.split("\n")
-        except (OSError, subprocess.SubprocessError):
-            return None
-        tracked = {line for line in listed if line}
-        if not tracked:
-            return None
-        return sorted(paths & tracked)
-
-    def test_every_governed_path_is_owned_by_exactly_one_party(self):
-        """No path this gate governs belongs to nobody.
-
-        A path is owned if it is HUMAN_ONLY, SHARED, or forbidden to exactly
-        one track -- forbidden to Track B means owned by Track A, and vice
-        versa. A path in none of those lists is one the gate is silent about:
-        both tracks may edit it and nothing says so until the merge.
-
-        **This test used to claim to be "the general form of the two holes
-        already paid for" while globbing `src/repo_model/*.py` and nothing
-        else.** It was not the general form of anything. Widened on 10
-        September, it named fourteen unowned paths on its first run: the three
-        published records under `docs/runs/`, ten test modules, and
-        `.gitignore`. Seven earlier holes in this gate were each found by a
-        person reading the file; these fourteen were found by the guard that
-        existed to find them, once it was allowed to look outside one
-        directory.
-
-        Mutation record, 10 September, in a disposable copy under `$HOME` with
-        `git init` run inside it, so this guard is exercisable there rather
-        than skipped. Unmutated control green before and after: 702 tests, OK.
-
-          * `docs/runs/` deleted from SHARED -> `AssertionError` naming the
-            three published records. Kill.
-          * `tests/test_baseline.py` deleted from Track B's forbidden list ->
-            `AssertionError` naming exactly that path. Kill.
-          * `.gitignore` deleted from HUMAN_ONLY -> `AssertionError` naming
-            exactly that path. Kill.
-
-        Three kills, no survivors. The run produced a fourth result that was
-        not a mutation and mattered more: with the git filter first written as
-        a *fallback* to the raw filesystem list, the unmutated control went red
-        on two ignored files in `docs/`. The control caught a defect in the
-        guard it was controlling for, which is the whole reason it is run
-        before and after rather than only after.
-        """
-
-        governed = self._governed_paths()
-        if governed is None:
-            self.skipTest("git is not available here; tracked paths cannot be enumerated")
-
-        gate = self._gate()
-        a_owned = set(gate.TRACKS["feature/model-eval"]["forbidden"])
-        b_owned = set(gate.TRACKS["feature/data-layer"]["forbidden"])
-
-        unowned = []
-        contested = []
-        for path in governed:
-            claims = [
-                label
-                for label, patterns in (
-                    ("human", gate.HUMAN_ONLY),
-                    ("shared", gate.SHARED),
-                    ("track A", a_owned),
-                    ("track B", b_owned),
-                )
-                if any(gate.matches(path, pattern) for pattern in patterns)
-            ]
-            if not claims:
-                unowned.append(path)
-            elif len(claims) > 1:
-                contested.append(f"{path} ({', '.join(claims)})")
-
-        self.assertEqual(
-            unowned,
-            [],
-            f"{unowned} are in no ownership list. The gate will neither block "
-            "an edit to them nor surface one for review, so both tracks can "
-            "change them and nothing will say so until the merge. Assign each "
-            "in .github/check_ownership.py and say so in AGENT_CONTRACT.md.",
-        )
-        self.assertEqual(
-            contested, [], f"{contested} are claimed by more than one party."
         )
 
 
@@ -2880,12 +2735,9 @@ class ReleaseLagRefusalMessageTests(unittest.TestCase):
 class FeatureSourceMapCoverageTests(unittest.TestCase):
     """The feature-to-source map describes the tree, or it fails.
 
-    An ownership list that is not asserted against the tree silently stops
-    describing the tree; five files were unowned before the gate could prove
-    its own coverage. `contract.FEATURE_SOURCES` is the same shape of hazard
-    one layer along -- a hand-written correspondence that nothing forces to
-    stay true -- so it ships with the assertions rather than with a comment
-    asking people to keep it current.
+    `contract.FEATURE_SOURCES` is a hand-written correspondence that nothing
+    else forces to stay true, so it ships with the assertions rather than with
+    a comment asking people to keep it current.
 
     The map cannot be derived from `metadata/sources.json`: the registry names
     fields in source vocabulary (`SOFR`, `WTREGEN`, `mmf_net_assets`) and the

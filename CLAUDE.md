@@ -1,18 +1,18 @@
 # repo-market-model — standing rules
 
 Read this first. **This file summarises; the tracked decision documents decide.** Where it
-disagrees with `docs/decisions/`, `AGENT_CONTRACT.md`, `PLAN.md`,
+disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
 `docs/DATA_QUALITY_DECISIONS.md` or `REPRODUCIBILITY.md`, they win and this file is the bug.
 
 ## How work happens
 
-`docs/decisions/workflow.md` decides this, and replaces the two-track workflow.
+`docs/decisions/workflow.md` decides this.
 
 - **One session, one branch, one pull request.** Branch from `origin/main` and give it a
-  name that says what it does, never `feature/data-layer` or `feature/model-eval`. Push only
+  name that says what it does. Push only
   your own branch, as `git push origin HEAD`, and open a PR. **Never push to `main`.**
 - **`main` is the only integration point.** A PR merges when CI (`tests.yml`) is green and
-  Eleonora has reviewed it. There are no tracks, no round closes, no lanes and no queues.
+  Eleonora has reviewed it.
 - **The PR description is the record of the work.** It carries what changed, the base SHA,
   the panel digest if a panel was built, the result tables, what was checked, and what was
   *not* checked.
@@ -38,7 +38,7 @@ disagrees with `docs/decisions/`, `AGENT_CONTRACT.md`, `PLAN.md`,
   figure alone is not a result.
 - **Never edit a published record in place.** `docs/runs/` holds runs that happened. Re-score
   and publish anew, or archive with a note saying why.
-- **Point-in-time data rules are unchanged**: `AGENT_CONTRACT.md` (panel schema, the as-of rule,
+- **Point-in-time data rules are unchanged**: `docs/process/AGENT_CONTRACT.md` (panel schema, the as-of rule,
   the forecast and splitter interfaces) and `docs/DATA_QUALITY_DECISIONS.md`.
 - Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
 - **Dependencies:** `src/` is stdlib-only, except `src/repo_model/ml.py` and `tests/test_ml.py`,

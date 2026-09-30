@@ -1,22 +1,20 @@
-## Track
+## What this changes
 
-- [ ] Track A - data layer (`feature/data-layer`)
-- [ ] Track B - model and evaluation (`feature/model-eval`)
-- [ ] Human - contract, plan, methodology, CI
+<!-- One or two sentences. -->
 
-## Contract
+## Evidence
 
-- [ ] Rebased on current `main`, and `AGENT_CONTRACT.md` re-read at its current revision
-- [ ] No file owned by the other track is touched (CI checks this; say so here if it flagged a shared file)
-- [ ] Leakage guards raise `LookAheadError`, never `assert`
-- [ ] Every new guard has a recorded mutation, run with `-B` and `PYTHONDONTWRITEBYTECODE=1`
-- [ ] Stdlib only outside `src/repo_model/ml.py` - no new dependency without the human
+- Base SHA:
+- Panel digest (if a panel was built):
+- Results (tables, paired against the stated benchmark, with intervals):
 
-## Mutations recorded
+## Checked
 
-<!-- One line each: what was flipped, how many tests failed, which suites. -->
+- [ ] Full suite green in one process; zero `expectedFailure`
+- [ ] New leakage, availability or staleness guards written red first, with one recorded mutation each
+- [ ] No published record edited in place
+- [ ] Pages rendered from records regenerated in the same commit (publish PRs only)
 
-## Expected failures
+## Not checked, or for Eleonora
 
-<!-- If this PR turns an expectedFailure green, it must convert it to a real
-     assertion in the same commit. Unexpected success fails CI by design. -->
+<!-- Anything unverified, and any judgement call (also open it as a `needs-eleonora` issue). -->

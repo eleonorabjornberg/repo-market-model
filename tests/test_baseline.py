@@ -214,7 +214,7 @@ declare a lag their panel cannot deliver by the decision instant.
 
 **Why the block stops here rather than fixing them.** Seven of the thirty-five
 are in `tests/test_contract.py`, which `AGENT_CONTRACT.md` assigns to neither
-track and `.github/check_ownership.py` lists as `SHARED`: "Changes to these are
+track and the ownership gate (since retired) listed as `SHARED`: "Changes to these are
 proposed to the human and applied once, by one agent, before either track
 resumes." Re-declaring `contract_registry`'s lag is that change. Track B cannot
 make it inside a block, and making it only in the two Track B fixtures would

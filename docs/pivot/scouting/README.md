@@ -1,13 +1,13 @@
 # Scouting: the lag
 
-These are not records. They are the scripts behind the numbers in `docs/pivot/lag-assessment.md`. They were written
+These are not records. They are the scripts behind the numbers in [`../lag-assessment.md`](../lag-assessment.md). They were written
 to decide whether the as-of redesign was worth building, and they sit outside `scripts/` on purpose: they use pandas
 and scikit-learn directly, and `scripts/` is held to the standard library by `tests/test_dependency_boundary.py`.
 
 ```
 PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output /tmp/funding_panel.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
-mkdir -p /tmp/scout && OMP_NUM_THREADS=1 python3 notebooks/scouting/lag_scout.py /tmp/funding_panel.csv /tmp/scout
-python3 notebooks/scouting/lag_analyze.py /tmp/funding_panel.csv /tmp/scout
+mkdir -p /tmp/scout && OMP_NUM_THREADS=1 python3 docs/pivot/scouting/lag_scout.py /tmp/funding_panel.csv /tmp/scout
+python3 docs/pivot/scouting/lag_analyze.py /tmp/funding_panel.csv /tmp/scout
 ```
 
 `lag_scout.py` scores every design, 12 jobs of about 20–100 seconds each on one thread. It takes optional job tags,

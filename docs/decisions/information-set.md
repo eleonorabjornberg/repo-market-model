@@ -28,20 +28,11 @@ A forecast for scored day `T` is made at the declared decision time on the last 
    No admissible value may be newer than the one read (staleness). A record reports each field's
    staleness at the decision instant.
 
-## What it replaces, and why
+## What it supersedes
 
-`AGENT_CONTRACT.md`'s own as-of rule already says a row is eligible only if its `available_at` is at
-or before the cutoff. The implementation instead converted each source's business-day release lag
-into calendar days at its worst case. For SOFR that is one business day becoming six calendar days.
-It then used the result as one purge, both to trim training rows and to choose the feature row. So
-every forecast read its inputs four or five business days before the scored day, on every day, to
-cover the worst holiday week. Declaring a slow series widened the purge further and made every other
-input staler with it.
-
-That design was leak-free and needlessly stale. The leakage guards could not see the problem,
-because they only ask whether a value read was already public. They never ask whether a newer one
-was. This decision supersedes `AGENT_CONTRACT.md`'s "The purge stays a scalar" wherever the purge
-chooses what a forecast reads.
+`docs/process/AGENT_CONTRACT.md`'s "The purge stays a scalar", wherever the purge chooses what a forecast reads. The contract's own
+as-of rule is unchanged, and this decision is what implements it. The evidence and the alternatives considered are in
+[`docs/pivot/lag-assessment.md`](../pivot/lag-assessment.md).
 
 ## Decided with it
 
