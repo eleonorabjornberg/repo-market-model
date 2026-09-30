@@ -424,10 +424,12 @@ from repo_model.splits import LookAheadError, SplitError, rolling_origin
 # The package walk `ForecastInterfaceCoverageTests` already discovers through,
 # imported rather than written a second time: two walks would be two definitions
 # of "every module of the package", and the one that drifted would be the one
-# nobody was reading. `tests/test_contract.py` imports no test module, so this
-# direction is acyclic, and a test module importing another is how
+# nobody was reading. `tests/test_contract.py` imports no test module at module
+# level (`_import_test_modules_naming` imports them when a test calls it, after
+# every module has loaded), so this direction is acyclic, and a test module
+# importing another is how
 # `tests/test_event_eval.py` already reaches this one's fixtures.
-from test_contract import _package_modules
+from test_contract import _import_test_modules_naming, _package_modules
 
 SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
@@ -5485,8 +5487,13 @@ def _exceedance_implementations(package=repo_model):
 
 
 def _exceedance_cases():
-    """`{factory: [test case, ...]}` over every subclass of the mixin."""
+    """`{factory: [test case, ...]}` over every subclass of the mixin.
 
+    Every test module that names the mixin is imported first, for the reason
+    `_import_test_modules_naming` in `tests/test_contract.py` gives.
+    """
+
+    _import_test_modules_naming(ExceedancePredictorConformance)
     cases = {}
     pending = list(ExceedancePredictorConformance.__subclasses__())
     while pending:

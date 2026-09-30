@@ -194,6 +194,7 @@ tests claims.
 import argparse
 import ast
 import contextlib
+import importlib
 import importlib.util
 import inspect
 import json
@@ -1833,9 +1834,42 @@ def _forecast_implementations(package=repo_model):
     return found
 
 
-def _conformance_cases():
-    """`{model class: [test case, ...]}` over every subclass of the mixin."""
+def _import_test_modules_naming(mixin):
+    """Import every test module whose source names `mixin`, and return their names.
 
+    `__subclasses__` sees only the classes whose modules this process has
+    imported. `unittest discover` imports them all, but a run of this module
+    alone, or of `test_baseline` alone, does not import `tests/test_ml.py`,
+    and the coverage checks then call its conformance cases missing. A check
+    whose verdict depends on which other modules share its process is what
+    made the ml job rerun the whole suite; importing them here removes that.
+
+    Selected by the mixin's name appearing in the source, not by a list: a
+    list here would have to be edited in the commit that added the module it
+    was meant to reach. Imported by bare name, as `discover -s tests` and
+    `PYTHONPATH=src:tests` import them, so the mixin a module subclasses is
+    this process's mixin and not a second copy of it. Importing `test_ml`
+    needs no extra: its third-party imports are inside functions, which
+    `tests/test_dependency_boundary.py` enforces.
+    """
+
+    tests = Path(__file__).resolve().parent
+    names = []
+    for path in sorted(tests.glob("test_*.py")):
+        if mixin.__name__ in path.read_text(encoding="utf-8"):
+            importlib.import_module(path.stem)
+            names.append(path.stem)
+    return names
+
+
+def _conformance_cases():
+    """`{model class: [test case, ...]}` over every subclass of the mixin.
+
+    Every test module that names the mixin is imported first, so the answer
+    does not depend on which modules this run happened to load.
+    """
+
+    _import_test_modules_naming(ForecastInterfaceConformance)
     cases = {}
     pending = list(ForecastInterfaceConformance.__subclasses__())
     while pending:
