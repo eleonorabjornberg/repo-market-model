@@ -52,9 +52,9 @@ are in `docs/decisions/` (`information-set.md`, `workflow.md`, `publish-rule.md`
 
 ## 2. Data
 
-- **Materiality rule (proposed; yours to adopt).** A defect that touches a bounded, listed set of days is documented and
-  handled, not a reason to refuse the series. The first application is daily ON RRP (`RRPONTSYD`, two two-operation
-  days).
+- **Materiality rule (adopted, 30 September 2026; [`docs/decisions/materiality.md`](../decisions/materiality.md)).** A
+  defect that touches a bounded, listed set of days is documented and handled, not a reason to refuse the series. The
+  first application is daily ON RRP (`RRPONTSYD`, two two-operation days).
 - **Settlements as scheduled inputs.** A `treasury_auctions` availability declaration dated from the auction results
   time. Approved. In scouting it is worth −3% MAE and the best pressure-day Brier.
 - **Free sources to price next,** each through the as-of rule:
@@ -129,8 +129,7 @@ Each step is one directive. Briefs are in [`directives/`](directives).
 
 ## Decision records
 
-- In force: `docs/decisions/information-set.md`, `workflow.md` and `publish-rule.md`.
+- In force: `docs/decisions/information-set.md`, `workflow.md`, `publish-rule.md` and `materiality.md`.
 - Open, for Eleonora:
-  - the materiality rule (§2);
   - whether the pressure probability may come from a direct model (§1).
-  Neither is in force until she rules.
+  It is not in force until she rules.
