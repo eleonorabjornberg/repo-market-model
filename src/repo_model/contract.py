@@ -1,7 +1,7 @@
-"""Shared contract fixtures, owned by neither track.
+"""Shared contract fixtures.
 
-This module exists because the ownership gate is path-level and cannot see a
-*semantic* collision. Four have been found on this project: the `release_lag`
+This module exists because two pieces of code can each be correct and still not
+compose: a *semantic* collision. Four have been found on this project: the `release_lag`
 dict-versus-scalar incompatibility, the duplicate spec filename, the
 `calendar`-versus-`unit` naming collision on the same field, and the
 event-window digest. The first three reached a merge; the fourth was caught
@@ -18,9 +18,9 @@ and the forecast quantile grid (`QUANTILE_LEVELS`). None was invented here --
 each was lifted from the track that had reasoned it through, unchanged except
 in name.
 
-The fix is to make the shared shape executable and put it where neither track
-owns it. Both tracks import this module; neither edits it. Changing it is a
-human edit, and the ownership gate enforces that.
+The fix is to make the shared shape executable and keep it in one place that
+both sides import. Changing it is a change to what the project agrees on, so it
+is reviewed as one.
 
 Stdlib only, by contract.
 """

@@ -1,11 +1,8 @@
 """Track B's command-line surface: the model and evaluation subcommands.
 
-Owned by **Track B (model and evaluation)**. The ownership gate fails a
-`feature/data-layer` branch that touches this file.
-
 `src/repo_model/cli.py` is a dispatcher that names no command. To add one, add
 it here: build the subparser and call `set_defaults(handler=...)` on it. Nothing
-outside this file changes -- not the dispatcher, not the contract, not the gate.
+outside this file changes -- not the dispatcher, not the contract.
 A handler takes the parsed namespace and returns an exit code; it may raise
 `OSError` or any `ValueError` subclass (`SplitError` is one) and the dispatcher
 will print it and exit 2.
@@ -14,7 +11,7 @@ will print it and exit 2.
 property "Decided: who owns the CLI" was written to get.
 
 Reading Track A's modules from here is fine and expected -- `load_daily_panel`
-is imported, not edited. Only writes are gated.
+is imported, not edited.
 
 Stdlib only, by contract.
 """

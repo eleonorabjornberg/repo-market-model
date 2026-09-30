@@ -63,5 +63,4 @@ that step's line in the same pull request, so the plan never lags the tree.
 
 ## Legacy gates
 
-`.github/check_ownership.py`, its CI job and `.claude/hooks/ownership_guard.py` act only on two legacy branch names,
-so they do not constrain this workflow. Removing them is a directive.
+The ownership gate, its CI job and its Claude Code hook are retired, by directive 04.

@@ -39,7 +39,6 @@ Removing a test is a claim that nothing it guarded still needs guarding, so ever
     schedule.
   - An `ml` job that reinstalls the extra and runs the **full suite again** on a push, or on a pull request touching
     the ML surface.
-  - The legacy `ownership` job.
   - A push to `main` also triggers `status.yml`, whose bot commits `docs/status.json` back onto `main` after every
     merge. That leaves every open branch one commit behind.
 - **The suite's own history:**
