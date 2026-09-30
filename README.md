@@ -5,75 +5,28 @@
 [![dependencies](https://img.shields.io/badge/runtime%20dependencies-0-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**An auditable research pipeline for estimating funding pressure in the U.S. Treasury
-repurchase-agreement market.**
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eleonorabjornberg/repo-market-model/blob/main/notebooks/00_overview.ipynb)
 
-> **Status: results under re-measurement.** Every figure below was scored with each input read 4–5 business
-> days before the day being forecast. That is a conservative purge applied as the information set, and it handicaps
-> the persistence benchmark in the same way. The project has adopted an as-of information rule
-> ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)) and is re-scoring under it. Until then,
-> read the figures as measurements of that stale design. See [`docs/pivot/`](docs/pivot) for the finding and the plan.
+Every day, banks, dealers and money-market funds lend each other trillions of dollars overnight against U.S.
+Treasury securities: the repo market. On most days the rate on that cash, SOFR, sits at or just below the rate the
+Federal Reserve pays banks on their reserves, IORB. On some days — tax dates, large Treasury settlements, month- and
+quarter-ends, above all when reserves are getting scarce — spare cash runs short and SOFR jumps above it, as it did in
+September 2019. This project asks one question of public data only, using only what was public at 4 pm the day before:
+**what is the chance that tomorrow SOFR is at least 5 basis points above IORB?** It is an academic and portfolio
+project, built to show how such a forecast can be made and tested without borrowing from the future.
 
-**In one sentence.** A gradient-boosted model forecasts the next day's repo funding
-spread as a distribution rather than a point, beats the "tomorrow looks like today"
-benchmark on average error across eight years of out-of-sample days, and has **no skill
-in the extreme tail** — the days anyone would actually want the warning for. The figures
-are in [Key findings](#key-findings) below, generated from the run records rather than
-typed. Everything here is a backtest on a frozen panel; there is no live forward
-evidence.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/overview-dark.svg">
+  <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is at least 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
+</picture>
 
-**Start here if you would rather not read code.**
-[`docs/EXECUTIVE_SUMMARY.md`](docs/EXECUTIVE_SUMMARY.md) is the result in a page for a
-risk manager; [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) is how it
-was built and why; [`notebooks/`](notebooks) runs the evaluation end to end.
+**Status, honestly.**
+1. The published results read every input about a week late, so they are being re-scored under an as-of information rule ([`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md), [`docs/decisions/information-set.md`](docs/decisions/information-set.md)).
+2. The data layer is unaffected: the panel rebuilds from tracked files, verifies against its published digest, and its leakage guards stand.
+3. Every model figure below measures the old, stale design until the re-score is published, when those records move to an archive.
 
-**How this was built.** Two AI coding agents worked in separate git worktrees, each
-confined by a human-owned contract naming the files it may touch, with the division
-enforced in CI by [`.github/check_ownership.py`](.github/check_ownership.py) and every
-merge reviewed and integrated by hand — see
-[`AGENT_CONTRACT.md`](AGENT_CONTRACT.md). The decisions the agents were not permitted
-to make are mine and are on the record in [`docs/decisions/`](docs/decisions): the purge
-gap derived from each series' declared release lag, the refusal to clip the log score
-where the model assigned probability zero to an event that happened, and the IOER splice
-without which the panel could not cover September 2019 or March 2020 at all.
-
-- **Decision problem.** How likely is it that overnight repo funding costs jump away
-  from the policy rate tomorrow — the condition that preceded the September 2019 and
-  March 2020 funding episodes, and the one a treasurer or a risk desk would want a
-  probability for rather than a point estimate.
-- **Data.** Official public sources only, stored as immutable checksummed snapshots:
-  the New York Fed's SOFR complex, FRED's administered-rate series, and SEC Form N-MFP
-  money-fund filings, each carrying the timestamp at which it first became observable.
-- **Method.** A point-in-time panel with an enforced as-of rule, purged rolling-origin
-  evaluation, and probabilistic scoring — pinball loss, threshold-weighted CRPS, Brier
-  skill and calibration diagnostics — against a persistence benchmark.
-- **Result.** The harness is verified end to end on real market data, the persistence
-  baseline is characterised over a multi-year holdout, and **Phase 2's exit criterion is
-  recorded met on the interval evidence**: the challenger with a smaller CRPS holds its
-  declared interval probability once cross-conformally calibrated. Its upper tail is still
-  weaker than persistence's, and its tail exceedance probabilities are now scored and
-  carry no skill above the shoulder — the measured half of the tail clause fails, which
-  is what keeps the phase open.
-- **Limitation.** The uncalibrated model's interval is under its nominal coverage, the
-  money-fund channel has open data-quality decisions recorded rather than resolved, and
-  every result here is a backtest on a frozen panel rather than live forward evidence of
-  forecasting skill.
-
-The first target is deliberately narrow: the next-business-day distribution of
-`SOFR - IORB`, accompanied by SOFR dispersion and volume forecasts and the
-probability that the spread exceeds predeclared stress thresholds.
-
-This is an **academic exercise** and a portfolio project. It is not a production
-trading system, not a risk-management tool, and not a source of investment advice,
-and no part of it should be used to size, price, or time a position. It currently
-demonstrates the data, validation, and evaluation architecture needed for credible
-forecasting. Two claims are kept apart deliberately, because conflating them is how
-a backtest starts to sound like a track record. **Backtest evidence: yes** — on a frozen
-historical panel, under purged rolling-origin evaluation, the calibrated model is more
-accurate than the benchmark and its intervals hold their declared probability, and
-Phase 2's interval criterion is recorded met on that evidence. **Live forward evidence:
-none** — no forecast here has been made against a day that had not already happened, and
-the tail clause of the same criterion fails.
+[`notebooks/00_overview.ipynb`](notebooks/00_overview.ipynb) is the tour: it rebuilds and verifies the panel, shows the
+data by year, reproduces the lag finding, and scores the pressure-probability baselines, in under a minute on Colab.
 
 <!-- generated: status -->
 <!-- Generated by scripts/emit_results.py from PLAN.md. -->
@@ -81,6 +34,20 @@ the tail clause of the same criterion fails.
 **Where this is: phase 2 of 7 — Forecasting benchmarks and probabilistic ML (in progress), with phase 1, Public U.S. dataset, still open alongside it.** Its exit criterion is a model that beats persistence out of sample and remains calibrated in the tails. Next is phase 3, Latent reserves and payment needs. The machine-readable version is [`docs/status.json`](docs/status.json), regenerated in CI from the same headings rather than edited.
 
 <!-- end generated: status -->
+
+## In plain words
+
+<!-- generated: headline -->
+<!-- Generated by scripts/emit_results.py from docs/runs/. -->
+
+- The forecasting machinery has been run end to end on real market data covering 2018-04-03 to 2026-09-03, and scored at **2080 separate decision points** — each one made only from information already public that afternoon, though about a week old: the as-of rule that reads the latest is being implemented.
+- On that history, a simple benchmark — the latest value it read, carried forward — is wrong by **3.14 basis points on average**, and the range that error could plausibly take is 2.60 to 3.76 basis points.
+- Its uncertainty bands are **too narrow**: a band meant to contain the outcome 90% of the time contained it 81.0% of the time. That gap is measured and unexplained, and is re-measured under the as-of rule before any verdict on it is repeated.
+- The scoring itself has been checked against a case where the right answer is known in advance: a forecast with no information in it scores **0.000 skill**, exactly as it must. Every later claim of skill rests on that.
+
+**Challenger models have scored better than the benchmark over the same decision points, but none of those results is yet reproduced end to end or broken down by date.** That is the honest state of the work, and it is why nothing here is a basis for a decision about money.
+
+<!-- end generated: headline -->
 
 ## Key findings
 
@@ -94,8 +61,11 @@ measured, and it fails. The conditional model carries Brier skill +0.213 against
 climatology at 5 bp and -0.778 at 50 bp -- skill at the shoulder, none in the tail.
 
 **Target.** The next-business-day value of the panel field `spread_bps` — the SOFR
-to IORB spread in basis points — forecast from information available at 16:00
-on the previous business day.
+to IORB spread in basis points — with the forecast made at 16:00 on the previous
+business day. In these records every input was read at the row
+dated at least seven calendar days before the scored day, which never leaks and is
+about a week stale. The as-of information rule, which reads each input at its latest
+public value, is being implemented; see `docs/pivot/lag-assessment.md`.
 
 **Panel.** 2018-04-03 to 2026-09-03, 2104 rows, SHA-256 `d8b716cf5d76`.
 
@@ -257,6 +227,10 @@ The intended research question is:
 > money-fund, and calendar variables forecast the next-day distribution of
 > Treasury repo-market pressure, including transitions into the upper tail?
 
+"Next-day" means a forecast made at 16:00 on the business day before the scored day. The
+as-of information rule, which reads each input at its latest value public at that instant,
+is being implemented; the published records read every input about a week earlier.
+
 ## Current status
 
 Implemented:
@@ -277,14 +251,15 @@ Implemented:
 
 Still in progress:
 
+- the as-of information rule ([`docs/decisions/information-set.md`](docs/decisions/information-set.md))
+  and the re-score under it;
 - validating complete SEC Form N-MFP monthly cross-sections; and
 - producing event-window results. The out-of-sample results below are produced and
   published; the event-window evaluator cannot yet express the published model's
   calibration and tail settings, so no event-window number is claimed.
 
-See
-[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) for the current boundary between
-implemented infrastructure and open research work.
+See [`METHODOLOGY.md`](METHODOLOGY.md) for what the harness guarantees, the limitations
+still open, and a reading of the pre-as-of records.
 
 ## Research design
 
@@ -329,6 +304,11 @@ read.
   <img alt="One fold of the purged rolling-origin evaluation: the training window, the derived purge gap, the feature row read at the decision instant, and the scored day" src="docs/figures/fold.svg">
 </picture>
 
+Both figures show the design the published records were scored under, in which the purge
+also chose the feature row. That is the week-old information set. Under the as-of rule
+being implemented, each input is read at its latest value public at the decision instant,
+and the purge only decides which training labels were observable.
+
 Longer-term latent-liquidity, market-clearing, and network-stress components are
 research directions, not completed features.
 
@@ -356,13 +336,12 @@ his.
 
 Start here:
 
-- [`docs/EXECUTIVE_SUMMARY.md`](docs/EXECUTIVE_SUMMARY.md) — one page, non-technical:
-  the problem, the approach, the result, the limitation, and the next operational step.
+- [`notebooks/00_overview.ipynb`](notebooks/00_overview.ipynb) — the tour, runnable on
+  Colab: the problem in plain words, the data, the lag finding and the pressure baselines.
 - [`METHODOLOGY.md`](METHODOLOGY.md) defines the academic claims and evaluation
-  protocol.
+  protocol, what the harness guarantees, the limitations still open, a reading of the
+  pre-as-of records, and related quantitative work.
 - [`DATA.md`](DATA.md) maps public and restricted data sources.
-- [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md) reads the records on volatility
-  and the tails in words, and places the project among related quantitative work.
 - [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) is the same work written
   for a reader outside the project: the business question, the controls, the result and
   its limitations.
@@ -377,18 +356,23 @@ Then, for how the work is controlled rather than what it claims:
   decisions each empirical claim rests on, including the ones still open.
 - [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) separates what a clean clone can
   reproduce today from what a published empirical result would additionally require.
-- [`AGENT_CONTRACT.md`](AGENT_CONTRACT.md), with `CLAUDE.md` and `AGENTS.md`, specifies
-  the machine-checked division of work used during development: which files each
-  automated contributor may touch, enforced in CI by `.github/check_ownership.py`.
-  These are engineering controls on how the code was written rather than research
+- [`docs/pivot/`](docs/pivot) — the lag finding, the redesign plan and the history of the
+  first three weeks.
+- [`docs/process/AGENT_CONTRACT.md`](docs/process/AGENT_CONTRACT.md) holds the panel
+  schema, the as-of rule and the interfaces. Its two-track ownership split is retired
+  ([`docs/decisions/workflow.md`](docs/decisions/workflow.md)) and kept as history;
+  `CLAUDE.md` carries the standing rules for coding agents, and `AGENTS.md` points to it.
+  These are engineering controls on how the code is written rather than research
   claims — and if you came to this repository for AI governance rather than for repo
   markets, they are the place to start.
 
 ## Development process and AI disclosure
 
-Parts of the implementation were developed with AI coding agents operating in
-separate Git worktrees. Their allowed files and shared interfaces are defined in a
-human-owned contract and checked in CI. The author and the advisor answer for different things:
+Parts of the implementation were developed with AI coding agents. For the first three
+weeks they worked in separate Git worktrees, under a human-owned contract naming the files
+each could touch, checked in CI. Since the pivot, each agent session works on one branch
+and one pull request, which merges into `main` only after CI and the author's review
+([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The author and the advisor answer for different things:
 the model, methodology, workflow, tests and code with Eleonora Björnberg; the choice
 of data and its economic meaning with Nicholas Beroud. Any academic submission based
 on this repository remains the author's academic responsibility, should follow the

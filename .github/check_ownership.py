@@ -31,7 +31,7 @@ import sys
 # A pattern ending in "/" matches a directory prefix; anything else is an exact
 # path. Deliberately not globs -- a glob invites a rule nobody can read.
 HUMAN_ONLY = (
-    "AGENT_CONTRACT.md",
+    "docs/process/AGENT_CONTRACT.md",
     "PLAN.md",
     "METHODOLOGY.md",
     "DATA.md",

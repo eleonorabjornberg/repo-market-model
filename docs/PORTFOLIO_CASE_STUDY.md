@@ -43,6 +43,10 @@ Five controls hold the evidence together:
 - **A derived purge.** The gap between training and scored data is computed from the declared
   lags of the features in use, never chosen by hand — which means the forecast is made from a
   feature row several business days before the day it is scored on, not from yesterday's close.
+  That was a finding, not a feature: the published forecasts were about a week stale. The as-of
+  information rule, which reads each input at its latest value public at the decision instant,
+  is being implemented, and every figure here is re-scored under it
+  ([`pivot/lag-assessment.md`](pivot/lag-assessment.md)).
 - **Typed absence.** A missing value, a declared structural zero, an excluded cross-section and
   a withheld field are four different things, each carrying its reason into the record.
 - **Guards proven to fire.** Each has a recorded mutation that breaks the behaviour it

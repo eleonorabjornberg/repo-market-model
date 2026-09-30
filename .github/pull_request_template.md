@@ -6,7 +6,7 @@
 
 ## Contract
 
-- [ ] Rebased on current `main`, and `AGENT_CONTRACT.md` re-read at its current revision
+- [ ] Rebased on current `main`, and `docs/process/AGENT_CONTRACT.md` re-read at its current revision
 - [ ] No file owned by the other track is touched (CI checks this; say so here if it flagged a shared file)
 - [ ] Leakage guards raise `LookAheadError`, never `assert`
 - [ ] Every new guard has a recorded mutation, run with `-B` and `PYTHONDONTWRITEBYTECODE=1`

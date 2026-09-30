@@ -45,7 +45,6 @@ ROOT = Path(__file__).resolve().parent.parent
 RUNS = ROOT / "docs/runs"
 FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
-SUMMARY = ROOT / "docs/EXECUTIVE_SUMMARY.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
 
@@ -163,10 +162,13 @@ def key_findings(persistence, exceedance, conditional):
                              highest["tau_bp"])
     add("")
     add("**Target.** The next-business-day value of the panel field `%s` — the SOFR")
-    add("to IORB spread in basis points — forecast from information available at %s")
-    add("on the previous business day.")
-    lines[-3] = lines[-3] % ", ".join(require(persistence, "declaration", "features"))
-    lines[-2] = lines[-2] % require(persistence, "declaration", "decision_time")
+    add("to IORB spread in basis points — with the forecast made at %s on the previous")
+    add("business day. In these records every input was read at the row")
+    add("dated at least seven calendar days before the scored day, which never leaks and is")
+    add("about a week stale. The as-of information rule, which reads each input at its latest")
+    add("public value, is being implemented; see `docs/pivot/lag-assessment.md`.")
+    lines[-6] = lines[-6] % ", ".join(require(persistence, "declaration", "features"))
+    lines[-5] = lines[-5] % require(persistence, "declaration", "decision_time")
     add("")
     add("**Panel.** %s to %s, %d rows, SHA-256 `%s`." % (
         panel["first_date"], panel["last_date"], panel["row_count"], panel["sha256"][:12]))
@@ -559,8 +561,8 @@ def status_line():
 def headline(persistence, exceedance):
     """The same figures as the results table, in sentences and without jargon.
 
-    `docs/EXECUTIVE_SUMMARY.md` is written for someone who will not open a run
-    record, and the temptation there is to round a number into a claim. It is
+    The README's plain-words block, once `docs/EXECUTIVE_SUMMARY.md`, is written
+    for someone who will not open a run record, and the temptation there is to round a number into a claim. It is
     generated for exactly that reason: the page a non-technical reader trusts
     most is the page furthest from the evidence, so it gets the same wiring as
     the table and none of the licence.
@@ -578,16 +580,19 @@ def headline(persistence, exceedance):
     lines.append("")
     lines.append("- The forecasting machinery has been run end to end on real market data "
                  "covering %s to %s, and scored at **%d separate decision points** — each "
-                 "one made using only information a person would actually have held that "
-                 "afternoon."
+                 "one made only from information already public that afternoon, though "
+                 "about a week old: the as-of rule that reads the latest is being "
+                 "implemented."
                  % (panel["first_date"], panel["last_date"], folds["count"]))
-    lines.append("- On that history, a simple benchmark — tomorrow looks like today — is "
+    lines.append("- On that history, a simple benchmark — the latest value it read, carried "
+                 "forward — is "
                  "wrong by **%s basis points on average**, and the range that error could "
                  "plausibly take is %s to %s basis points."
                  % (bp(metrics["mae_bps"]), bp(interval["lower"]), bp(interval["upper"])))
     lines.append("- Its uncertainty bands are **too narrow**: a band meant to contain the "
                  "outcome %s of the time contained it %s of the time. That gap is measured "
-                 "and unexplained, and it is the next thing being worked on."
+                 "and unexplained, and is re-measured under the as-of rule before any "
+                 "verdict on it is repeated."
                  % (pct(metrics["interval_probability"], 0), pct(metrics["interval_coverage"])))
     lines.append("- The scoring itself has been checked against a case where the right "
                  "answer is known in advance: a forecast with no information in it scores "
@@ -833,8 +838,6 @@ def rendered(persistence, exceedance, conditional):
             (BEGIN, END, key_findings(persistence, exceedance, conditional)),
             (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
             (STATUS_BEGIN, STATUS_END, status_line()),
-        ),
-        SUMMARY: (
             (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
         ),
     }

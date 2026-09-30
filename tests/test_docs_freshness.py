@@ -530,7 +530,7 @@ class PublishedDocumentTests(unittest.TestCase):
         """A guard that reads nothing passes for the wrong reason."""
         found = [relative for relative, _ in published_markdown()]
         self.assertIn("README.md", found)
-        self.assertIn("docs/PROJECT_STATUS.md", found)
+        self.assertIn("docs/DATA_QUALITY_DECISIONS.md", found)
 
     def test_no_document_transcribes_a_test_count(self):
         """The suite's size lives in the CI log, which is measured, not typed.
@@ -1080,7 +1080,7 @@ LIMITATIONS = (
     (
         "move_index_absent",
         "data",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         ("**Rates volatility and the cash-futures basis are not in the panel.**",),
         _no_feature_is("move_index"),
         _every_source_is_public,
@@ -1088,7 +1088,7 @@ LIMITATIONS = (
     (
         "futures_basis_absent",
         "data",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         ("the Treasury cash-futures basis needs licensed futures prices;",),
         _no_feature_is("futures_basis"),
         _every_source_is_public,
@@ -1096,7 +1096,7 @@ LIMITATIONS = (
     (
         "nmfp_per_era_floor",
         "declaration",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         (
             "**The coverage floor is declared for one era.**",
             "the coverage floor is still one number for every era.",
@@ -1107,7 +1107,7 @@ LIMITATIONS = (
     (
         "nmfp_split_month_end",
         "software",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         ("a split month-end still divides one reporting universe",),
         _split_month_end_divides_the_universe,
         None,
@@ -1115,7 +1115,7 @@ LIMITATIONS = (
     (
         "nmfp_identity_tolerance",
         "declaration",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         ("**The N-MFP identity tolerance is a single absolute bound**",),
         _identity_tolerance_is_a_single_absolute,
         None,
@@ -1123,7 +1123,7 @@ LIMITATIONS = (
     (
         "treasury_settlement_split_not_in_panel",
         "declaration",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         (
             "split is not in the panel.** The adapter emits the bill, coupon and "
             "SOMA components",
@@ -1134,7 +1134,7 @@ LIMITATIONS = (
     (
         "cli_partially_unpublished",
         "documentation",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         ("**Part of the command line is unpublished.**",),
         _part_of_the_cli_is_unpublished,
         _a_clone_does_not_receive_the_frozen_panel,
@@ -1142,7 +1142,7 @@ LIMITATIONS = (
     (
         "nmfp_absence_indistinguishable",
         "declaration",
-        "docs/PROJECT_STATUS.md",
+        "METHODOLOGY.md",
         # The trailing comma is part of the published token: the matcher is a
         # word stream and "representation" is not "representation,". The same
         # punctuation trap failed the corrected bullet at 2ced98e.

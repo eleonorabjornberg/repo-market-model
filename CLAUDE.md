@@ -1,7 +1,7 @@
 # repo-market-model — standing rules
 
 Read this first. **This file summarises; the tracked decision documents decide.** Where it
-disagrees with `docs/decisions/`, `AGENT_CONTRACT.md`, `PLAN.md`,
+disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
 `docs/DATA_QUALITY_DECISIONS.md` or `REPRODUCIBILITY.md`, they win and this file is the bug.
 
 ## How work happens
@@ -38,7 +38,7 @@ disagrees with `docs/decisions/`, `AGENT_CONTRACT.md`, `PLAN.md`,
   figure alone is not a result.
 - **Never edit a published record in place.** `docs/runs/` holds runs that happened. Re-score
   and publish anew, or archive with a note saying why.
-- **Point-in-time data rules are unchanged**: `AGENT_CONTRACT.md` (panel schema, the as-of rule,
+- **Point-in-time data rules are unchanged**: `docs/process/AGENT_CONTRACT.md` (panel schema, the as-of rule,
   the forecast and splitter interfaces) and `docs/DATA_QUALITY_DECISIONS.md`.
 - Leakage guards raise `LookAheadError`, never `assert`. Data guards raise `ValueError`.
 - **Dependencies:** `src/` is stdlib-only, except `src/repo_model/ml.py` and `tests/test_ml.py`,
