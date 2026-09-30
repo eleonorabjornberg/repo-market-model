@@ -113,13 +113,27 @@ class TargetAnchorTests(unittest.TestCase):
     """Label observability: the target is `sofr - iorb`, read at one row."""
 
     def test_iorb_declared_at_1615_holds_the_target_back_a_row_mid_week(self):
-        # Scored Thursday 2026-01-08, decision Wednesday 16:00. SOFR for
-        # Tuesday is final Wednesday 15:00, but IORB for Tuesday is declared
-        # observable Wednesday 16:15 -- fifteen minutes late -- so the latest
-        # row whose whole target is observable is Monday.
+        # The declaration `docs/decisions/iorb-availability.md` superseded
+        # (record_date + 1 day at 16:15), on a registry copy: the mechanism
+        # the as-of PR's acceptance runs measured. Scored Thursday 2026-01-08,
+        # decision Wednesday 16:00. SOFR for Tuesday is final Wednesday 15:00,
+        # but IORB for Tuesday would be observable Wednesday 16:15 -- fifteen
+        # minutes late -- so the latest row whose whole target is observable
+        # is Monday.
+        registry = copy.deepcopy(REGISTRY)
+        for name in ("IORB", "IOER"):
+            registry["fred_macro_latest_vintage"]["field_release_lags"][name]["days"] = 1
         scored = index_of(date(2026, 1, 8))
-        anchor = rule(["spread_bps"]).anchor(DATES, scored)
+        anchor = rule(["spread_bps"], registry).anchor(DATES, scored)
         self.assertEqual(DATES[anchor], date(2026, 1, 5))
+
+    def test_under_the_tracked_iorb_declaration_the_target_is_two_rows_back(self):
+        # `docs/decisions/iorb-availability.md`: IORB and IOER are observable
+        # at 16:15 on their own date, so SOFR binds and the target is read two
+        # panel rows before the scored day on every day, holidays included.
+        current = rule(["spread_bps"])
+        for scored in range(3, len(DATES)):
+            self.assertEqual(current.anchor(DATES, scored), scored - 2, DATES[scored])
 
     def test_after_a_weekend_the_target_is_two_rows_back(self):
         # Scored Tuesday 2026-01-13, decision Monday 16:00: Friday's IORB was
@@ -440,6 +454,12 @@ class SettlementScheduleGuardTests(unittest.TestCase):
     `test_a_same_day_settlement_inside_the_window_is_refused`,
     `test_a_close_after_the_declared_instant_the_day_before_is_refused` and
     `test_a_close_that_leaves_no_panel_day_between_is_measured_on_the_panel`.
+
+    That mutation does not reach the unreadable-closing-time refusal, which
+    has its own: in the same function, the `except ValueError:` branch's
+    `raise ValueError(...) from None` replaced with `continue`.
+    `test_an_auction_with_no_closing_time_is_refused` then fails with
+    `AssertionError: ValueError not raised`, and no other test here does.
     """
 
     BLOCK = REGISTRY["treasury_auctions"]["scheduled_availability"]
