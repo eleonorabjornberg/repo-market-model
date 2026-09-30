@@ -418,6 +418,7 @@ from repo_model.contract import (
     sources_for_features,
 )
 from repo_model.data import DailyObservation, load_daily_panel
+from repo_model.asof import StaleReadError
 from repo_model.registry import RegistryContractError
 from repo_model.splits import LookAheadError, SplitError, rolling_origin
 
@@ -9353,6 +9354,272 @@ class SiblingSeedMaterialTests(unittest.TestCase):
             b"\x00logistic\x00sofr_volume,spread_bps\x006\x0016:00:07\x005,10\x0010",
         )
         self.assertEqual(baseline._seed_from(material), 1925368273)
+
+
+class _PositionalForecast:
+    """Persistence, re-centred on the mean of the last `WINDOW` spreads it reads by position.
+
+    A test double for any model that reads history by position -- lags, a
+    GARCH recursion, a trailing scale -- written with the trap issue #34 names
+    built in: the read is **clamped** to the last row of the history it holds,
+    so a feature row newer than that history raises nothing and is silently
+    handed the history's own last rows. `reads` records, per forecast, the
+    feature date and the spreads read, so a test can compare them.
+
+    `honest=False` makes `with_history` ignore what it is handed: a model
+    reading from its fit frame's end whatever the fold loop does.
+    """
+
+    WINDOW = 3
+
+    def __init__(self, inner, history, reads, honest=True):
+        self._inner = inner
+        self._history = tuple(history)
+        self._reads = reads
+        self._honest = honest
+        self.cutoff = inner.cutoff
+        self.levels = inner.levels
+
+    @property
+    def residuals(self):
+        return self._inner.residuals
+
+    @property
+    def features_read(self):
+        return self._inner.features_read
+
+    @property
+    def history_end(self):
+        return self._history[-1].date
+
+    def with_history(self, history):
+        if not self._honest:
+            return self
+        return _PositionalForecast(self._inner, history, self._reads, self._honest)
+
+    def trained_beyond(self, feature_row):
+        return self._inner.trained_beyond(feature_row)
+
+    def _read(self, feature_row):
+        dates = [row.date for row in self._history]
+        position = (
+            dates.index(feature_row.date)
+            if feature_row.date in dates
+            else len(dates) - 1  # the trap: clamped to the history's end
+        )
+        spreads = tuple(
+            row.spread_bps
+            for row in self._history[max(0, position - self.WINDOW + 1) : position + 1]
+        )
+        self._reads.append((feature_row.date, spreads))
+        return sum(spreads) / len(spreads)
+
+    def point_forecast(self, feature_row):
+        return self._read(feature_row)
+
+    def predict(self, feature_row):
+        shift = self._read(feature_row) - self._inner.point_forecast(feature_row)
+        return tuple(value + shift for value in self._inner.predict(feature_row))
+
+    def predict_stress(self, feature_row, taus=None):
+        return self._inner.predict_stress(feature_row, taus)
+
+
+def positional_fitter(reads, fits, honest=True):
+    """`fit`, wrapped in `_PositionalForecast` over the frame it was fitted on."""
+
+    def fit_positional(train_frame, minimum_history=20):
+        fits.append(train_frame[-1].date)
+        return _PositionalForecast(
+            fit(train_frame, minimum_history=minimum_history),
+            train_frame,
+            reads,
+            honest,
+        )
+
+    return fit_positional
+
+
+def positional_exceedance(reads, fits, honest=True):
+    """`climatology_exceedance`, reporting a positional read as `gbm_exceedance` does.
+
+    Names `histories`, so the fold loop hands it each feature row's as-of
+    history; records the spreads it would read there and reports where the
+    read ended in `history_ends`. `honest=False` reads its training rows
+    instead, whatever it was handed.
+    """
+
+    climatology = climatology_exceedance(minimum_history=5)
+
+    def fit_predict(train_rows, feature_rows, taus, histories=None):
+        fits.append(train_rows[-1].date)
+        curves = climatology(train_rows, feature_rows, taus)
+        ends = []
+        for index, row in enumerate(feature_rows):
+            history = histories[index] if honest and histories is not None else train_rows
+            model = _PositionalForecast(
+                fit(train_rows, minimum_history=5), history, reads
+            )
+            model.point_forecast(row)
+            ends.append(model.history_end)
+        return dataclasses.replace(curves, history_ends=tuple(ends))
+
+    return fit_predict
+
+
+class PositionalHistoryRefitTests(unittest.TestCase):
+    """Issue #34: under `refit_every` above 1, positional reads are the as-of history's.
+
+    **The defect.** A model reading history by position -- lags, a GARCH
+    recursion, the scaled and partial CV+ scale -- kept the frame it was
+    fitted on and read a feature row's history back from it. Under a refit
+    every `N` scored rows, every row of a block after the first has a feature
+    row newer than that frame, so gbm raised. The refit schedule bounds the
+    training labels; the rows between the fit and a later forecast were public
+    at that forecast's decision instant, so the fold loops now hand the model
+    the as-of history at each row's own decision (`baseline._at_decision`).
+
+    **The acceptance criterion**, on each fold loop: under refit `N` every
+    forecast's positional reads equal those under refit 1 on the same grid.
+    **The trap** is clamping the read to the fit frame: it raises nothing and
+    is silently stale. `_PositionalForecast` has the clamp built in, so a fold
+    loop that did not hand over the as-of history would pass a no-error test
+    here and fail the equality -- and, before that, the staleness guard
+    (`baseline._check_history_end`), which the second test holds to its
+    `StaleReadError` on a model that reads its fit frame's end whatever it is
+    handed.
+
+    The gbm side -- that `FittedGradientBoostedQuantiles` reads what it is
+    handed -- is `tests/test_ml.py::RefitPositionalHistoryTests`.
+
+    Mutation record
+    ---------------
+
+    Disposable copy from `git ls-files -z --cached --others
+    --exclude-standard`, with `PYTHONDONTWRITEBYTECODE=1`, `python3 -B` and
+    `REPO_MODEL_REQUIRE_ML=1`, on CPython 3.11 with numpy 2.0.2 and
+    scikit-learn 1.6.1, running this class and `test_ml.RefitPositionalHistoryTests`.
+    Unmutated control green; each mutation restored before the next.
+
+      * **The fold loop reads from the fit frame's end** (the guard's required
+        mutation). In `baseline._at_decision`, `view = model if with_history
+        is None else with_history(_as_of_history(rows, rule, fold))` ->
+        `view = model`. Kills the equality test here (`backtest`, `compare`)
+        and every case of `test_ml`'s, each with `StaleReadError` from
+        `_check_history_end`, before any read is made.
+      * **The staleness guard off.** `if end is None: return` ->
+        `if True: return` in `baseline._check_history_end`. Kills the second
+        test here on all three paths, `AssertionError: StaleReadError not
+        raised`.
+      * **The exceedance path hands no history.** `if reads_histories:` ->
+        `if False:` in `baseline._exceedance_at_fold`. Kills this class's
+        `exceedance` subtest with `StaleReadError`, and
+        `test_ml`'s exceedance test with gbm's own `ValueError` (the feature
+        row is not in the fit's history).
+      * **The trap: the fit frame, a clamped read, and the guard off**, the
+        first two mutations together with `positional_history` clamped to the
+        history's last row and its refusal removed. Nothing raises; every
+        equality -- here and in `test_ml` -- fails with `AssertionError` on
+        the reads, which is the silent staleness the issue names.
+    """
+
+    FEATURES = ("spread_bps",)
+    MINIMUM_HISTORY = 12
+    PANEL_ROWS = 40
+    REFIT = 5
+
+    def setUp(self):
+        self.rows = on_consecutive_days(regressor_frame(self.PANEL_ROWS))
+        self.registry = record_date_registry(1, self.FEATURES)
+
+    def backtest(self, refit, honest=True):
+        reads, fits = [], []
+        report = rolling_persistence_backtest(
+            self.rows,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=DECISION_TIME,
+            minimum_history=self.MINIMUM_HISTORY,
+            fit_model=positional_fitter(reads, fits, honest),
+            refit_every=refit,
+        )
+        return report, reads, fits
+
+    def compare(self, refit, honest=True):
+        reads, fits = [], []
+        report = paired_model_comparison(
+            self.rows,
+            model_a="persistence",
+            fit_a=fit,
+            features_a=self.FEATURES,
+            model_b="positional",
+            fit_b=positional_fitter(reads, fits, honest),
+            features_b=self.FEATURES,
+            registry=self.registry,
+            decision_time=DECISION_TIME,
+            seed=20260930,
+            minimum_history=self.MINIMUM_HISTORY,
+            loss="crps",
+            refit_every=refit,
+        )
+        return report, reads, fits
+
+    def exceedance(self, refit, honest=True):
+        reads, fits = [], []
+        report = rolling_exceedance_backtest(
+            self.rows,
+            predictor=positional_exceedance(reads, fits, honest),
+            model_name="positional",
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=DECISION_TIME,
+            taus=EXCEEDANCE_TAUS,
+            minimum_history=self.MINIMUM_HISTORY,
+            refit_every=refit,
+        )
+        return report, reads, fits
+
+    def test_positional_reads_under_refit_equal_those_under_refit_one(self):
+        """Backtest, compare and exceedance: the same reads, forecast by forecast."""
+
+        for name, run in (
+            ("backtest", self.backtest),
+            ("compare", self.compare),
+            ("exceedance", self.exceedance),
+        ):
+            with self.subTest(name):
+                every, every_reads, every_fits = run(1)
+                blocked, blocked_reads, blocked_fits = run(self.REFIT)
+                self.assertLess(
+                    len(set(blocked_fits)),
+                    len(set(every_fits)),
+                    msg="the refit cadence did not reduce the fits, so a block "
+                    "with a forecast after its fit was never reached",
+                )
+                self.assertEqual(blocked_reads, every_reads)
+                self.assertEqual(
+                    [fold.feature_date for fold in blocked.folds],
+                    [fold.feature_date for fold in every.folds],
+                )
+                self.assertEqual(
+                    [date for date, _ in blocked_reads][-1], every.folds[-1].feature_date
+                )
+
+    def test_a_model_reading_its_fit_frame_end_fails_the_staleness_guard(self):
+        """The trap, made visible: a clamped read of the fit frame raises `StaleReadError`."""
+
+        for name, run in (
+            ("backtest", self.backtest),
+            ("compare", self.compare),
+            ("exceedance", self.exceedance),
+        ):
+            with self.subTest(name):
+                # At refit 1 the fit frame *is* the as-of history, so the same
+                # model is not stale there.
+                run(1, honest=False)
+                with self.assertRaises(StaleReadError) as caught:
+                    run(self.REFIT, honest=False)
+                self.assertIn("stale", str(caught.exception))
 
 
 if __name__ == "__main__":

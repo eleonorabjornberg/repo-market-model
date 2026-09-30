@@ -157,6 +157,7 @@ from types import MappingProxyType
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterable,
     List,
     Mapping,
@@ -192,6 +193,7 @@ from .asof import (
     NEVER_ON_THIS_PANEL,
     InformationRule,
     InformationSet,
+    StaleReadError,
     declared_availability,
     fold_grid,
     information_summary,
@@ -253,6 +255,14 @@ class ExceedanceCurves:
     #: unlike `model_settings` it is read at every fold, not the first: see
     #: `_tail_account` (B40).
     tail_account: Optional[Mapping[str, Any]] = None
+    #: Per curve, the last row of the history its model read by position
+    #: (`FittedGradientBoostedQuantiles.history_end`), or `None` for a model
+    #: that reads none; `None` for the whole field from a predictor that
+    #: reads no history, which is every predictor in this module. The fold
+    #: loop checks each against its forecast's anchor
+    #: (`_check_history_end`), on the predictor's own account of itself, the
+    #: trust `features_read` already carries.
+    history_ends: Optional[Tuple[Optional[date], ...]] = None
 
 
 def _model_settings(fitted: Any) -> Mapping[str, Any]:
@@ -2646,6 +2656,29 @@ def predict_stress(
 ModelFitter = Callable[..., FittedForecastModel]
 
 
+def _reads_histories(predictor: Callable[..., Any]) -> bool:
+    """Does this predictor name a `histories` parameter the fold loop fills?
+
+    `ml.gbm_exceedance` does: its model reads lags, a GARCH variance or a
+    trailing scale by position, and under `refit_every` above 1 the fold's
+    feature row is newer than the frame it was fitted on. Asked once per run.
+    """
+
+    return _names_parameter(predictor, "histories")
+
+
+def _names_parameter(fitter: Callable[..., Any], name: str) -> bool:
+    try:
+        parameters = inspect.signature(fitter).parameters
+    except (TypeError, ValueError):
+        return False
+    parameter = parameters.get(name)
+    return parameter is not None and parameter.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    )
+
+
 def _reads_information(fitter: ModelFitter) -> bool:
     """Does this fitter name an `information` parameter the fold loop must fill?
 
@@ -2660,15 +2693,7 @@ def _reads_information(fitter: ModelFitter) -> bool:
     throughout.
     """
 
-    try:
-        parameters = inspect.signature(fitter).parameters
-    except (TypeError, ValueError):
-        return False
-    parameter = parameters.get("information")
-    return parameter is not None and parameter.kind in (
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        inspect.Parameter.KEYWORD_ONLY,
-    )
+    return _names_parameter(fitter, "information")
 
 
 def _fit_at_origin(
@@ -2775,6 +2800,111 @@ def _as_of_folds(
                     f"labels, fewer than minimum_history {minimum_history}"
                 )
             yield _AsOfFold(index, info, frame, rule.observation(rows, info))
+
+
+def _as_of_history(
+    rows: Sequence[DailyObservation], rule: InformationRule, fold: _AsOfFold
+) -> Sequence[DailyObservation]:
+    """The history a forecast on `fold` reads by position.
+
+    The as-of frame at the fold's own decision instant, ending at its anchor:
+    the fit's frame on the row that opens a block, and the frame a fit made
+    at this row's decision would have had on every other. The refit cadence
+    bounds the training labels, never the forecast-time reads.
+    """
+
+    return fold.frame if fold.frame is not None else rule.frame(rows, fold.info)
+
+
+def _check_history_end(
+    end: Optional[date], rows: Sequence[DailyObservation], info: InformationSet
+) -> None:
+    """Raise unless a positional read ends at the forecast's anchor.
+
+    `end` is the last row of the history a model reads lags, a GARCH
+    recursion or a trailing scale from (`history_end`), `None` for a model
+    that reads none. At the anchor is the as-of read. Before it, the model is
+    reading history as of an earlier decision -- the fit's frame, under
+    `refit_every` above 1 -- and newer rows were public: stale. After it, the
+    model read a row not yet observable: leakage.
+
+    Raises:
+        StaleReadError: `end` is before the anchor's date.
+        LookAheadError: `end` is after it.
+    """
+
+    if end is None:
+        return
+    anchor = rows[info.anchor].date
+    scored = rows[info.scored_index].date
+    if end < anchor:
+        raise StaleReadError(
+            f"the forecast of {scored} reads history by position through "
+            f"{end}, but its as-of history runs to {anchor}, observable by the "
+            f"{info.decision_instant} decision; the rows between were public "
+            f"and a positional read that stops before them is stale"
+        )
+    if end > anchor:
+        raise LookAheadError(
+            f"the forecast of {scored} reads history by position through "
+            f"{end}, after {anchor}, the latest row observable at the "
+            f"{info.decision_instant} decision"
+        )
+
+
+def _at_decision(
+    model: FittedForecastModel,
+    rows: Sequence[DailyObservation],
+    rule: InformationRule,
+    fold: _AsOfFold,
+) -> FittedForecastModel:
+    """The block's model as a forecast on `fold` reads it, checked.
+
+    A model that reads history by position (`with_history`) is handed the
+    fold's as-of history (`_as_of_history`); every other model is returned as
+    it is. Either way the positional read, if any, is checked to end at the
+    fold's anchor (`_check_history_end`).
+    """
+
+    with_history = getattr(model, "with_history", None)
+    view = model if with_history is None else with_history(
+        _as_of_history(rows, rule, fold)
+    )
+    _check_history_end(getattr(view, "history_end", None), rows, fold.info)
+    return view
+
+
+def _exceedance_at_fold(
+    predictor: ExceedancePredictor,
+    train_rows: Sequence[DailyObservation],
+    rows: Sequence[DailyObservation],
+    rule: InformationRule,
+    fold: _AsOfFold,
+    taus: Sequence[float],
+    *,
+    reads_information: bool,
+    reads_histories: bool,
+) -> ExceedanceCurves:
+    """One exceedance predictor call for one fold of an as-of loop, checked.
+
+    `information=` for a predictor that names it (`_reads_information`), and
+    `histories=` -- the fold's as-of history, one per feature row -- for one
+    that names that. The curves' `history_ends` are checked against the
+    fold's anchor. The one call `rolling_exceedance_backtest` and
+    `tail_diagnostics` make, so the two cannot read history two ways.
+    """
+
+    keywords: Dict[str, Any] = {}
+    if reads_information:
+        keywords["information"] = rule
+    if reads_histories:
+        keywords["histories"] = (_as_of_history(rows, rule, fold),)
+    predicted = predictor(train_rows, (fold.feature_row,), taus, **keywords)
+    ends = getattr(predicted, "history_ends", None)
+    if ends is not None:
+        for end in ends:
+            _check_history_end(end, rows, fold.info)
+    return predicted
 
 
 #: Later than any deadline a panel can express; `asof.NEVER_ON_THIS_PANEL`.
@@ -3010,7 +3140,10 @@ def rolling_persistence_backtest(
             raise SplitError("a scored row was reached before any fit")
         feature_row = fold.feature_row
         infos.append(fold.info)
-        quantiles = model.predict(feature_row)
+        # The block's fit, reading any positional history as of this row's
+        # own decision instant.
+        reader = _at_decision(model, rows, rule, fold)
+        quantiles = reader.predict(feature_row)
         # Off the model this fold scored, in this iteration; see `_tail_account`.
         tail_accounts.append(_tail_account(model))
         folds.append(
@@ -3027,7 +3160,7 @@ def rolling_persistence_backtest(
                 actual_bps=rows[index].spread_bps,
                 # The model's own point rule: persistence's is the feature
                 # row's spread, the ARX's its conditional mean.
-                predicted_bps=model.point_forecast(feature_row),
+                predicted_bps=reader.point_forecast(feature_row),
                 lower_bps=quantiles[0],
                 upper_bps=quantiles[-1],
                 quantiles_bps=tuple(quantiles),
@@ -5082,8 +5215,12 @@ def paired_model_comparison(
         actual = rows[index].spread_bps
         # The selected loss, applied to each side's own fitted model at its
         # own as-of observation.
-        loss_a = selected.at_origin(fitted_a, fold_a.feature_row, actual)
-        loss_b = selected.at_origin(fitted_b, fold_b.feature_row, actual)
+        loss_a = selected.at_origin(
+            _at_decision(fitted_a, rows, rule_a, fold_a), fold_a.feature_row, actual
+        )
+        loss_b = selected.at_origin(
+            _at_decision(fitted_b, rows, rule_b, fold_b), fold_b.feature_row, actual
+        )
         losses_a.append(loss_a)
         losses_b.append(loss_b)
         differences.append(loss_a - loss_b)
@@ -6177,6 +6314,9 @@ def rolling_exceedance_backtest(
     # rows as forecasts -- is handed the run's rule, and every other predictor
     # is called exactly as it always was.
     reads_information = _reads_information(predictor)
+    # And one that names `histories` -- `ml.gbm_exceedance` -- is handed each
+    # fold's as-of history, which its positional reads come from.
+    reads_histories = _reads_histories(predictor)
     infos: List[InformationSet] = []
     train_rows: Tuple[DailyObservation, ...] = ()
 
@@ -6189,10 +6329,16 @@ def rolling_exceedance_backtest(
         infos.append(fold.info)
         conditioning = (fold.feature_row,)
 
-        if reads_information:
-            predicted = predictor(train_rows, conditioning, tau_family, information=rule)
-        else:
-            predicted = predictor(train_rows, conditioning, tau_family)
+        predicted = _exceedance_at_fold(
+            predictor,
+            train_rows,
+            rows,
+            rule,
+            fold,
+            tau_family,
+            reads_information=reads_information,
+            reads_histories=reads_histories,
+        )
         # Refitted here, on this fold's training rows, from the same call the
         # scored model got. Hoisting this one line out of the loop is the
         # mutation `tests/test_baseline.py::RollingExceedanceTests` is planted
