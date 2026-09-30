@@ -169,7 +169,6 @@ from typing import (
 
 from .contract import (
     DERIVED_FEATURES,
-    END_OF_DAY,
     QUANTILE_LEVELS,
     field_sources_for_features,
 )
@@ -199,7 +198,6 @@ from .asof import (
     refit_blocks,
     require_refit_every,
 )
-from .registry import RegistryContractError
 from .splits import (
     LookAheadError,
     SplitError,
@@ -6165,7 +6163,6 @@ def rolling_exceedance_backtest(
     # refitted, which is not where the fitting happens.
     reference_predictor = climatology_exceedance(minimum_history=minimum_history)
 
-    dates = [row.date for row in rows]
     folds: List[ScoredFold] = []
     scored_dates: List[date] = []
     realized_bps: List[float] = []

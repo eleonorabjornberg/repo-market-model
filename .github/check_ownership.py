@@ -188,6 +188,13 @@ TRACKS = {
             # list -- the same hole as cli.py, one file over. Applying an
             # existing ruling, not making a new one.
             "src/repo_model/baseline.py",
+            # The as-of information rule and its test (30 Sep): what every fold
+            # loop above reads. Listed only so the ownership tripwire in
+            # tests/test_contract.py stays green; the track split itself is
+            # retired (docs/decisions/workflow.md) and this gate acts on the two
+            # old track branch names alone.
+            "src/repo_model/asof.py",
+            "tests/test_asof.py",
             # The ml extra's one module and its test (10 Sep): candidate models
             # are Track B's, and the boundary test keeps third-party imports here.
             "src/repo_model/ml.py",

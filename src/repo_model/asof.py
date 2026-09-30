@@ -59,7 +59,6 @@ from .contract import (
     CALENDAR_FEATURES,
     DERIVED_FEATURES,
     END_OF_DAY,
-    FEATURE_FIELDS,
     field_sources_for_features,
 )
 from .data import DailyObservation

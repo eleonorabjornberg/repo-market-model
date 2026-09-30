@@ -820,7 +820,7 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
                 self.fit(rows[:36], calibration_share=0.25)
 
         with self.subTest("refusal: conformal with no gap"):
-            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+            with self.assertRaisesRegex(SplitError, r"needs the run's as-of rule"):
                 self.fit(rows[:36], calibration="conformal")
 
         with self.subTest("refusal: a gap that leaves nothing to fit"):
@@ -2269,7 +2269,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
             # By behaviour, on the last fold's frame: a row the probe block's
             # model may not train on moves nothing in it, and a row it may,
             # does.
-            frame, purge, model = fits[-1]
+            frame, information, model = fits[-1]
             self.assertGreater(len(frame), 100)
             dates = [row.date for row in frame]
             block = model.calibration_blocks[self.PROBE_BLOCK]
@@ -2284,7 +2284,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                     shifted,
                     minimum_history=self.MINIMUM_HISTORY,
                     calibration="cross_conformal",
-                    information=gap_rule(purge),
+                    information=information,
                 )
                 return self.probe_predictions(refit.calibration_blocks[self.PROBE_BLOCK], frame)
 
@@ -2298,8 +2298,10 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                     baseline_predictions,
                     msg=f"a row {label} ({dates[position]}) moved the block's excluding model",
                 )
+            # The first row after the block whose own decision already sees
+            # the block's last label: the first one the excluding model trains on.
             clear = stop + 1
-            while not dates[stop] + gap < dates[clear]:
+            while information.anchor(dates, clear) < stop:
                 clear += 1
             self.assertNotEqual(
                 moved(clear + 1),
@@ -2356,7 +2358,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 ValueError,
                 r"cross-conformal block 1 of 2 holds out 20 of 40 rows and leaves "
-                r"its excluding model 0 training pair\(s\) after a 19-day purge",
+                r"its excluding model 0 training pair\(s\) after label observability",
             ):
                 self.fit(rows[:40], calibration="cross_conformal",
                          calibration_folds=2, information=gap_rule(19))
@@ -2403,7 +2405,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
             )
 
         with self.subTest("refusal: cross_conformal with no gap"):
-            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+            with self.assertRaisesRegex(SplitError, r"needs the run's as-of rule"):
                 self.fit(rows[:40], calibration="cross_conformal")
 
 
@@ -3970,7 +3972,12 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
         with self.subTest("each block model's ARX is fitted without its block and purge gaps"):
             rows = cross_frame
             cross_dates = [row.date for row in rows]
-            gap = timedelta(days=self.PURGE)
+            # The rule the fit was handed: label observability on this frame.
+            rule = gap_rule(self.PURGE)
+
+            def anchor(index):
+                return rule.anchor(cross_dates, index) if index > 0 else -1
+
             self.assertEqual(
                 self.arx_state(cross.arx), self.arx_state(baseline.fit_arx(rows, self.REGRESSORS))
             )
@@ -3987,9 +3994,11 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                 lows.extend(excluded[0] - score for score in block.scores)
                 highs.extend(excluded[-1] + score for score in block.scores)
                 with self.subTest(block=number):
+                    start = cross_dates.index(block.held_out_start)
+                    end = cross_dates.index(block.held_out_end)
                     kept = [
-                        when + gap < block.held_out_start or block.held_out_end + gap < when
-                        for when in cross_dates
+                        p <= anchor(start) if p < start else p > end and anchor(p) >= end
+                        for p in range(len(cross_dates))
                     ]
                     origins = [
                         p for p in range(len(rows) - 1) if kept[p] and kept[p + 1]
@@ -4020,9 +4029,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     rescored = []
                     for when in block.scored_dates:
                         index = cross_dates.index(when)
-                        position = max(
-                            p for p in range(index) if cross_dates[p] + gap < when
-                        )
+                        position = anchor(index)
                         levels = self.sorted_levels(
                             block.estimators, self.design(rows[position], block.arx)
                         )
@@ -4074,7 +4081,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     msg=f"the control: the full fit's ARX does not read the row {label}",
                 )
             clear = stop + 1
-            while not cross_dates[stop] + gap < cross_dates[clear]:
+            while anchor(clear) < stop:
                 clear += 1
             self.assertNotEqual(
                 moved(clear + 1).calibration_blocks[self.PROBE_BLOCK].arx.coefficients,
