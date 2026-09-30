@@ -40,3 +40,15 @@ as-of rule is unchanged, and this decision is what implements it. The evidence a
 - **Old records:** records scored under the previous rule move to `docs/runs/archive/pre-asof/`,
   with a README naming the rule they were scored under. The move happens in the re-scoring pull
   request, because the generated pages render from `docs/runs/`.
+
+## Method notes
+
+- **Calibration masking is a calibration bias, not leakage.** A calibrated fit (conformal or
+  cross-conformal) scores held-out rows of its own training frame as forecasts, each read as-of its own
+  decision instant. The excluding models it trains for them, though, train on the frame as masked at
+  the fold's decision instant, not at each held-out row's. A declared column that was public by the
+  fold's decision but not yet by a held-out row's can therefore reach an excluding model's training
+  rows. No value the forecast itself reads is affected, and nothing public after the fold's decision
+  instant is used anywhere. The effect is a possible optimism in the calibration scores, and it is
+  limited to declared columns slower than the target (the H.4.1 weeklies, for example). It is
+  bounded to those rows and left as is.
