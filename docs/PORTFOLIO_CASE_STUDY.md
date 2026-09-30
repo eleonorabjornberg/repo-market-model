@@ -73,8 +73,8 @@ I defined the research question, designed the data model and its validation rule
 point-in-time and model-risk controls, and specified the evaluation protocol and the staged
 plan. I make the methodological decisions this repository records: what may count as a zero,
 what a purge must guarantee, which calibration is adopted, and whether a phase has met its exit
-criterion. AI coding agents implemented much of the code inside a machine-checked contract I
-wrote, in separate worktrees, reviewed before anything lands. Nicholas Beroud advises on the
+criterion. AI coding agents implement much of the code, one session per pull request, and nothing
+lands on `main` without CI and my review. Nicholas Beroud advises on the
 funding market itself — which public series carry its mechanics and what they mean — and is not
 a co-owner of the code.
 
@@ -121,7 +121,7 @@ can act on.
 
 **Stack.** Python with a dependency-free standard-library core, numpy and scikit-learn behind
 an optional extra, a CLI for every step, `unittest` with mutation-tested guards, GitHub
-Actions, and Git worktrees under a machine-checked contract.
+Actions, and pull requests gated by CI.
 
 ## Where to look
 

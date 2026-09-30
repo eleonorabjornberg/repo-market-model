@@ -354,23 +354,21 @@ Then, for how the work is controlled rather than what it claims:
   decisions each empirical claim rests on, including the ones still open.
 - [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) separates what a clean clone can
   reproduce today from what a published empirical result would additionally require.
-- [`docs/pivot/`](docs/pivot) — the lag finding, the redesign plan and the history of the
-  first three weeks.
+- [`docs/pivot/`](docs/pivot): the lag finding, the plan, and the directives the work is run from.
+- [`docs/archive/`](docs/archive): superseded documents, including the earlier development process. Not binding.
 - [`docs/process/AGENT_CONTRACT.md`](docs/process/AGENT_CONTRACT.md) holds the panel
-  schema, the as-of rule and the interfaces. Its two-track ownership split is retired
-  ([`docs/decisions/workflow.md`](docs/decisions/workflow.md)) and kept as history;
-  `CLAUDE.md` carries the standing rules for coding agents, and `AGENTS.md` points to it.
+  schema, the as-of rule and the interfaces. [`CLAUDE.md`](CLAUDE.md) carries the standing rules for coding agents, and
+  [`docs/decisions/workflow.md`](docs/decisions/workflow.md) says how work is directed and reviewed.
   These are engineering controls on how the code is written rather than research
   claims — and if you came to this repository for AI governance rather than for repo
   markets, they are the place to start.
 
 ## Development process and AI disclosure
 
-Parts of the implementation were developed with AI coding agents. For the first three
-weeks they worked in separate Git worktrees, under a human-owned contract naming the files
-each could touch, checked in CI. Since the pivot, each agent session works on one branch
-and one pull request, which merges into `main` only after CI and the author's review
-([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The author and the advisor answer for different things:
+Much of the implementation is written by AI coding agents. Each session works one directive, on one branch and one
+pull request, which merges into `main` only after CI and the author's review
+([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The earlier development process is documented in
+[`docs/archive/`](docs/archive). The author and the advisor answer for different things:
 the model, methodology, workflow, tests and code with Eleonora Björnberg; the choice
 of data and its economic meaning with Nicholas Beroud. Any academic submission based
 on this repository remains the author's academic responsibility, should follow the

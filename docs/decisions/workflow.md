@@ -1,42 +1,67 @@
-# Decision: one session, one pull request, `main` the only integration point
+# Decision: directives, sessions and pull requests
 
-**Status: decided.** This replaces the two-track workflow. `CLAUDE.md` summarises it.
+**Status: decided.** `CLAUDE.md` summarises it for agent sessions. This page is how Eleonora runs it.
 
 ## The rule
 
-- Work is done one session per branch, and each branch ends in a pull request against `main`.
+- **Work starts from a directive**: a GitHub issue labelled `directive`, whose body names a goal, acceptance
+  criteria, constraints and the files to read. Longer briefs live in `docs/pivot/directives/`, and the issue points
+  to one.
+- **One cloud session works one directive** on its own branch from `origin/main`, and ends in one pull request.
   Nothing is pushed to `main` directly.
-- A pull request merges when CI (`tests.yml`) is green and Eleonora has reviewed it.
-- The pull request's description is the record of the work: what changed, the base SHA, the
-  panel digest if a panel was built, the result tables, and what was and was not checked.
-- Judgement calls go to her. They go to an issue labelled `needs-eleonora`, or to a clearly marked
-  question in the pull request. Decision records are hers. A pull request may draft one for her
-  review, and it is in force only once merged.
-- Publishing follows `docs/decisions/publish-rule.md`.
+- **The pull request is the report.** Its template asks for the change, the evidence (base SHA, panel digest, paired
+  results with intervals), what was checked, and what was not.
+- **Findings do not get fixed out of scope.** A session that finds something beyond its directive opens an issue
+  labelled `finding`. A judgement call becomes an issue labelled `needs-eleonora`.
+- **A pull request merges** when CI (`tests.yml`) is green and Eleonora has approved it. Publishing follows
+  `docs/decisions/publish-rule.md`.
+- **Decision records are hers.** A session may draft one when a directive asks for it, and it is in force once merged.
 
-## What is retired
+## Running it
 
-- **Tracks A and B**, their worktrees and branches (`feature/data-layer`, `feature/model-eval`),
-  and the round close that merged them in lockstep.
-- **The Mac job lanes**: queues, heartbeats, `STOP`, and the overnight task that topped them up.
-  The scripts stay on disk as a fallback. They are not part of the workflow.
-- **The block protocol and the per-block verification ritual**: the ownership gate run by hand,
-  test-name set arithmetic, the suite in a copy under `$HOME`, and mutation reproduction for every
-  block. CI on the pull request replaces them. A recorded mutation is still required for a
-  leakage, availability or staleness guard.
-- In `AGENT_CONTRACT.md`, **"Tracks and ownership" and every "Ownership" subsection** are
-  historical. The panel schema, the as-of rule, the interfaces and the data decisions still apply.
+**Start a session.** Open a new session in the `rmm` environment with one line:
 
-`.github/check_ownership.py`, its CI job and `.claude/hooks/ownership_guard.py` stay in place for
-now. All three act only on the two track branch names, so they do not constrain this workflow.
-Removing them is a later, separate pull request.
+```
+Work issue #N in eleonorabjornberg/repo-market-model. Read CLAUDE.md first.
+```
 
-## Why
+Use the stronger model for directives that change scoring or data code, and a lighter one for documentation. Start
+a fresh session for every directive rather than continuing a long one.
 
-Three weeks of the old workflow produced a large verification apparatus and very little measured
-science. Most of the entries in the project's error log were operational. They were reach problems
-between the Mac and the VM, serialisation through a single scoring lane and a publish window, and
-handoff documents drifting from the tree. One scoring run took well over an hour on the Mac, and
-the same panel builds in seconds in a fresh cloud checkout. A workflow where every change is an
-independent, CI-checked pull request removes the serialisation, and it removes the need for state
-documents that restate what git already records.
+**Review a pull request.** Read, in this order:
+1. "Not checked, or for Eleonora".
+2. The evidence table: is it paired against the stated benchmark, with an interval, split by regime?
+3. CI.
+4. The diff.
+
+Then approve and merge, or comment. To have comments addressed, start a session with
+`Address the review comments on PR #N`.
+
+```
+gh pr list --repo eleonorabjornberg/repo-market-model
+gh pr view N --repo eleonorabjornberg/repo-market-model --comments
+gh pr checks N --repo eleonorabjornberg/repo-market-model
+gh pr merge N --repo eleonorabjornberg/repo-market-model --merge --delete-branch
+```
+
+**Turn findings into directives.** After each merged pull request, or at least weekly, triage the open `finding` and
+`needs-eleonora` issues. Each one ends one of three ways:
+- **Ruled:** a small pull request lands the decision record, drafted by a session if you like, and the issue is closed.
+- **Made a directive:** relabelled `directive`, with acceptance criteria added.
+- **Closed with a reason.**
+
+A planning session in Cowork can do the reading for you: it lists the open pull requests and issues, summarises them,
+and drafts the next directives for your approval. It never merges.
+
+```
+gh issue list --repo eleonorabjornberg/repo-market-model --label finding
+gh issue list --repo eleonorabjornberg/repo-market-model --label needs-eleonora
+```
+
+**Keep the roadmap honest.** `docs/pivot/plan.md` §7 is the sequence. A pull request that completes a step updates
+that step's line in the same pull request, so the plan never lags the tree.
+
+## Legacy gates
+
+`.github/check_ownership.py`, its CI job and `.claude/hooks/ownership_guard.py` act only on two legacy branch names,
+so they do not constrain this workflow. Removing them is a directive.

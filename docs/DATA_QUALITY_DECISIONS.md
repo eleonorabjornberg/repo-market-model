@@ -98,7 +98,7 @@ would be the loosening, and is not what this says.
 > exceeding and a median residual of **123 ppm** of the cross-section, where the
 > calibration counts **80 of 124** refused and a median of **171 ppm** of scale
 > taken as the larger side of the identity, the way the verdict takes it. The
-> maximum agrees at 6395 ppm. **Reconciled, on Track A's guidance: the
+> maximum agrees at 6395 ppm. **Reconciled, on the data layer's derivation: the
 > `tolerance_note`'s derivation is the one this repository uses.** Not because it
 > is the later of the two, which was the only argument available while the
 > disagreement stood, but because its denominator is *named* — scale, taken as
@@ -207,7 +207,7 @@ the quantity the identity is about. Nothing declares a relative bound. This was
 separated out deliberately: the deferral is about calibrating a number against one
 observation, and a schema calibrates against nothing. The consequence is that lifting
 this deferral is a one-line edit to a declaration in `metadata/sources.json` rather than
-a change to a shared contract with two tracks' tests attached to it. The deferral has
+a change to a shared contract with tests on both sides of it. The deferral has
 since been lifted and answered no, so that edit stays available and unused. `contract.py`
 resolves the pair as `max(absolute, relative_ppm * 1e-6 * scale)`, and
 `IdentityToleranceScaleTests` in `tests/test_data.py` is what keeps that path exercised
@@ -217,7 +217,7 @@ The restatement of the tolerance rules that used to sit in the registry conforma
 required `absolute` to be present, so an absolute-only bound was the only kind the
 repository could express. That was not a decision anyone made; it was a check written
 before the question came up. A first attempt at this section's decision changed the
-number as well, on the strength of the Track A memo and a stale open-item list, and had
+number as well, on the strength of an untracked memo and a stale open-item list, and had
 to be split back apart — this file is the record that was overridden, and it is tracked
 precisely so that cannot happen quietly.
 
@@ -281,7 +281,7 @@ instead.
 - **The identity is evaluated per reporting entity, not only per cross-section.** A
   per-entity verdict is what makes this defect a named filing rather than a month, and it
   is what any future one will surface as. That is a change to the adapter and to the
-  quality report, and it is queued for Track A rather than taken here.
+  quality report, and it is left as follow-up work rather than taken here.
 - **The tolerance stays where the calibration left it.** Nothing above changes the bound;
   the break was never the bound's to absorb, and it is now attributed rather than absorbed.
 - **`mmf_cash` and `mmf_other_assets` are not disjoint for the affected filings**, and any
@@ -518,8 +518,8 @@ tells them apart, and a field that cannot say "zero, and here is why" cannot say
 either.
 
 **How this stayed wrong after it was known.** The counts above were derived two days before
-this correction, into a track memo that `.gitignore` excludes, and never transcribed. The
-brief that queued the question afterwards was written from this page and spent a block
+this correction, into a working memo that `.gitignore` excludes, and never transcribed. The
+brief that queued the question afterwards was written from this page and spent a work item
 re-deriving an answer that already existed. The mechanism is not carelessness: **no test in
 this suite can see `data/raw/`**, so every claim this repository makes about the archives is
 prose, and prose does not decay-check. The sentence was true when written, and nobody
@@ -681,8 +681,8 @@ the test that pins it. The real registry is silent under the guard, and the publ
 
 The guard and `scripts/purge_availability_audit.py` derive a field's availability the same way,
 line for line, so the two cannot answer differently. Two questions about it are open and are
-the human's: the guard reads `release_lag` directly, where `AGENT_CONTRACT.md` tells Track B to
-go through `registry.max_release_lag_days` — which answers a deliberately more conservative
+the human's: the guard reads `release_lag` directly, where the contract at the time said evaluation code
+should go through `registry.max_release_lag_days` — which answers a deliberately more conservative
 question and would fire where the measurement says the registry is silent; and
 `max_release_lag_days` checks the declared timezone for a `record_date` source but not for a
 `ref_date` one, so `ref_date` availability times are still compared naively.
