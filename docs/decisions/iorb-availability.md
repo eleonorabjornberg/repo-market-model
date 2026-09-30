@@ -15,20 +15,24 @@ after their record date as a deliberately conservative choice.
 
 ## The evidence
 
-Every change to these rates is announced in the FOMC's implementation note, which states the new
-rate and the date it takes effect. The effective date is always later than the announcement:
+Every change to these rates is announced in an FOMC implementation note, which states the new rate
+and the date it takes effect. The case that tests the rule hardest is the unscheduled cut of Sunday
+15 March 2020, when the rate was IOER:
 
-- A scheduled meeting's implementation note is released on the meeting's final day and sets the
-  rate effective the following day.
-- An unscheduled change follows the same pattern. The emergency cut of Sunday 15 March 2020 was
-  announced that day and took effect on Monday 16 March.
-- The rename itself was announced in advance: IOER's last value is dated 2021-07-28 and IORB's
-  first is dated 2021-07-29.
+- The FOMC statement was released at 5:00 p.m. EDT on 15 March 2020.
+  <https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm>
+- The implementation note of the same day set IOER to 0.10 percent, effective 16 March 2020.
+  <https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a1.htm>
 
-Between announcements the rate does not move, so on any date the value for that date is the value
-most recently announced, and it was announced on an earlier date. The ALFRED vintages recorded in
-each field's `revision_evidence` agree: a vintage routinely carries an observation dated after the
-vintage itself.
+Even an emergency weekend cut was announced the day before it took effect. That the effective date
+always falls after the announcement is stated here from the form of the implementation notes, not
+from a check of each one. The dated IORB table of the later announced-IORB directive checks it row by
+row.
+
+Between announcements the rate does not move. On any date, then, the value for that date is the
+value most recently announced, and it was announced on an earlier date. The ALFRED vintages recorded
+in each field's `revision_evidence` are consistent with this: a vintage routinely carries an
+observation dated after the vintage itself.
 
 ## What the declaration still withholds
 
@@ -38,10 +42,11 @@ safe direction, and closing the remaining gap is not part of this decision.
 
 ## A consistency check, not a reason
 
-With the zero-day lag, the scouting controls of `docs/pivot/lag-assessment.md` reproduce through
-the repository's own code: persistence MAE 2.509, and gbm −1.6% against the scouting figure. That
-agreement is recorded here because it is consistent with the rule. It is not why the rule holds.
-The rule rests on the announcement evidence above and would stand if the controls had not matched.
+PR #31's counterfactual run used a registry that differs from `main` only in `IORB.days` and
+`IOER.days`, both set to zero. On that run the scouting controls of `docs/pivot/lag-assessment.md`
+reproduce: persistence MAE 2.509, and gbm −1.6% against the scouting figure. That agreement is
+consistent with the rule, but it is not why the rule holds. The rule rests on the announcement
+evidence above and would stand if the controls had not matched.
 
 ## What this record does not settle
 
