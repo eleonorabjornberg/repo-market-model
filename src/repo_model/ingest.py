@@ -1569,6 +1569,80 @@ def _treasury_rows(
     ]
 
 
+def check_settlement_schedule(records, panel_dates, block) -> None:
+    """Refuse an auction the `treasury_auctions` scheduled declaration misdates.
+
+    The declaration (`scheduled_availability` in `metadata/sources.json`)
+    says the settlement for date d is public at `available_time` on the panel
+    day `days` before d. That rests on the auction data, not on Treasury's
+    published procedure, so it is checked on every build: each auction whose
+    `issue_date` falls inside the panel window must have closed for
+    competitive bids (`closing_time_comp`, New York time) no later than that
+    instant. A same-day settlement fails by construction. Auctions settling
+    outside the window are not judged -- the declaration makes no claim there.
+
+    Raises:
+        ValueError: naming the CUSIP, the settlement date and both instants,
+            or an auction in the window with no readable closing time.
+    """
+
+    dates = sorted(panel_dates)
+    if not dates:
+        return
+    first, last = dates[0], dates[-1]
+    days = int(block["days"])
+    moment = time.fromisoformat(str(block["available_time"]))
+    for record in records:
+        settled = date.fromisoformat(str(record["issue_date"]))
+        if not first <= settled <= last:
+            continue
+        cusip = record.get("cusip", "?")
+        held = date.fromisoformat(str(record["auction_date"]))
+        raw = str(record.get("closing_time_comp", "")).strip()
+        try:
+            closed_at = datetime.strptime(raw, "%I:%M %p").time()
+        except ValueError:
+            raise ValueError(
+                f"Treasury auction {cusip} settling {settled} carries no readable "
+                f"closing_time_comp ({raw!r}); the scheduled settlement "
+                f"declaration cannot be checked against it"
+            ) from None
+        earlier = [when for when in dates if when < settled]
+        if len(earlier) < days:
+            deadline = datetime.combine(first, time.min)
+        else:
+            deadline = datetime.combine(earlier[-days], moment)
+        closed = datetime.combine(held, closed_at)
+        if closed > deadline:
+            raise ValueError(
+                f"Treasury auction {cusip} settling {settled} closed at "
+                f"{closed.isoformat(sep=' ')} New York time, after "
+                f"{deadline.isoformat(sep=' ')}: the scheduled_availability "
+                f"declaration ({block['available_time']} on the panel day "
+                f"before settlement) would admit its settlement before it was "
+                f"known"
+            )
+
+
+def check_scheduled_settlements(artifacts, panel_dates, registry) -> None:
+    """`check_settlement_schedule` over every `treasury_auctions` snapshot.
+
+    A no-op when the registry declares no `scheduled_availability` for the
+    source: without the declaration the settlement is read as an ordinary
+    field, dated by its record date, and there is no claim to check.
+    """
+
+    block = registry.get("treasury_auctions", {}).get("scheduled_availability")
+    if not block:
+        return
+    for artifact in artifacts:
+        source_id = LEGACY_SOURCE_IDS.get(artifact.source_id, artifact.source_id)
+        if source_id != "treasury_auctions":
+            continue
+        records = json.loads(_artifact_payload(artifact)).get("data") or []
+        check_settlement_schedule(records, panel_dates, block)
+
+
 TREASURY_BILL_RATES_SOURCE_ID = "treasury_bill_rates"
 
 #: One rate column of Treasury's "Daily Treasury Bill Rates" export: a tenor in

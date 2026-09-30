@@ -30,6 +30,14 @@ paths are expected to differ, and a comparison that included them could never
 pass. Floats are compared exactly. The run is deterministic, and the bootstrap
 carries its seed; a tolerance here would be a second, unstated criterion.
 
+**A record scored under the purge rule is not re-run.** Its `derived` carries
+`purge_days`, and the scoring path has since moved to the as-of rule
+(`docs/decisions/information-set.md`), under which it cannot reproduce by
+design. For such a record steps 1 and 2 still run and must pass -- the panel is
+unaffected -- and step 3 raises `PrePurgeRuleRecord`, naming the rule. The
+re-scoring pull request replaces the record with one scored under the as-of
+rule, and from then on all three steps run again.
+
 Everything is written to a temporary directory, so the checkout is left as it
 was found. Standard library only.
 
@@ -54,7 +62,7 @@ REGISTRY = ROOT / "metadata" / "sources.json"
 # Declaration keys this script knows how to turn back into `backtest`
 # arguments. A record declaring anything else is refused rather than re-run
 # without it: dropping a declared argument re-runs a different experiment.
-DECLARATION_KEYS = {"decision_time", "features", "minimum_history", "model"}
+DECLARATION_KEYS = {"decision_time", "features", "minimum_history", "model", "refit_every"}
 
 # Whole blocks of the record that describe the run, and the panel keys that do.
 COMPARED_BLOCKS = ("declaration", "derived", "folds", "metrics")
@@ -63,6 +71,15 @@ COMPARED_PANEL = ("sha256", "row_count", "first_date", "last_date")
 
 class ReproductionError(Exception):
     """A step could not run at all, as distinct from running and disagreeing."""
+
+
+class PrePurgeRuleRecord(ReproductionError):
+    """The record was scored under the purge rule, which the code no longer runs."""
+
+
+def scored_under_purge_rule(record):
+    """Was this record scored before the as-of rule? Its `derived` says so."""
+    return "purge_days" in record.get("derived", {})
 
 
 def _cli(*args):
@@ -127,18 +144,12 @@ def _differences(published, rebuilt, prefix=""):
     return []
 
 
-def reproduce(workdir):
-    """Run the three steps in `workdir`. Returns the list of disagreements."""
-    record = json.loads(RECORD.read_text(encoding="utf-8"))
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    declaration = record["declaration"]
-    unknown = set(declaration) - DECLARATION_KEYS
-    if unknown:
-        raise ReproductionError(
-            "the record declares %s, which this script cannot re-run"
-            % ", ".join(sorted(unknown))
-        )
+def reproduce_panel(workdir):
+    """Steps 1 and 2: build the panel from tracked inputs and verify its digest.
 
+    Returns the panel's path. Raises `ReproductionError` if either step fails.
+    """
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     columns = manifest.get("built_columns")
     if not columns:
         raise ReproductionError(
@@ -158,6 +169,32 @@ def reproduce(workdir):
         build += ["--column", column]
     _cli(*build)
     _cli("verify-panel", str(panel), "--manifest", str(MANIFEST))
+    return panel
+
+
+def reproduce(workdir):
+    """Run the three steps in `workdir`. Returns the list of disagreements.
+
+    Raises `PrePurgeRuleRecord` after steps 1 and 2 when the record was scored
+    under the purge rule.
+    """
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    declaration = record["declaration"]
+    unknown = set(declaration) - DECLARATION_KEYS
+    if unknown:
+        raise ReproductionError(
+            "the record declares %s, which this script cannot re-run"
+            % ", ".join(sorted(unknown))
+        )
+
+    panel = reproduce_panel(workdir)
+    if scored_under_purge_rule(record):
+        raise PrePurgeRuleRecord(
+            "%s was scored under the purge rule (derived.purge_days %r); the "
+            "scoring path runs the as-of rule, so the record is re-scored, not "
+            "reproduced. The panel it was scored on still reproduces."
+            % (RECORD.relative_to(ROOT), record["derived"]["purge_days"])
+        )
 
     report = Path(workdir) / "persistence_funding.json"
     arguments = [
@@ -166,6 +203,7 @@ def reproduce(workdir):
         "--decision-time", declaration["decision_time"],
         "--model", declaration["model"],
         "--minimum-history", str(declaration["minimum_history"]),
+        "--refit-every", str(declaration.get("refit_every", 1)),
         "--report", str(report),
     ]
     for feature in declaration["features"]:

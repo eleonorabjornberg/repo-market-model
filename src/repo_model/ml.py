@@ -61,19 +61,19 @@ boosted quantile fit is tight on the rows it was fitted on, so the outer
 2019), done causally inside the one training frame a fold hands over:
 
 * the frame is split by date. The most recent `calibration_share` of its rows
-  are **calibration rows**; the **fit rows** are the earlier rows that clear the
-  registry-derived purge gap before the first calibration row, by
-  `splits.clears_purge` -- the splitter's own comparison, so no fit row's value,
-  and so no fit row's target, is one the forecaster could not have had when the
-  calibration slice opens;
+  are **calibration rows**; the **fit rows** are the frame's prefix through the
+  first calibration row's anchor (`asof.InformationRule.anchor`) -- label
+  observability, the rule the fold loop trains by, so no fit row's target is
+  one the forecaster could not have had when the calibration slice opens;
 * every level is fitted on the fit rows **only**, and never refitted on the
   union afterwards: a refit scores the calibration rows with a model that has
   seen them, which is the in-sample residual tail again and voids the
   finite-sample guarantee;
 * each calibration row is scored `s = max(Q_lo - y, y - Q_hi)` off the
-  rearranged vector, its feature row chosen by `baseline._feature_index` -- the
-  rule a scored day's feature row is chosen by, so a calibration score is at the
-  horizon the backtest scores at -- and the `ceil((1 - alpha)(n + 1))`-th
+  rearranged vector, its feature row the as-of observation at its own decision
+  instant (`asof.InformationRule.observation`) -- the rule a scored day's
+  feature row is chosen by, so a calibration score is at the horizon the
+  backtest scores at -- and the `ceil((1 - alpha)(n + 1))`-th
   smallest score is the **widening**, with `1 - alpha` the declared band's own
   span. `Q_lo` moves down and `Q_hi` up by it, and it may be negative. The
   interior levels are untouched; an outer level that a negative widening would
@@ -86,7 +86,7 @@ produced with: no split, no widening, and no float operation on a reported
 vector that the uncalibrated model did not already perform.
 
 **Cross-conformal, opt-in (B25).** Split-conformal pays for its band with a
-quarter of the frame and the purge: every level, the median and so the CRPS are
+quarter of the frame and the unobservable labels before it: every level, the median and so the CRPS are
 fitted on the rows that are left. `calibration="cross_conformal"` is CV+
 (Barber, Candes, Ramdas and Tibshirani, 2021) applied to conformalized quantile
 regression, done causally inside the one training frame a fold hands over:
@@ -96,20 +96,20 @@ regression, done causally inside the one training frame a fold hands over:
   reported as `none` reports them, bit for bit;
 * the frame is split, **by date and never shuffled**, into `calibration_folds`
   contiguous blocks. Each block's **excluding model** is fitted on the other
-  blocks' rows less every row inside the registry-derived purge gap on either
-  side of it, by `splits.clears_purge` in both directions: a row before the
-  block trains only if it clears the gap before the block opens, a row after it
-  only if the block's last row clears the gap before that row. A design pair
-  trains only if its origin and its target both do, so no pair's target is a
-  held-out row or a purged one. The rows it may not train on are **holes** to
+  blocks' rows, by label observability in both directions: a row before the
+  block trains only if its label was observable at the block's first decision
+  instant, a row after it only if the block's last label was observable at that
+  row's own decision instant. A design pair trains only if its origin and its
+  target both do, so no pair's target is a held-out row or an unobservable
+  one. The rows it may not train on are **holes** to
   it -- a lag or a GARCH variance that would read one is missing, by the rules
   below -- so an excluding model reads nothing of its block through a feature
   either;
 * each held-out row is scored `s = max(Q_lo - y, y - Q_hi)` by its own block's
-  excluding model, from the feature row `baseline._feature_index` chooses for
-  it, as a calibration row is under `conformal`. A held-out row with no such
-  feature row inside the frame -- the frame's first rows, within the gap of its
-  start, or before a lag has rows to read -- has no forecast to score and is
+  excluding model, from its own as-of observation, as a calibration row is
+  under `conformal`. A held-out row with no such observation inside the frame
+  -- the frame's first rows, before any label or declared field is observable,
+  or before a lag has rows to read -- has no forecast to score and is
   not scored;
 * a forecast's band is CV+'s: with `alpha = 1 - (Q_hi level - Q_lo level)` and
   `n` scores, the lower edge is the `floor(alpha (n + 1))`-th smallest of
@@ -252,18 +252,18 @@ too wide in calm stretches and too thin in stressed ones, sorted by a trailing
 volatility known before each origin. A uniform shrink would deepen the stressed
 under-coverage, so `calibration="cross_conformal_scaled"` divides the score by
 a scale read at each row's own decision time. It is `cross_conformal` in the
-fit -- the same full fit reported, the same purged date blocks and excluding
+fit -- the same full fit reported, the same date blocks and excluding
 models, the same held-out rows and feature rows, the same `calibration_folds`
 -- and then:
 
 * **the scale.** `_trailing_scale`: the root mean square, about zero as the
   GARCH takes the changes, of the observed one-step spread changes into the
   `SCALE_WINDOW` rows ending at the **feature row**, floored at
-  `SCALE_FLOOR_BPS`. A held-out row's feature row is the one
-  `baseline._feature_index` chooses for it, so the window ends at or before the
-  last row that clears the purge before that row's target: every spread it
-  reads was published by the decision that forecasts the row. A forecast's
-  feature row is the frame's last row, the fold loop's own choice. A window
+  `SCALE_FLOOR_BPS`. A held-out row's feature row is its as-of observation,
+  dated at its anchor, so the window ends at or before the last row whose
+  spread was observable at that row's decision: every spread it reads was
+  published by the decision that forecasts the row. A forecast's feature row
+  is the fold loop's as-of observation, dated at the frame's last row. A window
   that ended at the target, or was centred on the feature row, or ran over the
   whole frame, would read spreads the forecaster did not have;
 * **the score** is `r_i = |y_i - m_-k(i)(x_i)| / sigma(x_i)`, `m` the
@@ -336,14 +336,14 @@ feature row, so lag 1 is the feature row's spread minus the row before it.
   feature row, so the rows before it are the training frame's own: the fitted
   model keeps each frame row's date and spread, and reads a feature row's lags
   back by that row's *position* in the frame. The frame is what the fold loop
-  handed over, already purged, and the feature row the loop chooses is always
-  its last row -- so no row after the feature date is reachable from here at
+  handed over, ending at the anchor, and the feature row the loop builds is
+  dated at that anchor -- so no row after the feature date is reachable from here at
   all, and a feature row the frame does not carry is refused rather than
   looked up somewhere else.
 * **Inside the design, the same rule.** A training row's lags end at that row,
   never at its target: the change *into* the day being forecast is lag 0, and
   it is the target minus the autoregressive term. A calibration row's lags end
-  at the feature row `baseline._feature_index` chose for it. One helper,
+  at its as-of observation's anchor. One helper,
   `_spread_changes`, reads every one of them.
 * **By row, not by calendar day.** A Monday's lag 1 is Friday's change, not a
   Sunday nobody observed.
@@ -511,7 +511,6 @@ from .baseline import (
     ExceedanceCurves,
     ExceedancePredictor,
     FittedArx,
-    _feature_index,
     _raw_regressor,
     _validate_taus_bp,
     fit_arx,
@@ -519,11 +518,11 @@ from .baseline import (
 from .contract import QUANTILE_LEVELS
 from .data import DailyObservation, load_stress_thresholds
 from .metrics import _validate_levels
+from .asof import InformationRule
 from .splits import (
     LookAheadError,
-    clears_purge,
+    SplitError,
     ensure_strictly_ascending,
-    require_purge_days,
 )
 
 __all__ = [
@@ -589,7 +588,7 @@ CALIBRATIONS = (
 )
 
 #: The calibrations that report the full fit and calibrate it with excluding
-#: models over `calibration_folds` purged date blocks.
+#: models over `calibration_folds` date blocks.
 _CROSS_CALIBRATIONS = (
     "cross_conformal",
     "cross_conformal_asymmetric",
@@ -2438,6 +2437,41 @@ def _fitted_levels(
     return estimators
 
 
+def _require_information(information: object, calibration: str) -> None:
+    """Refuse a calibration that was handed no as-of rule to split by."""
+
+    if not isinstance(information, InformationRule):
+        raise SplitError(
+            f"calibration {calibration!r} scores held-out rows as forecasts and "
+            f"needs the run's as-of rule to read them (information=), got "
+            f"{information!r}; a calibration split with no rule is a split "
+            f"nobody declared"
+        )
+
+
+def _held_out_read(
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    index: int,
+) -> Optional[Tuple[int, DailyObservation]]:
+    """A held-out row's anchor and as-of feature row, or `None` if it has none.
+
+    The frame's own rows and dates, so business days are counted on the frame;
+    every read is at or before the row's decision instant, which is inside the
+    frame, and is checked both ways by `InformationRule.check`.
+    """
+
+    if index < 1:
+        return None
+    try:
+        info = information.information_set(dates, index)
+    except SplitError:
+        return None
+    information.check(dates, info)
+    return info.anchor, information.observation(rows, info)
+
+
 def fit_gradient_boosted_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
@@ -2448,7 +2482,7 @@ def fit_gradient_boosted_quantiles(
     min_samples_leaf: int = 20,
     calibration: str = "none",
     calibration_share: Optional[float] = None,
-    purge_days: Optional[int] = None,
+    information: Optional[InformationRule] = None,
     spread_change_lags: Optional[int] = None,
     volatility_feature: Optional[str] = None,
     calibration_folds: Optional[int] = None,
@@ -2478,7 +2512,7 @@ def fit_gradient_boosted_quantiles(
             row and reports the band as fitted; `"conformal"` holds out the
             most recent rows and widens the band by their conformal score;
             `"cross_conformal"` reports the full fit and moves its band to
-            CV+'s edges over `calibration_folds` purged date blocks;
+            CV+'s edges over `calibration_folds` date blocks;
             `"conformal_asymmetric"` splits as `"conformal"` does and moves
             each edge by its own side's score;
             `"cross_conformal_asymmetric"` blocks as `"cross_conformal"` does
@@ -2494,14 +2528,15 @@ def fit_gradient_boosted_quantiles(
             under `conformal`, and is the only value `none` accepts: a share
             handed to a model that holds nothing out would be read as a setting
             that took effect.
-        purge_days: the registry-derived gap, in calendar days, between the
-            last fit row and the first calibration row -- and, under
-            `cross_conformal`, on both sides of every held-out block. Passed
-            by the fold loop (`baseline._fit_at_origin`), which sized it from
-            the declaration, and never chosen here. Required under both
-            calibrations, by `splits.require_purge_days`: a calibration split
-            with a defaulted gap is the silent zero the splitter exists to
-            refuse. Read by nothing under `none`, which splits nothing.
+        information: the run's `asof.InformationRule`, handed over by the fold
+            loop (`baseline._fit_at_origin`) and never built here. A
+            calibration scores held-out rows as forecasts, so it reads each
+            one's feature row as the rule reads it at that row's own decision
+            instant, and trains its fit rows (or excluding models) only on
+            labels observable there: before a held-out block, the rows at or
+            before its first row's anchor; after it, the rows whose own anchor
+            reaches past the block. Required under every calibration; read by
+            nothing under `none`, which splits nothing.
         spread_change_lags: how many lagged spread changes the design carries,
             at least 1. `None`, the default, carries none and is the model every
             published gbm record was produced with. See the module docstring.
@@ -2538,9 +2573,8 @@ def fit_gradient_boosted_quantiles(
     Raises:
         MissingMLExtraError: if the optional `ml` extra is not installed.
         LookAheadError: if any training row is dated after `cutoff`.
-        SplitError: if the frame is not strictly ascending by date, or if
-            `calibration="conformal"` or `"cross_conformal"` is given no
-            `purge_days` (or a `purge_days` that is not a non-negative int).
+        SplitError: if the frame is not strictly ascending by date, or if a
+            calibration is given no `information`.
         MissingRegressorError: if a training row does not carry a declared
             regressor.
         MetricError: if a declared level is outside `(0, 1)`, or the grid is not
@@ -2554,7 +2588,7 @@ def fit_gradient_boosted_quantiles(
             is not one of `CALIBRATIONS`, if `calibration_share` is outside
             `(0, 1)` or is given to `none`, if the calibration slice holds
             fewer rows than the conformal quantile needs to be finite, or if
-            the purge leaves fewer than two fit rows; and, for the
+            label observability leaves fewer than two fit rows; and, for the
             cross-conformal calibration, if `calibration_folds` is not an int
             of at least 2 or is given to another calibration, if
             `calibration_share` is given to it, if a block holds out no row or
@@ -2635,7 +2669,7 @@ def fit_gradient_boosted_quantiles(
                 f"one block holds out the whole frame and leaves its excluding "
                 f"model nothing to fit on"
             )
-        require_purge_days(purge_days)
+        _require_information(information, calibration)
     else:
         share = (
             DEFAULT_CALIBRATION_SHARE
@@ -2653,7 +2687,7 @@ def fit_gradient_boosted_quantiles(
                 f"on, and a share of 1 leaves nothing to fit"
             )
         share = float(share)
-        require_purge_days(purge_days)
+        _require_information(information, calibration)
 
     if spread_change_lags is not None and (
         isinstance(spread_change_lags, bool)
@@ -2799,12 +2833,12 @@ def fit_gradient_boosted_quantiles(
         first = len(rows) - count
         opens = dates[first]
         calibration_rows = rows[first:]
-        fit_rows = [
-            row for row in rows[:first] if clears_purge(row.date, opens, purge_days)
-        ]
+        # The fit rows are the labels observable at the first calibration
+        # row's decision instant: the frame's prefix through its anchor.
+        fit_rows = rows[: information.anchor(dates, first) + 1]
         if len(fit_rows) < 2:
             raise ValueError(
-                f"a {purge_days}-day purge before the calibration rows opening "
+                f"label observability before the calibration rows opening "
                 f"{opens} leaves {len(fit_rows)} fit row(s) of {len(rows)}; the "
                 f"design needs at least one origin and its successor"
             )
@@ -2850,16 +2884,18 @@ def fit_gradient_boosted_quantiles(
             kept: List[bool] = []
             origins: List[int] = []
             if start < stop:
-                opens, closes = dates[start], dates[stop - 1]
-                # A row before the block trains only if it clears the gap
-                # before the block opens; a row after it only if the block's
-                # last row clears the gap before that row. The splitter's own
-                # comparison, in both directions.
+                # A row before the block trains only if its label was
+                # observable at the block's first decision instant; a row
+                # after it only if, at its own decision instant, the block's
+                # last label was already observable -- the as-of rule's label
+                # observability, in both directions.
+                before = information.anchor(dates, start) if start > 0 else -1
                 kept = [
-                    clears_purge(when, opens, purge_days)
+                    position <= before
                     if position < start
-                    else position >= stop and clears_purge(closes, when, purge_days)
-                    for position, when in enumerate(dates)
+                    else position >= stop
+                    and information.anchor(dates, position) >= stop - 1
+                    for position in range(len(dates))
                 ]
                 # A pair trains only if its origin and its target both do.
                 origins = [
@@ -2871,8 +2907,8 @@ def fit_gradient_boosted_quantiles(
                 raise ValueError(
                     f"cross-conformal block {number + 1} of {folds} holds out "
                     f"{stop - start} of {len(rows)} rows and leaves its excluding "
-                    f"model {len(origins)} training pair(s) after a "
-                    f"{purge_days}-day purge on both sides; a gbm fit needs its "
+                    f"model {len(origins)} training pair(s) after label "
+                    f"observability on both sides; a gbm fit needs its "
                     f"block to hold out at least one row, and at least one "
                     f"origin with its successor to fit on"
                 )
@@ -2922,28 +2958,26 @@ def fit_gradient_boosted_quantiles(
             )
             held_out = []
             for index in range(start, stop):
-                # No row of the frame clears the gap before this one, or its
-                # feature row has too few rows before it for its lags: there is
-                # no forecast of it to score.
-                if not clears_purge(dates[0], dates[index], purge_days):
+                # No row of the frame is observable at this row's decision, or
+                # a declared field has none yet, or its feature row has too few
+                # rows before it for its lags: there is no forecast of it to
+                # score.
+                read = _held_out_read(information, rows, dates, index)
+                if read is None:
                     continue
-                # `_feature_index` on the tail, for the reason the conformal
-                # calibration rows below give.
-                recent = range(max(0, index - purge_days - 1), index)
-                position = _feature_index(dates, recent, index, purge_days)
+                position, feature = read
                 if position < lags:
                     continue
-                # The scale ends at the feature row, which cleared the purge
-                # before this row's target: the held-out row's own
-                # decision-time spreads, and none after them. No scale, no
-                # score.
+                # The scale ends at the feature row, the held-out row's own
+                # anchor: its decision-time spreads, and none after them. No
+                # scale, no score.
                 scale = _trailing_scale(spreads, position) if trailing else None
                 if trailing and scale is None:
                     continue
                 held_out.append(
                     (
                         _design(
-                            rows[position],
+                            feature,
                             names,
                             block_imputations,
                             "held-out feature row",
@@ -3023,14 +3057,15 @@ def fit_gradient_boosted_quantiles(
         first = len(rows) - len(calibration_rows)
         scored = []
         for index in range(first, len(rows)):
-            # `_feature_index` scans back from the end of the indices it is
-            # handed, and dates ascend strictly, so the row `purge_days + 1`
-            # positions back already clears the gap: handing it only that tail
-            # returns the same row as handing it the whole prefix, without a
-            # frame-length copy per calibration row per fold.
-            recent = range(max(0, index - purge_days - 1), index)
-            position = _feature_index(dates, recent, index, purge_days)
-            feature = rows[position]
+            # The calibration row's own as-of read: its anchor, and each
+            # declared field at its latest row observable at its decision.
+            read = _held_out_read(information, rows, dates, index)
+            if read is None:
+                raise ValueError(
+                    f"calibration row {dates[index]} has no as-of read inside "
+                    f"the frame; a calibration row with no forecast has no score"
+                )
+            position, feature = read
             # The lags end at the feature row, never at the row being scored.
             scored.append(
                 (
@@ -3242,12 +3277,12 @@ def gbm_exceedance(
             rule: passed straight to `fit_gradient_boosted_quantiles`, neither
             checked nor re-derived here, defaulting to its own (B42).
 
-    **The gap reaches the fit from the fold loop.** `fit_predict` names
-    `purge_days`, so `rolling_exceedance_backtest` hands over the gap it
-    derived, as `baseline._fit_at_origin` does for `backtest`; a calibration
-    needs it and `none` reads nothing. `event_eval.evaluate_event_window`
-    hands over the gap it derived by the same rule since B52; a caller that
-    passes none gets the fitter's refusal under a calibration.
+    **The as-of rule reaches the fit from the fold loop.** `fit_predict` names
+    `information`, so `rolling_exceedance_backtest` and
+    `event_eval.evaluate_event_window` hand over the run's rule, as
+    `baseline._fit_at_origin` does for `backtest`; a calibration needs it and
+    `none` reads nothing. A caller that passes none gets the fitter's refusal
+    under a calibration.
 
     **Before B39 the tail could not be measured.** `backtest` and `compare`
     score the quantile vector, which a tail by design never moves, and this
@@ -3277,7 +3312,7 @@ def gbm_exceedance(
         train_rows: Sequence[DailyObservation],
         feature_rows: Sequence[DailyObservation],
         taus: Sequence[float],
-        purge_days: Optional[int] = None,
+        information: Optional[InformationRule] = None,
     ) -> ExceedanceCurves:
         model = fit_gradient_boosted_quantiles(
             train_rows,
@@ -3288,7 +3323,7 @@ def gbm_exceedance(
             calibration=calibration,
             calibration_share=calibration_share,
             calibration_folds=calibration_folds,
-            purge_days=purge_days,
+            information=information,
             tail=tail,
             spread_change_lags=spread_change_lags,
             volatility_feature=volatility_feature,

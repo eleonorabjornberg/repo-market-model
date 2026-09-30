@@ -97,10 +97,8 @@ predict_stress(feature_row) -> exceedance vector aligned to metadata taus_bp
 
 ## Evaluation
 
-- **Splits** are expanding-window and time-ordered. Random splits are prohibited, and no flag enables them. The splitter
-  is `rolling_origin(dates, min_train, step, purge)`. Today its `purge` both trims training rows and chooses the feature
-  row. `docs/decisions/information-set.md` replaces the second use; its implementation is the next task in
-  `docs/pivot/next-session.md`.
+- **Splits** are expanding-window and time-ordered. Random splits are prohibited, and no flag enables them. Feature
+  rows and training labels follow the as-of rule in `docs/decisions/information-set.md`.
 - **The stress target** is an exceedance of SOFR − IORB derived from the predictive distribution, at the thresholds in
   `metadata/stress_thresholds.json`. It is scored as state, not onset. Labels use fixed bp thresholds and never a
   full-sample percentile.

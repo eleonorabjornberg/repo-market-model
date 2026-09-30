@@ -32,11 +32,11 @@ Phase 2 names. It is not a third variation on "read some columns, compute a
 number": every model above reads a covariate to *compute* a value, and this one
 reads a covariate to *choose a model*. That is a new way for a variable to enter
 a forecast, and it is the first thing to test whether the machinery built around
-`features_read` was a rule or a habit. The purge is sized over a declared
-feature set before anything is fitted and the fitted model is checked against
-that declaration afterwards; a threshold model that consulted `on_rrp` to pick
-its regime and did not report reading it would have had its gap computed
-correctly over the wrong sources, in the flattering direction. So the threshold
+`features_read` was a rule or a habit. The as-of rule reads and guards a
+declared feature set, and the fitted model is checked against that declaration
+afterwards; a threshold model that consulted `on_rrp` to pick its regime and
+did not report reading it would have read a column no guard had checked, in
+the flattering direction. So the threshold
 variable goes through the same lock as any other read, and `features_read`
 carries it. Nothing in the lock needed changing to accommodate it, which is the
 result worth having.
@@ -53,23 +53,22 @@ it. The name is unchanged because it is the name the last block's merge record
 and the existing assertions refer to; "persistence" in it now names the default,
 not the only option.
 
-It also takes its folds from `repo_model.splits.rolling_origin` rather than
-walking the index itself, which is what makes the purge gap reach the benchmark
-numbers at all. Until it did, `rolling_origin` was fully implemented, fully
-tested, carried the project's only purge boundary -- and nothing in the model
-path called it, so its guards had never guarded a reported number. The feature
-row follows from the fold rather than from the calendar: see `_feature_index`.
+What every fold loop reads is decided by `docs/decisions/information-set.md`
+and implemented once, in `repo_model.asof`: each declared field at its latest
+value observable at the decision instant (the declared decision time on the
+panel day before the scored day), scheduled inputs at the scored day, the
+target at one row (the anchor), and training labels only up to that anchor.
+`_as_of_folds` is the one fold loop's skeleton -- the one grid, the refit
+blocks, and both guards on every scored row -- and every evaluation path here,
+in `event_eval` and in `tail_diagnostics` walks it or the same rule. This
+replaced a scalar purge, sized in calendar days at each field's worst case and
+used both to trim training rows and to choose the feature row, which read
+every input four or five business days before the scored day on every day
+(`docs/pivot/lag-assessment.md`).
 
-The gap itself is no longer anybody's to type. The backtest takes a declared
-`features` set, resolves it through `contract.field_sources_for_features` to
-`(source, field)` pairs, and sizes the gap with `registry.max_release_lag_days`
-over exactly those fields -- `_derive_purge`, which the event path calls too.
-Over fields rather than sources because a source is too coarse a thing to
-price: one source carries an administered rate that is never revised beside
-weeklies that are, and priced as a source neither of them can be priced. That
-closes the question the purge block left open -- the number was required, and
-nothing checked that whoever produced it covered what the model reads -- and it
-is the first time this seam has been answered rather than routed around. The
+The backtest takes a declared `features` set, resolves it through
+`contract.field_sources_for_features` to `(source, field)` pairs
+(`_resolve_fields`), and the rule reads each pair by its own declaration. The
 declaration is verified against the first fitted model, because a declaration
 nothing checks is a comment.
 
@@ -96,7 +95,7 @@ covariate also decides **which fitted relationship is in force**: two feature
 rows straddling the fitted cutoff and differing in nothing else get different
 centres and therefore different exceedance probabilities, discontinuously.
 `FittedThreshold.features_read` already reports the regime variable, so the
-knowledge-holdout path sizes its gap over that column's fields too -- which is
+knowledge-holdout path reads and guards that column's fields too -- which is
 the read this implementer exists to put through `event_eval`'s declaration
 check, the second and last path on which it had never been checked.
 
@@ -128,7 +127,7 @@ aggregate belongs on the second and nowhere else, and
 distinction survives into the file rather than living only in these paragraphs.
 
 What the two exceedance evaluators share, they share by import, which is the
-only form of sharing that cannot drift: `_derive_purge`, `_feature_index`,
+only form of sharing that cannot drift: the as-of rule, `_resolve_fields`,
 `_check_fitter_stayed_inside`, `_validate_taus` and `_validate_prediction`. The
 last two moved here from `event_eval` when the second consumer arrived, for the
 reason `ExceedancePredictor` itself lives here -- what a predictor may return
@@ -170,7 +169,6 @@ from typing import (
 
 from .contract import (
     DERIVED_FEATURES,
-    END_OF_DAY,
     QUANTILE_LEVELS,
     field_sources_for_features,
 )
@@ -190,13 +188,20 @@ from .metrics import (
     stationary_bootstrap_interval,
     threshold_weighted_crps,
 )
-from .registry import RegistryContractError, max_release_lag_days
+from .asof import (
+    NEVER_ON_THIS_PANEL,
+    InformationRule,
+    InformationSet,
+    declared_availability,
+    fold_grid,
+    information_summary,
+    refit_blocks,
+    require_refit_every,
+)
 from .splits import (
     LookAheadError,
     SplitError,
-    clears_purge,
     ensure_strictly_ascending,
-    rolling_origin,
 )
 
 
@@ -210,10 +215,10 @@ class ExceedanceCurves:
 
     `features_read` is the same question `FittedForecastModel.features_read`
     answers on the rolling path, in the same panel vocabulary, and it is here
-    for the same reason. `event_eval` sizes its purge from a declared feature
-    set before anything is fitted; a predictor whose model read a column outside
-    that set was purged over the wrong sources, and the error is in the
-    flattering direction. A declaration nothing checks is a comment, so the
+    for the same reason. `event_eval` reads and guards a declared feature set
+    under the as-of rule; a predictor whose model read a column outside that
+    set read something no guard checked, and the error is in the flattering
+    direction. A declaration nothing checks is a comment, so the
     interface carries the answer rather than leaving the evaluator to infer it
     from the shape of a callable it cannot see inside.
 
@@ -366,9 +371,9 @@ def _ml_libraries(*fitted: Any) -> Optional[Mapping[str, str]]:
 #: the evaluator it feeds, and there is no longer a second copy to drift.
 #:
 #: `fit_predict(train_rows, feature_rows, taus) -> ExceedanceCurves`. One curve
-#: per feature row. The feature rows are chosen by the evaluator -- the last row
-#: that cleared the purge gap before each scored day, by `_feature_index`, the
-#: same rule the rolling path uses -- so a predictor cannot pick its own
+#: per feature row. The feature rows are chosen by the evaluator -- each scored
+#: day's as-of observation (`asof.InformationRule.observation`), the same rule
+#: the rolling path uses -- so a predictor cannot pick its own
 #: conditioning set and cannot reach a row it was not allowed to see.
 #:
 #: The rows are `DailyObservation`, not a date-and-value pair, because that is
@@ -644,39 +649,6 @@ class ProvenanceMismatchError(ValueError):
     """
 
 
-class IncomparablePurgeError(ValueError):
-    """Two models in one comparison derived different purge gaps.
-
-    The paired difference this module reports is a difference *per origin*, and
-    an origin set is a function of the gap: `rolling_origin` builds the folds
-    from `min_train`, the step and the purge, so two declarations that price
-    different gaps produce two different fold sequences over the same panel.
-    Subtracting one model's loss series from the other's would then subtract
-    losses computed on different days, in different numbers, and call the
-    result a difference between models.
-
-    Nothing downstream could see it. Both series are real losses from real
-    fits, the arithmetic is correct, and the mean of the subtraction is a
-    finite number the interval will happily be computed around -- the same
-    shape as a gap computed correctly over the wrong sources, one level up.
-
-    **This is the one comparability question the single fold loop does not
-    settle.** Everything else is settled by construction: one loop, one purge,
-    one feature row per origin, both models fitted on the same training rows
-    and scored on the same day. The gap is the exception because it is derived
-    from the *declaration* before the loop exists, so it has to be checked
-    before the loop is built rather than observed inside it.
-
-    Raised, never asserted, and never resolved by taking the wider of the two:
-    a comparison run under a gap neither declaration asked for is a third run
-    that nobody requested, and its numbers would be attributed to two models
-    that were never scored that way.
-
-    A `ValueError` subclass, so the CLI dispatcher already turns it into exit 2
-    with a message and no artifact -- the shape every other refusal here has.
-    """
-
-
 #: The two regimes, in the order every report and every coefficient mapping
 #: lists them. Named once and iterated rather than written out at each use, so
 #: that "there are exactly two" is a single statement a reader can check and not
@@ -710,11 +682,12 @@ class ScoredFold:
     and *which* day was scored, in the panel's own vocabulary, or a reader
     cannot check the gap against the calendar.
 
-    `feature_date` is the row the forecast was conditioned on -- the last day
-    the forecaster was allowed to have seen. It is carried beside `train_end`
-    because under a purge they are the same date and under a bug they are not,
-    and beside `scored_date` because `scored_date - feature_date` is the gap
-    made visible on a single row. The event path already reports a feature date
+    `feature_date` is the anchor of the as-of observation the forecast was
+    conditioned on -- the latest row whose target was observable at the
+    decision instant. It is carried beside `train_end` because at a refit they
+    are the same date (the frame ends at the anchor) and under a bug they are
+    not, and beside `scored_date` because `scored_date - feature_date` is the
+    target's staleness made visible on a single row. The event path already reports a feature date
     per scored day for exactly this reason; the rolling path did not, and its
     report is the one this project publishes.
     """
@@ -756,7 +729,11 @@ class BacktestReport:
     #: source-level `release_lag` stood in for every field of a source and the
     #: target variable was unpriceable because one of them was.
     field_sources: Tuple[Tuple[str, str], ...] = ()
-    purge_days: int = 0
+    #: The refit cadence in scored rows, and the per-feature staleness summary
+    #: `asof.information_summary` made of every scored row's reads. `None` on a
+    #: report `rolling_persistence_backtest` did not build.
+    refit_every: Optional[int] = None
+    information: Optional[Mapping[str, Any]] = None
     #: The remaining conditions the numbers were produced under. `decision_time`
     #: is half of what sized the gap -- `max_release_lag_days` takes it and a
     #: registry, and the same registry at a different decision time gives a
@@ -2669,16 +2646,15 @@ def predict_stress(
 ModelFitter = Callable[..., FittedForecastModel]
 
 
-def _reads_purge_days(fitter: ModelFitter) -> bool:
-    """Does this fitter name a `purge_days` parameter the fold loop must fill?
+def _reads_information(fitter: ModelFitter) -> bool:
+    """Does this fitter name an `information` parameter the fold loop must fill?
 
-    A fitter that splits its own training frame -- gbm under
-    `calibration="conformal"` holds out its latest rows -- needs the gap
-    between its slices, and that gap is the one this module derived from the
-    declaration. It is not bound on the command line: `cli_eval` never holds
-    the number, and a gap bound there would be a second place it came from.
-    So the fold loop hands it over, and only to a fitter whose signature names
-    it; every other fitter is called exactly as it always was.
+    A fitter that splits its own training frame -- gbm under a conformal
+    calibration holds out rows and scores them as forecasts -- needs the
+    as-of rule to know which of its rows a held-out forecast may read and
+    which labels its excluding fits may train on. That rule is the run's, built
+    from the declaration; it is handed over only to a fitter whose signature
+    names it, and every other fitter is called exactly as it always was.
 
     Asked once per run, not once per origin: the fitter is one callable
     throughout.
@@ -2688,7 +2664,7 @@ def _reads_purge_days(fitter: ModelFitter) -> bool:
         parameters = inspect.signature(fitter).parameters
     except (TypeError, ValueError):
         return False
-    parameter = parameters.get("purge_days")
+    parameter = parameters.get("information")
     return parameter is not None and parameter.kind in (
         inspect.Parameter.POSITIONAL_OR_KEYWORD,
         inspect.Parameter.KEYWORD_ONLY,
@@ -2700,211 +2676,114 @@ def _fit_at_origin(
     train_frame: Sequence[DailyObservation],
     *,
     minimum_history: int,
-    purge: int,
-    reads_purge: bool,
+    information: InformationRule,
+    reads_information: bool,
 ) -> FittedForecastModel:
-    """One origin's fit, with the derived gap for a fitter that reads it.
+    """One refit, with the run's as-of rule for a fitter that reads it.
 
-    The one call both fold loops make, so `rolling_persistence_backtest` and
-    `paired_model_comparison` cannot hand a calibrating fitter different gaps.
-    `reads_purge` is `_reads_purge_days(fitter)`, computed by the caller once.
+    The one call every fold loop makes, so no two paths can hand a calibrating
+    fitter different rules. `reads_information` is
+    `_reads_information(fitter)`, computed by the caller once.
     """
 
-    if reads_purge:
-        return fitter(train_frame, minimum_history=minimum_history, purge_days=purge)
+    if reads_information:
+        return fitter(
+            train_frame, minimum_history=minimum_history, information=information
+        )
     return fitter(train_frame, minimum_history=minimum_history)
 
 
-def _feature_index(
-    dates: Sequence[date],
-    train_indices: Sequence[int],
-    scored_index: int,
-    purge: int,
-) -> int:
-    """The last training row that cleared the purge gap before `scored_index`.
-
-    Under a gap of zero this is the row before the scored day, which is what the
-    backtest used unconditionally before it was purged. Under a gap it is often
-    not: `rows[scored_index - 1]` is frequently a row published after the
-    scoring window opened, and feeding it to the model is the leak the purge
-    exists to stop, re-entering through the one door the purge does not cover.
-    Dropping a row from the *training frame* and then reading the model's
-    feature off it is not a partial purge, it is no purge at all for the term
-    that dominates a persistence forecast.
-
-    The boundary is stated through `clears_purge` rather than by taking
-    `train_indices[-1]` on trust, for the reason `rolling_origin` states its own
-    guard that way: `rolling_origin` builds the prefix with a `bisect`, and a
-    consumer that re-derives the same answer from the same assumption cannot
-    disagree with it. Scanning back through the fold's own indices against the
-    authoritative comparison can, and the scan is over a prefix so the first
-    index it accepts is the last eligible one.
-
-    Raises:
-        LookAheadError: if no row in `train_indices` clears the gap. Reaching
-            this means the fold itself is malformed, since `rolling_origin`
-            refuses to yield such a fold -- so it raises rather than asserts,
-            and rather than falling back to a row that does not clear.
-    """
-
-    opens = dates[scored_index]
-    for index in reversed(tuple(train_indices)):
-        if clears_purge(dates[index], opens, purge):
-            return index
-    raise LookAheadError(
-        f"no training row clears the {purge}-day purge gap before "
-        f"{opens}; the fold is malformed"
-    )
-
-
-def _derive_purge(
-    registry: Mapping[str, Mapping[str, object]],
+def _resolve_fields(
     features: Tuple[str, ...],
-    *,
-    decision_time: time,
-) -> Tuple[Tuple[Tuple[str, str], ...], Tuple[str, ...], int]:
-    """Resolve a declared feature set to fields, and price the gap over those.
+) -> Tuple[Tuple[Tuple[str, str], ...], Tuple[str, ...]]:
+    """A declared feature set's `(source, field)` pairs, and their source IDs.
 
-    The one derivation both evaluation paths use. `rolling_persistence_backtest`
-    and `event_eval.evaluate_event_window` call this and nothing else; a second
-    copy of these three lines is a second answer to "what sized the gap", and
-    two answers agree until they do not. `_check_fitter_stayed_inside` already
-    lives here for that reason and is imported by the event path rather than
-    restated.
-
-    **Fields, not sources.** `contract.field_sources_for_features` resolves the
-    declaration to `(source_id, field)` pairs and `registry.max_release_lag_days`
-    prices each pair by the field's own declared lag where the source carries
-    one. A source is too coarse a thing to price: `fred_macro_latest_vintage`
-    carries an administered rate that is never revised beside H.4.1 weeklies
-    that are, under one source-level `release_lag` of basis
-    `snapshot_retrieved_at`. Priced by the source, every field of it is
-    unpriceable and `iorb` -- and therefore `spread_bps`, and therefore the
-    target -- goes with them. Priced by the field, `IORB` resolves on its
-    declared record-date lag and the weeklies stay refused, which is the
-    correct pair of answers rather than one answer applied twice.
-
-    The source IDs are still returned, projected from the pairs rather than
-    resolved a second time through `contract.sources_for_features`. They are
-    what `BacktestReport.sources`, `EventWindowReport.sources` and
-    `_check_fitter_stayed_inside` have always carried, and a second resolution
-    is the drift this function exists to prevent. `sources_for_features` is
-    left in place and still called by `cli_eval` for the event journal's hash,
-    which must not move on a registry that declares no fields.
-
-    **The refusal narrows; it does not disappear.** A field with no declared
-    revision policy on a `snapshot_retrieved_at` source is still refused, and
-    the refusal is Track A's -- `RegistryContractError` with Track A's message,
-    which names the source. This adds the fields the gap was being sized over
-    and nothing else: the registry's message cannot name the field, because a
-    field it has no declaration for never reaches the branch that appends one,
-    and a reader told only "fred_macro_latest_vintage" cannot tell a refused
-    `WRESBAL` from a refused `IORB`. Softening it -- an exemption for the event
-    path, a snapshot basis mapped to zero, a `revision_policy` invented here --
-    is not available: a derived purge still cannot be zero, and the field
-    declaration is a decision about the world and the human's to make.
-
-    Args:
-        registry: the parsed source registry.
-        features: the declared feature set, already a tuple.
-        decision_time: when the forecast is made.
-
-    Returns:
-        `(field_sources, sources, purge)` -- the `(source_id, field)` pairs the
-        gap was sized over, the source IDs projected from them, and the gap.
+    `contract.field_sources_for_features` resolves the declaration; the source
+    IDs are projected from the pairs rather than resolved a second time. What
+    each field is *worth* at a decision instant is `asof.InformationRule`'s
+    question, answered per field and per fold; this only says which fields
+    the declaration reaches.
 
     Raises:
         UndeclaredFeatureError: `features` names a column
             `contract.field_sources_for_features` cannot classify, or one
             declared to have no ingesting source.
-        RegistryContractError: the derived fields cannot support a safe bound.
     """
 
     field_sources = field_sources_for_features(features)
     sources = tuple(sorted({source for source, _field in field_sources}))
-    try:
-        purge = max_release_lag_days(
-            registry, field_sources, decision_time=decision_time
-        )
-    except RegistryContractError as exc:
-        raise RegistryContractError(
-            f"{exc} -- sizing the gap over "
-            f"{', '.join(f'{s}.{f}' for s, f in field_sources)}, the fields the "
-            f"declared feature set {list(features)} reads"
-        ) from exc
-    return field_sources, sources, purge
+    return field_sources, sources
 
 
-#: Later than any deadline a panel can express. A business-day count whose
-#: publication day runs off the end of the panel is **late**, not unknown: the
-#: panel is the only calendar this module has, so a value whose declared
-#: publication day is not on it has not been published by any instant the panel
-#: can name. Returning "unknown" there would skip exactly the folds at the end
-#: of the panel, where a long-lagged column is least likely to have arrived,
-#: which is the direction a leakage guard must not fail in.
-#: `scripts/purge_availability_audit.py` settles the same case the same way and
-#: says so in its own module docstring; the two answers have to agree, or the
-#: audit stops auditing this path.
-_NEVER_ON_THIS_PANEL = datetime.max
+class _AsOfFold(NamedTuple):
+    """One scored row of an as-of fold loop.
 
-
-def _declared_availability(
-    registry: Mapping[str, Mapping[str, object]],
-    source_id: str,
-    field: str,
-    dates: Sequence[date],
-    position: int,
-) -> Optional[datetime]:
-    """The first instant a field's value for `dates[position]` is observable.
-
-    `None` where the declaration makes no row-relative claim there is anything
-    to check: a `snapshot_retrieved_at` basis dates a row from its snapshot
-    timestamp, which is an `available_at` fact about the row and not a lag on
-    the source, and a declaration carrying no `days` has made no claim at all.
-    Neither is a pass. Both are "not this guard's question", and the guard says
-    nothing about those fields rather than clearing them.
-
-    **This reads `release_lag`, which AGENT_CONTRACT.md's "The conversion
-    belongs to the data layer" tells Track B not to do, and that tension is
-    real and is reported rather than resolved here.** The reason it cannot be
-    borrowed from Track A: `registry.max_release_lag_days` answers a different
-    question -- the conservative *calendar-day* bound -- and for a `ref_date`
-    source that bound is `worst_case_calendar_days`, deliberately far larger
-    than the business-day count the source actually declares. Sized from the
-    bound, this guard would fire on `metadata/sources.json`, where the whole
-    point of B29's measurement is that it is silent. Sized from `days` counted
-    on the panel's own dates, it is silent there and fires only where a fixture
-    declares a lag its calendar cannot deliver. The arithmetic mirrors
-    `scripts/purge_availability_audit.py:field_availability` line for line, so
-    the evaluation path and the audit cannot answer differently; a per-field
-    availability instant on Track A's side of the interface would let both drop
-    this copy, and that is the human's call, not a block's.
-
-    Wall clocks are compared, not zoned instants. Where `decision_time` is
-    tz-aware and a `record_date` source declares another zone,
-    `max_release_lag_days` has already refused the run inside `_derive_purge`,
-    before any fold exists. It performs no such check on a `ref_date` source,
-    so a `ref_date` availability time in a zone other than the decision's is
-    compared naively here; that gap is Track A's and is recorded rather than
-    patched over, since inventing a second timezone rule in this module is the
-    duplication the paragraph above is about.
+    `frame` is the training frame at this row's decision instant on the row
+    that opens a refit block, and `None` on every other: the block's model is
+    the one fitted there. `feature_row` is the as-of observation the model
+    reads (`asof.InformationRule.observation`).
     """
 
-    source = registry[source_id]
-    field_lags = source.get("field_release_lags") or {}
-    lag = field_lags.get(field) or source.get("release_lag") or {}
-    if lag.get("basis") == "snapshot_retrieved_at":
-        return None
-    days = lag.get("days")
-    if days is None:
-        return None
-    moment = time.fromisoformat(str(lag.get("available_time", END_OF_DAY)))
-    if lag.get("unit") == "business_days":
-        published = position + int(days)
-        if published >= len(dates):
-            return _NEVER_ON_THIS_PANEL
-        return datetime.combine(dates[published], moment)
-    return datetime.combine(dates[position] + timedelta(days=int(days)), moment)
+    index: int
+    info: InformationSet
+    frame: Optional[List[DailyObservation]]
+    feature_row: DailyObservation
+
+
+def _as_of_folds(
+    rows: Sequence[DailyObservation],
+    rule: InformationRule,
+    *,
+    minimum_history: int,
+    refit_every: int,
+) -> Iterable[_AsOfFold]:
+    """Every scored row of the one grid, with its reads checked both ways.
+
+    The grid is `asof.fold_grid`: every row from the first with
+    `minimum_history` observable labels, whatever the declaration. Rows are
+    taken in blocks of `refit_every`; the first row of each block carries the
+    frame its fit is made on. Every row is checked by
+    `InformationRule.check` (leakage and staleness) and, per read, by
+    `_check_decision_relative_availability`, the guard that predates the rule
+    and must still hold on every fold.
+    """
+
+    dates = [row.date for row in rows]
+    grid = fold_grid(
+        dates,
+        rule.registry,
+        decision_time=rule.decision_time,
+        minimum_history=minimum_history,
+    )
+    for block in refit_blocks(grid, refit_every):
+        for index in block:
+            info = rule.information_set(dates, index)
+            rule.check(dates, info)
+            for read in info.reads:
+                _check_decision_relative_availability(
+                    rule.registry,
+                    read.fields,
+                    dates,
+                    read.row,
+                    index,
+                    decision_time=rule.decision_time,
+                )
+            frame = rule.frame(rows, info) if index == block[0] else None
+            if frame is not None and len(frame) < minimum_history:
+                raise SplitError(
+                    f"the fit for {dates[index]} has {len(frame)} observable "
+                    f"labels, fewer than minimum_history {minimum_history}"
+                )
+            yield _AsOfFold(index, info, frame, rule.observation(rows, info))
+
+
+#: Later than any deadline a panel can express; `asof.NEVER_ON_THIS_PANEL`.
+_NEVER_ON_THIS_PANEL = NEVER_ON_THIS_PANEL
+
+#: `asof.declared_availability`, under the name this module's callers, the
+#: audit script and the tests have always used. One implementation: the as-of
+#: rule and this module's guard cannot read a declaration two ways.
+_declared_availability = declared_availability
 
 
 def _check_decision_relative_availability(
@@ -2914,57 +2793,29 @@ def _check_decision_relative_availability(
     feature_index: int,
     scored_index: int,
     *,
-    purge: int,
     decision_time: time,
 ) -> None:
-    """Raise unless the fold's feature row had been published when it was read.
+    """Raise unless a read row had been published when the forecast was made.
 
-    `splits.clears_purge` states the gap against the **scored** date: a row is
-    eligible when `row + purge < opens`. The forecast, though, is not made on
-    the scored date. It is made at the declared decision time on the last panel
-    date strictly before it -- the calendar day before only when those two days
-    are consecutive. After a weekend or a holiday the decision comes earlier
-    than that, and the purge rule alone stops establishing that the last
-    training row had been published by then. A23 found the gap and
-    `docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated against the target
-    date", records it; this is the check that closes it.
+    The forecast for `dates[scored_index]` is made at the declared decision
+    time on the panel day before it. Every field in `field_sources`, read at
+    `feature_index`, must be observable by then under its declared release lag
+    (`_declared_availability`). A23 found that the purge, stated against the
+    scored date, did not establish this after a weekend or a holiday, and this
+    guard was written to close that gap; under the as-of rule it is the
+    leakage half of every read, checked per fold and per read by
+    `_as_of_folds` beside `asof.InformationRule.check`, which it predates and
+    is kept independent of. A scheduled field's declared instant is the one
+    its `scheduled_availability` block gives, so a settlement read at the
+    scored row passes here only because its declaration dates it before the
+    decision.
 
-    Two dates, not one, and that is the whole content of the guard. The purge
-    is a scalar of calendar days by AGENT_CONTRACT.md's "The purge stays a
-    scalar", so it cannot express "and also be observable by 16:00 on the
-    trading day before". Nothing about `clears_purge`, `rolling_origin` or the
-    derivation moves to accommodate this: the gap is still sized the way it was
-    and folds are still built the way they were, and this refuses a fold the
-    two of them accepted. A guard that instead widened the purge would purge
-    every fold to protect the few after a holiday, and would move published
-    numbers to do it.
-
-    Per fold, and per field, because the folds differ: only a scored date that
-    follows a weekend or a holiday can fail, and which fields can fail depends
-    on the panel's own dates. `LookAheadError`, per CLAUDE.md's "Leakage guards
-    raise `LookAheadError`, never `assert`", and for the reason
-    `_check_fitter_stayed_inside` gives -- `python -O` strips asserts and this
-    has to survive the way the numbers are actually produced.
-
-    Args:
-        registry: the parsed source registry.
-        field_sources: the `(source_id, field)` pairs `_derive_purge` sized the
-            gap over. The same pairs, not a second resolution: a guard checking
-            a different field set than the one that was priced would be the
-            "correct rule over the wrong set" failure one level up.
-        dates: the panel's dates, ascending. The only calendar available, and
-            therefore the one business days are counted on.
-        feature_index: the fold's last training row -- the row the model reads,
-            and the one whose publication is in question.
-        scored_index: the fold's scored row.
-        purge: the derived gap, named in the message so a reader can see which
-            of the two rules let the fold through.
-        decision_time: when the forecast is made.
+    `LookAheadError`, per CLAUDE.md's "Leakage guards raise `LookAheadError`,
+    never `assert`": `python -O` strips asserts.
 
     Raises:
         LookAheadError: naming the field and the fold, when a field's declared
-            release lag puts the feature row's availability after the decision
-            instant.
+            availability for the row read is after the decision instant.
     """
 
     if scored_index == 0:
@@ -2986,10 +2837,7 @@ def _check_decision_relative_availability(
         raise LookAheadError(
             f"{source_id}.{field} for {dates[feature_index]} is first "
             f"observable at {when}, after the {deadline.isoformat(sep=' ')} "
-            f"decision that scores {dates[scored_index]}; the {purge}-day "
-            f"purge is stated against the scored date, so clearing it does "
-            f"not establish that this row had been published when the "
-            f"forecast was made"
+            f"decision that scores {dates[scored_index]}"
         )
 
 
@@ -2997,34 +2845,22 @@ def _check_fitter_stayed_inside(
     features_read: Sequence[str],
     features: Tuple[str, ...],
     sources: Tuple[str, ...],
-    purge: int,
 ) -> None:
     """Raise unless the fitted model read only what the caller declared.
 
-    The purge was sized from `features`, before this model existed. If the
-    fitter read a column outside that set, the gap protecting the reported
-    numbers was computed over the wrong sources -- and the error is in the
-    flattering direction, because the undeclared column is the one whose release
-    lag was never taken into the maximum.
+    The as-of rule reads, masks and guards the declared features and no
+    others. A column the fitter read outside that set reached it from a row
+    nobody checked -- `InformationRule.observation` hands it `None`, and the
+    training frame hands it values no availability check was run on. The error
+    is in the flattering direction, so it is refused rather than tolerated.
 
-    `LookAheadError`, not `ValueError`: this is a leakage condition, and it is
-    the same condition `_feature_index` raises for one level down. Not an
-    `assert`, because `python -O` strips asserts and this guard has to survive
-    the way the numbers are actually produced.
-
-    Set containment, not order or multiplicity: a model may read fewer columns
-    than were declared. Declaring more than the fitter uses purges more than the
-    evidence requires, which costs training rows and is visible in the report --
-    conservative and legible, so it is not refused here.
+    `LookAheadError`, not `ValueError`: this is a leakage condition. Set
+    containment, not order or multiplicity: a model may read fewer columns
+    than were declared.
 
     Takes the tuple rather than the fitted model, so that **both** evaluation
-    paths reach this one guard. `rolling_persistence_backtest` passes
-    `fitted.features_read`; `event_eval.evaluate_event_window` passes
-    `ExceedanceCurves.features_read`, which is the same claim made by a
-    predictor whose fitted model the evaluator never holds. A second copy of
-    this comparison in the evaluator would be a second implementation of the
-    rule that sizes the gap, and two implementations of that agree until they
-    do not.
+    paths reach this one guard: `fitted.features_read` on the rolling path and
+    `ExceedanceCurves.features_read` on the event path.
     """
 
     exceeded = tuple(
@@ -3033,12 +2869,10 @@ def _check_fitter_stayed_inside(
     if exceeded:
         raise LookAheadError(
             f"the fitted model reads {list(exceeded)}, which the declared "
-            f"feature set {list(features)} does not contain. The "
-            f"{purge}-day purge was sized over {list(sources)}, the sources of "
-            f"the declaration alone, so the release lag of every undeclared "
-            f"column is missing from the gap and the reported numbers were "
-            f"produced under too small a one. Declare the column the fitter "
-            f"reads rather than widening the gap by hand"
+            f"feature set {list(features)} does not contain. The as-of rule "
+            f"read and guarded the declaration's fields alone, over "
+            f"{list(sources)}, so every undeclared column reached the model "
+            f"unchecked. Declare the column the fitter reads"
         )
 
 
@@ -3051,126 +2885,71 @@ def rolling_persistence_backtest(
     minimum_history: int = 20,
     interval_probability: Optional[float] = None,
     fit_model: Optional[ModelFitter] = None,
+    refit_every: int = 1,
 ) -> BacktestReport:
-    """Refit at every purged rolling origin and score the next day.
+    """Score every row of the one fold grid under the as-of information rule.
 
-    Folds come from `repo_model.splits.rolling_origin` at `step=1`, so this is
-    the scoring holdout that module documents and the purge is the one boundary
-    this project has. At each origin the model is fitted on the training rows
-    that cleared the gap and asked for its quantiles; the reported interval is
-    the outermost declared pair. Prediction intervals therefore use only the
-    fitted model's own numbers over rows it was allowed to see, not a parallel
-    derivation that happens to agree with it today.
+    `docs/decisions/information-set.md` is the rule and `repo_model.asof` its
+    implementation. For each scored row `T` the forecast is made at
+    `decision_time` on the panel day before it; each declared feature is read
+    at its latest value observable by then, scheduled inputs (the calendar,
+    and settlements under their `scheduled_availability` declaration) at `T`,
+    and the target at the anchor -- the latest row whose `spread_bps` is
+    observable. The training frame is the prefix ending at the anchor (label
+    observability), with each declared column a hole where its value was not
+    yet observable. Leakage and staleness are both checked on every scored row
+    (`_as_of_folds`).
 
-    **What the purge does to persistence.** With `purge=0` the feature row is
-    the day before the scored day and persistence is "yesterday's spread". With
-    `purge > 0` the feature row is `_feature_index`'s -- the last day the
-    forecaster was allowed to have seen -- and persistence becomes "the spread
-    of the last day I was allowed to see". That is a different forecast, and a
-    more honest one: at a six-day gap, yesterday's spread is a number that had
-    not been published when the forecast was made. Every model here inherits the
-    change, because every model reads its feature row from the same place.
+    **The grid.** Every row from the first with `minimum_history` observable
+    labels to the end of the panel. It is built from the target's
+    declarations alone, so it does not move with `features`: two declarations
+    scored on one panel are scored on the same days.
 
-    **Where the gap comes from.** The caller declares a feature set; this
-    calls `_derive_purge`, which resolves
-    `contract.field_sources_for_features(features)` to `(source, field)` pairs
-    and takes `registry.max_release_lag_days(...)` over those fields, then
-    builds folds -- the order `cli_eval` already used on the event path. The
-    event path calls the same `_derive_purge`, so the two cannot drift. There
-    is no `purge` argument. Who computed the number was the open question the purge left
-    behind: a caller could declare an ARX on `on_rrp` and size the gap over
-    `nyfed_sofr` alone, and nothing checked it, so every number that came out
-    looked reasonable. That is the same silent-leak shape as `rows[index - 1]`
-    under a purge, one level up -- the gap computed correctly over the wrong
-    set.
+    **The refit.** The model is refitted every `refit_every` scored rows, at
+    the decision instant of the first row of each block, and each row of the
+    block is forecast from its own decision instant's reads. `1`, the
+    default, refits at every row. The cadence is recorded in the declaration.
 
-    **Declaration, then verification.** The gap must be sized before the first
-    fold, and the regressors are only known once a model is fitted, so this
-    cannot ask an unfitted model what it reads. It does not resolve that by
-    fitting a throwaway model to inspect: that fit would be on unpurged data,
-    which is the leak arriving through the door built to detect it. Instead the
-    declaration sizes the gap and the first fitted model is checked against the
-    declaration -- see `_check_fitter_stayed_inside`. The check is cheap and it
-    is the whole point: a fitter that exceeded the declaration was purged
-    against the wrong sources.
-
-    This module still does not know what a source is. It learns what a *feature
-    set* is, which is its own vocabulary, and passes tuples and ints between
-    `contract` and `registry`.
+    **What persistence is.** The model's feature row is the as-of observation
+    (`InformationRule.observation`), dated at the anchor, so persistence is
+    "the latest spread observable at the decision" -- two panel rows before
+    `T` when both SOFR and IORB for that row are public by 16:00.
 
     The fitting call is a parameter, so this scores the forecast interface
-    rather than one member of it. The name is unchanged: it is what the existing
-    assertions and the last block's merge record refer to, and "persistence" in
-    it now names the default rather than the only option. Renaming it is a
-    follow-up, not a silent side effect of generalising it.
+    rather than one member of it; the name is historical.
 
     Args:
         observations: the panel, ascending by date.
         features: the panel columns the model is declared to read.
-            **Required, keyword-only, with no default**, for the reason
-            `rolling_origin` refuses a default `purge`, `max_release_lag_days`
-            refuses a default `decision_time` and `fit_arx` refuses a default
-            `regressors`. A default here would be worse than any of those: it
-            would be a *silent claim about which sources the model draws on*,
-            and the gap derived from it would look computed while being a
-            guess. The sources follow from this, and the gap follows from the
-            sources; nothing about the gap is set by hand on this path.
-        registry: the parsed source registry, for `max_release_lag_days`. This
-            function never reads a `release_lag` itself -- a wrong conversion is
-            a provenance error and belongs with Track A, per
-            AGENT_CONTRACT.md's "The conversion belongs to the data layer".
-        decision_time: when the forecast is made, for `max_release_lag_days`.
-            Required and undefaulted there, so required and undefaulted here: a
-            default would be a silent assumption about the very thing the as-of
-            rule exists to make explicit, and passing one through would launder
-            it.
-        minimum_history: the first origin scored, and the shortest training
-            frame any fit is allowed. Passed to `rolling_origin` as `min_train`,
-            which counts rows *after* purging -- so a gap that leaves too little
-            history raises rather than quietly scoring on a shorter frame.
+            **Required, keyword-only, with no default**: the declaration says
+            which fields are read and guarded, and a default would be a silent
+            claim about which sources the model draws on.
+        registry: the parsed source registry; every read's availability is
+            its declaration.
+        decision_time: when the forecast is made. Required and undefaulted.
+        minimum_history: the fewest observable labels the first fit may have;
+            it sets the first scored row.
         interval_probability: accepted only for callers that want to state the
-            interval they expect. It is no longer an independent setting: the
-            bounds come from `contract.QUANTILE_LEVELS`, and the only value
-            those levels admit is `INTERVAL_PROBABILITY`. Pass `None`, the
-            default, to read it from the declaration.
+            interval they expect; the bounds come from
+            `contract.QUANTILE_LEVELS`.
         fit_model: the fitting call, `(train_frame, minimum_history=...) ->
-            fitted model`. `None`, the default, is persistence's `fit` and
-            leaves every number this function has ever reported unchanged. Pass
-            `functools.partial(fit_arx, regressors=(...))` to score the ARX. The
-            point forecast reported is the fitted model's median, so a model
-            whose centre is not the last observed spread is scored on its own
-            centre rather than on persistence's.
+            fitted model`; `None` is persistence's `fit`. A fitter naming an
+            `information` parameter is handed the run's `InformationRule`.
+        refit_every: scored rows per fit, at least 1.
 
     Raises:
-        ValueError: if the panel is too short, or if `interval_probability`
-            names an interval the declared levels do not produce. Silently
-            honouring a different number would put the reported coverage and the
-            reported interval out of step, which is the drift the derivation
-            exists to rule out; adjusting the levels to match is a contract
-            question and not this function's to answer.
-        SplitError: if `purge` is not a non-negative int, if the panel's dates
-            repeat or go backwards, or if the gap leaves no origin with
-            `minimum_history` training rows behind it. That last one is a
-            refusal on purpose: shrinking `min_train` to recover a fold would
-            report a number produced by a rule nobody declared.
-        LookAheadError: if a fold's feature row does not clear the gap -- a bug
-            here or in the splitter, not bad input -- or if the fitted model
-            reads a column outside `features`. The second is the declaration
-            being wrong about the model, which means the gap was sized over the
-            wrong sources; see `_check_fitter_stayed_inside`.
-        UndeclaredFeatureError: if `features` names a column that
-            `contract.field_sources_for_features` cannot classify, or one it
-            declares to have no ingesting source. Raised before any fold is
-            built, since a feature set that cannot be resolved has no gap and
-            therefore no backtest.
-        RegistryContractError: if the derived fields cannot support a safe
-            bound -- an unknown source, an unusable `release_lag`, or a field
-            of a `snapshot_retrieved_at` source that declares no revision
-            policy and whose rows carry no `available_at`. Track A's refusal,
-            with Track A's message; `_derive_purge` adds the fields the gap was
-            being sized over and softens nothing. A field of a snapshot source
-            that declares its own lag prices on it, and one that does not stays
-            refused -- the same source, both answers.
+        ValueError: if the panel is too short, `refit_every` is not a positive
+            int, or `interval_probability` names an interval the declared
+            levels do not produce.
+        SplitError: on a malformed panel, or when no row has
+            `minimum_history` observable labels before it.
+        LookAheadError: if a read is newer than its decision instant, or if
+            the fitted model reads a column outside `features`.
+        StaleReadError: if a read is older than the latest admissible value.
+        UndeclaredFeatureError: if `features` names a column
+            `contract.field_sources_for_features` cannot classify.
+        RegistryContractError: if a declared field has no availability the
+            rule can read.
     """
 
     if interval_probability is not None and not math.isclose(
@@ -3184,87 +2963,61 @@ def rolling_persistence_backtest(
         )
 
     # Before anything else, and before a single fold: an unresolvable feature
-    # set has no gap, so it has no backtest. Resolving first also means the
-    # caller who misspells a column gets `UndeclaredFeatureError` naming the
-    # column rather than a fold-shaped complaint further in.
+    # set has no information set, so it has no backtest.
     declared: Tuple[str, ...] = tuple(features)
-    field_sources, sources, purge = _derive_purge(
-        registry, declared, decision_time=decision_time
-    )
+    field_sources, sources = _resolve_fields(declared)
+    rule = InformationRule(registry, declared, decision_time=decision_time)
+    refit = require_refit_every(refit_every)
 
     rows = list(observations)
     if len(rows) <= minimum_history:
         raise ValueError("not enough observations for requested minimum history")
 
     fitter: ModelFitter = fit if fit_model is None else fit_model
-    reads_purge = _reads_purge_days(fitter)
+    reads_information = _reads_information(fitter)
 
     forecasts: List[Forecast] = []
     folds: List[ScoredFold] = []
+    infos: List[InformationSet] = []
     model: Optional[FittedForecastModel] = None
     ml_libraries: Optional[Mapping[str, str]] = None
     model_settings: Mapping[str, Any] = MappingProxyType({})
     tail_accounts: List[Optional[Mapping[str, Any]]] = []
-    dates = [row.date for row in rows]
+    train_frame: Sequence[DailyObservation] = ()
 
-    # `step=1` is the origin-by-origin shape this function has always had: one
-    # scored row per fold, blocks tiling the tail with no remainder. It is not a
-    # parameter, because a larger block would score a day on a model fitted at
-    # an origin further back than the day before it, which is a different
-    # backtest and would need its own reported horizon.
-    for train_indices, test_indices in rolling_origin(
-        dates, minimum_history, 1, purge
+    for fold in _as_of_folds(
+        rows, rule, minimum_history=minimum_history, refit_every=refit
     ):
-        index = test_indices[0]
-        # The training frame is the prefix that cleared the gap, so the cutoff
-        # `fit` derives from it is the last date the forecaster was allowed to
-        # see -- not the day before the scored day, which under a purge is a
-        # date whose value had not been published yet.
-        fitted = _fit_at_origin(
-            fitter,
-            [rows[i] for i in train_indices],
-            minimum_history=minimum_history,
-            purge=purge,
-            reads_purge=reads_purge,
-        )
-        if model is None:
-            # After the first fit, and only the first: the fitter is the same
-            # callable at every origin, so a model that stayed inside the
-            # declaration here stays inside it at every later one. Checking
-            # once keeps this off the hot path without weakening it, and
-            # checking *after* the fit is the only order available -- the
-            # regressors do not exist before it.
-            _check_fitter_stayed_inside(
-                fitted.features_read, declared, sources, purge
+        index = fold.index
+        if fold.frame is not None:
+            train_frame = fold.frame
+            fitted = _fit_at_origin(
+                fitter,
+                train_frame,
+                minimum_history=minimum_history,
+                information=rule,
+                reads_information=reads_information,
             )
-            ml_libraries = _ml_libraries(fitted)
-            model_settings = _model_settings(fitted)
-        model = fitted
-        feature_index = _feature_index(dates, train_indices, index, purge)
-        # The second of the two dates the gap has to clear. `_feature_index`
-        # answers "did this row clear the purge against the scored date"; this
-        # answers "had it been published when the forecast was made", which
-        # after a weekend or a holiday is a strictly earlier instant and a
-        # strictly stronger question. Per fold, because only some folds follow
-        # a non-trading day.
-        _check_decision_relative_availability(
-            registry,
-            field_sources,
-            dates,
-            feature_index,
-            index,
-            purge=purge,
-            decision_time=decision_time,
-        )
-        feature_row = rows[feature_index]
+            if model is None:
+                # After the first fit, and only the first: the fitter is the
+                # same callable at every refit, so a model that stayed inside
+                # the declaration here stays inside it at every later one.
+                _check_fitter_stayed_inside(fitted.features_read, declared, sources)
+                ml_libraries = _ml_libraries(fitted)
+                model_settings = _model_settings(fitted)
+            model = fitted
+        if model is None:  # pragma: no cover - the grid's first row opens a block
+            raise SplitError("a scored row was reached before any fit")
+        feature_row = fold.feature_row
+        infos.append(fold.info)
         quantiles = model.predict(feature_row)
         # Off the model this fold scored, in this iteration; see `_tail_account`.
         tail_accounts.append(_tail_account(model))
         folds.append(
             ScoredFold(
-                train_start=rows[train_indices[0]].date,
-                train_end=rows[train_indices[-1]].date,
-                train_rows=len(train_indices),
+                train_start=train_frame[0].date,
+                train_end=train_frame[-1].date,
+                train_rows=len(train_frame),
                 feature_date=feature_row.date,
                 scored_date=rows[index].date,
             )
@@ -3272,13 +3025,8 @@ def rolling_persistence_backtest(
         forecasts.append(
             Forecast(
                 actual_bps=rows[index].spread_bps,
-                # The model's own point rule, not persistence's restated. For
-                # persistence this is `feature_row.spread_bps` and every number
-                # this function reported before the generalisation is bit-
-                # identical; for the ARX it is the regression's conditional
-                # mean. Reading it off the model rather than off the feature row
-                # is what stops a second model being scored against the first
-                # one's centre while wearing its own intervals.
+                # The model's own point rule: persistence's is the feature
+                # row's spread, the ARX's its conditional mean.
                 predicted_bps=model.point_forecast(feature_row),
                 lower_bps=quantiles[0],
                 upper_bps=quantiles[-1],
@@ -3328,7 +3076,8 @@ def rolling_persistence_backtest(
         declared,
         sources,
         field_sources,
-        purge,
+        refit_every=refit,
+        information=information_summary(rule, infos),
         decision_time=decision_time,
         minimum_history=minimum_history,
         panel_rows=len(rows),
@@ -3442,15 +3191,40 @@ def _report_seed(report: BacktestReport, panel_sha256: str) -> int:
 
     return _seed_from(
         _backtest_seed_material(
-            panel_sha256, report.features, report.purge_days, report.decision_time
+            panel_sha256,
+            report.features,
+            _rule_token(report.refit_every),
+            report.decision_time,
         )
     )
+
+
+def _rule_token(refit_every: Optional[int]) -> str:
+    """The seed material's third component for a run under the as-of rule.
+
+    That slot held `str(purge_days)` for every record scored under the purge
+    rule, and still does when such a record is read back: those records keep
+    their seeds. A run under the as-of rule has no purge; what identifies its
+    information set beyond the declaration and the decision time is the rule
+    and its refit cadence, so that is what is digested.
+    """
+
+    return f"as_of:refit_every={refit_every}"
+
+
+def _record_rule_token(record: Mapping[str, Any]) -> str:
+    """`_rule_token` for a parsed record, or `str(purge_days)` for an old one."""
+
+    derived = record["derived"]
+    if "purge_days" in derived:
+        return str(derived["purge_days"])
+    return _rule_token(record["declaration"]["refit_every"])
 
 
 def _backtest_seed_material(
     panel_sha256: str,
     features: Iterable[str],
-    purge_days: Optional[int],
+    rule_token: str,
     decision_time: Optional[time],
 ) -> Tuple[str, ...]:
     """The four strings a backtest record's seed is the digest of.
@@ -3474,7 +3248,7 @@ def _backtest_seed_material(
     return (
         panel_sha256,
         ",".join(sorted(features)),
-        str(purge_days),
+        rule_token,
         "" if decision_time is None else decision_time.isoformat(),
     )
 
@@ -3485,7 +3259,8 @@ def backtest_record_seed(record: Mapping[str, Any]) -> int:
     `record` is the parsed JSON `backtest_document` produced. For a reader, in
     one line: `backtest_record_seed(json.load(open(path)))`. Every input is a
     field the record carries -- `panel.sha256`, `declaration.features`,
-    `derived.purge_days`, `declaration.decision_time` -- and the material goes
+    `declaration.refit_every` (`derived.purge_days` on a record scored under
+    the purge rule), `declaration.decision_time` -- and the material goes
     through `_backtest_seed_material`, the step the writer uses, so what this
     returns is the seed the writer drew with rather than a reconstruction of it.
 
@@ -3504,7 +3279,7 @@ def backtest_record_seed(record: Mapping[str, Any]) -> int:
         _backtest_seed_material(
             record["panel"]["sha256"],
             declaration["features"],
-            record["derived"]["purge_days"],
+            _record_rule_token(record),
             None if stated is None else time.fromisoformat(stated),
         )
     )
@@ -4688,6 +4463,8 @@ def backtest_document(
         )
     if report.minimum_history is not None:
         declaration["minimum_history"] = report.minimum_history
+    if report.refit_every is not None:
+        declaration["refit_every"] = report.refit_every
 
     panel: dict = {"path": str(panel_path), "sha256": digest}
     if report.panel_rows is not None:
@@ -4764,19 +4541,22 @@ def backtest_document(
     if report.crps_bps is not None:
         metrics["crps_bps"] = report.crps_bps
 
+    derived: dict = {
+        "sources": sorted(report.sources),
+        # The pairs the declaration reads, as `source.field` strings. A report
+        # that named only the sources would be a report an auditor cannot
+        # check: two fields of one source can carry different lags. JSON has no
+        # tuple, and the dotted form is the one the registry's refusals use.
+        "fields": [f"{source}.{field}" for source, field in sorted(report.field_sources)],
+    }
+    if report.information is not None:
+        # What every scored row read, per declared feature: how many rows
+        # before the scored day, and how long the value had been public.
+        # Absent, never null, on a report that carries none.
+        derived["information_set"] = report.information
     return {
         "declaration": declaration,
-        "derived": {
-            "sources": sorted(report.sources),
-            # The pairs the gap was sized over, as `source.field` strings. A
-            # report that named only the sources would be a report an auditor
-            # cannot check: two fields of one source can carry different lags,
-            # and one of them can be refused while the other prices. JSON has
-            # no tuple, and a two-element array per pair reads worse in a diff
-            # than the dotted form the registry's own refusal already uses.
-            "fields": [f"{source}.{field}" for source, field in sorted(report.field_sources)],
-            "purge_days": report.purge_days,
-        },
+        "derived": derived,
         "panel": panel,
         "provenance": provenance,
         "folds": folds,
@@ -4998,17 +4778,21 @@ class PairedComparisonReport:
     #: columns unpriced.
     features_a: Tuple[str, ...]
     features_b: Tuple[str, ...]
-    #: What each declaration resolved to, read off `_derive_purge` rather than
-    #: re-resolved by whoever prints them, for the reason `BacktestReport`
+    #: What each declaration resolved to, read off `_resolve_fields` rather
+    #: than re-resolved by whoever prints them, for the reason `BacktestReport`
     #: carries the same pair.
     sources_a: Tuple[str, ...]
     sources_b: Tuple[str, ...]
     field_sources_a: Tuple[Tuple[str, str], ...]
     field_sources_b: Tuple[Tuple[str, str], ...]
-    #: The gap both declarations produced. One number, because a comparison in
-    #: which they differed is refused before the folds are built -- see
-    #: `IncomparablePurgeError`.
-    purge_days: int
+    #: The refit cadence both sides were fitted at, and each side's
+    #: per-feature staleness summary (`asof.information_summary`). Both sides
+    #: are scored on the one as-of grid, so the pairing needs no refusal: the
+    #: grid is built from the target's declarations and never from either
+    #: side's features.
+    refit_every: int
+    information_a: Mapping[str, Any]
+    information_b: Mapping[str, Any]
     #: Which paired loss was taken, as the caller spelled it -- a key of
     #: `COMPARISON_LOSSES`, not the published name. `loss_name` and
     #: `loss_statistic` below render the two published spellings from it, so
@@ -5103,6 +4887,7 @@ def paired_model_comparison(
     seed: int,
     minimum_history: int = 20,
     loss: str = DEFAULT_COMPARISON_LOSS,
+    refit_every: int = 1,
 ) -> PairedComparisonReport:
     """Score two continuous models at the same origins and interval the gap.
 
@@ -5132,10 +4917,12 @@ def paired_model_comparison(
     two `compare` records, which do carry them: losses from two runs are two
     runs, whatever dates they share.
 
-    **The one thing the loop does not settle is the gap**, because the gap is
-    derived from each declaration before any fold exists. Two declarations that
-    price different gaps do not share an origin set at all, so they are refused
-    here rather than reconciled -- see `IncomparablePurgeError`.
+    **Any two declarations pair.** The fold grid is the as-of rule's
+    (`asof.fold_grid`), built from the target alone, so both sides are scored
+    on the same rows whatever they declare. Each side reads its own
+    declaration's fields at their own latest observable rows, and is fitted
+    on the frame its own declaration masks; both are refitted every
+    `refit_every` scored rows at the same instants.
 
     **There is no second bootstrap.** `metrics.stationary_bootstrap_interval`
     is the one this project has, per the contract, and the statistic handed to
@@ -5178,17 +4965,15 @@ def paired_model_comparison(
             nothing to attach either end of it to.
         fit_a: the first model's fitting call, `(train_frame,
             minimum_history=...) -> fitted model`.
-        features_a: the first model's declared feature set, which sizes its
-            gap. Required, keyword-only and undefaulted for the reason
-            `rolling_persistence_backtest`'s is.
+        features_a: the first model's declared feature set, the fields it
+            reads and is guarded on. Required, keyword-only and undefaulted
+            for the reason `rolling_persistence_backtest`'s is.
         model_b, fit_b, features_b: the same three for the second model. The
             subtraction runs a minus b; see `_sign_convention`.
-        registry: the parsed source registry, for `max_release_lag_days`. One
-            registry, because a comparison priced by two registries is a
-            comparison of two runs again.
+        registry: the parsed source registry. One registry, because a
+            comparison read under two registries is a comparison of two runs.
         decision_time: when the forecast is made. One value, for the same
-            reason: the gap is a function of it, and two decision times are two
-            different runs.
+            reason.
         seed: required, as `stationary_bootstrap_interval` requires it and for
             the same reason -- an interval that cannot be reproduced cannot be
             checked. `comparison_seed` derives one from the run's identity;
@@ -5199,135 +4984,117 @@ def paired_model_comparison(
             same rows.
         loss: which paired loss to take, a key of `COMPARISON_LOSSES`.
             Defaults to `DEFAULT_COMPARISON_LOSS`, the absolute error, so every
-            caller written before this argument existed and every record under
-            `docs/runs/` keeps its numbers and its meaning.
+            caller written before this argument existed keeps its meaning.
+        refit_every: scored rows per fit, for both sides.
 
     Returns:
         A `PairedComparisonReport`.
 
     Raises:
-        IncomparablePurgeError: the two declarations derived different gaps, so
-            there is no shared origin set to pair on.
         ValueError: the panel is too short for `minimum_history`, `loss` names
             a loss this module does not implement, or -- under `crps` -- a
             fitted model reports a quantile grid other than the declared one.
-        SplitError: as `rolling_origin` raises -- a panel whose dates repeat or
-            go backwards, or a gap that leaves no origin with `minimum_history`
-            training rows behind it.
-        LookAheadError: a fold's feature row does not clear the gap, or either
-            fitted model reads a column outside its own declaration. The second
-            is checked per side, against that side's declaration, because each
-            side's gap was sized from its own.
+        SplitError: a panel whose dates repeat or go backwards, or one with
+            no row that has `minimum_history` observable labels before it.
+        LookAheadError: a read is newer than its decision instant, or either
+            fitted model reads a column outside its own declaration.
+        StaleReadError: a read is older than the latest admissible value.
         UndeclaredFeatureError: either declaration names a column
             `contract.field_sources_for_features` cannot classify.
-        RegistryContractError: either declaration's fields cannot support a
-            safe bound. Track A's refusal, with Track A's message.
+        RegistryContractError: a declared field has no availability the rule
+            can read.
     """
 
-    # Before the gap derivation and before the panel, for the same reason the
-    # gap refusal comes first: a run that names a loss this module cannot take
-    # must not fit anything.
+    # Before the panel, and before anything is fitted: a run that names a loss
+    # this module cannot take must not fit anything.
     selected = _select_comparison_loss(loss)
 
     declared_a: Tuple[str, ...] = tuple(features_a)
     declared_b: Tuple[str, ...] = tuple(features_b)
-
-    # Before the panel is walked and before a single fold: two declarations
-    # that price different gaps have no shared origin set, so there is nothing
-    # for the rest of this function to pair.
-    field_sources_a, sources_a, purge_a = _derive_purge(
-        registry, declared_a, decision_time=decision_time
-    )
-    field_sources_b, sources_b, purge_b = _derive_purge(
-        registry, declared_b, decision_time=decision_time
-    )
-    if purge_a != purge_b:
-        raise IncomparablePurgeError(
-            f"model_a={model_a} declares {list(declared_a)}, which prices a "
-            f"{purge_a}-day purge gap, and model_b={model_b} declares "
-            f"{list(declared_b)}, which prices a {purge_b}-day gap. The gap "
-            "builds the folds, so these two models would be scored at "
-            "different origins and their losses are not paired -- the "
-            "difference between them would be a difference between two runs, "
-            "which is what this function exists instead of. Declare feature "
-            "sets that price the same gap, or run them as two backtests and "
-            "report them as two backtests"
-        )
-    purge = purge_a
+    field_sources_a, sources_a = _resolve_fields(declared_a)
+    field_sources_b, sources_b = _resolve_fields(declared_b)
+    rule_a = InformationRule(registry, declared_a, decision_time=decision_time)
+    rule_b = InformationRule(registry, declared_b, decision_time=decision_time)
+    refit = require_refit_every(refit_every)
 
     rows = list(observations)
     if len(rows) <= minimum_history:
         raise ValueError("not enough observations for requested minimum history")
 
-    dates = [row.date for row in rows]
     folds: List[ScoredFold] = []
     losses_a: List[float] = []
     losses_b: List[float] = []
     differences: List[float] = []
+    infos_a: List[InformationSet] = []
+    infos_b: List[InformationSet] = []
     ml_libraries: Optional[Mapping[str, str]] = None
     settings_a: Mapping[str, Any] = MappingProxyType({})
     settings_b: Mapping[str, Any] = MappingProxyType({})
+    fitted_a: Optional[FittedForecastModel] = None
+    fitted_b: Optional[FittedForecastModel] = None
+    frame_a: Sequence[DailyObservation] = ()
     checked = False
-    reads_purge_a = _reads_purge_days(fit_a)
-    reads_purge_b = _reads_purge_days(fit_b)
+    reads_information_a = _reads_information(fit_a)
+    reads_information_b = _reads_information(fit_b)
 
-    # `step=1`, the origin-by-origin shape `rolling_persistence_backtest` has,
-    # and one loop rather than two calls to it: the whole property this
-    # function delivers is that the two models were scored on the same days, in
-    # the same order, and a second call could only be checked for that
-    # afterwards rather than made to hold.
-    for train_indices, test_indices in rolling_origin(
-        dates, minimum_history, 1, purge
+    # One loop over both sides' folds: the grid is the target's, so the two
+    # sequences name the same rows in the same order, and the pairing is
+    # checked on every row rather than trusted.
+    for fold_a, fold_b in zip(
+        _as_of_folds(rows, rule_a, minimum_history=minimum_history, refit_every=refit),
+        _as_of_folds(rows, rule_b, minimum_history=minimum_history, refit_every=refit),
     ):
-        index = test_indices[0]
-        train_frame = [rows[i] for i in train_indices]
-        fitted_a = _fit_at_origin(
-            fit_a,
-            train_frame,
-            minimum_history=minimum_history,
-            purge=purge,
-            reads_purge=reads_purge_a,
-        )
-        fitted_b = _fit_at_origin(
-            fit_b,
-            train_frame,
-            minimum_history=minimum_history,
-            purge=purge,
-            reads_purge=reads_purge_b,
-        )
-        if not checked:
-            # After the first fit and only the first, as the single-model path
-            # does, and once per side against that side's own declaration: the
-            # gap each model was purged under was sized from its own features,
-            # so checking either against the other's would be checking the
-            # wrong claim.
-            _check_fitter_stayed_inside(
-                fitted_a.features_read, declared_a, sources_a, purge
+        if fold_a.index != fold_b.index:  # pragma: no cover - one grid by construction
+            raise SplitError(
+                f"the two sides reached rows {fold_a.index} and {fold_b.index}; "
+                f"the as-of grid is one grid, so this is a bug"
             )
-            _check_fitter_stayed_inside(
-                fitted_b.features_read, declared_b, sources_b, purge
+        index = fold_a.index
+        if fold_a.frame is not None:
+            frame_a = fold_a.frame
+            fitted_a = _fit_at_origin(
+                fit_a,
+                fold_a.frame,
+                minimum_history=minimum_history,
+                information=rule_a,
+                reads_information=reads_information_a,
             )
-            ml_libraries = _ml_libraries(fitted_a, fitted_b)
-            settings_a = _model_settings(fitted_a)
-            settings_b = _model_settings(fitted_b)
-            checked = True
-
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
+            fitted_b = _fit_at_origin(
+                fit_b,
+                fold_b.frame,
+                minimum_history=minimum_history,
+                information=rule_b,
+                reads_information=reads_information_b,
+            )
+            if not checked:
+                # After the first fit and only the first, once per side
+                # against that side's own declaration.
+                _check_fitter_stayed_inside(fitted_a.features_read, declared_a, sources_a)
+                _check_fitter_stayed_inside(fitted_b.features_read, declared_b, sources_b)
+                ml_libraries = _ml_libraries(fitted_a, fitted_b)
+                settings_a = _model_settings(fitted_a)
+                settings_b = _model_settings(fitted_b)
+                checked = True
+        if fitted_a is None or fitted_b is None:  # pragma: no cover - see above
+            raise SplitError("a scored row was reached before any fit")
+        infos_a.append(fold_a.info)
+        infos_b.append(fold_b.info)
         actual = rows[index].spread_bps
-        # The selected loss, applied to each side's own fitted model. Both
-        # sides go through the same callable, so a loss that read one model
-        # differently from the other is not expressible here.
-        loss_a = selected.at_origin(fitted_a, feature_row, actual)
-        loss_b = selected.at_origin(fitted_b, feature_row, actual)
+        # The selected loss, applied to each side's own fitted model at its
+        # own as-of observation.
+        loss_a = selected.at_origin(fitted_a, fold_a.feature_row, actual)
+        loss_b = selected.at_origin(fitted_b, fold_b.feature_row, actual)
         losses_a.append(loss_a)
         losses_b.append(loss_b)
         differences.append(loss_a - loss_b)
         folds.append(
             ScoredFold(
-                train_start=rows[train_indices[0]].date,
-                train_end=rows[train_indices[-1]].date,
-                train_rows=len(train_indices),
-                feature_date=feature_row.date,
+                train_start=frame_a[0].date,
+                train_end=frame_a[-1].date,
+                train_rows=len(frame_a),
+                # Both sides' observations are dated at the anchor, which is
+                # the target's and so the same for both.
+                feature_date=fold_a.feature_row.date,
                 scored_date=rows[index].date,
             )
         )
@@ -5364,7 +5131,9 @@ def paired_model_comparison(
         sources_b=sources_b,
         field_sources_a=field_sources_a,
         field_sources_b=field_sources_b,
-        purge_days=purge,
+        refit_every=refit,
+        information_a=information_summary(rule_a, infos_a),
+        information_b=information_summary(rule_b, infos_b),
         loss=loss,
         losses_a=tuple(losses_a),
         losses_b=tuple(losses_b),
@@ -5638,6 +5407,7 @@ def paired_comparison_document(
                 timespec="minutes"
             ),
             "minimum_history": comparison.minimum_history,
+            "refit_every": comparison.refit_every,
         },
         "derived": {
             "model_a": {
@@ -5646,6 +5416,7 @@ def paired_comparison_document(
                     f"{source}.{field}"
                     for source, field in sorted(comparison.field_sources_a)
                 ],
+                "information_set": comparison.information_a,
             },
             "model_b": {
                 "sources": sorted(comparison.sources_b),
@@ -5653,10 +5424,8 @@ def paired_comparison_document(
                     f"{source}.{field}"
                     for source, field in sorted(comparison.field_sources_b)
                 ],
+                "information_set": comparison.information_b,
             },
-            # One number, for both sides. A comparison in which the two
-            # declarations priced different gaps never reaches this function.
-            "purge_days": comparison.purge_days,
         },
         "panel": panel,
         "provenance": provenance,
@@ -5769,8 +5538,8 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
     Args:
         minimum_history: the shortest training set that may produce a curve. A
             fraction over five rows is not a climatology, and at an event
-            boundary the training set is whatever survived the purge -- which
-            can be very short without anything else objecting.
+            boundary the training set is whatever labels were observable
+            before it -- which can be very short without anything else objecting.
 
     Returns:
         A `fit_predict` callable suitable for `event_eval.evaluate_event_window`.
@@ -5794,7 +5563,7 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
             raise ValueError(
                 f"climatology needs at least {minimum_history} training rows, got "
                 f"{len(history)}; at an event boundary the training set is whatever "
-                "cleared the purge gap, and a curve from a handful of rows is not a "
+                "was observable before it, and a curve from a handful of rows is not a "
                 "climatology"
             )
         denominator = float(len(history))
@@ -5804,8 +5573,8 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
         )
         # `("spread_bps",)` for the same reason `FittedPersistence` reports it:
         # the target is the one column this reads, and it reads it off the
-        # training rows rather than off a feature row. The purge must still
-        # cover its sources, so it is declared rather than reported as empty --
+        # training rows rather than off a feature row. Its fields must still
+        # be declared and guarded, so it is reported rather than empty --
         # an empty claim would pass any declaration, which is the check
         # inverted.
         return ExceedanceCurves(
@@ -5828,8 +5597,8 @@ def arx_exceedance(
     description rather than an interface.
 
     `fit_arx` is fitted on the training rows the evaluator hands over, which is
-    everything that cleared the purge gap ahead of the window and nothing from
-    inside it, and the fitted model is then read once per feature row. **The
+    every label observable before the window and nothing from inside it, and
+    the fitted model is then read once per feature row. **The
     curve moves across scored days**, because the design row moves; that it
     moves is the entire difference between this and the climatology, whose curve
     is flat by construction.
@@ -5904,7 +5673,7 @@ def threshold_exceedance(
 
     **What the block is actually about is the declaration, not the curve.**
     `da78dea` put the regime variable through the *rolling* path's lock: it is
-    in `FittedThreshold.features_read`, so `_derive_purge` sizes the gap over
+    in `FittedThreshold.features_read`, so the as-of rule reads and guards
     its fields and `_check_fitter_stayed_inside` refuses a fitter that exceeds
     the declaration. The knowledge holdout is a second path with its own
     declaration check, reached through `ExceedanceCurves.features_read` rather
@@ -5912,13 +5681,12 @@ def threshold_exceedance(
     variable had never been through it. The failure that was still available is
     the one four blocks have closed one level at a time: a predictor that
     consults the regime variable to pick a regime, reports only its regressors,
-    and gets a gap sized over the wrong fields -- correct arithmetic, wrong set,
+    and has a read no guard checked -- correct arithmetic, wrong set,
     flattering direction.
 
     `fit_threshold` is fitted on the training rows the evaluator hands over,
-    which is everything that cleared the purge gap ahead of the window and
-    nothing from inside it, and the fitted model is then read once per feature
-    row. Everything fitted is fitted there: the imputations, the threshold, the
+    which is every label observable before the window and nothing from inside
+    it, and the fitted model is then read once per feature row. Everything fitted is fitted there: the imputations, the threshold, the
     regime assignment and the residual law.
 
     **`features_read` comes off the fitted model**, exactly as
@@ -6152,7 +5920,10 @@ class ExceedanceBacktestReport:
     features: Tuple[str, ...]
     sources: Tuple[str, ...]
     field_sources: Tuple[Tuple[str, str], ...]
-    purge_days: int
+    #: The refit cadence and the per-feature staleness summary; see
+    #: `BacktestReport.refit_every` and `.information`.
+    refit_every: int
+    information: Mapping[str, Any]
     decision_time: Optional[time]
     minimum_history: Optional[int]
     panel_rows: Optional[int]
@@ -6277,17 +6048,22 @@ def rolling_exceedance_backtest(
     decision_time: time,
     taus: Sequence[float],
     minimum_history: int = 20,
+    refit_every: int = 1,
 ) -> ExceedanceBacktestReport:
-    """Refit at every purged rolling origin, score the next day, pool, then score.
+    """Score every row of the as-of grid, pool the curves, then score the pool.
 
-    The scoring holdout for the probabilistic target. Folds come from
-    `repo_model.splits.rolling_origin` at `step=1` behind a gap derived from the
-    declared feature set through `_derive_purge` -- the same splitter, the same
-    derivation and the same feature row as `rolling_persistence_backtest`, all
-    by import. At each origin the predictor is fitted on the training rows that
-    cleared the gap and asked for one exceedance curve on the last row it was
-    allowed to have seen. The curves are pooled across origins and the contract's
-    metric set is computed once, over the pool.
+    The scoring holdout for the probabilistic target, under the same as-of
+    rule, grid, refit blocks and guards as `rolling_persistence_backtest`
+    (`_as_of_folds`). On the first row of each block of `refit_every` the
+    predictor and the climatology reference are fitted on the training frame
+    at that row's decision instant; each row is then asked for one exceedance
+    curve on its own as-of observation. The curves are pooled across rows and
+    the contract's metric set is computed once, over the pool.
+
+    An exceedance predictor fits and predicts in one call, so under a refit
+    cadence above one its fit is repeated on the block's frame for each row of
+    the block: the numbers are those of one fit per block, at the cost of the
+    repeated work.
 
     **The climatology is refitted on every fold, on that fold's training rows.**
     This is the whole block, so it is stated rather than left to the loop below
@@ -6312,8 +6088,8 @@ def rolling_exceedance_backtest(
     model are refused on the same short frames rather than one surviving the
     other.
 
-    **What is pooled, and what is not.** Every fold `rolling_origin` yields
-    over the panel it was handed. Event windows are not excluded and not
+    **What is pooled, and what is not.** Every row of the as-of grid over the
+    panel it was handed. Event windows are not excluded and not
     included: this function knows nothing about them, because the scoring
     holdout is defined by crisis dates being *available for training once they
     are in the past*, which is what an expanding rolling origin does by
@@ -6331,9 +6107,10 @@ def rolling_exceedance_backtest(
             reconstructed, is an artifact a reader cannot compare to another.
         features: the panel columns the predictor is declared to read.
             **Required, keyword-only, with no default**, exactly as on the
-            other two paths. The sources follow from it and the gap from the
-            sources; nothing about the gap is set by hand.
-        registry: the parsed source registry, for `max_release_lag_days`.
+            other two paths. The fields it reads follow from it; nothing about
+            what is read is set by hand.
+        registry: the parsed source registry; every read's availability is
+            its declaration.
         decision_time: when the forecast is made. Required and undefaulted
             there, so required and undefaulted here.
         taus: the declared exceedance family, from
@@ -6361,11 +6138,11 @@ def rolling_exceedance_backtest(
     """
 
     # Before anything else, and before a single fold: an unresolvable feature
-    # set has no gap, so it has no backtest.
+    # set has no information set, so it has no backtest.
     declared: Tuple[str, ...] = tuple(features)
-    field_sources, sources, purge = _derive_purge(
-        registry, declared, decision_time=decision_time
-    )
+    field_sources, sources = _resolve_fields(declared)
+    rule = InformationRule(registry, declared, decision_time=decision_time)
+    refit = require_refit_every(refit_every)
 
     if not isinstance(model_name, str) or not model_name:
         raise ValueError(
@@ -6386,7 +6163,6 @@ def rolling_exceedance_backtest(
     # refitted, which is not where the fitting happens.
     reference_predictor = climatology_exceedance(minimum_history=minimum_history)
 
-    dates = [row.date for row in rows]
     folds: List[ScoredFold] = []
     scored_dates: List[date] = []
     realized_bps: List[float] = []
@@ -6396,22 +6172,25 @@ def rolling_exceedance_backtest(
     model_settings: Mapping[str, Any] = MappingProxyType({})
     tail_accounts: List[Optional[Mapping[str, Any]]] = []
     checked = False
-    # `_fit_at_origin`'s rule on this path: a predictor that names `purge_days`
-    # -- `ml.gbm_exceedance`, whose calibration splits its training rows -- is
-    # handed the gap derived above, and every other predictor is called exactly
-    # as it always was (B39).
-    reads_purge = _reads_purge_days(predictor)
+    # `_fit_at_origin`'s rule on this path: a predictor that names
+    # `information` -- `ml.gbm_exceedance`, whose calibration scores held-out
+    # rows as forecasts -- is handed the run's rule, and every other predictor
+    # is called exactly as it always was.
+    reads_information = _reads_information(predictor)
+    infos: List[InformationSet] = []
+    train_rows: Tuple[DailyObservation, ...] = ()
 
-    for train_indices, test_indices in rolling_origin(
-        dates, minimum_history, 1, purge
+    for fold in _as_of_folds(
+        rows, rule, minimum_history=minimum_history, refit_every=refit
     ):
-        index = test_indices[0]
-        train_rows = tuple(rows[i] for i in train_indices)
-        feature_row = rows[_feature_index(dates, train_indices, index, purge)]
-        conditioning = (feature_row,)
+        index = fold.index
+        if fold.frame is not None:
+            train_rows = tuple(fold.frame)
+        infos.append(fold.info)
+        conditioning = (fold.feature_row,)
 
-        if reads_purge:
-            predicted = predictor(train_rows, conditioning, tau_family, purge_days=purge)
+        if reads_information:
+            predicted = predictor(train_rows, conditioning, tau_family, information=rule)
         else:
             predicted = predictor(train_rows, conditioning, tau_family)
         # Refitted here, on this fold's training rows, from the same call the
@@ -6422,18 +6201,10 @@ def rolling_exceedance_backtest(
         referenced = reference_predictor(train_rows, conditioning, tau_family)
 
         if not checked:
-            # After the first fit, and only the first: the predictor is the
-            # same callable at every origin, so a model that stayed inside the
-            # declaration here stays inside it at every later one. The
-            # reference is checked too -- it is fitted on the same rows and its
-            # read had to be covered by the same gap, and a reference nobody
-            # checked is a second way for the declaration to be wrong.
-            _check_fitter_stayed_inside(
-                predicted.features_read, declared, sources, purge
-            )
-            _check_fitter_stayed_inside(
-                referenced.features_read, declared, sources, purge
-            )
+            # After the first fit, and only the first. The reference is
+            # checked too: it is fitted on the same frame.
+            _check_fitter_stayed_inside(predicted.features_read, declared, sources)
+            _check_fitter_stayed_inside(referenced.features_read, declared, sources)
             ml_libraries = _ml_libraries(predicted, referenced)
             # The scored predictor's only: the reference is the climatology,
             # which takes no setting, and is not what `declaration.model` names.
@@ -6447,10 +6218,10 @@ def rolling_exceedance_backtest(
         reference.append(_validate_prediction(referenced, 1, tau_family)[0])
         folds.append(
             ScoredFold(
-                train_start=rows[train_indices[0]].date,
-                train_end=rows[train_indices[-1]].date,
-                train_rows=len(train_indices),
-                feature_date=feature_row.date,
+                train_start=train_rows[0].date,
+                train_end=train_rows[-1].date,
+                train_rows=len(train_rows),
+                feature_date=fold.feature_row.date,
                 scored_date=rows[index].date,
             )
         )
@@ -6493,7 +6264,8 @@ def rolling_exceedance_backtest(
         features=declared,
         sources=sources,
         field_sources=field_sources,
-        purge_days=purge,
+        refit_every=refit,
+        information=information_summary(rule, infos),
         decision_time=decision_time,
         minimum_history=minimum_history,
         panel_rows=len(rows),
@@ -6548,7 +6320,7 @@ def _exceedance_seed(
             panel_sha256,
             report.model_name,
             report.features,
-            report.purge_days,
+            _rule_token(report.refit_every),
             report.decision_time,
             report.taus,
             tau,
@@ -6560,7 +6332,7 @@ def _exceedance_seed_material(
     panel_sha256: str,
     model_name: str,
     features: Iterable[str],
-    purge_days: Optional[int],
+    rule_token: str,
     decision_time: Optional[time],
     taus: Iterable[float],
     tau: Optional[float],
@@ -6581,7 +6353,7 @@ def _exceedance_seed_material(
         panel_sha256,
         model_name,
         ",".join(sorted(features)),
-        str(purge_days),
+        rule_token,
         "" if decision_time is None else decision_time.isoformat(),
         ",".join(f"{value:g}" for value in taus),
         "" if tau is None else f"{tau:g}",
@@ -6595,7 +6367,8 @@ def exceedance_record_seed(record: Mapping[str, Any], tau_bp: float) -> int:
     seed it returns is the one under `metrics.by_tau.<tau>`, in both
     `brier_skill_score_interval` and `reliability_curve.band`, which share it.
     Every input is a field the record carries -- `panel.sha256`,
-    `declaration.model`, `declaration.features`, `derived.purge_days`,
+    `declaration.model`, `declaration.features`, `declaration.refit_every`
+    (`derived.purge_days` on a record scored under the purge rule),
     `declaration.decision_time` (parsed to a `time`, never joined as text) and
     `declaration.taus_bp` -- plus the threshold, which is the per-band part of
     the material.
@@ -6619,7 +6392,7 @@ def exceedance_record_seed(record: Mapping[str, Any], tau_bp: float) -> int:
             record["panel"]["sha256"],
             declaration["model"],
             declaration["features"],
-            record["derived"]["purge_days"],
+            _record_rule_token(record),
             None if stated is None else time.fromisoformat(stated),
             taus,
             tau_bp,
@@ -6896,6 +6669,8 @@ def exceedance_backtest_document(
         )
     if report.minimum_history is not None:
         declaration["minimum_history"] = report.minimum_history
+    if report.refit_every is not None:
+        declaration["refit_every"] = report.refit_every
 
     panel: dict = {"path": str(panel_path), "sha256": digest}
     if report.panel_rows is not None:
@@ -6950,7 +6725,7 @@ def exceedance_backtest_document(
             "fields": [
                 f"{source}.{field}" for source, field in sorted(report.field_sources)
             ],
-            "purge_days": report.purge_days,
+            "information_set": report.information,
         },
         "panel": panel,
         "provenance": provenance,

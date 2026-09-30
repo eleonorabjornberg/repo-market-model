@@ -5,8 +5,8 @@ The threshold ARX lost to persistence under CRPS with a very wide interval on
 the paired difference, and the leading explanation is that splitting the
 training frame in two leaves one regime too little data to fit. This script
 tests that explanation instead of repeating it: it walks the origins
-`paired_model_comparison` walks -- `splits.rolling_origin` with the gap
-`baseline._derive_purge` prices for the declared features -- fits
+`paired_model_comparison` walks -- the as-of folds `baseline._as_of_folds`
+builds for the declared features -- fits
 `baseline.fit_threshold` on each training frame exactly as `compare
 --model threshold` binds it (regressors split from the declaration by
 `cli_eval._regressors_and_regime`, not by a copy of that rule), and records the
@@ -45,16 +45,15 @@ import sys
 from datetime import time
 from pathlib import Path
 
+from repo_model.asof import InformationRule
 from repo_model.baseline import (
-    _derive_purge,
-    _feature_index,
+    _as_of_folds,
     fit_threshold,
     panel_sha256,
 )
 from repo_model.cli_eval import _regressors_and_regime
 from repo_model.data import load_daily_panel
 from repo_model.ingest import load_source_registry
-from repo_model.splits import rolling_origin
 
 DEFAULT_FEATURES = ("spread_bps", "sofr_volume", "sofr_p25", "sofr_p75")
 
@@ -81,32 +80,33 @@ def main(argv=None):
         True,
     )
     rows = load_daily_panel(args.panel)
-    dates = [row.date for row in rows]
-    _fields, _sources, purge = _derive_purge(
+    rule = InformationRule(
         load_source_registry(args.registry),
         tuple(sorted(features)),
         decision_time=time.fromisoformat(args.decision_time),
     )
-    folds = list(rolling_origin(dates, args.minimum_history, 1, purge))
+    folds = list(
+        _as_of_folds(rows, rule, minimum_history=args.minimum_history, refit_every=1)
+    )
     chosen = [i for i in range(len(folds)) if i % args.every == 0]
     if chosen[-1] != len(folds) - 1:
         chosen.append(len(folds) - 1)
 
     records = []
     for i in chosen:
-        train_indices, test_indices = folds[i]
-        frame = [rows[j] for j in train_indices]
+        fold = folds[i]
+        frame = fold.frame
         fitted = fit_threshold(
             frame, regressors, regime, minimum_history=args.minimum_history
         )
-        feature_row = rows[_feature_index(dates, train_indices, test_indices[0], purge)]
+        feature_row = fold.feature_row
         side = fitted.regime_for(feature_row)
         counts = dict(fitted.regime_rows)
         records.append(
             {
                 "feature_date": feature_row.date.isoformat(),
-                "scored_date": rows[test_indices[0]].date.isoformat(),
-                "train_rows": len(train_indices),
+                "scored_date": rows[fold.index].date.isoformat(),
+                "train_rows": len(frame),
                 "threshold": fitted.threshold,
                 "low_rows": counts["low"],
                 "high_rows": counts["high"],
@@ -121,7 +121,7 @@ def main(argv=None):
         "panel": {"path": str(args.panel), "sha256": panel_sha256(args.panel)},
         "regressors": list(regressors),
         "regime_variable": regime,
-        "purge_days": purge,
+        "information_rule": "as_of",
         "minimum_history": args.minimum_history,
         "origins": len(folds),
         "fitted": len(records),

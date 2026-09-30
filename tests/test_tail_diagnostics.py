@@ -359,10 +359,10 @@ class KnotRefitTests(unittest.TestCase):
             self.assertGreater(counts["states"]["refused"], 0)
 
         with self.subTest("5. a predictor that never reaches predict_stress is refused"):
-            def silent(train_rows, feature_rows, taus, purge_days=None):
+            def silent(train_rows, feature_rows, taus, information=None):
                 return baseline.ExceedanceCurves(((0.0,) * len(taus),), ())
 
-            with mock.patch.object(tail_diagnostics, "_reads_purge_days", lambda p: True):
+            with mock.patch.object(tail_diagnostics, "_reads_information", lambda p: True):
                 with self.assertRaises(ValueError):
                     tail_diagnostics.refit_knots(
                         document, panel, registry=case.registry, predictor=silent,

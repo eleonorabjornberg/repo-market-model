@@ -227,7 +227,6 @@ from repo_model.event_eval import (
     evaluate_event_window,
     read_journal,
 )
-from repo_model.splits import clears_purge
 from repo_model.metrics import crps_from_quantiles
 from repo_model.splits import SplitError
 
@@ -249,6 +248,37 @@ from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 #: The variable a job that exists to exercise the extra sets. See the module
 #: docstring: it is the only way this process can tell "no extra installed, and
 #: that is fine" from "no extra installed, and that is the bug".
+def gap_rule(days):
+    """The as-of rule under every source declared `record_date` + `days`, 00:00.
+
+    What a calibration test hands a fitter where it used to hand
+    `purge_days=days`. At a 16:00 decision a row dated `d` is observable from
+    midnight on `d + days`, so on a gapless calendar the held-out row `i`
+    reads row `i - days - 1` and the fit rows end there -- exactly the rows a
+    purge of `days` selected; `days=0` is the zero gap. On a weekday calendar
+    the rule counts from the decision day, the panel day before the row,
+    where the purge counted from the row itself.
+    """
+
+    from repo_model.asof import InformationRule
+    from repo_model.contract import FEATURE_FIELDS
+
+    sources = {source for pairs in FEATURE_FIELDS.values() for source, _ in pairs}
+    registry = {
+        source: {
+            "release_lag": {
+                "basis": "record_date",
+                "unit": "calendar_days",
+                "days": days,
+                "available_time": "00:00",
+                "timezone": "America/New_York",
+            }
+        }
+        for source in sources
+    }
+    return InformationRule(registry, ("spread_bps",), decision_time=time(16, 0))
+
+
 REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
 
 
@@ -650,7 +680,7 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
 
         with self.subTest("coverage on held-out rows"):
             uncalibrated = self.fit(train)
-            calibrated = self.fit(train, calibration="conformal", purge_days=0)
+            calibrated = self.fit(train, calibration="conformal", information=gap_rule(0))
             scores = int(ml.DEFAULT_CALIBRATION_SHARE * self.TRAIN_ROWS)
             tolerance = 3.0 * math.sqrt(
                 nominal * (1.0 - nominal) * (1.0 / self.HELD_OUT_ROWS + 1.0 / (scores + 2))
@@ -691,14 +721,14 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
                 )
             fits = []
 
-            def calibrating(train_frame, minimum_history, purge_days):
+            def calibrating(train_frame, minimum_history, information):
                 model = self.fit(
                     train_frame,
                     minimum_history=minimum_history,
                     calibration="conformal",
-                    purge_days=purge_days,
+                    information=information,
                 )
-                fits.append((train_frame, purge_days, model))
+                fits.append((train_frame, information, model))
                 return model
 
             report = baseline.rolling_persistence_backtest(
@@ -709,13 +739,11 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
                 minimum_history=44,
                 fit_model=calibrating,
             )
-            self.assertGreater(
-                report.purge_days, 0, msg="at a zero gap the purge is not under test"
-            )
             self.assertEqual(len(fits), len(report.folds))
-            for fold, (frame, purge, model) in zip(report.folds, fits):
+            for fold, (frame, information, model) in zip(report.folds, fits):
                 with self.subTest(fold=fold.scored_date.isoformat()):
-                    self.assertEqual(purge, report.purge_days)
+                    # The run's own rule, handed over by the fold loop.
+                    self.assertEqual(information.features, self.FEATURES)
                     self.assertEqual(model.calibration_end, frame[-1].date)
                     self.assertLess(model.calibration_end, fold.scored_date)
                     self.assertEqual(
@@ -723,13 +751,21 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
                         int(ml.DEFAULT_CALIBRATION_SHARE * len(frame)),
                         msg="the calibration rows are not the frame's most recent share",
                     )
+                    # The fit rows end at the first calibration row's anchor:
+                    # the last label observable at its decision, which is not
+                    # the row before it.
+                    dates = [row.date for row in frame]
+                    first = dates.index(model.calibration_start)
+                    self.assertEqual(
+                        model.fit_end, dates[information.anchor(dates, first)]
+                    )
                     self.assertLess(
-                        model.fit_end + timedelta(days=report.purge_days),
-                        model.calibration_start,
+                        model.fit_end,
+                        dates[first - 1],
                         msg=(
-                            f"the last fit row {model.fit_end} is inside the "
-                            f"{report.purge_days}-day gap before the calibration "
-                            f"rows open on {model.calibration_start}"
+                            f"the last fit row {model.fit_end} was not yet "
+                            f"observable when the calibration rows open on "
+                            f"{model.calibration_start}"
                         ),
                     )
 
@@ -758,10 +794,10 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 ValueError, r"needs at least 9 calibration rows, got 8"
             ):
-                self.fit(rows[:35], calibration="conformal", purge_days=0)
+                self.fit(rows[:35], calibration="conformal", information=gap_rule(0))
             # And nine is enough: the refusal sits at the edge, not above it.
             self.assertEqual(
-                self.fit(rows[:36], calibration="conformal", purge_days=0).calibration_start,
+                self.fit(rows[:36], calibration="conformal", information=gap_rule(0)).calibration_start,
                 rows[27].date,
             )
 
@@ -772,24 +808,24 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
                         train,
                         calibration="conformal",
                         calibration_share=share,
-                        purge_days=0,
+                        information=gap_rule(0),
                     )
 
         with self.subTest("refusal: an unknown calibration"):
             with self.assertRaisesRegex(ValueError, r"unknown calibration 'isotonic'"):
-                self.fit(rows[:36], calibration="isotonic", purge_days=0)
+                self.fit(rows[:36], calibration="isotonic", information=gap_rule(0))
 
         with self.subTest("refusal: a share given to calibration none"):
             with self.assertRaisesRegex(ValueError, r"'none' holds no rows out"):
                 self.fit(rows[:36], calibration_share=0.25)
 
         with self.subTest("refusal: conformal with no gap"):
-            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+            with self.assertRaisesRegex(SplitError, r"needs the run's as-of rule"):
                 self.fit(rows[:36], calibration="conformal")
 
         with self.subTest("refusal: a gap that leaves nothing to fit"):
             with self.assertRaisesRegex(ValueError, r"leaves 0 fit row\(s\) of 40"):
-                self.fit(rows[:40], calibration="conformal", purge_days=40)
+                self.fit(rows[:40], calibration="conformal", information=gap_rule(40))
 
         with self.subTest("refusal: calibration settings for a model other than gbm"):
             parser = cli.build_parser()
@@ -950,7 +986,7 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
         rows = heteroscedastic_frame(self.TRAIN_ROWS + 40)
         train = rows[: self.TRAIN_ROWS]
         feature_rows = rows[self.TRAIN_ROWS - 1 : -1]
-        model = self.fit(train, calibration="conformal_asymmetric", purge_days=0)
+        model = self.fit(train, calibration="conformal_asymmetric", information=gap_rule(0))
 
         with self.subTest("the edges move by different amounts, off separate score sets"):
             # Recomputed here: at a zero gap a calibration row's feature row is
@@ -986,7 +1022,7 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
                 self.assertEqual(reported[-1], max(fitted[-1] + up, fitted[-2]))
 
         with self.subTest("equal widenings are conformal's band and law, bit for bit"):
-            conformal = self.fit(train, calibration="conformal", purge_days=0)
+            conformal = self.fit(train, calibration="conformal", information=gap_rule(0))
             widening = conformal.widening
             equal = self.rebuilt(
                 conformal,
@@ -1025,10 +1061,10 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
                 r"conformal_asymmetric calibration needs at least 19 calibration "
                 r"rows, got 18",
             ):
-                self.fit(rows[:75], calibration="conformal_asymmetric", purge_days=0)
+                self.fit(rows[:75], calibration="conformal_asymmetric", information=gap_rule(0))
             self.assertEqual(
                 self.fit(
-                    rows[:76], calibration="conformal_asymmetric", purge_days=0
+                    rows[:76], calibration="conformal_asymmetric", information=gap_rule(0)
                 ).calibration_start,
                 rows[57].date,
             )
@@ -1040,7 +1076,7 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
                 self.fit(
                     rows[:120],
                     calibration="conformal_asymmetric",
-                    purge_days=0,
+                    information=gap_rule(0),
                     tail="gpd",
                 )
 
@@ -1179,11 +1215,11 @@ class GradientBoostedLaggedSpreadTests(unittest.TestCase):
 
         fits = []
 
-        def fitter(train_frame, minimum_history, purge_days):
+        def fitter(train_frame, minimum_history, information):
             model = self.fit(
                 train_frame,
                 minimum_history=minimum_history,
-                purge_days=purge_days,
+                information=information,
                 **settings,
             )
             fits.append(model)
@@ -1214,8 +1250,11 @@ class GradientBoostedLaggedSpreadTests(unittest.TestCase):
         feature = dates.index(fold.feature_date)
 
         with self.subTest("leakage probe"):
-            self.assertGreater(
-                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            self.assertLess(
+                dates.index(fold.feature_date),
+                dates.index(fold.scored_date) - 1,
+                msg="the feature row is the row before the scored day, so the "
+                "gap between them is not under test",
             )
             self.assertLess(fold.feature_date, fold.scored_date)
             # Every row after the feature date: the gap, the scored day, and
@@ -1587,11 +1626,11 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
 
         frames, fits = [], []
 
-        def fitter(train_frame, minimum_history, purge_days):
+        def fitter(train_frame, minimum_history, information):
             model = self.fit(
                 train_frame,
                 minimum_history=minimum_history,
-                purge_days=purge_days,
+                information=information,
                 **settings,
             )
             frames.append(list(train_frame))
@@ -1628,7 +1667,7 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
             calibration_frame,
             volatility_feature="garch11",
             calibration="conformal",
-            purge_days=0,
+            information=gap_rule(0),
         )
 
         with self.subTest("recovery"):
@@ -1665,8 +1704,11 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
             self.assertGreaterEqual(min(alpha, beta), 0.0)
 
         with self.subTest("leakage"):
-            self.assertGreater(
-                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            self.assertLess(
+                dates.index(fold.feature_date),
+                dates.index(fold.scored_date) - 1,
+                msg="the feature row is the row before the scored day, so the "
+                "gap between them is not under test",
             )
             later = panel[: feature + 1] + [
                 with_spread_shifted(row, 25.0) for row in panel[feature + 1 :]
@@ -1788,7 +1830,7 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
                 with_column(rows, "garch_check", expected),
                 regressors=self.REGRESSORS + ("garch_check",),
                 calibration="conformal",
-                purge_days=0,
+                information=gap_rule(0),
             )
             self.assertEqual(reference.widening, calibrated.widening)
 
@@ -2056,7 +2098,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
         forecasts = [rows[index - 1] for index in range(self.TRAIN_ROWS, len(rows))]
         outcomes = [row.spread_bps for row in rows[self.TRAIN_ROWS :]]
         uncalibrated = self.fit(train)
-        cross = self.fit(train, calibration="cross_conformal", purge_days=0)
+        cross = self.fit(train, calibration="cross_conformal", information=gap_rule(0))
         plain = [uncalibrated.predict(row) for row in forecasts]
         banded = [cross.predict(row) for row in forecasts]
 
@@ -2136,14 +2178,14 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                 )
             fits = []
 
-            def calibrating(train_frame, minimum_history, purge_days):
+            def calibrating(train_frame, minimum_history, information):
                 model = self.fit(
                     train_frame,
                     minimum_history=minimum_history,
                     calibration="cross_conformal",
-                    purge_days=purge_days,
+                    information=information,
                 )
-                fits.append((list(train_frame), purge_days, model))
+                fits.append((list(train_frame), information, model))
                 return model
 
             report = baseline.rolling_persistence_backtest(
@@ -2154,14 +2196,18 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                 minimum_history=self.MINIMUM_HISTORY,
                 fit_model=calibrating,
             )
-            gap = timedelta(days=report.purge_days)
-            self.assertGreater(report.purge_days, 0, msg="at a zero gap the purge is not under test")
             self.assertGreater(len(fits), 1)
             self.assertEqual(len(fits), len(report.folds))
-            for fold, (frame, purge, model) in zip(report.folds, fits):
+            for fold, (frame, information, model) in zip(report.folds, fits):
                 with self.subTest(fold=fold.scored_date.isoformat()):
-                    self.assertEqual(purge, report.purge_days)
+                    # The run's own rule, handed over by the fold loop; every
+                    # boundary below is its label observability on the frame.
+                    self.assertEqual(information.features, self.FEATURES)
                     dates = [row.date for row in frame]
+
+                    def anchor(index):
+                        return information.anchor(dates, index) if index > 0 else -1
+
                     blocks = model.calibration_blocks
                     self.assertEqual(len(blocks), ml.DEFAULT_CALIBRATION_FOLDS)
                     # Contiguous date blocks, in order, covering the frame: no
@@ -2177,29 +2223,31 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                         self.assertTrue(block.training_dates)
                         self.assertLessEqual(block.training_dates[-1], dates[-1])
                         self.assertLess(block.training_dates[-1], fold.scored_date)
+                        start = dates.index(block.held_out_start)
+                        end = dates.index(block.held_out_end)
                         for when in block.training_dates:
+                            position = dates.index(when)
                             self.assertTrue(
-                                when + gap < block.held_out_start
-                                or block.held_out_end + gap < when,
+                                position <= anchor(start)
+                                or (position > end and anchor(position) >= end),
                                 msg=(
                                     f"block {number}'s excluding model trained on "
                                     f"{when}, inside its block "
                                     f"{block.held_out_start}..{block.held_out_end} "
-                                    f"or the {report.purge_days}-day gap around it"
+                                    f"or a label not observable across it"
                                 ),
                             )
                         # Each held-out row is scored by this block's model, at
-                        # the feature row the purge chooses, and only rows
-                        # with one inside the frame are scored.
+                        # its anchor, and only rows with one inside the frame
+                        # are scored.
                         scored = [
-                            index for index, when in enumerate(dates)
-                            if block.held_out_start <= when <= block.held_out_end
-                            and dates[0] + gap < when
+                            index for index in range(start, end + 1)
+                            if anchor(index) >= 0
                         ]
                         self.assertEqual(block.scored_dates, tuple(dates[i] for i in scored))
                         rescored, in_sample = [], []
                         for index in scored:
-                            feature = max(p for p in range(index) if dates[p] + gap < dates[index])
+                            feature = anchor(index)
                             target = frame[index].spread_bps
                             for estimators, out in (
                                 (block.estimators, rescored),
@@ -2221,7 +2269,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
             # By behaviour, on the last fold's frame: a row the probe block's
             # model may not train on moves nothing in it, and a row it may,
             # does.
-            frame, purge, model = fits[-1]
+            frame, information, model = fits[-1]
             self.assertGreater(len(frame), 100)
             dates = [row.date for row in frame]
             block = model.calibration_blocks[self.PROBE_BLOCK]
@@ -2236,7 +2284,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                     shifted,
                     minimum_history=self.MINIMUM_HISTORY,
                     calibration="cross_conformal",
-                    purge_days=purge,
+                    information=information,
                 )
                 return self.probe_predictions(refit.calibration_blocks[self.PROBE_BLOCK], frame)
 
@@ -2250,8 +2298,10 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                     baseline_predictions,
                     msg=f"a row {label} ({dates[position]}) moved the block's excluding model",
                 )
+            # The first row after the block whose own decision already sees
+            # the block's last label: the first one the excluding model trains on.
             clear = stop + 1
-            while not dates[stop] + gap < dates[clear]:
+            while information.anchor(dates, clear) < stop:
                 clear += 1
             self.assertNotEqual(
                 moved(clear + 1),
@@ -2264,7 +2314,7 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                 dict(report.model_settings),
                 {"calibration": "cross_conformal", "calibration_folds": 5},
             )
-            three = self.fit(rows[:60], calibration="cross_conformal", calibration_folds=3, purge_days=0)
+            three = self.fit(rows[:60], calibration="cross_conformal", calibration_folds=3, information=gap_rule(0))
             self.assertEqual(
                 dict(baseline._model_settings(three)),
                 {"calibration": "cross_conformal", "calibration_folds": 3},
@@ -2302,19 +2352,19 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                     ValueError, r"calibration_folds must be an int of at least 2"
                 ):
                     self.fit(rows[:40], calibration="cross_conformal",
-                             calibration_folds=folds, purge_days=0)
+                             calibration_folds=folds, information=gap_rule(0))
 
         with self.subTest("refusal: a block that leaves its excluding model nothing to fit"):
             with self.assertRaisesRegex(
                 ValueError,
                 r"cross-conformal block 1 of 2 holds out 20 of 40 rows and leaves "
-                r"its excluding model 0 training pair\(s\) after a 19-day purge",
+                r"its excluding model 0 training pair\(s\) after label observability",
             ):
                 self.fit(rows[:40], calibration="cross_conformal",
-                         calibration_folds=2, purge_days=19)
+                         calibration_folds=2, information=gap_rule(19))
             # And one pair is enough: the refusal sits at the edge.
             edge = self.fit(rows[:40], calibration="cross_conformal",
-                            calibration_folds=2, purge_days=18)
+                            calibration_folds=2, information=gap_rule(18))
             self.assertEqual(
                 [len(block.training_dates) for block in edge.calibration_blocks], [2, 2]
             )
@@ -2327,35 +2377,35 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 ValueError, r"calibration_folds 3 was given, but calibration 'conformal'"
             ):
-                self.fit(rows[:40], calibration="conformal", calibration_folds=3, purge_days=0)
+                self.fit(rows[:40], calibration="conformal", calibration_folds=3, information=gap_rule(0))
 
         with self.subTest("refusal: calibration_share with cross_conformal"):
             with self.assertRaisesRegex(
                 ValueError, r"calibration_share 0.25 was given, but calibration 'cross_conformal'"
             ):
                 self.fit(rows[:40], calibration="cross_conformal",
-                         calibration_share=0.25, purge_days=0)
+                         calibration_share=0.25, information=gap_rule(0))
 
         with self.subTest("refusal: fewer held-out scores than CV+'s ranks need"):
             with self.assertRaisesRegex(
                 ValueError, r"needs at least 9 held-out scores, got 8"
             ):
                 self.fit(rows[:9], minimum_history=9, calibration="cross_conformal",
-                         calibration_folds=2, purge_days=0)
+                         calibration_folds=2, information=gap_rule(0))
             # And nine is enough.
             self.assertEqual(
                 sum(
                     len(block.scores)
                     for block in self.fit(
                         rows[:10], minimum_history=10, calibration="cross_conformal",
-                        calibration_folds=2, purge_days=0,
+                        calibration_folds=2, information=gap_rule(0),
                     ).calibration_blocks
                 ),
                 9,
             )
 
         with self.subTest("refusal: cross_conformal with no gap"):
-            with self.assertRaisesRegex(SplitError, r"purge must be an int, got None"):
+            with self.assertRaisesRegex(SplitError, r"needs the run's as-of rule"):
                 self.fit(rows[:40], calibration="cross_conformal")
 
 
@@ -2469,8 +2519,8 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
         rows = heteroscedastic_frame(self.TRAIN_ROWS + self.FORECAST_ROWS)
         train = rows[: self.TRAIN_ROWS]
         forecasts = rows[self.TRAIN_ROWS - 1 : -1]
-        model = self.fit(train, calibration="cross_conformal_asymmetric", purge_days=0)
-        pooled = self.fit(train, calibration="cross_conformal", purge_days=0)
+        model = self.fit(train, calibration="cross_conformal_asymmetric", information=gap_rule(0))
+        pooled = self.fit(train, calibration="cross_conformal", information=gap_rule(0))
 
         with self.subTest("each edge is CV+'s over its own side's signed scores, at its own rank"):
             blocks = model.calibration_blocks
@@ -2533,10 +2583,10 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
             ):
                 self.fit(rows[:19], minimum_history=19,
                          calibration="cross_conformal_asymmetric",
-                         calibration_folds=2, purge_days=0)
+                         calibration_folds=2, information=gap_rule(0))
             # And nineteen is enough.
             edge = self.fit(rows[:20], calibration="cross_conformal_asymmetric",
-                            calibration_folds=2, purge_days=0)
+                            calibration_folds=2, information=gap_rule(0))
             self.assertEqual(sum(len(block.scores) for block in edge.calibration_blocks), 19)
 
         with self.subTest("refusal: a tail"):
@@ -2544,7 +2594,7 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
                 ValueError, r"not wired for calibration 'cross_conformal_asymmetric'"
             ):
                 self.fit(rows[:120], calibration="cross_conformal_asymmetric",
-                         purge_days=0, tail="gpd")
+                         information=gap_rule(0), tail="gpd")
 
         with self.subTest("refusal: a calibration_share"):
             with self.assertRaisesRegex(
@@ -2553,7 +2603,7 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
                 r"'cross_conformal_asymmetric'",
             ):
                 self.fit(rows[:40], calibration="cross_conformal_asymmetric",
-                         calibration_share=0.25, purge_days=0)
+                         calibration_share=0.25, information=gap_rule(0))
 
         with self.subTest("the declaration names the calibration and its folds"):
             self.assertEqual(
@@ -2811,7 +2861,7 @@ class ScaledCrossConformalTests(unittest.TestCase):
                 for origin in range(self.FRAME_ROWS - 1, count - self.PURGE - 1):
                     frame = rows[origin - self.FRAME_ROWS + 1 : origin + 1]
                     model = self.constant_fit(
-                        frame, calibration=calibration, purge_days=self.PURGE
+                        frame, calibration=calibration, information=gap_rule(self.PURGE)
                     )
                     band = model.predict(rows[origin])
                     target = origin + self.PURGE + 1
@@ -2853,8 +2903,8 @@ class ScaledCrossConformalTests(unittest.TestCase):
             frame = regime_frame(self.FRAME_ROWS)
             moved = self.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
             opens = frame[self.PERTURB_AT].date
-            before = self.constant_fit(frame, purge_days=self.LEAK_PURGE)
-            after = self.constant_fit(moved, purge_days=self.LEAK_PURGE)
+            before = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
+            after = self.constant_fit(moved, information=gap_rule(self.LEAK_PURGE))
             checked = changed = 0
             for number, (one, two) in enumerate(
                 zip(before.calibration_blocks, after.calibration_blocks), start=1
@@ -2887,7 +2937,7 @@ class ScaledCrossConformalTests(unittest.TestCase):
 
         with self.subTest("a forecast's scale and band read nothing after its feature row"):
             frame = regime_frame(self.FRAME_ROWS)
-            model = self.constant_fit(frame, purge_days=self.LEAK_PURGE)
+            model = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
             row = frame[self.PERTURB_AT]
             scale, band = model._origin_scale(row), model.predict(row)
             self.assertEqual(scale, self.rms_scale(frame, self.PERTURB_AT))
@@ -2914,7 +2964,7 @@ class ScaledCrossConformalTests(unittest.TestCase):
             )
             flat = range(120, 160)
             frame = regime_frame(self.FRAME_ROWS, flat=flat)
-            model = self.constant_fit(frame, purge_days=self.PURGE)
+            model = self.constant_fit(frame, information=gap_rule(self.PURGE))
             floored = 0
             for block in model.calibration_blocks:
                 for when, scale, score in zip(block.scored_dates, block.scales, block.scaled_residuals):
@@ -2931,8 +2981,8 @@ class ScaledCrossConformalTests(unittest.TestCase):
 
         rows = heteroscedastic_frame(self.TRAIN_ROWS)
         forecasts = rows[-self.FORECAST_ROWS :]
-        model = self.fit(rows, purge_days=0)
-        cross = self.fit(rows, calibration="cross_conformal", purge_days=0)
+        model = self.fit(rows, information=gap_rule(0))
+        cross = self.fit(rows, calibration="cross_conformal", information=gap_rule(0))
 
         with self.subTest("the band is CV+'s over scaled residuals, and the interior the full fit's"):
             blocks = model.calibration_blocks
@@ -3032,20 +3082,20 @@ class ScaledCrossConformalTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 ValueError, r"cross_conformal_scaled calibration needs at least 9 held-out scores, got 8"
             ):
-                self.fit(rows[:29], calibration_folds=2, purge_days=0)
-            edge = self.fit(rows[:30], calibration_folds=2, purge_days=0)
+                self.fit(rows[:29], calibration_folds=2, information=gap_rule(0))
+            edge = self.fit(rows[:30], calibration_folds=2, information=gap_rule(0))
             self.assertEqual(sum(len(block.scaled_residuals) for block in edge.calibration_blocks), 9)
 
         with self.subTest("refusal: a tail, and a calibration_share"):
             with self.assertRaisesRegex(
                 ValueError, r"not wired for calibration 'cross_conformal_scaled'"
             ):
-                self.fit(rows[:120], purge_days=0, tail="gpd")
+                self.fit(rows[:120], information=gap_rule(0), tail="gpd")
             with self.assertRaisesRegex(
                 ValueError,
                 r"calibration_share 0.25 was given, but calibration 'cross_conformal_scaled'",
             ):
-                self.fit(rows[:40], calibration_share=0.25, purge_days=0)
+                self.fit(rows[:40], calibration_share=0.25, information=gap_rule(0))
 
 
 #: How much of a declared band `NarrowRegimeQuantile` fits: the outer levels
@@ -3297,7 +3347,7 @@ class PartialCrossConformalTests(unittest.TestCase):
                         rows[origin - self.FRAME_ROWS + 1 : origin + 1],
                         ("regime_sd",),
                         calibration=name,
-                        purge_days=self.PURGE,
+                        information=gap_rule(self.PURGE),
                     )
                     low, high = self.edges(model.predict(rows[origin]))
                     outcome = rows[target].spread_bps
@@ -3323,7 +3373,7 @@ class PartialCrossConformalTests(unittest.TestCase):
 
         rows = skewed_frame(self.TRAIN_ROWS)
         forecasts = rows[-self.FORECAST_ROWS :]
-        skewed = {"purge_days": 0, "spread_change_lags": ml.SCALE_WINDOW, "min_samples_leaf": self.SKEW_LEAF}
+        skewed = {"information": gap_rule(0), "spread_change_lags": ml.SCALE_WINDOW, "min_samples_leaf": self.SKEW_LEAF}
         cross = self.fit(rows, ("on_rrp",), calibration="cross_conformal", **skewed)
         partial = self.fit(rows, ("on_rrp",), **skewed)
 
@@ -3388,8 +3438,8 @@ class PartialCrossConformalTests(unittest.TestCase):
             frame = regime_frame(self.FRAME_ROWS)
             moved = ScaledCrossConformalTests.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
             opens = frame[self.PERTURB_AT].date
-            before = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.LEAK_PURGE)
-            after = self.stand_in_fit(ConstantQuantile, moved, ("sofr_volume",), purge_days=self.LEAK_PURGE)
+            before = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
+            after = self.stand_in_fit(ConstantQuantile, moved, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
             checked = changed = 0
             for number, (one, two) in enumerate(
                 zip(before.calibration_blocks, after.calibration_blocks), start=1
@@ -3414,7 +3464,7 @@ class PartialCrossConformalTests(unittest.TestCase):
 
         with self.subTest("leak: a forecast's factor and band read nothing after its decision"):
             frame = regime_frame(self.FRAME_ROWS)
-            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.LEAK_PURGE)
+            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
             row = frame[self.PERTURB_AT]
             scale, band = model._origin_scale(row), model.predict(row)
             self.assertEqual(scale, ScaledCrossConformalTests.rms_scale(frame, self.PERTURB_AT))
@@ -3434,7 +3484,7 @@ class PartialCrossConformalTests(unittest.TestCase):
         with self.subTest("ref cancels: one reference shared by the scores and the forecast moves no band"):
             frame = regime_frame(self.FRAME_ROWS)
             points = frame[-self.FORECAST_ROWS :]
-            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.PURGE)
+            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.PURGE))
             bands = [model.predict(row) for row in points]
             original = ml._partial_factor
             for reference in self.REFERENCES:
@@ -3442,7 +3492,7 @@ class PartialCrossConformalTests(unittest.TestCase):
                     return (scale / reference) ** ml.PARTIAL_SCALE_EXPONENT
 
                 with mock.patch.object(ml, "_partial_factor", referenced):
-                    other = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), purge_days=self.PURGE)
+                    other = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.PURGE))
                     moved = [other.predict(row) for row in points]
                 for row, one, two in zip(points, bands, moved):
                     for left, right in zip(self.edges(one), self.edges(two)):
@@ -3462,11 +3512,11 @@ class PartialCrossConformalTests(unittest.TestCase):
             points = frame[-self.FORECAST_ROWS :]
             scaled = self.stand_in_fit(
                 ConstantQuantile, frame, ("sofr_volume",),
-                calibration="cross_conformal_scaled", purge_days=self.PURGE,
+                calibration="cross_conformal_scaled", information=gap_rule(self.PURGE),
             )
             plain = self.stand_in_fit(
                 ConstantQuantile, frame, ("sofr_volume",),
-                calibration="cross_conformal", purge_days=self.PURGE,
+                calibration="cross_conformal", information=gap_rule(self.PURGE),
             )
             q = Fraction("0.95") - Fraction("0.05")
             for model, reads in ((plain, "scores"), (scaled, "scaled_residuals")):
@@ -3522,17 +3572,17 @@ class PartialCrossConformalTests(unittest.TestCase):
 
         with self.subTest("refusals: a tail, a share, too few scores, a forecast with no scale"):
             with self.assertRaisesRegex(ValueError, r"not wired for calibration 'cross_conformal_partial'"):
-                self.fit(rows[:120], ("on_rrp",), purge_days=0, tail="gpd")
+                self.fit(rows[:120], ("on_rrp",), information=gap_rule(0), tail="gpd")
             with self.assertRaisesRegex(
                 ValueError, r"calibration_share 0.25 was given, but calibration 'cross_conformal_partial'"
             ):
-                self.fit(rows[:40], ("on_rrp",), calibration_share=0.25, purge_days=0)
+                self.fit(rows[:40], ("on_rrp",), calibration_share=0.25, information=gap_rule(0))
             with self.assertRaisesRegex(
                 ValueError, r"cross_conformal_partial calibration needs at least 9 held-out scores, got 8"
             ):
-                self.fit(rows[:29], ("on_rrp",), calibration_folds=2, purge_days=0)
+                self.fit(rows[:29], ("on_rrp",), calibration_folds=2, information=gap_rule(0))
             early = self.stand_in_fit(
-                ConstantQuantile, regime_frame(self.FRAME_ROWS), ("sofr_volume",), purge_days=self.PURGE
+                ConstantQuantile, regime_frame(self.FRAME_ROWS), ("sofr_volume",), information=gap_rule(self.PURGE)
             )
             with self.assertRaisesRegex(
                 ValueError, r"has no scale: calibration 'cross_conformal_partial'"
@@ -3705,11 +3755,11 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
 
         frames, fits = [], []
 
-        def fitter(train_frame, minimum_history, purge_days):
+        def fitter(train_frame, minimum_history, information):
             model = self.fit(
                 train_frame,
                 minimum_history=minimum_history,
-                purge_days=purge_days,
+                information=information,
                 **settings,
             )
             frames.append(list(train_frame))
@@ -3766,14 +3816,14 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
             calibration_frame,
             arx_feature="declared",
             calibration="conformal",
-            purge_days=0,
+            information=gap_rule(0),
         )
         cross_frame = arx_frame(self.CROSS_ROWS)
         cross = self.fit(
             cross_frame,
             arx_feature="declared",
             calibration="cross_conformal",
-            purge_days=self.PURGE,
+            information=gap_rule(self.PURGE),
         )
 
         with self.subTest("the feature is baseline's own ARX one-step forecast"):
@@ -3791,8 +3841,11 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                 )
 
         with self.subTest("leakage"):
-            self.assertGreater(
-                report.purge_days, 0, msg="at a zero gap the scored day is the next row"
+            self.assertLess(
+                dates.index(fold.feature_date),
+                dates.index(fold.scored_date) - 1,
+                msg="the feature row is the row before the scored day, so the "
+                "gap between them is not under test",
             )
             later = panel[: feature + 1] + [
                 with_spread_shifted(row, self.SHIFT_BPS) for row in panel[feature + 1 :]
@@ -3894,7 +3947,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                 with_column(rows, "arx_check", expected),
                 regressors=declared,
                 calibration="conformal",
-                purge_days=0,
+                information=gap_rule(0),
             )
             self.assertEqual(reference.widening, calibrated.widening)
             # ...which the widening does read: the control moves the
@@ -3910,7 +3963,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     with_column(rows, "arx_check", mixed),
                     regressors=declared,
                     calibration="conformal",
-                    purge_days=0,
+                    information=gap_rule(0),
                 ).widening,
                 calibrated.widening,
                 msg="the control: the widening does not read the calibration rows' ARX column",
@@ -3919,7 +3972,12 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
         with self.subTest("each block model's ARX is fitted without its block and purge gaps"):
             rows = cross_frame
             cross_dates = [row.date for row in rows]
-            gap = timedelta(days=self.PURGE)
+            # The rule the fit was handed: label observability on this frame.
+            rule = gap_rule(self.PURGE)
+
+            def anchor(index):
+                return rule.anchor(cross_dates, index) if index > 0 else -1
+
             self.assertEqual(
                 self.arx_state(cross.arx), self.arx_state(baseline.fit_arx(rows, self.REGRESSORS))
             )
@@ -3936,9 +3994,11 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                 lows.extend(excluded[0] - score for score in block.scores)
                 highs.extend(excluded[-1] + score for score in block.scores)
                 with self.subTest(block=number):
+                    start = cross_dates.index(block.held_out_start)
+                    end = cross_dates.index(block.held_out_end)
                     kept = [
-                        when + gap < block.held_out_start or block.held_out_end + gap < when
-                        for when in cross_dates
+                        p <= anchor(start) if p < start else p > end and anchor(p) >= end
+                        for p in range(len(cross_dates))
                     ]
                     origins = [
                         p for p in range(len(rows) - 1) if kept[p] and kept[p + 1]
@@ -3969,9 +4029,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     rescored = []
                     for when in block.scored_dates:
                         index = cross_dates.index(when)
-                        position = max(
-                            p for p in range(index) if cross_dates[p] + gap < when
-                        )
+                        position = anchor(index)
                         levels = self.sorted_levels(
                             block.estimators, self.design(rows[position], block.arx)
                         )
@@ -4003,7 +4061,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     shifted,
                     arx_feature="declared",
                     calibration="cross_conformal",
-                    purge_days=self.PURGE,
+                    information=gap_rule(self.PURGE),
                 )
 
             for label, position in (
@@ -4023,7 +4081,7 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                     msg=f"the control: the full fit's ARX does not read the row {label}",
                 )
             clear = stop + 1
-            while not cross_dates[stop] + gap < cross_dates[clear]:
+            while anchor(clear) < stop:
                 clear += 1
             self.assertNotEqual(
                 moved(clear + 1).calibration_blocks[self.PROBE_BLOCK].arx.coefficients,
@@ -4122,10 +4180,10 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
                 ValueError, r"arx needs at least 20 training rows, got 19"
             ):
                 self.fit(panel[:38], arx_feature="declared", calibration="conformal",
-                         calibration_share=0.5, purge_days=0)
+                         calibration_share=0.5, information=gap_rule(0))
             # And twenty is enough: the refusal sits at the edge.
             edge = self.fit(panel[:40], arx_feature="declared", calibration="conformal",
-                            calibration_share=0.5, purge_days=0)
+                            calibration_share=0.5, information=gap_rule(0))
             self.assertEqual(edge.arx.cutoff, panel[19].date)
             with self.assertRaisesRegex(
                 ValueError, r"arx needs at least 20 training rows, got 19"
@@ -4986,7 +5044,7 @@ class GpdTailWiringTests(unittest.TestCase):
             "minimum_history": 20,
             "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
             "calibration": "conformal",
-            "purge_days": 0,
+            "information": gap_rule(0),
         }
         options.update(overrides)
         return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
@@ -5184,7 +5242,7 @@ class GpdCrossConformalSampleTests(unittest.TestCase):
             "minimum_history": 20,
             "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
             "calibration": "cross_conformal",
-            "purge_days": 0,
+            "information": gap_rule(0),
         }
 
         with self.subTest("the refusal, on the calibration's name"):
@@ -5447,7 +5505,7 @@ class TailDeclarationTests(unittest.TestCase):
             "minimum_history": 20,
             "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF,
             "calibration": "conformal",
-            "purge_days": 0,
+            "information": gap_rule(0),
         }
         options.update(overrides)
         return ml.fit_gradient_boosted_quantiles(frame, self.REGRESSORS, **options)
@@ -5501,7 +5559,7 @@ class TailDeclarationTests(unittest.TestCase):
                  "tail": "gpd"},
             )
             fitted = fitter(small, minimum_history=20,
-                            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF, purge_days=0)
+                            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF, information=gap_rule(0))
             self.assertEqual(fitted.tail, "gpd")
             self.assertEqual(dict(fitted.model_settings)["tail"], "gpd")
 
@@ -5705,7 +5763,7 @@ class TailAccountTests(unittest.TestCase):
 
         fits = []
 
-        def fitter(train_frame, minimum_history, purge_days):
+        def fitter(train_frame, minimum_history, information):
             model = ml.fit_gradient_boosted_quantiles(
                 train_frame,
                 self.REGRESSORS,
@@ -5713,7 +5771,7 @@ class TailAccountTests(unittest.TestCase):
                 min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
                 calibration="conformal",
                 calibration_share=self.SHARE,
-                purge_days=purge_days,
+                information=information,
                 **settings,
             )
             fits.append(model)
@@ -6069,7 +6127,7 @@ class ExceedanceTailTests(unittest.TestCase):
                 self.assertEqual(kwargs.get("tail"), "gpd")
                 self.assertEqual(kwargs.get("calibration"), "conformal")
                 self.assertEqual(kwargs.get("calibration_share"), float(self.SHARE))
-                self.assertEqual(kwargs.get("purge_days"), tailed.purge_days)
+                self.assertEqual(kwargs.get("information").features, tailed.features)
                 self.assertIsNotNone(model.tail_fit)
                 self.assertIsNone(bare_kwargs.get("tail"))
                 self.assertIsNone(bare.tail_fit)
@@ -6230,7 +6288,7 @@ class ExceedanceTailAccountTests(unittest.TestCase):
        (the base's record grew `folds.tail`), each by its own assertion.
     4. **The account read off a refit** --- the fold loop appends
        `_tail_account(predictor(train_rows, conditioning, tau_family,
-       purge_days=purge))`, a second fit of the same frame. Every float is the
+       information=gap_rule(purge)))`, a second fit of the same frame. Every float is the
        scored fit's, so nothing that reads values alone could see it: what
        kills it is **part 1**'s fit count, `52 != 26`, and **part 4**, whose
        `entries[n]`-against-`fits[n]` pairing the doubled fit list misaligns
@@ -6788,12 +6846,12 @@ class ExceedanceFeatureSettingsTests(unittest.TestCase):
 
         regressors, minimum_history = self.REGRESSORS, self.MINIMUM_HISTORY
 
-        def fit_predict(train_rows, feature_rows, taus, purge_days=None):
+        def fit_predict(train_rows, feature_rows, taus, information=None):
             model = ml.fit_gradient_boosted_quantiles(
                 train_rows,
                 regressors,
                 minimum_history=minimum_history,
-                purge_days=purge_days,
+                information=information,
             )
             return baseline.ExceedanceCurves(
                 tuple(model.predict_stress(row, taus) for row in feature_rows),
@@ -6858,7 +6916,7 @@ class ExceedanceFeatureSettingsTests(unittest.TestCase):
                 for model, kwargs in fits:
                     self.assertEqual(kwargs.get(key), value, msg=str(flags))
                     self.assertEqual(getattr(model, key), value, msg=str(flags))
-                    self.assertEqual(kwargs.get("purge_days"), report.purge_days)
+                    self.assertEqual(kwargs.get("information").features, report.features)
                     for other in keys:
                         if other != key:
                             self.assertIsNone(kwargs.get(other), msg=f"{flags}: {other}")
@@ -7538,8 +7596,8 @@ class EventHoldoutCalibrationGapTests(unittest.TestCase):
        which is the tree before this block. Kills this test alone, as an
        error: `SplitError: purge must be an int, got None`, the fitter's
        refusal through `require_purge_days`, raised before any assertion.
-    2. **The gap handed over one day short** -- `purge_days=purge)` ->
-       `purge_days=purge - 1)`. Kills this test alone, `AssertionError: 5 !=
+    2. **The gap handed over one day short** -- `information=gap_rule(purge))` ->
+       `information=gap_rule(purge) - 1)`. Kills this test alone, `AssertionError: 5 !=
        6` on the handed gap. Re-run on this test alone with that one assertion
        deleted from the copy, it still dies, `AssertionError` on `fit_end`:
        `2020-04-16 != 2020-04-15`, one calendar day later than the last row
@@ -7605,29 +7663,27 @@ class EventHoldoutCalibrationGapTests(unittest.TestCase):
                 journal_path=journal,
             )
 
-        self.assertEqual(report.purge_days, self.PURGE)
         self.assertEqual(len(fits), 1, msg="a knowledge holdout is fitted once")
         (frame, kwargs, model), = fits
 
         self.assertEqual(kwargs.get("calibration"), "conformal")
-        self.assertEqual(kwargs.get("purge_days"), report.purge_days)
+        information = kwargs.get("information")
+        self.assertEqual(information.features, self.FEATURES)
         self.assertEqual(frame[-1].date, report.last_train_date)
         self.assertEqual(model.calibration_end, report.last_train_date)
+        dates = [row.date for row in frame]
+        first = dates.index(model.calibration_start)
         self.assertEqual(
             model.fit_end,
-            max(
-                row.date
-                for row in frame
-                if clears_purge(row.date, model.calibration_start, self.PURGE)
-            ),
+            dates[information.anchor(dates, first)],
             msg=(
                 f"the fit rows end on {model.fit_end}, which is not the last "
-                f"training row clearing the registry's {self.PURGE}-day purge "
-                f"before the calibration rows open on {model.calibration_start}"
+                f"label observable at the decision before the calibration rows "
+                f"open on {model.calibration_start}"
             ),
         )
         self.assertEqual(
-            [line["purge_days"] for line in read_journal(journal)], [self.PURGE]
+            [line["information_rule"] for line in read_journal(journal)], ["as_of"]
         )
 
 
