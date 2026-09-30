@@ -31,7 +31,7 @@ import sys
 # A pattern ending in "/" matches a directory prefix; anything else is an exact
 # path. Deliberately not globs -- a glob invites a rule nobody can read.
 HUMAN_ONLY = (
-    "AGENT_CONTRACT.md",
+    "docs/process/AGENT_CONTRACT.md",
     "PLAN.md",
     "METHODOLOGY.md",
     "DATA.md",
@@ -39,7 +39,6 @@ HUMAN_ONLY = (
     "LICENSE",
     "REPRODUCIBILITY.md",
     "pyproject.toml",
-    "docs/PROJECT_STATUS.md",
     "docs/DATA_QUALITY_DECISIONS.md",
     # The decision records. A decision and its reasoning are a claim about why the project is
     # shaped as it is, so they are reserved for the same reason the pages they explain already
@@ -89,9 +88,9 @@ HUMAN_ONLY = (
     # The status emitter and the measured file it writes. Found unowned on
     # 9 Sep, on the commit that introduced them -- the sixth and seventh files
     # this gate had nothing to say about, and the same shape as cli.py and the
-    # package plumbing before them. docs/PROJECT_STATUS.md was already here;
-    # what produces it belongs here too, or the page is reserved and its source
-    # is not.
+    # package plumbing before them. The status page was already here; what
+    # produces it belongs here too, or the page is reserved and its source is
+    # not.
     "scripts/",
     "docs/status.json",
     # The recruiter-facing path and everything generated into it. Added 10 Sep
@@ -100,13 +99,8 @@ HUMAN_ONLY = (
     # beside it. Same argument as docs/status.json and scripts/ above -- a
     # reserved page whose source is not reserved is a page anyone can rewrite
     # one level down.
-    "docs/EXECUTIVE_SUMMARY.md",
-    # The research notes (11 Sep): the records read in words and the related
-    # work. A reading of the evidence is a claim, so it is reserved with the
-    # pages that make claims.
-    "docs/RESEARCH_NOTES.md",
-    # The portfolio case study: the same argument as the research notes and the
-    # executive summary. It reads the records as a narrative and names what the
+    # The portfolio case study: a reading of the evidence is a claim, so it is
+    # reserved with the pages that make claims. It reads the records as a narrative and names what the
     # project has and has not established, which is a claim about the evidence
     # rather than a description of the code.
     "docs/PORTFOLIO_CASE_STUDY.md",

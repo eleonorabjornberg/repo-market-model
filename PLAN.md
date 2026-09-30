@@ -18,7 +18,11 @@ with Nicholas Beroud, the project's advisor; the model, methodology and
 workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days
-and intraday nowcasting.
+and intraday nowcasting. "Next business day" means a forecast made at 16:00 on the
+business day before; the as-of information rule (`docs/decisions/information-set.md`),
+which reads each input at its latest value public at that instant, is being implemented.
+Every record published before it read each input about a week earlier
+(`docs/pivot/lag-assessment.md`).
 
 Primary targets:
 
@@ -154,7 +158,7 @@ pointing at `REPRODUCIBILITY.md`'s command list instead of naming the figures â€
 rewritten version was not true either. The original stands above because a criterion
 edited after the result is not a criterion, which is the same finding this repository
 records about a guard shaped to fit the thing it measures. What closes the gap is the
-rebuild described above. See `docs/PROJECT_STATUS.md` for what the benchmark does and
+rebuild described above. See `METHODOLOGY.md` ("Known limitations") for what the benchmark does and
 does not establish.
 
 ## Phase 2 â€” Forecasting benchmarks and probabilistic ML (in progress)
@@ -189,7 +193,7 @@ The evaluation machinery exists: rolling-origin folds behind a purge derived fro
 declared feature set, a common fitted-model forecast interface with more than one
 implementer, an event-holdout path, and the metric implementations. On the frozen
 panel, gradient-boosted quantiles and the trailing-window residual law beat persistence
-under CRPS at paired origins (`docs/PROJECT_STATUS.md`). Gradient-boosted quantiles'
+under CRPS at paired origins (`docs/runs/`). Gradient-boosted quantiles'
 nominal interval covers well under its nominal probability
 (`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
 calibrated in its interval; split-conformal calibration narrows the coverage gap without
