@@ -321,9 +321,7 @@ research directions, not completed features.
   of all machine-written code before it lands.
 - **Nicholas Beroud** — advisor on data selection and economic interpretation: which
   public series carry the funding market's mechanics, what each one means, and which
-  open questions are questions of finance rather than of code. I designed and led the
-  modelling, the methodology, the governance workflow, the implementation review and the
-  evaluation.
+  open questions are questions of finance rather than of code.
 
 The split matters to how this repository is read. Most of what is built here is data
 engineering and evaluation discipline, and those are the parts a test suite can
