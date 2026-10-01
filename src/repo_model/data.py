@@ -3083,11 +3083,11 @@ def build_daily_panel(
     the row with the greatest `available_at`. The cutoff is a property of the
     build and is returned so the manifest can record it.
 
-    **2. The join does not subtract the release lag. The purge does.** The
-    value at `ref_date` d is the value whose `ref_date` is d -- not the value
-    from d minus the source's lag. `splits.rolling_origin` and
-    `event_eval.evaluate_event_window` already hold the last training row a
-    full release lag clear of the scored day. A join that shifted values by
+    **2. The join does not subtract the release lag. The as-of read does.**
+    The value at `ref_date` d is the value whose `ref_date` is d -- not the
+    value from d minus the source's lag. `repo_model.asof` already reads each
+    field as of the decision instant, no earlier than its declared release
+    lag (it replaced the purge that used to do this). A join that shifted values by
     that lag as well would apply the gap twice: it would silently destroy
     training rows and move every reported number, while looking careful.
     `decision_time` is passed *through* to the pricing function and is never
@@ -3244,9 +3244,9 @@ def build_daily_panel(
 
     **By `ref_date`, not by availability.** The carried value is the one whose
     `ref_date` is nearest before, whether or not it was yet published on the
-    date it fills. That is rule 2, applied to a carry: the purge in
-    `splits.rolling_origin` already holds the last training row a full release
-    lag clear of the scored day, and a carry that also waited for its source's
+    date it fills. That is rule 2, applied to a carry: the as-of read in
+    `repo_model.asof` already reads each field no earlier than its declared
+    release lag, and a carry that also waited for its source's
     `available_at` would apply the gap twice. A35's brief required that and it
     was withdrawn for this reason. Like rule 8 and unlike rule 9, the carry adds
     no date to the grid; a date before the column's first observation stays a

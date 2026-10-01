@@ -16,15 +16,29 @@ keep one of its own.
 Declaring a phase complete is still a judgement and still a human's. It is now
 made once, by editing a heading in PLAN.md, instead of twice.
 
-The date is the commit date of HEAD, never today's date. A status page that can
-run ahead of the work it describes is the failure this repository exists to
-prevent, and that includes the copy of it published on a website.
+The date and commit are those of the latest commit that changed one of the
+file's inputs (`INPUTS`), never today's date and never the commit that records
+the file. A status page that can run ahead of the work it describes is the
+failure this repository exists to prevent, and that includes the copy of it
+published on a website.
+
+The file is regenerated inside the pull request that changes its inputs, not by
+a bot on `main` afterwards (directive 05, #50): a bot commit on `main` left
+every open branch one commit behind after each merge. A file cannot name the
+commit that contains it, so a pull request that changes an input commits the
+change first, then runs this script and commits `docs/status.json` on top.
+`--check` is what CI runs: it fails when the committed file is not what the
+inputs produce, which is also how a later commit to an input is caught.
+
+It reads git history, so it refuses a shallow clone rather than stamping a
+commit that only looks like the latest.
 
 Standard library only.
 
     python3 scripts/emit_status.py            # writes docs/status.json
-    python3 scripts/emit_status.py --check    # prints it, writes nothing
+    python3 scripts/emit_status.py --check    # writes nothing; fails if it is stale
 """
+import difflib
 import json
 import re
 import subprocess
@@ -172,9 +186,43 @@ def alongside(phases, number):
 ROOT = Path(__file__).resolve().parent.parent
 
 
+#: What docs/status.json is computed from, as git pathspecs. `docs/runs/*.json`
+#: is the top level only (the file lists those names, and `docs/runs/archive/`
+#: is not published); `glob` magic keeps `*` from crossing a `/`.
+INPUTS = (
+    "PLAN.md",
+    "pyproject.toml",
+    "metadata/events.json",
+    ":(glob)docs/runs/*.json",
+)
+
+
 def git(*args):
     return subprocess.run(("git",) + args, cwd=ROOT, capture_output=True,
                           text=True, check=True).stdout.strip()
+
+
+def input_stamp():
+    """The short sha and commit date of the latest commit that changed an input.
+
+    History is simplified the default way, so a merge commit that only brings
+    an input in from one side is skipped in favour of the commit that changed
+    it. Uncommitted edits to an input are refused: the stamp would name a commit
+    that does not carry them.
+    """
+    if git("rev-parse", "--is-shallow-repository") == "true":
+        raise PlanError("docs/status.json is stamped from git history, and this "
+                        "clone is shallow. Fetch the full history (in CI, "
+                        "actions/checkout with fetch-depth: 0).")
+    if git("status", "--porcelain", "--", *INPUTS):
+        raise PlanError("An input of docs/status.json has uncommitted changes. "
+                        "Commit them first, then emit: the file is stamped with "
+                        "the commit that changed its inputs.")
+    line = git("log", "-1", "--format=%H %cd", "--date=short", "--", *INPUTS)
+    if not line:
+        raise PlanError("No commit changes an input of docs/status.json.")
+    sha, date = line.split()
+    return sha[:7], date
 
 
 def dependency_count():
@@ -196,9 +244,10 @@ def main():
     require_exit(phase, "the current phase")
     following = phases[number + 1] if number + 1 < len(phases) else phase
 
+    commit, generated_at = input_stamp()
     status = {
-        "generated_at": git("log", "-1", "--format=%cd", "--date=short"),
-        "commit": git("rev-parse", "--short", "HEAD"),
+        "generated_at": generated_at,
+        "commit": commit,
         "phase": {"number": phase["number"], "name": phase["name"], "state": state},
         "alongside": alongside(phases, number),
         "next": {"number": following["number"], "name": following["name"],
@@ -215,10 +264,18 @@ def main():
     }
 
     text = json.dumps(status, indent=2, sort_keys=True) + "\n"
+    target = ROOT / "docs/status.json"
     if "--check" in sys.argv:
-        sys.stdout.write(text)
-        return
-    (ROOT / "docs/status.json").write_text(text, encoding="utf-8")
+        current = target.read_text(encoding="utf-8") if target.exists() else ""
+        if current == text:
+            print("docs/status.json agrees with its inputs at %s." % commit)
+            return
+        sys.stdout.writelines(difflib.unified_diff(
+            current.splitlines(True), text.splitlines(True),
+            "docs/status.json (committed)", "docs/status.json (from inputs)"))
+        sys.exit("docs/status.json is stale. Commit the inputs, then run "
+                 "python3 scripts/emit_status.py and commit the file.")
+    target.write_text(text, encoding="utf-8")
     print("wrote docs/status.json — phase %d of %d (%s), %s, at %s"
           % (phase["number"], len(phases) - 1, phase["name"], state,
              status["generated_at"]))

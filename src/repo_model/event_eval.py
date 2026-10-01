@@ -6,7 +6,7 @@ reporting:
 
 1. **Scoring holdout** -- crisis dates excluded from the headline metric but
    available for training once they are in the past. This is the deployable
-   model, and it is produced by `repo_model.splits.rolling_origin`.
+   model, and it is produced by the backtests in `repo_model.baseline`.
 2. **Knowledge holdout** -- crises stripped from training entirely, scored once
    per window. An extrapolation check, reported separately and never averaged
    into the main table. This module produces it, and produces nothing else.

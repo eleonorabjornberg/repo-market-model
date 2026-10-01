@@ -105,7 +105,7 @@ predict_stress(feature_row) -> exceedance vector aligned to metadata taus_bp
   full-sample percentile.
 - **Two holdout roles, never conflated.**
   - The scoring holdout: crisis dates excluded from the headline metric but available for training once past
-    (`rolling_origin`).
+    (the backtests in `repo_model.baseline`).
   - The knowledge holdout: crises stripped from training and scored once per window (`event_eval`), reported separately.
   Window boundaries live in `metadata/events.json`, each with a checksum verified through
   `contract.event_window_digest`.

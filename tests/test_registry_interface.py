@@ -50,7 +50,7 @@ What survives here is what only Track B can test, and none of it is shape:
   * that `max_release_lag_days` takes the maximum over the *named* sources
     rather than over the whole registry,
   * that each basis converts to the number the contract says it does,
-  * that the result is a type `require_purge_days` accepts,
+  * that the result is a plain int,
   * that the three silent-zero cases raise instead of returning a number.
 
 Nothing here computes a lag
@@ -104,11 +104,11 @@ neither was landing anywhere, so both are pinned here rather than in
 a review notice in CI, which is friction worth spending only when the assertion
 has to live there. These do not.
 
-  * **"Two registry corrections."** `validate_source_corrections` below, with
-    fixture tests that run today. `fields` becomes machine field names only with
-    prose moving to `coverage`, and `structural_zeros_reviewed` plus
-    `reviewed_note` make "reviewed and empty" distinguishable from "not yet
-    analyzed". The contract adopted both and assigned them to Track A.
+  * **"Two registry corrections."** These were pinned by a validator written
+    in this file, `validate_source_corrections`, and tests of that validator
+    alone; it was never applied to `metadata/sources.json`. Directive 05 (#50)
+    removed both. The registry's identity and structural-zero declarations are
+    checked against the real file by `test_contract.SourceRegistryTests`.
 
   * **The publication-gap check.** The contract says "a test asserts no observed
     publication gap exceeds the declared bound" in the passive voice, and the
@@ -465,24 +465,6 @@ class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
                                 "belongs to repo_model.registry",
                             )
 
-    def test_the_splitter_still_takes_purge_as_a_plain_int(self):
-        """The half of this that must *not* change.
-
-        The contract keeps the pinned semantics. If sizing the gap ever moved
-        into the splitter, this is what would have to be deleted first.
-        """
-
-        from repo_model.splits import require_purge_days, rolling_origin
-
-        self.assertEqual(
-            list(inspect.signature(rolling_origin).parameters),
-            ["dates", "min_train", "step", "purge"],
-        )
-        require_purge_days(3)
-        with self.assertRaises(Exception):
-            require_purge_days(3.0)
-
-
 
 # --------------------------------------------------------------------------
 # The interface Track A must satisfy
@@ -572,153 +554,21 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
         self.assertEqual(feature_set, 3)
         self.assertLess(feature_set, max(EXPECTED_LAG.values()))
 
-    def test_the_result_is_an_int_the_splitter_will_accept(self):
-        """`require_purge_days` rejects a float and rejects a bool.
+    def test_the_result_is_a_plain_int(self):
+        """A day count, never a float or a bool.
 
-        The two ends have to agree on the type or the handoff fails at the call
-        site, so the check is written against the real validator rather than
-        against `isinstance`.
+        This used to be checked against `splits.require_purge_days`, the
+        splitter's validator. The splitter was removed with the purge
+        (directive 05, #50), and what is left of the handoff is the type.
         """
 
         from repo_model.registry import max_release_lag_days
-        from repo_model.splits import require_purge_days
 
-        purge = max_release_lag_days(
+        lag = max_release_lag_days(
             FIXTURE_REGISTRY, ["daily_rate"], decision_time=DECISION_TIME
         )
-        self.assertIsInstance(purge, int)
-        self.assertNotIsInstance(purge, bool)
-        require_purge_days(purge)
-
-
-def validate_source_corrections(source):
-    """The "Two registry corrections" from the same contract section.
-
-    Separate from `validate_release_lag` because they are about the source entry
-    as a whole rather than about its lag declaration, and because they land on a
-    different schedule -- a registry can have correct lags and still record an
-    unreviewed `structural_zeros` as though it were a finding.
-    """
-
-    problems = []
-    if not isinstance(source, dict):
-        return [f"source must be an object, got {type(source).__name__}"]
-
-    fields = source.get("fields")
-    if not isinstance(fields, list) or not fields:
-        problems.append("'fields' must be a non-empty list of machine field names")
-    else:
-        for field in fields:
-            if not isinstance(field, str) or " " in field.strip():
-                problems.append(
-                    f"field {field!r} reads as prose; 'fields' is machine field "
-                    "names only, and the identity-subset check is meaningless "
-                    "unless it is"
-                )
-    if "coverage" not in source:
-        problems.append(
-            "no 'coverage'; human-readable coverage moved out of 'fields' and "
-            "has to land somewhere"
-        )
-
-    if "structural_zeros" not in source:
-        problems.append("no 'structural_zeros'")
-    if "structural_zeros_reviewed" not in source:
-        problems.append(
-            "no 'structural_zeros_reviewed'; an empty structural_zeros is not a "
-            "finding, and absence of evidence is not to be recorded as evidence "
-            "of absence"
-        )
-    elif not isinstance(source["structural_zeros_reviewed"], bool):
-        problems.append("'structural_zeros_reviewed' must be a bool")
-    elif source["structural_zeros_reviewed"] and not str(
-        source.get("reviewed_note", "")
-    ).strip():
-        problems.append(
-            "structural_zeros_reviewed is true with no 'reviewed_note'; the note "
-            "is what makes the claim checkable"
-        )
-
-    return problems
-
-
-class RegistryCorrectionsTests(unittest.TestCase):
-    """The validator for "Two registry corrections", exercised on fixtures.
-
-    Runs today. The corrections are Track A's to apply to
-    `metadata/sources.json`; what this pins is what "applied" means, so that
-    "reviewed" cannot be recorded by leaving a key empty.
-    """
-
-    WELL_FORMED = {
-        "fields": ["IORB", "WRESBAL"],
-        "coverage": "Reserve balances and the interest-on-reserves rate.",
-        "structural_zeros": [],
-        "structural_zeros_reviewed": True,
-        "reviewed_note": "No structural zeros: both series are strictly positive.",
-    }
-
-    def assertRejected(self, source, fragment):
-        problems = validate_source_corrections(source)
-        self.assertTrue(problems, msg=f"expected a problem mentioning {fragment!r}")
-        self.assertTrue(
-            any(fragment in problem for problem in problems),
-            msg=f"no problem mentioned {fragment!r}; got {problems}",
-        )
-
-    def test_a_corrected_source_validates(self):
-        self.assertEqual(validate_source_corrections(self.WELL_FORMED), [])
-
-    def test_prose_in_fields_is_rejected(self):
-        """Today's registry has "revision indicator" and "portfolio holdings"."""
-
-        self.assertRejected(
-            dict(self.WELL_FORMED, fields=["rate", "revision indicator"]),
-            "reads as prose",
-        )
-
-    def test_a_source_without_coverage_is_rejected(self):
-        source = dict(self.WELL_FORMED)
-        del source["coverage"]
-        self.assertRejected(source, "no 'coverage'")
-
-    def test_an_unreviewed_empty_structural_zeros_is_not_a_finding(self):
-        """The correction's whole point.
-
-        An empty list plus no review means "not yet analyzed", and contract test
-        5 stays a stand-in for that source. Recording it as a finding would be
-        absence of evidence written down as evidence of absence.
-        """
-
-        source = dict(self.WELL_FORMED)
-        del source["structural_zeros_reviewed"]
-        self.assertRejected(source, "not a finding")
-
-    def test_a_review_claim_without_a_note_is_rejected(self):
-        self.assertRejected(
-            dict(self.WELL_FORMED, reviewed_note="   "), "no 'reviewed_note'"
-        )
-
-    def test_an_unreviewed_source_may_omit_the_note(self):
-        """"Not yet analyzed" is a legitimate state to be in, honestly recorded."""
-
-        self.assertEqual(
-            validate_source_corrections(
-                dict(self.WELL_FORMED, structural_zeros_reviewed=False, reviewed_note="")
-            ),
-            [],
-        )
-
-
-# `PublicationGapTests` was here until 8 September 2026. It is now
-# `RealSnapshotPublicationGapTests` in `tests/test_data.py`, moved under the standing
-# invitation in its own docstring: Track A owns the panel and the registry, so Track A
-# sites the check. Two things were wrong with it in place, both recorded at the new
-# site. It called `load_point_in_time_panel()` with no arguments against an
-# implementation that requires a `path`, and its `expectedFailure` marker made that
-# `TypeError` read as "waiting on real snapshots" for the whole time it existed. And
-# the bound it checks cannot fail for any source now in the registry, because their
-# `available_at` is derived from that same declaration rather than observed.
+        self.assertIsInstance(lag, int)
+        self.assertNotIsInstance(lag, bool)
 
 
 class RegistryModuleTests(unittest.TestCase):

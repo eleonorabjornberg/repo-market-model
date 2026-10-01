@@ -1,7 +1,7 @@
 """Tests for `repo_model.baseline`.
 
 The purged rolling-origin benchmark, the models it scores, and the artifact it
-publishes. The splitter itself is `tests/test_splits.py`; the knowledge-holdout
+publishes. The splitter it used was removed with the purge (#50); the knowledge-holdout
 evaluator that shares this module's gap derivation is `tests/test_event_eval.py`.
 
 The field-priced purge (8 September 2026)
@@ -420,7 +420,7 @@ from repo_model.contract import (
 from repo_model.data import DailyObservation, load_daily_panel
 from repo_model.asof import StaleReadError
 from repo_model.registry import RegistryContractError
-from repo_model.splits import LookAheadError, SplitError, rolling_origin
+from repo_model.splits import LookAheadError, SplitError
 
 # The package walk `ForecastInterfaceCoverageTests` already discovers through,
 # imported rather than written a second time: two walks would be two definitions
@@ -606,6 +606,27 @@ def on_consecutive_days(rows):
     ]
 
 
+def gap_folds(dates, minimum_history, purge):
+    """The folds a backtest at a `purge`-day gap scores, one day per fold.
+
+    A reference, written out here rather than read from the code. It used to be
+    `splits.rolling_origin(dates, minimum_history, 1, purge)`; the splitter was
+    removed with the purge (directive 05, #50), and these tests compare the
+    as-of backtest against the folds a gap of that size would give. A row is
+    trainable for the day at `start` when it is more than `purge` calendar days
+    before it; the first fold is the first day with `minimum_history` such rows.
+    """
+
+    folds = []
+    for start in range(len(dates)):
+        train = tuple(
+            index for index in range(start) if (dates[start] - dates[index]).days > purge
+        )
+        if folds or len(train) >= minimum_history:
+            folds.append((train, (start,)))
+    return folds
+
+
 def at_gap(rows, *, purge, features=FEATURES, **kwargs):
     """`rolling_persistence_backtest` at a pinned gap, for tests about other things.
 
@@ -763,7 +784,7 @@ class FittedPersistenceTests(unittest.TestCase):
         # test restating the splitter's arithmetic instead of checking against
         # it.
         last_train, _ = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
+            gap_folds([row.date for row in rows], self.MINIMUM_HISTORY, 1)
         )[-1]
         self.assertEqual(report.model.cutoff, rows[last_train[-1]].date)
 
@@ -1707,7 +1728,7 @@ class RollingBacktestTests(unittest.TestCase):
         self.assertIsInstance(report.model, FittedArx)
         self.assertEqual(report.model.regressors, REGRESSORS)
         last_train, _ = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
+            gap_folds([row.date for row in rows], self.MINIMUM_HISTORY, 1)
         )[-1]
         self.assertEqual(report.model.cutoff, rows[last_train[-1]].date)
 
@@ -1716,7 +1737,7 @@ class RollingBacktestTests(unittest.TestCase):
         # `rows[index - 1]` any more, and holding on to that arithmetic would
         # compare the purged backtest against an unpurged expectation.
         folds = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
+            gap_folds([row.date for row in rows], self.MINIMUM_HISTORY, 1)
         )
         for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
             model = fit_arx(
@@ -1784,7 +1805,7 @@ class RollingBacktestTests(unittest.TestCase):
         # The persistence point rule is still the last observed spread, read off
         # the model rather than off the feature row but identical to it.
         folds = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
+            gap_folds([row.date for row in rows], self.MINIMUM_HISTORY, 1)
         )
         for forecast, (train_indices, _) in zip(default.forecasts, folds):
             # The last row that cleared the gap, which under a purge is not the
@@ -4626,9 +4647,7 @@ class RollingExceedanceTests(unittest.TestCase):
 
         dates = [row.date for row in self.rows]
         reference = []
-        for train_indices, _test in rolling_origin(
-            dates, self.MINIMUM_HISTORY, 1, purge
-        ):
+        for train_indices, _test in gap_folds(dates, self.MINIMUM_HISTORY, purge):
             history = [self.rows[i].spread_bps for i in train_indices]
             reference.append(sum(1 for v in history if v > tau) / len(history))
         return reference

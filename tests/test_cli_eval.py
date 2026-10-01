@@ -3826,19 +3826,14 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
 
 
 class SeamTests(unittest.TestCase):
-    """The property "Decided: who owns the CLI" was written to get."""
+    """Each evaluation subcommand reaches its own handler in `cli_eval`.
 
-    def test_adding_the_subcommand_required_no_edit_to_the_dispatcher(self):
-        dispatcher = inspect.getsource(cli)
-        for name in ("event-holdout", "event_holdout",
-                     "exceedance-backtest", "exceedance_backtest"):
-            self.assertNotIn(name, dispatcher)
-
-    def test_the_dispatcher_nevertheless_offers_it(self):
-        parser = cli.build_parser()
-        command = next(a for a in parser._actions if a.dest == "command")
-        self.assertIn("event-holdout", command.choices)
-        self.assertIn("exceedance-backtest", command.choices)
+    That the dispatcher registers no subcommand itself, and that every
+    subcommand's handler comes from a registration module, is
+    `test_contract.CommandLineDispatcherTests`. Two tests that restated it here
+    by text search were removed as duplicates (directive 05, #50). What is left
+    is the one thing those do not check: which function handles each command.
+    """
 
     def test_the_second_track_b_subcommand_landed_the_same_way(self):
         """The property is not that the file got an owner once.
