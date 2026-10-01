@@ -40,12 +40,11 @@ Five controls hold the evidence together:
 - **Point-in-time availability.** Every field declares its own release lag and, where the
   instant is earlier than the end-of-day convention, the evidence for it. An earlier instant is
   the only direction the declaration can leak in, so it is the one that must carry provenance.
-- **A derived purge.** The gap between training and scored data is computed from the declared
-  lags of the features in use, never chosen by hand — which means the forecast is made from a
-  feature row several business days before the day it is scored on, not from yesterday's close.
-  That was a finding, not a feature: the published forecasts were about a week stale. The as-of
-  information rule, which reads each input at its latest value public at the decision instant,
-  is being implemented, and every figure here is re-scored under it
+- **An as-of information rule.** Each input is read at its latest value public at the decision
+  instant, field by field, with leakage and staleness guards both holding. It replaced a derived
+  purge that made every forecast from a feature row several business days old: the published
+  forecasts were about a week stale. That was a finding, not a feature. Every figure here is
+  re-scored under the as-of rule, and the earlier records are archived
   ([`pivot/lag-assessment.md`](pivot/lag-assessment.md)).
 - **Typed absence.** A missing value, a declared structural zero, an excluded cross-section and
   a withheld field are four different things, each carrying its reason into the record.
@@ -56,8 +55,9 @@ Five controls hold the evidence together:
 
 ## Analytical approach
 
-Models are scored by purged rolling-origin backtesting: train on an expanding window, forecast
-across the derived gap, score, advance. September 2019 and March 2020 are frozen as knowledge
+Models are scored by as-of rolling-origin backtesting: train on an expanding window of what was
+public at each decision instant, forecast the next business day, score, advance, refitting every
+21 scored days on one shared fold grid. September 2019 and March 2020 are frozen as knowledge
 holdouts, so no model is tuned on the episodes it exists to warn about.
 
 Five model families sit behind one interface — persistence, ARX, threshold regression,
@@ -81,31 +81,27 @@ a co-owner of the code.
 ## Results and limitations
 
 **The machine-learning model beats the benchmark on average.** Gradient-boosted quantile
-regression scores a better CRPS than persistence across thousands of scored days, with the
-paired difference clear of zero. Autoregressive, regime-switching and volatility-feature
-challengers did not.
+regression scores a better CRPS than as-of persistence across thousands of scored days, with the
+paired difference clear of zero, uncalibrated and cross-conformal alike. The win is not uniform:
+every variant loses to persistence in 2021-23, and the uncalibrated model loses on quarter ends.
 
-**Calibration did not have to cost that edge.** The uncalibrated model's intervals are far too
-narrow. Split-conformal calibration repairs the coverage and surrenders the accuracy win.
-Cross-conformal calibration, which keeps the whole fitted model, holds the stated coverage and
-keeps a distinguishable win.
+**Calibration is a trade, not a free repair.** The uncalibrated model's intervals are far too
+narrow. Cross-conformal calibration, which keeps the whole fitted model, widens them past the
+stated coverage and keeps a smaller but distinguishable win over persistence.
 
-**The tail is where it fails, and that is the finding.** Scored against a climatology at
-pre-declared stress thresholds, the model has skill at the smallest threshold and is beaten at
-the larger ones, each interval clear of zero. The part of the score that comes from
-distinguishing one day from another falls to nothing at the largest, and at that threshold the
-record reports no log score at all, because the forecast assigned probability zero to an event
-that occurred and the record refuses to replace an infinite loss with a finite one somebody
-chose.
+**The tail is where it fails, and that is the finding.** Against a climatology at pre-declared
+stress thresholds, the model has skill at the two smaller thresholds and is beaten at the two
+larger ones, each interval clear of zero. Against the harder benchmark, a persistence-logistic
+model on the latest public spread, it is not distinguishable at either threshold the two are
+compared on, so it does not earn the headline pressure probability. At several thresholds the record reports no log score
+at all, because the forecast assigned probability zero to an event that occurred and the record
+refuses to replace an infinite loss with a finite one somebody chose.
 
-**The cause is structural, and was measured rather than argued.** The same flattening appears
-in a linear autoregression scored identically, so it is a property of this target at these
-thresholds and not of the learner. Reading the fitted predictive law's own knots back, fold by
-fold, shows why: above its highest fitted quantile the law is a single straight segment running
-to the largest residual it has ever seen, and every declared stress threshold is read inside
-that segment on the great majority of folds. A straight line carries no shape, so the
-probabilities it returns barely move with the inputs. Where the model should discriminate, it
-is interpolating.
+**The verdict.** The exit criterion — beat persistence out of sample and stay calibrated in the
+tails — is met on the first half and fails on the second, on the as-of records
+([`../PLAN.md`](../PLAN.md)). The earlier diagnosis of why the tail flattens, read from the
+fitted law's knots, was made on the archived records and has not been re-measured under the
+as-of rule.
 
 Nothing here is live forward performance: every result is a backtest on a frozen panel, and no
 part of this is a basis for a decision about money.

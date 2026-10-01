@@ -12,18 +12,18 @@ Treasury securities: the repo market. On most days the rate on that cash, SOFR, 
 Federal Reserve pays banks on their reserves, IORB. On some days — tax dates, large Treasury settlements, month- and
 quarter-ends, above all when reserves are getting scarce — spare cash runs short and SOFR jumps above it, as it did in
 September 2019. This project asks one question of public data only, using only what was public at 4 pm the day before:
-**what is the chance that tomorrow SOFR is at least 5 basis points above IORB?** It is an academic and portfolio
+**what is the chance that tomorrow SOFR is more than 5 basis points above IORB?** It is an academic and portfolio
 project, built to show how such a forecast can be made and tested without borrowing from the future.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/overview-dark.svg">
-  <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is at least 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
+  <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is more than 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
 </picture>
 
 **Status, honestly.**
 1. Every published result is scored under the as-of information rule: each input is read at its latest value public at 4 pm the day before ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)). The earlier records read every input about a week late ([`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md)) and are archived in [`docs/runs/archive/pre-asof/`](docs/runs/archive/pre-asof).
 2. The data layer is unaffected: the panel rebuilds from tracked files, verifies against its published digest, and its leakage guards stand.
-3. The verdicts reached on the stale design are re-opened. The figures below are measurements, paired against their benchmarks and split by regime and type of day; none of them is restated as a verdict here.
+3. Phase 2's verdict is made again on the as-of records: the model beats persistence out of sample, and the tail clause fails ([`PLAN.md`](PLAN.md), [#73](https://github.com/eleonorabjornberg/repo-market-model/issues/73)). The figures below are measurements, paired against their benchmarks and split by regime and type of day.
 
 [`notebooks/00_overview.ipynb`](notebooks/00_overview.ipynb) is the tour: it rebuilds and verifies the panel, shows the
 data by year, reproduces the lag finding, and scores the pressure-probability baselines, in under a minute on Colab.
@@ -45,7 +45,7 @@ data by year, reproduces the lag finding, and scores the pressure-probability ba
 - Its uncertainty bands are **too narrow**: a band meant to contain the outcome 90% of the time contained it 85.7% of the time, and resampling the same history does not reach 90%.
 - The scoring itself has been checked against a case where the right answer is known in advance: a forecast with no information in it scores **0.000 skill**, exactly as it must. Every later claim of skill rests on that.
 
-**Every result below is paired against its benchmark and split by regime and by type of day, and none of it is yet a verdict.** The earlier verdicts were reached on inputs about a week old and are re-opened. Nothing here is a basis for a decision about money.
+**Every result below is paired against its benchmark and split by regime and by type of day.** Phase 2's verdict on these records is in [`PLAN.md`](PLAN.md). Nothing here is a basis for a decision about money.
 
 <!-- end generated: headline -->
 
@@ -57,8 +57,8 @@ data by year, reproduces the lag finding, and scores the pressure-probability ba
 
 Every figure here is scored under the as-of information rule
 (`docs/decisions/information-set.md`). The records scored under the earlier purge
-rule are archived in `docs/runs/archive/pre-asof/`, and the verdicts reached on them
-are re-opened (`docs/pivot/lag-assessment.md` §4): none is restated here.
+rule are archived in `docs/runs/archive/pre-asof/` (`docs/pivot/lag-assessment.md` §4).
+Phase 2's verdict, made again on these as-of records, is in `PLAN.md`.
 
 **Target.** The next-business-day value of the panel field `spread_bps` — the SOFR
 to IORB spread in basis points — forecast at 16:00 on the previous business day from
