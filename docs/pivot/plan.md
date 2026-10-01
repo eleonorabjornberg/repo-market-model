@@ -116,7 +116,7 @@ Each step is one directive. Briefs are in [`directives/`](directives).
 
 1. **The as-of information set:** [`01`](directives/01-as-of-information-set.md).
 2. **Streamline the front door:** done, PR #24.
-3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md), after step 1 merges.
+3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md): done in the directive 03 pull request (#27). Records refit every 21 scored days, the two pressure-probability benchmarks scored and paired, every result split by regime and pressure-day type (`metadata/evaluation_splits.json`, provisional), the purge-rule records archived in `docs/runs/archive/pre-asof/`.
 4. **Retire the legacy ownership gates:** [`04`](directives/04-retire-legacy-gates.md): done, PR #30.
 5. **Review CI and the test suite:** [`05`](directives/05-review-ci-and-tests.md), after 04.
 6. **Pressure model v1 and the scarcity indicator**, after step 3.

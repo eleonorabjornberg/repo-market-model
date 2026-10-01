@@ -216,7 +216,9 @@ PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
   --feature spread_bps \
   --decision-time 16:00 \
   --model persistence \
-  --minimum-history 20 \
+  --minimum-history 61 \
+  --refit-every 21 \
+  --splits metadata/evaluation_splits.json \
   --report /tmp/persistence_funding.json
 ```
 

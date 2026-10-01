@@ -51,10 +51,10 @@ LEVEL = 0.90
 TARGET = 0.05
 
 CELLS = (
-    ("conformal", "share .35", "docs/runs/backtest_gbm_conformal_share035_mh61.json"),
-    ("conformal_asymmetric", "share .35", "docs/runs/backtest_gbm_conformal_asymmetric_share035_mh61.json"),
-    ("cross_conformal", "5 folds", "docs/runs/backtest_gbm_cross_conformal_mh61.json"),
-    ("cross_conformal_asymmetric", "5 folds", "docs/runs/backtest_gbm_cross_conformal_asymmetric_mh61.json"),
+    ("conformal", "share .35", "docs/runs/archive/pre-asof/backtest_gbm_conformal_share035_mh61.json"),
+    ("conformal_asymmetric", "share .35", "docs/runs/archive/pre-asof/backtest_gbm_conformal_asymmetric_share035_mh61.json"),
+    ("cross_conformal", "5 folds", "docs/runs/archive/pre-asof/backtest_gbm_cross_conformal_mh61.json"),
+    ("cross_conformal_asymmetric", "5 folds", "docs/runs/archive/pre-asof/backtest_gbm_cross_conformal_asymmetric_mh61.json"),
 )
 
 

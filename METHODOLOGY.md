@@ -32,15 +32,15 @@ outcomes are SOFR dispersion, volume, and a pre-declared stress indicator. The h
 target is the probability that the spread is at least +5 bp (and +10 bp) on the scored
 day.
 
-**The information set is being corrected.** "Next-day" means a forecast made at 16:00 on
-the business day before the scored day. The records published so far did not use what
-was public at that instant: every input was read at the row dated at least seven
-calendar days earlier, which never leaks and is about a week stale. The as-of
-information rule ([`docs/decisions/information-set.md`](docs/decisions/information-set.md))
-reads each input at its latest value public at the decision instant, and it is being
-implemented. Until the re-score is published, every model figure in this repository
-measures the stale design; [`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md)
-has the finding and its reach.
+**The information set.** "Next-day" means a forecast made at 16:00 on the business day
+before the scored day. The as-of information rule
+([`docs/decisions/information-set.md`](docs/decisions/information-set.md)) reads each
+input at its latest value public at that instant, and the records in `docs/runs/` are
+scored under it. The records published before it read every input at the row dated at
+least seven calendar days earlier, which never leaks and is about a week stale; they are
+archived in `docs/runs/archive/pre-asof/`, and the readings of them below are readings of
+that stale design. [`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md) has the
+finding and its reach.
 
 ## Claims the first version may support
 

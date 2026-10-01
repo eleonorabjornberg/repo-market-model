@@ -45,7 +45,7 @@ from repo_model import splits  # noqa: E402
 # day runs off the panel is reported late rather than skipped.
 NEVER_ON_THIS_PANEL = datetime.max
 
-DEFAULT_RECORD = "docs/runs/backtest_gbm_cross_conformal_mh61.json"
+DEFAULT_RECORD = "docs/runs/archive/pre-asof/backtest_gbm_cross_conformal_mh61.json"
 DEFAULT_PANEL = "data/processed/funding_panel.csv"
 
 
