@@ -19,10 +19,10 @@ workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days
 and intraday nowcasting. "Next business day" means a forecast made at 16:00 on the
-business day before; the as-of information rule (`docs/decisions/information-set.md`),
-which reads each input at its latest value public at that instant, is being implemented.
-Every record published before it read each input about a week earlier
-(`docs/pivot/lag-assessment.md`).
+business day before, reading each input at its latest value public at that instant: the
+as-of information rule (`docs/decisions/information-set.md`). Every record in `docs/runs/`
+is scored under it. The records published before it read each input about a week earlier
+(`docs/pivot/lag-assessment.md`) and are archived in `docs/runs/archive/pre-asof/`.
 
 Primary targets:
 
@@ -189,42 +189,32 @@ Evaluation:
 - event holdouts including September 2019, March 2020, tax dates, Treasury
   settlements, and reporting dates.
 
-The evaluation machinery exists: rolling-origin folds behind a purge derived from the
-declared feature set, a common fitted-model forecast interface with more than one
-implementer, an event-holdout path, and the metric implementations. On the frozen
-panel, gradient-boosted quantiles and the trailing-window residual law beat persistence
-under CRPS at paired origins (`docs/runs/`). Gradient-boosted quantiles'
-nominal interval covers well under its nominal probability
-(`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
-calibrated in its interval; split-conformal calibration narrows the coverage gap without
-closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`);
-cross-conformal calibration, keeping the full fit, covers a little more than nominal and
-keeps a distinguishable accuracy win, while its upper tail stays worse than persistence's
-(`docs/runs/backtest_gbm_cross_conformal_mh61.json`). The ARX forecast as a gbm feature is
-built and not yet scored. Its exceedance probabilities have now been scored in the
-tails against a climatology refitted on each fold
-(`docs/runs/exceedance_gbm_mh61.json`, and the generated tail section of `README.md`):
-the conditional model carries skill at the lowest declared threshold and none above it,
-and at the highest it is beaten by climatology. No conditional predictor has yet been
-scored against climatology on a knowledge-holdout window.
+The evaluation machinery exists: as-of rolling-origin folds on one grid, refitted every 21
+scored days, a common fitted-model forecast interface with more than one implementer, an
+event-holdout path, the metric implementations, the two pressure benchmarks
+(calendar-type climatology and persistence-logistic) and splits of every result by
+provisional regime and pressure-day type. Under the as-of rule (#27), on the panel at
+paired origins: gradient-boosted quantiles, uncalibrated and cross-conformally
+calibrated, and the trailing-window residual law beat persistence under CRPS;
+split-conformal calibration loses to it (`compare_persistence_vs_*_crps.json`). The
+uncalibrated model's nominal 90% interval covers well under 90%
+(`backtest_gbm_mh61.json`); the cross-conformal one covers above it
+(`backtest_gbm_cross_conformal_mh61.json`). The conditional model's exceedance
+probabilities carry skill against a climatology refitted on each fold at 5 and 10 bp and
+are beaten by it at 20 and 50 bp (`exceedance_gbm_mh61.json`, and the generated tail
+section of `README.md`). The figures are in the generated sections of `README.md`. No
+conditional predictor has yet been scored against climatology on a knowledge-holdout
+window.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
 
-**Verdict: hers.** The exit criterion is recorded met on the interval evidence. The
-cross-conformally calibrated model keeps a distinguishable accuracy win over persistence
-at paired origins and holds its declared interval probability
-(`docs/runs/backtest_gbm_cross_conformal_mh61.json`), and the purge that separates its
-training rows from its scored day has been measured against the sources' own publication
-schedules rather than argued (`docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated
-against the target date"). Two parts of the criterion's tail clause are named rather than
-scored and stay open under this heading. The first, exceedance probabilities in the
-tails, is now measured and **fails**: skill sits at the shoulder and the forecasts stop
-carrying information where the criterion asks them to, which is a published negative
-result rather than a gap (`docs/runs/exceedance_gbm_mh61.json`). The second, a
-conditional predictor against climatology on a knowledge-holdout window, is still
-unscored. The heading stays *in progress* for both, and no Phase 3 work has begun. Exit-criterion verdicts are
-the human's; this page records hers, and the evidence above is what it rests on.
+**Verdict: hers, and open again.** On the records scored under the earlier rule, now
+archived, the exit criterion was recorded met on the interval evidence and its tail
+clause was measured to fail. Those records do not measure a next-day forecast, so the
+verdict is not restated here. Whether the as-of evidence above meets the criterion is
+Eleonora's to rule. The heading stays *in progress*, and no Phase 3 work has begun.
+Exit-criterion verdicts are the human's; this page records hers.
 
 ## Phase 3 — Latent reserves and payment needs
 
@@ -335,8 +325,7 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    exceedance curve flattens across thresholds -- the measurement is published and the
    explanation is not -- and a conditional model scored against climatology on the
    declared knowledge holdouts. A model change comes after the diagnosis, not instead of
-   it. The interval half of the criterion is recorded met above; the measured tail half
-   fails, and these two are what keep the phase open.
+   it. The verdict on the criterion awaits Eleonora's ruling on the as-of evidence.
 5. **Phases 3 and 4.**
 6. **Decision point**, then Phases 5 through 7 or a stop.
 

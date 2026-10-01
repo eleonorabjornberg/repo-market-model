@@ -7,10 +7,12 @@ calendar-type climatology and a persistence-logistic model -- and every result i
 split by regime and by pressure-day type. Neither benchmark existed, nor did any
 split.
 
-Written first and watched failing on `origin/main` (`cd3915f`): the module failed to
-import, `ImportError: cannot import name 'month_end' from 'repo_model.data'`, and
-once `data.month_end` and `strata` existed, on `ImportError: cannot import name
-'calendar_climatology_exceedance' from 'repo_model.baseline'`.
+Written first and watched failing. On `origin/main` (`cd3915f`) the module fails to
+import, `ImportError: cannot import name 'strata' from 'repo_model'`. Once
+`data.month_end` and `strata` existed, it failed on `ImportError: cannot import name
+'calendar_climatology_exceedance' from 'repo_model.baseline'`. Once the predictors
+existed, the record tests failed on `TypeError: exceedance_backtest_document() got an
+unexpected keyword argument 'benchmarks'` and `KeyError: 'by_day_type'`.
 
 The panels here are weekday panels in 2025-26 read under the tracked registry,
 as in `tests/test_asof.py`, so every as-of read is the one the published runs make.

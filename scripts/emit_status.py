@@ -187,7 +187,7 @@ def dependency_count():
 
 
 def main():
-    manifest = json.loads((ROOT / "docs/runs/funding_panel.manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "metadata/funding_panel_manifest.json").read_text(encoding="utf-8"))
     events = json.loads((ROOT / "metadata/events.json").read_text(encoding="utf-8"))
 
     phases = parse_plan((ROOT / "PLAN.md").read_text(encoding="utf-8"))

@@ -351,7 +351,11 @@ class UnavailableMetricTests(unittest.TestCase):
     def test_a_metric_the_record_declares_unavailable_keeps_its_reason(self):
         generator, record = self._record()
         taus = record["metrics"]["by_tau"]
-        key = min(taus, key=float)          # the one that does carry a log score
+        # A threshold that does carry a log score. On the purge-rule record
+        # that was the lowest; on the as-of record (#27) the lowest withholds
+        # it too, so the first that carries one is taken.
+        key = next((k for k in sorted(taus, key=float) if "log_score" in taus[k]),
+                   min(taus, key=float))
         entry = taus[key]
         self.assertIn("log_score", entry,
                       "this guard needs a threshold whose log score exists, so that "

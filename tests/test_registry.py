@@ -835,6 +835,12 @@ class RegistryProseAgainstTrackedSidecarsTests(unittest.TestCase):
 
 TRACKED_RUNS = REPO_ROOT / "docs" / "runs"
 
+#: The records scored under the purge rule, archived by #27. The purge-price
+#: records below (A43, A45, A46) measured what a column would cost those
+#: records' purge; the as-of records carry no purge, so the measurement is read
+#: against the records it was made on.
+PURGE_RULE_RUNS = TRACKED_RUNS / "archive" / "pre-asof"
+
 
 class CandidateColumnPairingRecordTests(unittest.TestCase):
     """A42: four candidate columns priced, and why the paired-evidence gate was not built.
@@ -954,7 +960,9 @@ class CandidateColumnPairingRecordTests(unittest.TestCase):
                 "kind": sorted(record),
                 "holdout_role": record.get("holdout_role"),
                 "declaration": declaration,
-                "purge_days": record["derived"]["purge_days"],
+                # The purge under the earlier rule; under the as-of rule (#27)
+                # there is none, and the refit cadence is in `declaration`.
+                "purge_days": record["derived"].get("purge_days"),
                 "panel": record["panel"]["sha256"],
             },
             sort_keys=True,
@@ -1229,7 +1237,7 @@ class DffFirstPrintRecordTests(unittest.TestCase):
         registry = json.loads(TRACKED_REGISTRY.read_text(encoding="utf-8"))
         declared = self._declaration(registry)
 
-        record = json.loads((TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
+        record = json.loads((PURGE_RULE_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
         hour, minute = record["declaration"]["decision_time"].split(":")
         decision_time = time(int(hour), int(minute))
         published = [tuple(name.split(".", 1)) for name in record["derived"]["fields"]]
@@ -1630,7 +1638,7 @@ class OnRrpRoutesRecordTests(unittest.TestCase):
         # A46: the correction is free. The published funding record's purge is
         # what this registry prices over the fields that record declares.
         record = json.loads(
-            (TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8")
+            (PURGE_RULE_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8")
         )
         hour, minute = record["declaration"]["decision_time"].split(":")
         self.assertEqual(
@@ -1802,7 +1810,7 @@ class WlrraolFirstPrintRecordTests(unittest.TestCase):
             f"assertion to edit",
         )
 
-        record = json.loads((TRACKED_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
+        record = json.loads((PURGE_RULE_RUNS / self.FUNDING_RECORD).read_text(encoding="utf-8"))
         hour, minute = record["declaration"]["decision_time"].split(":")
         decision_time = time(int(hour), int(minute))
         published = [tuple(name.split(".", 1)) for name in record["derived"]["fields"]]

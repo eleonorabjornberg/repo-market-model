@@ -445,12 +445,15 @@ def labelled(declarations):
             continue
         sets = [set(require(declarations[i], "features")) for i in group]
         shared = set.intersection(*sets)
+        # One record of a group may declare only the shared features: it keeps
+        # the plain label. Two that cannot be told apart are refused.
+        if sum(1 for features in sets if not features - shared) > 1:
+            raise RecordError("two records declare the same model, settings and "
+                              "features: %s" % label)
         for i, features in zip(group, sets):
             own = sorted(features - shared)
-            if not own:
-                raise RecordError("two records declare the same model, settings and "
-                                  "features: %s" % label)
-            labels[i] = "%s with %s" % (label, ", ".join("`%s`" % f for f in own))
+            if own:
+                labels[i] = "%s with %s" % (label, ", ".join("`%s`" % f for f in own))
     return labels
 
 
@@ -801,7 +804,7 @@ def headline(persistence, exceedance):
     beating = [label for label, record in challenger_records()
                if record["comparison"]["mean_difference_interval"]["lower"] > 0]
     lines.append("- %d of %d challenger models score better than the benchmark over the "
-                 "same decision points, with an interval that excludes no difference."
+                 "same decision points, with an interval that excludes zero."
                  % (len(beating), len(challenger_records())))
     lines.append("")
     lines.append("**Every result is also broken down by period and by type of day below, "
