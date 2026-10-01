@@ -5981,11 +5981,9 @@ class CalendarColumnTests(unittest.TestCase):
 
     * 2019-03-29, a Friday, is the last grid date of a quarter whose last
       calendar day, 2019-03-31, is a Sunday: `days_to_month_end` 2, and since
-      #44 `quarter_end` 1.0 -- the last business day of the quarter on the
-      panel's own grid. This grid is sparse, so every quarter it leaves reads
-      1.0 on its last grid date (2018-04-20, 2019-04-19, 2019-11-01,
-      2020-02-28, ...), and the quarter it never leaves, 2024's second, reads
-      no 1.0. `QuarterEndBusinessDayTests` pins the rule on a dense grid.
+      #44 `quarter_end` 1.0, the quarter's last weekday not in the market
+      holiday table. 2019-09-30, a Monday, is the quarter's last calendar day
+      and its last business day. `QuarterEndMarketHolidayTests` pins the rule.
     * February: 2019-02-01 reads 27 and 2019-02-28 reads 0; 2020-02-28 reads 1,
       because 2020 is a leap year. 2019-10-01 and 2019-11-01 are the first days
       of a 31-day and a 30-day month.
@@ -6059,12 +6057,10 @@ class CalendarColumnTests(unittest.TestCase):
     CALENDAR = ("quarter_end", "tax_date", "days_to_month_end")
 
     #: date -> (quarter_end, tax_date, days_to_month_end), from the definitions.
-    #: `quarter_end` is read on this grid: 1.0 on the last grid date of each
-    #: quarter the grid leaves.
     EXPECTED = {
         date(2019, 2, 1): (0.0, 0.0, 27.0),
         date(2019, 2, 28): (0.0, 0.0, 0.0),
-        date(2020, 2, 28): (1.0, 0.0, 1.0),
+        date(2020, 2, 28): (0.0, 0.0, 1.0),
         date(2019, 3, 29): (1.0, 0.0, 2.0),
         date(2019, 4, 1): (0.0, 0.0, 29.0),
         date(2019, 9, 13): (0.0, 0.0, 17.0),
@@ -6074,25 +6070,25 @@ class CalendarColumnTests(unittest.TestCase):
         date(2019, 9, 19): (0.0, 0.0, 11.0),
         date(2019, 9, 30): (1.0, 0.0, 0.0),
         date(2019, 10, 1): (0.0, 0.0, 30.0),
-        date(2019, 11, 1): (1.0, 0.0, 29.0),
+        date(2019, 11, 1): (0.0, 0.0, 29.0),
         # Emancipation Day moves the deadline.
         date(2018, 4, 16): (0.0, 0.0, 14.0),
         date(2018, 4, 17): (0.0, 1.0, 13.0),
         date(2018, 4, 19): (0.0, 1.0, 11.0),
-        date(2018, 4, 20): (1.0, 0.0, 10.0),
+        date(2018, 4, 20): (0.0, 0.0, 10.0),
         date(2022, 4, 15): (0.0, 0.0, 15.0),
         date(2022, 4, 18): (0.0, 1.0, 12.0),
         date(2022, 4, 20): (0.0, 1.0, 10.0),
-        date(2022, 4, 21): (1.0, 0.0, 9.0),
+        date(2022, 4, 21): (0.0, 0.0, 9.0),
         date(2023, 4, 17): (0.0, 0.0, 13.0),
         date(2023, 4, 18): (0.0, 1.0, 12.0),
         date(2023, 4, 20): (0.0, 1.0, 10.0),
-        date(2023, 4, 21): (1.0, 0.0, 9.0),
+        date(2023, 4, 21): (0.0, 0.0, 9.0),
         # ...and a holiday inside the window moves its end.
         date(2019, 4, 15): (0.0, 1.0, 15.0),
         date(2019, 4, 16): (0.0, 0.0, 14.0),
         date(2019, 4, 18): (0.0, 1.0, 12.0),
-        date(2019, 4, 19): (1.0, 0.0, 11.0),
+        date(2019, 4, 19): (0.0, 0.0, 11.0),
         date(2024, 6, 17): (0.0, 1.0, 13.0),
         date(2024, 6, 19): (0.0, 0.0, 11.0),
         date(2024, 6, 20): (0.0, 1.0, 10.0),
@@ -6152,18 +6148,19 @@ class CalendarColumnTests(unittest.TestCase):
             self.assertEqual(got, self.EXPECTED)
 
         with self.subTest("a date alone, with no panel"):
-            # `tax_date` and `days_to_month_end`. Since #44 `quarter_end` reads
-            # the grid; `QuarterEndBusinessDayTests` covers it.
+            self.assertEqual(data.quarter_end(date(2019, 3, 29)), 1.0)
+            self.assertEqual(data.quarter_end(date(2019, 3, 31)), 0.0)
             self.assertEqual(data.days_to_month_end(date(2019, 3, 31)), 0.0)
             self.assertEqual(data.days_to_month_end(date(2020, 2, 1)), 28.0)
-            for day, (_quarter, tax, countdown) in self.EXPECTED.items():
+            self.assertEqual(data.quarter_end(date(2019, 8, 31)), 0.0)
+            for day, (quarter, tax, countdown) in self.EXPECTED.items():
                 self.assertEqual(
-                    (data.tax_date(day), data.days_to_month_end(day)),
-                    (tax, countdown),
+                    (data.quarter_end(day), data.tax_date(day), data.days_to_month_end(day)),
+                    (quarter, tax, countdown),
                     day,
                 )
 
-        with self.subTest("the grid does not move a date-alone value"):
+        with self.subTest("the grid does not move a value"):
             thinned = self.build(
                 [day for day in grid if day != date(2019, 9, 17)], ("sofr", *self.CALENDAR)
             )
@@ -6227,114 +6224,234 @@ class CalendarColumnTests(unittest.TestCase):
         )
 
 
-class QuarterEndBusinessDayTests(unittest.TestCase):
-    """#44: `quarter_end` is the last business day of the quarter, on the panel's grid.
+class QuarterEndMarketHolidayTests(unittest.TestCase):
+    """#44: `quarter_end` is the last weekday of the quarter not in the market holiday table.
 
-    Eleonora's decision, 30 September 2026. Until then it marked the last
-    *calendar* day, so it read 0.0 on every row of a quarter that ended on a
-    weekend -- 9 of the 33 complete quarters in the published panel. The four
-    in 2018-19 are the ones the finding named: 2018-06-29, 2018-09-28,
-    2019-03-29 and 2019-06-28 printed +17, +5, +25 and +15 bp against -2, -4,
-    +3 and +7 bp the business day before.
+    Eleonora's decision of 30 September 2026, and her ruling of 1 October 2026
+    on the review of #56 (option A): the business days come from a published
+    holiday schedule, not from the panel's grid, so `quarter_end` stays a
+    function of the date alone. The schedule is `metadata/market_holidays.json`,
+    the US government-securities market's full-close days for 2018-2027.
 
-    The business-day calendar is the panel's own dates, as `asof` counts a
-    `business_days` lag and rule 8 reads a settlement zero: there is no holiday
-    calendar and no `weekday()` here. That is why 2024-03-28 is the quarter end
-    of 2024's first quarter in the dense fixture below: 2024-03-29 was Good
-    Friday, SOFR did not print, and the grid has no row for it.
+    Until #44 the column marked the last *calendar* day, so it read 0.0 on
+    every row of a quarter that ended on a weekend -- 9 of the 33 complete
+    quarters in the published panel. The four in 2018-19 are the ones the
+    finding named: 2018-06-29, 2018-09-28, 2019-03-29 and 2019-06-28 printed
+    +17, +5, +25 and +15 bp against -2, -4, +3 and +7 bp the business day
+    before.
 
-    A date in a quarter the grid has not left -- the panel's last quarter --
-    cannot be shown to be the last business day by the grid, and reads 1.0
-    only if it is the quarter's last calendar day.
-
-    The acceptance test was written first and watched failing on the
-    calendar-day rule: `AssertionError: 0.0 != 1.0` on 2018-09-28.
+    No test here builds a panel. The acceptance test was written first and
+    watched failing on the calendar-day rule: an `AssertionError` whose first
+    differing value was 2018-09-28, `0.0` where `1.0` was expected. Before
+    the table had a loader, the checksum test failed on `AttributeError` (no
+    `MARKET_HOLIDAYS_PATH`), and dates outside the table were not refused
+    (`AssertionError: ValueError not raised`).
     """
 
-    REGISTRY = CalendarColumnTests.REGISTRY
-
-    #: Three windows of SOFR's business days around a quarter end, each a grid
-    #: of its own: 2018-09-30 a Sunday; 2019-12-31 a Tuesday, with 2020-01-01 a
-    #: holiday; 2024-03-31 a Sunday, with 2024-03-29 Good Friday. Each window
-    #: ends inside the quarter after, which it does not leave.
-    WINDOWS = (
-        (
-            date(2018, 9, 26), date(2018, 9, 27), date(2018, 9, 28),
-            date(2018, 10, 1), date(2018, 10, 2),
-        ),
-        (date(2019, 12, 27), date(2019, 12, 30), date(2019, 12, 31), date(2020, 1, 2)),
-        (date(2024, 3, 26), date(2024, 3, 27), date(2024, 3, 28), date(2024, 4, 1)),
+    ROOT = Path(__file__).parents[1]
+    TABLE = ROOT / "metadata" / "market_holidays.json"
+    STATUTE = "https://www.law.cornell.edu/uscode/text/5/6103"
+    SOFR = (
+        ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs" / "nyfed-sofr-rate"
+        / "20260906T195746Z_3a5e22446415.json"
     )
-    GRID = WINDOWS[0]
-    QUARTER_ENDS = {date(2018, 9, 28), date(2019, 12, 31), date(2024, 3, 28)}
 
-    def build(self, dates):
-        return CalendarColumnTests.build(self, dates, ("sofr", "quarter_end"))
+    def table(self):
+        return json.loads(self.TABLE.read_text(encoding="utf-8"))
 
-    def observation(self, ref_date):
-        return CalendarColumnTests.observation(self, ref_date)
+    @staticmethod
+    def statutory_holidays(year):
+        """5 U.S.C. 6103(a) legal public holidays of `year`, on their observed days.
+
+        Derived here from the statute, independently of the table: a Saturday
+        holiday is observed the Friday before, a Sunday one the Monday after
+        (6103(b) and Executive Order 11582), and New Year's Day of `year + 1`
+        can be observed in `year`. Juneteenth from 2021 (Pub. L. 117-17).
+        Inauguration Day (6103(c)) is local to the District and not included.
+        """
+
+        def nth(month, weekday, n):
+            first = date(year, month, 1)
+            return first + timedelta(days=(weekday - first.weekday()) % 7, weeks=n - 1)
+
+        def observed(day):
+            if day.weekday() == 5:
+                return day - timedelta(days=1)
+            if day.weekday() == 6:
+                return day + timedelta(days=1)
+            return day
+
+        fixed = [date(year, 1, 1), date(year + 1, 1, 1), date(year, 7, 4),
+                 date(year, 11, 11), date(year, 12, 25)]
+        if year >= 2021:
+            fixed.append(date(year, 6, 19))
+        days = {observed(day) for day in fixed}
+        days |= {
+            nth(1, 0, 3),  # Martin Luther King, Jr.
+            nth(2, 0, 3),  # Washington's Birthday
+            nth(6, 0, 1) - timedelta(days=7),  # Memorial Day, the last Monday of May
+            nth(9, 0, 1),  # Labor Day
+            nth(10, 0, 2),  # Columbus Day
+            nth(11, 3, 4),  # Thanksgiving Day
+        }
+        return {day for day in days if day.year == year}
 
     def test_a_weekend_quarter_end_falls_on_the_last_business_day(self):
-        """The acceptance criterion: 2018-09-30 is a Sunday, so 2018-09-28 reads 1.0."""
+        """The acceptance criterion, from the date alone: 2018-09-30 is a Sunday, so 2018-09-28."""
 
         from repo_model import data
 
-        got = {row.date: row.values["quarter_end"] for row in self.build(self.GRID).observations}
-        self.assertEqual(got[date(2018, 9, 28)], 1.0)
-        self.assertEqual(got[date(2018, 9, 27)], 0.0)
-        self.assertEqual(got[date(2018, 10, 1)], 0.0)
-        for window in self.WINDOWS:
-            with self.subTest(window[0]):
-                got = {
-                    row.date: row.values["quarter_end"]
-                    for row in self.build(window).observations
-                }
-                expected = {day: float(day in self.QUARTER_ENDS) for day in window}
-                self.assertEqual(got, expected)
-                self.assertEqual(
-                    {day: data.quarter_end(day, window) for day in window}, expected
-                )
+        reads = {
+            date(2018, 9, 28): 1.0,
+            date(2018, 9, 27): 0.0,
+            date(2018, 9, 30): 0.0,
+            date(2018, 10, 1): 0.0,
+            # The other three the finding named.
+            date(2018, 6, 29): 1.0,
+            date(2019, 3, 29): 1.0,
+            date(2019, 6, 28): 1.0,
+            date(2019, 3, 31): 0.0,
+            # A weekday quarter end is itself.
+            date(2019, 12, 31): 1.0,
+            date(2019, 12, 30): 0.0,
+            # Good Friday 2024 is a SIFMA full close: the Thursday before.
+            date(2024, 3, 28): 1.0,
+            date(2024, 3, 29): 0.0,
+            # New Year's Day 2022 is a Saturday; the statute observes it on
+            # Friday 2021-12-31, and the market opened. The table says so.
+            date(2021, 12, 31): 1.0,
+            date(2021, 12, 30): 0.0,
+            # Christmas 2021 is a Saturday, observed and closed on 2021-12-24:
+            # not a quarter end, and not moved by it.
+            date(2021, 12, 24): 0.0,
+        }
+        self.assertEqual({day: data.quarter_end(day) for day in reads}, reads)
 
-    def test_a_quarter_the_grid_has_not_left(self):
-        """The panel's last quarter: 1.0 only on the quarter's last calendar day."""
+    def test_every_quarter_of_the_table_has_one_quarter_end(self):
+        """2018-2027: one 1.0 per quarter, on the last weekday the table does not close."""
 
         from repo_model import data
 
-        to_friday = self.GRID[: self.GRID.index(date(2018, 9, 28)) + 1]
-        got = {row.date: row.values["quarter_end"] for row in self.build(to_friday).observations}
-        self.assertEqual(set(got.values()), {0.0})
+        closed = {date.fromisoformat(entry["date"]) for entry in self.table()["closed"]}
+        day = date(2018, 1, 1)
+        ends = {}
+        while day <= date(2027, 12, 31):
+            if data.quarter_end(day) == 1.0:
+                ends.setdefault((day.year, (day.month - 1) // 3), []).append(day)
+            day += timedelta(days=1)
+        self.assertEqual(len(ends), 40)
+        for quarter, days in ends.items():
+            with self.subTest(quarter):
+                self.assertEqual(len(days), 1, days)
+                (end,) = days
+                self.assertLess(end.weekday(), 5)
+                self.assertNotIn(end, closed)
+                after = end + timedelta(days=1)
+                while (after.month - 1) // 3 == quarter[1] and after.year == quarter[0]:
+                    self.assertTrue(after.weekday() >= 5 or after in closed, after)
+                    after += timedelta(days=1)
 
-        to_new_year = self.WINDOWS[1][:-1]
-        got = {row.date: row.values["quarter_end"] for row in self.build(to_new_year).observations}
-        self.assertEqual(got, {date(2019, 12, 27): 0.0, date(2019, 12, 30): 0.0, date(2019, 12, 31): 1.0})
+    def test_a_date_outside_the_table_is_refused(self):
+        from repo_model import data
 
-        with self.assertRaises(ValueError):
-            data.quarter_end(date(2018, 9, 29), self.GRID)
+        for day in (date(2017, 12, 29), date(2028, 3, 31), date(2028, 1, 3)):
+            with self.subTest(day), self.assertRaises(ValueError):
+                data.quarter_end(day)
 
-    def test_every_complete_quarter_of_the_published_panel_has_one_quarter_end(self):
-        """On the published build: the last row of each complete quarter, and no other."""
+    def test_the_table_is_the_file_its_checksum_names(self):
+        """`data.MARKET_HOLIDAYS_SHA256` pins the table, and a changed file is refused."""
 
-        import csv
+        import hashlib
+
+        from repo_model import data
+
+        self.assertEqual(data.MARKET_HOLIDAYS_PATH, self.TABLE)
+        self.assertEqual(
+            data.MARKET_HOLIDAYS_SHA256, hashlib.sha256(self.TABLE.read_bytes()).hexdigest()
+        )
+        loaded = data.market_holidays()
+        self.assertEqual((loaded.first, loaded.last), (date(2018, 1, 1), date(2027, 12, 31)))
+        self.assertIn(date(2024, 3, 29), loaded.closed)
 
         with tempfile.TemporaryDirectory() as tmp:
-            panel = Path(tmp) / "panel.csv"
-            code, text = RequestedColumnsBuildTests.run_build(self, panel)
-            self.assertEqual(code, 0, text)
-            with panel.open(encoding="utf-8", newline="") as handle:
-                rows = [
-                    (date.fromisoformat(row["date"]), float(row["quarter_end"]))
-                    for row in csv.DictReader(handle)
-                ]
-        last_in_quarter = {}
-        for day, _value in rows:
-            last_in_quarter[(day.year, (day.month - 1) // 3)] = day
-        final_quarter = max(last_in_quarter)
-        expected = {
-            day for quarter, day in last_in_quarter.items() if quarter != final_quarter
+            tampered = Path(tmp) / "market_holidays.json"
+            tampered.write_text(
+                self.TABLE.read_text(encoding="utf-8").replace("2024-03-29", "2024-03-28"),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError) as raised:
+                data.market_holidays(tampered)
+            self.assertIn("sha256", str(raised.exception))
+
+    def test_every_entry_carries_a_date_a_reason_and_a_source(self):
+        table = self.table()
+        first, last = date.fromisoformat(table["first"]), date.fromisoformat(table["last"])
+        dates = []
+        for entry in table["closed"] + table["statutory_days_the_market_opened"]:
+            with self.subTest(entry["date"]):
+                day = date.fromisoformat(entry["date"])
+                dates.append(day)
+                self.assertTrue(first <= day <= last)
+                self.assertLess(day.weekday(), 5)
+                self.assertTrue(entry["reason"])
+                self.assertTrue(entry["source"].startswith("https://"))
+                self.assertIsInstance(entry["verified"], bool)
+        self.assertEqual(len(dates), len(set(dates)))
+        for entry in table["closed"]:
+            self.assertIn(entry["basis"], ("statute", "sifma"))
+            if entry["basis"] == "sifma":
+                # Not read on sifma.org: the rmm environment cannot reach it.
+                self.assertFalse(entry["verified"], entry["date"])
+                self.assertIn("sifma.org", entry["source"])
+            else:
+                self.assertEqual(entry["source"], self.STATUTE)
+
+    def test_the_statutory_entries_follow_from_the_statute(self):
+        """Every observed 5 U.S.C. 6103(a) holiday is closed, or listed as a day the market opened."""
+
+        table = self.table()
+        statute = set()
+        for year in range(2018, 2028):
+            statute |= self.statutory_holidays(year)
+        closed = {
+            date.fromisoformat(entry["date"])
+            for entry in table["closed"]
+            if entry["basis"] == "statute"
         }
-        self.assertEqual({day for day, value in rows if value == 1.0}, expected)
-        for day in (date(2018, 6, 29), date(2018, 9, 28), date(2019, 3, 29), date(2019, 6, 28)):
-            self.assertIn(day, expected)
+        opened = {
+            date.fromisoformat(entry["date"])
+            for entry in table["statutory_days_the_market_opened"]
+        }
+        self.assertEqual(closed | opened, statute)
+        self.assertEqual(closed & opened, set())
+        self.assertEqual(
+            opened,
+            {date(2021, 6, 18), date(2021, 12, 31), date(2023, 11, 10), date(2027, 12, 31)},
+        )
+
+    def test_the_table_agrees_with_the_sofr_prints(self):
+        """In the tracked SOFR span, a weekday has no print exactly when the table closes it."""
+
+        rates = json.loads(self.SOFR.read_text(encoding="utf-8"))["refRates"]
+        printed = {date.fromisoformat(row["effectiveDate"]) for row in rates}
+        start, end = min(printed), max(printed)
+        unprinted = set()
+        day = start
+        while day <= end:
+            if day.weekday() < 5 and day not in printed:
+                unprinted.add(day)
+            day += timedelta(days=1)
+        table = self.table()
+        closed = {
+            date.fromisoformat(entry["date"])
+            for entry in table["closed"]
+            if start <= date.fromisoformat(entry["date"]) <= end
+        }
+        self.assertEqual(unprinted, closed)
+        for entry in table["statutory_days_the_market_opened"]:
+            day = date.fromisoformat(entry["date"])
+            if start <= day <= end:
+                self.assertIn(day, printed)
 
 
 class WeeklyCarryForwardTests(unittest.TestCase):
