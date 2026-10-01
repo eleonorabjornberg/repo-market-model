@@ -29,7 +29,7 @@ pressure, including transitions into the upper tail?
 
 The primary outcome is the SOFR spread to the administered reserve rate. Secondary
 outcomes are SOFR dispersion, volume, and a pre-declared stress indicator. The headline
-target is the probability that the spread is at least +5 bp (and +10 bp) on the scored
+target is the probability that the spread is more than +5 bp (and +10 bp) on the scored
 day.
 
 **The information set.** "Next-day" means a forecast made at 16:00 on the business day

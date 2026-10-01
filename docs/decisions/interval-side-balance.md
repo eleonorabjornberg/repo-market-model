@@ -1,6 +1,7 @@
 # Decision: which side the intervals miss on, and what the asymmetric variant corrects
 
-**Status: measured and published. The four records are in `docs/runs/`; the reading is emitted by
+**Status: measured and published. The four records were in `docs/runs/` and are now archived in
+`docs/runs/archive/pre-asof/` (directive 03, PR #74); the reading is emitted by
 `scripts/emit_interval_sides.py` and is not transcribed here. Decided: both asymmetric calibrations
 are retired -- see the Decision section.**
 
@@ -23,10 +24,10 @@ estimator and no change to `src/` was needed; the one cell that had never been r
 Four cells, each the same panel, the same 61-day minimum history, the same 16:00 decision time and
 the same declared features, differing only in calibration:
 
-- `docs/runs/backtest_gbm_conformal_share035_mh61.json`
-- `docs/runs/backtest_gbm_conformal_asymmetric_share035_mh61.json`
-- `docs/runs/backtest_gbm_cross_conformal_mh61.json`
-- `docs/runs/backtest_gbm_cross_conformal_asymmetric_mh61.json`
+- `docs/runs/archive/pre-asof/backtest_gbm_conformal_share035_mh61.json`
+- `docs/runs/archive/pre-asof/backtest_gbm_conformal_asymmetric_share035_mh61.json`
+- `docs/runs/archive/pre-asof/backtest_gbm_cross_conformal_mh61.json`
+- `docs/runs/archive/pre-asof/backtest_gbm_cross_conformal_asymmetric_mh61.json`
 
 Each side's miss rate carries a stationary-block-bootstrap interval, and the imbalance -- below
 minus above -- is taken **from the same resample**, because the two rates are computed over one set

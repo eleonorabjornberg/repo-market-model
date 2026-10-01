@@ -26,8 +26,8 @@ are in `docs/decisions/` (`information-set.md`, `workflow.md`, `publish-rule.md`
   persistence-logistic model. A headline claim is always stated against these, paired, with a bootstrap interval.
 - **Targets.**
   - Keep the next-day distribution of SOFR − IORB.
-  - **Headline target:** P(SOFR − IORB ≥ +5 bp) and P(≥ +10 bp) at horizons of 1–5 business days.
-  - The ≥ +50 bp tail leaves the headline. It happened on 4 days in 8 years, so it becomes a scenario narrative, not a
+  - **Headline target:** P(SOFR − IORB > +5 bp) and P(> +10 bp) at horizons of 1–5 business days.
+  - The > +50 bp tail leaves the headline. It happened on 4 days in 8 years, so it becomes a scenario narrative, not a
     forecast claim.
 - **Pressure model v1.** Under `docs/decisions/pressure-probability.md`, the pressure probability comes from the best
   candidate model. The candidates are the as-of distributional model's exceedance at +5 and +10 bp, and direct

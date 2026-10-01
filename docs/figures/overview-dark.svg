@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 388" width="800" height="388" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="What the model reads and what it answers: four groups of public data -- the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead -- flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is at least 5 basis points above what the Fed pays on reserves">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 388" width="800" height="388" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="What the model reads and what it answers: four groups of public data -- the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead -- flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is more than 5 basis points above what the Fed pays on reserves">
 <rect width="800" height="388" fill="#1a1a19"/>
 <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L7,4 L0,7 z" fill="#c3c2b7"/></marker></defs>
 <text x="8" y="21" font-size="13" fill="#ffffff" font-weight="600">What the model reads, and what it answers</text>
@@ -32,9 +32,9 @@
 <line x1="584" y1="212.0" x2="618" y2="212.0" stroke="#c3c2b7" stroke-width="1.4" marker-end="url(#arrow)"/>
 <rect x="620" y="136" width="172" height="152" rx="4" fill="#e5703f" fill-opacity="0.12" stroke="#e5703f" stroke-width="1.6"/>
 <text x="706.0" y="170" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">The chance tomorrow's</text>
-<text x="706.0" y="187" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">rate is ≥ 5 bp above</text>
+<text x="706.0" y="187" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">rate is &gt; 5 bp above</text>
 <text x="706.0" y="204" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">what the Fed pays</text>
 <text x="706.0" y="221" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">on reserves</text>
-<text x="706.0" y="268" font-size="10" fill="#c3c2b7" text-anchor="middle">P(SOFR − IORB ≥ +5 bp)</text>
+<text x="706.0" y="268" font-size="10" fill="#c3c2b7" text-anchor="middle">P(SOFR − IORB &gt; +5 bp)</text>
 <text x="8" y="376" font-size="10" fill="#898781">ON RRP is planned, not yet in the panel. Settlements are read for tomorrow once their auction-time declaration lands.</text>
 </svg>

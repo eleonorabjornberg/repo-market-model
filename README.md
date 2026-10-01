@@ -12,12 +12,12 @@ Treasury securities: the repo market. On most days the rate on that cash, SOFR, 
 Federal Reserve pays banks on their reserves, IORB. On some days — tax dates, large Treasury settlements, month- and
 quarter-ends, above all when reserves are getting scarce — spare cash runs short and SOFR jumps above it, as it did in
 September 2019. This project asks one question of public data only, using only what was public at 4 pm the day before:
-**what is the chance that tomorrow SOFR is at least 5 basis points above IORB?** It is an academic and portfolio
+**what is the chance that tomorrow SOFR is more than 5 basis points above IORB?** It is an academic and portfolio
 project, built to show how such a forecast can be made and tested without borrowing from the future.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/overview-dark.svg">
-  <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is at least 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
+  <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is more than 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
 </picture>
 
 **Status, honestly.**
