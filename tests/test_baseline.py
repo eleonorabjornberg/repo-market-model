@@ -9629,5 +9629,84 @@ class PositionalHistoryRefitTests(unittest.TestCase):
                 self.assertIn("stale", str(caught.exception))
 
 
+def counted_exceedance(calls):
+    """`climatology_exceedance`, recording each call's feature dates in `calls`.
+
+    One call is one fit: an `ExceedancePredictor` fits and predicts in one
+    call, so the calls a fold loop makes are the fits it pays for.
+    """
+
+    climatology = climatology_exceedance(minimum_history=5)
+
+    def fit_predict(train_rows, feature_rows, taus):
+        calls.append((train_rows[-1].date, tuple(row.date for row in feature_rows)))
+        return climatology(train_rows, feature_rows, taus)
+
+    return fit_predict
+
+
+class ExceedanceFitPerBlockTests(unittest.TestCase):
+    """Issue #57: the exceedance backtest fits once per refit block.
+
+    **The defect.** `rolling_exceedance_backtest` called the predictor once
+    per scored row, and an `ExceedancePredictor` fits inside that call, so
+    under `--refit-every N` every row of a block repeated the block's fit on
+    the block's frame. The numbers were the block's fit; only the cost was
+    not reduced (`exceedance_gbm_conformal_lags3` at refit 21 took about
+    2,850 s on the fixture panel).
+
+    **The fix.** The predictor is called once per block, with every feature
+    row of the block and each row's own as-of history, which is the shape
+    `event_eval` has always called it in. The climatology reference is still
+    called per row, where `RollingExceedanceTests` pins it.
+
+    The gbm side -- that every scored row's probabilities are what the per-row
+    calls gave -- is `tests/test_ml.py::ExceedanceFitPerBlockGbmTests`.
+    """
+
+    FEATURES = ("spread_bps",)
+    MINIMUM_HISTORY = 12
+    PANEL_ROWS = 40
+    REFIT = 5
+
+    def setUp(self):
+        self.rows = on_consecutive_days(regressor_frame(self.PANEL_ROWS))
+        self.registry = record_date_registry(1, self.FEATURES)
+
+    def exceedance(self, refit):
+        calls = []
+        report = rolling_exceedance_backtest(
+            self.rows,
+            predictor=counted_exceedance(calls),
+            model_name="counted",
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=DECISION_TIME,
+            taus=EXCEEDANCE_TAUS,
+            minimum_history=self.MINIMUM_HISTORY,
+            refit_every=refit,
+        )
+        return report, calls
+
+    def test_one_call_per_block_not_per_row(self):
+        for refit in (1, self.REFIT):
+            with self.subTest(refit=refit):
+                report, calls = self.exceedance(refit)
+                feature_dates = [fold.feature_date for fold in report.folds]
+                blocks = [
+                    tuple(feature_dates[start:start + refit])
+                    for start in range(0, len(feature_dates), refit)
+                ]
+                self.assertGreater(len(feature_dates), refit)
+                self.assertEqual(len(calls), len(blocks))
+                self.assertEqual([dates for _end, dates in calls], blocks)
+                # Each block's one call is on that block's frame.
+                self.assertEqual(
+                    [end for end, _dates in calls],
+                    [report.folds[start].train_end
+                     for start in range(0, len(feature_dates), refit)],
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

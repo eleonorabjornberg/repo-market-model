@@ -34,7 +34,7 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 from .asof import InformationRule
 from .baseline import (
     _as_of_folds,
-    _exceedance_at_fold,
+    _exceedance_at_folds,
     _reads_histories,
     _reads_information,
 )
@@ -367,12 +367,12 @@ def refit_knots(
         if wanted is not None and scored not in wanted:
             continue
         with capture_knots() as captured:
-            _exceedance_at_fold(
+            _exceedance_at_folds(
                 predictor,
                 train_rows,
                 rows,
                 rule,
-                fold,
+                (fold,),
                 taus,
                 reads_information=reads_information,
                 reads_histories=reads_histories,

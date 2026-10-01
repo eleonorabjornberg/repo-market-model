@@ -131,7 +131,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from .baseline import (
     KNOWLEDGE_HOLDOUT,
@@ -139,7 +139,9 @@ from .baseline import (
     ExceedancePredictor,
     _check_decision_relative_availability,
     _check_fitter_stayed_inside,
+    _check_history_ends,
     _ml_libraries,
+    _reads_histories,
     _reads_information,
     _resolve_fields,
     _validate_prediction,
@@ -478,9 +480,11 @@ def evaluate_event_window(
         observations: the panel, strictly ascending and unique by date. The
             target is `row.spread_bps`, the target the rolling paths score.
         fit_predict: an `ExceedancePredictor`, called once with the training
-            rows, the feature rows and `taus` -- and with `information=` the
-            run's rule when its signature names that parameter, by
-            `baseline._reads_information`. Returns `ExceedanceCurves`.
+            rows, the feature rows and `taus` -- with `information=` the run's
+            rule when its signature names that parameter, by
+            `baseline._reads_information`, and with `histories=` each day's
+            as-of history when it names that one, by
+            `baseline._reads_histories`. Returns `ExceedanceCurves`.
         window: the declared knowledge-holdout window, inclusive at both ends,
             as an `EventWindow` from `load_event_windows`, so no unpinned
             window can be scored.
@@ -503,8 +507,10 @@ def evaluate_event_window(
         LookAheadError: a read is newer than its decision instant, the
             training set reaches past the window's first anchor or into the
             window, the scored rows are not exactly the declared window, or
-            the predictor read a column outside `features`.
-        StaleReadError: a read is older than the latest admissible value.
+            the predictor read a column outside `features`, or a positional
+            read ends after its day's anchor.
+        StaleReadError: a read is older than the latest admissible value, or
+            a positional read ends before its day's anchor.
         UndeclaredFeatureError: `features` names a column
             `contract.field_sources_for_features` cannot classify, or one
             declared to have no ingesting source. Raised before any row is
@@ -575,12 +581,22 @@ def evaluate_event_window(
 
     # A predictor that names `information` -- `ml.gbm_exceedance`, whose
     # calibration scores held-out rows as forecasts -- is handed the run's
-    # rule; every other predictor is called exactly as it always was.
+    # rule. One that names `histories` -- `ml.gbm_exceedance` again, whose
+    # lags, GARCH variance and trailing scale are read by position -- is handed
+    # each day's own as-of history, the frame at that day's decision ending at
+    # its anchor (#57), as the rolling paths do. The training rows stay the
+    # first day's frame. Every other predictor is called exactly as it always
+    # was.
+    keywords: Dict[str, Any] = {}
     if _reads_information(fit_predict):
-        prediction = fit_predict(train_rows, feature_rows, tau_family, information=rule)
-    else:
-        prediction = fit_predict(train_rows, feature_rows, tau_family)
+        keywords["information"] = rule
+    if _reads_histories(fit_predict):
+        keywords["histories"] = tuple(rule.frame(rows, info) for info in infos)
+    prediction = fit_predict(train_rows, feature_rows, tau_family, **keywords)
     exceedance = _validate_prediction(prediction, len(scored_index), tau_family)
+    # Each day's positional read ends at that day's anchor: before it is stale,
+    # after it is look-ahead (`baseline._check_history_end`).
+    _check_history_ends(prediction, rows, infos)
     _check_fitter_stayed_inside(prediction.features_read, declared, sources)
 
     record = EvaluationRecord(

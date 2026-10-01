@@ -2874,37 +2874,81 @@ def _at_decision(
     return view
 
 
-def _exceedance_at_fold(
+def _exceedance_at_folds(
     predictor: ExceedancePredictor,
     train_rows: Sequence[DailyObservation],
     rows: Sequence[DailyObservation],
     rule: InformationRule,
-    fold: _AsOfFold,
+    folds: Sequence[_AsOfFold],
     taus: Sequence[float],
     *,
     reads_information: bool,
     reads_histories: bool,
 ) -> ExceedanceCurves:
-    """One exceedance predictor call for one fold of an as-of loop, checked.
+    """One exceedance predictor call for the folds of one refit block, checked.
 
-    `information=` for a predictor that names it (`_reads_information`), and
-    `histories=` -- the fold's as-of history, one per feature row -- for one
-    that names that. The curves' `history_ends` are checked against the
-    fold's anchor. The one call `rolling_exceedance_backtest` and
-    `tail_diagnostics` make, so the two cannot read history two ways.
+    One call is one fit: the predictor is fitted on `train_rows` and asked for
+    a curve at every fold's feature row (#57). `information=` for a predictor
+    that names it (`_reads_information`), and `histories=` -- each fold's own
+    as-of history, one per feature row -- for one that names that. Each
+    curve's `history_ends` entry is checked against its fold's anchor. The one
+    call `rolling_exceedance_backtest` and `tail_diagnostics` make, so the two
+    cannot read history two ways.
     """
 
     keywords: Dict[str, Any] = {}
     if reads_information:
         keywords["information"] = rule
     if reads_histories:
-        keywords["histories"] = (_as_of_history(rows, rule, fold),)
-    predicted = predictor(train_rows, (fold.feature_row,), taus, **keywords)
-    ends = getattr(predicted, "history_ends", None)
-    if ends is not None:
-        for end in ends:
-            _check_history_end(end, rows, fold.info)
+        keywords["histories"] = tuple(
+            _as_of_history(rows, rule, fold) for fold in folds
+        )
+    predicted = predictor(
+        train_rows, tuple(fold.feature_row for fold in folds), taus, **keywords
+    )
+    _check_history_ends(predicted, rows, [fold.info for fold in folds])
     return predicted
+
+
+def _check_history_ends(
+    predicted: ExceedanceCurves,
+    rows: Sequence[DailyObservation],
+    infos: Sequence[InformationSet],
+) -> None:
+    """`_check_history_end` on each curve's positional read, against its own forecast.
+
+    `history_ends` is `None` from a predictor that reads no history by
+    position. Otherwise it carries one entry per curve, and a count that does
+    not match is refused (`SplitError`) rather than zipped short, which would
+    leave forecasts unchecked.
+    """
+
+    ends = getattr(predicted, "history_ends", None)
+    if ends is None:
+        return
+    if len(ends) != len(infos):
+        raise SplitError(
+            f"the predictor reported {len(ends)} history ends for "
+            f"{len(infos)} forecasts; each forecast's positional read is checked"
+        )
+    for end, info in zip(ends, infos):
+        _check_history_end(end, rows, info)
+
+
+def _refit_blocks_of(folds: Iterable[_AsOfFold]) -> Iterable[List[_AsOfFold]]:
+    """`_as_of_folds`, grouped into its refit blocks.
+
+    A block opens on the fold that carries a frame, and runs to the next one.
+    """
+
+    block: List[_AsOfFold] = []
+    for fold in folds:
+        if fold.frame is not None and block:
+            yield block
+            block = []
+        block.append(fold)
+    if block:
+        yield block
 
 
 #: Later than any deadline a panel can express; `asof.NEVER_ON_THIS_PANEL`.
@@ -6197,10 +6241,11 @@ def rolling_exceedance_backtest(
     curve on its own as-of observation. The curves are pooled across rows and
     the contract's metric set is computed once, over the pool.
 
-    An exceedance predictor fits and predicts in one call, so under a refit
-    cadence above one its fit is repeated on the block's frame for each row of
-    the block: the numbers are those of one fit per block, at the cost of the
-    repeated work.
+    An exceedance predictor fits and predicts in one call, so it is called once
+    per refit block, with every feature row of the block and, for one that
+    names `histories`, each row's own as-of history (#57). Until #57 it was
+    called once per row on the block's frame: the same numbers, a fit repeated
+    for every row of the block.
 
     **The climatology is refitted on every fold, on that fold's training rows.**
     This is the whole block, so it is stated rather than left to the loop below
@@ -6237,8 +6282,8 @@ def rolling_exceedance_backtest(
     Args:
         observations: the panel, ascending by date.
         predictor: the `ExceedancePredictor` being scored. Called once per
-            fold with that fold's training rows, one feature row, and the
-            declared tau family.
+            refit block with that block's training rows, the block's feature
+            rows, and the declared tau family.
         model_name: what to record as having produced these numbers. Required
             and undefaulted: an artifact that named no model, or named one it
             reconstructed, is an artifact a reader cannot compare to another.
@@ -6318,61 +6363,66 @@ def rolling_exceedance_backtest(
     # fold's as-of history, which its positional reads come from.
     reads_histories = _reads_histories(predictor)
     infos: List[InformationSet] = []
-    train_rows: Tuple[DailyObservation, ...] = ()
 
-    for fold in _as_of_folds(
-        rows, rule, minimum_history=minimum_history, refit_every=refit
+    for block in _refit_blocks_of(
+        _as_of_folds(rows, rule, minimum_history=minimum_history, refit_every=refit)
     ):
-        index = fold.index
-        if fold.frame is not None:
-            train_rows = tuple(fold.frame)
-        infos.append(fold.info)
-        conditioning = (fold.feature_row,)
-
-        predicted = _exceedance_at_fold(
+        train_rows = tuple(block[0].frame)
+        # One fit for the block (#57): the predictor is asked for every row's
+        # curve at once, each row reading its own as-of history.
+        predicted = _exceedance_at_folds(
             predictor,
             train_rows,
             rows,
             rule,
-            fold,
+            block,
             tau_family,
             reads_information=reads_information,
             reads_histories=reads_histories,
         )
-        # Refitted here, on this fold's training rows, from the same call the
-        # scored model got. Hoisting this one line out of the loop is the
-        # mutation `tests/test_baseline.py::RollingExceedanceTests` is planted
-        # against, and it is the only line whose position is the subject of a
-        # test rather than its behaviour.
-        referenced = reference_predictor(train_rows, conditioning, tau_family)
+        curves = _validate_prediction(predicted, len(block), tau_family)
 
-        if not checked:
-            # After the first fit, and only the first. The reference is
-            # checked too: it is fitted on the same frame.
-            _check_fitter_stayed_inside(predicted.features_read, declared, sources)
-            _check_fitter_stayed_inside(referenced.features_read, declared, sources)
-            ml_libraries = _ml_libraries(predicted, referenced)
-            # The scored predictor's only: the reference is the climatology,
-            # which takes no setting, and is not what `declaration.model` names.
-            model_settings = _model_settings(predicted)
-            checked = True
+        for fold, curve in zip(block, curves):
+            index = fold.index
+            infos.append(fold.info)
+            conditioning = (fold.feature_row,)
 
-        # Off the curves this fold scored, in this iteration, and never off
-        # `referenced`: the climatology has no tail. See `_tail_account` (B40).
-        tail_accounts.append(_tail_account(predicted))
-        forecast.append(_validate_prediction(predicted, 1, tau_family)[0])
-        reference.append(_validate_prediction(referenced, 1, tau_family)[0])
-        folds.append(
-            ScoredFold(
-                train_start=train_rows[0].date,
-                train_end=train_rows[-1].date,
-                train_rows=len(train_rows),
-                feature_date=fold.feature_row.date,
-                scored_date=rows[index].date,
+            # Refitted here, on this fold's training rows, from the same call
+            # the scored model got. Hoisting this one line out of the loop is
+            # the mutation `tests/test_baseline.py::RollingExceedanceTests` is
+            # planted against, and it is the only line whose position is the
+            # subject of a test rather than its behaviour.
+            referenced = reference_predictor(train_rows, conditioning, tau_family)
+
+            if not checked:
+                # After the first fit, and only the first. The reference is
+                # checked too: it is fitted on the same frame.
+                _check_fitter_stayed_inside(predicted.features_read, declared, sources)
+                _check_fitter_stayed_inside(referenced.features_read, declared, sources)
+                ml_libraries = _ml_libraries(predicted, referenced)
+                # The scored predictor's only: the reference is the
+                # climatology, which takes no setting, and is not what
+                # `declaration.model` names.
+                model_settings = _model_settings(predicted)
+                checked = True
+
+            # Off the fit that scored this row -- the block's -- and never off
+            # `referenced`: the climatology has no tail. See `_tail_account`
+            # (B40).
+            tail_accounts.append(_tail_account(predicted))
+            forecast.append(curve)
+            reference.append(_validate_prediction(referenced, 1, tau_family)[0])
+            folds.append(
+                ScoredFold(
+                    train_start=train_rows[0].date,
+                    train_end=train_rows[-1].date,
+                    train_rows=len(train_rows),
+                    feature_date=fold.feature_row.date,
+                    scored_date=rows[index].date,
+                )
             )
-        )
-        scored_dates.append(rows[index].date)
-        realized_bps.append(rows[index].spread_bps)
+            scored_dates.append(rows[index].date)
+            realized_bps.append(rows[index].spread_bps)
 
     # Strictly greater, matching the contract's `P(spread > tau)`, the
     # `stress_gt_*` label columns and `climatology_exceedance`'s own count.
