@@ -25,6 +25,7 @@ from time import sleep as _sleep
 from typing import (
     AbstractSet,
     Callable,
+    Dict,
     Iterable,
     List,
     Mapping,
@@ -1277,12 +1278,111 @@ def _fr2004_rows(
     return rows
 
 
+#: The divisor that takes a value stated in a source's unit to the panel's
+#: unit, keyed on the unit exactly as the source spells it. `DATA.md`
+#: denominates every money column in USD billions, and a rate is read as
+#: written. The table is for any adapter that reads its unit from the source,
+#: not only FRED's: the Daily Treasury Statement's TGA, when it is built (plan
+#: section 2), publishes in millions and goes through `unit_divisor` as well.
+#: A unit missing from this table is refused, not guessed (#41).
+PANEL_UNIT_DIVISORS = {
+    "Percent": 1.0,
+    "Billions of U.S. Dollars": 1.0,
+    "Billions of US Dollars": 1.0,
+    "Millions of U.S. Dollars": 1000.0,
+    "Millions of US Dollars": 1000.0,
+}
+
+
+def unit_divisor(unit: str, *, source_id: str, field: str) -> float:
+    """What to divide a `field` value stated in `unit` by to reach the panel's unit.
+
+    Raises:
+        ValueError: a unit not in `PANEL_UNIT_DIVISORS`. A source that changes
+            its unit fails here, at ingest, instead of reaching the panel off
+            by a factor nobody stated.
+    """
+
+    divisor = PANEL_UNIT_DIVISORS.get(unit)
+    if divisor is None:
+        raise ValueError(
+            f"{source_id} {field} is stated in {unit!r}, which is not a unit the "
+            f"ingest knows; known units are {sorted(PANEL_UNIT_DIVISORS)}"
+        )
+    return divisor
+
+
 def _fred_csv_payloads(payload: bytes) -> Iterable[bytes]:
     if not payload.startswith(b"PK"):
         return (payload,)
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         names = sorted(name for name in archive.namelist() if name.lower().endswith(".csv"))
         return tuple(archive.read(name) for name in names)
+
+
+def _fred_readme_units(payload: bytes) -> Dict[str, str]:
+    """Each series' unit, as the snapshot's README states it.
+
+    FRED zips a multi-frequency graph with a `README.txt`. That file is the only
+    place a snapshot states its units. It lists the series in a fixed-width
+    table between two rules of dash groups. The middle column reads
+    `title, unit, frequency, seasonal adjustment` and wraps over continuation
+    lines, which have a blank first column. The unit is the third field from
+    the end, because a title may itself contain commas.
+
+    A bare CSV has no README, and neither does a zip without one. Either gives
+    `{}`, and `_fred_rows` then refuses every series it carries for having no
+    stated unit.
+    """
+
+    if not payload.startswith(b"PK"):
+        return {}
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        names = [name for name in archive.namelist() if name.lower() == "readme.txt"]
+        if not names:
+            return {}
+        text = archive.read(names[0]).decode("utf-8-sig")
+
+    lines = text.splitlines()
+    rules = [
+        index
+        for index, line in enumerate(lines)
+        if line.startswith("-") and len(line.split()) > 1 and not line.replace("-", "").strip()
+    ]
+    if len(rules) < 2:
+        raise ValueError("FRED snapshot README carries no series table")
+    spans = [
+        (match.start(), match.end()) for match in re.finditer(r"-+", lines[rules[0]])
+    ]
+    if len(spans) < 2:
+        raise ValueError("FRED snapshot README's series table has no description column")
+    (name_start, name_end), (text_start, text_end) = spans[0], spans[1]
+
+    descriptions: Dict[str, List[str]] = {}
+    current = None
+    for line in lines[rules[0] + 1 : rules[1]]:
+        name = line[name_start:name_end].strip()
+        piece = line[text_start:text_end].strip()
+        if name:
+            if name in descriptions:
+                raise ValueError(f"FRED snapshot README names {name} twice")
+            current = name
+            descriptions[current] = []
+        if current is None:
+            raise ValueError("FRED snapshot README's series table opens with a continuation line")
+        if piece:
+            descriptions[current].append(piece)
+
+    units = {}
+    for name, pieces in descriptions.items():
+        parts = [part.strip() for part in " ".join(pieces).split(",")]
+        if len(parts) < 4:
+            raise ValueError(
+                f"FRED snapshot README's entry for {name} is not "
+                f"'title, unit, frequency, seasonal adjustment'"
+            )
+        units[name] = parts[-3]
+    return units
 
 
 #: FRED's CSV writes `.` for a missing observation, and a blank where a row is
@@ -1305,11 +1405,20 @@ def _fred_rows(
     -- `validate_publication_gaps` skips a series it has no bound for -- and
     reach the long point-in-time panel. A dropped column would hide a
     declaration that is missing; a refusal names it.
+
+    **Every value is taken to the panel's unit (#41).** Each series' unit is
+    read from the snapshot's README (`_fred_readme_units`) and divided out
+    through `unit_divisor`, so `WRESBAL` and `WTREGEN`, served in USD millions,
+    enter the table in billions as `DATA.md` declares them. A series the README
+    does not name, a snapshot with no README, and a unit `unit_divisor` does
+    not know are each refused. The raw values stay auditable through
+    `source_sha` and the pinned snapshot.
     """
 
     from .data import PointInTimeObservation
 
     available_at = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    units = _fred_readme_units(payload)
     rows = []
     for content in _fred_csv_payloads(payload):
         reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
@@ -1324,6 +1433,19 @@ def _fred_rows(
             raise ValueError(
                 f"{artifact.source_id} snapshot {artifact.path} carries {undeclared}, "
                 f"which {artifact.source_id} does not declare in its registry fields"
+            )
+        divisors = {}
+        for series_id in reader.fieldnames:
+            if series_id == "observation_date":
+                continue
+            if series_id not in units:
+                raise ValueError(
+                    f"{artifact.source_id} snapshot {artifact.path} carries {series_id} "
+                    f"but its README states no unit for it; a value with no unit is "
+                    f"not read (#41)"
+                )
+            divisors[series_id] = unit_divisor(
+                units[series_id], source_id=artifact.source_id, field=series_id
             )
         for record_number, record in enumerate(reader, start=2):
             try:
@@ -1355,7 +1477,7 @@ def _fred_rows(
                         series_id=series_id,
                         ref_date=ref_date,
                         available_at=available_at,
-                        value=value,
+                        value=value / divisors[series_id],
                         vintage_id=artifact.retrieved_at,
                         source_sha=artifact.sha256,
                     )

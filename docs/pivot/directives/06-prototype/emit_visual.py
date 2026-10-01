@@ -18,7 +18,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-EXPECTED_SHA = "d8b716cf5d76eb71eb8193fe7d56310db474b7ba80bc31b92c5a555248a6b9d6"
+EXPECTED_SHA = "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
 PRESSURE_BP = 5
 CLIP_BP = 45  # top of the full-period scale; days above it are drawn off the frame
 TYPES = ["Quarter-end", "Month-end", "Tax window", "Coupon settlement", "Other"]
@@ -75,11 +75,6 @@ def main(panel, repo, template, out):
         fail(f"panel digest {sha[:12]} is not the published {EXPECTED_SHA[:12]}; refusing")
     rows = list(csv.DictReader(raw.decode().splitlines()))
 
-    # DATA.md declares reserve_balances in USD billions; the panel holds USD millions
-    # (2018-04-03 reads 2,113,321, i.e. $2.11tn). Convert explicitly and stop if it moves.
-    if min(float(r["reserve_balances"]) for r in rows) < 1e5:
-        fail("reserve_balances is no longer in USD millions; re-check the unit before plotting")
-
     windows = json.loads((Path(repo) / "metadata/events.json").read_text())["windows"]
     commit = subprocess.run(["git", "-C", repo, "rev-parse", "--short", "HEAD"],
                             capture_output=True, text=True, check=True).stdout.strip()
@@ -110,7 +105,7 @@ def main(panel, repo, template, out):
         if r["sofr_p25"] and r["sofr_p75"]:
             band = [int((Decimal(r["sofr_p25"]) - iorb) * 100), int((Decimal(r["sofr_p75"]) - iorb) * 100)]
         out_rows.append([r["date"], r["s"], band[0], band[1], float(r["sofr"]), float(iorb),
-                         round(float(r["reserve_balances"]) / 1e6, 3), t])
+                         round(float(r["reserve_balances"]) / 1e3, 3), t])
 
     yr = lambda r: int(r["date"][:4])
     above = lambda ys: sum(1 for r in rows if yr(r) in ys and r["s"] > 0)
@@ -118,7 +113,7 @@ def main(panel, repo, template, out):
     ge50 = [r for r in rows if r["s"] >= 50]
     ge50_years = sorted({yr(r) for r in ge50})
     med = lambda lo, hi: round(statistics.median(
-        float(r["reserve_balances"]) / 1e6 for r in rows if lo <= yr(r) <= hi and r["s"] >= PRESSURE_BP), 2)
+        float(r["reserve_balances"]) / 1e3 for r in rows if lo <= yr(r) <= hi and r["s"] >= PRESSURE_BP), 2)
 
     years = list(range(yr(rows[0]), yr(rows[-1]) + 1))
     cells = {(y, t): [0, 0] for y in years for t in range(len(TYPES))}
