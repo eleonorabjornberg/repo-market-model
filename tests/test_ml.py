@@ -295,6 +295,24 @@ def gap_rule(days):
 REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
 
 
+#: Set by CI's ml job on pull requests. A subtest marked with `skip_if_fast`
+#: is skipped then, and runs everywhere else: locally, on every push to `main`
+#: and on the weekly schedule, where the ml job runs the whole suite
+#: (directive 05, "Do 4": a test that must stay slow runs only there).
+SKIP_SLOW = "REPO_MODEL_SKIP_SLOW"
+
+
+def skip_if_fast(case: unittest.TestCase, why: str) -> None:
+    """Skip a slow subtest when the job declared it wants the fast set only.
+
+    Only for a subtest whose cost is a sweep of refits and whose property is
+    not a leakage, availability or staleness guard: those stay in every run.
+    """
+
+    if os.environ.get(SKIP_SLOW):
+        case.skipTest(f"slow ({why}); runs on pushes to main and the weekly schedule")
+
+
 def _extra_installed() -> bool:
     """Is the `ml` extra importable here?
 
@@ -2968,6 +2986,7 @@ class ScaledCrossConformalTests(unittest.TestCase):
         nominal = float(1 - q)
 
         with self.subTest("each regime misses its nominal rate, and cross_conformal's does not"):
+            skip_if_fast(self, "a refit at every origin of two regime sweeps")
             count = self.FRAME_ROWS + self.PERIODS * REGIME_ROWS * len(REGIME_PATTERN) + self.PURGE + 1
             rows = regime_frame(count)
             misses = {}
@@ -3454,6 +3473,7 @@ class PartialCrossConformalTests(unittest.TestCase):
         """Interpolation per regime, the fit's own edges, no leak, ref cancels, the others unchanged."""
 
         with self.subTest("interpolation: each regime's misses lie between cross_conformal's and scaled's"):
+            skip_if_fast(self, "a refit at every origin of three regime sweeps")
             count = self.FRAME_ROWS + self.PERIODS * REGIME_ROWS * len(REGIME_PATTERN) + self.PURGE + 1
             rows = with_column(
                 regime_frame(count), "regime_sd", [regime_sd(index) for index in range(count)]

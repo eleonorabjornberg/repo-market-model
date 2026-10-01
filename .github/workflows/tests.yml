@@ -94,7 +94,10 @@ jobs:
           REPO_MODEL_REQUIRE_ML: "1"
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            PYTHONPATH=src:tests python3 -B -m unittest test_ml test_tail_diagnostics test_cli_eval -v
+            # Subtests marked `skip_if_fast` in test_ml (refit sweeps, never a
+            # leakage, availability or staleness guard) skip here and run on
+            # every push and on the schedule (directive 05, Do 4).
+            REPO_MODEL_SKIP_SLOW=1 PYTHONPATH=src:tests python3 -B -m unittest test_ml test_tail_diagnostics test_cli_eval -v
           else
             python3 -B -m unittest discover -s tests -v
           fi
