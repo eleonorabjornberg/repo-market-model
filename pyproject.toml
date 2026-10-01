@@ -15,15 +15,16 @@ authors = [{name = "Eleonora Bjornberg"}]
 # specifier, so the declaration can say what is supported instead of whatever a
 # substring search could match.
 #
-# Measured, not asserted. 3.9.23, 3.10 and 3.11.15 each run the whole suite
-# green (10 Sep, after 9a38a0c repaired the mappingproxy default that made 3.11
-# refuse baseline.py at import). 3.12 and 3.13 import and run everything, and
-# fail the Milestone A reproduction: 3.12's built-in sum() compensates float
-# rounding, so every published figure moves in its last digits and the exact
-# comparison refuses it. The ceiling is that finding. Raising it means deciding
-# whether a record reproduces to the bit or to a stated tolerance -- not a
-# version bump.
-requires-python = ">=3.9,<3.12"
+# Decided by the human on 30 Sep 2026 (#29, #53): 3.11 only. Every environment
+# that runs or scores this project is the rmm cloud environment, on 3.11; 3.9
+# and 3.10 had no user left, and dropping them let the ml extra move to current
+# releases (#55). 3.11.15 runs the whole suite green. 3.12 and 3.13 import and
+# run everything, and fail the Milestone A reproduction: 3.12's built-in sum()
+# compensates float rounding, so every published figure moves in its last
+# digits and the exact comparison refuses it. The ceiling is that finding.
+# Raising it means deciding whether a record reproduces to the bit or to a
+# stated tolerance -- not a version bump.
+requires-python = ">=3.11,<3.12"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "License :: OSI Approved :: MIT License",
@@ -35,9 +36,16 @@ classifiers = [
 # 2026: phase 2's candidate models (gradient-boosted conditional quantiles) need
 # them. Everything else stays standard-library only, so every published record
 # reproduces with no install; tests/test_dependency_boundary.py holds that line.
-# The upper bounds are the last releases that still support Python 3.9.
+# The lower bounds are the latest releases that support CPython 3.11, as of
+# 1 Oct 2026 (#55, on the human's ruling to use the best available versions):
+# numpy 2.4.6 (numpy 2.5 requires 3.12) and scikit-learn 1.9.1. A gbm figure
+# moves with scikit-learn's version, so the floor keeps every fit on the
+# versions the suite and the re-score (#27) were measured on, and the ceiling
+# refuses the next major version, whose API is not measured here. CI's ml job
+# pins exactly these two, and the rmm environment's /opt/rmm-venv is to pin the
+# same, by its setup script, which lives outside this repository.
 [project.optional-dependencies]
-ml = ["numpy>=1.24,<2.1", "scikit-learn>=1.4,<1.7"]
+ml = ["numpy>=2.4.6,<3", "scikit-learn>=1.9.1,<2"]
 
 [project.urls]
 Repository = "https://github.com/eleonorabjornberg/repo-market-model"

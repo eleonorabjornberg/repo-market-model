@@ -1,7 +1,7 @@
 # Repo Market Model
 
 [![tests](https://github.com/eleonorabjornberg/repo-market-model/actions/workflows/tests.yml/badge.svg)](https://github.com/eleonorabjornberg/repo-market-model/actions/workflows/tests.yml)
-[![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](pyproject.toml)
+[![python](https://img.shields.io/badge/python-3.11-blue.svg)](pyproject.toml)
 [![dependencies](https://img.shields.io/badge/runtime%20dependencies-0-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -173,14 +173,14 @@ The same CORP reliability curves for the conditional model. Compare them with th
 
 ## Quick start
 
-Requirements: Python 3.9, 3.10 or 3.11. The supported range is declared once in
+Requirements: Python 3.11. The supported version is declared once in
 `pyproject.toml` and is checked against the interpreter that runs the suite; 3.12
 moves the published figures in their last digits and is outside it. The project intentionally uses
 only the Python standard library for everything a published result depends on except
 the gradient-boosted comparison, which needs the extra below; reproducing any other
 needs no package installation. Phase 2's machine-learning candidates live
-in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy and
-scikit-learn); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with these opt-in
+in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy 2.4.6 and
+scikit-learn 1.9.1, the versions CI pins); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with these opt-in
 settings: a conformal interval (`--calibration conformal`, or `cross_conformal` with
 `--calibration-folds K`), lagged spread changes (`--spread-change-lags K`), a GARCH(1,1)
 variance fitted per fold (`--volatility-feature garch11`), an ARX one-step forecast fitted
