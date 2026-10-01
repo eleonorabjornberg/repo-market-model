@@ -22,45 +22,19 @@ concurrency:
 
 jobs:
   prepare:
-    # Emits the interpreter matrix and the ml-surface verdict so the two heavy
-    # jobs can be shaped per event. Runs in seconds. On pull requests it
-    # replaces ~24 runner-minutes of redundant full-suite work with a
-    # merge-base diff; pushes and the weekly schedule keep the full check.
+    # Emits the interpreter matrix so the suite job can be shaped per event.
+    # Runs in seconds.
     name: shape the run
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.shape.outputs.matrix }}
-      ml-changed: ${{ steps.mlpaths.outputs.changed }}
     steps:
-      - uses: actions/checkout@v5
-        with:
-          # The ml verdict diffs against the merge base, which a shallow
-          # clone does not have.
-          fetch-depth: 0
-
       - id: shape
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo 'matrix=["3.9", "3.11"]' >> "$GITHUB_OUTPUT"
           else
             echo 'matrix=["3.9", "3.10", "3.11"]' >> "$GITHUB_OUTPUT"
-          fi
-
-      - id: mlpaths
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            # Pushes and the weekly schedule always get the full check: a bad
-            # merge must never be under-tested on the way into a branch.
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          base="origin/${{ github.base_ref }}"
-          changed=$(git diff --name-only "$base"...HEAD -- \
-            src/repo_model/ml.py pyproject.toml tests/test_ml.py tests/test_tail_diagnostics.py)
-          if [ -n "$changed" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
   suite:
@@ -111,28 +85,30 @@ jobs:
         run: python3 -B -m unittest discover -s tests -v
 
   ml:
-    # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep). The
-    # whole suite, with numpy and scikit-learn installed, and
+    # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep), with
     # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
     # the extra did not install: the core job above cannot see those tests,
-    # and a skip nothing can see is not a test. 3.9 because it is the floor the
-    # extra's version bounds were chosen for.
+    # and a skip nothing can see is not a test. 3.11, the interpreter the rmm
+    # environment scores on (#29); the extra's version bounds resolve there to
+    # the same numpy and scikit-learn that environment pins.
     #
-    # On a pull request that does not touch the ml surface (ml.py, the version
-    # bounds in pyproject.toml, or the two ml-dependent test modules), the
-    # honest minimal check is those two modules only: test_tail_diagnostics.py
-    # imports test_ml, and everything else is re-proven by the matrix job above
-    # in the same run. Touching any of the four paths, or pushing to a branch,
-    # runs the whole suite as before.
-    name: unit tests with the ml extra (3.9)
-    needs: prepare
+    # On a pull request, the modules whose tests change with the extra
+    # installed, and nothing else: test_ml.py, test_tail_diagnostics.py (which
+    # imports test_ml) and test_cli_eval.py (whose gbm cases skip without the
+    # extra). Every other module runs identically with or without it and is
+    # proven by the matrix job above in the same run. The two conformance-
+    # coverage checks in test_baseline and test_contract import the modules
+    # that define conformance cases themselves (#29), so they no longer need
+    # this job to load test_ml beside them. Pushes and the weekly schedule run
+    # the whole suite here too, so a merge is never under-tested on the way in.
+    name: unit tests with the ml extra (3.11)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.9"
+          python-version: "3.11"
           cache: pip
           # Key the wheel cache on the file that pins the versions, so a bump
           # of the ml extra's bounds invalidates it.
@@ -147,9 +123,8 @@ jobs:
           PYTHONPATH: src
           REPO_MODEL_REQUIRE_ML: "1"
         run: |
-          if [ "${{ needs.prepare.outputs.ml-changed }}" = "true" ]; then
-            python3 -B -m unittest discover -s tests -v
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PYTHONPATH=src:tests python3 -B -m unittest test_ml test_tail_diagnostics test_cli_eval -v
           else
-            PYTHONPATH=src:tests python3 -B -m unittest tests.test_ml tests.test_tail_diagnostics -v
+            python3 -B -m unittest discover -s tests -v
           fi
-

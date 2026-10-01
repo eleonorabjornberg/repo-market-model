@@ -83,3 +83,8 @@ PYTHONPATH=src python3 -m repo_model.cli <subcommand>
 
 Both are Eleonora's. A PR may propose changes to them, and must say so in its description.
 Nothing here is changed without her review.
+
+## Delegated review
+
+Until directive 06 merges, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
+this file still applies.
