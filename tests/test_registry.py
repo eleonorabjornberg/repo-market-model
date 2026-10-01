@@ -833,7 +833,11 @@ class RegistryProseAgainstTrackedSidecarsTests(unittest.TestCase):
         self.assertEqual(contradictions, [], "\n".join(contradictions))
 
 
-TRACKED_RUNS = REPO_ROOT / "docs" / "runs"
+#: The records these research tests (A42 onward) read were scored under the
+#: purge rule and moved, unedited, to the pre-as-of archive by the directive 03
+#: re-score (#27). What the tests pin is a fact about those records, so they
+#: read them where they now live.
+TRACKED_RUNS = REPO_ROOT / "docs" / "runs" / "archive" / "pre-asof"
 
 
 class CandidateColumnPairingRecordTests(unittest.TestCase):

@@ -208,11 +208,16 @@ def reproduce(workdir):
     ]
     for feature in declaration["features"]:
         arguments += ["--feature", feature]
+    # A record split by regime and pressure-day type (#27) names the
+    # declaration it was split by, as the path the publishing run passed:
+    # relative to the checkout, which is where this runs the command from.
+    if "splits" in record:
+        arguments += ["--splits", record["splits"]["declaration"]["path"]]
     _cli(*arguments)
     rebuilt = json.loads(report.read_text(encoding="utf-8"))
 
     found = []
-    for block in COMPARED_BLOCKS:
+    for block in COMPARED_BLOCKS + (("splits",) if "splits" in record else ()):
         found.extend(_differences(record.get(block), rebuilt.get(block), block))
     for key in COMPARED_PANEL:
         found.extend(

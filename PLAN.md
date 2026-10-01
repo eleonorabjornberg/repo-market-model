@@ -130,9 +130,10 @@ the other.*
 
 **Publication: met.** `docs/runs/persistence_funding.json` is tracked and generated. A
 cloner receives pinball loss at five quantiles, interval coverage, MAE with a
-stationary-bootstrap interval and a recorded seed, over 2080 folds on a fetched panel
-spanning 2018-04-03 to 2026-09-03, with the build manifest and source digests beside
-them. No figure from it is transcribed into any Markdown page in this repository, which
+stationary-bootstrap interval and a recorded seed, scored under the as-of rule on the
+published panel, with the build manifest and source digests beside them. The record
+was re-scored under that rule by directive 03 (#27); the purge-rule record it replaced
+is in `docs/runs/archive/pre-asof/`. No figure from it is transcribed into any Markdown page in this repository, which
 was the harder half to hold and it held.
 
 **Reproduction: met.** `scripts/reproduce_milestone_a.py` rebuilds the panel from the
@@ -189,42 +190,31 @@ Evaluation:
 - event holdouts including September 2019, March 2020, tax dates, Treasury
   settlements, and reporting dates.
 
-The evaluation machinery exists: rolling-origin folds behind a purge derived from the
-declared feature set, a common fitted-model forecast interface with more than one
-implementer, an event-holdout path, and the metric implementations. On the frozen
-panel, gradient-boosted quantiles and the trailing-window residual law beat persistence
-under CRPS at paired origins (`docs/runs/`). Gradient-boosted quantiles'
-nominal interval covers well under its nominal probability
-(`docs/runs/backtest_gbm_mh61.json`), so the model that wins on accuracy is not
-calibrated in its interval; split-conformal calibration narrows the coverage gap without
-closing it and gives up the accuracy win (`docs/runs/backtest_gbm_conformal_mh61.json`);
-cross-conformal calibration, keeping the full fit, covers a little more than nominal and
-keeps a distinguishable accuracy win, while its upper tail stays worse than persistence's
-(`docs/runs/backtest_gbm_cross_conformal_mh61.json`). The ARX forecast as a gbm feature is
-built and not yet scored. Its exceedance probabilities have now been scored in the
-tails against a climatology refitted on each fold
-(`docs/runs/exceedance_gbm_mh61.json`, and the generated tail section of `README.md`):
-the conditional model carries skill at the lowest declared threshold and none above it,
-and at the highest it is beaten by climatology. No conditional predictor has yet been
-scored against climatology on a knowledge-holdout window.
+The evaluation machinery exists: as-of rolling-origin folds on one grid for every
+declaration (`docs/decisions/information-set.md`), refitted every 21 scored days, a
+common fitted-model forecast interface with more than one implementer, an event-holdout
+path, the metric implementations, the two pressure-probability benchmarks and the
+declared regime and pressure-day-type splits. The records scored under the earlier purge
+rule read every input about a week late; they are archived in
+`docs/runs/archive/pre-asof/`, and what they showed is re-opened
+(`docs/pivot/lag-assessment.md` §4). The re-scored evidence is in `docs/runs/` and in the
+generated sections of `README.md`: persistence, gbm uncalibrated and cross-conformal, and
+the published funding declaration, each paired against persistence; and their exceedance
+probabilities, each paired against the calendar-type climatology and the
+persistence-logistic model. No conditional predictor has yet been scored against
+climatology on a knowledge-holdout window.
 
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
 
-**Verdict: hers.** The exit criterion is recorded met on the interval evidence. The
-cross-conformally calibrated model keeps a distinguishable accuracy win over persistence
-at paired origins and holds its declared interval probability
-(`docs/runs/backtest_gbm_cross_conformal_mh61.json`), and the purge that separates its
-training rows from its scored day has been measured against the sources' own publication
-schedules rather than argued (`docs/DATA_QUALITY_DECISIONS.md`, "The purge is stated
-against the target date"). Two parts of the criterion's tail clause are named rather than
-scored and stay open under this heading. The first, exceedance probabilities in the
-tails, is now measured and **fails**: skill sits at the shoulder and the forecasts stop
-carrying information where the criterion asks them to, which is a published negative
-result rather than a gap (`docs/runs/exceedance_gbm_mh61.json`). The second, a
-conditional predictor against climatology on a knowledge-holdout window, is still
-unscored. The heading stays *in progress* for both, and no Phase 3 work has begun. Exit-criterion verdicts are
-the human's; this page records hers, and the evidence above is what it rests on.
+**Verdict: re-opened, and hers to make again.** Her earlier verdict -- the criterion
+met on the interval evidence, its tail clause measured and failing -- rested on records
+scored under the purge rule, which read every input about a week late
+(`docs/pivot/lag-assessment.md`). Those records are archived, and that verdict is not
+restated here. The as-of evidence it would be made on is in `docs/runs/` and the
+generated sections of `README.md`. A conditional predictor against climatology on a
+knowledge-holdout window is still unscored. The heading stays *in progress*, and no
+Phase 3 work has begun. Exit-criterion verdicts are the human's.
 
 ## Phase 3 — Latent reserves and payment needs
 
@@ -335,8 +325,7 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    exceedance curve flattens across thresholds -- the measurement is published and the
    explanation is not -- and a conditional model scored against climatology on the
    declared knowledge holdouts. A model change comes after the diagnosis, not instead of
-   it. The interval half of the criterion is recorded met above; the measured tail half
-   fails, and these two are what keep the phase open.
+   it. Both halves of the criterion are re-opened on the as-of records (above).
 5. **Phases 3 and 4.**
 6. **Decision point**, then Phases 5 through 7 or a stop.
 
