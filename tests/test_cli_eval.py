@@ -3468,6 +3468,21 @@ class ExceedanceBacktestHarness(unittest.TestCase):
                 )
         return path
 
+    def with_days_to_month_end(self, path):
+        """A copy of the panel with the calendar countdown column added."""
+
+        with path.open(newline="", encoding="utf-8") as handle:
+            table = list(csv.reader(handle))
+        out = self.tmp / "panel_with_calendar.csv"
+        with out.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(table[0] + ["days_to_month_end"])
+            for line in table[1:]:
+                when = date.fromisoformat(line[0])
+                following = date(when.year + (when.month == 12), when.month % 12 + 1, 1)
+                writer.writerow(line + [(following - timedelta(days=1) - when).days])
+        return out
+
     def run_command(self, *extra, model="climatology", features=None,
                     thresholds=None, report=None):
         argv = [
@@ -3607,6 +3622,12 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
                 if cli_eval.MODEL_FACTORIES[name].needs_regime_variable:
                     features.append("on_rrp")
                     extra = ["--regime-variable", "on_rrp"]
+                if cli_eval.MODEL_FACTORIES[name].takes_splits:
+                    # The calendar-type climatology (#27) reads the pressure-day
+                    # type from the calendar columns, under the declared splits.
+                    features += ["days_to_month_end", "quarter_end", "tax_date"]
+                    extra = ["--splits", str(REPO_ROOT / "metadata" / "evaluation_splits.json")]
+                    self.panel = self.with_days_to_month_end(self.panel)
                 # The registry has to price whatever this run declares: the
                 # gap is the maximum over the declared set's fields, and a
                 # source the file does not carry is a refusal rather than a

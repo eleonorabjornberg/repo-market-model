@@ -31,9 +31,15 @@ from .baseline import (
     ExceedancePredictor,
     FittedForecastModel,
     ModelFitter,
+    add_backtest_splits,
+    add_comparison_splits,
+    add_exceedance_splits,
     arx_exceedance,
     backtest_document,
+    benchmark_comparison_document,
+    calendar_climatology_exceedance,
     climatology_exceedance,
+    persistence_logistic_exceedance,
     COMPARISON_LOSSES,
     DEFAULT_COMPARISON_LOSS,
     comparison_seed,
@@ -51,6 +57,7 @@ from .baseline import (
 )
 from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
+from .evaluation_splits import load_split_declaration
 from .event_eval import evaluate_event_window, load_events_file
 from .splits import SplitError
 
@@ -151,6 +158,9 @@ class _ModelChoice:
     takes_spread_change_lags: bool = False
     takes_volatility_feature: bool = False
     takes_arx_feature: bool = False
+    #: Needs the split declaration (`--splits`) that defines the pressure-day
+    #: types: the calendar-type climatology.
+    takes_splits: bool = False
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -213,6 +223,25 @@ MODEL_FACTORIES = MappingProxyType(
                 regressors, regime, minimum_history=minimum_history
             ),
             needs_regime_variable=True,
+        ),
+        # The two pressure-probability benchmarks
+        # (`docs/decisions/pressure-probability.md`), runnable by name so each
+        # can publish its own record, and selectable as `--benchmark` beside
+        # any scored model.
+        "persistence_logistic": _ModelChoice(
+            declared=persistence_logistic_exceedance,
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
+        "calendar_climatology": _ModelChoice(
+            declared=calendar_climatology_exceedance,
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                settings["splits"], minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
         ),
         # The one entry the core cannot import; see `_DeferredFactory`. Its
         # construction signature is the ARX's -- regressors plus a minimum
@@ -327,6 +356,13 @@ def _select_model(
         )
         settings.update(_arx_feature(args, name, choice.takes_arx_feature))
         settings.update(_tail(args, name, choice.takes_tail))
+    if choice.takes_splits:
+        if getattr(args, "splits", None) is None:
+            raise SplitError(
+                f"--model {name} reads the pressure-day types from the split "
+                f"declaration; pass --splits metadata/evaluation_splits.json"
+            )
+        settings["splits"] = load_split_declaration(args.splits)
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
@@ -1010,6 +1046,8 @@ def _backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         model=model_name,
     )
+    if args.splits is not None:
+        add_backtest_splits(document, report, rows, load_split_declaration(args.splits))
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1190,6 +1228,8 @@ def _compare(args: argparse.Namespace) -> int:
     document = paired_comparison_document(
         comparison, panel_path=args.path, registry_path=args.registry
     )
+    if args.splits is not None:
+        add_comparison_splits(document, rows, load_split_declaration(args.splits))
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1432,6 +1472,40 @@ def _event_holdout(args: argparse.Namespace) -> int:
     return 0
 
 
+#: `--benchmark NAME` -> the fixed declaration it is scored under. The two
+#: benchmarks of `docs/decisions/pressure-probability.md`; each reads only what
+#: its predictor reports reading, so its guards are its own.
+BENCHMARK_FEATURES = MappingProxyType(
+    {
+        "calendar_climatology": (
+            "spread_bps", "days_to_month_end", "quarter_end", "tax_date",
+        ),
+        "persistence_logistic": ("spread_bps",),
+    }
+)
+
+
+def _benchmarks(args: argparse.Namespace):
+    """Resolve `--benchmark` to `(name, features, predictor)`, or refuse."""
+
+    runs = []
+    for name in args.benchmark or ():
+        if name not in BENCHMARK_FEATURES:
+            raise SplitError(
+                f"unknown --benchmark {name!r}; the benchmarks are "
+                f"{', '.join(sorted(BENCHMARK_FEATURES))}"
+            )
+        if name in [run[0] for run in runs]:
+            raise SplitError(f"--benchmark {name} given twice")
+        features = BENCHMARK_FEATURES[name]
+        side = argparse.Namespace(**vars(args))
+        side.model = name
+        side.feature = list(features)
+        _, predictor = _select_model(side)
+        runs.append((name, features, predictor))
+    return runs
+
+
 def _exceedance_backtest(args: argparse.Namespace) -> int:
     """Score an exceedance predictor at every purged rolling origin, and publish.
 
@@ -1490,6 +1564,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     """
 
     model_name, predictor = _select_model(args, settings_flags=True)
+    benchmark_runs = _benchmarks(args)
 
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
@@ -1517,6 +1592,37 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         thresholds_path=args.thresholds,
     )
+    split_declaration = (
+        None if args.splits is None else load_split_declaration(args.splits)
+    )
+    digest = panel_sha256(args.panel)
+    add_exceedance_splits(
+        document, report, rows, split_declaration, panel_sha256=digest
+    )
+    # The pressure-probability benchmarks (`--benchmark`), each scored on the
+    # same panel under its own fixed declaration and guards, then paired with
+    # the model day by day (`baseline.benchmark_comparison_document`).
+    if benchmark_runs:
+        document["benchmarks"] = {}
+        for name, features, bench_predictor in benchmark_runs:
+            bench = rolling_exceedance_backtest(
+                rows,
+                predictor=bench_predictor,
+                model_name=name,
+                features=features,
+                registry=_registry(args),
+                decision_time=time.fromisoformat(args.decision_time),
+                taus=taus,
+                minimum_history=args.minimum_history,
+                refit_every=args.refit_every,
+            )
+            document["benchmarks"][name] = benchmark_comparison_document(
+                report,
+                bench,
+                panel_sha256=digest,
+                rows=rows,
+                declaration=split_declaration,
+            )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1574,6 +1680,28 @@ def _add_calibration_argument(parser: argparse.ArgumentParser, *, help: str) -> 
     parser.add_argument("--calibration", metavar="NAME", default=None, help=help)
 
 
+def _add_splits(parser: argparse.ArgumentParser) -> None:
+    """`--splits PATH`: the declared regime and pressure-day-type splits.
+
+    When given, the record carries every reported loss split by the regimes
+    and pressure-day types `metadata/evaluation_splits.json` declares, each
+    with a stationary-bootstrap interval drawn like the pooled one, and the
+    declaration's digest.
+    """
+
+    parser.add_argument(
+        "--splits",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "the evaluation-split declaration, metadata/evaluation_splits.json; "
+            "when given, the record splits its losses by regime and by "
+            "pressure-day type, with stationary-bootstrap intervals"
+        ),
+    )
+
+
 def _add_refit_every(parser: argparse.ArgumentParser) -> None:
     """`--refit-every N`: scored rows per fit, recorded in the declaration.
 
@@ -1600,6 +1728,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "backtest", help="run the as-of rolling benchmark"
     )
     _add_refit_every(backtest)
+    _add_splits(backtest)
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
     backtest.add_argument("--registry", type=Path, required=True)
@@ -1732,6 +1861,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "the paired difference",
     )
     _add_refit_every(compare)
+    _add_splits(compare)
     compare.add_argument("path", type=Path)
     compare.add_argument("--minimum-history", type=int, default=20)
     compare.add_argument("--registry", type=Path, required=True)
@@ -1871,6 +2001,20 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="score an exceedance predictor at every row of the as-of grid",
     )
     _add_refit_every(exceedance)
+    _add_splits(exceedance)
+    exceedance.add_argument(
+        "--benchmark",
+        action="append",
+        default=None,
+        metavar="NAME",
+        help=(
+            "score a pressure-probability benchmark on the same grid and pair "
+            "the model against it, repeatable: calendar_climatology (needs "
+            "--splits) or persistence_logistic. Each runs under its own fixed "
+            "declaration; the record carries the paired Brier difference per "
+            "threshold with a stationary-bootstrap interval"
+        ),
+    )
     exceedance.add_argument("--panel", type=Path, required=True)
     exceedance.add_argument("--thresholds", type=Path, required=True)
     exceedance.add_argument("--registry", type=Path, required=True)
