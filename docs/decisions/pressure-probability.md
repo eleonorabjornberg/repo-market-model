@@ -36,6 +36,21 @@ greater than** the threshold, as the exceedance path, the `stress_gt_*` labels a
 This record said ≥ before. Both rates are quoted in whole basis points, so the two differ on every day that sits
 exactly on the threshold, and this record now states what the code and the published records measure.
 
+## The thresholds are fixed relative to IORB
+
+Amended by Eleonora, 1 October 2026, in her ruling on
+[#87](https://github.com/eleonorabjornberg/repo-market-model/pull/87). The +5 and +10 bp thresholds are fixed
+distances above IORB. The headline labels are never re-anchored to a trailing median, a rolling percentile or any other
+normalisation of the spread's own history. The spread is anchored to administered rates: the ON RRP rate below
+it and the SRF minimum bid, IORB + 10 bp, above it. Both move with IORB. A trailing anchor would drift with the
+regime it is meant to detect, and would label a scarce-reserves period as normal just when it matters (Nicholas
+Beroud's argument, `docs/advisor/evidence-pack/MEMO.md`, Q1(a)). Per-regime distributions of the spread remain a
+diagnostic, never the label.
+
+This governs the headline labels. `metadata/stress_thresholds.json` still declares a `trailing_percentile`
+`secondary_rule`. It is validated when the panel loads, but nothing computes a label from it, and this record does
+not retire it.
+
 ## Why
 
 In scouting, the persistence-logistic benchmark beat every gradient-boosted classifier, and the gradient-boosted model
