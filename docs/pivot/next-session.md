@@ -59,8 +59,5 @@ state below comes with the command that checks it, and the command's output wins
 
 Raise these as `needs-eleonora` issues if they block you. Do not settle them in code.
 
-- **The materiality rule** (plan §2). Until she adopts it, refused series stay refused.
-- **The pressure-probability method** (plan §1). The standing decision says the probability is an exceedance derived
-  from the predictive distribution, so a direct probability model needs her ruling.
 - **Public pages outside this repository** (the Notion advisor pages and the website) still carry the old figures.
   They are corrected from records after directive 03.
