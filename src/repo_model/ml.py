@@ -340,6 +340,14 @@ feature row, so lag 1 is the feature row's spread minus the row before it.
   dated at that anchor -- so no row after the feature date is reachable from here at
   all, and a feature row the frame does not carry is refused rather than
   looked up somewhere else.
+* **Between refits, the as-of history** (issue #34). Under `refit_every`
+  above 1 a forecast after its block's first row has a feature row newer than
+  the fitted frame. The rows between were public at its decision, so the fold
+  loop hands the model the as-of frame at that decision (`with_history`), and
+  the lags are read from it by the same rule: the fitted values are the
+  block's, the history is the forecast's own. `positional_history` is the one
+  reader, for the lags, the GARCH variance and the trailing scale alike, and
+  `history_end` is what the fold loop checks is the anchor.
 * **Inside the design, the same rule.** A training row's lags end at that row,
   never at its target: the change *into* the day being forecast is lag 0, and
   it is the target minus the autoregressive term. A calibration row's lags end
@@ -380,7 +388,7 @@ change, fitted inside the one training frame a fold hands over.
   forecasts the change into `t + 1`: for a training row that is the change
   into its target, and it is never an input. A calibration row's variance is
   its feature row's; a forecast's is the feature row's, filtered through the
-  fitted frame's own rows by position, the lag columns' rule.
+  history's own rows by position, the lag columns' rule.
 * **Refused, never flattened.** Fewer than `GARCH_MINIMUM_CHANGES` observed
   changes among the fit rows, and a search that does not converge -- including
   a frame whose every observed change is zero, where omega runs to 0 and there
@@ -498,6 +506,7 @@ Stdlib plus the `ml` extra, inside functions.
 
 from __future__ import annotations
 
+import copy
 import math
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
@@ -1529,7 +1538,9 @@ class FittedGradientBoostedQuantiles:
     * `spread_change_lags`, `_history_dates`, `_history_spreads` --- how many
       lagged spread changes the design carries (`None` when it carries none),
       and the training frame's own dates and spreads, which are the only rows
-      a feature row's lags are read back from. See the module docstring.
+      a feature row's lags are read back from -- or, on a model
+      `with_history` returned, the as-of history it was handed. See the
+      module docstring.
     * `volatility_feature`, `garch_parameters`, `garch_initial_variance` ---
       the volatility feature the design carries (`None` when it carries none),
       the `(omega, alpha, beta)` fitted on the fit rows, and `f_-1`, the fit
@@ -1855,14 +1866,14 @@ class FittedGradientBoostedQuantiles:
     def design_row(self, feature_row: DailyObservation) -> Tuple[float, ...]:
         """The feature row as this model reads it, in `design_names` order.
 
-        With lags, the rows before `feature_row` are the fitted frame's, found
-        by the position of `feature_row`'s date in it; the feature row's own
-        spread ends lag 1. A row the frame does not carry is refused: it has no
-        position in the frame, and the nearest one would hand it another row's
-        lags.
+        With lags, the rows before `feature_row` are the history's
+        (`positional_history`): the fitted frame's, or the as-of history
+        `with_history` handed over. The feature row's own spread ends lag 1. A
+        row the history does not carry is refused: it has no position there,
+        and the nearest one would hand it another row's lags.
 
         The GARCH variance by the same rule: the recursion is run with the
-        fitted parameters through the frame's rows before `feature_row` and
+        fitted parameters through the history's rows before `feature_row` and
         then `feature_row`'s own spread, and its last value is the column.
 
         The ARX forecast is the fitted ARX's point forecast from `feature_row`,
@@ -1896,22 +1907,8 @@ class FittedGradientBoostedQuantiles:
         variance: Optional[float] = None
         lags = self.spread_change_lags
         if lags is not None or self.volatility_feature is not None:
-            position = bisect_left(self._history_dates, feature_row.date)
-            if (
-                position == len(self._history_dates)
-                or self._history_dates[position] != feature_row.date
-            ):
-                raise ValueError(
-                    f"feature row for {feature_row.date} is not a row of the "
-                    f"frame this model was fitted on "
-                    f"({self._history_dates[0]}..{self._history_dates[-1]}); its "
-                    f"lagged spread changes and its GARCH variance are read off "
-                    f"that frame's own rows by position, and a row the frame "
-                    f"does not carry has none"
-                )
-            spreads = self._history_spreads[:position] + (
-                _observed_spread(feature_row, "feature row"),
-            )
+            spreads = self.positional_history(feature_row)
+            position = len(spreads) - 1
             if lags is not None:
                 changes = _spread_changes(
                     spreads, position, lags, f"feature row for {feature_row.date}"
@@ -1934,14 +1931,76 @@ class FittedGradientBoostedQuantiles:
             )
         )
 
-    def _origin_scale(self, feature_row: DailyObservation) -> float:
-        """`cross_conformal_scaled`'s and `cross_conformal_partial`'s scale at a forecast's feature row.
+    @property
+    def history_end(self) -> Optional[date]:
+        """The last row of the history this model reads by position.
 
-        `_trailing_scale` over the fitted frame's spreads *before* the feature
-        row, by position as `_design_row` finds it, and the feature row's own
-        spread: the list handed over ends at the feature row, so no frame row
-        after it is reachable here whatever the window reads. A row the frame
-        does not carry, or one with no scale, is refused.
+        `None` when it reads none: no lags, no GARCH variance and neither
+        scaled calibration. Otherwise the fitted frame's last row, or, on a
+        model `with_history` returned, the last row it was handed. The fold
+        loops check it against the anchor of the forecast being made
+        (`baseline._check_history_end`): a positional read that ends before
+        the latest observable row is stale.
+        """
+
+        return self._history_dates[-1] if self._history_dates else None
+
+    def with_history(
+        self, history: Sequence[DailyObservation]
+    ) -> "FittedGradientBoostedQuantiles":
+        """This fit, reading history by position from `history` instead.
+
+        What the fold loops hand a forecast made after its block's fit: the
+        refit cadence bounds the training labels, not the forecast-time reads,
+        and the rows between the fit and the forecast were public at the
+        forecast's decision instant. `history` is the as-of frame at that
+        instant, ending at its anchor, the feature row. Every fitted value is
+        this model's own; only the rows lags, the GARCH recursion and the
+        trailing scale are read from change, so a forecast here reads exactly
+        the rows a fit made at its own decision would have.
+
+        `self`, unchanged, when this model reads no history. The fitted
+        frame's rows must be a prefix of `history`, date and spread alike: a
+        history that rewrote a row the fit was made on is another panel, and
+        is refused (`ValueError`) rather than read.
+        """
+
+        if not self._history_dates:
+            return self
+        rows = list(history)
+        dates = tuple(row.date for row in rows)
+        spreads = tuple(_observed_spread(row, "history row") for row in rows)
+        fitted = len(self._history_dates)
+        if (
+            dates[:fitted] != self._history_dates
+            or spreads[:fitted] != self._history_spreads
+        ):
+            raise ValueError(
+                f"the history handed over ({dates[0] if dates else None}.."
+                f"{dates[-1] if dates else None}) does not begin with the "
+                f"{fitted} rows this model was fitted on "
+                f"({self._history_dates[0]}..{self._history_dates[-1]}); a "
+                f"positional read from it would not be this fit's history"
+            )
+        view = copy.copy(self)
+        view._history_dates = dates
+        view._history_spreads = spreads
+        # The memo is keyed on the feature row alone, and the law now reads
+        # another history: the copy starts without one.
+        view._last_law = None
+        return view
+
+    def positional_history(
+        self, feature_row: DailyObservation
+    ) -> Tuple[Optional[float], ...]:
+        """The spreads a positional read of `feature_row` sees, oldest first.
+
+        The history's rows before `feature_row`, found by its date, then
+        `feature_row`'s own spread, which is last: lags, the GARCH recursion
+        and the trailing scale all end there. The one reader of the history
+        by position, so no two of them can find a row two ways. A row the
+        history does not carry is refused: it has no position, and the nearest
+        one would hand it another row's history.
         """
 
         position = bisect_left(self._history_dates, feature_row.date)
@@ -1949,15 +2008,34 @@ class FittedGradientBoostedQuantiles:
             position == len(self._history_dates)
             or self._history_dates[position] != feature_row.date
         ):
-            raise ValueError(
-                f"feature row for {feature_row.date} is not a row of the frame "
-                f"this model was fitted on; calibration {self.calibration!r} "
-                f"reads its scale off that frame's own rows by position, and a "
-                f"row the frame does not carry has none"
+            span = (
+                f"{self._history_dates[0]}..{self._history_dates[-1]}"
+                if self._history_dates
+                else "no rows"
             )
-        spreads = self._history_spreads[:position] + (
+            raise ValueError(
+                f"feature row for {feature_row.date} is not a row of the "
+                f"history this model reads ({span}); its lagged spread "
+                f"changes, its GARCH variance and its trailing scale are read "
+                f"off that history's own rows by position, and a row the "
+                f"history does not carry has none"
+            )
+        return self._history_spreads[:position] + (
             _observed_spread(feature_row, "feature row"),
         )
+
+    def _origin_scale(self, feature_row: DailyObservation) -> float:
+        """`cross_conformal_scaled`'s and `cross_conformal_partial`'s scale at a forecast's feature row.
+
+        `_trailing_scale` over `positional_history`: the history's spreads
+        *before* the feature row and the feature row's own spread. The list
+        handed over ends at the feature row, so no history row after it is
+        reachable here whatever the window reads. A row the history does not
+        carry, or one with no scale, is refused.
+        """
+
+        spreads = self.positional_history(feature_row)
+        position = len(spreads) - 1
         scale = _trailing_scale(spreads, position)
         if scale is None:
             raise ValueError(
@@ -3313,6 +3391,7 @@ def gbm_exceedance(
         feature_rows: Sequence[DailyObservation],
         taus: Sequence[float],
         information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
     ) -> ExceedanceCurves:
         model = fit_gradient_boosted_quantiles(
             train_rows,
@@ -3329,8 +3408,22 @@ def gbm_exceedance(
             volatility_feature=volatility_feature,
             arx_feature=arx_feature,
         )
+        # One model per feature row: the fit, reading history by position
+        # from that row's own as-of history where the evaluator handed one.
+        if histories is None:
+            views = [model] * len(feature_rows)
+        else:
+            if len(histories) != len(feature_rows):
+                raise ValueError(
+                    f"{len(histories)} histories for {len(feature_rows)} feature "
+                    f"rows; each feature row reads its own"
+                )
+            views = [model.with_history(history) for history in histories]
         return ExceedanceCurves(
-            tuple(model.predict_stress(row, taus) for row in feature_rows),
+            tuple(
+                view.predict_stress(row, taus)
+                for view, row in zip(views, feature_rows)
+            ),
             model.features_read,
             # Off the model that produced the curves, not read again here: the
             # versions a record names are the fit's.
@@ -3340,6 +3433,9 @@ def gbm_exceedance(
             # This fit's tail, off this model, for this fold's entry (B40);
             # `None` without a tail, so a record without one is unchanged.
             tail_account=model.tail_account,
+            # Where each curve's positional reads ended, for the evaluator's
+            # staleness check (`baseline._check_history_end`).
+            history_ends=tuple(view.history_end for view in views),
         )
 
     return fit_predict

@@ -1433,7 +1433,7 @@ class GradientBoostedLaggedSpreadTests(unittest.TestCase):
         with self.subTest("refusal: a feature row the fitted frame does not carry"):
             model = self.fit(panel[:30], spread_change_lags=self.LAGS)
             with self.assertRaisesRegex(
-                ValueError, r"is not a row of the frame this model was fitted on"
+                ValueError, r"is not a row of the history this model reads"
             ):
                 model.design_row(panel[30])
             with self.assertRaisesRegex(
@@ -3112,7 +3112,7 @@ class ScaledCrossConformalTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r"has no scale: .* its frame has 10 row\(s\) before it"):
                 model.predict(rows[10])
             beyond = heteroscedastic_frame(self.TRAIN_ROWS + 1)[-1]
-            with self.assertRaisesRegex(ValueError, r"is not a row of the frame"):
+            with self.assertRaisesRegex(ValueError, r"is not a row of the history"):
                 model.predict(beyond)
 
         with self.subTest("refusal: fewer scaled scores than CV+'s ranks need"):
@@ -8075,6 +8075,196 @@ class GradientBoostedFitRefusalTests(unittest.TestCase):
             "and filling it with 0.0 would be the coercion contract test 5 "
             "prohibits",
         )
+
+
+class RefitPositionalHistoryTests(unittest.TestCase):
+    """Issue #34: gbm's positional reads under `refit_every` above 1.
+
+    **The defect.** `FittedGradientBoostedQuantiles` read a feature row's lags,
+    GARCH variance and trailing scale back from the frame it was fitted on, by
+    the row's position there. Under a refit every `N` scored rows, the feature
+    row of every forecast after a block's first is newer than that frame, and
+    the model raised `ValueError` ("not a row of the frame this model was
+    fitted on"). Persistence and plain gbm read no history and were unaffected.
+
+    **The fix.** The refit cadence bounds the training labels, not the
+    forecast-time reads: the fold loops hand the block's model the as-of
+    history at each forecast's own decision instant
+    (`FittedGradientBoostedQuantiles.with_history`), and every positional read
+    goes through `positional_history`, which this class records.
+
+    **The acceptance criterion**: for each setting that reads history by
+    position, every forecast's positional reads under refit `REFIT` equal those
+    under refit 1 on the same grid, on the rolling path and the exceedance
+    path. **The trap** is clamping the read to the fit frame: it raises nothing
+    and is silently stale; the equality sees it, and the fold loop's staleness
+    guard refuses it first (`tests/test_baseline.py::PositionalHistoryRefitTests`).
+
+    The mutations run against this class are recorded there, with the ones run
+    against that class, because they were run together: the fold loop reading
+    from the fit frame's end kills every case here with `StaleReadError`, and
+    the trap -- that read clamped, and the guard off -- with `AssertionError`
+    on the equality.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    REFIT = 4
+    #: `(name, panel rows, minimum history, settings)`: six or seven scored
+    #: rows, so refit `REFIT` makes two blocks and the first has forecasts
+    #: after its fit. Three calibration folds rather than the records' five
+    #: keep the partial CV+ case to seconds; the scale is read the same way
+    #: at any number.
+    CASES = (
+        ("lags", 46, 40, {"spread_change_lags": 2}),
+        ("lags, conformal", 54, 48, {"spread_change_lags": 3, "calibration": "conformal"}),
+        ("garch11", 46, 40, {"volatility_feature": "garch11"}),
+        ("garch11, conformal", 54, 48, {"volatility_feature": "garch11", "calibration": "conformal"}),
+        (
+            "partial CV+",
+            48,
+            42,
+            {"calibration": "cross_conformal_partial", "calibration_folds": 3},
+        ),
+    )
+
+    def setUp(self):
+        require_extra(self)
+        # The assertions are about which rows each forecast read, not how far
+        # the boosting ran.
+        fewer_boosting_iterations(self)
+        with tempfile.TemporaryDirectory() as directory:
+            self.registry = json.loads(
+                declared_registry_file(
+                    directory, purge=self.PURGE, features=self.FEATURES
+                ).read_text(encoding="utf-8")
+            )
+
+    @contextlib.contextmanager
+    def recorded(self):
+        """Every positional read a forecast makes, keyed by its feature date."""
+
+        reads = {}
+        original = ml.FittedGradientBoostedQuantiles.positional_history
+
+        def spy(model, feature_row):
+            spreads = original(model, feature_row)
+            reads.setdefault(feature_row.date, set()).add(spreads)
+            return spreads
+
+        with mock.patch.object(
+            ml.FittedGradientBoostedQuantiles, "positional_history", spy
+        ):
+            yield reads
+
+    def backtest(self, panel, minimum_history, settings, refit):
+        def fitter(train_frame, minimum_history, information):
+            return ml.fit_gradient_boosted_quantiles(
+                train_frame,
+                self.REGRESSORS,
+                minimum_history=20,
+                min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+                information=information,
+                **settings,
+            )
+
+        with self.recorded() as reads:
+            report = baseline.rolling_persistence_backtest(
+                panel,
+                features=self.FEATURES,
+                registry=self.registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                minimum_history=minimum_history,
+                fit_model=fitter,
+                refit_every=refit,
+            )
+        return report, reads
+
+    def exceedance(self, panel, minimum_history, settings, refit):
+        predictor = ml.gbm_exceedance(
+            self.REGRESSORS,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            **settings,
+        )
+        with self.recorded() as reads:
+            report = baseline.rolling_exceedance_backtest(
+                panel,
+                predictor=predictor,
+                model_name="gbm",
+                features=self.FEATURES,
+                registry=self.registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                taus=EXCEEDANCE_TAUS,
+                minimum_history=minimum_history,
+                refit_every=refit,
+            )
+        return report, reads
+
+    def assert_same_reads(self, every, every_reads, blocked, blocked_reads):
+        feature_dates = [fold.feature_date for fold in every.folds]
+        self.assertEqual([fold.feature_date for fold in blocked.folds], feature_dates)
+        self.assertEqual(
+            sorted(blocked_reads), sorted(set(feature_dates)),
+            msg="a forecast made no positional read, so nothing was compared",
+        )
+        self.assertEqual(blocked_reads, every_reads)
+        for when, spreads in blocked_reads.items():
+            # One history per forecast, whichever of the fit's excluding models
+            # read it.
+            self.assertEqual(len(spreads), 1, msg=str(when))
+
+    def test_positional_reads_under_refit_equal_those_under_refit_one(self):
+        """Lags, GARCH and the partial CV+ scale, on the rolling path."""
+
+        for name, rows, minimum, settings in self.CASES:
+            with self.subTest(name):
+                panel = garch_frame(rows)
+                every, every_reads = self.backtest(panel, minimum, settings, 1)
+                blocked, blocked_reads = self.backtest(panel, minimum, settings, self.REFIT)
+                self.assertEqual(blocked.refit_every, self.REFIT)
+                self.assert_same_reads(every, every_reads, blocked, blocked_reads)
+
+    def test_the_exceedance_path_reads_the_same_history(self):
+        """`gbm_exceedance` with lags under conformal, the `exceedance_gbm_conformal_lags3` shape."""
+
+        _, rows, minimum, settings = self.CASES[1]
+        panel = garch_frame(rows)
+        every, every_reads = self.exceedance(panel, minimum, settings, 1)
+        blocked, blocked_reads = self.exceedance(panel, minimum, settings, self.REFIT)
+        self.assert_same_reads(every, every_reads, blocked, blocked_reads)
+
+    def test_a_history_that_rewrites_the_fitted_frame_is_refused(self):
+        """`with_history` refuses rows that are not the fit's own, and is a no-op without history."""
+
+        panel = garch_frame(50)
+        model = ml.fit_gradient_boosted_quantiles(
+            panel[:40],
+            self.REGRESSORS,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            spread_change_lags=2,
+        )
+        self.assertEqual(model.history_end, panel[39].date)
+        view = model.with_history(panel[:45])
+        self.assertEqual(view.history_end, panel[44].date)
+        self.assertEqual(model.history_end, panel[39].date, msg="the fit was changed")
+        with self.assertRaises(ValueError):
+            model.predict(panel[44])
+        view.predict(panel[44])
+        rewritten = list(panel[:45])
+        rewritten[10] = with_spread_shifted(rewritten[10], 1.0)
+        with self.assertRaises(ValueError):
+            model.with_history(rewritten)
+        plain = ml.fit_gradient_boosted_quantiles(
+            panel[:40],
+            self.REGRESSORS,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+        )
+        self.assertIsNone(plain.history_end)
+        self.assertIs(plain.with_history(panel[:45]), plain)
 
 
 if __name__ == "__main__":

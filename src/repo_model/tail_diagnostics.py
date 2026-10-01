@@ -32,7 +32,12 @@ from datetime import time
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
 from .asof import InformationRule
-from .baseline import _as_of_folds, _reads_information
+from .baseline import (
+    _as_of_folds,
+    _exceedance_at_fold,
+    _reads_histories,
+    _reads_information,
+)
 
 __all__ = [
     "absolute_ceilings",
@@ -346,6 +351,7 @@ def refit_knots(
     )
     wanted = None if scored_dates is None else set(scored_dates)
     reads_information = _reads_information(predictor)
+    reads_histories = _reads_histories(predictor)
     knots: List[Dict[str, Any]] = []
     train_rows: tuple = ()
     for fold in _as_of_folds(
@@ -360,12 +366,17 @@ def refit_knots(
         scored = rows[index].date.isoformat()
         if wanted is not None and scored not in wanted:
             continue
-        feature_row = fold.feature_row
         with capture_knots() as captured:
-            if reads_information:
-                predictor(train_rows, (feature_row,), taus, information=rule)
-            else:
-                predictor(train_rows, (feature_row,), taus)
+            _exceedance_at_fold(
+                predictor,
+                train_rows,
+                rows,
+                rule,
+                fold,
+                taus,
+                reads_information=reads_information,
+                reads_histories=reads_histories,
+            )
         if len(captured) != 1:
             raise ValueError(
                 f"{scored}: the predictor made {len(captured)} predict_stress "
