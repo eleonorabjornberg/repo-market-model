@@ -32,9 +32,10 @@ state below comes with the command that checks it, and the command's output wins
   The expected digest is `865979fa…`. The records in `docs/runs/` were scored on the panel before `quarter_end`
   became the last business day of the quarter (#44), digest `d8b716cf…`.
 - **Nothing is re-scored yet.** Every record in `docs/runs/` was scored under the earlier rule.
-- **The environment:** `/opt/rmm-venv` should exist, with numpy 2.0.2 and scikit-learn 1.6.1. If it is missing, the
-  environment's setup script did not apply. Say so rather than installing other versions, because scikit-learn's
-  version can move gbm figures.
+- **The environment:** `/opt/rmm-venv` should exist, on Python 3.11, with numpy 2.4.6 and scikit-learn 1.9.1, the
+  versions CI's ml job pins (#55). If it is missing or carries other versions, the environment's setup script did
+  not apply. Say so rather than installing other versions, because scikit-learn's version can move gbm figures. The
+  records in `docs/runs/` were fitted with numpy 2.0.2 and scikit-learn 1.6.1.
 
   ```
   ls /opt/rmm-venv/bin/python && /opt/rmm-venv/bin/python -c "import numpy, sklearn; print(numpy.__version__, sklearn.__version__)"

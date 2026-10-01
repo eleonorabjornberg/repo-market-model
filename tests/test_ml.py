@@ -197,6 +197,13 @@ restored before the next.
    fitted residual range, which no fixture here does -- so the constant is
    currently unpinned by any test, and that is recorded rather than papered
    over with an assertion invented to cover it.
+
+**Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn 1.9.1,
+`OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`, `REPO_MODEL_REQUIRE_ML=1`, the
+killing test run alone in a disposable copy, control green before and after, each
+mutation confirmed applied by diff and reverted). Mutations 1, 3 and 4 each killed
+again, on the tests named above, `AssertionError`; mutation 1 still on 20
+`crossing_frame` rows. 2 and 5 were not re-run: they are recorded survivors.
 """
 
 from __future__ import annotations
@@ -657,6 +664,19 @@ class GradientBoostedConformalCalibrationTests(unittest.TestCase):
             timedelta days component: NoneType`, out of `clears_purge`;
           - a gap that leaves fewer than two fit rows: `IndexError`, out of the
             imputation's refusal reaching for a first origin that is not there.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All thirteen killed again, on the subtests named above. Where the
+    record predates the as-of rule, its equivalent was applied: 4 as `fit_rows =
+    rows[:first]` (the refusal now arrives as a `ValueError` naming the missing
+    as-of read, since `_feature_index` is gone); 5 as `_fit_at_origin` withholding
+    `information=`, a `TypeError` naming `information`; 7f as the share branch's
+    `_require_information` call removed, now an `AttributeError` on `None.anchor`
+    rather than the recorded `TypeError`. Figures moved with the fitter: mutation
+    3's coverage is 0.579.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -972,6 +992,14 @@ class GradientBoostedAsymmetricConformalTests(unittest.TestCase):
         share`, `AssertionError: {} != {'calibration': 'conformal_asymmetric',
         'calibration_share': 0.25}`: a scored record would have declared the
         uncalibrated model.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All seven killed again, each on its own subtest, `AssertionError`
+    except 5 (`IndexError`). Mutation 1 now reads `(2.934, 2.934) != (2.934,
+    1.840)`.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -1210,6 +1238,14 @@ class GradientBoostedLaggedSpreadTests(unittest.TestCase):
             same subtest. A negative index wraps to the end of the frame, so
             without it the oldest lags of an early row are read off the latest
             rows, silently.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All nine killed again, on the subtests named above, `AssertionError`
+    except 4c (`IndexError`). 4d was applied where the guard now lives, in
+    `positional_history`.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -1620,6 +1656,17 @@ class GradientBoostedGarchFeatureTests(unittest.TestCase):
     a slow decay from `f_-1`, not a clustering estimate. Converged, inside the
     constraints, and what the estimator says at that length; recorded because
     the first folds of a `--minimum-history 61` run are frames of that size.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All thirteen killed again. Mutation 1, applied as `train_frame =
+    rows[: index + 1]` in the fold loop, now dies before any subtest on the history
+    guard's `ValueError` (the history handed over does not begin with the rows the
+    model was fitted on); its cross-suite failures were not re-counted. Mutation 3
+    was applied as `variances[position + 1]`. Mutation 6 also fails the recovery and
+    two refusal subtests.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -2064,6 +2111,16 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
     took 0.92 s uncalibrated and 3.11 s cross-conformal, and forecasting 240
     rows 0.30 s and 1.83 s: five blocks plus the full fit, and every forecast
     reads each excluding model once more.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All twelve killed again, on the subtests named above,
+    `AssertionError` except 5b (`IndexError`). Mutation 2 was applied as `kept`
+    dropping the as-of rule on both sides of the block; 5f as the first
+    `_require_information` call removed, now an `AttributeError` on `None.anchor`
+    rather than a `TypeError`. Mutation 1's coverage is 0.754.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -2523,6 +2580,13 @@ class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
         `None` -- the silent mis-fit this subtest set exists for.
       * **The declaration** -- `model_settings` reading `== "cross_conformal"`.
         `the declaration names ...`, `AssertionError: {} != {...}`.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All eight killed again, on the subtests named above,
+    `AssertionError`. Mutation 3 still reads `(8.0, 155.0) != (9.0, 154.0)`.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -2820,6 +2884,14 @@ class ScaledCrossConformalTests(unittest.TestCase):
          `tests/test_generated_results.py` **stays green**: it re-scores the
          published records and fits nothing, so it cannot see a fitter
          defect. The equality subtest here is the guard.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All six killed again, `AssertionError`. 2b and 2c now also fail the
+    forecast, floor and band-rebuild subtests. Mutation 4 widened the `trailing`
+    flag along with `scaled`, which the record predates.
     """
 
     REGRESSORS = ("sofr_volume",)
@@ -3328,6 +3400,13 @@ class PartialCrossConformalTests(unittest.TestCase):
             `interpolation` (calm 38 / 38, a gap of 0). Beside it:
             `ScaledCrossConformalTests`' regime and band subtests,
             `AssertionError`.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All six killed again, on the subtests named above, `AssertionError`.
+    Mutation 1 still reads calm 11/63/63.
     """
 
     NAME = "cross_conformal_partial"
@@ -3756,6 +3835,14 @@ class GradientBoostedArxFeatureTests(unittest.TestCase):
     law as well as its coefficients, `n` solves per fit, 0.005 s at 83 rows,
     0.15 s at 500 and 2.6 s at 2100 on this fixture. This test runs in about
     twenty-five seconds.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All seven killed again, on this class's subtests, `AssertionError`.
+    Mutation 1 was applied as `train_frame = rows[: index + 1]`; the record's
+    failures elsewhere in the suite were not re-counted.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -4410,6 +4497,13 @@ class LawKnotsTests(unittest.TestCase):
        directly. The finding is about the memo generally: new state whose
        failure mode is returning another row's answer cannot be left to a
        fixture that happens not to collide.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All four killed again, `AssertionError`. Mutation 3's conformance
+    siblings were not re-run.
     """
 
     REGRESSORS = ("sofr_volume", "on_rrp")
@@ -4692,6 +4786,13 @@ class FittedTailPwmTests(unittest.TestCase):
        committed samples are above either value, so no assertion here reaches
        the fallback branch. Recorded rather than covered by an assertion
        invented for it.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Mutations 2 and 3 killed again, `AssertionError`. 1 and 4 were not
+    re-run: a recorded survivor and a planted control.
     """
 
     #: Residual excesses above a conditional `Q(0.95)`, in basis points, in the
@@ -4889,6 +4990,14 @@ class GpdRecoveryTests(unittest.TestCase):
        inside `GPD_SHAPE_BOUNDS`, so no fit here is clamped and the flag's
        assertion never meets a `True`. The two guards hold separate things ---
        the clamp's honesty there, the `a_1` limb here.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Mutations 1 to 3 killed again, `AssertionError`; 2 still on the one
+    subtest, at a margin of 0.00034. 4 kills `FittedTailPwmTests`, as recorded, and
+    was not re-run here.
     """
 
     #: The plotting positions the sample is built at: Hosking and Wallis'
@@ -4985,9 +5094,23 @@ class GpdTailWiringTests(unittest.TestCase):
     `sigma` off the record, whatever sample produced them.
 
     **Three states.** `heteroscedastic_frame(1200)` at a calibration share of
-    `0.6` leaves 720 calibration rows and a fitted, unclamped, non-fallback
+    `0.7` leaves 840 calibration rows and a fitted, unclamped, non-fallback
     shape --- more than `GPD_MINIMUM_EXCESSES` excesses, with margin, so the
-    `xi != 0` branch of the survival function is what is read. A 36-row frame
+    `xi != 0` branch of the survival function is what is read. The shape must
+    also be positive, an unbounded tail, or part 3 has nothing to read: a
+    negative shape puts the tail's ceiling `sigma / -xi` above the threshold,
+    and beyond it the tail is `0.0` as the default is.
+
+    **Why `0.7` (#55).** The share was `0.6` until scikit-learn moved from
+    1.6.1 to 1.9.1. The sign of a shape fitted on some thirty excesses is not
+    something the wiring controls, and it moved with the fitter: on this frame
+    at `0.6` the fit went from `xi` about `0.040` to `-0.136`, a ceiling `0.6` bp
+    above the top knot, so part 3 read `1.1e-11` at the knot and `0.0` ten bp
+    past it. At `0.7` under 1.9.1 it is `0.112` on 29 excesses. The positive
+    shape is asserted in the first subtest, so a fitter that flips it again
+    fails there, on the premise, and not as a missing tail in part 3. The
+    figures quoted in the mutation record below are the `0.6` fixture's under
+    1.6.1, as recorded; the re-run under 1.9.1 is recorded after it. A 36-row frame
     at the default share leaves nine calibration rows, the conformal minimum,
     where the rank names the largest score, no target exceeds its calibrated top
     quantile, and there is **no tail to attach**: `tail` says `"gpd"`,
@@ -5070,11 +5193,24 @@ class GpdTailWiringTests(unittest.TestCase):
         no-excess subtest. `ForecastInterfaceConformance::
         test_predict_stress_agrees_with_the_quantiles_predict_reports` stays
         green: it fits under `calibration="none"`, where that loop never runs.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). On the `0.7` fixture: mutations 1 to 7 each killed again,
+    `AssertionError`, on the subtests named above (1: parts 2 and 3; 2: part 2; 3a:
+    parts 1 and 2; 3b: the sample and no-excess subtests; 4 to 6: part 5; 7: the
+    no-excess subtest). 8 and 9 kill other classes and were not re-run here. 10
+    cannot be re-run as written: the calibration loop no longer has a local to
+    rename. Inserting `tail = range(...)` in that loop instead failed the
+    recorded-fit subtest with the record's `range(1198, 1199) != 'gpd'`, on the
+    `0.6` fixture.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
     ROWS = 1200
-    SHARE = 0.6
+    SHARE = 0.7
 
     def setUp(self):
         require_extra(self)
@@ -5264,6 +5400,12 @@ class GpdCrossConformalSampleTests(unittest.TestCase):
        no excluding model trains *inside* its block and purge gaps, and this
        mutation only trains on less. It is the safe direction --- no leak ---
        which is why it went unguarded, and it is recorded here as found.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Both killed again, `AssertionError`, on the subtests named above.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -5399,6 +5541,13 @@ class TailLowerBoundRefusalTests(unittest.TestCase):
        `refused` branch ahead of it. Kill sets as recorded there, plus this
        test's part 4 (`'fitted' != 'fallback'`), `TailCeilingTests` part 4 and
        `ExceedanceTailAccountTests` part 2. Every failure is `AssertionError`.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All three killed again, `AssertionError`, with the kill sets
+    recorded.
     """
 
     #: Evenly spaced excesses: bounded above, and the PWM shape of a bounded
@@ -5754,6 +5903,13 @@ class TailAccountTests(unittest.TestCase):
        (`8 != 4`), which count fits per fold for their own reasons. Inside
        the model no refit is expressible: the excesses are not kept, so
        `tail_account` can only read `tail_fit`.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All four killed again, `AssertionError`. Fit counts read 58 against
+    29 where the record has 52 against 26: the fixture carries more folds now.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -6018,6 +6174,14 @@ class ExceedanceTailTests(unittest.TestCase):
        has no tau between the upper two knots on this fixture, so every scored
        curve was unchanged below the top quantile. That is why part 3 reads
        them.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All fourteen killed again, `AssertionError`. Mutation 4 was applied
+    as the predictor never handed `information=`; the run now exits 2 on "needs the
+    run's as-of rule" rather than on an integer purge.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -6382,6 +6546,15 @@ class ExceedanceTailAccountTests(unittest.TestCase):
       `report.tail_accounts or ()`. `AssertionError` in **part 3**, both the gbm
       and climatology subtests: `'tail' unexpectedly found in {..., 'tail': []}`.
       This test and nothing else.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All eight killed again, `AssertionError` except 6 (`KeyError`).
+    B49-1's `KnotRefitTests` subtests raise `ValueError`, as recorded, at 28 entries
+    for 29 folds. Mutation 4's recorded text is not source; it was applied as a
+    second `_exceedance_at_fold` call read for the account.
     """
 
     REGRESSORS = TailAccountTests.REGRESSORS
@@ -6790,6 +6963,12 @@ class ExceedanceFeatureSettingsTests(unittest.TestCase):
        plain run does not see it, because an unset run's settings are empty
        either way, which is why part 3 also reads the set runs. Also
        `ExceedanceTailTests` part 1, `None != 'gpd'`, the same read.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). All nine killed again, on the parts named above, `AssertionError`.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -7216,6 +7395,14 @@ class GradientBoostedCompareTests(ContinuousModelHarness):
     before this block no test read a record's provenance for anything an ml
     fit could put there.
 
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Mutations 1, 3, 4, 5 and 7 and B19 1 to 4 killed again,
+    `AssertionError` except 5 (`ModuleNotFoundError`). 2 and 6 kill other classes
+    and were not re-run; B19's plant is a control.
     """
 
     def setUp(self):
@@ -7646,6 +7833,15 @@ class EventHoldoutCalibrationGapTests(unittest.TestCase):
        that clears the declared purge before calibration opens on
        `2020-04-22`. So the split clause stands on its own and is not carried
        by the keyword check.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Mutation 1, applied as `_reads_information` disabled, killed again,
+    now a `SplitError` naming the missing as-of rule. Mutation 2 has no counterpart:
+    the evaluator hands an `InformationRule`, not an integer gap, so there is no day
+    to drop.
     """
 
     REGRESSORS = ("on_rrp", "sofr_volume")
@@ -7825,6 +8021,13 @@ class GarchCriterionGuardTests(unittest.TestCase):
        `AssertionError: 1.0 not less than 1.0`, twice. Unmutated, the arm
        answers `math.inf` before `_garch_criterion` is reached, so the recorder
        never sees such a vertex. Mutation confirmed applied by diff.
+
+    **Re-run under #55, 1 October 2026** (CPython 3.11.15, numpy 2.4.6, scikit-learn
+    1.9.1, `OMP_NUM_THREADS=1`, `PYTHONDONTWRITEBYTECODE=1`, `-B`,
+    `REPO_MODEL_REQUIRE_ML=1`, the killing test run alone in a disposable copy,
+    control green before and after, each mutation confirmed applied by diff and
+    reverted). Both killed again: 1 by `TypeError` in both criterion tests, 2 by
+    `AssertionError` in the search test.
     """
 
     SQUARES = (1.0, None, 4.0, 9.0)

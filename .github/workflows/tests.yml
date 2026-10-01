@@ -5,9 +5,8 @@ on:
     branches: [main, improvements]
   push:
     branches: [main, improvements]
-  # Weekly all-versions parity check. The pull-request matrix runs only the
-  # declared range's endpoints (3.9 and 3.11); this schedule is what catches a
-  # mid-range (3.10-only) regression between one merge and the next Monday.
+  # Weekly run on main, so a change in the runner image or a dependency surfaces
+  # between one merge and the next Monday.
   schedule:
     - cron: "0 5 * * 1"
 
@@ -21,48 +20,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prepare:
-    # Emits the interpreter matrix so the suite job can be shaped per event.
-    # Runs in seconds.
-    name: shape the run
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.shape.outputs.matrix }}
-    steps:
-      - id: shape
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo 'matrix=["3.9", "3.11"]' >> "$GITHUB_OUTPUT"
-          else
-            echo 'matrix=["3.9", "3.10", "3.11"]' >> "$GITHUB_OUTPUT"
-          fi
-
   suite:
-    name: unit tests (${{ matrix.python-version }})
-    needs: prepare
+    name: unit tests (3.11)
     runs-on: ubuntu-latest
-    # Pull requests run the two endpoints of the declared range, 3.9 and 3.11:
-    # measured on 7b8f0c9, 3.9.23 and 3.10.20 were green and identical, and the
-    # matrix is the honest answer to "should both tracks run the same
-    # interpreter" -- parity by decree was never the check. The weekly schedule
-    # above still runs all three declared versions, so a mid-range-only
-    # regression surfaces within a week instead of on every pull request.
-    # History: this job was pinned to a single "3.12" until 10 Sep, on which
-    # the suite ran all 700 tests and failed exactly one -- the guard that
-    # enforces requires-python = ">=3.9,<3.11" -- so the badge at the top of
-    # README.md was red for a version the project does not claim to support,
-    # and no CI run had ever exercised 3.9 at all. 3.11 joined on 10 Sep, when
-    # the range widened to <3.12; 3.12 is still out, on the exact reproduction.
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    # 3.11 only, the one declared interpreter (requires-python, #53). 3.9 and
+    # 3.10 left the matrix on the human's ruling of 30 Sep (#29): every
+    # environment that runs this project is the rmm cloud environment, on 3.11.
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v6
         with:
-          python-version: "${{ matrix.python-version }}"
+          python-version: "3.11"
 
       # No install step, deliberately: this job is the proof that the core
       # reproduces with no install. The ml extra has its own job below. If this
@@ -89,14 +58,16 @@ jobs:
     # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
     # the extra did not install: the core job above cannot see those tests,
     # and a skip nothing can see is not a test. 3.11, the interpreter the rmm
-    # environment scores on (#29); the extra's version bounds resolve there to
-    # the same numpy and scikit-learn that environment pins.
+    # environment scores on (#29). The install pins exactly the versions the
+    # rmm environment's /opt/rmm-venv is to pin (#55), so CI and the environment
+    # fit with the same numpy and scikit-learn; pyproject.toml's bounds admit
+    # them.
     #
     # On a pull request, the modules whose tests change with the extra
     # installed, and nothing else: test_ml.py, test_tail_diagnostics.py (which
     # imports test_ml) and test_cli_eval.py (whose gbm cases skip without the
     # extra). Every other module runs identically with or without it and is
-    # proven by the matrix job above in the same run. The two conformance-
+    # proven by the core job above in the same run. The two conformance-
     # coverage checks in test_baseline and test_contract import the modules
     # that define conformance cases themselves (#29), so they no longer need
     # this job to load test_ml beside them. Pushes and the weekly schedule run
@@ -115,7 +86,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: Install the ml extra
-        run: python3 -m pip install ".[ml]"
+        run: python3 -m pip install ".[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"
 
       - name: Run the suite
         env:

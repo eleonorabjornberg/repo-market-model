@@ -17,13 +17,16 @@ re-run from their own `declaration` blocks; no script re-checks them yet.
 
 ## Environment
 
-- Python 3.9, Python 3.10 or Python 3.11, declared as a range in `pyproject.toml`
-  and stated nowhere else that is not checked against it. Each was run whole before
-  the range admitted it. 3.12 runs everything except the exact reproduction of the
+- Python 3.11, declared in `pyproject.toml` and stated nowhere else that is not
+  checked against it. 3.12 runs everything except the exact reproduction of the
   published record: its `sum()` rounds floats differently, and the figures move in
   their last digits.
 - no third-party Python packages for any published record; the optional `ml` extra
-  (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`
+  (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`. CI pins numpy 2.4.6
+  and scikit-learn 1.9.1, and the rmm environment is to pin the same. A gbm record names the versions
+  it was fitted with in `provenance.ml_libraries`; the records in `docs/runs/` were
+  fitted with numpy 2.0.2 and scikit-learn 1.6.1, and a re-run under other versions
+  is a new measurement, not a reproduction
 - commands run from the repository root
 
 Record the code revision before running an experiment:
