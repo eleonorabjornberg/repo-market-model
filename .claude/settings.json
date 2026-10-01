@@ -4,7 +4,9 @@
       "Bash(git fetch origin)",
       "Bash(git merge-base --is-ancestor origin/main HEAD)",
       "Bash(git merge --ff-only origin/main)",
-      "Bash(git push origin HEAD)"
+      "Bash(git push origin HEAD)",
+      "Edit(.github/workflows/**)",
+      "Write(.github/workflows/**)"
     ]
   }
 }
