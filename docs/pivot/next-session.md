@@ -29,7 +29,8 @@ state below comes with the command that checks it, and the command's output wins
   PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv --manifest metadata/funding_panel_manifest.json
   ```
 
-  The expected digest is `d8b716cf…`.
+  The expected digest is `865979fa…`. The records in `docs/runs/` were scored on the panel before `quarter_end`
+  became the last business day of the quarter (#44), digest `d8b716cf…`.
 - **Nothing is re-scored yet.** Every record in `docs/runs/` was scored under the earlier rule.
 - **The environment:** `/opt/rmm-venv` should exist, with numpy 2.0.2 and scikit-learn 1.6.1. If it is missing, the
   environment's setup script did not apply. Say so rather than installing other versions, because scikit-learn's

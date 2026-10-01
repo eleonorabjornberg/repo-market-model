@@ -9,7 +9,9 @@ Three columns, each a function of the scored date alone and contributing no sour
 
 - `days_to_month_end` — calendar days remaining until the last day of the month. Zero on the last
   day; 27 to 30 on the first, depending on month length. Unclipped and unsigned.
-- `quarter_end` — the last calendar day of March, June, September or December.
+- `quarter_end` — the last business day of March, June, September or December: the last weekday of
+  the quarter not in the market holiday table. Until 1 October 2026 it was the last calendar day; see
+  below.
 - `tax_date` — the statutory corporate estimated-tax date, rolled forward off Saturdays, Sundays and
   the legal holidays of the District of Columbia, **and the two business days that follow it**.
 
@@ -34,6 +36,20 @@ A plain countdown has neither fault. The month is one monotone ramp, the two bou
 opposite ends of it, and the middle stays resolved. The cost is that a tree spends two splits to
 express "either end of the month" where a signed column spends one. That is the trade, and it buys
 back the middle.
+
+## Amended 1 October 2026: `quarter_end` on business days
+
+Eleonora's decisions on #44: 30 September 2026, that `quarter_end` marks the last business day of
+the quarter, and 1 October 2026, ruling on the review of that change, that business days come from
+a published holiday schedule, not from the panel's grid.
+
+`quarter_end` is 1.0 on the last weekday of the quarter that is not in
+`metadata/market_holidays.json`, and 0.0 otherwise. It is computed from the date and the table
+alone, so it stays a function of the scored date. The table lists the US government-securities
+market's full-close days, each with its date, reason and source, and its checksum is pinned in
+`data.MARKET_HOLIDAYS_SHA256`. An unscheduled closure is a new table entry, added by a reviewed pull request.
+
+`days_to_month_end` and `tax_date` are unchanged, and neither reads the table.
 
 ## Why calendar days and not business days
 

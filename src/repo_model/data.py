@@ -2420,7 +2420,9 @@ CARRY_FORWARD_COLUMNS = MappingProxyType(
 # rule: each value below is computed from one `date` and nothing else -- no
 # panel row, no grid, no source. A value that read the next row on the grid
 # would depend on which rows exist after the scored date, which is a look
-# forward at the panel wearing a calendar.
+# forward at the panel wearing a calendar. `quarter_end` also reads the
+# tracked market holiday table, a published schedule fixed in the tree, which
+# no print moves (#44).
 
 
 def _last_day_of_month(day: date) -> int:
@@ -2440,16 +2442,84 @@ def days_to_month_end(day: date) -> float:
     return float(_last_day_of_month(day) - day.day)
 
 
-def quarter_end(day: date) -> float:
-    """1.0 on the last calendar day of March, June, September or December.
+#: The US government-securities market's full-close days, and the file's
+#: sha256 (#44). A changed table is refused until this pin moves with it, so an
+#: entry is added by a reviewed change to both.
+MARKET_HOLIDAYS_PATH = Path(__file__).parents[2] / "metadata" / "market_holidays.json"
+MARKET_HOLIDAYS_SHA256 = "4d687477f7b1d037f78aae7fc10f125725e2bdba750fd7ae662d9433b8e7107a"
 
-    The last *calendar* day, not the last grid date: 2019-03-31 was a Sunday,
-    and 2019-03-29 is 0.0. A panel therefore carries no 1.0 at all for a
-    quarter whose last day it has no row for, and that is the definition, not
-    a hole -- the grid-relative reading needs the next row to know it is last.
+
+@dataclass(frozen=True)
+class MarketHolidays:
+    """The market holiday table: the days it covers, and the weekdays it closes."""
+
+    first: date
+    last: date
+    closed: frozenset
+
+
+_MARKET_HOLIDAYS_CACHE: Dict[str, MarketHolidays] = {}
+
+
+def market_holidays(path: Optional[Path] = None) -> MarketHolidays:
+    """Read `metadata/market_holidays.json`, refusing a file its pinned checksum does not name.
+
+    Eleonora's ruling of 1 October 2026 on #44: business days come from a
+    published holiday schedule, not from the panel's grid. The table lists
+    each full close with its date, reason and source; the statutory entries
+    follow from 5 U.S.C. 6103, the others are SIFMA's recommendations. A file
+    whose sha256 is not `MARKET_HOLIDAYS_SHA256` is a `ValueError`. An
+    unscheduled closure is a new entry, added by a reviewed pull request.
     """
 
-    return float(day.month in (3, 6, 9, 12) and day.day == _last_day_of_month(day))
+    path = MARKET_HOLIDAYS_PATH if path is None else Path(path)
+    key = str(path)
+    if key in _MARKET_HOLIDAYS_CACHE:
+        return _MARKET_HOLIDAYS_CACHE[key]
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != MARKET_HOLIDAYS_SHA256:
+        raise ValueError(
+            f"{path} has sha256 {digest}, but MARKET_HOLIDAYS_SHA256 is {MARKET_HOLIDAYS_SHA256}"
+        )
+    table = json.loads(raw.decode("utf-8"))
+    closed = frozenset(date.fromisoformat(item["date"]) for item in table["closed"])
+    holidays = MarketHolidays(
+        first=date.fromisoformat(table["first"]),
+        last=date.fromisoformat(table["last"]),
+        closed=closed,
+    )
+    _MARKET_HOLIDAYS_CACHE[key] = holidays
+    return holidays
+
+
+def quarter_end(day: date) -> float:
+    """1.0 on the last business day of March, June, September or December.
+
+    Eleonora's decision (#44) and her ruling of 1 October 2026: the last
+    weekday of the quarter that is not in the market holiday table
+    (`market_holidays`), computed from the date and the table alone, never
+    from the panel's grid. 2019-03-31 was a Sunday, so 2019-03-29 reads 1.0;
+    2024-03-29 was Good Friday, a full close, so 2024-03-28 does. A quarter the
+    table does not wholly cover is refused with a `ValueError` rather than read
+    on weekdays alone.
+
+    Until #44 this was the last *calendar* day, which read 0.0 on every day of
+    a quarter that ended on a weekend.
+    """
+
+    holidays = market_holidays()
+    month = 3 * ((day.month - 1) // 3) + 3
+    end = date(day.year, month, _last_day_of_month(date(day.year, month, 1)))
+    start = date(day.year, month - 2, 1)
+    if start < holidays.first or end > holidays.last:
+        raise ValueError(
+            f"the market holiday table covers {holidays.first.isoformat()} to "
+            f"{holidays.last.isoformat()}, not the quarter of {day.isoformat()}"
+        )
+    while end.weekday() >= 5 or end in holidays.closed:
+        end -= timedelta(days=1)
+    return float(day == end)
 
 
 #: The months holding a corporate estimated-tax deadline for a calendar-year
@@ -2476,7 +2546,10 @@ def _tax_deadline_holidays(year: int) -> frozenset:
     **This is not a holiday calendar and must not be used as one.** The
     repository refuses to invent one -- `expected_ref_dates_from_registry`,
     `_settlement_publication`, `build_daily_panel` rule 8, and `splits.py` on
-    why a guard must not depend on one -- and that refusal stands. This is the
+    why a guard must not depend on one -- and that refusal stands. The one
+    tracked schedule, `market_holidays` (#44), is read by `quarter_end` alone,
+    and not here: a tax deadline rolls by the District's holidays, not the
+    market's. This is the
     statutory rolling rule for one deadline: 26 U.S.C. 7503 moves a deadline
     falling on a Saturday, Sunday or "legal holiday" to the next day that is
     none of them, and a legal holiday there is one in the District of

@@ -1,0 +1,838 @@
+{
+  "description": "Full-close days of the US government-securities market, 2018-01-01 to 2027-12-31: the days `data.quarter_end` does not count as business days, besides Saturdays and Sundays. Eleonora's ruling of 1 October 2026 on #44 (option A). An entry with basis 'statute' is a legal public holiday under 5 U.S.C. 6103(a) on its observed day (a Saturday holiday on the Friday before, a Sunday one on the Monday after); tests/test_data.py derives them from the statute and checks this list against the derivation. An entry with basis 'sifma' is a full close SIFMA recommended beyond the statute; verified false means it was not read on sifma.org, which the rmm environment cannot reach. 'statutory_days_the_market_opened' lists observed statutory holidays on which the market did not close; they are not in 'closed'. An unscheduled closure is a new entry, added by a reviewed pull request. data.MARKET_HOLIDAYS_SHA256 pins this file's sha256, and data.quarter_end refuses a file that does not match it, so a changed entry is a reviewed code change too.",
+  "first": "2018-01-01",
+  "last": "2027-12-31",
+  "closed": [
+    {
+      "date": "2018-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-01-15",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-02-19",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-03-30",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2018-05-28",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-09-03",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-10-08",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-11-12",
+      "reason": "Veterans Day (2018-11-11, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-11-22",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2018-12-05",
+      "reason": "National Day of Mourning for President George H. W. Bush",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2018-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-01-21",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-02-18",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-04-19",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2019-05-27",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-09-02",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-10-14",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-11-28",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2019-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-01-20",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-02-17",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-04-10",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2020-05-25",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-07-03",
+      "reason": "Independence Day (2020-07-04, a Saturday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-09-07",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-10-12",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-11-26",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2020-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-01-18",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-02-15",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-04-02",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2021-05-31",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-07-05",
+      "reason": "Independence Day (2021-07-04, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-09-06",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-10-11",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-11-25",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2021-12-24",
+      "reason": "Christmas Day (2021-12-25, a Saturday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-01-17",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-02-21",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-04-15",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2022-05-30",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-06-20",
+      "reason": "Juneteenth National Independence Day (2022-06-19, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-09-05",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-10-10",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-11-24",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2022-12-26",
+      "reason": "Christmas Day (2022-12-25, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-01-02",
+      "reason": "New Year's Day (2023-01-01, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-01-16",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-02-20",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-04-07",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2023-05-29",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-09-04",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-10-09",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-11-23",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2023-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-01-15",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-02-19",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-03-29",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2024-05-27",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-09-02",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-10-14",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-11-28",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2024-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-01-20",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-02-17",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-04-18",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2025-05-26",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-09-01",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-10-13",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-11-27",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2025-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-01-19",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-02-16",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-04-03",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2026-05-25",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-07-03",
+      "reason": "Independence Day (2026-07-04, a Saturday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-09-07",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-10-12",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-11-26",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2026-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-01-18",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-02-15",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-03-26",
+      "reason": "Good Friday",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2027-05-31",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-06-18",
+      "reason": "Juneteenth National Independence Day (2027-06-19, a Saturday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-07-05",
+      "reason": "Independence Day (2027-07-04, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-09-06",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-10-11",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-11-25",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2027-12-24",
+      "reason": "Christmas Day (2027-12-25, a Saturday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    }
+  ],
+  "statutory_days_the_market_opened": [
+    {
+      "date": "2021-06-18",
+      "reason": "Juneteenth (2021-06-19, a Saturday), observed. Pub. L. 117-17 made it a legal public holiday on 17 June 2021, the day before; the market stayed open.",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2021-12-31",
+      "reason": "New Year's Day (2022-01-01, a Saturday), observed. The market stays open on 31 December when New Year's Day falls on a Saturday.",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2023-11-10",
+      "reason": "Veterans Day (2023-11-11, a Saturday), observed. The market stayed open.",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    },
+    {
+      "date": "2027-12-31",
+      "reason": "New Year's Day (2028-01-01, a Saturday), observed. Assumed open by the 2021-12-31 precedent; not read from a SIFMA recommendation.",
+      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
+      "verified": false
+    }
+  ]
+}
