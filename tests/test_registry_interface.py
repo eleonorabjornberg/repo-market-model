@@ -50,7 +50,7 @@ What survives here is what only Track B can test, and none of it is shape:
   * that `max_release_lag_days` takes the maximum over the *named* sources
     rather than over the whole registry,
   * that each basis converts to the number the contract says it does,
-  * that the result is a type `require_purge_days` accepts,
+  * that the result is a plain int,
   * that the three silent-zero cases raise instead of returning a number.
 
 Nothing here computes a lag
@@ -104,11 +104,12 @@ neither was landing anywhere, so both are pinned here rather than in
 a review notice in CI, which is friction worth spending only when the assertion
 has to live there. These do not.
 
-  * **"Two registry corrections."** `validate_source_corrections` below, with
-    fixture tests that run today. `fields` becomes machine field names only with
-    prose moving to `coverage`, and `structural_zeros_reviewed` plus
+  * **"Two registry corrections."** `fields` becomes machine field names only
+    with prose moving to `coverage`, and `structural_zeros_reviewed` plus
     `reviewed_note` make "reviewed and empty" distinguishable from "not yet
-    analyzed". The contract adopted both and assigned them to Track A.
+    analyzed". The real registry is held to both by
+    `tests/test_contract.py::SourceRegistryTests`; the fixture-only validator
+    that used to sit here was removed by directive 05 (#50).
 
   * **The publication-gap check.** The contract says "a test asserts no observed
     publication gap exceeds the declared bound" in the passive voice, and the
@@ -153,8 +154,6 @@ from repo_model.contract import (
 
 
 REPO_ROOT = Path(__file__).parents[1]
-SPLITS_PATH = REPO_ROOT / "src" / "repo_model" / "splits.py"
-EVENT_EVAL_PATH = REPO_ROOT / "src" / "repo_model" / "event_eval.py"
 SOURCES_PATH = REPO_ROOT / "metadata" / "sources.json"
 
 
@@ -353,137 +352,6 @@ def _non_docstring_strings(path):
     ]
 
 
-class TrackBDoesNotReimplementTheConversionTests(unittest.TestCase):
-    """The prohibition, enforced rather than promised.
-
-    `CLAUDE.md`: "Never write a second implementation of a Track A rule to
-    unblock yourself." The failure mode is not malice, it is convenience --
-    a four-line helper that reads the registry and takes a maximum, added to
-    keep a backtest running while Track A finishes. It would work, it would
-    disagree with `registry.py` in some corner, and nothing would notice.
-    """
-
-    def owned_modules(self):
-        return {"splits.py": SPLITS_PATH, "event_eval.py": EVENT_EVAL_PATH}
-
-    def test_no_owned_module_reads_the_source_registry(self):
-        for name, path in self.owned_modules().items():
-            with self.subTest(module=name):
-                for literal in _non_docstring_strings(path):
-                    self.assertNotIn(
-                        "sources.json",
-                        literal,
-                        msg=f"{name} names metadata/sources.json in live code; the "
-                        "registry is Track A's to read",
-                    )
-
-    def test_no_owned_module_reaches_for_a_release_lag_field(self):
-        for name, path in self.owned_modules().items():
-            with self.subTest(module=name):
-                for literal in _non_docstring_strings(path):
-                    self.assertNotEqual(
-                        literal,
-                        "release_lag",
-                        msg=f"{name} subscripts a release_lag field; the key is a "
-                        "structured object and reading it is Track A's job",
-                    )
-
-    #: The one name an owned module may take from `repo_model.registry`. The
-    #: conversion is Track A's; calling it is how Track B is supposed to reach
-    #: it, and importing anything else -- the module object, a helper, a
-    #: validator -- is how a caller starts assembling a second conversion out of
-    #: Track A's parts.
-    PERMITTED_REGISTRY_IMPORTS = frozenset({"max_release_lag_days"})
-
-    def test_an_owned_module_imports_the_conversion_and_nothing_else_from_it(self):
-        """Track B calls the conversion. It never takes the pieces of one.
-
-        This test used to read "must not import `repo_model.registry` until it
-        exists". It exists, `baseline.py` has called `max_release_lag_days`
-        since the purge block, and on 8 September `event_eval.py` began deriving
-        its own gap the same way -- so the old form was a guard whose premise
-        had expired, and a guard with an expired premise fails on the first
-        correct change rather than on a wrong one.
-
-        What survives is the prohibition that was always the point: **call the
-        conversion, never reassemble it.** `from .registry import
-        max_release_lag_days` is the supported reach. `import registry` and
-        `from .registry import _rows_have_available_at` are not: the first hands
-        an owned module the whole namespace to pick from, and the second is the
-        four-line helper `CLAUDE.md` names, arriving one part at a time.
-
-        Not conditional, either. A try/except ImportError around the import
-        would create a second code path, and the branch that runs when the
-        import fails is the one nobody tests -- so the whole tree is walked for
-        an import node rather than the module header read, and one hidden inside
-        a function is found the same way.
-        """
-
-        for name, path in self.owned_modules().items():
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        with self.subTest(module=name, imported=alias.name):
-                            self.assertNotIn(
-                                "registry",
-                                alias.name,
-                                msg=f"{name} imports the module {alias.name!r} "
-                                "rather than the one call; the whole namespace "
-                                "is then in reach and a second conversion can "
-                                "be assembled from its parts",
-                            )
-                elif isinstance(node, ast.ImportFrom) and "registry" in (
-                    node.module or ""
-                ):
-                    taken = {alias.name for alias in node.names}
-                    with self.subTest(module=name):
-                        self.assertLessEqual(
-                            taken,
-                            self.PERMITTED_REGISTRY_IMPORTS,
-                            msg=f"{name} takes "
-                            f"{sorted(taken - self.PERMITTED_REGISTRY_IMPORTS)} "
-                            f"from repo_model.registry; only "
-                            f"{sorted(self.PERMITTED_REGISTRY_IMPORTS)} is the "
-                            "supported reach, and the rest is how a second "
-                            "implementation of the conversion gets built out of "
-                            "Track A's own pieces",
-                        )
-
-    def test_no_owned_module_defines_a_lag_conversion(self):
-        for name, path in self.owned_modules().items():
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    lowered = node.name.lower()
-                    for forbidden in ("release_lag", "lag_days", "max_lag"):
-                        with self.subTest(module=name, function=node.name):
-                            self.assertNotIn(
-                                forbidden,
-                                lowered,
-                                msg=f"{name} defines {node.name!r}; the conversion "
-                                "belongs to repo_model.registry",
-                            )
-
-    def test_the_splitter_still_takes_purge_as_a_plain_int(self):
-        """The half of this that must *not* change.
-
-        The contract keeps the pinned semantics. If sizing the gap ever moved
-        into the splitter, this is what would have to be deleted first.
-        """
-
-        from repo_model.splits import require_purge_days, rolling_origin
-
-        self.assertEqual(
-            list(inspect.signature(rolling_origin).parameters),
-            ["dates", "min_train", "step", "purge"],
-        )
-        require_purge_days(3)
-        with self.assertRaises(Exception):
-            require_purge_days(3.0)
-
-
-
 # --------------------------------------------------------------------------
 # The interface Track A must satisfy
 # --------------------------------------------------------------------------
@@ -572,153 +440,16 @@ class MaxReleaseLagDaysSpecTests(unittest.TestCase):
         self.assertEqual(feature_set, 3)
         self.assertLess(feature_set, max(EXPECTED_LAG.values()))
 
-    def test_the_result_is_an_int_the_splitter_will_accept(self):
-        """`require_purge_days` rejects a float and rejects a bool.
-
-        The two ends have to agree on the type or the handoff fails at the call
-        site, so the check is written against the real validator rather than
-        against `isinstance`.
-        """
+    def test_the_result_is_a_plain_int(self):
+        """A day count, never a float or a bool."""
 
         from repo_model.registry import max_release_lag_days
-        from repo_model.splits import require_purge_days
 
-        purge = max_release_lag_days(
+        lag = max_release_lag_days(
             FIXTURE_REGISTRY, ["daily_rate"], decision_time=DECISION_TIME
         )
-        self.assertIsInstance(purge, int)
-        self.assertNotIsInstance(purge, bool)
-        require_purge_days(purge)
-
-
-def validate_source_corrections(source):
-    """The "Two registry corrections" from the same contract section.
-
-    Separate from `validate_release_lag` because they are about the source entry
-    as a whole rather than about its lag declaration, and because they land on a
-    different schedule -- a registry can have correct lags and still record an
-    unreviewed `structural_zeros` as though it were a finding.
-    """
-
-    problems = []
-    if not isinstance(source, dict):
-        return [f"source must be an object, got {type(source).__name__}"]
-
-    fields = source.get("fields")
-    if not isinstance(fields, list) or not fields:
-        problems.append("'fields' must be a non-empty list of machine field names")
-    else:
-        for field in fields:
-            if not isinstance(field, str) or " " in field.strip():
-                problems.append(
-                    f"field {field!r} reads as prose; 'fields' is machine field "
-                    "names only, and the identity-subset check is meaningless "
-                    "unless it is"
-                )
-    if "coverage" not in source:
-        problems.append(
-            "no 'coverage'; human-readable coverage moved out of 'fields' and "
-            "has to land somewhere"
-        )
-
-    if "structural_zeros" not in source:
-        problems.append("no 'structural_zeros'")
-    if "structural_zeros_reviewed" not in source:
-        problems.append(
-            "no 'structural_zeros_reviewed'; an empty structural_zeros is not a "
-            "finding, and absence of evidence is not to be recorded as evidence "
-            "of absence"
-        )
-    elif not isinstance(source["structural_zeros_reviewed"], bool):
-        problems.append("'structural_zeros_reviewed' must be a bool")
-    elif source["structural_zeros_reviewed"] and not str(
-        source.get("reviewed_note", "")
-    ).strip():
-        problems.append(
-            "structural_zeros_reviewed is true with no 'reviewed_note'; the note "
-            "is what makes the claim checkable"
-        )
-
-    return problems
-
-
-class RegistryCorrectionsTests(unittest.TestCase):
-    """The validator for "Two registry corrections", exercised on fixtures.
-
-    Runs today. The corrections are Track A's to apply to
-    `metadata/sources.json`; what this pins is what "applied" means, so that
-    "reviewed" cannot be recorded by leaving a key empty.
-    """
-
-    WELL_FORMED = {
-        "fields": ["IORB", "WRESBAL"],
-        "coverage": "Reserve balances and the interest-on-reserves rate.",
-        "structural_zeros": [],
-        "structural_zeros_reviewed": True,
-        "reviewed_note": "No structural zeros: both series are strictly positive.",
-    }
-
-    def assertRejected(self, source, fragment):
-        problems = validate_source_corrections(source)
-        self.assertTrue(problems, msg=f"expected a problem mentioning {fragment!r}")
-        self.assertTrue(
-            any(fragment in problem for problem in problems),
-            msg=f"no problem mentioned {fragment!r}; got {problems}",
-        )
-
-    def test_a_corrected_source_validates(self):
-        self.assertEqual(validate_source_corrections(self.WELL_FORMED), [])
-
-    def test_prose_in_fields_is_rejected(self):
-        """Today's registry has "revision indicator" and "portfolio holdings"."""
-
-        self.assertRejected(
-            dict(self.WELL_FORMED, fields=["rate", "revision indicator"]),
-            "reads as prose",
-        )
-
-    def test_a_source_without_coverage_is_rejected(self):
-        source = dict(self.WELL_FORMED)
-        del source["coverage"]
-        self.assertRejected(source, "no 'coverage'")
-
-    def test_an_unreviewed_empty_structural_zeros_is_not_a_finding(self):
-        """The correction's whole point.
-
-        An empty list plus no review means "not yet analyzed", and contract test
-        5 stays a stand-in for that source. Recording it as a finding would be
-        absence of evidence written down as evidence of absence.
-        """
-
-        source = dict(self.WELL_FORMED)
-        del source["structural_zeros_reviewed"]
-        self.assertRejected(source, "not a finding")
-
-    def test_a_review_claim_without_a_note_is_rejected(self):
-        self.assertRejected(
-            dict(self.WELL_FORMED, reviewed_note="   "), "no 'reviewed_note'"
-        )
-
-    def test_an_unreviewed_source_may_omit_the_note(self):
-        """"Not yet analyzed" is a legitimate state to be in, honestly recorded."""
-
-        self.assertEqual(
-            validate_source_corrections(
-                dict(self.WELL_FORMED, structural_zeros_reviewed=False, reviewed_note="")
-            ),
-            [],
-        )
-
-
-# `PublicationGapTests` was here until 8 September 2026. It is now
-# `RealSnapshotPublicationGapTests` in `tests/test_data.py`, moved under the standing
-# invitation in its own docstring: Track A owns the panel and the registry, so Track A
-# sites the check. Two things were wrong with it in place, both recorded at the new
-# site. It called `load_point_in_time_panel()` with no arguments against an
-# implementation that requires a `path`, and its `expectedFailure` marker made that
-# `TypeError` read as "waiting on real snapshots" for the whole time it existed. And
-# the bound it checks cannot fail for any source now in the registry, because their
-# `available_at` is derived from that same declaration rather than observed.
+        self.assertIsInstance(lag, int)
+        self.assertNotIsInstance(lag, bool)
 
 
 class RegistryModuleTests(unittest.TestCase):

@@ -24,6 +24,17 @@ Standard library only.
 
     python3 scripts/emit_status.py            # writes docs/status.json
     python3 scripts/emit_status.py --check    # prints it, writes nothing
+    python3 scripts/emit_status.py --verify   # exit 1 if the file is stale
+
+**Where it is regenerated (directive 05, #50).** In the pull request that
+changes what it reads -- `PLAN.md`, the records in `docs/runs/`, the panel
+manifest, `metadata/events.json` or `pyproject.toml` -- never by a bot commit
+on `main`. The bot commit left every open branch one commit behind `main`.
+`--verify` and `tests/test_generated_results.py` refuse a file whose content
+disagrees with its inputs. They ignore `commit` and `generated_at`, which name
+the commit the file was generated at: a file cannot carry the hash of the
+commit that contains it, so after a merge these name the work commit that
+regenerated it, which is the commit that changed the status.
 """
 import json
 import re
@@ -186,7 +197,12 @@ def dependency_count():
     return len([item for item in match.group(1).split(",") if item.strip()])
 
 
-def main():
+#: The keys that name the commit the file was generated at, not its content.
+VOLATILE = ("commit", "generated_at")
+
+
+def build_status():
+    """The status this repository's inputs yield, as a dict."""
     manifest = json.loads((ROOT / "docs/runs/funding_panel.manifest.json").read_text(encoding="utf-8"))
     events = json.loads((ROOT / "metadata/events.json").read_text(encoding="utf-8"))
 
@@ -213,8 +229,32 @@ def main():
         },
         "run_records": sorted(p.name for p in (ROOT / "docs/runs").glob("*.json")),
     }
+    return status
+
+
+def stale_keys(published, built):
+    """The keys whose published value differs from the built one, `VOLATILE` aside."""
+    keys = (set(published) | set(built)) - set(VOLATILE)
+    return sorted(key for key in keys if published.get(key) != built.get(key))
+
+
+def main():
+    status = build_status()
+    phases = parse_plan((ROOT / "PLAN.md").read_text(encoding="utf-8"))
+    phase = phases[status["phase"]["number"]]
+    state = status["phase"]["state"]
 
     text = json.dumps(status, indent=2, sort_keys=True) + "\n"
+    if "--verify" in sys.argv:
+        published = json.loads((ROOT / "docs/status.json").read_text(encoding="utf-8"))
+        stale = stale_keys(published, status)
+        if stale:
+            sys.stderr.write(
+                "docs/status.json is stale in %s; run: python3 scripts/emit_status.py\n"
+                % ", ".join(stale))
+            sys.exit(1)
+        print("docs/status.json agrees with its inputs.")
+        return
     if "--check" in sys.argv:
         sys.stdout.write(text)
         return

@@ -160,10 +160,6 @@ class GeneratedResultsTests(unittest.TestCase):
                          "a committed notebook output is a result nobody re-ran")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def load_reproduction():
     path = REPO_ROOT / "scripts/reproduce_milestone_a.py"
     spec = importlib.util.spec_from_file_location("reproduce_milestone_a", path)
@@ -435,3 +431,52 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         generator = self.records_dir(mutate)
         with self.assertRaises(generator.RecordError):
             generator.challenger_records()
+
+
+def load_status_emitter():
+    path = REPO_ROOT / "scripts/emit_status.py"
+    spec = importlib.util.spec_from_file_location("emit_status", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class StatusFileTests(unittest.TestCase):
+    """`docs/status.json` is regenerated in the pull request that moves it.
+
+    Directive 05 (#50) retired the bot commit that regenerated it on `main`
+    after every merge, which left every open branch one commit behind. So the
+    file is now committed by the change to its inputs, and this holds it to
+    them: everything but `commit` and `generated_at`, which name the commit the
+    file was generated at and cannot name the commit that contains it.
+
+    Mutation record (directive 05, 1 October 2026; CPython 3.11, `-B`,
+    `PYTHONDONTWRITEBYTECODE=1`, the class run alone, control green before and
+    after, each mutation confirmed applied and reverted):
+
+    1. `"panel_rows": 2104` changed to `2105` in `docs/status.json`. Kills
+       `test_the_committed_status_is_what_its_inputs_yield`, `AssertionError`
+       naming `figures`.
+    2. One record name in `run_records` replaced by another. The same test,
+       `AssertionError` naming `run_records`.
+    3. `"commit"` changed to `"0000000"`. Nothing fails, as intended.
+    """
+
+    def test_the_committed_status_is_what_its_inputs_yield(self):
+        emitter = load_status_emitter()
+        published = json.loads((REPO_ROOT / "docs/status.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            [], emitter.stale_keys(published, emitter.build_status()),
+            "docs/status.json disagrees with PLAN.md, docs/runs/ or the manifests; "
+            "run: python3 scripts/emit_status.py")
+
+    def test_only_the_commit_and_its_date_are_exempt(self):
+        emitter = load_status_emitter()
+        self.assertEqual(("commit", "generated_at"), emitter.VOLATILE)
+        self.assertEqual(
+            ["figures"],
+            emitter.stale_keys({"commit": "a", "figures": 1}, {"commit": "b", "figures": 2}))
+
+
+if __name__ == "__main__":
+    unittest.main()

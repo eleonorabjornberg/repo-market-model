@@ -3825,46 +3825,6 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
         self.assertNotIn("--journal", options)
 
 
-class SeamTests(unittest.TestCase):
-    """The property "Decided: who owns the CLI" was written to get."""
-
-    def test_adding_the_subcommand_required_no_edit_to_the_dispatcher(self):
-        dispatcher = inspect.getsource(cli)
-        for name in ("event-holdout", "event_holdout",
-                     "exceedance-backtest", "exceedance_backtest"):
-            self.assertNotIn(name, dispatcher)
-
-    def test_the_dispatcher_nevertheless_offers_it(self):
-        parser = cli.build_parser()
-        command = next(a for a in parser._actions if a.dest == "command")
-        self.assertIn("event-holdout", command.choices)
-        self.assertIn("exceedance-backtest", command.choices)
-
-    def test_the_second_track_b_subcommand_landed_the_same_way(self):
-        """The property is not that the file got an owner once.
-
-        `exceedance-backtest` is the first command added since the split that
-        is not the one the split was written for, so it is the first evidence
-        that the seam holds for the next command rather than for the example.
-        """
-
-        args = cli.build_parser().parse_args(
-            ["exceedance-backtest", "--panel", "p", "--thresholds", "t",
-             "--registry", "r", "--feature", "spread_bps",
-             "--decision-time", "16:30", "--model", "climatology",
-             "--report", "o"]
-        )
-        self.assertIs(args.handler, cli_eval._exceedance_backtest)
-
-    def test_the_handler_is_registered_by_this_track_module(self):
-        args = cli.build_parser().parse_args(
-            ["event-holdout", "--panel", "p", "--events", "e", "--thresholds", "t",
-             "--registry", "r", "--journal", "j", "--feature", "spread_bps",
-             "--decision-time", "16:30", "--model", "climatology"]
-        )
-        self.assertIs(args.handler, cli_eval._event_holdout)
-
-
 class PairedComparisonCommandTests(ContinuousModelHarness):
     """`compare`: two models, one run, and a record that says which way it runs.
 

@@ -420,7 +420,7 @@ from repo_model.contract import (
 from repo_model.data import DailyObservation, load_daily_panel
 from repo_model.asof import StaleReadError
 from repo_model.registry import RegistryContractError
-from repo_model.splits import LookAheadError, SplitError, rolling_origin
+from repo_model.splits import LookAheadError, SplitError
 
 # The package walk `ForecastInterfaceCoverageTests` already discovers through,
 # imported rather than written a second time: two walks would be two definitions
@@ -624,6 +624,40 @@ def at_gap(rows, *, purge, features=FEATURES, **kwargs):
     )
 
 
+def as_of_folds(rows, registry, minimum_history):
+    """`(scored, anchor)` for every scored row, by the as-of rule written out.
+
+    The independent oracle these tests check the backtest's folds against, in
+    place of the purge splitter retired by directive 05 (#50). For each row `T`
+    the decision instant is `DECISION_TIME` on `dates[T - 1]`, and the anchor is
+    the latest earlier row whose target fields are all observable by then under
+    `_declared_availability`. The model trains on `rows[: anchor + 1]` and reads
+    `rows[anchor]`. The grid starts at the first row with `minimum_history`
+    labels behind its anchor. `PurgedBacktestTests.longhand` writes out the same
+    rule and also fits the model.
+    """
+
+    dates = [row.date for row in rows]
+    target = field_sources_for_features(("spread_bps",))
+    out = []
+    for scored in range(1, len(rows)):
+        deadline = datetime.combine(dates[scored - 1], DECISION_TIME)
+        anchor = max(
+            (
+                p
+                for p in range(scored)
+                if all(
+                    _declared_availability(registry, s, f, dates, p) <= deadline
+                    for s, f in target
+                )
+            ),
+            default=-1,
+        )
+        if anchor + 1 >= minimum_history:
+            out.append((scored, anchor))
+    return out
+
+
 def regressor_frame(count=40, seed=20260909, unobserved=()):
     """A panel with distinct spreads and two moving exogenous columns.
 
@@ -758,14 +792,13 @@ class FittedPersistenceTests(unittest.TestCase):
         # it was fitted at. A report that cannot name its own cutoff is the
         # thing "every fitted object carries the cutoff" exists to prevent.
         self.assertIsInstance(report.model, FittedPersistence)
-        # The last fold's training end, enumerated independently. Under a gap
-        # this is no longer `rows[-2]`, and a literal index here would be this
-        # test restating the splitter's arithmetic instead of checking against
-        # it.
-        last_train, _ = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
+        # The last fold's anchor, enumerated independently. Under a gap this is
+        # no longer `rows[-2]`, and a literal index here would be this test
+        # restating the backtest's arithmetic instead of checking against it.
+        _, anchor = as_of_folds(
+            rows, declared_registry(1), self.MINIMUM_HISTORY
         )[-1]
-        self.assertEqual(report.model.cutoff, rows[last_train[-1]].date)
+        self.assertEqual(report.model.cutoff, rows[anchor].date)
 
         # Every reported interval is the fitted model's own quantile vector at
         # the outermost declared levels -- refit independently here, so this
@@ -1706,34 +1739,30 @@ class RollingBacktestTests(unittest.TestCase):
 
         self.assertIsInstance(report.model, FittedArx)
         self.assertEqual(report.model.regressors, REGRESSORS)
-        last_train, _ = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
-        )[-1]
-        self.assertEqual(report.model.cutoff, rows[last_train[-1]].date)
+        folds = as_of_folds(
+            rows, declared_registry(1, ARX_FEATURES), self.MINIMUM_HISTORY
+        )
+        self.assertEqual(report.model.cutoff, rows[folds[-1][1]].date)
 
         # Refit independently at each fold, on the fold's own training rows and
         # its own feature row. Under a gap neither is `rows[:index]` and
         # `rows[index - 1]` any more, and holding on to that arithmetic would
-        # compare the purged backtest against an unpurged expectation.
-        folds = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
-        )
-        for forecast, (train_indices, test_indices) in zip(report.forecasts, folds):
+        # compare the gapped backtest against an ungapped expectation.
+        self.assertEqual(len(report.forecasts), len(folds))
+        for forecast, (scored, anchor) in zip(report.forecasts, folds):
             model = fit_arx(
-                [rows[i] for i in train_indices],
+                rows[: anchor + 1],
                 REGRESSORS,
                 minimum_history=self.MINIMUM_HISTORY,
             )
-            feature_row = rows[train_indices[-1]]
+            feature_row = rows[anchor]
             quantiles = model.predict(feature_row)
             self.assertEqual(
                 forecast.predicted_bps, model.point_forecast(feature_row)
             )
             self.assertEqual(forecast.lower_bps, quantiles[0])
             self.assertEqual(forecast.upper_bps, quantiles[-1])
-            self.assertEqual(
-                forecast.actual_bps, rows[test_indices[0]].spread_bps
-            )
+            self.assertEqual(forecast.actual_bps, rows[scored].spread_bps)
 
         # The point forecast is the ARX's regression mean, not the last observed
         # spread. A backtest that read the centre off the feature row would
@@ -1783,16 +1812,13 @@ class RollingBacktestTests(unittest.TestCase):
 
         # The persistence point rule is still the last observed spread, read off
         # the model rather than off the feature row but identical to it.
-        folds = list(
-            rolling_origin([row.date for row in rows], self.MINIMUM_HISTORY, 1, 1)
-        )
-        for forecast, (train_indices, _) in zip(default.forecasts, folds):
-            # The last row that cleared the gap, which under a purge is not the
-            # day before the scored day. Taken from the fold rather than from
-            # `position` arithmetic, for the reason the cutoff check above is.
-            self.assertEqual(
-                forecast.predicted_bps, rows[train_indices[-1]].spread_bps
-            )
+        folds = as_of_folds(rows, declared_registry(1), self.MINIMUM_HISTORY)
+        self.assertEqual(len(default.forecasts), len(folds))
+        for forecast, (_, anchor) in zip(default.forecasts, folds):
+            # The anchor row, which under a gap is not the day before the
+            # scored day. Taken from the fold rather than from `position`
+            # arithmetic, for the reason the cutoff check above is.
+            self.assertEqual(forecast.predicted_bps, rows[anchor].spread_bps)
 
         # Pinned at the smallest expressible gap. The numbers moved from the
         # unpurged 15/13/11 when the gap stopped being typeable as zero, and
@@ -4617,19 +4643,19 @@ class RollingExceedanceTests(unittest.TestCase):
     def per_fold_climatology(self, purge, tau):
         """The reference, rebuilt from the fold structure rather than the code.
 
-        Walks the same splitter at the same gap and counts, for each fold, the
-        training spreads strictly above `tau`. That is the definition of a
+        Walks the as-of folds at the same gap (`as_of_folds`, written without
+        `asof`) and counts, for each fold, the training spreads strictly above
+        `tau`. That is the definition of a
         climatology and it is written out here so the assertion below compares
         the run against the definition rather than against a helper the run
         also calls.
         """
 
-        dates = [row.date for row in self.rows]
         reference = []
-        for train_indices, _test in rolling_origin(
-            dates, self.MINIMUM_HISTORY, 1, purge
+        for _scored, anchor in as_of_folds(
+            self.rows, declared_registry(purge, self.FEATURES), self.MINIMUM_HISTORY
         ):
-            history = [self.rows[i].spread_bps for i in train_indices]
+            history = [row.spread_bps for row in self.rows[: anchor + 1]]
             reference.append(sum(1 for v in history if v > tau) / len(history))
         return reference
 

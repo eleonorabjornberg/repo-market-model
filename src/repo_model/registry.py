@@ -200,11 +200,19 @@ def max_release_lag_days(
     *,
     decision_time: time,
 ) -> int:
-    """Return the conservative calendar-day purge for selected feature sources.
+    """Return the conservative calendar-day release lag of the selected sources.
 
     ``sources`` may be an iterable of source IDs for lag-based sources. A
     mapping of source ID to rows is required for ``snapshot_retrieved_at`` so
     every row can be checked for an explicit ``available_at`` value.
+
+    **What it is used for now.** This number once sized the purge gap of the
+    retired purge rule (`docs/runs/archive/pre-asof/` records it as
+    `derived.purge_days`). No evaluator reads it any more: the as-of rule
+    (`repo_model.asof`) reads each field at its own availability. Its one
+    caller is the panel build, `data._priceable_columns`, which uses whether
+    it prices a column or raises to decide which columns a panel can carry.
+    The name is kept because the tests and the archived records name it.
     """
 
     cutoff_time = _parse_decision_time(decision_time)
