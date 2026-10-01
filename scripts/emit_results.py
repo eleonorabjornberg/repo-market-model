@@ -227,8 +227,8 @@ def key_findings(persistence, exceedance, conditional):
     add("")
     add("Every figure here is scored under the as-of information rule")
     add("(`docs/decisions/information-set.md`). The records scored under the earlier purge")
-    add("rule are archived in `docs/runs/archive/pre-asof/`, and the verdicts reached on them")
-    add("are re-opened (`docs/pivot/lag-assessment.md` §4): none is restated here.")
+    add("rule are archived in `docs/runs/archive/pre-asof/` (`docs/pivot/lag-assessment.md` §4).")
+    add("Phase 2's verdict, made again on these as-of records, is in `PLAN.md`.")
     add("")
     add("**Target.** The next-business-day value of the panel field `spread_bps` — the SOFR")
     add("to IORB spread in basis points — forecast at %s on the previous business day from"
@@ -799,9 +799,8 @@ def headline(persistence, exceedance):
                  "that." % bp(worst, 3))
     lines.append("")
     lines.append("**Every result below is paired against its benchmark and split by regime "
-                 "and by type of day, and none of it is yet a verdict.** The earlier "
-                 "verdicts were reached on inputs about a week old and are re-opened. "
-                 "Nothing here is a basis for a decision about money.")
+                 "and by type of day.** Phase 2's verdict on these records is in "
+                 "[`PLAN.md`](PLAN.md). Nothing here is a basis for a decision about money.")
     lines.append("")
     lines.append(HEADLINE_END)
     return "\n".join(lines)
