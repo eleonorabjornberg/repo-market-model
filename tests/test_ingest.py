@@ -65,12 +65,87 @@ from repo_model.ingest import (
     load_snapshot_manifest,
     observations_from_snapshots,
 )
-from repo_model import cli, cli_data
+from repo_model import cli, cli_data, ingest
 from zoneinfo import ZoneInfo
 
 
 REPO_ROOT = Path(__file__).parents[1]
 SOURCE_REGISTRY = REPO_ROOT / "metadata" / "sources.json"
+
+
+def fred_readme(units):
+    """A FRED graph README carrying `units`, laid out as FRED lays it out.
+
+    The real one, in the tracked `fred-macro-latest-vintage` snapshot, names
+    each series in a fixed-width table whose middle column reads
+    `title, unit, frequency, seasonal adjustment`, wrapped over several lines.
+    This writes the same table, wrapping each description at the same width,
+    so the parser meets the continuation lines it meets in the real file.
+    """
+
+    import textwrap
+
+    # FRED sizes the name column to the longest id: `RRPONTSYD`'s nine in
+    # the tracked snapshot.
+    width = max(len(series_id) for series_id in units)
+    rule = "-" * width + "  " + "-" * 70 + "  " + "-" * 24
+    lines = [
+        "FRED Graph Observations",
+        "Federal Reserve Economic Data, Federal Reserve Bank of St. Louis",
+        "",
+        rule,
+    ]
+    for series_id, unit in units.items():
+        description = (
+            f"{series_id} as a test names it, {unit}, Daily, Not Seasonally Adjusted"
+        )
+        wrapped = textwrap.wrap(description, 70)
+        for index, text in enumerate(wrapped):
+            name = series_id if index == 0 else ""
+            updated = "Data Updated: 2026-09-04" if index == 0 else ""
+            lines.append(f"{name:<{width}}  {text:<70}  {updated}".rstrip())
+    lines.append(rule)
+    return "\n".join(lines) + "\n"
+
+
+#: The units FRED states for the series the tests below write, as the tracked
+#: snapshot's README states them where it carries the series.
+FRED_TEST_UNITS = {
+    "IORB": "Percent",
+    "IOER": "Percent",
+    "DFF": "Percent",
+    "RRPONTSYD": "Billions of US Dollars",
+    "RRPONTSYAWARD": "Percent",
+    "TREAST": "Millions of U.S. Dollars",
+    "WRESBAL": "Millions of U.S. Dollars",
+    "WTREGEN": "Millions of U.S. Dollars",
+    "WLRRAOL": "Millions of U.S. Dollars",
+}
+
+
+def fred_zip(csv_text, units=None, *, readme=True):
+    """A FRED snapshot payload: `csv_text` zipped beside its README.
+
+    #41: `_fred_rows` reads each series' unit from the README, so a bare CSV,
+    which states no unit, is refused. `units` defaults to `FRED_TEST_UNITS`
+    for the columns the CSV carries.
+    """
+
+    if isinstance(csv_text, bytes):
+        csv_text = csv_text.decode("utf-8")
+    header = csv_text.splitlines()[0].split(",")[1:]
+    if units is None:
+        units = {
+            series_id: FRED_TEST_UNITS[series_id]
+            for series_id in header
+            if series_id in FRED_TEST_UNITS
+        }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        if readme:
+            archive.writestr("README.txt", fred_readme(units))
+        archive.writestr("daily.csv", csv_text)
+    return buffer.getvalue()
 
 
 def registry_with_nmfp_coverage_floor(directory: Path, floor: int) -> Path:
@@ -328,7 +403,7 @@ class IngestTests(unittest.TestCase):
         )
         fred = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )
         panel_path = self.output_root / "processed" / "panel.csv"
         panel = build_point_in_time_snapshot(
@@ -370,7 +445,7 @@ class IngestTests(unittest.TestCase):
         )
         fred = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )
         legacy = [
             replace(
@@ -394,7 +469,7 @@ class IngestTests(unittest.TestCase):
     def test_panel_builder_rejects_a_tampered_raw_snapshot(self):
         artifacts = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )
         artifacts[0].path.write_bytes(b"tampered")
         with self.assertRaisesRegex(ValueError, "checksum mismatch"):
@@ -456,15 +531,15 @@ class IngestTests(unittest.TestCase):
     def test_changed_snapshot_appends_revision_but_unchanged_value_does_not(self):
         first = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )[0]
         unchanged = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )[0]
         revised = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.31\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.31\n"),
         )[0]
         panel_path = self.output_root / "revisions.csv"
         build_point_in_time_snapshot([first, unchanged, revised], panel_path)
@@ -4262,7 +4337,7 @@ class LegacySourceIdBuildTests(unittest.TestCase):
         )
         fred = fetch_fred_macro(
             self.output_root,
-            lambda url: b"observation_date,IORB\n2026-01-02,4.30\n",
+            lambda url: fred_zip(b"observation_date,IORB\n2026-01-02,4.30\n"),
         )
         return [
             replace(
@@ -6143,7 +6218,9 @@ class AbsentValueReasonTests(unittest.TestCase):
                 ],
             )
 
-        fred_payload = b"observation_date,IORB,DFF\n2026-01-02,,.\n2026-01-05,4.30,4.33\n"
+        fred_payload = fred_zip(
+            b"observation_date,IORB,DFF\n2026-01-02,,.\n2026-01-05,4.30,4.33\n"
+        )
 
         with self.subTest(adapter="fred"):
             artifact = fetch_fred_macro(self.root / "fred", lambda url: fred_payload)[0]
@@ -6285,7 +6362,7 @@ class AbsentValueReasonTests(unittest.TestCase):
                 )
 
         with self.subTest(refusal="fred unknown token"):
-            payload = b"observation_date,IORB\n2026-01-02,NA\n"
+            payload = fred_zip(b"observation_date,IORB\n2026-01-02,NA\n")
             artifact = self.artifact(
                 "fred_macro_latest_vintage", "fred.csv", payload, "fred"
             )
@@ -6450,7 +6527,7 @@ class AbsentCellRunTests(unittest.TestCase):
         registry = load_source_registry()
 
         def fred(name, text):
-            payload = text.encode("utf-8")
+            payload = fred_zip(text)
             return self.artifact(self.FRED, name, payload, "fred")
 
         with self.subTest("blanks, a value, blanks: two runs"):
@@ -6896,7 +6973,7 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
 
         def macro_spy(**kwargs):
             artifacts = real_macro(
-                downloader=lambda _url: b"observation_date,IORB\n2026-01-01,4.30\n",
+                downloader=lambda _url: fred_zip(b"observation_date,IORB\n2026-01-01,4.30\n"),
                 **kwargs,
             )
             macro_calls.append((kwargs, artifacts))
@@ -7569,7 +7646,8 @@ class FredParseRefusesUndeclaredFieldsTests(unittest.TestCase):
             + "\n2026-01-02,"
             + ",".join(values)
             + "\n"
-        ).encode("utf-8")
+        )
+        payload = fred_zip(payload)
         (artifact,) = fetch_fred_macro(self.root, lambda url: payload)
         self.assertEqual(artifact.source_id, self.source_id)
         return artifact
@@ -7600,11 +7678,144 @@ class FredParseRefusesUndeclaredFieldsTests(unittest.TestCase):
                 for row in parsed.rows
             ),
             sorted(
-                (field, date(2026, 1, 2), float(value), available_at,
-                 artifact.retrieved_at, artifact.sha256)
+                (field, date(2026, 1, 2),
+                 float(value) / ingest.PANEL_UNIT_DIVISORS[FRED_TEST_UNITS[field]],
+                 available_at, artifact.retrieved_at, artifact.sha256)
                 for field, value in zip(self.declared, values)
             ),
         )
+
+
+class FredValueUnitTests(unittest.TestCase):
+    """#41: FRED's money series enter the point-in-time table in USD billions.
+
+    **The defect.** FRED serves `WRESBAL` and `WTREGEN` in USD millions. The
+    tracked snapshot's README says so, and so do the registry notes for both
+    sources. `_fred_rows` copied every cell unscaled, so the panel's
+    `reserve_balances` and `tga` were in millions: 2,113,321 and 318,858 on
+    2018-04-03. `DATA.md`, the contract and every other money column use
+    billions. FR 2004 (`FR2004_MILLIONS_PER_BILLION`) and the Treasury
+    settlements were already scaled at ingest. FRED now is too.
+
+    **The unit is read, not assumed.** Each series' unit comes from the
+    snapshot's own README, the only place the snapshot states it.
+    `ingest.unit_divisor` turns a unit into the divisor that takes it to the
+    panel's unit, and it refuses a unit it does not know. A snapshot that names
+    no unit for a series it carries is refused too, and so is a bare CSV,
+    which has no README. The units moved once already: FRED served both series
+    in billions through its 2024 vintage and in millions in 2026 (the
+    registry's `revision_evidence`). A README that says billions is read
+    unscaled, and a third unit fails loudly.
+
+    `unit_divisor` is not specific to FRED. The daily TGA from the Daily
+    Treasury Statement, when it is built (plan section 2), also publishes in
+    millions and must go through the same guard.
+
+    **Red here** means a money series reached the table in a unit other than
+    billions, or an unknown unit was read as a number. Fix the parser or the
+    unit table. Never edit this assertion.
+
+    Written first and watched failing on `origin/main` (`2cfdffd`). The tracked
+    snapshot read `AssertionError: 2113321.0 != 2113.321`. The three refusal
+    tests failed with `AssertionError: ValueError not raised`.
+    `test_the_unit_guard_is_general` errored because `unit_divisor` did not
+    exist.
+
+    Mutation, run 1 October 2026 in a disposable copy built from
+    `git ls-files`, with the unmutated control green first. Drop the division:
+    in `_fred_rows`, `value=value / divisors[series_id],` becomes
+    `value=value,`. It was found exactly once, and the diff confirmed it
+    applied. `test_the_tracked_snapshot_reads_in_billions` fails with
+    `AssertionError: 2113321.0 != 2113.321`.
+    `FredParseRefusesUndeclaredFieldsTests.test_declared_columns_parse_to_their_observations`
+    fails as well, with an `AssertionError` reading `5.5 != 0.0055` on a
+    millions-denominated column.
+    """
+
+    FIXTURE = (
+        REPO_ROOT
+        / "tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage"
+        / "20260906T195909Z_359621178c04.zip.manifest.json"
+    )
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+
+    def values(self, parsed):
+        return {(row.series_id, row.ref_date): row.value for row in parsed.rows}
+
+    def test_the_tracked_snapshot_reads_in_billions(self):
+        artifact = load_snapshot_manifest(self.FIXTURE)
+        values = self.values(parse_snapshots([artifact]))
+        # The README states millions for both. These are 2,113,321 and
+        # 318,858 in the CSV.
+        self.assertEqual(values[("WRESBAL", date(2018, 3, 28))], 2113.321)
+        self.assertEqual(values[("WTREGEN", date(2018, 3, 28))], 318.858)
+        self.assertEqual(values[("WRESBAL", date(2002, 12, 18))], 9.028)
+        # Percent and billions are read as written.
+        self.assertEqual(values[("IORB", date(2026, 1, 2))], 3.65)
+        self.assertEqual(values[("RRPONTSYD", date(2003, 2, 7))], 2.5)
+
+    def test_a_readme_in_billions_is_read_unscaled(self):
+        payload = fred_zip(
+            "observation_date,WRESBAL\n2018-03-28,2113.321\n",
+            {"WRESBAL": "Billions of U.S. Dollars"},
+        )
+        (artifact,) = fetch_fred_macro(self.root, lambda url: payload)
+        values = self.values(parse_snapshots([artifact]))
+        self.assertEqual(values[("WRESBAL", date(2018, 3, 28))], 2113.321)
+
+    def test_an_unknown_unit_is_refused_naming_series_and_unit(self):
+        payload = fred_zip(
+            "observation_date,WRESBAL\n2018-03-28,2113321000\n",
+            {"WRESBAL": "Thousands of U.S. Dollars"},
+        )
+        (artifact,) = fetch_fred_macro(self.root, lambda url: payload)
+        with self.assertRaises(ValueError) as caught:
+            parse_snapshots([artifact])
+        message = str(caught.exception)
+        self.assertIn("WRESBAL", message)
+        self.assertIn("'Thousands of U.S. Dollars'", message)
+
+    def test_a_series_the_readme_does_not_name_is_refused(self):
+        payload = fred_zip(
+            "observation_date,WRESBAL,IORB\n2018-03-28,2113321,1.75\n",
+            {"IORB": "Percent"},
+        )
+        (artifact,) = fetch_fred_macro(self.root, lambda url: payload)
+        with self.assertRaisesRegex(ValueError, r"WRESBAL.*no unit"):
+            parse_snapshots([artifact])
+
+    def test_a_snapshot_without_a_readme_is_refused(self):
+        for name, payload in (
+            ("bare csv", b"observation_date,WRESBAL\n2018-03-28,2113321\n"),
+            (
+                "zip without a README",
+                fred_zip("observation_date,WRESBAL\n2018-03-28,2113321\n", readme=False),
+            ),
+        ):
+            with self.subTest(name):
+                (artifact,) = fetch_fred_macro(self.root / name, lambda url: payload)
+                with self.assertRaisesRegex(ValueError, r"WRESBAL.*no unit"):
+                    parse_snapshots([artifact])
+
+    def test_the_unit_guard_is_general(self):
+        """The guard a Daily Treasury Statement adapter will call."""
+
+        self.assertEqual(
+            ingest.unit_divisor(
+                "Millions of U.S. Dollars", source_id="dts", field="tga_close"
+            ),
+            1000.0,
+        )
+        self.assertEqual(
+            ingest.unit_divisor("Billions of US Dollars", source_id="x", field="y"), 1.0
+        )
+        self.assertEqual(ingest.unit_divisor("Percent", source_id="x", field="y"), 1.0)
+        with self.assertRaisesRegex(ValueError, r"dts tga_close.*'Dollars'"):
+            ingest.unit_divisor("Dollars", source_id="dts", field="tga_close")
 
 
 if __name__ == "__main__":

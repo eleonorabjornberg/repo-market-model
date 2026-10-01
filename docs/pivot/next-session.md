@@ -29,8 +29,9 @@ state below comes with the command that checks it, and the command's output wins
   PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv --manifest metadata/funding_panel_manifest.json
   ```
 
-  The expected digest is `865979fa…`. The records in `docs/runs/` were scored on the panel before `quarter_end`
-  became the last business day of the quarter (#44), digest `d8b716cf…`.
+  The expected digest is `4ddc3882…`, the panel with `reserve_balances` and `tga` in USD billions (#41). The
+  records in `docs/runs/` were scored on the panel before that and before `quarter_end` became the last business day
+  of the quarter (#44), digest `d8b716cf…`.
 - **Nothing is re-scored yet.** Every record in `docs/runs/` was scored under the earlier rule.
 - **The environment:** `/opt/rmm-venv` should exist, on Python 3.11, with numpy 2.4.6 and scikit-learn 1.9.1, the
   versions CI's ml job pins (#55). If it is missing or carries other versions, the environment's setup script did
