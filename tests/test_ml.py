@@ -8131,6 +8131,9 @@ class RefitPositionalHistoryTests(unittest.TestCase):
 
     def setUp(self):
         require_extra(self)
+        # The assertions are about which rows each forecast read, not how far
+        # the boosting ran.
+        fewer_boosting_iterations(self)
         with tempfile.TemporaryDirectory() as directory:
             self.registry = json.loads(
                 declared_registry_file(
