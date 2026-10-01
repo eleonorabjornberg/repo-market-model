@@ -36,9 +36,18 @@ once.
    against `{10: 1, 50: 1}`). Nothing else in the suite goes red.
    `KnotRefitTests` reads no ceiling.
 
-The lower-bound refusal's mutations are recorded on
+The lower-bound refusal's mutations were recorded on
 `test_ml.TailLowerBoundRefusalTests`. Under the first two,
-`KnotRefitTests` part 4 also fails, because the fixture then has no refused fold.
+`KnotRefitTests` part 4 also failed, because the fixture then had no refused fold.
+
+**The floor (#63).** A negative shape is now floored at zero and recorded as
+`floored`, and `ml.TAIL_STATES` gained that state. `refused` and
+`upper_endpoint_excess` stay readable, because published records carry them.
+So `TailRecordReadingTests`' hand-written record keeps its `refused` fold and
+its ceilings, and its expected dictionaries gain `floored` with a count of
+zero. That count is a key every reader reports, not a new reading.
+`KnotRefitTests` part 4 runs a fresh fit, which can no longer refuse, so it now
+counts the floored folds that took the refused ones' place.
 """
 
 import json
@@ -102,7 +111,9 @@ class TailRecordReadingTests(unittest.TestCase):
         self.assertEqual(
             counts,
             {
-                "states": {"fitted": 3, "fallback": 1, "no_excesses": 1, "refused": 1},
+                "states": {
+                    "fitted": 3, "fallback": 1, "no_excesses": 1, "floored": 0, "refused": 1,
+                },
                 "fitted": 3,
                 "fitted_no_endpoint": 1,
                 "fitted_with_endpoint": 2,
@@ -149,6 +160,7 @@ class TailRecordReadingTests(unittest.TestCase):
                     {"scored_date": "2024-01-02", "tau_bp": 10.0, "realized_bps": 12.0},
                 ],
                 "no_excesses": [],
+                "floored": [],
                 "refused": [],
             },
         )
@@ -355,10 +367,11 @@ class KnotRefitTests(unittest.TestCase):
             self.assertEqual(json.loads(json.dumps(refit)), json.loads(json.dumps(knots[-8:])))
             self.assertIs(ml.FittedGradientBoostedQuantiles.predict_stress, original)
 
-        with self.subTest("4. the record's states, refusals included, are counted"):
+        with self.subTest("4. the record's states, floored folds included, are counted"):
             counts = tail_diagnostics.state_counts(document)
             self.assertEqual(sum(counts["states"].values()), len(report.folds))
-            self.assertGreater(counts["states"]["refused"], 0)
+            self.assertGreater(counts["states"]["floored"], 0)
+            self.assertEqual(counts["states"]["refused"], 0)
 
         with self.subTest("5. a predictor that never reaches predict_stress is refused"):
             def silent(train_rows, feature_rows, taus, information=None):

@@ -460,10 +460,13 @@ residual ever seen and then an exceedance of exactly `0.0`.
   `backtest` record of a tail run carries each fold's state under
   `folds.tail`, through `tail_account` (B38), and an `exceedance-backtest`
   record does the same (B40).
-* **A fourth state: a shape at the lower bound is refused (B44).** A fit whose
-  `xi` lands at or below the lower end of `GPD_SHAPE_BOUNDS` is not used: the
-  fold takes the same exponential fallback, and the record says `refused`, not
-  `fallback`, so the two can be counted apart. See `_fit_gpd_pwm`.
+* **A fourth state: a negative shape is floored at zero (#63).** Repo
+  pressure has no hard ceiling, so a fit whose raw shape is negative takes
+  `xi = 0.0` and the sample's mean excess as its scale, the exponential the
+  fallback uses, and the record says `floored` and keeps the raw estimate. The
+  tail never assigns probability zero above a level. This replaces B44's
+  refusal at the lower bound; records written before it still carry
+  `refused`. See `_fit_gpd_pwm`.
 * **Refused under `none`, `cross_conformal`, `conformal_asymmetric`,
   `cross_conformal_asymmetric`, `cross_conformal_scaled` and
   `cross_conformal_partial`.** The last two for `cross_conformal`'s reason;
@@ -669,10 +672,14 @@ TAIL_FAMILIES = ("gpd",)
 
 #: What a tail was at one fit, as `tail_account` spells it on a record: a
 #: fitted shape, `_fit_gpd_pwm`'s exponential fallback, no excesses at all, and
-#: a shape refused at the lower end of `GPD_SHAPE_BOUNDS` and replaced by that
-#: same fallback (B44). See `FittedTail` on why the first is the only one that
-#: is evidence.
-TAIL_STATES = ("fitted", "fallback", "no_excesses", "refused")
+#: a negative shape floored at zero (#63). See `FittedTail` on why the first is
+#: the only one that is evidence.
+#:
+#: `refused` is B44's state, a shape refused at the old lower bound of `-0.5`.
+#: No fit makes it since the floor (#63), which takes in that case. It stays
+#: here so the published records that carry it still read
+#: (`tail_diagnostics`).
+TAIL_STATES = ("fitted", "fallback", "no_excesses", "floored", "refused")
 
 #: The fewest observed spread changes among a frame's fit rows a GARCH(1,1) is
 #: fitted from: ten per fitted parameter. Below it the three parameters are
@@ -701,8 +708,9 @@ _GPD_PLOTTING_OFFSET = 0.35
 #: exponential fallback is taken and recorded.
 #:
 #: Twenty. The PWM shape's sampling error falls like `1 / sqrt(n)`, so at ten
-#: excesses it is of the same order as the half-width of `GPD_SHAPE_BOUNDS`
-#: below: the fit could not tell one end of its own clamp from the other, and a
+#: excesses it is of the same order as `0.5`, the upper end of
+#: `GPD_SHAPE_BOUNDS` below: the fit could not tell one end of its range from
+#: the other, and a
 #: shape reported at that precision reads as evidence while carrying none. At
 #: twenty it is about half that, which is the least that distinguishes a heavy
 #: tail from a bounded one.
@@ -714,31 +722,32 @@ _GPD_PLOTTING_OFFSET = 0.35
 #: fitted `xi` that landed near zero from one that was never fitted.
 GPD_MINIMUM_EXCESSES = 20
 
-#: The interval the fitted shape is clamped to. The two ends are there for
+#: The interval the fitted shape is held to. The two ends are there for
 #: different reasons, and neither is a preference.
 #:
-#: `0.5` above is the end that matters. At `xi >= 0.5` the fitted law has
-#: infinite variance and at `xi >= 1` an infinite mean; about a hundred excesses
-#: cannot evidence a tail that heavy, and what produces such a fit is one large
-#: residual. The wide taus are read a long way out, so that residual's opinion
-#: would arrive at `P(spread > 50 bp)` multiplied rather than averaged away.
+#: `0.5` above is a clamp. At `xi >= 0.5` the fitted law has infinite variance
+#: and at `xi >= 1` an infinite mean; about a hundred excesses cannot evidence a
+#: tail that heavy, and what produces such a fit is one large residual. The wide
+#: taus are read a long way out, so that residual's opinion would arrive at
+#: `P(spread > 50 bp)` multiplied rather than averaged away. A shape above it is
+#: brought down to it and kept, and `clamped` says so.
 #:
-#: `-0.5` below bounds the fitted law's *upper endpoint*. A negative `xi` puts a
-#: hard ceiling `sigma / -xi` above the threshold, beyond which the model
-#: returns exactly zero; at `-0.5` that ceiling is two scale units up, and below
-#: it the tail closes tighter still. A zero assigned by a fitted tail is the
-#: same zero this repair exists to remove, arrived at the long way round.
+#: `0.0` below is a floor, and it is Eleonora's ruling on #63
+#: (`docs/decisions/tail-shape-floor.md`): **repo pressure has no hard
+#: ceiling.** The Standing Repo Facility is a soft cap, not a bound. A negative
+#: `xi` puts a hard ceiling `sigma / -xi` above the threshold, beyond which the
+#: model returns exactly zero, and that is the zero the tail exists to remove.
+#: On about thirty excesses the shape's sign also turned on the fitter's
+#: version (#63). So a fit whose raw shape is negative takes `xi = 0.0`, with
+#: the sample's mean excess as its scale, and is recorded as `floored` with the
+#: raw estimate beside it. It is not a clamp. A clamp would keep the PWM scale,
+#: which no longer belongs to the shape. At `xi = 0.0` the PWM pair is exactly
+#: the exponential with the sample's mean, the law the fallback already uses.
 #:
-#: **The two ends are also handled differently (B44).** A shape at or above
-#: `0.5` is clamped and kept. A shape at or below `-0.5` is refused: the fit is
-#: not used and the exponential fallback is taken instead, recorded as
-#: `refused`. A clamp at the lower end means the estimator wanted a steeper
-#: cutoff still, so the ceiling it would publish belongs to the bound, not to
-#: the data. On the rescored panel this refused three folds of 2039 and removed
-#: both days on which a fitted tail gave an event that happened probability
-#: exactly zero. The rule is stated on `xi` and not on `clamped`, which is true
-#: at either end.
-GPD_SHAPE_BOUNDS = (-0.5, 0.5)
+#: The floor replaces B44 (`docs/decisions/tail-refusal.md`), which refused a
+#: shape at or below the old lower bound of `-0.5` and kept an interior negative
+#: shape with its ceiling. The floor takes in both.
+GPD_SHAPE_BOUNDS = (0.0, 0.5)
 
 #: How far `a_0 - 2 a_1` may fall, as a share of `a_0`, before the fit is
 #: refused rather than divided by. For a sample that is not identically zero the
@@ -1189,27 +1198,30 @@ def _cross_conformal_asymmetric_edges(
 class FittedTail:
     """A generalised Pareto fit to a sample of excesses, and how it was got.
 
-    `xi` and `sigma` alone are not enough to read a fit by. Three quite
-    different things come out of `_fit_gpd_pwm` as a pair of floats --- a shape
-    the sample supported, a shape the sample proposed and the clamp took back,
-    and no shape at all --- and only the first is evidence about a tail. So the
-    record carries which of the three happened:
+    `xi` and `sigma` alone are not enough to read a fit by. Quite different
+    things come out of `_fit_gpd_pwm` as a pair of floats --- a shape the
+    sample supported, a shape the sample proposed and the clamp took back, a
+    negative shape the floor set to zero, and no shape at all --- and only the
+    first is evidence about a tail. So the record carries which happened:
 
     * `excesses` --- how many excesses the fit saw.
-    * `clamped` --- the PWM shape fell outside `GPD_SHAPE_BOUNDS` and was
-      brought to the nearest end. `sigma` is the unclamped fit's scale; it is
-      not re-estimated against the clamped shape, because the pair is then no
-      longer a PWM fit of anything and pretending otherwise is what the flag
-      exists to prevent.
+    * `clamped` --- the PWM shape fell above the upper end of
+      `GPD_SHAPE_BOUNDS` and was brought down to it. `sigma` is the unclamped
+      fit's scale; it is not re-estimated against the clamped shape, because
+      the pair is then no longer a PWM fit of anything and pretending otherwise
+      is what the flag exists to prevent.
     * `fallback` --- fewer than `GPD_MINIMUM_EXCESSES` excesses, so no shape was
       fitted: `xi` is exactly `0.0` and `sigma` is the mean of the excesses,
       which is the exponential the two-parameter family collapses to there.
-    * `refused` --- enough excesses were seen, but the shape landed at or below
-      the lower end of `GPD_SHAPE_BOUNDS`, so it was not used (B44). `fallback`
-      is also true and `xi` and `sigma` are the fallback's, so the law is that
-      same exponential; `clamped` still says whether the shape had been clamped
-      before it was refused. Only the record tells a refusal from an ordinary
-      fallback, which is why this flag exists.
+    * `floored`, `xi_estimate` --- enough excesses were seen, but the raw PWM
+      shape was negative, so the floor at the lower end of `GPD_SHAPE_BOUNDS`
+      set it to zero (#63). `xi` is `0.0` and `sigma` the mean of the excesses,
+      the fallback's exponential, and `xi_estimate` is the raw negative shape.
+      `None` on every fit that was not floored. Only the record tells a floored
+      fit from a fallback or from a shape fitted at zero, which is why this flag
+      exists.
+
+    B44's `refused` flag is gone: the floor takes in the shapes it refused.
 
     A caller that ignores these still gets a usable law. A record that
     ignores them publishes a fitted shape that was not fitted.
@@ -1220,7 +1232,8 @@ class FittedTail:
     excesses: int
     clamped: bool
     fallback: bool
-    refused: bool = False
+    floored: bool = False
+    xi_estimate: Optional[float] = None
 
 
 def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
@@ -1242,11 +1255,17 @@ def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
         sigma = 2 a_0 a_1 / (a_0 - 2 a_1)
 
     `xi` is the extreme-value convention: positive is heavy-tailed, the fitted
-    mean is `sigma / (1 - xi)`, and negative puts a finite upper endpoint at
-    `sigma / -xi`. The two moments are the population moments of that law
+    mean is `sigma / (1 - xi)`, and negative would put a finite upper endpoint
+    at `sigma / -xi`. The two moments are the population moments of that law
     inverted, so `sigma / (1 - xi)` is identically `a_0` for any sample the
     estimator accepts and does not clamp --- which is what `tests/test_ml.py`'s
     `FittedTailPwmTests` holds it to.
+
+    **A negative shape is floored at zero (#63).** The returned fit then has
+    `xi = 0.0` and `sigma = a_0`, the exponential with the sample's mean, which
+    keeps `sigma / (1 - xi) == a_0`. It is `floored`, with the raw shape as
+    `xi_estimate`. Repo pressure has no hard ceiling, so no fit returned here
+    has an upper endpoint. See `GPD_SHAPE_BOUNDS`.
 
     Both sums are `math.fsum` rather than `sum`, which is the one place this
     module departs from the repository's plain-summation idiom and does so on
@@ -1266,8 +1285,9 @@ def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
         excesses: non-negative finite excesses above a threshold, any order.
 
     Returns:
-        A `FittedTail`. See its docstring: `clamped` and `fallback` are the
-        difference between a shape this sample supported and a shape it did not.
+        A `FittedTail`. See its docstring: `clamped`, `fallback` and `floored`
+        are the difference between a shape this sample supported and a shape it
+        did not.
 
     Raises:
         ValueError: an empty sample; a negative or non-finite excess; or a
@@ -1312,22 +1332,24 @@ def _fit_gpd_pwm(excesses: Sequence[float]) -> FittedTail:
     xi = 2.0 - a_0 / denominator
     sigma = 2.0 * a_0 * a_1 / denominator
     lower, upper = GPD_SHAPE_BOUNDS
-    clamped = not lower <= xi <= upper
-    if clamped:
-        xi = min(max(xi, lower), upper)
-    # B44: a shape at the lower bound is refused, not kept. Read on the clamped
-    # `xi`, so this fires for a shape clamped up to the bound and for one that
-    # landed on it exactly, and never at the upper end, where `clamped` is also
-    # true. See `GPD_SHAPE_BOUNDS`.
-    if xi <= lower:
+    # #63: a negative shape is floored at zero, every negative shape, with the
+    # sample's mean as the scale. This subsumes B44's refusal of a shape at or
+    # below `-0.5`, which also fell back to this exponential, and it removes
+    # the ceiling an interior negative shape used to keep. See
+    # `GPD_SHAPE_BOUNDS`.
+    if xi < lower:
         return FittedTail(
             xi=0.0,
             sigma=a_0,
             excesses=count,
-            clamped=clamped,
-            fallback=True,
-            refused=True,
+            clamped=False,
+            fallback=False,
+            floored=True,
+            xi_estimate=xi,
         )
+    clamped = xi > upper
+    if clamped:
+        xi = upper
     return FittedTail(
         xi=xi, sigma=sigma, excesses=count, clamped=clamped, fallback=False
     )
@@ -1338,8 +1360,9 @@ def _gpd_survival(tail: FittedTail, excess: float) -> float:
 
     `(1 + xi x / sigma) ** (-1 / xi)`, or `exp(-x / sigma)` at `xi == 0.0` ---
     the fallback's exponential, and the family's own limit there. A negative
-    `xi` puts the endpoint at `sigma / -xi`, at and beyond which this is `0.0`;
-    see `GPD_SHAPE_BOUNDS` on why that zero is bounded two scale units out.
+    `xi` would put the endpoint at `sigma / -xi`, at and beyond which this is
+    `0.0`. No fit has one since the floor (#63; `GPD_SHAPE_BOUNDS`). The branch
+    is kept because it is the law's, not the estimator's.
     """
 
     if tail.xi == 0.0:
@@ -1554,8 +1577,8 @@ class FittedGradientBoostedQuantiles:
       its top declared quantile (`None` when it is not) and the `FittedTail`
       fitted to the calibration rows' excesses above that quantile. Four
       states under `tail="gpd"`: `tail_fit.fallback` false, a fitted shape;
-      true, the exponential fallback; `tail_fit.refused` true, a shape refused
-      at the lower bound and replaced by that fallback; and `tail_fit` `None`,
+      true, the exponential fallback; `tail_fit.floored` true, a negative shape
+      floored at zero, with that same exponential (#63); and `tail_fit` `None`,
       **no excesses at all**, where nothing was fitted and the law is the
       default's. See the
       module docstring, and `tail_account` for how a record spells them.
@@ -1806,35 +1829,34 @@ class FittedGradientBoostedQuantiles:
 
         * `fitted` --- `xi`, `sigma`, `excesses` and `clamped`. A clamped shape
           is still this state and says so; see `FittedTail` on why it is not
-          a shape the sample supported. Under a negative `xi` also
-          `upper_endpoint_excess`: the excess above the top declared quantile
-          at and beyond which the fitted tail assigns probability exactly
-          zero, `sigma / -xi`, where `_gpd_survival` stops (B41). **Absent**
-          at `xi >= 0`, which has no endpoint --- a `None` would read as a
-          ceiling at zero.
+          a shape the sample supported. `xi` is never negative (#63).
         * `fallback` --- `sigma` and `excesses`, and no `xi`. The fallback's
           `xi` is the `0.0` the family collapses to, not a fitted value, and
           a record carrying it would read as a shape of zero.
         * `no_excesses` --- `excesses` of `0` alone: `tail_fit` is `None` and
           there is nothing else to report.
-        * `refused` --- `sigma` and `excesses`, and no `xi`, like `fallback`:
-          the shape landed at the lower end of `GPD_SHAPE_BOUNDS` and was not
-          used, and the law is the fallback's exponential (B44). A separate
-          state so a reader can count refusals apart from folds that fell back
-          for having too few excesses.
+        * `floored` --- `sigma`, `excesses` and `xi_estimate`, and no `xi`,
+          like `fallback`: the raw shape was negative and the floor set it to
+          zero, so the law is the fallback's exponential (#63). `xi_estimate`
+          is the raw negative estimate. A separate state so a reader can count
+          floored folds apart from shapes fitted non-negative, which is the sign
+          split #63 raised.
 
         Read off `tail_fit`, the fit the law was continued with. The excesses
         are not kept, so nothing here could recompute it.
 
-        **The endpoint is a derived reading, not new evidence.** It follows
-        from `xi` and `sigma`, both already on the record. It is carried anyway
-        because nobody reads a ceiling out of two floats by eye: a tail whose
-        ceiling sits below a declared tau gives that tau's exceedance
-        probability exactly zero, which is the zero `GPD_SHAPE_BOUNDS` names
-        and the one a run can publish at 5 bp without the record saying why.
-        A fit clamped at the lower bound is now refused (`refused` above); a
-        fitted negative shape inside the bounds keeps its ceiling and is shown
-        here, not refused.
+        **No ceiling since the floor (#63).** Until then a fitted negative
+        shape also carried `upper_endpoint_excess`, `sigma / -xi`, the excess
+        above the top declared quantile beyond which the tail gave probability
+        exactly zero (B41). B44's `refused` was a fifth state, for a shape at
+        or below `-0.5`. No fit makes either now. Published records still
+        carry both, and `tail_diagnostics` reads them.
+
+        Raises:
+            ValueError: a `tail_fit` that is neither floored nor a fallback
+                with a negative `xi`. `_fit_gpd_pwm` cannot return one, and
+                this refuses to record one as `fitted`, with no ceiling, when
+                its law has one.
         """
 
         if self.tail is None:
@@ -1842,10 +1864,20 @@ class FittedGradientBoostedQuantiles:
         fit = self.tail_fit
         if fit is None:
             account: dict = {"state": "no_excesses", "excesses": 0}
-        elif fit.refused:
-            account = {"state": "refused", "sigma": fit.sigma, "excesses": fit.excesses}
+        elif fit.floored:
+            account = {
+                "state": "floored",
+                "sigma": fit.sigma,
+                "excesses": fit.excesses,
+                "xi_estimate": fit.xi_estimate,
+            }
         elif fit.fallback:
             account = {"state": "fallback", "sigma": fit.sigma, "excesses": fit.excesses}
+        elif fit.xi < 0.0:
+            raise ValueError(
+                f"a fitted tail with a negative shape ({fit.xi!r}) is not one "
+                f"this model publishes; a negative shape is floored at zero (#63)"
+            )
         else:
             account = {
                 "state": "fitted",
@@ -1854,8 +1886,6 @@ class FittedGradientBoostedQuantiles:
                 "excesses": fit.excesses,
                 "clamped": fit.clamped,
             }
-            if fit.xi < 0.0:
-                account["upper_endpoint_excess"] = fit.sigma / -fit.xi
         return MappingProxyType(account)
 
     def trained_beyond(self, feature_row: DailyObservation) -> bool:
