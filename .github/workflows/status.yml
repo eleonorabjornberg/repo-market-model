@@ -25,7 +25,9 @@ permissions:
 
 jobs:
   emit:
-    name: check docs/status.json
+    # The name is kept from when this job committed the file, because a
+    # branch rule or a reader of check runs may name it.
+    name: publish docs/status.json
     runs-on: ubuntu-latest
     steps:
       # The file is stamped with the latest commit that changed an input, which
