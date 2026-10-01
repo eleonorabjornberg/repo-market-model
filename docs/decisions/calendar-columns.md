@@ -49,6 +49,12 @@ alone, so it stays a function of the scored date. The table lists the US governm
 market's full-close days, each with its date, reason and source, and its checksum is pinned in
 `data.MARKET_HOLIDAYS_SHA256`. An unscheduled closure is a new table entry, added by a reviewed pull request.
 
+The table carries no announcement date for now (Eleonora, 1 October 2026, deferring the question).
+That is a known limit: a closure announced after a decision date can land on a quarter's last
+weekday, and then the weekday before it would read 1.0 on a rebuilt panel although nobody knew at
+that day's decision instant. If one does, the pull request that adds it must add announcement dates
+to the table and make `quarter_end` respect them.
+
 `days_to_month_end` and `tax_date` are unchanged, and neither reads the table.
 
 ## Why calendar days and not business days
