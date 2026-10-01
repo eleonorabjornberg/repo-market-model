@@ -6,7 +6,7 @@ predictive distribution.
 
 ## The rule
 
-The headline pressure probability, P(SOFR − IORB ≥ +5 bp) and P(≥ +10 bp) at 1–5 business days, is produced by
+The headline pressure probability, P(SOFR − IORB > +5 bp) and P(> +10 bp) at 1–5 business days, is produced by
 whichever candidate model wins. A candidate may be:
 
 - **the distribution-derived exceedance** of the as-of predictive distribution;
@@ -28,6 +28,14 @@ The winner is the candidate that beats both benchmarks on that evidence and does
 figure alone does not decide it. Choosing the winner is a published claim, so it is made in a scored record and put to
 Eleonora, not settled in code.
 
+## The event is strictly greater than
+
+Amended by Eleonora, 1 October 2026, in her ruling on
+[#73](https://github.com/eleonorabjornberg/repo-market-model/issues/73). The event is SOFR − IORB **strictly
+greater than** the threshold, as the exceedance path, the `stress_gt_*` labels and the contract already score it.
+This record said ≥ before. Both rates are quoted in whole basis points, so the two differ on every day that sits
+exactly on the threshold, and this record now states what the code and the published records measure.
+
 ## Why
 
 In scouting, the persistence-logistic benchmark beat every gradient-boosted classifier, and the gradient-boosted model
@@ -39,4 +47,4 @@ paired, split evidence.
 
 - The next-day distribution of SOFR − IORB stays a target, with its own benchmark (as-of persistence).
 - Pressure is scored as state, not onset. Thresholds come from `metadata/stress_thresholds.json`.
-- The ≥ +50 bp tail stays out of the headline (plan §1).
+- The > +50 bp tail stays out of the headline (plan §1).
