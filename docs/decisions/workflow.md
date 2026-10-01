@@ -69,7 +69,7 @@ The ownership gate, its CI job and its Claude Code hook are retired, by directiv
 
 Decided by Eleonora, 30 September 2026. Until the directive 06 pull request merges, a pull request that closes an
 issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), not by her. The review session is a separate Claude Code session from the one that implemented the change, and does not change code. It merges only when CI is green and the directive's acceptance criteria are met. It
-escalates instead of merging (the pull request labelled `needs-eleonora`, the queue on `hold`) when the pull request:
+escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
 
 - asks her a question, or its session opened a `needs-eleonora` issue;
 - changes `docs/decisions/` beyond recording a decision its directive says she has made;
@@ -77,6 +77,23 @@ escalates instead of merging (the pull request labelled `needs-eleonora`, the qu
 - lacks a required recorded mutation, or one that was not killed, or has any `expectedFailure`;
 - moves the panel digest when its directive does not rebuild the panel, or reaches well outside its directive;
 - leaves the reviewer unsure.
+
+**Escalations do not stop independent work.** Decided by Eleonora, 1 October 2026. An escalated pull request waits
+on her, and the queue is not put on `hold` for it. The loop moves on to the next queued item that does not depend on
+it. A queue line `- #N (after #A, #B)` marks a dependency: #N waits until #A and #B are closed. An item whose pull
+request waits on her is skipped, never re-worked. `hold` is kept for states that block every item: a permission
+denial, red CI on `main`, or a run that stalled.
+
+**Mechanical escalations are ruled under her delegation.** Decided by Eleonora, 1 October 2026. The orchestrating
+Claude session that starts the queue's routine rules on these, in a comment starting `**Ruling` and saying "decided
+under Eleonora's delegation", and the queue moves on:
+
+- a merge conflict, or CI that does not start;
+- a change to the cloud environment or its setup script that the directive needs;
+- an acceptance criterion read as met only because the directive removes the code the criterion would protect.
+
+Everything else on the list above stays hers. That covers a question the pull request asks her, a change to
+`docs/decisions/`, a verdict or public claim, a threshold, a data meaning, and a published figure.
 
 A finding that blocks the next queued directive may be made a directive and inserted into the queue by the review
 session. Other findings wait for her triage. When the queue is done, merging returns to her.
