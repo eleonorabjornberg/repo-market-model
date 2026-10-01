@@ -80,3 +80,10 @@ escalates instead of merging (the pull request labelled `needs-eleonora`, the qu
 
 A finding that blocks the next queued directive may be made a directive and inserted into the queue by the review
 session. Other findings wait for her triage. When the queue is done, merging returns to her.
+
+**Pure follow-ups go through the queue too.** Decided by Eleonora, 1 October 2026. A follow-up that only applies a
+ruling she has already posted is queued as a directive and merged under delegated review like any other. Examples:
+wording that brings a page in line with a ruling, a record's path after it moves, a stale reference in a directive's
+text. The directive cites the ruling by link. Recording that ruling in `docs/decisions/` counts as recording a
+decision she has made. The reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or
+what the project claims beyond what the cited ruling says.
