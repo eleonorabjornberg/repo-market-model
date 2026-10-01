@@ -21,6 +21,11 @@ that fold. The ceiling in basis points is `Q(top) + upper_endpoint_excess`.
 Comparing the bare excess to a tau compares an excess with a level: B43 found
 that it refuses 62 folds at 50 bp where the level comparison refuses 48.
 
+**Since the floor (#63)** a new run has no ceiling. A negative shape is
+recorded as `floored`, with no `upper_endpoint_excess`, and no fold is
+`refused`. The ceiling readers here are for the records written before it,
+which carry both.
+
 Stdlib only. `repo_model.ml` is reached inside functions, as
 `tests/test_dependency_boundary.py` requires of every core module.
 """
