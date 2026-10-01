@@ -5980,9 +5980,12 @@ class CalendarColumnTests(unittest.TestCase):
     exercises:
 
     * 2019-03-29, a Friday, is the last grid date of a quarter whose last
-      calendar day, 2019-03-31, is a Sunday: `quarter_end` 0.0 and
-      `days_to_month_end` 2. The quarter carries no 1.0 on this grid at all;
-      2019-09-30, a Monday, is the quarter end that is a grid date.
+      calendar day, 2019-03-31, is a Sunday: `days_to_month_end` 2, and since
+      #44 `quarter_end` 1.0 -- the last business day of the quarter on the
+      panel's own grid. This grid is sparse, so every quarter it leaves reads
+      1.0 on its last grid date (2018-04-20, 2019-04-19, 2019-11-01,
+      2020-02-28, ...), and the quarter it never leaves, 2024's second, reads
+      no 1.0. `QuarterEndBusinessDayTests` pins the rule on a dense grid.
     * February: 2019-02-01 reads 27 and 2019-02-28 reads 0; 2020-02-28 reads 1,
       because 2020 is a leap year. 2019-10-01 and 2019-11-01 are the first days
       of a 31-day and a 30-day month.
@@ -6056,11 +6059,13 @@ class CalendarColumnTests(unittest.TestCase):
     CALENDAR = ("quarter_end", "tax_date", "days_to_month_end")
 
     #: date -> (quarter_end, tax_date, days_to_month_end), from the definitions.
+    #: `quarter_end` is read on this grid: 1.0 on the last grid date of each
+    #: quarter the grid leaves.
     EXPECTED = {
         date(2019, 2, 1): (0.0, 0.0, 27.0),
         date(2019, 2, 28): (0.0, 0.0, 0.0),
-        date(2020, 2, 28): (0.0, 0.0, 1.0),
-        date(2019, 3, 29): (0.0, 0.0, 2.0),
+        date(2020, 2, 28): (1.0, 0.0, 1.0),
+        date(2019, 3, 29): (1.0, 0.0, 2.0),
         date(2019, 4, 1): (0.0, 0.0, 29.0),
         date(2019, 9, 13): (0.0, 0.0, 17.0),
         date(2019, 9, 16): (0.0, 1.0, 14.0),
@@ -6069,25 +6074,25 @@ class CalendarColumnTests(unittest.TestCase):
         date(2019, 9, 19): (0.0, 0.0, 11.0),
         date(2019, 9, 30): (1.0, 0.0, 0.0),
         date(2019, 10, 1): (0.0, 0.0, 30.0),
-        date(2019, 11, 1): (0.0, 0.0, 29.0),
+        date(2019, 11, 1): (1.0, 0.0, 29.0),
         # Emancipation Day moves the deadline.
         date(2018, 4, 16): (0.0, 0.0, 14.0),
         date(2018, 4, 17): (0.0, 1.0, 13.0),
         date(2018, 4, 19): (0.0, 1.0, 11.0),
-        date(2018, 4, 20): (0.0, 0.0, 10.0),
+        date(2018, 4, 20): (1.0, 0.0, 10.0),
         date(2022, 4, 15): (0.0, 0.0, 15.0),
         date(2022, 4, 18): (0.0, 1.0, 12.0),
         date(2022, 4, 20): (0.0, 1.0, 10.0),
-        date(2022, 4, 21): (0.0, 0.0, 9.0),
+        date(2022, 4, 21): (1.0, 0.0, 9.0),
         date(2023, 4, 17): (0.0, 0.0, 13.0),
         date(2023, 4, 18): (0.0, 1.0, 12.0),
         date(2023, 4, 20): (0.0, 1.0, 10.0),
-        date(2023, 4, 21): (0.0, 0.0, 9.0),
+        date(2023, 4, 21): (1.0, 0.0, 9.0),
         # ...and a holiday inside the window moves its end.
         date(2019, 4, 15): (0.0, 1.0, 15.0),
         date(2019, 4, 16): (0.0, 0.0, 14.0),
         date(2019, 4, 18): (0.0, 1.0, 12.0),
-        date(2019, 4, 19): (0.0, 0.0, 11.0),
+        date(2019, 4, 19): (1.0, 0.0, 11.0),
         date(2024, 6, 17): (0.0, 1.0, 13.0),
         date(2024, 6, 19): (0.0, 0.0, 11.0),
         date(2024, 6, 20): (0.0, 1.0, 10.0),
@@ -6147,18 +6152,18 @@ class CalendarColumnTests(unittest.TestCase):
             self.assertEqual(got, self.EXPECTED)
 
         with self.subTest("a date alone, with no panel"):
-            self.assertEqual(data.quarter_end(date(2019, 3, 31)), 1.0)
+            # `tax_date` and `days_to_month_end`. Since #44 `quarter_end` reads
+            # the grid; `QuarterEndBusinessDayTests` covers it.
             self.assertEqual(data.days_to_month_end(date(2019, 3, 31)), 0.0)
             self.assertEqual(data.days_to_month_end(date(2020, 2, 1)), 28.0)
-            self.assertEqual(data.quarter_end(date(2019, 8, 31)), 0.0)
-            for day, (quarter, tax, countdown) in self.EXPECTED.items():
+            for day, (_quarter, tax, countdown) in self.EXPECTED.items():
                 self.assertEqual(
-                    (data.quarter_end(day), data.tax_date(day), data.days_to_month_end(day)),
-                    (quarter, tax, countdown),
+                    (data.tax_date(day), data.days_to_month_end(day)),
+                    (tax, countdown),
                     day,
                 )
 
-        with self.subTest("the grid does not move a value"):
+        with self.subTest("the grid does not move a date-alone value"):
             thinned = self.build(
                 [day for day in grid if day != date(2019, 9, 17)], ("sofr", *self.CALENDAR)
             )
@@ -6220,6 +6225,116 @@ class CalendarColumnTests(unittest.TestCase):
                 date(2023, 4, 17): date(2023, 4, 18),
             },
         )
+
+
+class QuarterEndBusinessDayTests(unittest.TestCase):
+    """#44: `quarter_end` is the last business day of the quarter, on the panel's grid.
+
+    Eleonora's decision, 30 September 2026. Until then it marked the last
+    *calendar* day, so it read 0.0 on every row of a quarter that ended on a
+    weekend -- 9 of the 33 complete quarters in the published panel. The four
+    in 2018-19 are the ones the finding named: 2018-06-29, 2018-09-28,
+    2019-03-29 and 2019-06-28 printed +17, +5, +25 and +15 bp against -2, -4,
+    +3 and +7 bp the business day before.
+
+    The business-day calendar is the panel's own dates, as `asof` counts a
+    `business_days` lag and rule 8 reads a settlement zero: there is no holiday
+    calendar and no `weekday()` here. That is why 2024-03-28 is the quarter end
+    of 2024's first quarter in the dense fixture below: 2024-03-29 was Good
+    Friday, SOFR did not print, and the grid has no row for it.
+
+    A date in a quarter the grid has not left -- the panel's last quarter --
+    cannot be shown to be the last business day by the grid, and reads 1.0
+    only if it is the quarter's last calendar day.
+
+    The acceptance test was written first and watched failing on the
+    calendar-day rule: `AssertionError: 0.0 != 1.0` on 2018-09-28.
+    """
+
+    REGISTRY = CalendarColumnTests.REGISTRY
+
+    #: Three windows of SOFR's business days around a quarter end, each a grid
+    #: of its own: 2018-09-30 a Sunday; 2019-12-31 a Tuesday, with 2020-01-01 a
+    #: holiday; 2024-03-31 a Sunday, with 2024-03-29 Good Friday. Each window
+    #: ends inside the quarter after, which it does not leave.
+    WINDOWS = (
+        (
+            date(2018, 9, 26), date(2018, 9, 27), date(2018, 9, 28),
+            date(2018, 10, 1), date(2018, 10, 2),
+        ),
+        (date(2019, 12, 27), date(2019, 12, 30), date(2019, 12, 31), date(2020, 1, 2)),
+        (date(2024, 3, 26), date(2024, 3, 27), date(2024, 3, 28), date(2024, 4, 1)),
+    )
+    GRID = WINDOWS[0]
+    QUARTER_ENDS = {date(2018, 9, 28), date(2019, 12, 31), date(2024, 3, 28)}
+
+    def build(self, dates):
+        return CalendarColumnTests.build(self, dates, ("sofr", "quarter_end"))
+
+    def observation(self, ref_date):
+        return CalendarColumnTests.observation(self, ref_date)
+
+    def test_a_weekend_quarter_end_falls_on_the_last_business_day(self):
+        """The acceptance criterion: 2018-09-30 is a Sunday, so 2018-09-28 reads 1.0."""
+
+        from repo_model import data
+
+        got = {row.date: row.values["quarter_end"] for row in self.build(self.GRID).observations}
+        self.assertEqual(got[date(2018, 9, 28)], 1.0)
+        self.assertEqual(got[date(2018, 9, 27)], 0.0)
+        self.assertEqual(got[date(2018, 10, 1)], 0.0)
+        for window in self.WINDOWS:
+            with self.subTest(window[0]):
+                got = {
+                    row.date: row.values["quarter_end"]
+                    for row in self.build(window).observations
+                }
+                expected = {day: float(day in self.QUARTER_ENDS) for day in window}
+                self.assertEqual(got, expected)
+                self.assertEqual(
+                    {day: data.quarter_end(day, window) for day in window}, expected
+                )
+
+    def test_a_quarter_the_grid_has_not_left(self):
+        """The panel's last quarter: 1.0 only on the quarter's last calendar day."""
+
+        from repo_model import data
+
+        to_friday = self.GRID[: self.GRID.index(date(2018, 9, 28)) + 1]
+        got = {row.date: row.values["quarter_end"] for row in self.build(to_friday).observations}
+        self.assertEqual(set(got.values()), {0.0})
+
+        to_new_year = self.WINDOWS[1][:-1]
+        got = {row.date: row.values["quarter_end"] for row in self.build(to_new_year).observations}
+        self.assertEqual(got, {date(2019, 12, 27): 0.0, date(2019, 12, 30): 0.0, date(2019, 12, 31): 1.0})
+
+        with self.assertRaises(ValueError):
+            data.quarter_end(date(2018, 9, 29), self.GRID)
+
+    def test_every_complete_quarter_of_the_published_panel_has_one_quarter_end(self):
+        """On the published build: the last row of each complete quarter, and no other."""
+
+        import csv
+
+        with tempfile.TemporaryDirectory() as tmp:
+            panel = Path(tmp) / "panel.csv"
+            code, text = RequestedColumnsBuildTests.run_build(self, panel)
+            self.assertEqual(code, 0, text)
+            with panel.open(encoding="utf-8", newline="") as handle:
+                rows = [
+                    (date.fromisoformat(row["date"]), float(row["quarter_end"]))
+                    for row in csv.DictReader(handle)
+                ]
+        last_in_quarter = {}
+        for day, _value in rows:
+            last_in_quarter[(day.year, (day.month - 1) // 3)] = day
+        final_quarter = max(last_in_quarter)
+        expected = {
+            day for quarter, day in last_in_quarter.items() if quarter != final_quarter
+        }
+        self.assertEqual({day for day, value in rows if value == 1.0}, expected)
+        for day in (date(2018, 6, 29), date(2018, 9, 28), date(2019, 3, 29), date(2019, 6, 28)):
+            self.assertIn(day, expected)
 
 
 class WeeklyCarryForwardTests(unittest.TestCase):

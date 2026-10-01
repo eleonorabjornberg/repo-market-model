@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import csv
 import hashlib
 import json
@@ -2415,12 +2416,15 @@ CARRY_FORWARD_COLUMNS = MappingProxyType(
 )
 
 
-# The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them "a
-# function of the scored date alone", and that is the whole implementation
-# rule: each value below is computed from one `date` and nothing else -- no
-# panel row, no grid, no source. A value that read the next row on the grid
-# would depend on which rows exist after the scored date, which is a look
-# forward at the panel wearing a calendar.
+# The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them a
+# function of the scored date: each value below is computed from one `date`
+# and no panel row's values, and no source. `tax_date` and
+# `days_to_month_end` read nothing else. `quarter_end` also reads which dates
+# the grid holds, as the panel's business-day calendar (#44): whether a
+# business day follows the scored date is set by published market schedules,
+# not by any print. The grid is made by which sources printed, so an
+# unscheduled closure after the scored date would reach back into the day
+# before it.
 
 
 def _last_day_of_month(day: date) -> int:
@@ -2440,16 +2444,38 @@ def days_to_month_end(day: date) -> float:
     return float(_last_day_of_month(day) - day.day)
 
 
-def quarter_end(day: date) -> float:
-    """1.0 on the last calendar day of March, June, September or December.
+def _last_day_of_quarter(day: date) -> date:
+    month = 3 * ((day.month - 1) // 3) + 3
+    return date(day.year, month, _last_day_of_month(date(day.year, month, 1)))
 
-    The last *calendar* day, not the last grid date: 2019-03-31 was a Sunday,
-    and 2019-03-29 is 0.0. A panel therefore carries no 1.0 at all for a
-    quarter whose last day it has no row for, and that is the definition, not
-    a hole -- the grid-relative reading needs the next row to know it is last.
+
+def quarter_end(day: date, grid: Sequence[date]) -> float:
+    """1.0 on the last business day of a calendar quarter, on the panel's own grid.
+
+    Eleonora's decision, 30 September 2026 (#44). The business days are the
+    panel's dates -- `grid`, sorted -- as rule 8 and `asof` read them; there is
+    no holiday calendar and no `weekday()` here. 2019-03-31 was a Sunday, so
+    2019-03-29 reads 1.0; 2024-03-29 was Good Friday and has no row, so
+    2024-03-28 does.
+
+    `day` is the last business day of its quarter when the next grid date is in
+    a later quarter. A date with no later grid date is in a quarter the grid has
+    not left, and the grid cannot say whether a business day follows it, so it
+    reads 1.0 only on the quarter's last calendar day. Which day is a business
+    day is set by published schedules, not by the prints, so reading the next
+    grid date takes no value from after `day`.
+
+    The calendar-day rule this replaces read 0.0 on every day of a quarter that
+    ended on a weekend.
     """
 
-    return float(day.month in (3, 6, 9, 12) and day.day == _last_day_of_month(day))
+    index = bisect.bisect_left(grid, day)
+    if index == len(grid) or grid[index] != day:
+        raise ValueError(f"{day.isoformat()} is not a date of the grid")
+    last = _last_day_of_quarter(day)
+    if index + 1 == len(grid):
+        return float(day == last)
+    return float(grid[index + 1] > last)
 
 
 #: The months holding a corporate estimated-tax deadline for a calendar-year
@@ -2547,11 +2573,13 @@ def tax_date(day: date) -> float:
 #: Calendar column -> its rule. A `contract.CALENDAR_FEATURES` name with no
 #: entry here is refused by the build, with the reason, as every calendar
 #: column was before A31.
+#: Each rule takes the row's `ref_date` and the panel's grid; only
+#: `quarter_end` reads the grid.
 CALENDAR_COLUMN_RULES = MappingProxyType(
     {
-        "days_to_month_end": days_to_month_end,
+        "days_to_month_end": lambda day, _grid: days_to_month_end(day),
         "quarter_end": quarter_end,
-        "tax_date": tax_date,
+        "tax_date": lambda day, _grid: tax_date(day),
     }
 )
 
@@ -3144,13 +3172,14 @@ def build_daily_panel(
 
     **9. A calendar column is computed from the grid date, and is never priced**
     (A31). `contract.CALENDAR_FEATURES` declares it a function of the scored
-    date alone, so it draws on no source and has no release lag to price; a
+    date, so it draws on no source and has no release lag to price; a
     column there with a rule in `CALENDAR_COLUMN_RULES` is built, one without
     is refused with the reason. Each value is the rule applied to the row's own
-    `ref_date` -- not to a neighbouring row, and not to the grid -- so it is
-    never a hole and never a settlement zero, and it adds no date to the grid:
-    rule 6's grid is made by the sourced columns alone, and a build with no
-    sourced column surviving raises.
+    `ref_date` -- not to a neighbouring row's values -- so it is never a hole
+    and never a settlement zero, and it adds no date to the grid: rule 6's grid
+    is made by the sourced columns alone, and a build with no sourced column
+    surviving raises. `quarter_end` alone also reads the grid's dates, as the
+    panel's business-day calendar (#44); the others ignore it.
 
     **10. A weekly column carries its last print forward by `ref_date`, and no
     further than a declared staleness** (human decision, A36). A `ref_date` on
@@ -3342,9 +3371,9 @@ def build_daily_panel(
     for ref_date in retained:
         values: Dict[str, Optional[float]] = {}
         for column in built:
-            # Rule 9: from the date alone, never from a row. Never a hole.
+            # Rule 9: from the date and the grid, never from a row. Never a hole.
             if column in CALENDAR_COLUMN_RULES:
-                values[column] = CALENDAR_COLUMN_RULES[column](ref_date)
+                values[column] = CALENDAR_COLUMN_RULES[column](ref_date, retained)
                 continue
             row = latest.get((column, ref_date))
             if row is None and ref_date in zero_dates.get(column, ()):

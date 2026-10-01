@@ -343,9 +343,11 @@ DERIVED_FEATURES = MappingProxyType(
     }
 )
 
-# Features that are a function of the scored date alone. These contribute no
-# source. They are enumerated rather than inferred: a feature that
-# contributes nothing to the purge is exactly the shape of an error, and the
+# Features that are a function of the scored date. These contribute no
+# source. `quarter_end` also reads the panel's dates as its business-day
+# calendar (#44; `data.quarter_end`). They are enumerated rather than
+# inferred: a feature that contributes nothing to the purge is exactly the
+# shape of an error, and the
 # registry's `snapshot_retrieved_at` rule already establishes that nothing
 # gets mapped to a zero gap by default.
 CALENDAR_FEATURES = frozenset(

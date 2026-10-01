@@ -9,7 +9,8 @@ Three columns, each a function of the scored date alone and contributing no sour
 
 - `days_to_month_end` — calendar days remaining until the last day of the month. Zero on the last
   day; 27 to 30 on the first, depending on month length. Unclipped and unsigned.
-- `quarter_end` — the last calendar day of March, June, September or December.
+- `quarter_end` — the last business day of March, June, September or December, on the panel's own
+  business-day calendar. Until 30 September 2026 it was the last calendar day; see below.
 - `tax_date` — the statutory corporate estimated-tax date, rolled forward off Saturdays, Sundays and
   the legal holidays of the District of Columbia, **and the two business days that follow it**.
 
@@ -34,6 +35,25 @@ A plain countdown has neither fault. The month is one monotone ramp, the two bou
 opposite ends of it, and the middle stays resolved. The cost is that a tree spends two splits to
 express "either end of the month" where a signed column spends one. That is the trade, and it buys
 back the middle.
+
+## Amended 30 September 2026: `quarter_end` on business days
+
+Eleonora's decision (#44). Marking the last calendar day put `quarter_end` at 0.0 on every row of a
+quarter that ended on a weekend: 9 of the 33 complete quarters in the published panel. The four in
+2018-19 printed +17, +5, +25 and +15 bp against -2, -4, +3 and +7 bp the business day before.
+
+`quarter_end` is now 1.0 on the last business day of the quarter, and the business days are the
+panel's own dates, as `asof` counts a `business_days` lag and rule 8 reads a settlement zero. No
+holiday calendar is added: on 2024-03-29, Good Friday, SOFR did not print, and the grid makes
+2024-03-28 the quarter end without one. A date in a quarter the grid has not left, the panel's last,
+reads 1.0 only if it is the quarter's last calendar day.
+
+This makes `quarter_end` the one calendar column that reads which dates the grid holds after the
+scored date. Which days are business days is set by published market schedules, not by any print;
+an unscheduled closure would reach back into the day before it.
+
+`days_to_month_end` keeps calendar days, for the reasons in the next section. `tax_date` already
+rolls by its statute.
 
 ## Why calendar days and not business days
 
