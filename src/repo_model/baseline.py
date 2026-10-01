@@ -174,8 +174,19 @@ from .contract import (
     field_sources_for_features,
 )
 from .data import DailyObservation, load_stress_thresholds
+from .strata import (
+    COUPON_COLUMN,
+    Strata,
+    pressure_day_type,
+    row_day_type,
+    scored_strata,
+    split_definitions,
+    split_document,
+    split_seed,
+)
 from .metrics import (
     CorpDecomposition,
+    average_precision,
     MetricError,
     ReliabilityCurve,
     _validate_levels,
@@ -801,6 +812,9 @@ class BacktestReport:
     #: every origin, and the early folds are the ones that fall back. See
     #: `_tail_account`.
     tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
+    #: Each scored day's regime and pressure-day type, aligned with `folds`
+    #: (#27); see `strata.scored_strata`.
+    strata: Optional[Strata] = None
 
 
 #: The interval `rolling_persistence_backtest` reports, derived from the
@@ -2903,6 +2917,11 @@ def _exceedance_at_folds(
         keywords["histories"] = tuple(
             _as_of_history(rows, rule, fold) for fold in folds
         )
+    # The day each forecast is for, for a predictor that names it
+    # (`calendar_climatology_exceedance`): the calendar is known in advance,
+    # and the feature row is dated at its anchor, not at the scored day.
+    if _names_parameter(predictor, "scored_dates"):
+        keywords["scored_dates"] = tuple(rows[fold.index].date for fold in folds)
     predicted = predictor(
         train_rows, tuple(fold.feature_row for fold in folds), taus, **keywords
     )
@@ -2949,6 +2968,13 @@ def _refit_blocks_of(folds: Iterable[_AsOfFold]) -> Iterable[List[_AsOfFold]]:
         block.append(fold)
     if block:
         yield block
+
+
+def _strata_of(rows: Sequence[DailyObservation], folds: Sequence[ScoredFold]) -> Strata:
+    """`strata.scored_strata` over the rows the folds scored, in fold order."""
+
+    by_date = {row.date: row for row in rows}
+    return scored_strata([by_date[fold.scored_date] for fold in folds])
 
 
 #: Later than any deadline a panel can express; `asof.NEVER_ON_THIS_PANEL`.
@@ -3266,6 +3292,7 @@ def rolling_persistence_backtest(
         crps_bps=crps,
         ml_libraries=ml_libraries,
         model_settings=model_settings,
+        strata=_strata_of(rows, folds),
         # `None`, not a tuple of `None`s, when no fold had a tail: the fitter
         # is one callable, so a run either carries a tail at every origin or at
         # none, and a run without one must record nothing.
@@ -4717,6 +4744,9 @@ def backtest_document(
         }
     if report.crps_bps is not None:
         metrics["crps_bps"] = report.crps_bps
+    # Split by regime and pressure-day type (#27): a pooled figure alone is
+    # not a result. Each stratum's means over its own scored days.
+    metrics.update(_backtest_splits(report))
 
     derived: dict = {
         "sources": sorted(report.sources),
@@ -5027,6 +5057,9 @@ class PairedComparisonReport:
     #: Required like every field here; an empty mapping is a computed answer.
     settings_a: Mapping[str, Any]
     settings_b: Mapping[str, Any]
+    #: Each scored day's regime and pressure-day type, aligned with `folds`
+    #: (#27); see `strata.scored_strata`.
+    strata: Optional[Strata] = None
 
     @property
     def loss_name(self) -> str:
@@ -5337,7 +5370,113 @@ def paired_model_comparison(
         ml_libraries=ml_libraries,
         settings_a=settings_a,
         settings_b=settings_b,
+        strata=_strata_of(rows, folds),
     )
+
+
+def _mean_or_none(values: Sequence[float]) -> Optional[float]:
+    return sum(values) / len(values) if values else None
+
+
+def _backtest_splits(report: BacktestReport) -> dict:
+    """`by_regime` and `by_day_type` for a continuous backtest: MAE, CRPS, coverage."""
+
+    if not report.forecasts or report.strata is None:
+        return {}
+    levels = tuple(report.quantile_levels)
+
+    def summary(split: str, label: str, positions: List[int]) -> dict:
+        items = [report.forecasts[i] for i in positions]
+        entry: dict = {
+            "forecast_count": len(items),
+            "mae_bps": sum(abs(i.actual_bps - i.predicted_bps) for i in items) / len(items),
+            "interval_coverage": sum(
+                i.lower_bps <= i.actual_bps <= i.upper_bps for i in items
+            ) / len(items),
+        }
+        if len(levels) > 1 and all(i.quantiles_bps for i in items):
+            entry["crps_bps"] = sum(
+                crps_from_quantiles(levels, i.quantiles_bps, i.actual_bps) for i in items
+            ) / len(items)
+        return entry
+
+    document = split_document(report.strata, summary)
+    if document:
+        document["splits"] = split_definitions()
+    return document
+
+
+def _paired_mean_interval(
+    differences: Sequence[float], *, block: int, seed: int
+) -> Tuple[Optional[dict], Optional[str]]:
+    """The stationary-bootstrap interval on a mean paired difference, or why not."""
+
+    try:
+        lower, upper = stationary_bootstrap_interval(
+            lambda indices: sum(differences[i] for i in indices) / len(indices),
+            len(differences),
+            block_length=block,
+            seed=seed,
+            replications=BOOTSTRAP_REPLICATIONS,
+            level=BOOTSTRAP_LEVEL,
+        )
+    except MetricError as exc:
+        return None, str(exc)
+    return (
+        {
+            "lower": lower,
+            "upper": upper,
+            "level": BOOTSTRAP_LEVEL,
+            "method": "stationary_bootstrap",
+            "block_length": block,
+            "replications": BOOTSTRAP_REPLICATIONS,
+            "seed": seed,
+        },
+        None,
+    )
+
+
+def _comparison_splits(comparison: PairedComparisonReport) -> dict:
+    """`by_regime` and `by_day_type` for a paired comparison, each paired with its interval.
+
+    The stratum's origins are resampled in their scored order, with the run's
+    block length; each stratum draws from its own seed (`strata.split_seed`).
+    """
+
+    if comparison.strata is None:
+        return {}
+
+    def summary(split: str, label: str, positions: List[int]) -> dict:
+        differences = [comparison.differences[i] for i in positions]
+        entry: dict = {
+            "origin_count": len(positions),
+            "model_a": {
+                f"{comparison.loss_statistic}_bps": _mean_or_none(
+                    [comparison.losses_a[i] for i in positions]
+                )
+            },
+            "model_b": {
+                f"{comparison.loss_statistic}_bps": _mean_or_none(
+                    [comparison.losses_b[i] for i in positions]
+                )
+            },
+            "mean_difference_bps": sum(differences) / len(differences),
+        }
+        interval, reason = _paired_mean_interval(
+            differences,
+            block=comparison.block_length,
+            seed=split_seed(comparison.seed, split, label),
+        )
+        if interval is not None:
+            entry["mean_difference_interval"] = interval
+        else:
+            entry["unavailable"] = {"mean_difference_interval": reason}
+        return entry
+
+    document = split_document(comparison.strata, summary)
+    if document:
+        document["splits"] = split_definitions()
+    return document
 
 
 def panel_sha256(panel_path: Path) -> str:
@@ -5665,6 +5804,8 @@ def paired_comparison_document(
                     comparison.differences,
                 )
             ],
+            # Split by regime and pressure-day type, each paired (#27).
+            **_comparison_splits(comparison),
         },
     }
 
@@ -5761,6 +5902,218 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
         return ExceedanceCurves(
             tuple(curve for _ in feature_rows), ("spread_bps",)
         )
+
+    return fit_predict
+
+
+#: The inverse regularisation strength of `fit_penalised_logistic`: scikit-learn's
+#: `LogisticRegression()` default, which the scouting benchmark used.
+LOGISTIC_C = 1.0
+
+
+def _sigmoid(z: float) -> float:
+    if z >= 0.0:
+        return 1.0 / (1.0 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1.0 + e)
+
+
+def fit_penalised_logistic(
+    xs: Sequence[float], ys: Sequence[int], *, c: float = LOGISTIC_C
+) -> Tuple[float, float]:
+    """`(intercept, slope)` of a one-regressor logistic model, L2 on the slope.
+
+    Minimises `c * sum(logloss) + slope**2 / 2` by Newton's method, with the
+    intercept unpenalised: scikit-learn's `LogisticRegression()` with its
+    defaults, which is the persistence-logistic the scouting
+    (`docs/pivot/scouting/lag_analyze.py`) scored. The penalty keeps the fit
+    finite on separable data.
+
+    Raises:
+        ValueError: fewer than two rows, a label other than 0 or 1, or labels
+            of one class only (the intercept then has no finite optimum).
+    """
+
+    if len(xs) != len(ys) or len(xs) < 2:
+        raise ValueError("a logistic fit needs at least two aligned rows")
+    if any(y not in (0, 1) for y in ys):
+        raise ValueError("logistic labels must be 0 or 1")
+    positives = sum(ys)
+    if positives in (0, len(ys)):
+        raise ValueError("a logistic fit needs labels of both classes")
+    base = positives / len(ys)
+    intercept, slope = math.log(base / (1.0 - base)), 0.0
+
+    def objective(b0: float, b1: float) -> float:
+        total = 0.0
+        for x, y in zip(xs, ys):
+            z = b0 + b1 * x
+            # log(1 + e^z) - y z, computed stably.
+            total += (max(z, 0.0) + math.log1p(math.exp(-abs(z)))) - y * z
+        return c * total + 0.5 * b1 * b1
+
+    current = objective(intercept, slope)
+    for _ in range(200):
+        g0 = g1 = h00 = h01 = h11 = 0.0
+        for x, y in zip(xs, ys):
+            p = _sigmoid(intercept + slope * x)
+            w = p * (1.0 - p)
+            g0 += p - y
+            g1 += (p - y) * x
+            h00 += w
+            h01 += w * x
+            h11 += w * x * x
+        g0, g1 = c * g0, c * g1 + slope
+        h00, h01, h11 = c * h00, c * h01, c * h11 + 1.0
+        determinant = h00 * h11 - h01 * h01
+        if determinant <= 0.0:
+            raise ValueError("the logistic Hessian is singular")
+        step0 = (h11 * g0 - h01 * g1) / determinant
+        step1 = (h00 * g1 - h01 * g0) / determinant
+        scale = 1.0
+        while True:
+            b0, b1 = intercept - scale * step0, slope - scale * step1
+            value = objective(b0, b1)
+            if value <= current or scale < 1e-12:
+                break
+            scale /= 2.0
+        intercept, slope, previous, current = b0, b1, current, value
+        if abs(scale * step0) < 1e-12 and abs(scale * step1) < 1e-12:
+            return intercept, slope
+        if abs(previous - current) <= 1e-15 * max(1.0, abs(current)) and scale < 1.0:
+            return intercept, slope
+    raise ValueError("the logistic fit did not converge in 200 Newton steps")
+
+
+def persistence_logistic_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
+    """The persistence-logistic benchmark: P(spread > tau) from the latest as-of spread.
+
+    One of the two benchmarks every pressure probability is compared against
+    (`docs/decisions/pressure-probability.md`, plan §1). At each tau, a
+    logistic model of the exceedance label on one regressor, the spread the
+    label's own decision read: training label `j` is paired with the spread at
+    `information.anchor(dates, j)`, the latest row whose spread was observable
+    at the decision that forecast `j`, which is the row the scored forecast
+    reads too. Fitted by `fit_penalised_logistic`, scikit-learn's default
+    regularisation, as the scouting benchmark was.
+
+    Two declared choices, both forced by the interface:
+
+    * **A tau with labels of one class gets that class's frequency**, 0.0 or
+      1.0, unsmoothed: `climatology_exceedance`'s rule. The logistic intercept
+      has no finite optimum there.
+    * **The curve is made non-increasing in tau** by a running minimum: the
+      taus are fitted separately, and two separate fits can cross.
+
+    `information` is keyword-only and required. The fold loop hands over the
+    run's `InformationRule` (`_reads_information`); called without one, the
+    pairing would have to be guessed.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        *,
+        information: InformationRule,
+    ) -> ExceedanceCurves:
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"persistence-logistic needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        dates = [row.date for row in train_rows]
+        pairs = []
+        # From the second row: the first has no panel day before it, so no
+        # decision instant and no anchor.
+        for index in range(1, len(train_rows)):
+            anchor = information.anchor(dates, index)
+            if anchor >= 0:
+                pairs.append((train_rows[anchor].spread_bps, train_rows[index].spread_bps))
+        xs = [x for x, _label in pairs]
+        fits = []
+        for tau in taus:
+            ys = [1 if label > float(tau) else 0 for _x, label in pairs]
+            positives = sum(ys)
+            if positives in (0, len(ys)):
+                fits.append(("constant", float(positives > 0)))
+            else:
+                fits.append(("logistic", fit_penalised_logistic(xs, ys)))
+        curves = []
+        for row in feature_rows:
+            x = row.spread_bps
+            curve, ceiling = [], 1.0
+            for kind, value in fits:
+                p = value if kind == "constant" else _sigmoid(value[0] + value[1] * x)
+                ceiling = min(ceiling, p)
+                curve.append(ceiling)
+            curves.append(tuple(curve))
+        return ExceedanceCurves(tuple(curves), ("spread_bps",))
+
+    return fit_predict
+
+
+def calendar_climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
+    """The calendar-type climatology benchmark: P(spread > tau) given the day's type.
+
+    The other benchmark of `docs/decisions/pressure-probability.md`. The
+    training rows are grouped by pressure-day type (`strata.row_day_type`:
+    quarter-end, month-end, tax window, coupon settlement, other) and each
+    scored day gets the fraction of its own type's training spreads strictly
+    above tau. A type with no training row falls back to the pooled
+    climatology over every training row (`climatology_exceedance`).
+
+    The scored day's type is read from its date, which the calendar knows in
+    advance, and from the coupon settlement on the feature row, a scheduled
+    input the as-of rule reads at the scored day. `scored_dates` is
+    keyword-only and required: the feature row is dated at its anchor, not at
+    the day it forecasts, and the fold loop hands the scored dates over
+    (`_reads_scored_dates`).
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        *,
+        scored_dates: Sequence[date],
+    ) -> ExceedanceCurves:
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"calendar climatology needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        if len(scored_dates) != len(feature_rows):
+            raise ValueError(
+                f"{len(scored_dates)} scored dates for {len(feature_rows)} feature "
+                "rows; each forecast's type is read from its own scored day"
+            )
+        groups: Dict[str, List[float]] = {}
+        for row in train_rows:
+            groups.setdefault(row_day_type(row), []).append(float(row.spread_bps))
+        pooled = [float(row.spread_bps) for row in train_rows]
+
+        def frequency(history: Sequence[float]) -> Tuple[float, ...]:
+            return tuple(
+                sum(1 for value in history if value > float(tau)) / len(history)
+                for tau in taus
+            )
+
+        curves = tuple(
+            frequency(
+                groups.get(
+                    pressure_day_type(day, row.values.get(COUPON_COLUMN)), pooled
+                )
+            )
+            for day, row in zip(scored_dates, feature_rows)
+        )
+        return ExceedanceCurves(curves, ("spread_bps", COUPON_COLUMN))
 
     return fit_predict
 
@@ -6135,6 +6488,9 @@ class ExceedanceBacktestReport:
     #: fit carried a tail, so a record of such a run grows no key.
     #: `RollingBacktestReport.tail_accounts`, on this path (B40).
     tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
+    #: Each scored day's regime and pressure-day type, aligned with `folds`
+    #: (#27); see `strata.scored_strata`.
+    strata: Optional[Strata] = None
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -6485,6 +6841,7 @@ def rolling_exceedance_backtest(
             if all(account is None for account in tail_accounts)
             else tuple(tail_accounts)
         ),
+        strata=_strata_of(rows, folds),
     )
 
 
@@ -6689,6 +7046,7 @@ def _tau_document(
     *,
     panel_sha256: str,
     block: int,
+    benchmarks: Sequence["ExceedanceBacktestReport"] = (),
 ) -> dict:
     """One threshold's row of the published table, absences and all."""
 
@@ -6761,6 +7119,51 @@ def _tau_document(
             curve, seed=seed, block=block
         )
 
+    try:
+        document["average_precision"] = average_precision(predicted, realized)
+    except MetricError as exc:
+        unavailable["average_precision"] = str(exc)
+
+    # The benchmarks, paired day by day (#27), pooled and then per stratum.
+    columns = {
+        bench.model_name: bench.at_tau(position)[0] for bench in benchmarks
+    }
+    if columns:
+        document["benchmarks"] = {
+            name: _benchmark_entry(
+                predicted, column, realized, list(range(len(realized))),
+                block=block, seed=split_seed(seed, "benchmark", name),
+            )
+            for name, column in columns.items()
+        }
+
+    def summary(split: str, label: str, positions: List[int]) -> dict:
+        outcomes = [realized[i] for i in positions]
+        model = [predicted[i] for i in positions]
+        entry: dict = {
+            "scored_days": len(positions),
+            "positives": sum(outcomes),
+            "brier": brier_score(model, outcomes),
+        }
+        try:
+            entry["average_precision"] = average_precision(model, outcomes)
+        except MetricError as exc:
+            entry["unavailable"] = {"average_precision": str(exc)}
+        if columns:
+            entry["benchmarks"] = {
+                name: _benchmark_entry(
+                    predicted, column, realized, positions,
+                    block=block, seed=split_seed(seed, split, label, name),
+                )
+                for name, column in columns.items()
+            }
+        return entry
+
+    splits = split_document(report.strata, summary)
+    if "unavailable" in splits:
+        unavailable.update(splits.pop("unavailable"))
+    document.update(splits)
+
     if unavailable:
         # Absent *and* accounted for. `backtest_document` omits what it cannot
         # compute so a reader asks rather than believes; on this path the
@@ -6770,12 +7173,64 @@ def _tau_document(
     return document
 
 
+def _benchmark_entry(
+    predicted: Sequence[float],
+    benchmark: Sequence[float],
+    realized: Sequence[int],
+    positions: Sequence[int],
+    *,
+    block: int,
+    seed: int,
+) -> dict:
+    """One benchmark against the model over `positions`, paired day by day.
+
+    `mean_brier_difference` is the benchmark's Brier minus the model's, so a
+    positive value favours the model; its interval resamples the per-day
+    differences (`_paired_mean_interval`). `brier_skill_score` is against the
+    benchmark.
+    """
+
+    outcomes = [realized[i] for i in positions]
+    model = [predicted[i] for i in positions]
+    bench = [benchmark[i] for i in positions]
+    model_brier = brier_score(model, outcomes)
+    bench_brier = brier_score(bench, outcomes)
+    entry: dict = {
+        "brier": bench_brier,
+        "mean_brier_difference": bench_brier - model_brier,
+    }
+    unavailable: dict = {}
+    if bench_brier > 0.0:
+        entry["brier_skill_score"] = 1.0 - model_brier / bench_brier
+    else:
+        unavailable["brier_skill_score"] = (
+            "the benchmark's Brier score is zero on these days, so a skill "
+            "score against it has no denominator"
+        )
+    differences = [
+        (b - y) ** 2 - (m - y) ** 2 for m, b, y in zip(model, bench, outcomes)
+    ]
+    interval, reason = _paired_mean_interval(differences, block=block, seed=seed)
+    if interval is not None:
+        entry["mean_brier_difference_interval"] = interval
+    else:
+        unavailable["mean_brier_difference_interval"] = reason
+    try:
+        entry["average_precision"] = average_precision(bench, outcomes)
+    except MetricError as exc:
+        unavailable["average_precision"] = str(exc)
+    if unavailable:
+        entry["unavailable"] = dict(sorted(unavailable.items()))
+    return entry
+
+
 def exceedance_backtest_document(
     report: ExceedanceBacktestReport,
     *,
     panel_path: Path,
     registry_path: Path,
     thresholds_path: Path,
+    benchmarks: Sequence[ExceedanceBacktestReport] = (),
 ) -> dict:
     """The pooled exceedance evaluation as a publishable record.
 
@@ -6817,13 +7272,18 @@ def exceedance_backtest_document(
 
     **What is deliberately not here.** No aggregate over any event window: those
     are `event_eval`'s, are scored once per window, and the contract forbids an
-    aggregate on one. No precision-recall curve either, and that omission is
-    worth naming rather than leaving to be noticed -- the contract's Metrics
-    section calls for "Precision-recall, not ROC", `metrics.py` implements both
-    `precision_recall_curve` and `average_precision`, and neither is called
-    here. They are a discrimination diagnostic rather than part of the skill
-    decomposition this block was for, and adding them would be a second block's
-    worth of decisions about how to publish a curve.
+    aggregate on one.
+
+    **What #27 added.** Per threshold, `average_precision` (precision-recall,
+    the contract's "Precision-recall, not ROC", read beside `base_rate`), and
+    `by_regime` and `by_day_type` (`strata`). With `benchmarks` -- reports from
+    the two pressure benchmarks, `calendar_climatology_exceedance` and
+    `persistence_logistic_exceedance`, scored on the same grid -- each
+    threshold and each stratum also carries every benchmark's Brier, the paired
+    mean Brier difference (benchmark minus model, positive favours the model)
+    with its stationary-bootstrap interval, and the skill score against it.
+    `declaration.benchmarks` names each benchmark's features. A benchmark
+    scored on other days or thresholds is refused (`ValueError`).
 
     Args:
         report: a report from `rolling_exceedance_backtest`.
@@ -6851,6 +7311,19 @@ def exceedance_backtest_document(
     # dependence the gap creates being carried by the resample that reports it.
     block = _maximum_horizon_overlap(report.folds)
 
+    # The benchmarks (#27) are paired with the model day by day, so they must
+    # have been scored on its grid, at its thresholds, under distinct names.
+    names = [bench.model_name for bench in benchmarks]
+    if len(set(names)) != len(names):
+        raise ValueError(f"benchmarks named twice: {names}")
+    for bench in benchmarks:
+        if bench.scored_dates != report.scored_dates or bench.taus != report.taus:
+            raise ValueError(
+                f"the {bench.model_name} benchmark was scored on {len(bench.scored_dates)} "
+                f"days at {list(bench.taus)}, not on the model's {len(report.scored_dates)} "
+                f"days at {list(report.taus)}; a comparison is paired day by day"
+            )
+
     declaration: dict = {
         "model": report.model_name,
         "features": sorted(report.features),
@@ -6867,6 +7340,10 @@ def exceedance_backtest_document(
         declaration["minimum_history"] = report.minimum_history
     if report.refit_every is not None:
         declaration["refit_every"] = report.refit_every
+    if benchmarks:
+        declaration["benchmarks"] = {
+            bench.model_name: sorted(bench.features) for bench in benchmarks
+        }
 
     panel: dict = {"path": str(panel_path), "sha256": digest}
     if report.panel_rows is not None:
@@ -6901,11 +7378,14 @@ def exceedance_backtest_document(
         "reference": "climatology_exceedance, refitted on each fold's training rows",
         "by_tau": {
             _tau_key(metric.tau_bp): _tau_document(
-                report, position, metric, panel_sha256=digest, block=block
+                report, position, metric, panel_sha256=digest, block=block,
+                benchmarks=benchmarks,
             )
             for position, metric in enumerate(report.metrics)
         },
     }
+    if report.strata is not None:
+        metrics["splits"] = split_definitions()
     if report.twcrps is not None:
         metrics["threshold_weighted_crps"] = report.twcrps
     if report.twcrps_unavailable is not None:

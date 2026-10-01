@@ -32,7 +32,9 @@ from .baseline import (
     FittedForecastModel,
     ModelFitter,
     arx_exceedance,
+    persistence_logistic_exceedance,
     backtest_document,
+    calendar_climatology_exceedance,
     climatology_exceedance,
     COMPARISON_LOSSES,
     DEFAULT_COMPARISON_LOSS,
@@ -151,6 +153,10 @@ class _ModelChoice:
     takes_spread_change_lags: bool = False
     takes_volatility_feature: bool = False
     takes_arx_feature: bool = False
+    #: Columns the predictor reads whatever else is declared, which `--feature`
+    #: must therefore name (#27): the calendar climatology types each day by its
+    #: coupon settlement.
+    required_features: Tuple[str, ...] = ()
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -200,6 +206,24 @@ MODEL_FACTORIES = MappingProxyType(
             ),
             needs_regime_variable=False,
         ),
+        # The two pressure benchmarks (#27). Their features are fixed by what
+        # they read, `BENCHMARK_FEATURES`; as `--model` they take `--feature`
+        # like any other entry.
+        "calendar-climatology": _ModelChoice(
+            declared=calendar_climatology_exceedance,
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+            required_features=("treasury_settlement_coupons",),
+        ),
+        "persistence-logistic": _ModelChoice(
+            declared=persistence_logistic_exceedance,
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
         "arx": _ModelChoice(
             declared=arx_exceedance,
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
@@ -236,6 +260,17 @@ MODEL_FACTORIES = MappingProxyType(
             takes_volatility_feature=True,
             takes_arx_feature=True,
         ),
+    }
+)
+
+
+#: `--benchmark NAME` -> the features that benchmark declares (#27). Each is
+#: scored on the model's grid under its own declaration and paired with the
+#: model day by day in the record (`baseline.exceedance_backtest_document`).
+BENCHMARK_FEATURES = MappingProxyType(
+    {
+        "calendar-climatology": ("spread_bps", "treasury_settlement_coupons"),
+        "persistence-logistic": ("spread_bps",),
     }
 )
 
@@ -313,6 +348,11 @@ def _select_model(
             "numbers under that model's name"
         )
 
+    missing = sorted(set(choice.required_features) - set(args.feature or ()))
+    if missing:
+        raise SplitError(
+            f"--model {name} reads {', '.join(missing)}, so --feature must name it"
+        )
     regressors, regime_variable = _regressors_and_regime(
         args, name, choice.needs_regime_variable
     )
@@ -1509,6 +1549,34 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         refit_every=args.refit_every,
     )
 
+    benchmarks = []
+    for name in args.benchmark or ():
+        if name not in BENCHMARK_FEATURES:
+            raise SplitError(
+                f"unknown --benchmark {name!r}; the benchmarks are "
+                f"{', '.join(sorted(BENCHMARK_FEATURES))}"
+            )
+        if name == model_name or name in [bench.model_name for bench in benchmarks]:
+            raise SplitError(
+                f"--benchmark {name} is the model being scored or is named twice"
+            )
+        benchmarks.append(
+            rolling_exceedance_backtest(
+                rows,
+                predictor=MODEL_FACTORIES[name].construct(
+                    regressors=(), regime_variable=None,
+                    minimum_history=args.minimum_history,
+                ),
+                model_name=name,
+                features=BENCHMARK_FEATURES[name],
+                registry=_registry(args),
+                decision_time=time.fromisoformat(args.decision_time),
+                taus=taus,
+                minimum_history=args.minimum_history,
+                refit_every=args.refit_every,
+            )
+        )
+
     # Both declaration files the run opened, identified in the record by the
     # digest of the bytes that were read.
     document = exceedance_backtest_document(
@@ -1516,6 +1584,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         panel_path=args.panel,
         registry_path=args.registry,
         thresholds_path=args.thresholds,
+        benchmarks=tuple(benchmarks),
     )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -1981,6 +2050,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="where to write the JSON evaluation record; required, because a "
         "skill score whose reference, gap and fold count exist only in a "
         "terminal is a figure the next document will carry as prose",
+    )
+    exceedance.add_argument(
+        "--benchmark",
+        action="append",
+        metavar="NAME",
+        help="score a pressure benchmark on the same grid and pair it with the "
+        "model in the record, day by day, pooled and split by regime and "
+        "pressure-day type; repeatable, one of calendar-climatology, "
+        "persistence-logistic (#27)",
     )
     # No --purge, no --source and no --taus. See _exceedance_backtest.
     exceedance.set_defaults(handler=_exceedance_backtest)

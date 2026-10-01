@@ -2495,6 +2495,37 @@ def market_holidays(path: Optional[Path] = None) -> MarketHolidays:
     return holidays
 
 
+def _last_business_day(year: int, month: int) -> date:
+    """The last weekday of `year`-`month` not in the market holiday table.
+
+    A month the table does not wholly cover is refused with a `ValueError`
+    rather than read on weekdays alone.
+    """
+
+    holidays = market_holidays()
+    end = date(year, month, _last_day_of_month(date(year, month, 1)))
+    if date(year, month, 1) < holidays.first or end > holidays.last:
+        raise ValueError(
+            f"the market holiday table covers {holidays.first.isoformat()} to "
+            f"{holidays.last.isoformat()}, not {year:04d}-{month:02d}"
+        )
+    while end.weekday() >= 5 or end in holidays.closed:
+        end -= timedelta(days=1)
+    return end
+
+
+def month_end(day: date) -> float:
+    """1.0 on the last business day of `day`'s month (#27).
+
+    `quarter_end`'s rule, one period down: the last weekday of the month that
+    is not in the market holiday table, from the date and the table alone. On
+    2021-05-31, Memorial Day, there was no SOFR publication, so 2021-05-28
+    reads 1.0. A month the table does not cover is refused (`ValueError`).
+    """
+
+    return float(day == _last_business_day(day.year, day.month))
+
+
 def quarter_end(day: date) -> float:
     """1.0 on the last business day of March, June, September or December.
 

@@ -3447,11 +3447,11 @@ class ExceedanceBacktestHarness(unittest.TestCase):
         self.panel = self.write_panel()
         self.report_path = self.tmp / "exceedance.json"
 
-    def write_panel(self, path=None):
+    def write_panel(self, path=None, extra_columns=()):
         path = path or self.tmp / "panel.csv"
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
-            writer.writerow(PANEL_COLUMNS)
+            writer.writerow(PANEL_COLUMNS + tuple(extra_columns))
             for index, when in enumerate(self.days):
                 spread = self.LOW_BPS if index < 30 else self.HIGH_BPS
                 # A little jitter so the pooled forecasts are not one repeated
@@ -3465,6 +3465,7 @@ class ExceedanceBacktestHarness(unittest.TestCase):
                      # refuses it, correctly.
                      115 + (index % 11),
                      "", "", "", 0, 0]
+                    + [0] * len(extra_columns)
                 )
         return path
 
@@ -3607,6 +3608,15 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
                 if cli_eval.MODEL_FACTORIES[name].needs_regime_variable:
                     features.append("on_rrp")
                     extra = ["--regime-variable", "on_rrp"]
+                # A column the model reads whatever else is declared (#27): the
+                # calendar climatology's coupon settlement. The fixture panel
+                # does not carry it, so it is added, as a day with no settlement.
+                required = cli_eval.MODEL_FACTORIES[name].required_features
+                features += [column for column in required if column not in features]
+                self.panel = self.write_panel(
+                    self.tmp / f"{name}-panel.csv",
+                    extra_columns=[c for c in required if c not in PANEL_COLUMNS],
+                )
                 # The registry has to price whatever this run declares: the
                 # gap is the maximum over the declared set's fields, and a
                 # source the file does not carry is a refusal rather than a

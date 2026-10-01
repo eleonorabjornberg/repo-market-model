@@ -114,12 +114,15 @@ Done in PR #24: the README lead with the plain-English overview and figure, the 
 
 Each step is one directive. Briefs are in [`directives/`](directives).
 
-1. **The as-of information set:** [`01`](directives/01-as-of-information-set.md).
+1. **The as-of information set:** [`01`](directives/01-as-of-information-set.md): done, PR #31.
 2. **Streamline the front door:** done, PR #24.
-3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md), after step 1 merges.
+3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md), #27. Every record re-scored under the as-of
+   rule at refit 21, the earlier records archived in `docs/runs/archive/pre-asof/`, both pressure benchmarks scored,
+   and every result split by provisional regime and by pressure-day type.
 4. **Retire the legacy ownership gates:** [`04`](directives/04-retire-legacy-gates.md): done, PR #30.
 5. **Review CI and the test suite:** [`05`](directives/05-review-ci-and-tests.md), after 04.
-6. **Pressure model v1 and the scarcity indicator**, after step 3.
+6. **Pressure model v1 and the scarcity indicator**, after step 3. The scarcity indicator replaces the provisional
+   calendar-period regimes of `src/repo_model/strata.py`.
 7. **Calibration re-diagnosis:** CV+ against online conformal.
 8. **Data additions** (§2), each priced as-of.
 9. **Model documentation and validation report,** in a model-risk structure: purpose and use, data, methodology,
