@@ -17,7 +17,8 @@ directive 03 and plan step 6.
 - **Voice:** one page for every reader, in layers. Each chapter has a one-sentence finding, the chart, a plain
   explanation, and a "Go deeper" fold with definitions, provenance and the notebook cell that reproduces it.
 - **Starting point:** the prototype in [`06-prototype/`](06-prototype), chapters 2 and 3, generated from the verified
-  panel (digest `d8b716cf…`). Its look is under Eleonora's review; treat its code as the baseline, not its copy as final.
+  panel (digest `4ddc3882…`, money series in USD billions since #41). Its look is under Eleonora's review; treat its
+  code as the baseline, not its copy as final.
 
 ## The chapters
 
@@ -87,13 +88,11 @@ directive 03 and plan step 6.
 
 ## Found while drafting (raise as `finding` issues; do not settle them in this PR)
 
-1. **Reserve and TGA units.** `DATA.md` declares `reserve_balances` and `tga` in USD billions, but the rebuilt panel
-   holds USD millions: 2018-04-03 reads `reserve_balances` 2,113,321, which is $2.11 trillion. The prototype converts
-   explicitly and refuses if the magnitude changes. Correcting `DATA.md` is a documentation change. Rescaling the
-   values would touch `src/` and the digest, and needs Eleonora's ruling.
-2. **`quarter_end` misses weekend quarter-ends.** It flags the last calendar day of the quarter
-   (`docs/decisions/calendar-columns.md`), so on business-day rows it is 1 for 24 of the sample's 33 quarter-ends.
-   The nine it misses are the quarters whose last calendar day fell on a weekend. The four in 2018–19 (2018-06-29,
-   2018-09-28, 2019-03-29, 2019-06-28) printed +17, +5, +25 and +15 bp, against −2, −4, +3 and +7 bp the business day
-   before; the five since 2022 were quiet. Whether the feature should mark the last business day instead is a
-   methodology decision for Eleonora. It bears on every record that declares calendar columns.
+Both items found while drafting are now settled. They are kept here so the history reads; neither is work for this
+PR.
+
+1. **Reserve and TGA units. Settled by #41 (PR #69).** The panel carries `reserve_balances` and `tga` in USD
+   billions, at digest `4ddc3882…`. The prototype divides by `1e3` to chart trillions, and its millions guard is gone.
+   Do not add another unit conversion: the values are already billions.
+2. **`quarter_end` on weekend quarter-ends. Settled by #44 (PR #54).** `quarter_end` now marks the last business day
+   of the quarter from a tracked market holiday table (`docs/decisions/calendar-columns.md`).
