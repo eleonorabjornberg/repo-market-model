@@ -29,13 +29,13 @@ are in `docs/decisions/` (`information-set.md`, `workflow.md`, `publish-rule.md`
   - **Headline target:** P(SOFR − IORB ≥ +5 bp) and P(≥ +10 bp) at horizons of 1–5 business days.
   - The ≥ +50 bp tail leaves the headline. It happened on 4 days in 8 years, so it becomes a scenario narrative, not a
     forecast claim.
-- **Pressure model v1.** Under the standing stress-target decision (`docs/process/AGENT_CONTRACT.md`, Evaluation), the pressure
-  probability is an exceedance **derived from the predictive distribution**, not a separately fitted classifier. So v1
-  is the as-of distributional model's exceedance at +5 and +10 bp. Its inputs are the latest spread, scheduled pressure
-  (month-end, quarter-end, tax date, settlement size) × scarcity state, and TGA change × reserves. It is recalibrated and
-  judged against two benchmarks, calendar-type climatology and a persistence-logistic model. In scouting, the
-  persistence-logistic beat every gbm classifier overall, and the gbm missed the onset of the Oct 2025 pressure.
-  **A direct probability model would need Eleonora to re-rule that decision.** It is an open question, not a plan.
+- **Pressure model v1.** Under `docs/decisions/pressure-probability.md`, the pressure probability comes from the best
+  candidate model. The candidates are the as-of distributional model's exceedance at +5 and +10 bp, and direct
+  probability models (logistic, gbm classifier) fitted to the same labels. Their inputs are the latest spread, scheduled
+  pressure (month-end, quarter-end, tax date, settlement size) × scarcity state, and TGA change × reserves. Each is
+  recalibrated and judged on one fold grid against two benchmarks, calendar-type climatology and a persistence-logistic
+  model, paired and split by regime and pressure-day type. In scouting, the persistence-logistic beat every gbm
+  classifier overall, and the gbm missed the onset of the Oct 2025 pressure.
 - **Scarcity indicator.**
   - A declared regime state built from reserves (relative to bank assets where the data allow), ON RRP and the NY Fed's
     Reserve Demand Elasticity (monthly).
@@ -129,7 +129,5 @@ Each step is one directive. Briefs are in [`directives/`](directives).
 
 ## Decision records
 
-- In force: `docs/decisions/information-set.md`, `workflow.md`, `publish-rule.md` and `materiality.md`.
-- Open, for Eleonora:
-  - whether the pressure probability may come from a direct model (§1).
-  It is not in force until she rules.
+- In force: `docs/decisions/information-set.md`, `workflow.md`, `publish-rule.md`, `materiality.md` and
+  `pressure-probability.md`.
