@@ -390,6 +390,18 @@ class DeclarationTests(unittest.TestCase):
         with self.assertRaises(RegistryContractError):
             rule(["spread_bps", "treasury_settlement_bills"], registry)
 
+    def test_the_settlement_declaration_cites_treasurys_procedure(self):
+        """#59 part 2: the note quotes 31 CFR 356.23(a), Treasury's own statement.
+
+        The quote names no clock time, so the 15:00 instant still rests on the
+        auction data; the note says so rather than calling it confirmed.
+        """
+
+        note = REGISTRY["treasury_auctions"]["scheduled_availability"]["note"]
+        self.assertIn("https://www.ecfr.gov/current/title-31/section-356.23", note)
+        self.assertIn("After the conclusion of the auction", note)
+        self.assertNotIn("unverified", note)
+
     def test_a_scheduled_declaration_names_only_its_own_fields(self):
         block = copy.deepcopy(REGISTRY["treasury_auctions"]["scheduled_availability"])
         block["fields"] = ["not_a_field"]

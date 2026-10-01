@@ -45,9 +45,13 @@ a published holiday schedule, not from the panel's grid.
 
 `quarter_end` is 1.0 on the last weekday of the quarter that is not in
 `metadata/market_holidays.json`, and 0.0 otherwise. It is computed from the date and the table
-alone, so it stays a function of the scored date. The table lists the US government-securities
-market's full-close days, each with its date, reason and source, and its checksum is pinned in
-`data.MARKET_HOLIDAYS_SHA256`. An unscheduled closure is a new table entry, added by a reviewed pull request.
+alone, so it stays a function of the scored date. The table lists the days with no scheduled SOFR
+publication, each with its date, reason and source, and its checksum is pinned in
+`data.MARKET_HOLIDAYS_SHA256`. The panel's target is SOFR − IORB, so a business day for the
+calendar columns is a day the New York Fed publishes SOFR (#59, decided under Eleonora's
+delegation, 1 October 2026). Where SIFMA recommended only an early close and SOFR was not
+published, as on Good Friday 2021, 2023 and 2026, the day stays in the table, and its row records
+SIFMA's actual recommendation and cites the New York Fed's publication schedule. An unscheduled closure is a new table entry, added by a reviewed pull request.
 
 `days_to_month_end` and `tax_date` are unchanged, and neither reads the table.
 

@@ -2442,11 +2442,11 @@ def days_to_month_end(day: date) -> float:
     return float(_last_day_of_month(day) - day.day)
 
 
-#: The US government-securities market's full-close days, and the file's
+#: The weekdays with no scheduled SOFR publication (#59), and the file's
 #: sha256 (#44). A changed table is refused until this pin moves with it, so an
 #: entry is added by a reviewed change to both.
 MARKET_HOLIDAYS_PATH = Path(__file__).parents[2] / "metadata" / "market_holidays.json"
-MARKET_HOLIDAYS_SHA256 = "4d687477f7b1d037f78aae7fc10f125725e2bdba750fd7ae662d9433b8e7107a"
+MARKET_HOLIDAYS_SHA256 = "671f31db6aba4fa822085514aae7c129786d0dfa335755e8a39db0d06874e1b9"
 
 
 @dataclass(frozen=True)
@@ -2465,9 +2465,11 @@ def market_holidays(path: Optional[Path] = None) -> MarketHolidays:
     """Read `metadata/market_holidays.json`, refusing a file its pinned checksum does not name.
 
     Eleonora's ruling of 1 October 2026 on #44: business days come from a
-    published holiday schedule, not from the panel's grid. The table lists
-    each full close with its date, reason and source; the statutory entries
-    follow from 5 U.S.C. 6103, the others are SIFMA's recommendations. A file
+    published holiday schedule, not from the panel's grid. Since #59 the
+    table lists each weekday with no scheduled SOFR publication, with its
+    date, reason and source; the statutory entries follow from 5 U.S.C.
+    6103, the others from SIFMA's recommendations and the New York Fed's
+    SOFR publication schedule. A file
     whose sha256 is not `MARKET_HOLIDAYS_SHA256` is a `ValueError`. An
     unscheduled closure is a new entry, added by a reviewed pull request.
     """
@@ -2500,7 +2502,7 @@ def quarter_end(day: date) -> float:
     weekday of the quarter that is not in the market holiday table
     (`market_holidays`), computed from the date and the table alone, never
     from the panel's grid. 2019-03-31 was a Sunday, so 2019-03-29 reads 1.0;
-    2024-03-29 was Good Friday, a full close, so 2024-03-28 does. A quarter the
+    2024-03-29 was Good Friday, with no SOFR publication, so 2024-03-28 does. A quarter the
     table does not wholly cover is refused with a `ValueError` rather than read
     on weekdays alone.
 

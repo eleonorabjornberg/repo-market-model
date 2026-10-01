@@ -6230,8 +6230,8 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
     Eleonora's decision of 30 September 2026, and her ruling of 1 October 2026
     on the review of #56 (option A): the business days come from a published
     holiday schedule, not from the panel's grid, so `quarter_end` stays a
-    function of the date alone. The schedule is `metadata/market_holidays.json`,
-    the US government-securities market's full-close days for 2018-2027.
+    function of the date alone. The schedule is `metadata/market_holidays.json`:
+    since #59, the weekdays of 2018-2027 with no scheduled SOFR publication.
 
     Until #44 the column marked the last *calendar* day, so it read 0.0 on
     every row of a quarter that ended on a weekend -- 9 of the 33 complete
@@ -6314,7 +6314,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
             # A weekday quarter end is itself.
             date(2019, 12, 31): 1.0,
             date(2019, 12, 30): 0.0,
-            # Good Friday 2024 is a SIFMA full close: the Thursday before.
+            # Good Friday 2024 was a SIFMA full close: the Thursday before.
             date(2024, 3, 28): 1.0,
             date(2024, 3, 29): 0.0,
             # New Year's Day 2022 is a Saturday; the statute observes it on
@@ -6399,12 +6399,45 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
         self.assertEqual(len(dates), len(set(dates)))
         for entry in table["closed"]:
             self.assertIn(entry["basis"], ("statute", "sifma"))
-            if entry["basis"] == "sifma":
-                # Not read on sifma.org: the rmm environment cannot reach it.
-                self.assertFalse(entry["verified"], entry["date"])
-                self.assertIn("sifma.org", entry["source"])
-            else:
+            if entry["basis"] != "sifma":
                 self.assertEqual(entry["source"], self.STATUTE)
+
+    def test_the_sifma_rows_were_read_at_source(self):
+        """#59: every SIFMA-sourced row is verified against the page that supports it.
+
+        Each `basis: sifma` row of `closed`, and every day the market opened,
+        names the SIFMA page that states it -- not the generic schedule page,
+        which shows only the current years -- and carries `verified: true`.
+        Where SIFMA recommended only an early close but the New York Fed did
+        not publish SOFR, the row stays (the table lists days with no
+        scheduled SOFR publication), its reason says what SIFMA recommended,
+        and it also names the New York Fed's statement of SOFR's publication
+        schedule. Written first and watched failing on the unverified table,
+        at its description: `AssertionError: 'no scheduled SOFR publication'
+        not found in "Full-close days of the US government-securities market,
+        ..."`.
+        """
+
+        table = self.table()
+        self.assertIn("no scheduled SOFR publication", table["description"])
+        self.assertNotIn("Full-close days", table["description"])
+        rows = [entry for entry in table["closed"] if entry["basis"] == "sifma"]
+        rows += table["statutory_days_the_market_opened"]
+        early = set()
+        for entry in rows:
+            with self.subTest(entry["date"]):
+                self.assertTrue(entry["verified"], entry["date"])
+                self.assertTrue(entry["source"].startswith("https://www.sifma.org/"))
+                self.assertNotEqual(
+                    entry["source"].rstrip("/"),
+                    "https://www.sifma.org/resources/general/holiday-schedule",
+                )
+                if "early close" in entry["reason"].lower() and entry in table["closed"]:
+                    early.add(entry["date"])
+                    self.assertTrue(
+                        entry["publication_source"].startswith("https://www.newyorkfed.org/")
+                    )
+        self.assertEqual(early, {"2021-04-02", "2023-04-07", "2026-04-03"})
 
     def test_the_statutory_entries_follow_from_the_statute(self):
         """Every observed 5 U.S.C. 6103(a) holiday is closed, or listed as a day the market opened."""

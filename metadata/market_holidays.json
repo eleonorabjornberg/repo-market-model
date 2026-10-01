@@ -1,5 +1,5 @@
 {
-  "description": "Full-close days of the US government-securities market, 2018-01-01 to 2027-12-31: the days `data.quarter_end` does not count as business days, besides Saturdays and Sundays. Eleonora's ruling of 1 October 2026 on #44 (option A). An entry with basis 'statute' is a legal public holiday under 5 U.S.C. 6103(a) on its observed day (a Saturday holiday on the Friday before, a Sunday one on the Monday after); tests/test_data.py derives them from the statute and checks this list against the derivation. An entry with basis 'sifma' is a full close SIFMA recommended beyond the statute; verified false means it was not read on sifma.org, which the rmm environment cannot reach. 'statutory_days_the_market_opened' lists observed statutory holidays on which the market did not close; they are not in 'closed'. An unscheduled closure is a new entry, added by a reviewed pull request. data.MARKET_HOLIDAYS_SHA256 pins this file's sha256, and data.quarter_end refuses a file that does not match it, so a changed entry is a reviewed code change too.",
+  "description": "Weekdays with no scheduled SOFR publication, 2018-01-01 to 2027-12-31: the days `data.quarter_end` does not count as business days, besides Saturdays and Sundays. The panel's target is SOFR - IORB, so a business day for the calendar columns is a day the New York Fed publishes SOFR, and this table is that schedule, known in advance (#59, decided under Eleonora's delegation, 1 October 2026; the table itself follows her ruling of 1 October 2026 on #44, option A). The New York Fed publishes SOFR every business day, including days SIFMA recommends an early close, but not on days SIFMA recommends a full close, and it may, with advance notice, not publish on a day the Treasury repo market broadly treats as a holiday ('publication_source' on the rows that rest on that clause). An entry with basis 'statute' is a legal public holiday under 5 U.S.C. 6103(a) on its observed day (a Saturday holiday on the Friday before, a Sunday one on the Monday after); tests/test_data.py derives them from the statute and checks this list against the derivation. An entry with basis 'sifma' is a day beyond the statute, sourced to the SIFMA page that states SIFMA's recommendation; its reason records that recommendation, which is a full close except where it says early close. verified true means the row was read at its source on 1 October 2026 (#59). 'statutory_days_the_market_opened' lists observed statutory holidays on which SIFMA recommended no full close and SOFR was published; they are not in 'closed'. An unscheduled closure is a new entry, added by a reviewed pull request. data.MARKET_HOLIDAYS_SHA256 pins this file's sha256, and data.quarter_end refuses a file that does not match it, so a changed entry is a reviewed code change too.",
   "first": "2018-01-01",
   "last": "2027-12-31",
   "closed": [
@@ -26,10 +26,10 @@
     },
     {
       "date": "2018-03-30",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2018 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2018-05-28",
@@ -75,10 +75,10 @@
     },
     {
       "date": "2018-12-05",
-      "reason": "National Day of Mourning for President George H. W. Bush",
+      "reason": "National Day of Mourning for President George H. W. Bush. SIFMA recommended on 1 December 2018 that all fixed-income cash markets close.",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/news/press-releases/sifma-recommends-full-market-close-wednesday-december-5-in-honor-of-former-president-george-h-w-bush",
+      "verified": true
     },
     {
       "date": "2018-12-25",
@@ -110,10 +110,10 @@
     },
     {
       "date": "2019-04-19",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2019 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2019-05-27",
@@ -187,10 +187,10 @@
     },
     {
       "date": "2020-04-10",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2020 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2020-05-25",
@@ -264,10 +264,11 @@
     },
     {
       "date": "2021-04-02",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended an early close only (12:00 p.m. Eastern Time), 'Confirmed based on the BLS Employment Situation Release Schedule' (SIFMA's 2021 list), not a full close. SIFMA's release of 17 March 2021 is published with its title only, so whether it also advised against settling that day was not read. The New York Fed did not publish SOFR for this day.",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "publication_source": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates",
+      "verified": true
     },
     {
       "date": "2021-05-31",
@@ -334,10 +335,10 @@
     },
     {
       "date": "2022-04-15",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2022 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2022-05-30",
@@ -418,10 +419,11 @@
     },
     {
       "date": "2023-04-07",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended an early close only (12:00 p.m. Eastern Time), 'rather than a full close to accommodate the release of US employment data' (SIFMA's 2023 list), and that the day 'not be treated as a good settlement day for secondary market transactions in U.S. government securities'; its release of 23 March 2023 notes that the Fixed Income Clearing Corporation was closed. The New York Fed did not publish SOFR for this day.",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/news/press-releases/sifma-recommends-an-early-market-close-on-april-7-in-the-u-s-in-observance-of-good-friday",
+      "publication_source": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates",
+      "verified": true
     },
     {
       "date": "2023-05-29",
@@ -495,10 +497,10 @@
     },
     {
       "date": "2024-03-29",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2024 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2024-05-27",
@@ -579,10 +581,10 @@
     },
     {
       "date": "2025-04-18",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2025 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2025-05-26",
@@ -663,10 +665,11 @@
     },
     {
       "date": "2026-04-03",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended an early close only (12:00 p.m. Eastern Time), and that the day 'not be treated as a good settlement day for secondary market transactions in U.S. government securities'; its release of 20 March 2026 notes that the Fixed Income Clearing Corporation was closed. The New York Fed did not publish SOFR for this day.",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/news/press-releases/sifma-fixed-income-market-close-recommendations-in-the-u-s-the-u-k-and-japan-for-good-friday-easter-monday-holidays-2026",
+      "publication_source": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates",
+      "verified": true
     },
     {
       "date": "2026-05-25",
@@ -747,10 +750,10 @@
     },
     {
       "date": "2027-03-26",
-      "reason": "Good Friday",
+      "reason": "Good Friday. SIFMA recommended a full close (SIFMA's 2027 list).",
       "basis": "sifma",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": true
     },
     {
       "date": "2027-05-31",
@@ -812,27 +815,27 @@
   "statutory_days_the_market_opened": [
     {
       "date": "2021-06-18",
-      "reason": "Juneteenth (2021-06-19, a Saturday), observed. Pub. L. 117-17 made it a legal public holiday on 17 June 2021, the day before; the market stayed open.",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "reason": "Juneteenth (2021-06-19, a Saturday), observed. Pub. L. 117-17 made it a legal public holiday on 17 June 2021, the day before. SIFMA's 2021 list recommends no close for it; SIFMA first added Juneteenth as a full close for 2022, on 14 July 2021.",
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2021-12-31",
-      "reason": "New Year's Day (2022-01-01, a Saturday), observed. The market stays open on 31 December when New Year's Day falls on a Saturday.",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "reason": "New Year's Day (2022-01-01, a Saturday), observed. SIFMA recommended an early close only (2:00 p.m. Eastern Time) on Friday 31 December 2021 (SIFMA's 2022 list).",
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2023-11-10",
-      "reason": "Veterans Day (2023-11-11, a Saturday), observed. The market stayed open.",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "reason": "Veterans Day (2023-11-11, a Saturday), observed. SIFMA's 2023 list names Veterans Day with no date: it recommended no close on Friday 10 November 2023.",
+      "source": "https://www.sifma.org/resources/guides-playbooks/us-holiday-archive",
+      "verified": true
     },
     {
       "date": "2027-12-31",
-      "reason": "New Year's Day (2028-01-01, a Saturday), observed. Assumed open by the 2021-12-31 precedent; not read from a SIFMA recommendation.",
-      "source": "https://www.sifma.org/resources/general/holiday-schedule/",
-      "verified": false
+      "reason": "New Year's Day (2028-01-01, a Saturday), observed. SIFMA recommended an early close only (2:00 p.m. Eastern Time) on Friday 31 December 2027 (SIFMA's 2027 list, issued 17 December 2025).",
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": true
     }
   ]
 }
