@@ -210,6 +210,7 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import dataclasses
 import functools
 import importlib.util
 import io
@@ -236,7 +237,8 @@ from repo_model.event_eval import (
     read_journal,
 )
 from repo_model.metrics import crps_from_quantiles
-from repo_model.splits import SplitError
+from repo_model.asof import StaleReadError
+from repo_model.splits import LookAheadError, SplitError
 
 from test_baseline import (
     EXCEEDANCE_TAUS,
@@ -8468,6 +8470,287 @@ class RefitPositionalHistoryTests(unittest.TestCase):
         )
         self.assertIsNone(plain.history_end)
         self.assertIs(plain.with_history(panel[:45]), plain)
+
+
+def one_row_at_a_time(predictor):
+    """`predictor`, called once per feature row: the exceedance loop before #57.
+
+    Names `information` and `histories`, so the fold loop hands it both, and
+    passes each feature row its own history. The curves and history ends are
+    concatenated, so a caller sees one call's shape made of per-row fits.
+    """
+
+    def fit_predict(train_rows, feature_rows, taus, information=None, histories=None):
+        parts = [
+            predictor(
+                train_rows,
+                (row,),
+                taus,
+                information=information,
+                histories=None if histories is None else (histories[index],),
+            )
+            for index, row in enumerate(feature_rows)
+        ]
+        return dataclasses.replace(
+            parts[0],
+            curves=tuple(curve for part in parts for curve in part.curves),
+            history_ends=tuple(end for part in parts for end in part.history_ends),
+        )
+
+    return fit_predict
+
+
+@contextlib.contextmanager
+def counted_fits():
+    """Every `fit_gradient_boosted_quantiles` call `gbm_exceedance` makes."""
+
+    fits = []
+    fitter = ml.fit_gradient_boosted_quantiles
+
+    def spy(train_rows, *args, **kwargs):
+        fits.append(train_rows[-1].date)
+        return fitter(train_rows, *args, **kwargs)
+
+    with mock.patch.object(ml, "fit_gradient_boosted_quantiles", spy):
+        yield fits
+
+
+class ExceedanceFitPerBlockGbmTests(unittest.TestCase):
+    """Issue #57: gbm's exceedance backtest fits once per block, to the same curves.
+
+    `rolling_exceedance_backtest` used to call the predictor once per scored
+    row, and `gbm_exceedance` fits inside that call, so a block of `N` rows
+    paid for `N` identical fits. It now calls it once per block with the
+    block's feature rows and each row's own as-of history. Every scored row's
+    probabilities must be what the per-row calls gave: `one_row_at_a_time`
+    is that loop, rebuilt as a predictor, on the
+    `exceedance_gbm_conformal_lags3` shape (lags 3, conformal).
+
+    The stdlib side -- one predictor call per block -- is
+    `tests/test_baseline.py::ExceedanceFitPerBlockTests`.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    REFIT = 4
+    PANEL_ROWS = 54
+    MINIMUM_HISTORY = 48
+    SETTINGS = {"spread_change_lags": 3, "calibration": "conformal"}
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        with tempfile.TemporaryDirectory() as directory:
+            self.registry = json.loads(
+                declared_registry_file(
+                    directory, purge=self.PURGE, features=self.FEATURES
+                ).read_text(encoding="utf-8")
+            )
+        self.panel = garch_frame(self.PANEL_ROWS)
+
+    def exceedance(self, predictor, refit):
+        with counted_fits() as fits:
+            report = baseline.rolling_exceedance_backtest(
+                self.panel,
+                predictor=predictor,
+                model_name="gbm",
+                features=self.FEATURES,
+                registry=self.registry,
+                decision_time=time.fromisoformat(DECISION_TIME),
+                taus=EXCEEDANCE_TAUS,
+                minimum_history=self.MINIMUM_HISTORY,
+                refit_every=refit,
+            )
+        return report, fits
+
+    def predictor(self):
+        return ml.gbm_exceedance(
+            self.REGRESSORS,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            **self.SETTINGS,
+        )
+
+    def test_one_fit_per_block_and_the_per_row_curves(self):
+        blocked, fits = self.exceedance(self.predictor(), self.REFIT)
+        per_row, per_row_fits = self.exceedance(
+            one_row_at_a_time(self.predictor()), self.REFIT
+        )
+        rows = len(blocked.folds)
+        blocks = -(-rows // self.REFIT)
+        self.assertGreater(rows, self.REFIT, msg="one block has nothing to share")
+        self.assertEqual(len(fits), blocks)
+        self.assertEqual(len(per_row_fits), rows)
+        self.assertEqual(
+            fits, [blocked.folds[start].train_end for start in range(0, rows, self.REFIT)]
+        )
+        self.assertEqual(blocked.folds, per_row.folds)
+        self.assertEqual(blocked.forecast, per_row.forecast)
+        self.assertEqual(blocked.reference, per_row.reference)
+        self.assertEqual(blocked.metrics, per_row.metrics)
+        self.assertEqual(blocked.model_settings, per_row.model_settings)
+
+
+@contextlib.contextmanager
+def clamped_positional_reads():
+    """gbm reading a feature row it does not carry from the end of its history.
+
+    The trap #34 named, put back on purpose: a positional read clamped to
+    whatever history the model holds raises nothing and is silently stale, so
+    only the evaluator's `history_ends` check can refuse it.
+    """
+
+    original = ml.FittedGradientBoostedQuantiles.positional_history
+
+    def clamped(model, feature_row):
+        try:
+            return original(model, feature_row)
+        except ValueError:
+            return model._history_spreads + (
+                ml._observed_spread(feature_row, "feature row"),
+            )
+
+    with mock.patch.object(
+        ml.FittedGradientBoostedQuantiles, "positional_history", clamped
+    ):
+        yield
+
+
+class EventHoldoutPositionalHistoryTests(unittest.TestCase):
+    """Issue #57: the event holdout reads each window day's own as-of history.
+
+    **The defect.** `evaluate_event_window` trains once, on the as-of frame at
+    the window's first decision instant, and hands the predictor one feature
+    row per window day, each its day's as-of observation and so newer than
+    that frame from the second day on. A gbm with lags, GARCH or the scaled
+    and partial CV+ scale reads history by position, and was handed none:
+    it read the training frame, which does not carry the later days' rows
+    (gbm's own `ValueError`), and a model that clamped the read instead would
+    have been silently stale. #34 fixed this on the rolling paths.
+
+    **The fix is #34's.** The evaluator hands each day's `rule.frame(rows,
+    info)` through `fit_predict(histories=...)` and checks every curve's
+    `history_ends` with `baseline._check_history_end`: a read ending before
+    the day's anchor is `StaleReadError`, one past it `LookAheadError`. The
+    training frame is unchanged.
+
+    Mutation record (#57)
+    ---------------------
+
+    A disposable copy from `git ls-files -z --cached --others
+    --exclude-standard`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    `OMP_NUM_THREADS=1`, `REPO_MODEL_REQUIRE_ML=1`, CPython 3.11.15 with numpy
+    2.4.6 and scikit-learn 1.9.1, running this class. Unmutated control green
+    before and after; each anchor found exactly once in
+    `src/repo_model/event_eval.py`, confirmed applied by diff, and restored
+    before the next.
+
+    1. **The guard off** (the required mutation).
+       `_check_history_ends(prediction, rows, infos)` -> `pass` in
+       `evaluate_event_window`. Kills the stale test with `AssertionError:
+       StaleReadError not raised` and the look-ahead test with
+       `AssertionError: LookAheadError not raised`.
+    2. **No history handed over**, the tree before #57.
+       `if _reads_histories(fit_predict):` -> `if False:`. Kills the first
+       test with gbm's own `ValueError` (the second window day's feature row
+       is not a row of the training frame) and the look-ahead test with
+       `TypeError` (its wrapper is handed no history to extend).
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    PURGE = 6
+    PANEL_ROWS = 60
+    WINDOW_DAYS = 5
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tmp = Path(directory.name)
+        self.registry = json.loads(
+            declared_registry_file(
+                self.tmp, purge=self.PURGE, features=self.FEATURES
+            ).read_text(encoding="utf-8")
+        )
+        self.rows = garch_frame(self.PANEL_ROWS)
+        start, end = self.rows[-self.WINDOW_DAYS].date, self.rows[-1].date
+        self.window = EventWindow(
+            "lagged-window",
+            start,
+            end,
+            event_window_digest("lagged-window", start.isoformat(), end.isoformat()),
+        )
+        self.gbm = ml.gbm_exceedance(
+            self.REGRESSORS,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            spread_change_lags=2,
+        )
+
+    def evaluate(self, fit_predict):
+        return evaluate_event_window(
+            self.rows,
+            fit_predict,
+            self.window,
+            features=self.FEATURES,
+            registry=self.registry,
+            decision_time=time.fromisoformat(DECISION_TIME),
+            taus=EXCEEDANCE_TAUS,
+            model_config={"model": "gbm", "spread_change_lags": 2},
+            journal_path=self.tmp / "events.jsonl",
+        )
+
+    def test_each_window_day_reads_history_through_its_own_anchor(self):
+        reads = []
+        original = ml.FittedGradientBoostedQuantiles.positional_history
+
+        def spy(model, feature_row):
+            reads.append((feature_row.date, model.history_end))
+            return original(model, feature_row)
+
+        with mock.patch.object(
+            ml.FittedGradientBoostedQuantiles, "positional_history", spy
+        ):
+            report = self.evaluate(self.gbm)
+        self.assertEqual(len(report.scored_dates), self.WINDOW_DAYS)
+        self.assertGreater(
+            len(set(report.feature_dates)), 1, msg="every day read one anchor"
+        )
+        self.assertLess(report.last_train_date, report.feature_dates[-1])
+        self.assertEqual(
+            reads, [(when, when) for when in report.feature_dates]
+        )
+
+    def test_a_read_from_the_first_days_frame_is_stale(self):
+        gbm = self.gbm
+
+        def first_day_frame(train_rows, feature_rows, taus, histories=None):
+            return gbm(train_rows, feature_rows, taus, histories=(train_rows,) * len(feature_rows))
+
+        with clamped_positional_reads():
+            with self.assertRaises(StaleReadError) as caught:
+                self.evaluate(first_day_frame)
+        self.assertIn("stale", str(caught.exception))
+
+    def test_a_read_past_the_decision_instant_is_look_ahead(self):
+        gbm = self.gbm
+        dates = [row.date for row in self.rows]
+        rows = self.rows
+
+        def one_row_late(train_rows, feature_rows, taus, histories=None):
+            # Each day's history, and the panel row after its end: the scored
+            # day or later, not observable at the day's decision.
+            late = []
+            for history in histories:
+                after = dates.index(history[-1].date) + 1
+                late.append(tuple(history) + tuple(rows[after:after + 1]))
+            return gbm(train_rows, feature_rows, taus, histories=tuple(late))
+
+        with self.assertRaises(LookAheadError):
+            self.evaluate(one_row_late)
 
 
 if __name__ == "__main__":
