@@ -207,14 +207,26 @@ climatology on a knowledge-holdout window.
 Exit criterion: a model that beats persistence out of sample and remains calibrated
 in the tails.
 
-**Verdict: re-opened, and hers to make again.** Her earlier verdict -- the criterion
-met on the interval evidence, its tail clause measured and failing -- rested on records
-scored under the purge rule, which read every input about a week late
-(`docs/pivot/lag-assessment.md`). Those records are archived, and that verdict is not
-restated here. The as-of evidence it would be made on is in `docs/runs/` and the
-generated sections of `README.md`. A conditional predictor against climatology on a
-knowledge-holdout window is still unscored. The heading stays *in progress*, and no
-Phase 3 work has begun. Exit-criterion verdicts are the human's.
+**Verdict (Eleonora, on the as-of records,
+[#73](https://github.com/eleonorabjornberg/repo-market-model/issues/73)): the criterion is met on the
+interval evidence, and its tail clause is measured and failing.** This is the verdict she reached
+on the purge-rule records, now made again on the as-of evidence in `docs/runs/` and the generated
+sections of `README.md`.
+
+- **Met: beats persistence out of sample.** gbm, uncalibrated and cross-conformal, and the
+  funding declaration each beat as-of persistence on CRPS, with paired intervals that exclude
+  zero. The win is not uniform: every gbm loses to persistence in 2021-23, and the uncalibrated
+  gbm loses on quarter ends. Cross-conformal over-covers its 90% band and the uncalibrated gbm
+  under-covers it.
+- **Failing: calibrated in the tails.** At the upper thresholds every gbm's exceedance
+  probabilities are beaten by climatology. At the lower thresholds gbm beats climatology but is
+  not distinguishable from the persistence-logistic benchmark, so under
+  `docs/decisions/pressure-probability.md` no conditional model earns the headline pressure
+  probability on this evidence.
+
+A conditional predictor against climatology on a knowledge-holdout window is still unscored.
+The heading stays *in progress*, and no Phase 3 work has begun. Exit-criterion verdicts are the
+human's.
 
 ## Phase 3 — Latent reserves and payment needs
 
@@ -325,7 +337,7 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    exceedance curve flattens across thresholds -- the measurement is published and the
    explanation is not -- and a conditional model scored against climatology on the
    declared knowledge holdouts. A model change comes after the diagnosis, not instead of
-   it. Both halves of the criterion are re-opened on the as-of records (above).
+   it. The tail clause fails on the as-of records (above).
 5. **Phases 3 and 4.**
 6. **Decision point**, then Phases 5 through 7 or a stop.
 
