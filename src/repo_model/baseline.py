@@ -2786,6 +2786,7 @@ def _as_of_folds(
         rule.registry,
         decision_time=rule.decision_time,
         minimum_history=minimum_history,
+        horizon=rule.horizon,
     )
     if end is not None:
         grid = [index for index in grid if dates[index] <= end]
@@ -2804,6 +2805,7 @@ def _as_of_folds(
                     read.row,
                     index,
                     decision_time=rule.decision_time,
+                    horizon=rule.horizon,
                 )
             frame = rule.frame(rows, info) if index == block[0] else None
             if frame is not None and len(frame) < minimum_history:
@@ -2980,6 +2982,7 @@ def _check_decision_relative_availability(
     scored_index: int,
     *,
     decision_time: time,
+    horizon: int = 1,
 ) -> None:
     """Raise unless a read row had been published when the forecast was made.
 
@@ -2999,15 +3002,20 @@ def _check_decision_relative_availability(
     `LookAheadError`, per CLAUDE.md's "Leakage guards raise `LookAheadError`,
     never `assert`": `python -O` strips asserts.
 
+    At a declared `horizon` of `h` panel days (#114) the decision is made on
+    the panel day `h` rows before the scored one.
+
     Raises:
         LookAheadError: naming the field and the fold, when a field's declared
             availability for the row read is after the decision instant.
     """
 
-    if scored_index == 0:
-        return  # no panel date precedes the scored one, so no decision instant
+    if scored_index < horizon:
+        return  # no panel date `horizon` before the scored one, so no decision instant
+    # The deadline is computed here from `horizon`, never read off the rule:
+    # this guard checks the rule's decision instant rather than trusting it.
     deadline = datetime.combine(
-        dates[scored_index - 1], decision_time.replace(tzinfo=None)
+        dates[scored_index - horizon], decision_time.replace(tzinfo=None)
     )
     for source_id, field in field_sources:
         available = _declared_availability(
@@ -6108,7 +6116,8 @@ def persistence_logistic_exceedance(minimum_history: int = 20) -> ExceedancePred
         dates = [row.date for row in train_rows]
         xs: List[float] = []
         targets: List[float] = []
-        for position in range(1, len(train_rows)):
+        # From the first label with a decision instant: `horizon` rows in.
+        for position in range(information.horizon, len(train_rows)):
             anchor = information.anchor(dates, position)
             if anchor < 0:
                 continue
@@ -6400,6 +6409,9 @@ class ExceedanceBacktestReport:
     #: fit carried a tail, so a record of such a run grows no key.
     #: `RollingBacktestReport.tail_accounts`, on this path (B40).
     tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
+    #: How many panel days ahead each forecast was made (#114); 1 is the
+    #: rule every published record was scored under.
+    horizon: int = 1
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -6496,6 +6508,7 @@ def rolling_exceedance_backtest(
     minimum_history: int = 20,
     refit_every: int = 1,
     end: Optional[date] = None,
+    horizon: int = 1,
 ) -> ExceedanceBacktestReport:
     """Score every row of the as-of grid, pool the curves, then score the pool.
 
@@ -6570,6 +6583,9 @@ def rolling_exceedance_backtest(
             alike.
         end: the last day to score; `None` scores to the end of the panel.
             Rows after it stay in the panel and are never scored.
+        horizon: how many panel days before each scored day its forecast is
+            made (`asof.InformationRule`, #114). 1, the default, is the rule
+            every published record was scored under.
 
     Raises:
         LookAheadError: if a scored day falls in a locked tier of
@@ -6593,7 +6609,9 @@ def rolling_exceedance_backtest(
     # set has no information set, so it has no backtest.
     declared: Tuple[str, ...] = tuple(features)
     field_sources, sources = _resolve_fields(declared)
-    rule = InformationRule(registry, declared, decision_time=decision_time)
+    rule = InformationRule(
+        registry, declared, decision_time=decision_time, horizon=horizon
+    )
     refit = require_refit_every(refit_every)
 
     if not isinstance(model_name, str) or not model_name:
@@ -6762,6 +6780,7 @@ def rolling_exceedance_backtest(
             if all(account is None for account in tail_accounts)
             else tuple(tail_accounts)
         ),
+        horizon=rule.horizon,
     )
 
 
