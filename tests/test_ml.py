@@ -10307,6 +10307,24 @@ class PressureModelPublishTests(unittest.TestCase):
         )
         self.assertEqual(declaration["scorecaster_variant"], recalibration.SCORECASTER_VARIANT)
 
+    def test_the_event_listed_thresholds_carry_no_pooled_figure(self):
+        report = self.tmp / "pressure_events.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1", "--report", str(report),
+                "--event-list", "20", "--event-list", "50",
+            ])
+        self.assertEqual(code, 0)
+        record = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration"]["event_list"]["taus_bp"], [20.0, 50.0])
+        for tau in ("20", "50"):
+            entry = record["metrics"]["by_tau"][tau]
+            self.assertEqual(entry["reporting"], "event_list")
+            self.assertNotIn("brier", entry)
+            for bench in record["benchmarks"].values():
+                self.assertNotIn(tau, bench["by_tau"])
+        self.assertIn("brier", record["metrics"]["by_tau"]["5"])
+
     def test_horizon_one_declares_no_variant(self):
         from repo_model import recalibration
 

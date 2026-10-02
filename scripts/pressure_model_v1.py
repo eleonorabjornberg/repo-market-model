@@ -32,7 +32,10 @@ both benchmarks. Its record is `docs/runs/pressure_model_v1_hH.json`, in the
 shape of an `exceedance-backtest` record, and is scored from a clean tree:
 
     PYTHONPATH=src python3 scripts/pressure_model_v1.py publish --panel PANEL --horizon H \
-        --report docs/runs/pressure_model_v1_hH.json [--limitation TEXT ...]
+        --report docs/runs/pressure_model_v1_hH.json [--event-list TAU ...] [--limitation TEXT ...]
+
+`--event-list` reports a threshold event by event instead of pooled, as
+`exceedance-backtest --event-list` does (#130, `docs/decisions/pressure-probability.md`).
 
 At horizons of 2 or more `treasury_settlement` is not public at the decision
 instant under its declaration (`metadata/sources.json`, `treasury_auctions`:
@@ -59,6 +62,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
+    EVENT_LEAD_DAYS,
     calendar_climatology_exceedance,
     panel_sha256,
     persistence_logistic_exceedance,
@@ -280,6 +284,7 @@ def publish_command(args) -> int:
 
     from repo_model import ml
     from repo_model.baseline import (
+        add_exceedance_event_lists,
         add_exceedance_splits,
         benchmark_comparison_document,
         exceedance_backtest_document,
@@ -339,6 +344,7 @@ def publish_command(args) -> int:
     digest = panel_sha256(args.panel)
     add_exceedance_splits(document, report, rows, splits, panel_sha256=digest)
     document["benchmarks"] = {}
+    bench_reports = []
     for name, declared, predictor in (
         (
             "calendar_climatology",
@@ -351,12 +357,17 @@ def publish_command(args) -> int:
             persistence_logistic_exceedance(minimum_history=MINIMUM_HISTORY),
         ),
     ):
+        bench_reports.append(run(name, predictor, declared))
         document["benchmarks"][name] = benchmark_comparison_document(
             report,
-            run(name, predictor, declared),
+            bench_reports[-1],
             panel_sha256=digest,
             rows=rows,
             declaration=splits,
+        )
+    if args.event_list:
+        add_exceedance_event_lists(
+            document, report, bench_reports, args.event_list, lead_days=args.event_lead_days
         )
     args.report.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "report": str(args.report), "scored_days": len(report.scored_dates)}))
@@ -556,6 +567,11 @@ def main(argv=None) -> int:
     record.add_argument("--horizon", type=int, choices=HORIZONS, required=True)
     record.add_argument("--report", type=Path, required=True)
     record.add_argument("--limitation", action="append", default=None, metavar="TEXT")
+    record.add_argument(
+        "--event-list", action="append", type=float, default=None, metavar="TAU",
+        help="report this declared threshold (bp) event by event instead of pooled, repeatable",
+    )
+    record.add_argument("--event-lead-days", type=int, default=EVENT_LEAD_DAYS, metavar="N")
     record.set_defaults(func=publish_command)
     merge = sub.add_parser("assemble", help="merge the horizons; lead time; tables")
     merge.add_argument("--panel", type=Path, required=True)
