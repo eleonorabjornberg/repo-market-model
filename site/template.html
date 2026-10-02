@@ -80,6 +80,20 @@ ol.events a{color:var(--ink-3)}
 details{margin:26px 0 0;border-top:1px solid var(--rule);padding-top:12px;max-width:74ch}
 summary{cursor:pointer;font-size:.92rem;font-weight:600;color:var(--ink-2);list-style-position:outside}
 details[open] summary{color:var(--ink)}
+table.tags{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.82rem;line-height:1.4;margin-top:12px}
+table.tags th,table.tags td{text-align:left;vertical-align:top;padding:7px 8px 7px 0;border-bottom:1px solid var(--rule)}
+table.tags thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:600}
+table.tags tbody th{font-weight:600;color:var(--ink)}
+table.tags td{color:var(--ink-2)}
+table.tags small{display:block;color:var(--ink-3);font-size:.76rem}
+table.tags code{font-size:.74rem;word-break:break-all}
+table.tags .status{font-weight:600;color:var(--ink);white-space:nowrap}
+details.wide{max-width:none}
+@media (max-width:720px){ table.tags thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.tags,table.tags tbody,table.tags tr,table.tags th,table.tags td{display:block;width:auto}
+  table.tags tr{border-bottom:1px solid var(--rule);padding:8px 0}
+  table.tags th,table.tags td{border:0;padding:2px 0}
+  table.tags td::before{content:attr(data-h) ": ";color:var(--ink-3);font-size:.74rem} }
 details p,details li{font-size:.98rem}
 details ul{padding-left:1.2em}
 dl.gloss{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:.96rem}
@@ -224,6 +238,24 @@ details .grid2{margin-top:6px}
     <p>The same cells at +{{second_bp}} bp:</p>
     <div class="grid2" role="region" aria-label="Table: share of days more than +{{second_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table_second}}</div>
     <p>Pressure by day type and year, with the reserves behind it, is <a href="#why">chapter 3</a>.</p>
+  </details>
+</section>
+
+<section id="n4" aria-labelledby="n4-title">
+  <h2 id="n4-title"><span class="n">N4</span>Who lends to whom</h2>
+  <p class="prose lede">{{n4_lede}}</p>
+  <div class="prose">
+    <p>Cash moves between the Fed, the Treasury, money funds, banks, dealers and the funds dealers lend to. Each public series that measures one of those flows is a tag: the balance at {{dfn_on_rrp}}, the balance of {{dfn_tga}}, the gap between {{dfn_effr}} and IORB, take-up at {{dfn_srf}}, and the {{dfn_percentile}}s of each day's SOFR trades, among others.</p>
+    <p>A tag's status says whether a published forecast reads it. It is worked out from the repository's own files each time the page is built, so it changes when they do.</p>
+  </div>
+  <details class="wide">
+    <summary>Go deeper: the status of every tag</summary>
+    {{n4_status_table}}
+    <ul>
+      <li><b>Used</b>: a published run record in <code>docs/runs/</code> declares every field the tag reads. <b>Tried and hurt</b>: a published comparison that differs only by adding the tag's fields shows a worse paired score, with its interval wholly on that side. <b>In progress</b>: a directive for it is labelled in progress or has an open pull request, or it was scored and left off and its publishing question is still open. <b>Registered but unused</b>: the sources registry carries it and nothing above holds; &ldquo;queued&rdquo; names an open directive not yet started. <b>Not registered</b>: no source in the registry carries it.</li>
+      <li>&ldquo;Data in this repository&rdquo; says whether a snapshot of the tag's source, with its manifest, is tracked under <code>tests/fixtures/snapshots/</code>.</li>
+      <li>Directive and pull-request states are read from <code>docs/visual/issues.json</code>, retrieved from GitHub on {{n4_retrieved}}. A state that changed since then shows on the next refresh.</li>
+    </ul>
   </details>
 </section>
 </div>
