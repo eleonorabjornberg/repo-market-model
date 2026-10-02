@@ -3,7 +3,8 @@
 `docs/decisions/information-set.md` decides the rule; this module is its one
 implementation. A forecast for the scored row `T` is made at the declared
 decision time on the panel day before it, `dates[T - 1]` -- the *decision
-instant*. At that instant:
+instant*; at a declared `horizon` of `h` panel days (#114), on `dates[T - h]`.
+At that instant:
 
 1. **Each declared input is read per field**, at the latest panel row whose
    declared first-observable instant is at or before the decision instant.
@@ -401,10 +402,18 @@ class InformationRule:
         features: Sequence[str],
         *,
         decision_time: time,
+        horizon: int = 1,
     ) -> None:
         if not isinstance(decision_time, time):
             raise TypeError("decision_time must be a datetime.time")
+        if not _is_int(horizon) or horizon < 1:
+            raise ValueError(f"horizon must be an int of at least 1, got {horizon!r}")
         self.registry = registry
+        #: How many panel days before the scored day the decision is made
+        #: (#114). 1, the default, is the rule every published record was
+        #: scored under; a longer horizon moves the decision instant back and
+        #: every read follows from it.
+        self.horizon = int(horizon)
         self.features = tuple(features)
         self.decision_time = decision_time
         self._scheduled = _scheduled_blocks(registry)
@@ -481,14 +490,15 @@ class InformationRule:
     # -- instants ---------------------------------------------------------
 
     def decision_instant(self, dates: Sequence[date], scored_index: int) -> datetime:
-        """The declared decision time on the panel day before `scored_index`."""
+        """The declared decision time `horizon` panel days before `scored_index`."""
 
-        if scored_index < 1:
+        if scored_index < self.horizon:
             raise SplitError(
-                f"row {scored_index} has no panel day before it, so no decision instant"
+                f"row {scored_index} has no panel day {self.horizon} before it, so "
+                f"no decision instant"
             )
         return datetime.combine(
-            dates[scored_index - 1], self.decision_time.replace(tzinfo=None)
+            dates[scored_index - self.horizon], self.decision_time.replace(tzinfo=None)
         )
 
     def availability(
@@ -768,18 +778,21 @@ def fold_grid(
     *,
     decision_time: time,
     minimum_history: int,
+    horizon: int = 1,
 ) -> Tuple[int, ...]:
     """The scored rows: every row from the first with `minimum_history` labels.
 
     Built from the target's declarations alone, so it is one grid for every
-    feature declaration on the same panel.
+    feature declaration on the same panel at one `horizon`.
     """
 
     ensure_strictly_ascending(dates)
     if not _is_int(minimum_history) or minimum_history < 1:
         raise SplitError(f"minimum_history must be an int of at least 1, got {minimum_history!r}")
-    target = InformationRule(registry, (TARGET,), decision_time=decision_time)
-    for index in range(1, len(dates)):
+    target = InformationRule(
+        registry, (TARGET,), decision_time=decision_time, horizon=horizon
+    )
+    for index in range(target.horizon, len(dates)):
         if target.anchor(dates, index) + 1 >= minimum_history:
             return tuple(range(index, len(dates)))
     raise SplitError(
@@ -815,8 +828,15 @@ def information_summary(
                 None if not hours else {"min": min(hours), "max": max(hours)}
             ),
         }
-    return {
+    summary: Dict[str, object] = {
         "rule": "as_of",
         "decision_instant": "decision_time on the panel day before the scored day",
         "features": features,
     }
+    if rule.horizon != 1:
+        # Only off the default, so a record scored at horizon 1 is unchanged.
+        summary["decision_instant"] = (
+            f"decision_time {rule.horizon} panel days before the scored day"
+        )
+        summary["horizon"] = rule.horizon
+    return summary
