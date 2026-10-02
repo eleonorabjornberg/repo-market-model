@@ -21,6 +21,13 @@ the project was built. Nothing on the page is typed:
 * The "Start here" block above the chapters is the newcomer layer (#141). Its
   terms come from `docs/visual/glossary.json`, each with a primary source; its
   view N1 holds out the same locked days, through the same reader.
+* The status of each tag on view N4's market map (`docs/visual/map.json`) is
+  derived, never typed: from the sources registry, the panel manifest, the
+  declarations of the published run records, the tracked fixtures and the
+  tracked issue snapshot `docs/visual/issues.json` (#141 §3). Only the
+  declarations of a run record are read, never its results. The snapshot is
+  written by `--refresh-issues`, the one command here that uses the network;
+  generation reads the file and stays byte-reproducible.
 
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
 the SHA-256 of each input file read. The commit is the latest one that changed
@@ -34,6 +41,7 @@ Standard library only, plus this repository's own `src/`.
 
     python3 scripts/emit_visual.py            # writes docs/visual/data/ and site/index.html
     python3 scripts/emit_visual.py --check    # writes nothing; fails if either is stale
+    python3 scripts/emit_visual.py --refresh-issues   # rewrites docs/visual/issues.json from GitHub
 """
 import argparse
 import csv
@@ -46,7 +54,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -67,6 +75,11 @@ SPLITS = "metadata/evaluation_splits.json"
 LOCKBOX = "metadata/lockbox.json"
 ANNOTATIONS = "docs/visual/annotations.json"
 GLOSSARY = "docs/visual/glossary.json"
+MAP = "docs/visual/map.json"
+ISSUES = "docs/visual/issues.json"
+RUNS = "docs/runs"
+SNAPSHOTS = "tests/fixtures/snapshots"
+REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
 PAGE = "site/index.html"
 DATA_DIR = "docs/visual/data"
@@ -86,6 +99,10 @@ INPUTS = (
     SPLITS,
     LOCKBOX,
     FIXTURES,
+    MAP,
+    ISSUES,
+    f":(glob){RUNS}/*.json",
+    SNAPSHOTS,
 )
 
 #: Run records the model chapters render. Empty until chapters 5 to 7 are built
@@ -109,6 +126,20 @@ NEWCOMER_VIEWS = (
     ("n4", "Who lends to whom", "The market map"),
     ("n5", "A quarter-end squeeze", "Step by step"),
 )
+
+#: A map tag's statuses (#141 §3), in the order the derivation tries them, the
+#: first match winning: (key, icon, word). The page shows the icon and the word,
+#: never colour alone.
+STATUSES = (
+    ("used", "\u25cf", "Used"),
+    ("tried_and_hurt", "\u2715", "Tried and hurt"),
+    ("in_progress", "\u25d0", "In progress"),
+    ("registered_unused", "\u25cb", "Registered but unused"),
+    ("not_registered", "\u2013", "Not registered"),
+)
+
+#: An open "Publish?" question about directive N: "Publish? <title> (#N)".
+PUBLISH_TITLE = re.compile(r"^Publish\? .*\(#(\d+)\)$")
 
 #: Events from `annotations.json` that N1 marks on its chart, by date.
 N1_EPISODES = ("2019-09-17", "2020-03-15", "2022-06-01", "2025-12-01")
@@ -767,6 +798,278 @@ def newcomer_n1(rows, locked, thresholds, notes):
     }
     return data, fills
 
+# ---------------------------------------------------------------- N4: the tag-status engine (#141 §3, #144)
+
+
+def pair_name(pair):
+    return f"{pair['source']}.{pair['field']}"
+
+
+def check_map(tag_map, registry, notes):
+    """Refuse a map that names a flow, a claim or a registry field it cannot back.
+
+    Every flow rests on a sourced claim in `annotations.json`. Every tag sits on
+    a flow and names (source, field) pairs. A pair the registry lacks is refused
+    unless the map marks it `expect: "unregistered"`; such a pair is refused once
+    the registry carries it, so a directive that registers the field forces the
+    map to be revisited.
+    """
+    for key, flow in tag_map["flows"].items():
+        claim = notes["claims"].get(flow.get("claim"))
+        if claim is None:
+            raise VisualError(f"map flow {key!r} rests on no claim in {ANNOTATIONS}")
+        if not any(claim["src"].startswith(prefix) for prefix in ALLOWED_SOURCES):
+            raise VisualError(f"map flow {key!r}: its claim has no primary-source URL")
+    seen = set()
+    for tag in tag_map["tags"]:
+        key = tag.get("key", "")
+        if not re.fullmatch(r"[a-z0-9_]+", key) or key in seen:
+            raise VisualError(f"map tag {tag} has no unique key")
+        seen.add(key)
+        if "status" in tag:
+            raise VisualError(f"map tag {key!r} types a status; statuses are derived")
+        if tag.get("flow") not in tag_map["flows"]:
+            raise VisualError(f"map tag {key!r} sits on no flow in the map")
+        if not tag.get("fields"):
+            raise VisualError(f"map tag {key!r} names no field")
+        for pair in tag["fields"]:
+            registered = pair["field"] in registry.get(pair["source"], {}).get("fields", ())
+            if pair.get("expect") == "unregistered" and registered:
+                raise VisualError(f"map tag {key!r}: {pair_name(pair)} is now registered in {SOURCES}; "
+                                  f"revisit the map and drop its expect: unregistered")
+            if pair.get("expect") != "unregistered" and not registered:
+                raise VisualError(f"map tag {key!r}: {pair_name(pair)} is not in {SOURCES}")
+
+
+def model_pairs(declaration, derived):
+    """The registry (source, field) pairs one model reads: its derived fields and its panel columns."""
+    pairs = {tuple(f.split(".", 1)) for f in (derived or {}).get("fields", ())}
+    for column in (declaration or {}).get("features", ()):
+        pairs.update(FEATURE_FIELDS.get(column, ()))
+    return pairs
+
+
+def run_record_declarations(repo):
+    """{relative path: {declaration, derived, comparison}} for each published record (top-level docs/runs/*.json).
+
+    Only what a record declares is kept, and a comparison's verdict; no other
+    result is read.
+    """
+    out = {}
+    for path in sorted((Path(repo) / RUNS).glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        kept = {k: record[k] for k in ("declaration", "derived") if k in record}
+        if "comparison" in record:
+            kept["comparison"] = {k: record["comparison"][k] for k in ("loss", "mean_difference_interval")
+                                  if k in record["comparison"]}
+        out[f"{RUNS}/{path.name}"] = kept
+    return out
+
+
+def is_published(rel):
+    """A top-level JSON file in docs/runs/, not one under archive/."""
+    return rel.startswith(RUNS + "/") and "/" not in rel[len(RUNS) + 1:] and rel.endswith(".json")
+
+
+def published_uses(records):
+    """[(record, pairs)] for each published single-model record."""
+    out = []
+    for rel, record in sorted(records.items()):
+        declaration = record.get("declaration") or {}
+        if is_published(rel) and "features" in declaration:
+            out.append((rel, model_pairs(declaration, record.get("derived"))))
+    return out
+
+
+def hurt_verdicts(records):
+    """[(record, added pairs, loss)] for each published comparison in which adding fields made the score worse.
+
+    Only an ablation counts: the two models' declarations are the same except
+    for their inputs, one reads every pair the other does and more, and the
+    paired interval lies wholly on the side where the model with more inputs
+    loses. The difference is loss(model_a) minus loss(model_b).
+    """
+    out = []
+    for rel, record in sorted(records.items()):
+        declaration, derived = record.get("declaration") or {}, record.get("derived") or {}
+        interval = (record.get("comparison") or {}).get("mean_difference_interval")
+        if not (is_published(rel) and interval and "model_a" in declaration and "model_b" in declaration):
+            continue
+        a, b = declaration["model_a"], declaration["model_b"]
+        if {k: v for k, v in a.items() if k != "features"} != {k: v for k, v in b.items() if k != "features"}:
+            continue
+        pa = model_pairs(a, derived.get("model_a"))
+        pb = model_pairs(b, derived.get("model_b"))
+        loss = record["comparison"].get("loss", "score")
+        if pb > pa and interval["upper"] < 0:
+            out.append((rel, pb - pa, loss))
+        elif pa > pb and interval["lower"] > 0:
+            out.append((rel, pa - pb, loss))
+    return out
+
+
+def issue_index(snapshot, tag_map):
+    """{number: entry} from the snapshot; a map issue the snapshot lacks is refused."""
+    index = {e["number"]: e for e in snapshot["issues"]}
+    for tag in tag_map["tags"]:
+        missing = [n for n in tag["issues"] if n not in index]
+        if missing:
+            raise VisualError(f"map tag {tag['key']!r} names issues {missing} that {ISSUES} does not carry; "
+                              f"run `python3 scripts/emit_visual.py --refresh-issues`")
+    return index
+
+
+def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
+    """Each tag's derived status, its reason and sub-line, and what its detail shows (#141 §3).
+
+    The first matching rule wins: used, tried and hurt, in progress,
+    registered but unused, not registered. `tracked` is the list of tracked
+    files under tests/fixtures/snapshots/.
+    """
+    index = issue_index(snapshot, tag_map)
+    uses = published_uses(records)
+    verdicts = hurt_verdicts(records)
+    publish = {}
+    for e in snapshot["issues"]:
+        m = PUBLISH_TITLE.match(e["title"])
+        if m and e["state"] == "open":
+            publish.setdefault(int(m.group(1)), []).append(e["number"])
+    built, refused = set(manifest["built_columns"]), set(manifest["refused_columns"])
+    rows = []
+    for tag in tag_map["tags"]:
+        pairs = {(p["source"], p["field"]) for p in tag["fields"]}
+        names = ", ".join(f"<code>{s}.{f}</code>" for s, f in sorted(pairs))
+        registered = all(f in registry.get(s, {}).get("fields", ()) for s, f in pairs)
+        status = reason = sub = None
+        user = next((rel for rel, used in uses if pairs <= used), None)
+        hurt = next(((rel, loss) for rel, added, loss in verdicts if pairs <= added), None)
+        working = [(n, index[n]) for n in tag["issues"] if index[n]["state"] == "open"
+                   and ("in-progress" in index[n]["labels"] or index[n]["open_prs"])]
+        asking = [(n, q) for n in tag["issues"] if index[n]["state"] == "closed" for q in publish.get(n, ())]
+        queued = [n for n in tag["issues"] if index[n]["state"] == "open" and "directive" in index[n]["labels"]
+                  and (n, index[n]) not in working]
+        if registered and user:
+            status, reason = "used", f"in the published declaration <code>{user}</code>"
+        elif registered and hurt:
+            status, reason = "tried_and_hurt", (f"adding it made the paired {hurt[1].replace('_', ' ')} worse in "
+                                                f"<code>{hurt[0]}</code>")
+        elif working:
+            n, e = working[0]
+            status = "in_progress"
+            reason = (f"open pull request #{e['open_prs'][0]} for #{n}" if e["open_prs"]
+                      else f"#{n} is being worked on")
+        elif registered and asking:
+            n, q = asking[0]
+            status, reason = "in_progress", f"directive #{n} is done, and its publishing question #{q} is open"
+        elif registered:
+            status, reason = "registered_unused", "registered, and no published declaration reads it"
+            sub = ("queued: " + ", ".join(f"#{n}" for n in queued)) if queued else None
+        else:
+            status, reason = "not_registered", f"no source in <code>{SOURCES}</code> carries it"
+        columns = sorted({c for c, fields in FEATURE_FIELDS.items() if pairs & set(fields)})
+        panel = ([f"<code>{c}</code>" + ("" if c in built else ", refused by the panel" if c in refused
+                                         else ", not built") for c in columns] or ["not in the panel"])
+        where = tag.get("fixtures")
+        data_in_repo = bool(where) and any(
+            f.startswith(where.rstrip("/") + "/") and f.endswith(".manifest.json") for f in tracked)
+        rows.append({"key": tag["key"], "label": tag["label"], "flow": tag["flow"], "status": status,
+                     "reason": reason, "sub": sub, "fields": names, "panel": "; ".join(panel),
+                     "data_in_repo": data_in_repo, "issues": list(tag["issues"])})
+    return rows
+
+
+def status_table(rows, flows, parties):
+    """The generated status table for N4's "Go deeper" fold."""
+    marks = {key: (icon, word_) for key, icon, word_ in STATUSES}
+    body = []
+    for r in rows:
+        icon, word_ = marks[r["status"]]
+        flow = flows[r["flow"]]
+        sub = f'<small>{html.escape(r["sub"])}</small>' if r["sub"] else ""
+        body.append(
+            f'<tr id="tag-{r["key"]}"><th scope="row">{html.escape(r["label"])}</th>'
+            f'<td data-h="Flow">{parties[flow["from"]]} &rarr; {parties[flow["to"]]}</td>'
+            f'<td data-h="Status"><span class="status s-{r["status"]}"><span aria-hidden="true">{icon}</span> '
+            f'{word_}</span><small>{r["reason"]}</small>{sub}</td>'
+            f'<td data-h="Registry">{r["fields"]}</td><td data-h="Panel">{r["panel"]}</td>'
+            f'<td data-h="Data in this repository">{"yes" if r["data_in_repo"] else "no"}</td></tr>')
+    return ('<table class="tags"><thead><tr><th scope="col">Tag</th><th scope="col">Flow</th>'
+            '<th scope="col">Status</th><th scope="col">Registry</th><th scope="col">Panel</th>'
+            '<th scope="col">Data in this repository</th></tr></thead><tbody>' + "".join(body) + "</tbody></table>")
+
+
+def newcomer_n4(tag_map, registry, manifest, records, snapshot, tracked, notes):
+    """N4's status table, ahead of the map itself (#141 PR 3)."""
+    check_map(tag_map, registry, notes)
+    rows = tag_statuses(tag_map, registry, manifest, records, snapshot, tracked)
+    parties = {k: html.escape(v) for k, v in tag_map["parties"].items()}
+    for key, flow in tag_map["flows"].items():
+        for end in (flow["from"], flow["to"]):
+            if end not in parties:
+                raise VisualError(f"map flow {key!r} names a party {end!r} the map does not list")
+    used = sum(1 for r in rows if r["status"] == "used")
+    retrieved = snapshot["retrieved_at"]
+    data = {"tags": rows, "issues_retrieved_at": retrieved,
+            "statuses": [{"key": k, "icon": i, "word": w} for k, i, w in STATUSES]}
+    fills = {
+        "n4_lede": (f"Of the {word(len(rows))} public series on this market's map, {word(used)} "
+                    f"{'is' if used == 1 else 'are'} read by a published forecast. The table says, for each, "
+                    f"why or why not, and is worked out from the repository, not typed."),
+        "n4_status_table": status_table(rows, tag_map["flows"], parties),
+        "n4_retrieved": f"{day(retrieved[:10])} ({retrieved[11:16]} UTC)",
+    }
+    return data, fills
+
+
+def tracked_snapshots(repo):
+    out = git(repo, "ls-files", "--", SNAPSHOTS)
+    return tuple(out.splitlines()) if out else ()
+
+
+def gh_fetch(path):
+    """One REST call through the `gh` CLI. Used only by `--refresh-issues`."""
+    done = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+    if done.returncode:
+        raise VisualError(f"gh api {path}: {done.stderr.strip()[-300:]}")
+    return json.loads(done.stdout)
+
+
+def refresh_issues(tag_map, fetch, now):
+    """The bytes of `docs/visual/issues.json`: the map's issues, their "Publish?" questions, and open pull requests.
+
+    Reads the repository's issue list page by page through `fetch` (REST; pull
+    requests come in the same list). Keeps each issue the map names, each open
+    or closed "Publish? … (#N)" issue for such an N, and for each kept issue the
+    open pull requests whose body says "Closes #N".
+    """
+    wanted = sorted({n for tag in tag_map["tags"] for n in tag["issues"]})
+    listing, page = [], 1
+    while True:
+        batch = fetch(f"repos/{REPOSITORY}/issues?state=all&per_page=100&page={page}")
+        if not batch:
+            break
+        listing.extend(batch)
+        page += 1
+    issues = {e["number"]: e for e in listing if "pull_request" not in e}
+    missing = [n for n in wanted if n not in issues]
+    if missing:
+        raise VisualError(f"the map names issues {missing} that {REPOSITORY} does not have")
+    keep = set(wanted)
+    for e in issues.values():
+        m = PUBLISH_TITLE.match(e["title"])
+        if m and int(m.group(1)) in keep:
+            keep.add(e["number"])
+    open_prs = {}
+    for e in listing:
+        if "pull_request" in e and e["state"] == "open":
+            for n in re.findall(r"(?i)\bcloses #(\d+)\b", e.get("body") or ""):
+                open_prs.setdefault(int(n), []).append(e["number"])
+    doc = {"repository": REPOSITORY, "retrieved_at": now, "issues": [
+        {"number": n, "title": issues[n]["title"], "state": issues[n]["state"],
+         "labels": sorted(label["name"] for label in issues[n]["labels"]), "open_prs": sorted(open_prs.get(n, []))}
+        for n in sorted(keep)]}
+    return (json.dumps(doc, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+
 
 # ---------------------------------------------------------------- the page
 
@@ -781,6 +1084,9 @@ def generate(repo, commit=None):
     regimes = read_json(SPLITS, repo)["regimes"]
     windows = read_json(EVENTS, repo)["windows"]
     glossary = read_json(GLOSSARY, repo)
+    tag_map = read_json(MAP, repo)
+    snapshot = read_json(ISSUES, repo)
+    records = run_record_declarations(repo)
     locked = locked_tiers(repo / LOCKBOX)
     check_annotations(notes)
     check_glossary(glossary)
@@ -797,6 +1103,8 @@ def generate(repo, commit=None):
     n1, n1_fills = newcomer_n1([dict(r) for r in rows], locked, thresholds, notes)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
     fills.update(n1_fills)
+    n4, n4_fills = newcomer_n4(tag_map, registry, manifest, records, snapshot, tracked_snapshots(repo), notes)
+    fills.update(n4_fills)
     fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]
@@ -858,10 +1166,14 @@ def generate(repo, commit=None):
     }
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
-    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1}
+    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1,
+                "newcomer_n4": n4}
+    n4_provenance = dict(provenance, inputs=dict(
+        {rel: sha256(repo / rel) for rel in (MAP, ISSUES, SOURCES, MANIFEST, ANNOTATIONS)},
+        **{rel: sha256(repo / rel) for rel in records}))
     out = {}
     for name, payload in payloads.items():
-        doc = {"provenance": provenance, "data": payload}
+        doc = {"provenance": n4_provenance if name == "newcomer_n4" else provenance, "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1")}
@@ -879,9 +1191,20 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument("--check", action="store_true", help="write nothing; fail if an output is stale")
     parser.add_argument("--commit", help="stamp this commit instead of reading git history")
+    parser.add_argument("--refresh-issues", action="store_true",
+                        help=f"rewrite {ISSUES} from GitHub (network); nothing else is written")
     parser.add_argument("--repo", default=str(ROOT), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     repo = Path(args.repo)
+    if args.refresh_issues:
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            data = refresh_issues(read_json(MAP, repo), gh_fetch, now)
+        except VisualError as exc:
+            sys.exit(f"emit_visual: {exc}")
+        (repo / ISSUES).write_bytes(data)
+        print(f"emit_visual: wrote {ISSUES}; regenerate the page with `python3 scripts/emit_visual.py`")
+        return
     try:
         outputs = generate(repo, args.commit)
     except (VisualError, LookAheadError) as exc:
