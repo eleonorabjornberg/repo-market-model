@@ -691,5 +691,64 @@ class EnumerationTests(unittest.TestCase):
                 self.assertFalse([p for p in parameters if "lock" in p or "open" in p])
 
 
+class SamplePanelTests(unittest.TestCase):
+    """The synthetic sample panel scores under the tracked declaration (#113).
+
+    `data/sample/daily_market.csv` is what README's quick-start,
+    `REPRODUCIBILITY.md`, `examples/walkthrough.py` and the walkthrough notebook
+    score. Dated January and February 2026 it lay wholly inside the near-blind
+    tier and every one of those commands exited 2 (#103); #113 moved it back 52
+    weeks, values untouched. Run against the tracked declaration, with no
+    override, so a sample that drifts back into a locked tier fails here rather
+    than in a reader's first command.
+    """
+
+    SAMPLE = Path(__file__).resolve().parents[1] / "data" / "sample" / "daily_market.csv"
+    REGISTRY = Path(__file__).resolve().parents[1] / "metadata" / "sources.json"
+
+    def dates(self):
+        with self.SAMPLE.open(newline="") as handle:
+            return [date.fromisoformat(row["date"]) for row in csv.DictReader(handle)]
+
+    def test_no_sample_date_lies_in_a_tier(self):
+        dates = self.dates()
+        self.assertTrue(dates)
+        self.assertLess(max(dates), date(2026, 1, 1))
+        tiers = lockbox.load_lockbox(TRACKED)
+        self.assertEqual(
+            [(day, tier.name) for day in dates for tier in tiers if tier.contains(day)], []
+        )
+
+    def test_the_published_sample_commands_run(self):
+        """`backtest`, `compare` and `exceedance-backtest` as `REPRODUCIBILITY.md` prints them."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            common = ["--registry", str(self.REGISTRY), "--decision-time", "16:00"]
+            commands = {
+                "backtest": [
+                    "backtest", str(self.SAMPLE), *common, "--feature", "spread_bps",
+                    "--model", "persistence", "--report", f"{tmp}/backtest.json",
+                ],
+                "compare": [
+                    "compare", str(self.SAMPLE), *common,
+                    "--model-a", "persistence", "--feature-a", "spread_bps",
+                    "--model-b", "arx", "--feature-b", "spread_bps",
+                    "--feature-b", "sofr_volume", "--report", f"{tmp}/compare.json",
+                ],
+                "exceedance-backtest": [
+                    "exceedance-backtest", "--panel", str(self.SAMPLE),
+                    "--thresholds", str(THRESHOLDS), *common,
+                    "--feature", "spread_bps", "--model", "climatology",
+                    "--report", f"{tmp}/exceedance.json",
+                ],
+            }
+            for name, argv in commands.items():
+                with self.subTest(command=name):
+                    out, err = io.StringIO(), io.StringIO()
+                    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                        code = cli.main(argv)
+                    self.assertEqual(code, 0, err.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
