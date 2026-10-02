@@ -30,7 +30,8 @@ pressure, including transitions into the upper tail?
 The primary outcome is the SOFR spread to the administered reserve rate. Secondary
 outcomes are SOFR dispersion, volume, and a pre-declared stress indicator. The headline
 target is the probability that the spread is more than +5 bp (and +10 bp) on the scored
-day.
+day, as [`docs/decisions/pressure-probability.md`](docs/decisions/pressure-probability.md)
+defines it.
 
 **The information set.** "Next-day" means a forecast made at 16:00 on the business day
 before the scored day. The as-of information rule
@@ -176,28 +177,14 @@ stops being published here, or if one that has been repaired is still published.
 
 ## Reading the pre-as-of records
 
-*Pre-as-of; re-score pending.* This is what the published records say about volatility and
-the tails, read in words. Every one of these readings rests on the stale information set,
-and `docs/pivot/lag-assessment.md` lists them among the verdicts to re-open after the
-re-score. They are kept because the re-score will be read against them. No figure is
-quoted here; the figures are in the run records under [`docs/runs/`](docs/runs) and in the
-README's generated blocks.
-
-1. **Every nominal 90% band was too narrow, the benchmark's included.** Persistence's band
-   covered fewer outcomes than it promised, and the bootstrap interval around its realised
-   coverage excluded the nominal probability.
-2. **The most accurate model was the least honest about its range.** Gradient-boosted
-   quantiles won on CRPS, but their band covered far fewer outcomes than persistence's, and
-   their upper-tail pinball loss was worse. The accuracy was won on ordinary days.
-3. **Calibration need not have cost the edge.** Split-conformal calibration moved gbm's
-   coverage toward nominal and lost the CRPS advantage; cross-conformal calibration kept
-   both, while the upper-tail pinball loss stayed worse than persistence's.
-4. **Volatility clustering added nothing measurable** (a GARCH(1,1) feature, longer windows
-   of lagged spread changes), and **regime-switching models did worse** (threshold models on
-   either regime variable).
-5. **Stress probabilities carried skill at the shoulder and none in the tail.** The
-   climatology control scored exactly no skill, as it must; the conditional model beat it
-   only at the lowest declared threshold.
+The records scored under the purge rule are archived, unedited, in
+[`docs/runs/archive/pre-asof/`](docs/runs/archive/pre-asof), whose README says what they are
+still good for. What they said about volatility and the tails is not restated here. Every
+reading of them rests on the stale information set, and a copy on this page would be one more
+copy to correct. The figures are in those records, and
+[`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md) §4 lists the conclusions drawn
+from them that re-open under the as-of rule. What the as-of records measure is in the README's
+generated blocks, and the verdict on them is in `PLAN.md`.
 
 *A reading, not a tested claim:* repo spikes arrive with the calendar and the balance sheet
 — tax dates, Treasury settlements, quarter-ends, reserves drifting toward scarcity — rather
