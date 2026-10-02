@@ -400,7 +400,17 @@ UNSOURCED_FEATURES = MappingProxyType({})
 # the same file refuses an entry a panel column now reaches (stale), one the
 # registry does not declare (a misspelling excusing nothing), or one with no
 # reason. Adding a column for a source means deleting its entry here.
-UNMODELLED_SOURCES = MappingProxyType({})
+UNMODELLED_SOURCES = MappingProxyType(
+    {
+        "nyfed_on_rrp": (
+            "#45: on_rrp from the Desk's operation results is declared in "
+            "ON_RRP_OPERATION_RESULTS_FIELDS and off in the published "
+            "declaration until Eleonora rules whether it joins it "
+            "(docs/decisions/workflow.md, 'A question about publishing does "
+            "not hold back the measurement'). Turning it on removes this entry."
+        ),
+    }
+)
 
 
 def sources_for_features(names):
