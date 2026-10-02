@@ -8282,11 +8282,22 @@ class FrbH8ExtractRowsTests(unittest.TestCase):
             datetime(2025, 9, 26, 16, 15, tzinfo=ZoneInfo("America/New_York")),
         )
 
-    def test_a_raw_archive_page_is_refused_by_the_panel_parser(self):
+    def test_a_raw_archive_page_yields_no_observation(self):
+        """Every print of four weeks is on a page; only the extract's first prints are read."""
+
         with tempfile.TemporaryDirectory() as directory:
-            artifact = self.artifact(directory, "<html></html>", name="frb_h8/page.html")
-            with self.assertRaisesRegex(ValueError, "first-print extract"):
-                ingest.parse_snapshots([artifact], registry=ingest.load_source_registry())
+            page = replace(
+                self.artifact(directory, "<html></html>", name="frb_h8/page.html"),
+                url="https://www.federalreserve.gov/releases/h8/20250926/",
+            )
+            index = replace(
+                self.artifact(directory, "[]", name="frb_h8/index.json"),
+                url=ingest.FRB_H8_RELEASE_DATES_URL,
+            )
+            rows = ingest.parse_snapshots(
+                [page, index], registry=ingest.load_source_registry()
+            ).rows
+        self.assertEqual(rows, ())
 
     def test_a_week_released_on_or_before_its_own_date_is_refused(self):
         text = (

@@ -1670,19 +1670,20 @@ def _frb_h8_first_print_rows(artifact: SnapshotArtifact, payload: bytes):
     that release page's SHA-256. `available_at` is the release date at 16:15
     New York time, the registry's declaration (`frb_h8.release_lag`), and never
     later than the extract's own retrieval. Revisions are not in the extract, so
-    a week has one vintage: its first print.
+    a week has one vintage: its first print. A raw archive snapshot yields
+    nothing.
     """
 
     from zoneinfo import ZoneInfo
     from .data import PointInTimeObservation
 
-    if artifact.path.suffix != ".csv":
-        raise ValueError(
-            f"{artifact.path} is a raw H.8 archive snapshot ({artifact.url}); the "
-            f"panel reads H.8 only through the first-print extract that "
-            f"scripts/extract_h8_first_prints.py cuts from those snapshots, so "
-            f"build from the extract's raw root, not from the archive's"
-        )
+    if artifact.url != FRB_H8_ARCHIVE_URL or artifact.path.suffix != ".csv":
+        # A raw archive page or the release-date index, as `fetch h8` saves them
+        # under `data/raw/frb_h8/`. They are the evidence the extract is cut
+        # from and contribute no observation of their own: a page carries every
+        # print of four weeks, revisions included, and the panel reads only
+        # first prints, which only the extract selects.
+        return []
     text = payload.decode("utf-8")
     reader = csv.DictReader(io.StringIO(text))
     if tuple(reader.fieldnames or ()) != FRB_H8_EXTRACT_COLUMNS:
