@@ -126,6 +126,16 @@ dfn .term:focus-visible{outline:2px solid var(--sofr);outline-offset:2px;border-
 .def[hidden]{display:none}
 .def a{color:var(--ink-2)}
 .held-note{font-family:var(--sans);font-size:.82rem;color:var(--ink-2);margin:10px 0 0;max-width:74ch}
+.grid2{margin-top:14px;max-width:720px}
+.grid2 table{border-collapse:separate;border-spacing:4px;width:100%;font-family:var(--sans);font-size:.86rem;font-variant-numeric:tabular-nums;table-layout:fixed}
+.grid2 caption{text-align:left;font-size:.8rem;color:var(--ink-2);padding:0 0 4px}
+.grid2 th{font-weight:500;color:var(--ink-2);text-align:left;padding:4px 6px 4px 0;vertical-align:middle}
+.grid2 thead th{text-align:center;font-size:.8rem}
+.grid2 td{background:color-mix(in srgb,var(--pressure) calc(var(--share) / 2),var(--panel));border-radius:6px;text-align:center;padding:10px 6px;color:var(--ink)}
+.grid2 td b{display:block;font-size:1.25rem;font-weight:600}
+.grid2 td span,.grid2 td small{display:block;color:var(--ink-2);font-size:.78rem;line-height:1.35}
+.grid2 td.held{background:none;border:1px dashed var(--rule);color:var(--ink-3);font-size:.78rem;text-align:left}
+details .grid2{margin-top:6px}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 </head>
@@ -182,6 +192,38 @@ dfn .term:focus-visible{outline:2px solid var(--sofr);outline-offset:2px;border-
       <li>With the scale clipped at +{{clip_bp}} bp, {{n1_off_scale}} counted here rise above it and are drawn as triangles on the top edge; the largest was {{n1_spike}}.</li>
     </ul>
     <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">chapter 2</a>.</p>
+  </details>
+</section>
+
+<section id="n3" aria-labelledby="n3-title">
+  <h2 id="n3-title"><span class="n">N3</span>When does it happen?</h2>
+  <p class="prose lede">{{n3_lede}}</p>
+  <div class="prose">
+    <p>Two things are crossed here. One is the calendar: the days around each quarter's end. The other is spare cash. Money market funds can park cash at the Fed in {{dfn_on_rrp}}; this view calls cash scarce on a day when the facility took in less than {{n3_break}}, and abundant otherwise.</p>
+  </div>
+  <figure>
+    <figcaption><div class="t">Share of days with SOFR more than +{{pressure_bp}} bp above IORB</div>
+      <div class="s">Business days from {{n3_first}} to {{n3_last}}, in four groups. Dot: the share; bar: its interval; circle: quarter-end window; square: other days</div></figcaption>
+    <div class="chart" id="n3chart"><div class="tip"></div></div>
+    <div class="grid2" role="region" aria-label="Table: share of days more than +{{pressure_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table}}</div>
+    <p class="held-note">{{n3_held_note}}</p>
+  </figure>
+  <div class="prose">
+    <p>{{c_n3_quarter_end}} {{c_n3_fed_cash}}</p>
+    <p>{{n3_small}} Read each cell as a rate, not as a rule. {{n3_reading}}</p>
+    <p>This shows what happened, not what could have been predicted.</p>
+  </div>
+  <details>
+    <summary>Go deeper: how the cells are drawn</summary>
+    <ul>
+      <li>{{n3_window_caption}}</li>
+      <li>{{n3_read}} The amount is what the facility accepted that day, summed over its operations, from the New York Fed's operation results (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
+      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and never tuned on these days. The reserve-scarcity state, which also reads bank reserves, is not shown until its publication is ruled.</li>
+      <li>A day counts when its spread, in whole basis points, is strictly above the line (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{n3_interval}}</li>
+    </ul>
+    <p>The same cells at +{{second_bp}} bp:</p>
+    <div class="grid2" role="region" aria-label="Table: share of days more than +{{second_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table_second}}</div>
+    <p>Pressure by day type and year, with the reserves behind it, is <a href="#why">chapter 3</a>.</p>
   </details>
 </section>
 </div>
@@ -709,6 +751,44 @@ d3.selectAll("#n1scale button").on("click", function () {
   renderN1();
 });
 
+// ---- N3 "When does it happen?": four rates with their intervals; held-out days are in no group.
+const N3 = D.newcomer_n3;
+function renderN3() {
+  const host = d3.select("#n3chart"); host.select("svg").remove();
+  const tau = String(N3.pressure_bp);
+  const order = [[true, true], [true, false], [false, true], [false, false]];
+  const cells = order.map(([s, q]) => N3.cells.find(c => c.scarce === s && c.quarter_end === q)).filter(c => c.n);
+  const name = c => (c.quarter_end ? "Quarter-end window" : "Other days");
+  const group = c => (c.scarce ? "Scarce cash" : "Abundant cash");
+  const pc = v => (v > 0 && v < 0.1 ? (100 * v).toFixed(1) : Math.round(100 * v)) + "%";
+  const W = host.node().clientWidth, narrow = W < 520, rowH = 38, gap = 18;
+  const m = {t: 22, r: 16, b: 44, l: narrow ? 112 : 190};
+  const H = m.t + m.b + cells.length * rowH + gap;
+  const top = Math.min(1, Math.ceil(10 * d3.max(cells, c => c.above[tau].interval[1]) + 0.5) / 10);
+  const x = d3.scaleLinear([0, top], [m.l, W - m.r]);
+  const yOf = i => m.t + i * rowH + (i >= 2 ? gap : 0) + rowH / 2;
+  const svg = host.append("svg").attr("width", W).attr("height", H)
+    .attr("role", "img").attr("aria-label", `Dot chart of the share of days with SOFR more than +${N3.pressure_bp} bp above IORB, with intervals: ` + cells.map(c => `${group(c)}, ${name(c).toLowerCase()}: ${c.above[tau].k} of ${c.n} days, ${pc(c.above[tau].rate)}, interval ${pc(c.above[tau].interval[0])} to ${pc(c.above[tau].interval[1])}`).join("; ") + ".");
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b + 6})`)
+    .call(d3.axisBottom(x).ticks(narrow ? 4 : 6).tickFormat(d3.format(".0%")));
+  svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", H - 2).attr("text-anchor", "end").text("share of the group's days");
+  [true, false].forEach((s, gi) => svg.append("text").attr("x", 0).attr("y", m.t + gi * (2 * rowH + gap) - 6)
+    .style("font-size", "11px").style("font-weight", 600).style("fill", "var(--ink-2)").text(s ? `Scarce cash (ON RRP below $${N3.break_bn}bn)` : `Abundant cash (ON RRP at or above $${N3.break_bn}bn)`));
+  cells.forEach((c, i) => {
+    const a = c.above[tau], cy = yOf(order.findIndex(([s, q]) => s === c.scarce && q === c.quarter_end));
+    const col = c.scarce ? "var(--pressure)" : "var(--sofr)";
+    svg.append("text").attr("class", "lab").attr("x", 0).attr("y", cy + 4).text(name(c));
+    svg.append("line").attr("x1", x(a.interval[0])).attr("x2", x(a.interval[1])).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 3).style("stroke-linecap", "round").style("opacity", .45);
+    const mark = c.quarter_end
+      ? svg.append("circle").attr("cx", x(a.rate)).attr("cy", cy).attr("r", 5.5)
+      : svg.append("rect").attr("x", x(a.rate) - 5).attr("y", cy - 5).attr("width", 10).attr("height", 10);
+    mark.style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
+    const label = `${pc(a.rate)}, ${a.k} of ${c.n}`, half = 3.2 * label.length;
+    svg.append("text").attr("class", "lab").attr("x", Math.max(m.l + half, Math.min(W - m.r - half, x(a.rate)))).attr("y", cy - 10)
+      .attr("text-anchor", "middle").style("fill", "var(--ink-2)").text(label);
+  });
+}
+
 // ---- Glossary terms: Enter, Space or a tap opens the definition in place; Esc closes it and returns focus.
 document.querySelectorAll("dfn .term").forEach(b => {
   const def = document.getElementById(b.getAttribute("aria-controls"));
@@ -722,7 +802,7 @@ document.querySelectorAll("dfn .term").forEach(b => {
   def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
 });
 
-const renderAll = () => { renderN1(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
+const renderAll = () => { renderN1(); renderN3(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
