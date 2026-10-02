@@ -300,7 +300,7 @@ ul.guards li{margin:0 0 8px} ul.guards b{color:var(--ink);font-weight:600}
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>8609d248af413605bd7c647b9a2594874fac8b9a</code>. Every number on this page is computed from that file, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>d3d5c7d77ce589214424a3236da2c312864aedee</code>. Every number on this page is computed from that file, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>No model results are shown. Chapters 5 to 7 will be built only from records scored under the project's as-of information rule, and the generator refuses any other record.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -466,28 +466,32 @@ P.segments.forEach(s => d3.select(`#seg-${s.key} .tag span`).text(`${s.rate.toFi
 function renderCorridor() {
   const host = d3.select("#corridor"); host.select("svg").remove();
   const rates = [...P.note.rates].sort((a, b) => b.v - a.v || a.name.localeCompare(b.name));
-  const W = host.node().clientWidth, narrow = W < 560, gap = narrow ? 46 : 40;
-  const m = {t: 18, r: 12, b: 18, l: narrow ? 52 : 70};
+  const W = host.node().clientWidth, narrow = W < 560, gap = narrow ? 66 : 40;
+  const m = {t: 18, r: 12, b: 18, l: narrow ? 44 : 70};
   const lo = Math.min(P.note.range[0], d3.min(rates, r => r.v)), hi = Math.max(P.note.range[1], d3.max(rates, r => r.v));
   const H2 = Math.max(220, rates.length * gap + m.t + m.b);
   const y = d3.scaleLinear([lo - 0.05, hi + 0.05], [H2 - m.b, m.t]);
   const svg = host.append("svg").attr("width", W).attr("height", H2).attr("viewBox", `0 0 ${W} ${H2}`).attr("role", "img")
     .attr("aria-label", "The Fed's administered rates from the implementation note: " + rates.map(r => `${r.name} ${r.v.toFixed(2)}%`).join(", ") + `; target range ${P.note.range[0].toFixed(2)} to ${P.note.range[1].toFixed(2)}%.`);
-  const bx = m.l, bw = narrow ? 34 : 54;
+  const bx = m.l, bw = narrow ? 22 : 54;
   svg.append("rect").attr("x", bx).attr("width", bw).attr("y", y(P.note.range[1])).attr("height", y(P.note.range[0]) - y(P.note.range[1])).style("fill", "var(--band)").style("stroke", "var(--rule)");
   svg.append("g").attr("class", "axis").selectAll("text").data([P.note.range[0], P.note.range[1]]).join("text")
     .attr("x", bx - 8).attr("y", d => y(d) + 4).attr("text-anchor", "end").text(d => d.toFixed(2) + "%");
   svg.append("text").attr("class", "lab").attr("x", bx + bw / 2).attr("y", y(P.note.range[0]) + 14).attr("text-anchor", "middle").text("Target range");
   // Labels sit in their own lanes, joined to their level by a leader, so two equal rates never overprint.
-  const lx = bx + bw + (narrow ? 26 : 46), step = (H2 - m.t - m.b) / rates.length;
+  const lx = bx + bw + (narrow ? 16 : 46), step = (H2 - m.t - m.b) / rates.length;
   rates.forEach((r, i) => {
     const ly = m.t + step * (i + 0.5), ry = y(r.v), isIorb = r.key === "iorb";
     svg.append("line").attr("x1", bx - 4).attr("x2", bx + bw + 4).attr("y1", ry).attr("y2", ry).style("stroke", isIorb ? "var(--sofr)" : "var(--ink)").style("stroke-width", 2);
     svg.append("path").attr("d", `M${bx + bw + 4},${ry} L${lx - 6},${ly}`).style("fill", "none").style("stroke", "var(--ink-3)").style("stroke-dasharray", "2 2");
     const t = svg.append("text").attr("x", lx).attr("y", ly - 3).style("font-size", "12.5px").style("font-weight", 600).style("fill", isIorb ? "var(--sofr)" : "var(--ink)");
     t.append("tspan").text(`${r.name} ${r.v.toFixed(2)}%`);
-    if (!isIorb) t.append("tspan").style("font-weight", 400).style("fill", "var(--ink-2)").text(`  ${sgn(r.vs_iorb_bp)} bp vs IORB`);
-    svg.append("text").attr("class", "lab").attr("x", lx).attr("y", ly + 12).text(r.who);
+    if (!isIorb) t.append("tspan").style("font-weight", 400).style("fill", "var(--ink-2)").attr("x", narrow ? lx : null).attr("dy", narrow ? 14 : null).text(`${narrow ? "" : "  "}${sgn(r.vs_iorb_bp)} bp vs IORB`);
+    // Wrap the description to the width left of the labels, so nothing runs off a phone screen.
+    const max = Math.max(16, Math.floor((W - lx - m.r) / 5.8)), lines = [];
+    r.who.split(" ").forEach(wd => { const l = lines.length ? lines[lines.length - 1] : null; if (l !== null && (l + " " + wd).length <= max) lines[lines.length - 1] = l + " " + wd; else lines.push(wd); });
+    const who = svg.append("text").attr("class", "lab").attr("x", lx).attr("y", ly + (narrow && !isIorb ? 26 : 12));
+    lines.forEach((l, k) => who.append("tspan").attr("x", lx).attr("dy", k ? 12 : 0).text(l));
   });
 }
 
