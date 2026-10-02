@@ -8064,3 +8064,277 @@ class NyFedOnRrpAdapterTests(unittest.TestCase):
             )
         self.assertEqual(written, [ingest.NYFED_ON_RRP_SOURCE_ID] * 2)
         self.assertEqual(len(urls), 2)
+
+
+def _h8_page(release_date, weeks, values, *, layout="tables", stated="4:15"):
+    """A minimal archived H.8 page carrying the total-assets line, NSA.
+
+    `layout="tables"` is the 2020s page (an `<h4>` per table and a unit
+    `<span>`); `layout="pages"` is the earlier one (an `<h5>` per printed page,
+    the line on the table's "(continued)" page). Each page also carries the
+    seasonally adjusted table and the domestically chartered one, with
+    different values on the same line, so a parser that read either would be
+    caught.
+    """
+
+    def table(title, unit, line_values):
+        head = "".join(f"<th>{label}</th>" for label in weeks)
+        cells = "".join(f"<td>{value}</td>" for value in line_values)
+        monthly = "<td>1.0</td><td>2.0</td>"
+        if layout == "tables":
+            preamble = f'<h4 id="t">{title} <a href="#f1"><sup>1</sup></a></h4> <span class="tableunit">{unit}.</span>'
+        else:
+            preamble = f'<h5 class="tablehead">H.8; Page 5</h5> <p>{title} <sup>1</sup></p> <p>{unit} (continued)</p>'
+        return (
+            f"{preamble}<table><thead><tr><th colspan='2'>Account</th><th>2025 Aug</th>"
+            f"<th>2025 Sep</th><th colspan='{len(weeks)}'>Week ending</th></tr>"
+            f"<tr>{head}</tr></thead><tbody>"
+            f"<tr><th>32</th><th>Other assets</th>{monthly}{cells}</tr>"
+            f"<tr><th>33</th><th>Total assets</th>{monthly}{cells}</tr></tbody></table>"
+        )
+
+    us = "Assets and Liabilities of Commercial Banks in the United States"
+    stamp = "" if stated is None else f"<p>For release at {stated} p.m. Eastern Time</p>"
+    body = (
+        f"<html><body><h2>{us} - H.8</h2>{stamp}"
+        + table(f"Selected {us}", "Percent change at break adjusted, seasonally adjusted, annual rate", ["9.9"] * len(weeks))
+        + table(us, "Seasonally adjusted, billions of dollars", ["1,111.1"] * len(weeks))
+        + table(us, "Not seasonally adjusted, billions of dollars", values)
+        + table(
+            "Assets and Liabilities of Domestically Chartered Commercial Banks in the United States",
+            "Not seasonally adjusted, billions of dollars",
+            ["2,222.2"] * len(weeks),
+        )
+        + "<script>var x = '<table><tr><th>Total assets</th></tr></table>';</script>"
+        + "</body></html>"
+    )
+    return body.encode("utf-8")
+
+
+class FrbH8ArchiveParseTests(unittest.TestCase):
+    """#115: total assets of all commercial banks, NSA, from an archived H.8 page."""
+
+    WEEKS = ["Aug 27", "Sep 03", "Sep 10", "Sep 17"]
+    VALUES = ["24,559.7", "24,481.9", "24,488.0", "24,338.4"]
+    RELEASE = date(2025, 9, 26)
+
+    def test_both_layouts_read_the_nsa_all_banks_line(self):
+        expected = {
+            date(2025, 8, 27): 24559.7,
+            date(2025, 9, 3): 24481.9,
+            date(2025, 9, 10): 24488.0,
+            date(2025, 9, 17): 24338.4,
+        }
+        for layout in ("tables", "pages"):
+            with self.subTest(layout=layout):
+                release = ingest.parse_frb_h8_total_assets(
+                    _h8_page(self.RELEASE, self.WEEKS, self.VALUES, layout=layout), self.RELEASE
+                )
+                self.assertEqual(dict(release.weeks), expected)
+                self.assertEqual(release.release_date, self.RELEASE)
+
+    def test_the_stated_release_time_is_read_when_the_page_states_one(self):
+        page = _h8_page(self.RELEASE, self.WEEKS, self.VALUES)
+        self.assertEqual(
+            ingest.parse_frb_h8_total_assets(page, self.RELEASE).stated_time, time(16, 15)
+        )
+        page = _h8_page(self.RELEASE, self.WEEKS, self.VALUES, stated=None)
+        self.assertIsNone(ingest.parse_frb_h8_total_assets(page, self.RELEASE).stated_time)
+
+    def test_weeks_across_the_new_year_are_dated_to_the_earlier_year(self):
+        release = date(2026, 1, 9)
+        page = _h8_page(release, ["Dec 10", "Dec 17", "Dec 24", "Dec 31"], ["1.0", "2.0", "3.0", "4.0"])
+        weeks = ingest.parse_frb_h8_total_assets(page, release).weeks
+        self.assertEqual(sorted(weeks), [date(2025, 12, 10), date(2025, 12, 17),
+                                         date(2025, 12, 24), date(2025, 12, 31)])
+
+    def test_a_page_without_the_line_or_with_a_bad_value_raises(self):
+        with self.assertRaisesRegex(ValueError, "not exactly one"):
+            ingest.parse_frb_h8_total_assets(b"<html><table></table></html>", self.RELEASE)
+        bad = _h8_page(self.RELEASE, self.WEEKS, ["24,559.7", "n.a.", "1.0", "2.0"])
+        with self.assertRaisesRegex(ValueError, "not a number"):
+            ingest.parse_frb_h8_total_assets(bad, self.RELEASE)
+        not_wednesday = _h8_page(self.RELEASE, ["Aug 28", "Sep 03", "Sep 10", "Sep 17"], self.VALUES)
+        with self.assertRaisesRegex(ValueError, "Wednesdays"):
+            ingest.parse_frb_h8_total_assets(not_wednesday, self.RELEASE)
+
+    def test_the_release_date_index_parses_and_refuses_another_shape(self):
+        payload = json.dumps([
+            {"yearValue": "2025", "Months": [{"MonthName": "September", "Dates": ["20250926", "20250919"]}]},
+            {"yearValue": "2024", "Months": [{"MonthName": "December", "Dates": ["20241227"]}]},
+        ]).encode("utf-8-sig")
+        self.assertEqual(
+            ingest.parse_frb_h8_release_dates(payload),
+            (date(2024, 12, 27), date(2025, 9, 19), date(2025, 9, 26)),
+        )
+        with self.assertRaises(ValueError):
+            ingest.parse_frb_h8_release_dates(b'[{"Months": [{"Dates": ["2025-09-26"]}]}]')
+        with self.assertRaises(ValueError):
+            ingest.parse_frb_h8_release_dates(b"{}")
+
+
+class FrbH8FirstPrintTests(unittest.TestCase):
+    """A week's first print is its value in the earliest release that carries it."""
+
+    def release(self, day, weeks):
+        return ingest.FrbH8Release(day, time(16, 15), weeks)
+
+    def test_the_earliest_release_wins_and_revisions_are_not_read(self):
+        early = self.release(date(2025, 9, 19), {date(2025, 9, 3): 100.0, date(2025, 9, 10): 110.0})
+        late = self.release(date(2025, 9, 26), {date(2025, 9, 10): 999.0, date(2025, 9, 17): 120.0})
+        # Given out of order, as a directory listing might.
+        prints = ingest.frb_h8_first_prints([(late, "b" * 64), (early, "a" * 64)])
+        self.assertEqual(
+            [(p.week_ending, p.value, p.release_date, p.release_sha256[0]) for p in prints],
+            [
+                (date(2025, 9, 3), 100.0, date(2025, 9, 19), "a"),
+                (date(2025, 9, 10), 110.0, date(2025, 9, 19), "a"),
+                (date(2025, 9, 17), 120.0, date(2025, 9, 26), "b"),
+            ],
+        )
+
+    def test_one_release_given_twice_raises(self):
+        one = self.release(date(2025, 9, 19), {date(2025, 9, 10): 1.0})
+        with self.assertRaisesRegex(ValueError, "twice"):
+            ingest.frb_h8_first_prints([(one, "a" * 64), (one, "b" * 64)])
+
+
+class FrbH8FetchTests(unittest.TestCase):
+    """`fetch h8`: the index, then each release in range, paced and resumable."""
+
+    INDEX = json.dumps([
+        {"yearValue": "2025", "Months": [{"MonthName": "September", "Dates": ["20250919", "20250926"]}]},
+        {"yearValue": "2018", "Months": [{"MonthName": "January", "Dates": ["20180105"]}]},
+    ]).encode()
+
+    def transport(self, urls):
+        def download(url):
+            urls.append(url)
+            if url == ingest.FRB_H8_RELEASE_DATES_URL:
+                return self.INDEX
+            day = url.rstrip("/").rsplit("/", 1)[1]
+            release = date(int(day[:4]), int(day[4:6]), int(day[6:]))
+            return _h8_page(release, ["Aug 27", "Sep 03", "Sep 10", "Sep 17"] if release.month == 9 else ["Dec 13", "Dec 20", "Dec 27", "Jan 03"], ["1.0", "2.0", "3.0", day])
+        return download
+
+    def test_fetches_each_release_in_range_once_paced(self):
+        urls, pauses = [], []
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = ingest.fetch_frb_h8_archive(
+                root, "2025-01-01", "2025-12-31", downloader=self.transport(urls), pause=pauses.append
+            )
+            self.assertEqual(
+                [artifact.url for artifact in artifacts],
+                [
+                    ingest.FRB_H8_RELEASE_DATES_URL,
+                    "https://www.federalreserve.gov/releases/h8/20250919/",
+                    "https://www.federalreserve.gov/releases/h8/20250926/",
+                ],
+            )
+            self.assertEqual(pauses, [ingest.FRB_H8_REQUEST_PAUSE_SECONDS] * 2)
+            for artifact in artifacts:
+                self.assertEqual(artifact.source_id, ingest.FRB_H8_SOURCE_ID)
+                self.assertEqual(
+                    hashlib.sha256(artifact.path.read_bytes()).hexdigest(), artifact.sha256
+                )
+                self.assertTrue(Path(str(artifact.path) + ".manifest.json").is_file())
+            # A second run fetches the index again and no release page.
+            urls.clear()
+            again = ingest.fetch_frb_h8_archive(
+                root, "2025-01-01", "2025-12-31", downloader=self.transport(urls), pause=pauses.append
+            )
+            self.assertEqual(urls, [ingest.FRB_H8_RELEASE_DATES_URL])
+            self.assertEqual(len(again), 1)
+
+    def test_a_page_that_does_not_parse_is_not_saved(self):
+        def download(url):
+            return self.INDEX if url == ingest.FRB_H8_RELEASE_DATES_URL else b"<html>moved</html>"
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "not exactly one"):
+                ingest.fetch_frb_h8_archive(
+                    Path(directory), "2025-09-19", "2025-09-19", downloader=download, pause=lambda _s: None
+                )
+            pages = list(Path(directory).rglob("*.html"))
+        self.assertEqual(pages, [])
+
+    def test_the_cli_reaches_it(self):
+        urls = []
+        real = cli_data.fetch_frb_h8_archive
+        self.addCleanup(setattr, cli_data, "fetch_frb_h8_archive", real)
+        cli_data.fetch_frb_h8_archive = lambda **kwargs: real(
+            downloader=self.transport(urls), pause=lambda _s: None, **kwargs
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            argv = ["fetch", "h8", "--start", "2025-09-20", "--end", "2025-09-30",
+                    "--output-root", directory]
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(argv), 0)
+        self.assertEqual(
+            urls,
+            [ingest.FRB_H8_RELEASE_DATES_URL, "https://www.federalreserve.gov/releases/h8/20250926/"],
+        )
+
+
+class FrbH8ExtractRowsTests(unittest.TestCase):
+    """The tracked extract parses to one first-print observation per week."""
+
+    def artifact(self, directory, text, name="frb_h8/extract.csv"):
+        path = Path(directory) / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = text.encode("utf-8")
+        path.write_bytes(payload)
+        return ingest.SnapshotArtifact(
+            source_id=ingest.FRB_H8_SOURCE_ID,
+            path=path,
+            retrieved_at="2026-10-02T06:30:00+00:00",
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=ingest.FRB_H8_ARCHIVE_URL,
+            byte_count=len(payload),
+        )
+
+    def test_available_at_is_the_release_at_1615_new_york(self):
+        text = (
+            "week_ending,total_assets,release_date,release_sha256\n"
+            f"2025-09-10,24488.0,2025-09-19,{'a' * 64}\n"
+            f"2025-09-17,24338.4,2025-09-26,{'b' * 64}\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, text)
+            rows = ingest.parse_snapshots([artifact], registry=ingest.load_source_registry()).rows
+        self.assertEqual([row.series_id for row in rows], [ingest.FRB_H8_FIELD] * 2)
+        self.assertEqual(rows[1].ref_date, date(2025, 9, 17))
+        self.assertEqual(rows[1].value, 24338.4)
+        self.assertEqual(
+            rows[1].available_at,
+            datetime(2025, 9, 26, 16, 15, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+    def test_a_raw_archive_page_yields_no_observation(self):
+        """Every print of four weeks is on a page; only the extract's first prints are read."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            page = replace(
+                self.artifact(directory, "<html></html>", name="frb_h8/page.html"),
+                url="https://www.federalreserve.gov/releases/h8/20250926/",
+            )
+            index = replace(
+                self.artifact(directory, "[]", name="frb_h8/index.json"),
+                url=ingest.FRB_H8_RELEASE_DATES_URL,
+            )
+            rows = ingest.parse_snapshots(
+                [page, index], registry=ingest.load_source_registry()
+            ).rows
+        self.assertEqual(rows, ())
+
+    def test_a_week_released_on_or_before_its_own_date_is_refused(self):
+        text = (
+            "week_ending,total_assets,release_date,release_sha256\n"
+            f"2025-09-17,24338.4,2025-09-17,{'b' * 64}\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "released on"):
+                ingest.parse_snapshots(
+                    [self.artifact(directory, text)], registry=ingest.load_source_registry()
+                )

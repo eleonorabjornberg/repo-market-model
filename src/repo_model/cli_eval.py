@@ -288,6 +288,29 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The dynamic pressure logit and its ordinal version (#137): the
+        # direct design plus the lagged event indicator and the model's own
+        # lagged index, read off each forecast's as-of history.
+        "dynamic_logit": _ModelChoice(
+            declared=_DeferredFactory("dynamic_logit_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "dynamic_ordinal": _ModelChoice(
+            declared=_DeferredFactory("dynamic_ordinal_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
     }
 )
 
