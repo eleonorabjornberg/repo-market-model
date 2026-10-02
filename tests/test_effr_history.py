@@ -308,5 +308,46 @@ class EpisodeTests(unittest.TestCase):
         self.assertLessEqual(max(row.spread_bps for row in rows), 0.0)
 
 
+class CarriedV1DeclarationTests(unittest.TestCase):
+    """`scripts/longer_history.py` carries v1's declarations; they must stay v1's.
+
+    Read from both scripts' source with `ast`, so neither is imported (v1's
+    imports the ml extra's callers) and the control cannot drift from v1 as
+    merged without this failing.
+    """
+
+    @staticmethod
+    def _constants(path, names, namespace_call=None):
+        import ast
+
+        tree = ast.parse(path.read_text())
+        found = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                target = node.targets[0]
+                if isinstance(target, ast.Name) and target.id in names:
+                    found[target.id] = ast.unparse(node.value)
+                if (
+                    namespace_call
+                    and isinstance(target, ast.Name)
+                    and target.id == namespace_call
+                    and isinstance(node.value, ast.Call)
+                ):
+                    for keyword in node.value.keywords:
+                        if keyword.arg in names:
+                            found[keyword.arg] = ast.unparse(keyword.value)
+        return found
+
+    def test_the_control_is_declared_as_v1_declares_it(self):
+        names = (
+            "TAUS", "HORIZONS", "MINIMUM_HISTORY", "REFIT_EVERY", "DECISION", "END",
+            "DIRECT_FEATURES", "CALENDAR_FEATURES", "SETTLEMENT",
+        )
+        theirs = self._constants(REPO / "scripts" / "pressure_model_v1.py", names)
+        ours = self._constants(REPO / "scripts" / "longer_history.py", names, namespace_call="v1")
+        self.assertEqual(set(theirs), set(names))
+        self.assertEqual(ours, theirs)
+
+
 if __name__ == "__main__":
     unittest.main()

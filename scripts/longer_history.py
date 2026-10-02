@@ -17,7 +17,8 @@ indicator, never read as if it were the same event.
         --markdown OUT/longer_history.md OUT/h1.json OUT/h2.json OUT/h3.json OUT/h4.json OUT/h5.json
 
 The control is pressure model v1's direct logistic as merged (#114,
-`scripts/pressure_model_v1.py`), on the same fold grid: walk-forward,
+`scripts/pressure_model_v1.py`, whose declarations are carried below), on the
+same fold grid: walk-forward,
 expanding, refit every 21 scored days, `minimum_history` 61, 16:00, +5 and
 +10 bp, horizons 1 to 5, no scored day on or after 2026-01-01. Paired against
 it, with stationary-bootstrap intervals split by regime and pressure-day type:
@@ -49,15 +50,92 @@ from collections import defaultdict
 from datetime import date, time
 from pathlib import Path
 
+from types import SimpleNamespace
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "scripts"))
 
-import pressure_model_v1 as v1  # noqa: E402
 from repo_model import effr_history, ingest, pressure  # noqa: E402
-from repo_model.baseline import panel_sha256  # noqa: E402
+from repo_model.baseline import (  # noqa: E402
+    calendar_climatology_exceedance,
+    panel_sha256,
+    persistence_logistic_exceedance,
+    rolling_exceedance_backtest,
+)
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+
+
+# -- pressure model v1's declarations and run helpers, carried -----------------
+#
+# Carried from `scripts/pressure_model_v1.py` rather than imported: a script
+# importing a sibling script is outside the dependency boundary
+# (`tests/test_dependency_boundary.py`). `tests/test_effr_history.py` checks that
+# each carried declaration still equals v1's, so the control stays v1 as merged.
+
+
+def _at_horizon(features, horizon):
+    return tuple(name for name in features if horizon == 1 or name != "treasury_settlement")
+
+
+def _run(rows, name, predictor, features, horizon):
+    return rolling_exceedance_backtest(
+        rows,
+        predictor=predictor,
+        model_name=name,
+        features=features,
+        registry=json.loads(v1.REGISTRY.read_text()),
+        decision_time=v1.DECISION,
+        taus=v1.TAUS,
+        minimum_history=v1.MINIMUM_HISTORY,
+        refit_every=v1.REFIT_EVERY,
+        end=v1.END,
+        horizon=horizon,
+    )
+
+
+def _fmt(value, places=4):
+    return "–" if value is None else f"{value:.{places}f}"
+
+
+def _interval(paired):
+    interval = paired["interval"]
+    return f"{paired['mean']:+.4f} [{interval['lower']:+.4f}, {interval['upper']:+.4f}]"
+
+
+def _split_cell(entry):
+    if "mean" not in entry:
+        return "– (n=0)"
+    interval = entry.get("interval")
+    if not interval:
+        return f"{entry['mean']:+.4f} (n={entry['count']}, no interval)"
+    return f"{entry['mean']:+.4f} [{interval['lower']:+.4f}, {interval['upper']:+.4f}]"
+
+
+v1 = SimpleNamespace(
+    REGISTRY=REPO / "metadata" / "sources.json",
+    SPLITS=REPO / "metadata" / "evaluation_splits.json",
+    TAUS=(5.0, 10.0),
+    HORIZONS=(1, 2, 3, 4, 5),
+    MINIMUM_HISTORY=61,
+    REFIT_EVERY=21,
+    DECISION=time(16, 0),
+    #: The last day any comparison may score (`docs/decisions/lockbox.md`).
+    END=date(2025, 12, 31),
+    DIRECT_FEATURES=(
+        "spread_bps", "days_to_month_end", "quarter_end", "tax_date",
+        "treasury_settlement", "reserve_balances", "tga",
+    ),
+    CALENDAR_FEATURES=("spread_bps", "days_to_month_end", "quarter_end", "tax_date"),
+    SETTLEMENT="treasury_settlement",
+    calendar_climatology_exceedance=calendar_climatology_exceedance,
+    persistence_logistic_exceedance=persistence_logistic_exceedance,
+    _at_horizon=_at_horizon,
+    _run=_run,
+    _fmt=_fmt,
+    _interval=_interval,
+    _split_cell=_split_cell,
+)
 
 DDP_DIRECTORY = REPO / "tests" / "fixtures" / "snapshots" / ingest.FRB_DDP_SOURCE_ID
 FRED_DIRECTORY = REPO / "tests" / "fixtures" / "snapshots" / "funding_inputs" / "fred-macro-latest-vintage"

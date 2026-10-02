@@ -480,6 +480,64 @@ def frb_ddp_series(payload: bytes, release: str, series_name: str) -> Dict[date,
     return values
 
 
+#: The DDP series each `frb_ddp` field is read from: (release, series name).
+FRB_DDP_FIELD_SERIES = {
+    "EFFR": ("H15", "RIFSPFF_N.B"),
+    "IOER": ("PRATES", "RESBME_N.D"),
+    "IORB": ("PRATES", "RESBM_N.D"),
+}
+
+
+def _frb_ddp_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+    """Point-in-time observations from one DDP package: its release's fields.
+
+    `available_at` is read off the registry on every call, as `_fr2004_rows`
+    reads its own: a `ref_date` field is public `days` business days (weekdays)
+    after its date, a `record_date` field `days` calendar days after it, each at
+    its `available_time` in its `timezone`, and never later than retrieval.
+    A date the Board marks not available yields no observation.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .contract import validate_release_lag
+    from .data import PointInTimeObservation
+
+    source = registry[FRB_DDP_SOURCE_ID]
+    query = parse_qs(urlparse(artifact.url).query)
+    release = (query.get("rel") or [""])[0]
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for field, (field_release, series_name) in FRB_DDP_FIELD_SERIES.items():
+        if field_release != release:
+            continue
+        lag = (source.get("field_release_lags") or {}).get(field) or source["release_lag"]
+        problems = validate_release_lag(f"{FRB_DDP_SOURCE_ID}.{field}", lag)
+        if problems:
+            raise ValueError("; ".join(problems))
+        moment = time.fromisoformat(lag["available_time"])
+        zone = ZoneInfo(lag["timezone"])
+        for ref_date, value in sorted(frb_ddp_series(payload, release, series_name).items()):
+            if value is None:
+                continue
+            if lag["basis"] == "ref_date":
+                day = _next_weekday(ref_date, int(lag["days"]))
+            else:
+                day = ref_date + timedelta(days=int(lag["days"]))
+            rows.append(
+                PointInTimeObservation(
+                    series_id=field,
+                    ref_date=ref_date,
+                    available_at=min(datetime.combine(day, moment, tzinfo=zone), retrieved),
+                    value=value,
+                    vintage_id=f"{artifact.retrieved_at}:{release}",
+                    source_sha=artifact.sha256,
+                )
+            )
+    if not rows:
+        raise ValueError(f"the DDP package {artifact.url} carries no frb_ddp field")
+    return rows
+
+
 def fetch_treasury_auctions(
     output_root: Path,
     start: str,
@@ -3693,6 +3751,8 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_ON_RRP_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_on_rrp_rows(artifact, payload)
+        elif artifact.source_id == FRB_DDP_SOURCE_ID:
+            parsed_rows = _frb_ddp_rows(artifact, payload, registry)
         elif artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "fred_macro_latest_vintage":
