@@ -9,15 +9,17 @@ These three records were the published funding declaration's gbm, calibrated by 
 
 **Why they were archived.** Eleonora ruled on
 [#123](https://github.com/eleonorabjornberg/repo-market-model/issues/123) that the published funding
-declaration replaces CV+ with conformal PID and its calendar scorecaster, exactly as
-[#122](https://github.com/eleonorabjornberg/repo-market-model/pull/122) scored it. Directive
-[#124](https://github.com/eleonorabjornberg/repo-market-model/issues/124) republished the declaration under
-that calibration. The pull request for #124 moved these records here unedited, as the rule "never edit a
+declaration replaces CV+ with conformal PID and its calendar scorecaster, and on
+[#136](https://github.com/eleonorabjornberg/repo-market-model/issues/136) that conformal PID's constants are
+chosen by nested walk-forward selection ([#135](https://github.com/eleonorabjornberg/repo-market-model/pull/135)),
+not fixed at [#122](https://github.com/eleonorabjornberg/repo-market-model/pull/122)'s. Directive
+[#124](https://github.com/eleonorabjornberg/repo-market-model/issues/124) republished the declaration once,
+under that calibration. The pull request for #124 moved these records here unedited, as the rule "never edit a
 published record in place" requires.
 
-**What replaced them.** `backtest_gbm_conformal_pid_funding.json`,
-`compare_persistence_vs_gbm_conformal_pid_funding_crps.json` and
-`exceedance_gbm_conformal_pid_funding.json` at the top level of `docs/runs/`. Under
+**What replaced them.** `backtest_gbm_conformal_pid_nested_funding.json`,
+`compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json` and
+`exceedance_gbm_conformal_pid_nested_funding.json` at the top level of `docs/runs/`. Under
 `docs/decisions/lockbox.md` those score only days before 2026-01-01, so their figures are not comparable with
 the figures here.
 

@@ -114,7 +114,7 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 
 | Challenger | CRPS | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.68 bp | +0.41 bp | +0.17 to +0.72 bp | beats persistence |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.66 bp | +0.43 bp | +0.19 to +0.74 bp | beats persistence |
 
 **The paired difference by regime and by pressure-day type** (persistence's CRPS minus the challenger's, bp, with its 90% interval):
 
@@ -132,11 +132,11 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 
 | | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +1.63 (+0.50 to +3.12) | -0.04 (-0.31 to +0.31) | -0.08 (-0.15 to -0.01) | +0.26 (+0.14 to +0.41) | +0.61 (+0.34 to +0.91) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +1.65 (+0.52 to +3.14) | +0.07 (-0.18 to +0.40) | -0.08 (-0.16 to -0.01) | +0.26 (+0.15 to +0.41) | +0.64 (+0.37 to +0.94) |
 
 | | month end | ordinary | quarter end | tax date |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.19 (-0.02 to +0.40) | +0.48 (+0.19 to +0.85) | +0.08 (-0.62 to +0.81) | -0.36 (-0.86 to +0.07) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.22 (+0.02 to +0.43) | +0.50 (+0.21 to +0.87) | +0.11 (-0.56 to +0.83) | -0.37 (-0.91 to +0.09) |
 
 **Interval coverage on the same origins.**
 
@@ -152,7 +152,7 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 
 | Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 90% | 89.6% | 88.2% to 91.0% | 0.749 bp |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 90% | 88.7% | 87.2% to 90.1% | 0.731 bp |
 
 A realised-coverage interval that excludes the nominal probability is a calibration finding. None of these models has one.
 
@@ -198,29 +198,31 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 
 | Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0513 | 0.575 | +0.0286 (+0.0224 to +0.0352), beats it | +0.0038 (+0.0009 to +0.0069), beats it |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0507 | 0.580 | +0.0293 (+0.0229 to +0.0359), beats it | +0.0045 (+0.0015 to +0.0076), beats it |
 
 *Threshold 10 bp, exceeded on 3.7% of days.*
 
 | Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0316 | 0.306 | +0.0057 (+0.0025 to +0.0094), beats it | +0.0013 (-0.0009 to +0.0035), not distinguishable |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0314 | 0.307 | +0.0058 (+0.0027 to +0.0095), beats it | +0.0014 (-0.0007 to +0.0037), not distinguishable |
 
 **The paired Brier difference against the persistence-logistic, 5 bp, by regime and by pressure-day type** (benchmark minus model, with its 90% interval):
 
 | | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0172 (+0.0050 to +0.0292) | +0.0071 (+0.0010 to +0.0144) | -0.0020 (-0.0021 to -0.0018) | +0.0022 (-0.0013 to +0.0067) | -0.0006 (-0.0098 to +0.0098) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0175 (+0.0053 to +0.0295) | +0.0118 (+0.0062 to +0.0187) | -0.0020 (-0.0021 to -0.0018) | +0.0020 (-0.0014 to +0.0063) | -0.0006 (-0.0098 to +0.0097) |
 
 | | month end | ordinary | quarter end | tax date |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0022 (-0.0094 to +0.0127) | +0.0031 (-0.0000 to +0.0063) | +0.0182 (+0.0006 to +0.0374) | +0.0152 (+0.0021 to +0.0300) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0038 (-0.0078 to +0.0141) | +0.0038 (+0.0008 to +0.0071) | +0.0163 (-0.0007 to +0.0352) | +0.0129 (+0.0007 to +0.0274) |
 
 **Limitations the records state.** Each is quoted from the records named after it, which carry it beside their figures.
 
-- Scored only on days before 2026-01-01 (--end 2025-12-31), under docs/decisions/lockbox.md. The records it replaces, archived in docs/runs/archive/cross-conformal-funding/, were scored through 2026-09-03, so no figure here is comparable with theirs, or with any record scored on that longer window. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
-- Conformal PID scores worse than CV+ in the 2020 regime, as #122 measured on this window, paired day by day (CV+ minus PID, with a 90% stationary-bootstrap interval): CRPS -0.107 bp [-0.150, -0.065], Brier at +5 bp -0.00312 [-0.00490, -0.00141], Brier at +10 bp -0.00259 [-0.00413, -0.00100]. Its band widens late after the March 2020 break. Eleonora's ruling on #123 adopts it with this regression stated. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
-- Its constants were declared in src/repo_model/recalibration.py by the session that implemented #122, before any fold was scored, and were neither searched nor re-tuned (#123, #124). Its first scored days, before any label is observable, carry the uncalibrated band. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
+- Scored only on days before 2026-01-01 (--end 2025-12-31), under docs/decisions/lockbox.md. The records it replaces, archived in docs/runs/archive/cross-conformal-funding/, were scored through 2026-09-03, so no figure here is comparable with theirs, or with any record scored on that longer window. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- Calibrated by conformal PID with the calendar scorecaster, its constants chosen by nested walk-forward selection (#125; Eleonora's rulings on #123 and #136): at each 21-day refit, the point of the 45-point grid declared in src/repo_model/recalibration.py before any scoring with the least pooled CRPS over the days whose labels were observable then. The first block, before any label is observable, uses #122's constants and carries the uncalibrated band. From late 2019 the choice mostly sits at the grid's smallest step, 0.01, its edge; the grid was not widened. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- Coverage of the 0.05-0.95 band is 0.887 against 0.90 nominal on this window (#135: 0.887 [0.873, 0.901]); nested selection trades coverage for width (10.75 bp against 12.79 bp for #122's fixed constants). Tax-date coverage falls to 0.809. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- The 2020 regression: #122 measured conformal PID at its fixed constants worse than CV+ in the 2020 regime, paired day by day (CV+ minus PID, 90% stationary-bootstrap interval): CRPS -0.107 bp [-0.150, -0.065], Brier at +5 bp -0.00312 [-0.00490, -0.00141], Brier at +10 bp -0.00259 [-0.00413, -0.00100]. Under nested selection (#135, CV+ minus nested PID) the 2020 gap is CRPS +0.008 bp [-0.048, +0.052], Brier at +5 bp +0.00157 [-0.00121, +0.00399], Brier at +10 bp -0.00124 [-0.00363, +0.00047]: no longer distinguishable from zero, and not shown to be better than CV+ in 2020. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- Where nested selection does not help (#135, #122's fixed constants minus nested PID, 90% interval): in 2021-23 (CRPS -0.007 bp [-0.018, +0.002]) and on tax dates (CRPS -0.011 bp [-0.104, +0.066], Brier at +5 bp -0.00231 [-0.00694, +0.00069]). Most of its pooled CRPS gain over the fixed constants (+0.021 bp [+0.009, +0.032]) is in 2020 (+0.115 bp [+0.050, +0.172]). (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
 
 **The control that licenses every skill number.** A climatology scored against climatology must show no skill. Over the same 2042 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one.
 
