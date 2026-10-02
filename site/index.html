@@ -134,8 +134,7 @@ h3.sub{margin:40px 0 4px;font-size:1.05rem}
       <li class="live"><b>4</b><span><a href="#clock">What's known at 4 pm</a><small>Each input's publication clock</small></span></li>
       <li class="live"><b>5</b><span><a href="#forecast">Making a forecast</a><small>Against two benchmarks</small></span></li>
       <li class="live"><b>6</b><span><a href="#grading">Grading it honestly</a><small>Reliability and lead time</small></span></li>
-      <li class="live"><b>7</b><span><a href="#scarcity">The scarcity gauge</a><small>Reserves and pressure</small></span></li>
-      <li class="live"><b>8</b><span><a href="#built">How it was built</a><small>Process and guards</small></span></li>
+      <li class="live"><b>7</b><span><a href="#built">How it was built</a><small>Process and guards</small></span></li>
     </ol>
   </nav>
 </header>
@@ -335,13 +334,8 @@ h3.sub{margin:40px 0 4px;font-size:1.05rem}
   </details>
 </section>
 
-<section id="scarcity">
-  <h2><span class="n">7</span>The scarcity gauge</h2>
-  <p class="pending">No published record in <code>docs/runs/</code> carries the reserve-scarcity state against how often pressure came, so this page draws no figure of it. The generator draws model figures only from such a record, and refuses one that no record carries.</p>
-</section>
-
 <section id="built">
-  <h2><span class="n">8</span>How it was built</h2>
+  <h2><span class="n">7</span>How it was built</h2>
   <p class="prose lede">Every figure on this page is computed from a verified data panel by a script in the repository, and every change to that script went through a written directive and a reviewed pull request.</p>
   <ol class="steps" aria-label="The steps every change goes through"><li><b>Directive</b><span>Work starts from a directive: an issue with a goal, acceptance criteria and the files to read. <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md'>Rule</a></span></li><li><b>Session</b><span>One session works one directive on its own branch, test first. <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md'>Rule</a></span></li><li><b>Pull request</b><span>The pull request is the report: what changed, the evidence, what was checked and what was not. <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md'>Rule</a></span></li><li><b>Review</b><span>A separate reviewer checks every acceptance criterion against the tree, and judgement calls go to Eleonora. <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md'>Rule</a></span></li><li><b>Publish</b><span>A record is published only while nothing that computes a figure, declares a source or supplies the panel has changed since it was scored. <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/publish-rule.md'>Rule</a></span></li></ol>
   <h3 style="margin:34px 0 8px;font-size:1.05rem">The guards</h3>
@@ -367,7 +361,7 @@ h3.sub{margin:40px 0 4px;font-size:1.05rem}
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>65a5b4bf64752b689c1cb2ba5e1745d20ce94e64</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>362a8ad1f7e493e8b8c4511922e784ba1b508f63</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>Chapters 5 and 6 are drawn only from the six run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
