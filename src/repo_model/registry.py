@@ -200,11 +200,21 @@ def max_release_lag_days(
     *,
     decision_time: time,
 ) -> int:
-    """Return the conservative calendar-day purge for selected feature sources.
+    """Return the conservative calendar-day release lag of selected feature sources.
 
     ``sources`` may be an iterable of source IDs for lag-based sources. A
     mapping of source ID to rows is required for ``snapshot_retrieved_at`` so
     every row can be checked for an explicit ``available_at`` value.
+
+    The name is historical. This number used to size the purge gap of
+    ``splits.rolling_origin``; the as-of rule (`docs/decisions/information-set.md`)
+    replaced the purge, and the splitter was removed after the re-score
+    (directive 05, #50). What still calls this is the panel build,
+    ``data._priceable_columns``, which builds a column exactly when this
+    returns and refuses it exactly when this raises `RegistryContractError`.
+    So the refusals are the contract here, and the returned number is only
+    the evidence that the declaration priced. The name is kept because
+    the panel build, the CLI help and the registry tests use it.
     """
 
     cutoff_time = _parse_decision_time(decision_time)

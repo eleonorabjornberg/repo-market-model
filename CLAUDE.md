@@ -26,6 +26,11 @@ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
 - **Publishing a record** follows `docs/decisions/publish-rule.md`. A publish is a PR that adds
   the records and regenerates the pages rendered from them (`python scripts/emit_results.py`)
   in the same commit. Those generated blocks are never hand-edited.
+- **`docs/status.json`** is regenerated in the PR that changes its inputs (`PLAN.md`, the
+  top-level records in `docs/runs/`, `metadata/events.json`, `pyproject.toml`), in a commit
+  after the one that changes them: it is stamped with that commit. Run
+  `python3 scripts/emit_status.py` and commit the file; CI runs `--check`. It reads git
+  history, so in a shallow clone run `git fetch --unshallow` first.
 
 ## The science rules
 

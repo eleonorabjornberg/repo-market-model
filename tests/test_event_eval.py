@@ -4,8 +4,8 @@ This module produces the **knowledge holdout** of `AGENT_CONTRACT.md`, "Two
 holdout roles" -- crises stripped from training entirely, scored once per
 window, reported separately and never averaged into the main table. The
 **scoring holdout**, which keeps crisis dates out of the headline metric but
-lets them train once they are past, is `repo_model.splits.rolling_origin` and
-is tested in `tests/test_splits.py`.
+lets them train once they are past, is produced by the backtests in
+`repo_model.baseline` and tested in `tests/test_baseline.py`.
 
 The knowledge holdout needs its own evaluator because the rolling-origin window
 expands: by the time a late fold scores one stress episode it has trained on

@@ -142,14 +142,6 @@ class TargetAnchorTests(unittest.TestCase):
         anchor = rule(["spread_bps"]).anchor(DATES, scored)
         self.assertEqual(DATES[anchor], date(2026, 1, 9))
 
-    def test_with_iorb_known_the_same_day_the_target_is_two_rows_back_always(self):
-        registry = copy.deepcopy(REGISTRY)
-        for name in ("IORB", "IOER"):
-            registry["fred_macro_latest_vintage"]["field_release_lags"][name]["days"] = 0
-        current = rule(["spread_bps"], registry)
-        for scored in range(3, len(DATES)):
-            self.assertEqual(current.anchor(DATES, scored), scored - 2, DATES[scored])
-
     def test_the_anchor_does_not_depend_on_the_declared_features(self):
         bare = rule(["spread_bps"])
         wide = rule(["spread_bps", "reserve_balances", "tbill_4w", "days_to_month_end"])

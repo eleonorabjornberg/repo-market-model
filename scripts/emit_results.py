@@ -736,8 +736,9 @@ def status_line():
         for item in emit_status.alongside(phases, number))
     lines.append("**Where this is: phase %d of %d — %s (%s)%s.** Its exit criterion is "
                  "%s. Next is phase %d, %s. The machine-readable version is "
-                 "[`docs/status.json`](docs/status.json), regenerated in CI from the "
-                 "same headings rather than edited."
+                 "[`docs/status.json`](docs/status.json), regenerated from the same "
+                 "headings in the pull request that changes them, and checked in CI, "
+                 "rather than edited."
                  % (phase["number"], len(phases) - 1, phase["name"], state, still_open,
                     emit_status.require_exit(phase, "the current phase"),
                     following["number"], following["name"]))

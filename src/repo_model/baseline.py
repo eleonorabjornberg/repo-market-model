@@ -688,7 +688,7 @@ class Forecast:
 class ScoredFold:
     """One origin of the rolling backtest, as dates rather than as indices.
 
-    The indices `rolling_origin` yields are positions in a list that only the
+    The indices a backtest walks are positions in a list that only the
     run holds. A published report has to say *when* the training frame ended
     and *which* day was scored, in the panel's own vocabulary, or a reader
     cannot check the gap against the calendar.
@@ -840,7 +840,7 @@ class FittedPersistence:
 
     `cutoff` is the last date the training frame was allowed to contain. It is
     carried because a fitted model that cannot say what it was allowed to see
-    cannot be audited for leakage, and because `event_eval` and `rolling_origin`
+    cannot be audited for leakage, and because `event_eval` and the backtests
     both hand out training sets whose end date is the entire point. Predicting
     from a `feature_row` dated at or before the cutoff is not automatically
     wrong -- an in-sample diagnostic is a legitimate thing to want -- so it is
@@ -1031,7 +1031,7 @@ def fit(
             are the one-step differences within this frame and nothing else.
         cutoff: the last date the model was allowed to see. Defaults to the
             frame's own last date. Passed explicitly by callers that were handed
-            a cutoff -- `rolling_origin` and `event_eval` both are -- so the
+            a cutoff -- the backtests and `event_eval` both are -- so the
             frame can be checked against it rather than trusted.
         minimum_history: the shortest frame that may produce a fitted law. A
             residual quantile from a handful of rows is not a residual law.
@@ -1734,8 +1734,7 @@ def fit_arx(
             count as persistence's `n - 1` residuals.
         regressors: the ordered exogenous regressor names, read from each
             origin row's `values`. **Required, with no default**, for the reason
-            `rolling_origin` refuses a default `purge` and `max_release_lag_days`
-            refuses a default `decision_time`: a default here would be a silent
+            `max_release_lag_days` refuses a default `decision_time`: a default here would be a silent
             assumption about which columns a model is entitled to, and nothing in
             this repository declares that. Naming them at the call site keeps the
             assumption visible and keeps the fitted object able to report it.
@@ -6185,7 +6184,7 @@ def calendar_climatology_exceedance(
 # **Which holdout this is, and why it matters here more than usual.** The
 # contract's "Two holdout roles" separates the scoring holdout -- crisis dates
 # excluded from the headline metric but available for training once past,
-# produced by `rolling_origin` -- from the knowledge holdout, produced by
+# produced by the backtests here -- from the knowledge holdout, produced by
 # `event_eval` and "reported separately and never averaged into the main
 # table". This path is the first, and it is the only one an aggregate belongs
 # on. The same Metrics section: "Event windows get the exceedance curve and
