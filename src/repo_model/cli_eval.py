@@ -31,8 +31,10 @@ from .baseline import (
     ExceedancePredictor,
     FittedForecastModel,
     ModelFitter,
+    EVENT_LEAD_DAYS,
     add_backtest_splits,
     add_comparison_splits,
+    add_exceedance_event_lists,
     add_exceedance_splits,
     arx_exceedance,
     backtest_document,
@@ -1609,6 +1611,18 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
 
     declaration = load_stress_thresholds(args.thresholds)
     taus = tuple(float(tau) for tau in declaration["taus_bp"])
+    # Refused before any fit, as `add_exceedance_event_lists` would refuse
+    # them after: a run is not spent to learn its flags were wrong.
+    for tau in args.event_list or ():
+        if tau not in taus:
+            raise SplitError(
+                f"--event-list {tau:g} is not a declared threshold; the family "
+                f"is {', '.join(f'{t:g}' for t in taus)}"
+            )
+    if args.event_list and args.event_lead_days < 0:
+        raise ValueError(
+            f"--event-lead-days must be zero or more, got {args.event_lead_days}"
+        )
 
     report = rolling_exceedance_backtest(
         rows,
@@ -1642,6 +1656,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     # The pressure-probability benchmarks (`--benchmark`), each scored on the
     # same panel under its own fixed declaration and guards, then paired with
     # the model day by day (`baseline.benchmark_comparison_document`).
+    bench_reports = []
     if benchmark_runs:
         document["benchmarks"] = {}
         for name, features, bench_predictor in benchmark_runs:
@@ -1664,6 +1679,18 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                 rows=rows,
                 declaration=split_declaration,
             )
+            bench_reports.append(bench)
+    # A threshold reported event by event (`--event-list`, #130): its pooled
+    # figures, here and in the paired rows, give way to the event list. Absent
+    # the flag the record is byte-for-byte what it was.
+    if args.event_list:
+        add_exceedance_event_lists(
+            document,
+            report,
+            bench_reports,
+            args.event_list,
+            lead_days=args.event_lead_days,
+        )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1688,6 +1715,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                         else round(metric.brier_skill_score, 4)
                     )
                     for metric in report.metrics
+                    if metric.tau_bp not in (args.event_list or ())
                 },
                 "features": sorted(report.features),
                 "refit_every": report.refit_every,
@@ -2104,6 +2132,27 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             "declaration; the record carries the paired Brier difference per "
             "threshold with a stationary-bootstrap interval"
         ),
+    )
+    exceedance.add_argument(
+        "--event-list",
+        action="append",
+        type=float,
+        default=None,
+        metavar="TAU",
+        help=(
+            "report this declared threshold (bp) event by event instead of "
+            "pooled, repeatable: the record lists each positive scored day with "
+            "every model's probabilities over the days before it, and carries "
+            "no skill score, interval or split there (#130). Off by default"
+        ),
+    )
+    exceedance.add_argument(
+        "--event-lead-days",
+        type=int,
+        default=EVENT_LEAD_DAYS,
+        metavar="N",
+        help="scored days before each event the event list shows; "
+        f"default {EVENT_LEAD_DAYS}",
     )
     exceedance.add_argument("--panel", type=Path, required=True)
     exceedance.add_argument("--thresholds", type=Path, required=True)

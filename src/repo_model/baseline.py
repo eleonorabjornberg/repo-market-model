@@ -7225,6 +7225,127 @@ def _tau_key(tau: float) -> str:
     return f"{float(tau):g}"
 
 
+#: How many scored days before an event its event-list entry shows, when the
+#: caller does not say. Five, the far end of the headline's 1-5 business-day
+#: horizon; a draft for `docs/decisions/pressure-probability.md` (#130), not a
+#: rule until Eleonora merges it.
+EVENT_LEAD_DAYS = 5
+
+
+def exceedance_event_list(
+    report: ExceedanceBacktestReport,
+    benchmarks: Sequence[ExceedanceBacktestReport],
+    position: int,
+    *,
+    lead_days: int = EVENT_LEAD_DAYS,
+) -> List[dict]:
+    """Every positive scored day at one threshold, with each model's path to it.
+
+    The threshold at `position` of `report.taus` is one with too few positives
+    for a pooled claim (#130). Each scored day whose outcome is positive there
+    is one event: its date, the realised spread, and, for that day and the
+    `lead_days` scored days before it, the probability each model gave --
+    the scored model, the climatology reference its skill score is a ratio
+    against, and every benchmark. A path is cut short at the first scored day.
+
+    Every probability is read off the reports as scored, and the benchmarks
+    must be on the report's own grid, as `benchmark_comparison_document`
+    requires (`SplitError` otherwise). Nothing is aggregated.
+    """
+
+    if lead_days < 0:
+        raise ValueError(f"lead_days must be zero or more, got {lead_days}")
+    columns = {
+        report.model_name: report.at_tau(position)[0],
+        "reference_climatology": report.at_tau(position)[1],
+    }
+    for bench in benchmarks:
+        if tuple(bench.scored_dates) != tuple(report.scored_dates):
+            raise SplitError(
+                f"the benchmark {bench.model_name!r} was not scored on the "
+                f"model's grid; an event list reads one grid"
+            )
+        if bench.model_name in columns:
+            raise SplitError(f"two models named {bench.model_name!r} in one event list")
+        columns[bench.model_name] = bench.at_tau(position)[0]
+    outcomes = report.at_tau(position)[2]
+    events: List[dict] = []
+    for index, outcome in enumerate(outcomes):
+        if not outcome:
+            continue
+        start = max(0, index - lead_days)
+        events.append(
+            {
+                "date": report.scored_dates[index].isoformat(),
+                "realized_bps": report.realized_bps[index],
+                "forecasts": [
+                    {
+                        "scored_date": report.scored_dates[step].isoformat(),
+                        "feature_date": report.folds[step].feature_date.isoformat(),
+                        "days_before": index - step,
+                        "probability": {
+                            name: column[step]
+                            for name, column in sorted(columns.items())
+                        },
+                    }
+                    for step in range(start, index + 1)
+                ],
+            }
+        )
+    return events
+
+
+def add_exceedance_event_lists(
+    document: dict,
+    report: ExceedanceBacktestReport,
+    benchmarks: Sequence[ExceedanceBacktestReport],
+    taus_bp: Sequence[float],
+    *,
+    lead_days: int = EVENT_LEAD_DAYS,
+) -> dict:
+    """Report each of `taus_bp` event by event instead of pooled (#130).
+
+    For each listed threshold, `metrics.by_tau.<tau>` keeps the threshold, the
+    scored days and the positive count, and carries `events`
+    (`exceedance_event_list`) in place of every pooled figure: no skill score,
+    no bootstrap interval, no split, no decomposition. The benchmarks' paired
+    rows at that threshold are dropped for the same reason; their
+    probabilities are in the events. The declaration records the listed
+    thresholds and the lead. A threshold outside the run's declared family is
+    refused (`SplitError`): the family is `metadata/stress_thresholds.json`'s.
+    """
+
+    listed = sorted({float(tau) for tau in taus_bp})
+    for tau in listed:
+        if tau not in report.taus:
+            raise SplitError(
+                f"--event-list {tau:g} is not a declared threshold; the family "
+                f"is {', '.join(f'{t:g}' for t in report.taus)}"
+            )
+    if lead_days < 0:
+        raise ValueError(f"lead_days must be zero or more, got {lead_days}")
+    for tau in listed:
+        position = report.taus.index(tau)
+        key = _tau_key(tau)
+        pooled = document["metrics"]["by_tau"][key]
+        document["metrics"]["by_tau"][key] = {
+            "tau_bp": pooled["tau_bp"],
+            "scored_days": pooled["scored_days"],
+            "positives": pooled["positives"],
+            "reporting": "event_list",
+            "events": exceedance_event_list(
+                report, benchmarks, position, lead_days=lead_days
+            ),
+        }
+        for entry in document.get("benchmarks", {}).values():
+            entry["by_tau"].pop(key, None)
+    document["declaration"]["event_list"] = {
+        "taus_bp": listed,
+        "lead_days": lead_days,
+    }
+    return document
+
+
 # --------------------------------------------------------------------------
 # Directive 03: splits by regime and pressure-day type, and the paired
 # pressure-probability benchmarks
