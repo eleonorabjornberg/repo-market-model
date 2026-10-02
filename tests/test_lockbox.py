@@ -262,6 +262,11 @@ NOT_ENTRY_POINTS = {
         "training frame (#114); scores nothing, the backtest that calls the "
         "predictor guards the scored days"
     ),
+    "ml._dynamic_rows": (
+        "builds the dynamic pressure models' design rows and anchors inside a "
+        "fit's own as-of frames (#137); scores nothing, the backtest that calls "
+        "the predictor guards the scored days"
+    ),
     "ml._held_out_mask": (
         "lists the training values before a calibration block that a held-out "
         "row could not yet see, inside a fit's own training frame (#78); "
