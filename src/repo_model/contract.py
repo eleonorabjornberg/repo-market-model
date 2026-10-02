@@ -56,6 +56,7 @@ __all__ = [
     "FEATURE_SOURCES",
     "COMPOSED_FEATURES",
     "ON_RRP_DEPLETION_BREAK_BN",
+    "SETTLEMENT_DAY_MONTH_END_DAYS",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
@@ -366,6 +367,14 @@ DERIVED_FEATURES = MappingProxyType(
 #: $50bn and $200bn are reported beside it and select nothing.
 ON_RRP_DEPLETION_BREAK_BN = 100.0
 
+#: The month-end clause of `settlement_day` (#97): a scored day within this
+#: many calendar days of the month's last day is a settlement day. Fixed in
+#: advance by the directive from finding #96 (points 4-5: about half of the
+#: days above +5 bp in both pressure eras fall on settlement-calendar dates),
+#: with the flag's other clauses, from existing panel columns only. It is never
+#: tuned on this repository's data.
+SETTLEMENT_DAY_MONTH_END_DAYS = 2
+
 # Features composed at the decision instant from inputs each read per field
 # (#88). Unlike `DERIVED_FEATURES`, which are read at one row where every
 # constituent is observable, each input here is read on its own declaration
@@ -379,6 +388,21 @@ COMPOSED_FEATURES = MappingProxyType(
         "on_rrp_depleted": ("on_rrp",),
         # reserve_balances * on_rrp_depleted.
         "reserves_when_depleted": ("reserve_balances", "on_rrp"),
+        # The settlement calendar of the scored day (#97, from finding #96):
+        # quarter_end OR tax_date OR days_to_month_end <=
+        # SETTLEMENT_DAY_MONTH_END_DAYS OR treasury_settlement_coupons > 0.
+        # Three calendar columns and one scheduled input, all known before
+        # the decision instant (`docs/decisions/calendar-columns.md`,
+        # `information-set.md`, rule 2).
+        "settlement_day": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+        ),
+        # settlement_day * on_rrp_depleted: a settlement day with the
+        # buffer depleted (#97).
+        "settlement_day_when_depleted": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+            "on_rrp",
+        ),
     }
 )
 

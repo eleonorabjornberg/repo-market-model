@@ -61,6 +61,7 @@ from .contract import (
     DERIVED_FEATURES,
     END_OF_DAY,
     ON_RRP_DEPLETION_BREAK_BN,
+    SETTLEMENT_DAY_MONTH_END_DAYS,
     field_sources_for_features,
 )
 from .data import DailyObservation
@@ -327,12 +328,62 @@ def _reserves_when_depleted(values: Mapping[str, Optional[float]]) -> Optional[f
     return float(reserves) if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
 
 
+def _settlement_day(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """The scored day's settlement calendar (#97); a hole when any input is one.
+
+    `quarter_end OR tax_date OR days_to_month_end <= SETTLEMENT_DAY_MONTH_END_DAYS
+    OR treasury_settlement_coupons > 0`. A coupon settlement not carried is not
+    no settlement.
+    """
+
+    inputs = (
+        values["quarter_end"],
+        values["tax_date"],
+        values["days_to_month_end"],
+        values["treasury_settlement_coupons"],
+    )
+    if any(value is None for value in inputs):
+        return None
+    quarter_end, tax_date, days_to_month_end, coupons = (float(v) for v in inputs)
+    flagged = (
+        quarter_end == 1.0
+        or tax_date == 1.0
+        or days_to_month_end <= SETTLEMENT_DAY_MONTH_END_DAYS
+        or coupons > 0.0
+    )
+    return 1.0 if flagged else 0.0
+
+
+def _settlement_day_when_depleted(
+    values: Mapping[str, Optional[float]],
+) -> Optional[float]:
+    """`settlement_day * 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)` (#97).
+
+    A hole when any input is: an unknown buffer is not a full one.
+    """
+
+    settlement = _settlement_day(
+        {
+            "quarter_end": values["quarter_end"],
+            "tax_date": values["tax_date"],
+            "days_to_month_end": values["days_to_month_end"],
+            "treasury_settlement_coupons": values["treasury_settlement_coupons"],
+        }
+    )
+    on_rrp = values["on_rrp"]
+    if settlement is None or on_rrp is None:
+        return None
+    return settlement if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
 #: How each `contract.COMPOSED_FEATURES` entry is formed from its inputs' reads
-#: (#88). `tests/test_contract.py` parses each function to check it reads
+#: (#88, #97). `tests/test_contract.py` parses each function to check it reads
 #: exactly the inputs the contract declares.
 COMPOSERS = {
     "on_rrp_depleted": _on_rrp_depleted,
     "reserves_when_depleted": _reserves_when_depleted,
+    "settlement_day": _settlement_day,
+    "settlement_day_when_depleted": _settlement_day_when_depleted,
 }
 
 
