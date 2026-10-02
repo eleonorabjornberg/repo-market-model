@@ -223,6 +223,40 @@ def _refit_knots(rows, end=None):
     return predictor.calls
 
 
+class CountingDays:
+    """The scored days `scarcity.pressure_days_by_state` returned, as a count.
+
+    It fits nothing, so what is counted is the days it paired with a state:
+    zero when the lockbox refused it, which it does before reading any.
+    """
+
+    def __init__(self):
+        self.calls = 0
+        COUNTERS.append(self)
+
+
+def _scarcity_pressure_days(rows, end=None):
+    from repo_model.scarcity import measurement_declaration, pressure_days_by_state
+
+    counter = CountingDays()
+    with measurement_declaration():
+        features = ("spread_bps", "reserve_scarcity_state")
+        registry = record_date_registry(0, features)
+        rows = [
+            DailyObservation(row.date, {**row.values, "reserve_scarcity_state": 0.0})
+            for row in rows
+        ]
+        scored = pressure_days_by_state(
+            rows,
+            registry=registry,
+            decision_time=DECISION_TIME,
+            minimum_history=MINIMUM_HISTORY,
+            end=end,
+        )
+    counter.calls = len(scored)
+    return counter.calls
+
+
 #: Every library entry point that scores days, by its qualified name.
 LIBRARY_ENTRY_POINTS = {
     "baseline.rolling_persistence_backtest": _persistence,
@@ -230,6 +264,7 @@ LIBRARY_ENTRY_POINTS = {
     "baseline.paired_model_comparison": _paired,
     "event_eval.evaluate_event_window": _event_window,
     "tail_diagnostics.refit_knots": _refit_knots,
+    "scarcity.pressure_days_by_state": _scarcity_pressure_days,
 }
 
 #: Every tracked script function that walks the fold grid to score, as
@@ -257,6 +292,16 @@ NOT_ENTRY_POINTS = {
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
     "ml._held_out_read": "a calibration read inside a fit's own training frame",
+    "ml._pressure_pairs": (
+        "builds the direct pressure models' training pairs inside a fit's own "
+        "training frame (#114); scores nothing, the backtest that calls the "
+        "predictor guards the scored days"
+    ),
+    "ml._dynamic_rows": (
+        "builds the dynamic pressure models' design rows and anchors inside a "
+        "fit's own as-of frames (#137); scores nothing, the backtest that calls "
+        "the predictor guards the scored days"
+    ),
     "ml._held_out_mask": (
         "lists the training values before a calibration block that a held-out "
         "row could not yet see, inside a fit's own training frame (#78); "
@@ -682,11 +727,12 @@ class EnumerationTests(unittest.TestCase):
 
         import inspect
 
-        from repo_model import baseline, event_eval, tail_diagnostics
+        from repo_model import baseline, event_eval, scarcity, tail_diagnostics
 
         modules = {
             "baseline": baseline,
             "event_eval": event_eval,
+            "scarcity": scarcity,
             "tail_diagnostics": tail_diagnostics,
         }
         for name in LIBRARY_ENTRY_POINTS:
