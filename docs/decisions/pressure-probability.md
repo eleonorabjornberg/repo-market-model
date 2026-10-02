@@ -51,6 +51,27 @@ This governs the headline labels. `metadata/stress_thresholds.json` still declar
 `secondary_rule`, a leftover of the pre-pivot contract. Nothing computes a label from it. Directive
 [#91](https://github.com/eleonorabjornberg/repo-market-model/issues/91) retires it.
 
+## Headline thresholds, and thresholds reported event by event
+
+**Decided by Eleonora, 2 October 2026 ([#130](https://github.com/eleonorabjornberg/repo-market-model/issues/130),
+PR [#152](https://github.com/eleonorabjornberg/repo-market-model/pull/152)).**
+
+- **The headline pressure claims are at +5 and +10 bp.**
+- **At +20 and +50 bp a record carries no pooled skill claim and no bootstrap interval.** Those thresholds have too
+  few positive days for a pooled figure to be validated, and at +50 bp the forecasts show no discrimination. The
+  record carries an event list instead: for each day above the threshold, its date, the realised spread, and each
+  model's forecast probabilities over the five scored business days before it and on the day. "Each model" is the
+  scored candidate, the climatology reference and every benchmark the record pairs it with. Every day above the
+  threshold is its own entry; days are not merged into episodes. At a listed threshold the record drops every pooled
+  figure: the skill score and its interval, the Brier score, its decomposition, the reliability curve, average
+  precision and the paired benchmark rows.
+- **Every threshold's positive count is stated in the record**, as `positives`, so a reader sees what each figure
+  rests on. The count lives in the record, never in an acceptance criterion or in page text.
+- **The threshold-weighted CRPS keeps integrating over every declared threshold, +20 and +50 bp included.**
+
+`exceedance-backtest --event-list 20 --event-list 50` writes such a record (`--event-lead-days` sets the five). The
+records published before this rule are not edited in place: their +20 and +50 bp rows change at the next publish.
+
 ## Why
 
 In scouting, the persistence-logistic benchmark beat every gradient-boosted classifier, and the gradient-boosted model
