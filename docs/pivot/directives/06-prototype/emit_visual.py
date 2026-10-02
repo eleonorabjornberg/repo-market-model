@@ -18,7 +18,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-EXPECTED_SHA = "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+EXPECTED_SHA = "9f7d6881a2181b35394daf8097a10e8ad3567250c75383072d11ecb78132e30a"
 PRESSURE_BP = 5
 CLIP_BP = 45  # top of the full-period scale; days above it are drawn off the frame
 TYPES = ["Quarter-end", "Month-end", "Tax window", "Coupon settlement", "Other"]

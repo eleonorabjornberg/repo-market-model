@@ -6741,6 +6741,21 @@ class OnRrpHolidayCarryTests(unittest.TestCase):
 
     **The fixture.** Weekdays 12 to 30 January 2026. `sofr` prints on every
     one. `on_rrp` prints on every one except Monday 19 January, the holiday.
+
+    Mutation record, 2 October 2026, in a disposable copy built from
+    `git ls-files`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class
+    alone; unmutated control green before and after. Test written first: the
+    gap test failed with `AssertionError: DataContractError not raised` before
+    the refusal existed.
+
+    * The refusal (`src/repo_model/data.py`, `_carry_forward_values`): `if
+      column in CARRY_FORWARD_REFUSED_BEYOND and ref_date not in own:` mutated
+      to `if False and ...`. Kills `test_a_gap_longer_than_the_bound_raises`
+      alone: `AssertionError: DataContractError not raised`.
+    * The carry: `"on_rrp": ON_RRP_MAX_GAP_DAYS,` deleted from
+      `CARRY_FORWARD_COLUMNS`. Kills all four: the holiday test with
+      `AssertionError: None != 104.0`, the bound test with `KeyError:
+      'on_rrp'`.
     """
 
     SOFR_SHA = "e" * 64
