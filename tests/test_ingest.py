@@ -4204,7 +4204,36 @@ class AvailableAtDerivationTests(unittest.TestCase):
             byte_count=len(payload),
         )
 
+    def ddp_snapshot(self, ref_date, retrieved):
+        """One H.15 EFFR print, in the DDP package's SDMX shape (#129)."""
+
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?><m:MessageGroup xmlns:m="m" '
+            'xmlns:frb="f" xmlns:kf="k"><frb:DataSet id="H15">'
+            '<kf:Series SERIES_NAME="RIFSPFF_N.B">'
+            f'<frb:Obs OBS_STATUS="A" OBS_VALUE="4.33" TIME_PERIOD="{ref_date}" />'
+            "</kf:Series></frb:DataSet></m:MessageGroup>"
+        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("H15_data.xml", xml)
+        payload = buffer.getvalue()
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "h15.zip"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=ingest.FRB_DDP_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.FRB_DDP_OUTPUT_URL}?rel=H15&filetype=zip",
+            byte_count=len(payload),
+        )
+
     def source_snapshot(self, source_id, ref_date, retrieved):
+        if source_id == ingest.FRB_DDP_SOURCE_ID:
+            return self.ddp_snapshot(ref_date, retrieved)
         if source_id == FR2004_SOURCE_ID:
             return self.fr2004_snapshot(ref_date, retrieved)
         if source_id == ingest.NYFED_ON_RRP_SOURCE_ID:
@@ -4269,7 +4298,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         self.assertEqual(
             self.ref_date_sources(),
-            ["nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_on_rrp", "nyfed_sofr", "nyfed_tgcr"],
+            ["frb_ddp", "nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_on_rrp", "nyfed_sofr", "nyfed_tgcr"],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
