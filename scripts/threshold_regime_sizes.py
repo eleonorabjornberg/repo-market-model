@@ -19,8 +19,16 @@ no forecast is made from it, and decisive if the forecasts are.
 A full walk is one fit per origin on an expanding frame, and the fit's
 threshold search grows with the frame -- about an hour on the frozen panel.
 `--every N` fits one origin in N (earliest first, always including the last) for
-a quick look; the summary says which it did. Reads the gitignored frozen panel,
-so it is not a test. Nothing is published by running it.
+a quick look; the summary says which it did.
+
+**The fold walk stops at `--end`.** `_as_of_folds` checks every scored day
+against the lockbox (`docs/decisions/lockbox.md`, `repo_model.lockbox`) and
+refuses one in a locked tier with `LookAheadError`, before any fit, and the
+frozen panel runs into the near-blind tier. So a run on it passes `--end`, the
+last scored day, before 2026-01-01, as the CLI's scoring commands do.
+
+Reads the gitignored frozen panel, so it is not a test. Nothing is published by
+running it.
 
 Usage:
 
@@ -29,7 +37,7 @@ Usage:
         [--registry metadata/sources.json] [--decision-time 16:00] \
         [--minimum-history 61] [--regime-variable sofr_volume] \
         [--feature spread_bps --feature sofr_volume ...] \
-        [--every 1] [--csv OUT.csv] [--json OUT.json]
+        [--every 1] --end 2025-12-31 [--csv OUT.csv] [--json OUT.json]
 
 The defaults are the declaration of the unpublished `sofr_volume` threshold run.
 Stdlib only.
@@ -42,7 +50,7 @@ import csv
 import json
 import statistics
 import sys
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 
 from repo_model.asof import InformationRule
@@ -67,6 +75,14 @@ def main(argv=None):
     parser.add_argument("--regime-variable", default="sofr_volume")
     parser.add_argument("--feature", action="append")
     parser.add_argument("--every", type=int, default=1)
+    parser.add_argument(
+        "--end",
+        type=date.fromisoformat,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="the last scored day of the fold walk; before 2026-01-01 on the "
+        "frozen panel, whose later days are locked",
+    )
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--json", type=Path)
     args = parser.parse_args(argv)
@@ -86,7 +102,14 @@ def main(argv=None):
         decision_time=time.fromisoformat(args.decision_time),
     )
     folds = list(
-        _as_of_folds(rows, rule, minimum_history=args.minimum_history, refit_every=1)
+        _as_of_folds(
+            rows,
+            rule,
+            minimum_history=args.minimum_history,
+            refit_every=1,
+            entry="scripts/threshold_regime_sizes.py",
+            end=args.end,
+        )
     )
     chosen = [i for i in range(len(folds)) if i % args.every == 0]
     if chosen[-1] != len(folds) - 1:
@@ -123,6 +146,7 @@ def main(argv=None):
         "regime_variable": regime,
         "information_rule": "as_of",
         "minimum_history": args.minimum_history,
+        "end": None if args.end is None else args.end.isoformat(),
         "origins": len(folds),
         "fitted": len(records),
         "every": args.every,

@@ -217,6 +217,7 @@ from repo_model.data import (
 )
 from repo_model.event_eval import load_event_windows
 from repo_model.splits import LookAheadError
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 
 REPO_ROOT = Path(__file__).parents[1]

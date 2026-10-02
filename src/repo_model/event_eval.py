@@ -154,6 +154,7 @@ from .contract import (
     validate_event_windows_document,
 )
 from .data import DailyObservation
+from .lockbox import require_unlocked
 from .splits import (
     LookAheadError,
     SplitError,
@@ -504,7 +505,9 @@ def evaluate_event_window(
     Raises:
         SplitError: malformed panel, window, taus or predictions, or a window
             with no observable label before it.
-        LookAheadError: a read is newer than its decision instant, the
+        LookAheadError: a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), checked
+            before any read or fit; or a read is newer than its decision instant, the
             training set reaches past the window's first anchor or into the
             window, the scored rows are not exactly the declared window, or
             the predictor read a column outside `features`, or a positional
@@ -545,6 +548,10 @@ def evaluate_event_window(
             f"the window opens on the panel's first row, {ordered_dates[0]}, so "
             f"there is no decision instant before it to train at"
         )
+
+    require_unlocked(
+        (ordered_dates[i] for i in scored_index), where="evaluate_event_window"
+    )
 
     # One information set per scored day, each checked both ways. The training
     # frame is the one at the window's first decision instant: every label
