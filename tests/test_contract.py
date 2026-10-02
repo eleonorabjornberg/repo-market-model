@@ -1693,6 +1693,28 @@ def on_rrp_from_operation_results():
     )
 
 
+def srf_from_operation_results():
+    """`srf_take_up` read from the Desk's operation results, for one test (#127).
+
+    `contract.SRF_OPERATION_RESULTS_FIELDS` is declared and off: no published
+    `FEATURE_FIELDS` entry names it, so the published panel does not move. The
+    tests of the new source switch it on for their own duration, as
+    `on_rrp_from_operation_results` does for #45's.
+    """
+
+    fields = contract.SRF_OPERATION_RESULTS_FIELDS
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "srf_take_up": fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                "srf_take_up": tuple(sorted({source for source, _field in fields})),
+            }
+        ),
+    )
+
+
 def _import_test_modules_naming(mixin):
     """Import every test module whose source names `mixin`, and return their names.
 
