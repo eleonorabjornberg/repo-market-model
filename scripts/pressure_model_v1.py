@@ -232,9 +232,11 @@ def _interval(paired):
 
 
 def _split_cell(entry):
+    if "mean" not in entry:
+        return "– (n=0)"
     interval = entry.get("interval")
     if not interval:
-        return f"{entry['mean']:+.4f} (n={entry['count']})"
+        return f"{entry['mean']:+.4f} (n={entry['count']}, no interval)"
     return f"{entry['mean']:+.4f} [{interval['lower']:+.4f}, {interval['upper']:+.4f}]"
 
 
