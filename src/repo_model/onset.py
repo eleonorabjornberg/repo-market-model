@@ -22,11 +22,9 @@ distribution comparison, a view of the days that matter:
 - **Paired evidence**: the stationary bootstrap, as everywhere, and a
   Diebold-Mariano test with a Newey-West variance on the all-days group only.
 
-Every spread compared with a threshold here is read in whole basis points
-(`whole_bp`). Both rates are quoted to the basis point, and the event is
-strictly greater (`docs/decisions/pressure-probability.md`), so a day that
-sits on +5 bp is not above it (#155). The pooled figures elsewhere in a record
-use the labels its scoring path produced.
+Every spread compared with a threshold here goes through `data.exceeds_bp`:
+whole basis points, strictly greater, so a day that sits on +5 bp is not above
+it (#155). A jump is the difference of two whole-bp spreads (`whole_bp`).
 
 Nothing here reads a day the forecast could not have seen: a jump's anchor is
 checked against the forecast's decision instant (`as_of_jump`, which raises
@@ -42,7 +40,7 @@ from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from .asof import InformationRule
-from .data import DailyObservation
+from .data import DailyObservation, exceeds_bp
 from .metrics import stationary_bootstrap_interval
 from .splits import LookAheadError, SplitError
 
@@ -111,16 +109,13 @@ def onset_flags(rows: Sequence[DailyObservation]) -> List[bool]:
     it. A row with fewer panel days before it than that is never an onset.
     """
 
-    spreads = [whole_bp(row.spread_bps) for row in rows]
+    above = [exceeds_bp(row.spread_bps, ONSET_THRESHOLD_BP) for row in rows]
     flags: List[bool] = []
-    for index, spread in enumerate(spreads):
+    for index, today in enumerate(above):
         flags.append(
             index >= ONSET_CALM_DAYS
-            and spread > ONSET_THRESHOLD_BP
-            and all(
-                spreads[index - back] <= ONSET_THRESHOLD_BP
-                for back in range(1, ONSET_CALM_DAYS + 1)
-            )
+            and today
+            and not any(above[index - back] for back in range(1, ONSET_CALM_DAYS + 1))
         )
     return flags
 
@@ -289,7 +284,7 @@ class LeapTargets:
             for index in range(len(rows))
         ]
         self.pressure_leap = [
-            self.leap[index] and whole_bp(rows[index].spread_bps) > 0
+            self.leap[index] and exceeds_bp(rows[index].spread_bps, 0.0)
             for index in range(len(rows))
         ]
 
@@ -723,7 +718,7 @@ def exceedance_onset_document(
     base_seed = _exceedance_seed(report, panel_sha256)
     document: dict = {
         "definitions": {
-            "labels": "whole basis points, strictly greater (#155)",
+            "labels": "the report's own: whole basis points, strictly greater (#155)",
             "onset_day": (
                 f"the first day with SOFR - IORB > +{ONSET_THRESHOLD_BP} bp after at "
                 f"least {ONSET_CALM_DAYS} consecutive panel days at or below it"
@@ -740,8 +735,8 @@ def exceedance_onset_document(
     headline = [tau for tau in report.taus if tau in (5.0, 10.0)]
     for tau in headline:
         position = report.taus.index(tau)
-        predicted, reference, _ = report.at_tau(position)
-        outcomes = [1 if whole_bp(value) > tau else 0 for value in report.realized_bps]
+        # The report's own outcomes, on whole basis points (`exceeds_bp`, #155).
+        predicted, reference, outcomes = report.at_tau(position)
         columns: Dict[str, Sequence[float]] = {
             report.model_name: predicted,
             "reference_climatology": reference,
