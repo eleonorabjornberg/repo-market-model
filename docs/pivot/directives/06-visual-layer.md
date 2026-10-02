@@ -16,7 +16,7 @@ directive 03 and plan step 6.
   site repository.
 - **Voice:** one page for every reader, in layers. Each chapter has a one-sentence finding, the chart, a plain
   explanation, and a "Go deeper" fold with definitions, provenance and the notebook cell that reproduces it.
-- **Starting point:** the prototype in [`06-prototype/`](06-prototype), chapters 2 and 3, generated from the verified
+- **Starting point:** the prototype in `06-prototype/` (now `scripts/emit_visual.py` and [`site/template.html`](../../../site/template.html)), chapters 2 and 3, generated from the verified
   panel (digest `4ddc3882…`, money series in USD billions since #41). Its look is under Eleonora's review; treat its
   code as the baseline, not its copy as final.
 
