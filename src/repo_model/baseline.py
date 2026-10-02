@@ -1527,7 +1527,20 @@ def _raw_regressor(
     which a `spread_bps` regime reads without the model declaring it as a
     regressor at all. A message naming the wrong read sends the reader to the
     wrong flag.
+
+    A derived feature other than the target (`contract.DERIVED_FEATURES`) is
+    not a panel column. It is read off `DailyObservation`'s property of the
+    same name, after each constituent column is read here: an absent one
+    raises as any column does, and an unobserved one makes the feature `None`.
+    The as-of rule reads every constituent at one row, so the property never
+    joins two days.
     """
+
+    if name not in row.values and name in DERIVED_FEATURES and name != SPREAD_VARIABLE:
+        for component in DERIVED_FEATURES[name]:
+            if _raw_regressor(row, component, where, role=f"a component of {name!r}") is None:
+                return None
+        return _raw_regressor(DailyObservation(row.date, {name: getattr(row, name)}), name, where)
 
     try:
         raw = row.values[name]

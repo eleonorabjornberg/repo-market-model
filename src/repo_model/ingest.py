@@ -58,6 +58,9 @@ USER_AGENT = (
     "(+https://github.com/eleonorabjornberg/repo-market-model; academic research)"
 )
 NYFED_BASE = "https://markets.newyorkfed.org/api/rates/secured"
+#: The New York Fed's unsecured reference rates. EFFR is fetched from here, as
+#: published, and not from FRED's `DFF` copy of it (directive #98).
+NYFED_UNSECURED_BASE = "https://markets.newyorkfed.org/api/rates/unsecured"
 FRED_GRAPH_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 FRED_MACRO_SERIES = (
     "IORB",       # interest on reserve balances, 2021-present
@@ -277,6 +280,57 @@ def fetch_nyfed_reference_rate(
         artifacts.append(
             _save_snapshot(
                 source_id=f"nyfed_{rate_name}",
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="json",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
+def fetch_nyfed_effr(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the effective federal funds rate, one snapshot per calendar year.
+
+    The same response shape as `fetch_nyfed_reference_rate`'s rate leg, from
+    the unsecured endpoint, so `_nyfed_rows` reads it unchanged: the URL's
+    `effr` path segment names the series and `type=rate` selects the rate and
+    its percentiles. The window is cut at calendar years, as Treasury's bill
+    rates are, so each request is small and each year is its own unmodified
+    snapshot with its own checksum.
+    """
+
+    # Validate before interpolating caller-provided dates into a query.
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("EFFR start date must not follow end date")
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        window_start = max(start_date, date(year, 1, 1))
+        window_end = min(end_date, date(year, 12, 31))
+        query = urlencode(
+            {
+                "startDate": window_start.isoformat(),
+                "endDate": window_end.isoformat(),
+                "type": "rate",
+            }
+        )
+        url = f"{NYFED_UNSECURED_BASE}/effr/search.json?{query}"
+        payload = downloader(url)
+        parsed = json.loads(payload)
+        if not isinstance(parsed, dict) or not isinstance(parsed.get("refRates"), list):
+            raise ValueError("New York Fed response does not contain a refRates list")
+        artifacts.append(
+            _save_snapshot(
+                source_id="nyfed_effr",
                 url=url,
                 payload=payload,
                 output_root=output_root,

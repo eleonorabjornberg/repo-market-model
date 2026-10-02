@@ -4237,7 +4237,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         self.assertEqual(
             self.ref_date_sources(),
-            ["nyfed_bgcr", "nyfed_fr2004", "nyfed_sofr", "nyfed_tgcr"],
+            ["nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_sofr", "nyfed_tgcr"],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
@@ -6955,7 +6955,7 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
         # The bill-rate and FR 2004 fetchers are replaced outright so a trap
         # subtest over them never reaches the network; what they write is
         # `TreasuryBillRateAndFr2004FetchTests`' business, not this class's.
-        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004"):
+        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004", "fetch_nyfed_effr"):
             self.addCleanup(setattr, cli_data, name, getattr(cli_data, name))
             setattr(cli_data, name, lambda **_kwargs: [])
 
