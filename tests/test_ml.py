@@ -10150,13 +10150,12 @@ class PressureModelPublishTests(unittest.TestCase):
         from repo_model import pressure as pressure_module
 
         report = self.tmp / "pressure.json"
-        self.assertEqual(
-            self.module.main([
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
                 "publish", "--panel", str(self.panel), "--horizon", "1",
                 "--report", str(report), "--limitation", "Narrow claim.",
-            ]),
-            0,
-        )
+            ])
+        self.assertEqual(code, 0)
         record = json.loads(report.read_text(encoding="utf-8"))
         declaration = record["declaration"]
         self.assertEqual(declaration["model"], "distributional_gbm+recalibrated")
