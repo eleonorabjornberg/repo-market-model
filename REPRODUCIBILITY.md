@@ -106,13 +106,6 @@ design -- correctly, and it is the first thing a reader who swaps the regressor
 will hit. The other panel columns draw on sources whose snapshots do not ship,
 so the declaration is refused before any fold is built.
 
-**The locked period refuses these three today.** `docs/decisions/lockbox.md` locks every
-day from 2026-01-01, and every scoring command refuses a scored day in a locked tier
-(`metadata/lockbox.json`, `repo_model.lockbox`). The synthetic sample is dated in January
-and February 2026, so `backtest`, `compare` and `exceedance-backtest` on it exit 2 naming
-the near-blind tier, and `--end` cannot help: the sample has no day before the tier.
-`audit` scores nothing and still runs.
-
 The sample panel contains 25 synthetic rows. These commands verify parsing,
 validation, chronological forecasting, and reporting only. Their numerical output
 is not a research result.
