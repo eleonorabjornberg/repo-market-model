@@ -2757,6 +2757,12 @@ class CalibrationMaskingTests(unittest.TestCase):
                         information=self.rule,
                         calibration_masking="held_out_row",
                     )
+        with self.subTest("direct training pairs"):
+            # A direct pair reads only what was public at its own target's
+            # decision, earlier than any held-out row's after it: there is
+            # nothing to mask, so the combination is refused, not ignored.
+            with self.assertRaisesRegex(ValueError, "training_pairs 'direct'"):
+                self.fit(frame, calibration_masking="held_out_row", training_pairs="direct")
 
 
 class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
@@ -9164,6 +9170,210 @@ class EventHoldoutPositionalHistoryTests(unittest.TestCase):
 
         with self.assertRaises(LookAheadError):
             self.evaluate(one_row_late)
+
+
+
+class RecordingQuantile(ConstantQuantile):
+    """`ConstantQuantile` that keeps every design and target it was fitted on.
+
+    `fits` is class-level and in fit order: the full fit's levels first, then
+    each excluding model's. Cleared by the test that patches it in.
+    """
+
+    fits = []
+
+    def fit(self, design, targets):
+        RecordingQuantile.fits.append(
+            ([tuple(row) for row in design], list(targets))
+        )
+        return super().fit(design, targets)
+
+
+class DirectTrainingPairsTests(unittest.TestCase):
+    """`training_pairs="direct"` (#37): horizon-matched training pairs, opt-in.
+
+    **The design.** One-step pairs train each row's own values on the next
+    row's spread, and the model is then served the as-of observation, which is
+    two or more rows before the scored day. Direct pairs train each target row
+    on the observation a forecast of that row reads: the as-of rule's
+    `observation` at the target's own decision instant, its lags and variance
+    ending at the target's anchor. The served and the trained gaps are then
+    the same by construction. One-step stays the default, and a fit that names
+    no pairing declares exactly what it declared before.
+
+    The fixture's registry prices `on_rrp` (`RRPONTSYD`) at four calendar days
+    and every other field at one, so a direct design row reads `on_rrp` off an
+    older row than its spread: what the subtests compare is the rule's own
+    per-field read, not the anchor row.
+
+    Mutation record (#37)
+    ---------------------
+
+    Run on CPython 3.11, numpy 2.4.6, scikit-learn 1.9.1 (`/opt/rmm-venv`),
+    `PYTHONDONTWRITEBYTECODE=1`, `-B`, `REPO_MODEL_REQUIRE_ML=1`, in a
+    disposable copy of the branch; unmutated control green before and after;
+    each mutation confirmed applied by diff and reverted.
+
+    1. **The one-step row served as the direct feature row** -- in
+       `_direct_pairs`, `information.observation(rows, info)` ->
+       `rows[target - 1]`. Killed by part 1, `AssertionError` on the design
+       rows.
+    2. **The as-of guards skipped on a training read** -- the
+       `information.check(dates, info)` call in `_direct_pairs` deleted. Killed
+       by part 2, `AssertionError: LookAheadError not raised`.
+    3. **A pair whose reads reach a held-out block kept** -- the read-row test
+       in `_direct_pairs`' `kept` filter removed. Killed by part 3,
+       `AssertionError` on an excluding model's training dates.
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    FEATURES = ("on_rrp", "sofr_volume", "spread_bps")
+    ROWS = 60
+
+    def setUp(self):
+        require_extra(self)
+        from repo_model.asof import InformationRule
+        from repo_model.contract import sources_for_features
+
+        lag = {
+            "basis": "record_date",
+            "unit": "calendar_days",
+            "days": 1,
+            "available_time": "00:00",
+            "timezone": "America/New_York",
+        }
+        registry = {
+            source: {"release_lag": dict(lag)}
+            for source in sources_for_features(self.FEATURES)
+        }
+        registry["fred_macro_latest_vintage"]["field_release_lags"] = {
+            "RRPONTSYD": {**lag, "days": 4}
+        }
+        self.rule = InformationRule(
+            registry, self.FEATURES, decision_time=time(16, 0)
+        )
+        self.rows = business_day_frame(self.ROWS)
+        self.dates = [row.date for row in self.rows]
+        RecordingQuantile.fits = []
+        patcher = mock.patch.object(
+            ml, "_estimator_class", return_value=RecordingQuantile
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def fit(self, **overrides):
+        options = {
+            "minimum_history": 20,
+            "information": self.rule,
+            "training_pairs": "direct",
+        }
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(self.rows, self.REGRESSORS, **options)
+
+    def has_read(self, index):
+        try:
+            self.rule.information_set(self.dates, index)
+        except SplitError:
+            return False
+        return True
+
+    def expected_pairs(self, targets):
+        design, values = [], []
+        for target in targets:
+            info = self.rule.information_set(self.dates, target)
+            seen = self.rule.observation(self.rows, info)
+            design.append(
+                (float(seen.spread_bps), seen.values["on_rrp"], seen.values["sofr_volume"])
+            )
+            values.append(float(self.rows[target].spread_bps))
+        return design, values
+
+    def test_direct_pairs_train_each_target_on_its_own_as_of_read(self):
+        """Parts 1-4: the read, the guards, the blocks, the declaration."""
+
+        with self.subTest("1. a target's design row is the as-of observation at its decision"):
+            fitted = self.fit()
+            design, targets = RecordingQuantile.fits[0]
+            # The frame's first rows have no read at their decision: no label
+            # yet, or no `on_rrp` four days back. They train no pair.
+            first = next(index for index in range(1, self.ROWS) if self.has_read(index))
+            self.assertGreater(first, 2)
+            self.assertEqual((design, targets), self.expected_pairs(range(first, self.ROWS)))
+            self.assertEqual(len(RecordingQuantile.fits), len(QUANTILE_LEVELS))
+            # And it is not the one-step design: on_rrp is read four days back.
+            RecordingQuantile.fits = []
+            self.fit(training_pairs=None)
+            one_step, _ = RecordingQuantile.fits[0]
+            self.assertNotEqual(design, one_step[-len(design):])
+            self.assertEqual(fitted.training_pairs, "direct")
+
+        with self.subTest("2. every training read passes the as-of guards"):
+            with mock.patch.object(
+                type(self.rule), "check", side_effect=LookAheadError("probe")
+            ):
+                with self.assertRaises(LookAheadError):
+                    self.fit()
+
+        with self.subTest("3. no excluding model reads its own block through a feature"):
+            RecordingQuantile.fits = []
+            fitted = self.fit(calibration="cross_conformal", calibration_folds=3)
+            self.assertEqual(len(fitted.calibration_blocks), 3)
+            for block in fitted.calibration_blocks:
+                inside = [
+                    when
+                    for when in block.training_dates
+                    if block.held_out_start <= when <= block.held_out_end
+                ]
+                self.assertEqual(inside, [], f"block {block.held_out_start}")
+
+        with self.subTest("4. named when set, absent when not"):
+            self.assertEqual(dict(self.fit().model_settings), {"training_pairs": "direct"})
+            self.assertEqual(
+                dict(baseline._model_settings(self.fit())), {"training_pairs": "direct"}
+            )
+            self.assertEqual(dict(self.fit(training_pairs=None).model_settings), {})
+            self.assertIsNone(self.fit(training_pairs=None).training_pairs)
+
+    def test_refusals(self):
+        with self.subTest("an unknown pairing"):
+            with self.assertRaisesRegex(ValueError, r"unknown training_pairs 'onestep'"):
+                self.fit(training_pairs="onestep")
+        with self.subTest("direct pairs with no as-of rule to read them by"):
+            with self.assertRaisesRegex(SplitError, r"training_pairs 'direct'"):
+                self.fit(information=None)
+
+    def test_the_flag_reaches_the_fitter_and_is_refused_elsewhere(self):
+        common = ["--registry", "registry.json", "--decision-time", DECISION_TIME]
+
+        def parse(*argv):
+            command, *rest = argv
+            return cli.build_parser().parse_args(
+                [command, "panel.csv", *common, "--report", "r.json", *rest]
+            )
+
+        gbm = ["--feature", "on_rrp", "--feature", "spread_bps", "--model", "gbm"]
+        _, fitter = cli_eval._select_fitter(parse("backtest", *gbm, "--training-pairs", "direct"))
+        self.assertEqual(fitter.keywords.get("training_pairs"), "direct")
+        _, fitter = cli_eval._select_fitter(parse("backtest", *gbm))
+        self.assertNotIn("training_pairs", fitter.keywords)
+
+        compare = parse(
+            "compare",
+            "--model-a", "gbm", "--feature-a", "on_rrp", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "on_rrp", "--feature-b", "spread_bps",
+            "--training-pairs-b", "direct",
+        )
+        _, fit_a = cli_eval._select_fitter(cli_eval._side(compare, "a"), side="-a")
+        _, fit_b = cli_eval._select_fitter(cli_eval._side(compare, "b"), side="-b")
+        self.assertNotIn("training_pairs", fit_a.keywords)
+        self.assertEqual(fit_b.keywords.get("training_pairs"), "direct")
+
+        arx = parse("backtest", "--feature", "on_rrp", "--feature", "spread_bps",
+                    "--model", "arx", "--training-pairs", "direct")
+        with self.assertRaisesRegex(
+            SplitError, r"--training-pairs direct was given, but --model arx"
+        ):
+            cli_eval._select_fitter(arx)
 
 
 if __name__ == "__main__":
