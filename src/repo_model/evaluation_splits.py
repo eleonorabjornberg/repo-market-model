@@ -15,8 +15,8 @@ whether it is provisional, and a record that used it carries its digest.
   rule reads at the scored day itself (they are always known). One type per
   day, by the declared precedence, so the types partition the scored days.
 * **Regime** is a set of contiguous, non-overlapping date ranges, labelled.
-* **The quarter-end window** (#140, drafted in
-  `docs/decisions/quarter-end-window.md` for Eleonora's ruling) is reported
+* **The quarter-end window** (#140, decided in
+  `docs/decisions/quarter-end-window.md`) is reported
   alongside the pressure-day types, not among them: a day is in it or outside
   it, read from its date by `data.quarter_end_window`. The declared types, their
   precedence and the file are unchanged, so no published split moves.

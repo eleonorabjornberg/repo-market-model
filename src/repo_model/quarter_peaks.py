@@ -1,6 +1,6 @@
 """Per-quarter peak pressure in the quarter-end window (#140).
 
-Drafted in `docs/decisions/quarter-end-window.md` for Eleonora's ruling. The
+Decided in `docs/decisions/quarter-end-window.md` (#140). The
 New York Fed reads month-end pressure as the maximum of a spread over the 5
 business days centred on the month's last business day; this module reads the
 quarter-end version on SOFR - IORB, one value per quarter, over

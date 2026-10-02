@@ -467,7 +467,7 @@ CALENDAR_FEATURES = frozenset(
     {
         "quarter_end",
         # The quarter's last business day and the two business days either
-        # side (#140, drafted for Eleonora's ruling). An opt-in column: no
+        # side (#140, decided by Eleonora). An opt-in column: no
         # published declaration reads it.
         "quarter_end_window",
         "tax_date",

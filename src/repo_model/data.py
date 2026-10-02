@@ -2343,7 +2343,7 @@ PANEL_COLUMNS = tuple(
 #: panel's documented build names no columns and a new default column would be
 #: new bytes under its digest (REPRODUCIBILITY.md). `effr` is directive #98's
 #: candidate input, read by no published declaration. `quarter_end_window` is
-#: #140's calendar column, drafted for Eleonora's ruling.
+#: #140's calendar column, decided by Eleonora on 2 October 2026.
 OPT_IN_COLUMNS = ("effr", "quarter_end_window")
 
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
@@ -2581,8 +2581,8 @@ def last_business_day_of_quarter(year: int, quarter: int) -> date:
 
 
 #: The quarter-end window: the quarter's last business day and this many
-#: business days either side (#140, drafted in
-#: `docs/decisions/quarter-end-window.md` for Eleonora's ruling).
+#: business days either side (#140, decided in
+#: `docs/decisions/quarter-end-window.md`).
 QUARTER_END_WINDOW_BUSINESS_DAYS = 2
 
 
@@ -2646,7 +2646,7 @@ def quarter_end_window_quarter(day: date) -> Optional[Tuple[int, int]]:
 def quarter_end_window(day: date) -> float:
     """1.0 on a day of a quarter-end window (`quarter_end_window_days`); 0.0 otherwise.
 
-    Drafted for Eleonora's ruling (#140): the New York Fed reads month-end
+    Decided by Eleonora (#140): the New York Fed reads month-end
     pressure as the maximum spread over the 5 business days centred on the
     month's last business day, and this column marks that window at quarter
     ends. Like `quarter_end` it is computed from the date and the market

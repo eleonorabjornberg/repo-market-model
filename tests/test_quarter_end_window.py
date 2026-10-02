@@ -4,8 +4,8 @@ Eleonora's request of 2 October 2026: a calendar column `quarter_end_window`,
 1.0 on the last business day of the quarter and the two business days either
 side; a `quarter_end_window` day type reported alongside the declared day
 types; and one peak of SOFR - IORB per quarter over the window, beside the
-highest probability each model gave on a window day. The decision is drafted
-in `docs/decisions/quarter-end-window.md` for her to rule on.
+highest probability each model gave on a window day. She approved it on
+2 October 2026; it is recorded in `docs/decisions/quarter-end-window.md`.
 
 Expected windows are written from the market holiday table
 (`metadata/market_holidays.json`) and a calendar, not from the code's output:
