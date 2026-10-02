@@ -2528,6 +2528,244 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
                 self.fit(rows[:40], calibration="cross_conformal")
 
 
+def masking_frame(count, seed=20261002):
+    """Weekday rows whose spread follows `reserve_balances`, a column slower than the target.
+
+    Under the tracked registry `reserve_balances` (H.4.1, `WRESBAL`) is public
+    days after the target, so the frame the fold loop hands a fitter carries
+    it on rows whose label is already observable: the exposure
+    `information-set.md`'s Method notes describe. The spread moves with it so
+    the trees split on it, and a moved value can move a model.
+    """
+
+    rows = []
+    state = seed
+    when = date(2024, 1, 2)
+    while len(rows) < count:
+        if when.weekday() < 5:
+            state = (1103515245 * state + 12345) % (2 ** 31)
+            reserves = 3000.0 + (state % 500)
+            spread = 5.0 + 0.04 * (reserves - 3000.0) + (state % 7) / 3.0
+            rows.append(
+                DailyObservation(
+                    when,
+                    {
+                        "sofr": 4.30 + spread / 100.0,
+                        "iorb": 4.30,
+                        "reserve_balances": reserves,
+                        "sofr_volume": 2000.0 + (state % 911),
+                    },
+                )
+            )
+        when += timedelta(days=1)
+    return rows
+
+
+class CalibrationMaskingTests(unittest.TestCase):
+    """`calibration_masking="held_out_row"`: directive #78's option, test first.
+
+    **The bias.** `docs/decisions/information-set.md`, Method notes: a
+    cross-conformal fit scores each held-out row as a forecast read at its own
+    decision instant, but the excluding model that scores it trains on the
+    frame as masked at the **fold's** decision instant. A declared column
+    slower than the target can therefore reach that model's training rows
+    before the block with a value that was public at the fold's decision but
+    not yet at the held-out row's. The option masks those values, per held-out
+    row: each held-out row is scored by an excluding model whose training rows
+    before the block carry only what was public at that row's own decision.
+    Off by default, so every published record is unchanged.
+
+    **What the test sees, and on what.** The tracked registry, under which
+    `reserve_balances` is public days after the target, on a weekday frame
+    whose spread follows it. For each block, the values exposed to its first
+    held-out row are moved by 5000; every held-out row of that block that
+    could not yet see any moved value must keep its score bit for bit under
+    the option. The control: without the option, at least one such score
+    moves, so the fixture can see the bias the option removes.
+
+    Mutation record (#78)
+    ---------------------
+
+    Scratch copy under `/tmp` of the branch's tracked files, `PYTHONPATH=src`
+    (resolved to the copy), `/opt/rmm-venv` (CPython 3.11, numpy 2.4.6,
+    scikit-learn 1.9.1), this class alone. Unmutated control green; the anchor
+    found exactly once and confirmed applied.
+
+      * **The held-out row's frame taken unmasked** -- in `_held_out_mask`,
+        `seen = information.frame(rows, information.information_set(dates,
+        index))` replaced by `seen = list(rows[: info.anchor + 1])` (with
+        `info` the same information set), so no value is ever masked and every
+        held-out row is scored by the block's one model. `a held-out row never
+        trains on a value it could not yet see`, `AssertionError` in blocks 2
+        to 5, for example `-1.7636... != -1.7393... : block 2: the held-out row
+        2024-02-14 could see none of the moved values, and its score moved
+        with them`.
+    """
+
+    ROWS = 160
+    FOLDS = 5
+
+    def setUp(self):
+        require_extra(self)
+        from repo_model.asof import InformationRule
+
+        registry = json.loads(
+            (Path(__file__).resolve().parents[1] / "metadata" / "sources.json").read_text()
+        )
+        self.registry = registry
+        self.rule = InformationRule(
+            registry, ("spread_bps", "reserve_balances"), decision_time=time(16, 0)
+        )
+        fewer_boosting_iterations(self)
+
+    def frame(self, rows, rule=None):
+        rule = rule or self.rule
+        dates = [row.date for row in rows]
+        return rule.frame(rows, rule.information_set(dates, len(rows) - 1))
+
+    def fit(self, frame, regressors=("reserve_balances",), rule=None, **settings):
+        return ml.fit_gradient_boosted_quantiles(
+            frame,
+            regressors,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            calibration="cross_conformal",
+            calibration_folds=self.FOLDS,
+            information=rule or self.rule,
+            **settings,
+        )
+
+    @staticmethod
+    def scores(fitted):
+        out = {}
+        for block in fitted.calibration_blocks:
+            for when, score in zip(block.scored_dates, block.scores):
+                if when in out:
+                    raise AssertionError(f"{when} was scored twice")
+                out[when] = score
+        return out
+
+    def test_a_held_out_row_never_trains_on_a_value_it_could_not_yet_see(self):
+        frame = self.frame(masking_frame(self.ROWS))
+        dates = [row.date for row in frame]
+        bounds = [len(frame) * number // self.FOLDS for number in range(self.FOLDS + 1)]
+        observed = self.rule.groups[1:]
+        (group,) = [g for g in observed if "reserve_balances" in g.columns]
+
+        def availability(position):
+            return self.rule.availability(dates, group.fields, position)
+
+        exercised = 0
+        moved_without = 0
+        for number in range(1, self.FOLDS):
+            start = bounds[number]
+            stop = bounds[number + 1]
+            before = self.rule.anchor(dates, start)
+            deadline = self.rule.decision_instant(dates, start)
+            exposed = [
+                position
+                for position in range(before + 1)
+                if frame[position].values.get("reserve_balances") is not None
+                and availability(position) > deadline
+            ]
+            self.assertTrue(
+                exposed,
+                msg=f"block {number + 1}: the fixture exposes no value, so it cannot see the bias",
+            )
+            moved = list(frame)
+            for position in exposed:
+                values = dict(moved[position].values)
+                values["reserve_balances"] = values["reserve_balances"] + 5000.0
+                moved[position] = DailyObservation(moved[position].date, values)
+            blind = [
+                dates[index]
+                for index in range(start, stop)
+                if all(
+                    availability(position) > self.rule.decision_instant(dates, index)
+                    for position in exposed
+                )
+            ]
+            with self.subTest("a held-out row never trains on a value it could not yet see", block=number + 1):
+                masked = self.scores(self.fit(frame, calibration_masking="held_out_row"))
+                masked_moved = self.scores(self.fit(moved, calibration_masking="held_out_row"))
+                checked = [when for when in blind if when in masked]
+                self.assertTrue(checked, msg=f"block {number + 1}: no blind held-out row is scored")
+                for when in checked:
+                    self.assertEqual(
+                        masked[when],
+                        masked_moved[when],
+                        msg=(
+                            f"block {number + 1}: the held-out row {when} could see none "
+                            f"of the moved values, and its score moved with them"
+                        ),
+                    )
+                exercised += len(checked)
+            plain = self.scores(self.fit(frame))
+            plain_moved = self.scores(self.fit(moved))
+            moved_without += sum(plain[when] != plain_moved[when] for when in blind if when in plain)
+        self.assertGreater(exercised, 0)
+        self.assertGreater(
+            moved_without,
+            0,
+            msg=(
+                "the control: without the option no blind held-out row's score moves "
+                "with the values it could not see, so this fixture cannot see the bias"
+            ),
+        )
+
+    def test_the_option_scores_the_same_rows_and_is_recorded(self):
+        frame = self.frame(masking_frame(self.ROWS))
+        plain = self.fit(frame)
+        masked = self.fit(frame, calibration_masking="held_out_row")
+        self.assertEqual(sorted(self.scores(plain)), sorted(self.scores(masked)))
+        self.assertNotIn("calibration_masking", plain.model_settings)
+        self.assertEqual(masked.model_settings["calibration_masking"], "held_out_row")
+        # The interior is the full fit's, which the option never touches.
+        row = frame[-1]
+        self.assertEqual(plain.predict(row)[1:-1], masked.predict(row)[1:-1])
+
+    def test_a_declaration_as_fast_as_the_target_is_unchanged_bit_for_bit(self):
+        from repo_model.asof import InformationRule
+
+        rule = InformationRule(
+            self.registry, ("spread_bps", "sofr_volume"), decision_time=time(16, 0)
+        )
+        frame = self.frame(masking_frame(self.ROWS), rule)
+        plain = self.fit(frame, ("sofr_volume",), rule)
+        masked = self.fit(frame, ("sofr_volume",), rule, calibration_masking="held_out_row")
+        self.assertEqual(self.scores(plain), self.scores(masked))
+        self.assertEqual(
+            [block.training_dates for block in plain.calibration_blocks],
+            [block.training_dates for block in masked.calibration_blocks],
+        )
+        for row in frame[-10:]:
+            self.assertEqual(plain.predict(row), masked.predict(row))
+
+    def test_refusals(self):
+        frame = self.frame(masking_frame(60))
+        with self.subTest("an unknown masking"):
+            with self.assertRaisesRegex(ValueError, "unknown calibration_masking"):
+                self.fit(frame, calibration_masking="fold")
+        for calibration in ("none", "conformal", "conformal_asymmetric"):
+            with self.subTest("a calibration with no excluding models", calibration=calibration):
+                with self.assertRaisesRegex(ValueError, "calibration_masking"):
+                    ml.fit_gradient_boosted_quantiles(
+                        frame,
+                        ("reserve_balances",),
+                        minimum_history=20,
+                        min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+                        calibration=calibration,
+                        information=self.rule,
+                        calibration_masking="held_out_row",
+                    )
+        with self.subTest("direct training pairs"):
+            # A direct pair reads only what was public at its own target's
+            # decision, earlier than any held-out row's after it: there is
+            # nothing to mask, so the combination is refused, not ignored.
+            with self.assertRaisesRegex(ValueError, "training_pairs 'direct'"):
+                self.fit(frame, calibration_masking="held_out_row", training_pairs="direct")
+
+
 class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
     """`calibration="cross_conformal_asymmetric"`: B54's acceptance criterion and its mutation target.
 
