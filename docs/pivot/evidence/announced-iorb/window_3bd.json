@@ -1,0 +1,94 @@
+{
+  "compare_gbm_vs_gbm_iorb_crps.json": {
+    "loss": "crps_bps",
+    "sign_convention": "difference = crps_bps(model_a=gbm) - crps_bps(model_b=gbm) at each scored origin; a positive mean difference means model_a=gbm carried the larger loss over these origins, so model_b=gbm was the more accurate of the two on them",
+    "window_days": 3,
+    "inside": {
+      "count": 189,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "outside": {
+      "count": 1684,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "bootstrap": {
+      "block_length": 2,
+      "level": 0.9,
+      "replications": 2000,
+      "seed": 38
+    }
+  },
+  "compare_gbm_vs_gbm_iorb_direct_crps.json": {
+    "loss": "crps_bps",
+    "sign_convention": "difference = crps_bps(model_a=gbm) - crps_bps(model_b=gbm) at each scored origin; a positive mean difference means model_a=gbm carried the larger loss over these origins, so model_b=gbm was the more accurate of the two on them",
+    "window_days": 3,
+    "inside": {
+      "count": 189,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "outside": {
+      "count": 1684,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "bootstrap": {
+      "block_length": 2,
+      "level": 0.9,
+      "replications": 2000,
+      "seed": 38
+    }
+  },
+  "compare_gbm_vs_gbm_iorb_direct_mae.json": {
+    "loss": "absolute_error_bps",
+    "sign_convention": "difference = absolute_error_bps(model_a=gbm) - absolute_error_bps(model_b=gbm) at each scored origin; a positive mean difference means model_a=gbm carried the larger loss over these origins, so model_b=gbm was the more accurate of the two on them",
+    "window_days": 3,
+    "inside": {
+      "count": 189,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "outside": {
+      "count": 1684,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "bootstrap": {
+      "block_length": 2,
+      "level": 0.9,
+      "replications": 2000,
+      "seed": 38
+    }
+  },
+  "compare_gbm_vs_gbm_iorb_mae.json": {
+    "loss": "absolute_error_bps",
+    "sign_convention": "difference = absolute_error_bps(model_a=gbm) - absolute_error_bps(model_b=gbm) at each scored origin; a positive mean difference means model_a=gbm carried the larger loss over these origins, so model_b=gbm was the more accurate of the two on them",
+    "window_days": 3,
+    "inside": {
+      "count": 189,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "outside": {
+      "count": 1684,
+      "mean": 0.0,
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "bootstrap": {
+      "block_length": 2,
+      "level": 0.9,
+      "replications": 2000,
+      "seed": 38
+    }
+  }
+}
