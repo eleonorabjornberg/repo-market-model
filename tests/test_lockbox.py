@@ -257,6 +257,11 @@ NOT_ENTRY_POINTS = {
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
     "ml._held_out_read": "a calibration read inside a fit's own training frame",
+    "ml._pressure_pairs": (
+        "builds the direct pressure models' training pairs inside a fit's own "
+        "training frame (#114); scores nothing, the backtest that calls the "
+        "predictor guards the scored days"
+    ),
     "ml._held_out_mask": (
         "lists the training values before a calibration block that a held-out "
         "row could not yet see, inside a fit's own training frame (#78); "

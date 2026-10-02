@@ -621,3 +621,136 @@ class OnRrpAvailabilityTests(unittest.TestCase):
         information = rule(self.FEATURES)
         for scored in range(3, len(DATES)):
             information.check(DATES, information.information_set(DATES, scored))
+
+
+class HorizonTests(unittest.TestCase):
+    """A forecast `horizon` panel days ahead (#114).
+
+    The decision instant is the declared time on the panel day `horizon` rows
+    before the scored day; `horizon=1` is the rule every published record was
+    scored under. Every read follows from that instant by the same per-field
+    rule, so a longer horizon reads older rows and nothing else changes.
+    """
+
+    FEATURES = ("spread_bps", "sofr_volume", "reserve_balances", "days_to_month_end")
+
+    def rule(self, horizon, features=FEATURES, registry=REGISTRY):
+        return InformationRule(
+            registry, tuple(features), decision_time=DECISION, horizon=horizon
+        )
+
+    def test_the_decision_is_horizon_panel_days_before_the_scored_day(self):
+        scored = index_of(date(2026, 1, 22))
+        for horizon in (1, 2, 3, 5):
+            info = self.rule(horizon).information_set(DATES, scored)
+            self.assertEqual(
+                info.decision_instant, datetime.combine(DATES[scored - horizon], DECISION)
+            )
+
+    def test_horizon_one_is_the_published_rule(self):
+        scored = index_of(date(2026, 1, 22))
+        self.assertEqual(
+            self.rule(1).information_set(DATES, scored),
+            rule(self.FEATURES).information_set(DATES, scored),
+        )
+
+    def test_the_target_is_read_horizon_plus_one_rows_back(self):
+        current = self.rule(3)
+        for scored in range(5, len(DATES)):
+            self.assertEqual(current.anchor(DATES, scored), scored - 4, DATES[scored])
+
+    def test_a_calendar_field_is_still_read_at_the_scored_day(self):
+        scored = index_of(date(2026, 1, 22))
+        info = self.rule(4).information_set(DATES, scored)
+        self.assertEqual(read_of(info, "days_to_month_end").row, scored)
+
+    def test_a_row_without_horizon_rows_before_it_has_no_decision(self):
+        with self.assertRaises(SplitError):
+            self.rule(3).information_set(DATES, 2)
+
+    def test_a_horizon_below_one_is_refused(self):
+        for bad in (0, -1, True, 1.5, None):
+            with self.assertRaises(ValueError, msg=repr(bad)):
+                self.rule(bad)
+
+    def test_every_read_at_a_long_horizon_passes_the_independent_guard(self):
+        """The rule's reads at horizon 3 clear `_check_decision_relative_availability` at 3.
+
+        That guard predates the rule and computes its own deadline, so it
+        checks the rule's horizon rather than trusting it.
+
+        Recorded mutation (CLAUDE.md), the horizon dropped from the decision:
+        in `asof.InformationRule.decision_instant`,
+        `dates[scored_index - self.horizon]` mutated to
+        `dates[scored_index - 1]`, so a horizon-3 forecast reads what was public
+        the day before the scored day. This test then fails, raising
+        `LookAheadError` from `baseline._check_decision_relative_availability`
+        (the first on the target's `fred_macro_latest_vintage.IOER`).
+        """
+
+        from repo_model.baseline import _check_decision_relative_availability
+
+        current = self.rule(3)
+        for scored in range(10, len(DATES)):
+            info = current.information_set(DATES, scored)
+            current.check(DATES, info)
+            for read in info.reads:
+                _check_decision_relative_availability(
+                    REGISTRY, read.fields, DATES, read.row, scored,
+                    decision_time=DECISION, horizon=3,
+                )
+
+    def test_the_independent_guard_refuses_a_read_too_new_for_the_horizon(self):
+        """A read public by the day before, but not by `horizon` days before.
+
+        Recorded mutation (CLAUDE.md), the guard's own deadline: in
+        `baseline._check_decision_relative_availability`,
+        `dates[scored_index - horizon]` mutated to `dates[scored_index - 1]`.
+        This test then fails, raising `AssertionError` ("LookAheadError not
+        raised"): the guard accepts a horizon-1 read at horizon 3.
+        """
+
+        from repo_model.baseline import _check_decision_relative_availability
+
+        scored = index_of(date(2026, 1, 22))
+        one_day = rule(self.FEATURES).information_set(DATES, scored)
+        read = read_of(one_day, "sofr_volume")
+        _check_decision_relative_availability(
+            REGISTRY, read.fields, DATES, read.row, scored, decision_time=DECISION
+        )
+        with self.assertRaises(LookAheadError):
+            _check_decision_relative_availability(
+                REGISTRY, read.fields, DATES, read.row, scored,
+                decision_time=DECISION, horizon=3,
+            )
+
+    def test_the_rule_check_refuses_a_horizon_one_read_at_horizon_three(self):
+        scored = index_of(date(2026, 1, 22))
+        current = self.rule(3)
+        info = current.information_set(DATES, scored)
+        newer = rule(self.FEATURES).information_set(DATES, scored)
+        reads = tuple(
+            mine._replace(row=theirs.row) if mine.feature == "sofr_volume" else mine
+            for mine, theirs in zip(info.reads, newer.reads)
+        )
+        with self.assertRaises(LookAheadError):
+            current.check(DATES, info._replace(reads=reads))
+
+    def test_a_settlement_announced_one_day_ahead_is_not_public_two_days_ahead(self):
+        # `treasury_auctions` declares a settlement public one panel day before
+        # it, at 15:00. At horizon 2 the decision is a day earlier than that.
+        scored = index_of(date(2026, 1, 22))
+        current = self.rule(2, ("spread_bps", "treasury_settlement"))
+        with self.assertRaises(LookAheadError):
+            current.check(DATES, current.information_set(DATES, scored))
+        one = self.rule(1, ("spread_bps", "treasury_settlement"))
+        one.check(DATES, one.information_set(DATES, scored))
+
+    def test_the_grid_starts_where_the_horizon_leaves_enough_labels(self):
+        one = fold_grid(DATES, REGISTRY, decision_time=DECISION, minimum_history=5)
+        three = fold_grid(
+            DATES, REGISTRY, decision_time=DECISION, minimum_history=5, horizon=3
+        )
+        self.assertEqual(three[0], one[0] + 2)
+        self.assertEqual(three[-1], len(DATES) - 1)
+        self.assertEqual(self.rule(3).anchor(DATES, three[0]) + 1, 5)
