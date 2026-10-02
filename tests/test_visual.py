@@ -779,10 +779,11 @@ class PublishedMapTests(unittest.TestCase):
     def test_status_is_shown_by_more_than_colour(self):
         block = newcomer_block(self.page)
         for key, icon, word_ in emit_visual.STATUSES:
-            for cell in re.findall(rf'<span class="status s-{key}">(.*?)</span>', block):
+            for mark, text in re.findall(rf'<span class="status s-{key}"><span aria-hidden="true">(.*?)</span>'
+                                         rf'(.*?)</span>', block):
                 with self.subTest(status=key):
-                    self.assertIn(icon, cell)
-                    self.assertIn(word_, cell)
+                    self.assertEqual(mark, icon)
+                    self.assertEqual(text.strip(), word_)
 
     def test_changing_the_snapshot_changes_the_status(self):
         registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
