@@ -15,6 +15,11 @@ in `tests/test_ml.py::RecalibrationPartsTests`.
   any scoring (#125), and #122's constants as one of its points.
 * `NestedSelectionGuardTests`: the constants used for a refit block are chosen
   only from days whose labels were observable at that block's refit (#125).
+* `FoldPidTests`: conformal PID inside a fold loop (#124), at #122's
+  constants, as Eleonora's ruling on #123 first adopted it.
+* `NestedFoldPidTests`: conformal PID with nested walk-forward selection of
+  its constants inside a fold loop (#124), the published funding
+  declaration's calibration since her rulings on #136 and #134.
 """
 
 from __future__ import annotations
@@ -29,6 +34,7 @@ from repo_model.asof import InformationRule
 from repo_model.data import DailyObservation
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.ingest import load_source_registry
+from repo_model.metrics import crps_from_quantiles
 from repo_model.splits import LookAheadError
 
 from pathlib import Path
@@ -506,6 +512,313 @@ class GroupConditionalEdgesTests(unittest.TestCase):
     def test_misaligned_terms_are_refused(self):
         with self.assertRaises(ValueError):
             recalibration.group_conditional_edges([0.0], [1.0, 2.0], [("a", "b")], ("a", "b"), LEVELS)
+
+
+
+class _UncalibratedModel:
+    """A fitted model's shape as `FoldPid` reads it: an uncalibrated band."""
+
+    levels = LEVELS
+    tail_fit = None
+
+    def __init__(self, scale=1.0, settings=None):
+        self.scale = scale
+        self.model_settings = dict(settings or {})
+        self.residuals = (-3.0 * scale, 0.0, 4.0 * scale)
+
+    def predict(self, row):
+        centre = row.spread_bps
+        return tuple(centre + self.scale * offset for offset in (-1.0, -0.5, 0.0, 0.5, 1.0))
+
+    def point_forecast(self, row):
+        return row.spread_bps
+
+
+class FoldPidTests(unittest.TestCase):
+    """Conformal PID run inside a fold loop: `recalibration.FoldPid` (#124).
+
+    Eleonora's ruling on #123 publishes the funding declaration's gbm with
+    conformal PID and the calendar scorecaster, exactly as #122 scored it. The
+    fold loops (`backtest`, `compare`, `exceedance-backtest`) issue one band
+    per scored day and learn the day's label only after it is scored. Driven
+    that way, `FoldPid` must issue `conformal_pid`'s bands to the bit, and its
+    laws must be `ml.law_from_band` at those edges, as the re-diagnosis read
+    them.
+
+    Red first: written before `FoldPid` and `OnlinePid` existed
+    (`AttributeError`).
+
+    Mutation record. In a disposable copy of the tree under /tmp (checked to
+    resolve to the copy's `src/`), `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    CPython 3.11, this class run alone; unmutated control green; the mutation
+    confirmed applied by `diff` against the tree:
+
+    1. `OnlinePid.issue`'s guard, `if day.anchor >= day.scored_date:`, mutated
+       to `if day.anchor > day.scored_date:` (a band issued at a decision whose
+       anchor is its own scored day, so its own label was public). Killed:
+       `test_a_day_anchored_on_its_own_scored_day_is_refused` failed with
+       `AssertionError: LookAheadError not raised`.
+    """
+
+    LAG = 2
+
+    def setUp(self):
+        self.registry = load_source_registry(ROOT / "metadata" / "sources.json")
+        self.splits = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
+        self.rule = InformationRule(self.registry, ("spread_bps",), decision_time=time(16, 0))
+        rng = random.Random(124)
+        self.rows = []
+        when = date(2023, 1, 2)
+        while len(self.rows) < 160:
+            if when.weekday() < 5:
+                last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
+                spread = rng.gauss(0.0, 2.0) + (6.0 if (last - when).days < 1 else 0.0)
+                self.rows.append(
+                    DailyObservation(
+                        when,
+                        {
+                            "sofr": 5.00 + spread / 100.0,
+                            "iorb": 5.00,
+                            "quarter_end": 1.0 if (when.month % 3 == 0 and (last - when).days < 1) else 0.0,
+                            "tax_date": 1.0 if when.day == 15 else 0.0,
+                            "days_to_month_end": float((last - when).days),
+                            "treasury_settlement_coupons": 60.0 if when.day in (15, 30, 31) else 0.0,
+                        },
+                    )
+                )
+            when += timedelta(days=1)
+        self.dates = [row.date for row in self.rows]
+        self.scored = range(self.LAG + 1, len(self.rows))
+
+    def drive(self, pid, model=None, *, laws=False):
+        """Each scored day in turn: issue its band, then learn its label."""
+
+        model = model or _UncalibratedModel()
+        out = []
+        for index in self.scored:
+            feature_row = self.rows[index - self.LAG]
+            if laws:
+                vector = model.predict(feature_row)
+                out.append(
+                    pid.law(index, feature_row.date, vector, model.residuals[0], model.residuals[-1])
+                )
+            else:
+                view = pid.view(model, index, feature_row)
+                out.append((view.predict(feature_row), view.point_forecast(feature_row)))
+            pid.label(index, self.rows[index].spread_bps)
+        return out
+
+    def reference(self, model=None):
+        model = model or _UncalibratedModel()
+        days = [
+            recalibration.OnlineDay(
+                scored_date=self.dates[index],
+                anchor=self.dates[index - self.LAG],
+                vector=model.predict(self.rows[index - self.LAG]),
+                calendar=recalibration.scorecaster_calendar(
+                    self.rows, self.rule, index, self.splits, self.dates
+                ),
+            )
+            for index in self.scored
+        ]
+        actuals = [self.rows[index].spread_bps for index in self.scored]
+        return days, recalibration.conformal_pid(days, actuals, LEVELS)
+
+    def fold_pid(self):
+        return recalibration.FoldPid(self.rows, self.rule, splits=self.splits)
+
+    def test_the_fold_loop_issues_conformal_pids_bands_to_the_bit(self):
+        _, bands = self.reference()
+        issued = self.drive(self.fold_pid())
+        self.assertEqual([vector for vector, _ in issued], [band.vector for band in bands])
+        model = _UncalibratedModel()
+        self.assertEqual(
+            [point for _, point in issued],
+            [model.point_forecast(self.rows[index - self.LAG]) for index in self.scored],
+        )
+        # The method moved something: it is not the uncalibrated band.
+        days, _ = self.reference()
+        self.assertNotEqual([day.vector for day in days], [band.vector for band in bands])
+
+    def test_the_law_is_law_from_band_at_the_issued_edges(self):
+        model = _UncalibratedModel()
+        days, bands = self.reference(model)
+        laws = self.drive(self.fold_pid(), model, laws=True)
+        for day, band, law in zip(days, bands, laws):
+            self.assertEqual(
+                law,
+                ml.law_from_band(
+                    day.vector,
+                    day.vector[0] - band.quantile,
+                    day.vector[-1] + band.quantile,
+                    model.residuals[0],
+                    model.residuals[-1],
+                    LEVELS,
+                ),
+            )
+
+    def test_the_account_counts_what_the_run_did(self):
+        _, bands = self.reference()
+        pid = self.fold_pid()
+        self.drive(pid)
+        account = pid.account()
+        self.assertEqual(account["days"], len(bands))
+        self.assertEqual(account["days_before_first_label"], sum(1 for b in bands if b.observed == 0))
+        self.assertEqual(account["saturated_days"], sum(b.saturated for b in bands))
+
+    def test_the_settings_name_the_method_and_its_declared_constants(self):
+        settings = self.fold_pid().settings
+        self.assertEqual(settings["calibration"], "conformal_pid")
+        constants = settings["calibration_constants"]
+        self.assertEqual(constants["PID_STEP"], recalibration.PID_STEP)
+        self.assertEqual(constants["SCORECASTER_INDICATORS"], list(recalibration.SCORECASTER_INDICATORS))
+        self.assertEqual(
+            set(constants),
+            {
+                "PID_STEP", "PID_STEP_WINDOW", "PID_SCALE_FLOOR", "PID_INTEGRATOR_GAIN",
+                "PID_SATURATION", "PID_TANGENT_LIMIT", "SCORECASTER_MINIMUM",
+                "SCORECASTER_INDICATOR_MINIMUM", "SCORECASTER_INDICATORS",
+            },
+        )
+
+    def test_a_day_anchored_on_its_own_scored_day_is_refused(self):
+        pid = self.fold_pid()
+        index = 10
+        with self.assertRaises(LookAheadError) as caught:
+            pid.view(_UncalibratedModel(), index, self.rows[index])
+        self.assertIn(str(self.dates[index]), str(caught.exception))
+
+    def test_each_label_is_learned_once_after_its_own_band(self):
+        pid = self.fold_pid()
+        model = _UncalibratedModel()
+        with self.assertRaises(ValueError):
+            pid.label(10, 0.0)
+        pid.view(model, 10, self.rows[8])
+        with self.assertRaises(ValueError):
+            pid.view(model, 11, self.rows[9])
+        with self.assertRaises(ValueError):
+            pid.label(11, 0.0)
+        pid.label(10, 0.0)
+        with self.assertRaises(ValueError):
+            pid.view(model, 10, self.rows[8])
+
+    def test_a_calibrated_or_tailed_base_is_refused(self):
+        pid = self.fold_pid()
+        with self.assertRaises(ValueError):
+            pid.view(_UncalibratedModel(settings={"calibration": "cross_conformal"}), 10, self.rows[8])
+        tailed = _UncalibratedModel()
+        tailed.tail_fit = object()
+        with self.assertRaises(ValueError):
+            pid.view(tailed, 10, self.rows[8])
+
+
+class NestedFoldPidTests(unittest.TestCase):
+    """Nested-selection conformal PID inside a fold loop: `NestedFoldPid` (#124).
+
+    Eleonora's rulings on #136 and #134 republish the funding declaration with
+    conformal PID whose constants are chosen by nested walk-forward selection
+    (#125, `nested_selection`), not #122's fixed ones. Driven one scored day at
+    a time, as the fold loops drive it, `NestedFoldPid` must issue on every day
+    the band of the grid point `nested_selection` chose for that day's refit
+    block, from the same per-point `conformal_pid` runs, and must record the
+    same choice at every block.
+
+    The fixture's forecasts are anchored two rows back, so the day scored just
+    before a refit is not observable at it: a selection that read every label
+    learned so far, rather than those observable at the refit, is refused by
+    `select_constants` (`LookAheadError`).
+
+    Red first: written before `NestedFoldPid` existed (`AttributeError`).
+    """
+
+    LAG = FoldPidTests.LAG
+    REFIT_EVERY = 20
+    setUp = FoldPidTests.setUp
+    drive = FoldPidTests.drive
+
+    def fold_pid(self):
+        return recalibration.NestedFoldPid(
+            self.rows, self.rule, splits=self.splits, refit_every=self.REFIT_EVERY
+        )
+
+    def reference(self, model=None):
+        model = model or _UncalibratedModel()
+        days = [
+            recalibration.OnlineDay(
+                scored_date=self.dates[index],
+                anchor=self.dates[index - self.LAG],
+                vector=model.predict(self.rows[index - self.LAG]),
+                calendar=recalibration.scorecaster_calendar(
+                    self.rows, self.rule, index, self.splits, self.dates
+                ),
+            )
+            for index in self.scored
+        ]
+        actuals = [self.rows[index].spread_bps for index in self.scored]
+        grid = recalibration.PID_GRID
+        runs = [recalibration.conformal_pid(days, actuals, LEVELS, constants=point) for point in grid]
+        losses = [
+            tuple(crps_from_quantiles(LEVELS, run[i].vector, actual) for run in runs)
+            for i, actual in enumerate(actuals)
+        ]
+        nested = recalibration.nested_selection(
+            [day.scored_date for day in days],
+            [day.anchor for day in days],
+            losses,
+            self.REFIT_EVERY,
+            fallback=grid.index(recalibration.DECLARED_PID),
+        )
+        bands = [runs[chosen][i] for i, chosen in enumerate(nested.per_day)]
+        return days, bands, nested
+
+    def test_the_fold_loop_issues_the_nested_choice_to_the_bit(self):
+        _, bands, nested = self.reference()
+        pid = self.fold_pid()
+        issued = self.drive(pid)
+        self.assertEqual([vector for vector, _ in issued], [band.vector for band in bands])
+        self.assertEqual(pid.blocks, nested.blocks)
+        # The selection moved off #122's point at some refit, so the test
+        # tells nested selection from the fixed constants.
+        declared = recalibration.PID_GRID.index(recalibration.DECLARED_PID)
+        self.assertTrue(any(block.chosen != declared for block in nested.blocks))
+
+    def test_the_law_is_law_from_band_at_the_chosen_edges(self):
+        model = _UncalibratedModel()
+        days, bands, _ = self.reference(model)
+        laws = self.drive(self.fold_pid(), model, laws=True)
+        for day, band, law in zip(days, bands, laws):
+            self.assertEqual(
+                law,
+                ml.law_from_band(
+                    day.vector,
+                    day.vector[0] - band.quantile,
+                    day.vector[-1] + band.quantile,
+                    model.residuals[0],
+                    model.residuals[-1],
+                    LEVELS,
+                ),
+            )
+
+    def test_the_settings_name_the_method_its_grid_and_its_selection(self):
+        settings = self.fold_pid().settings
+        self.assertEqual(settings["calibration"], "conformal_pid_nested")
+        constants = settings["calibration_constants"]
+        self.assertEqual(constants["PID_STEP_WINDOW"], recalibration.PID_STEP_WINDOW)
+        self.assertNotIn("PID_STEP", constants)
+        selection = settings["calibration_selection"]
+        self.assertEqual(selection["refit_every"], self.REFIT_EVERY)
+        self.assertEqual(selection["loss"], "crps")
+        self.assertEqual(selection["points"], len(recalibration.PID_GRID))
+        self.assertEqual(
+            selection["fallback"], recalibration.DECLARED_PID._asdict()
+        )
+        self.assertEqual(selection["grid"]["steps"], list(recalibration.PID_GRID_STEPS))
+
+    def test_each_label_is_learned_once_after_its_own_band(self):
+        FoldPidTests.test_each_label_is_learned_once_after_its_own_band(self)
+
+    def test_a_calibrated_base_is_refused(self):
+        FoldPidTests.test_a_calibrated_or_tailed_base_is_refused(self)
 
 
 if __name__ == "__main__":

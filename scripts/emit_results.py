@@ -280,24 +280,36 @@ def key_findings(persistence, exceedance, conditional):
     add("")
     lines.extend(split_table(splits, "by_day_type", "Pressure-day type", "Mean absolute error"))
     add("")
-    table, challengers = challenger_section()
+    table, groups = challenger_section()
     lines.extend(table)
     add("")
     add("**The paired difference by regime and by pressure-day type** (persistence's CRPS "
         "minus the challenger's, bp, with its 90% interval):")
     add("")
-    split_rows = [(label, require(record, "comparison", "splits"))
-                  for label, record in challengers]
-    lines.extend(split_matrix(split_rows, "by_regime"))
-    add("")
-    lines.extend(split_matrix(split_rows, "by_day_type"))
-    add("")
+    for position, challengers in enumerate(groups):
+        if position:
+            add(window_heading(challengers[0][1]))
+            add("")
+        split_rows = [(label, require(record, "comparison", "splits"))
+                      for label, record in challengers]
+        lines.extend(split_matrix(split_rows, "by_regime"))
+        add("")
+        lines.extend(split_matrix(split_rows, "by_day_type"))
+        add("")
     add("**Interval coverage on the same origins.**")
     add("")
-    lines.extend(coverage_section(challengers, persistence))
-    add("")
+    for position, challengers in enumerate(groups):
+        if position:
+            add(window_heading(challengers[0][1]))
+            add("")
+        lines.extend(coverage_section(challengers, persistence))
+        add("")
     lines.extend(pressure_section())
     add("")
+    limitations = limitations_section()
+    if limitations:
+        lines.extend(limitations)
+        add("")
     add("**The control that licenses every skill number.** A climatology scored "
         "against climatology must show no skill. Over the same %d origins its Brier "
         "skill score is %s at every declared threshold (%s bp), and its reference Brier "
@@ -351,30 +363,37 @@ def pressure_records():
         found.append((label, record))
     if not found:
         raise RecordError("no %s record in docs/runs/" % PRESSURE)
-    keys = set(_Scored.key(record) for _, record in found)
-    if len(keys) != 1:
-        raise RecordError("exceedance records are not scored on one panel, history, "
-                          "refit and origin count: %s" % sorted(keys))
-    return found
+    return _by_window(found, "exceedance")
 
 
 def pressure_section():
-    records = pressure_records()
+    groups = pressure_records()
+    lines = _pressure_tables(groups[0])
+    for group in groups[1:]:
+        lines.append("")
+        lines.append(window_heading(group[0][1]))
+        lines.append("")
+        lines.extend(_pressure_tables(group, opening=False))
+    return lines
+
+
+def _pressure_tables(records, opening=True):
     lines = []
     add = lines.append
     first = records[0][1]
-    add("**The pressure probability against its two benchmarks.** Every exceedance record "
-        "is scored on the same %d days; the event is the spread strictly above the "
-        "threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks "
-        "are those of `docs/decisions/pressure-probability.md`: a calendar-type "
-        "climatology and a persistence-logistic model, each scored in the same run under "
-        "its own declaration and paired with the model day by day. The difference is the "
-        "benchmark's Brier score minus the model's, so a positive value favours the "
-        "model; its interval is a stationary bootstrap on the per-day differences. "
-        "Average precision is the area under the precision-recall curve, against a "
-        "no-skill value equal to the base rate."
-        % require(first, "metrics", "scored_days"))
-    add("")
+    if opening:
+        add("**The pressure probability against its two benchmarks.** Every exceedance record "
+            "on this window is scored on the same %d days; the event is the spread strictly above the "
+            "threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks "
+            "are those of `docs/decisions/pressure-probability.md`: a calendar-type "
+            "climatology and a persistence-logistic model, each scored in the same run under "
+            "its own declaration and paired with the model day by day. The difference is the "
+            "benchmark's Brier score minus the model's, so a positive value favours the "
+            "model; its interval is a stationary bootstrap on the per-day differences. "
+            "Average precision is the area under the precision-recall curve, against a "
+            "no-skill value equal to the base rate."
+            % require(first, "metrics", "scored_days"))
+        add("")
     for key in HEADLINE_TAUS:
         row = require(first, "metrics", "by_tau", key)
         add("*Threshold %g bp, exceeded on %s of days.*" % (row["tau_bp"], pct(row["base_rate"])))
@@ -539,6 +558,50 @@ CHALLENGERS = "compare_persistence_vs_*_crps.json"
 COVERAGE = "backtest_*.json"
 
 
+def _window(record):
+    """The last day a record declares it scores, or `None` for the whole panel.
+
+    A re-score confined by `docs/decisions/lockbox.md` declares `--end`; the
+    records scored before the lockbox scored the panel to its end and declare
+    none. Records on one window are ranked in one table, and records on
+    another window are never ranked beside them (#124).
+    """
+
+    return require(record, "declaration").get("end")
+
+
+def _by_window(records, what):
+    """`records` (each a `(label, record)` pair) grouped by declared window.
+
+    The whole-panel window first, then each later-declared end in date order.
+    Within a window every record must be scored on one panel, history, refit
+    and origin count, or the group is refused: two records that declare one
+    window and were scored on different origins are a defect, not a second
+    table.
+    """
+
+    groups = {}
+    for label, record in records:
+        groups.setdefault(_window(record), []).append((label, record))
+    for window, members in groups.items():
+        keys = set(_Scored.key(record) for _, record in members)
+        if len(keys) != 1:
+            raise RecordError("%s records are not scored on one panel, history, "
+                              "refit and origin count: %s" % (what, sorted(keys)))
+    return [groups[window] for window in sorted(groups, key=lambda end: (end is not None, end or ""))]
+
+
+def window_heading(record):
+    """The sentence that opens a table of records scored on a declared window."""
+
+    folds = require(record, "folds")
+    return ("*Scored on a shorter window: %d origins, %s to %s (`--end %s`), the days "
+            "before the locked periods of `docs/decisions/lockbox.md`. These figures are "
+            "not comparable with the tables above, which score the panel to its end.*"
+            % (folds["count"], folds["first"]["scored_date"], folds["last"]["scored_date"],
+               _window(record)))
+
+
 class _Scored(object):
     """What a challenger or coverage record was scored on, compared as a key.
 
@@ -559,8 +622,11 @@ class _Scored(object):
 
 #: Declaration keys that are not model settings: shared by every row of a
 #: table (and checked to be), so showing them would repeat them per row.
+#: `end` is the window, stated in the heading of its own table, and
+#: `calibration_constants` is what a calibration's name stands for, carried
+#: whole in the record (#124).
 _NOT_SETTINGS = ("model", "features", "decision_time", "minimum_history", "refit_every",
-                 "taus_bp", "twcrps_weights")
+                 "taus_bp", "twcrps_weights", "end", "calibration_constants")
 
 
 def _settings(side):
@@ -587,10 +653,12 @@ def challenger_records():
         found.append(record)
     if not found:
         raise RecordError("no %s record in docs/runs/; nothing to rank" % CHALLENGERS)
-    keys = set(_Scored.key(record) for record in found)
-    if len(keys) != 1:
-        raise RecordError("challenger records are not scored on one panel, history, "
-                          "refit and origin count: %s" % sorted(keys))
+    return [_challenger_group([record for _, record in group])
+            for group in _by_window([(None, record) for record in found], "challenger")]
+
+
+def _challenger_group(found):
+    """One window's comparisons against persistence, labelled and ranked."""
 
     labels = [_settings(require(r, "declaration", "model_b")) for r in found]
     # A gbm is named with its features: the published set scores one model on two
@@ -619,7 +687,17 @@ def challenger_records():
 
 
 def challenger_section():
-    rows = challenger_records()
+    groups = challenger_records()
+    lines, rows = _challenger_table(groups[0])
+    for group in groups[1:]:
+        lines.append("")
+        lines.append(window_heading(group[0][1]))
+        lines.append("")
+        lines.extend(_challenger_table(group)[0])
+    return lines, groups
+
+
+def _challenger_table(rows):
     first = rows[0][1]
     comparison = first["comparison"]
     lines = []
@@ -698,6 +776,35 @@ def coverage_section(challengers, persistence):
         "calibration finding. %s" % (
             "It is one for: %s." % ", ".join(verdicts) if verdicts
             else "None of these models has one."))
+    return lines
+
+
+def limitations_section():
+    """Each limitation a record states (`--limitation`), once, with its records.
+
+    A record carries the limitations whoever scored it stated beside its
+    figures (#124). They are rendered verbatim, from the record, so a page
+    never states a limitation the record does not, and each is listed once
+    with every record that states it.
+    """
+
+    stated = []
+    for path in sorted(RUNS.glob("*.json")):
+        with path.open(encoding="utf-8") as handle:
+            record = json.load(handle)
+        for text in record.get("limitations", ()) if isinstance(record, dict) else ():
+            for entry in stated:
+                if entry[0] == text:
+                    entry[1].append(path.name)
+                    break
+            else:
+                stated.append((text, [path.name]))
+    if not stated:
+        return []
+    lines = ["**Limitations the records state.** Each is quoted from the records named "
+             "after it, which carry it beside their figures.", ""]
+    for text, names in stated:
+        lines.append("- %s (%s)" % (text, ", ".join("`%s`" % name for name in names)))
     return lines
 
 

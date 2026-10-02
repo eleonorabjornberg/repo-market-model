@@ -229,7 +229,7 @@ from fractions import Fraction
 from pathlib import Path
 from unittest import mock
 
-from repo_model import baseline, cli, cli_eval, ml
+from repo_model import baseline, cli, cli_eval, ml, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.contract import event_window_digest
@@ -9881,6 +9881,225 @@ class PidConstantSelectionScriptTests(unittest.TestCase):
         self.assertIn("not for selection", result["full_grid"]["label"])
         self.assertIn("never the selection", result["split_sample"]["label"])
         self.assertEqual(result["split_sample"]["evaluation_window"]["days"], days)
+
+
+class ConformalPidPublishTests(unittest.TestCase):
+    """`--calibration conformal_pid` on `backtest`, `compare` and `exceedance-backtest` (#124).
+
+    Eleonora's ruling on #123 publishes the funding declaration's gbm with
+    conformal PID and the calendar scorecaster, exactly as #122 scored it, with
+    the same constants. So the records the three commands write must carry
+    #122's PID figures: on one panel and window, the backtest's CRPS and
+    coverage, the comparison's CRPS for the PID side, and the exceedance
+    record's Brier at +5 and +10 bp each equal what
+    `scripts/calibration_rediagnosis.py` reports for `online_pid`.
+
+    Red first: written before the commands took the name (each run was refused
+    by `ml.fit_gradient_boosted_quantiles` as an unknown calibration, exit 2).
+    """
+
+    TRACKED = Path(__file__).resolve().parents[1]
+    SCRIPT = TRACKED / "scripts" / "calibration_rediagnosis.py"
+    SELECTION = TRACKED / "scripts" / "pid_constant_selection.py"
+    SPLITS = TRACKED / "metadata" / "evaluation_splits.json"
+    REGISTRY = TRACKED / "metadata" / "sources.json"
+    THRESHOLDS = TRACKED / "metadata" / "stress_thresholds.json"
+    LOCKBOX = TRACKED / "metadata" / "lockbox.json"
+    COMMON = ("--decision-time", "16:00", "--minimum-history", "40", "--refit-every", "20",
+              "--end", "2025-12-31")
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        lockbox = mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.LOCKBOX)
+        lockbox.start()
+        self.addCleanup(lockbox.stop)
+
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(list(argv))
+        return code, " ".join(err.getvalue().split())
+
+    def record(self, name, *argv):
+        report = self.tmp / name
+        code, err = self.run_cli(*argv, "--report", str(report))
+        self.assertEqual(code, 0, err)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def rediagnosis(self):
+        spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = self.tmp / "rediagnosis.json"
+        self.assertEqual(
+            module.main([
+                "--panel", str(self.panel), "--calibration-folds", "3",
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--replications", "20", "--report", str(report), *self.COMMON,
+            ]),
+            0,
+        )
+        return json.loads(report.read_text(encoding="utf-8"))["methods"]["online_pid"]
+
+    def backtest(self, *extra):
+        return self.record(
+            "backtest.json", "backtest", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            *self.COMMON, *extra,
+        )
+
+    def test_the_three_records_carry_the_rediagnosis_pid_figures(self):
+        pid = self.rediagnosis()
+        backtest = self.backtest("--calibration", "conformal_pid", "--splits", str(self.SPLITS))
+        self.assertAlmostEqual(backtest["metrics"]["crps_bps"], pid["crps_bps"], places=12)
+        self.assertAlmostEqual(
+            backtest["metrics"]["interval_coverage"], pid["coverage"]["all"]["all"]["mean"],
+            places=12,
+        )
+        compare = self.record(
+            "compare.json", "compare", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model-a", "persistence", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "spread_bps", "--feature-b", "sofr_volume",
+            "--calibration-b", "conformal_pid", "--loss", "crps",
+            "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        self.assertAlmostEqual(
+            compare["comparison"]["model_b"]["crps_bps"], pid["crps_bps"], places=12
+        )
+        exceedance = self.record(
+            "exceedance.json", "exceedance-backtest", "--panel", str(self.panel),
+            "--thresholds", str(self.THRESHOLDS), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        for tau in ("5", "10"):
+            self.assertAlmostEqual(
+                exceedance["metrics"]["by_tau"][tau]["brier"], pid["brier"][tau + ".0"],
+                places=12,
+            )
+        for declaration in (
+            backtest["declaration"], compare["declaration"]["model_b"], exceedance["declaration"]
+        ):
+            self.assertEqual(declaration["calibration"], "conformal_pid")
+            self.assertNotIn("calibration_folds", declaration)
+            constants = declaration["calibration_constants"]
+            self.assertEqual(constants["PID_STEP"], recalibration.PID_STEP)
+            self.assertEqual(
+                constants["SCORECASTER_INDICATORS"], list(recalibration.SCORECASTER_INDICATORS)
+            )
+        self.assertNotIn("calibration", compare["declaration"]["model_a"])
+        # And it is not the uncalibrated model's record.
+        plain = self.backtest()
+        self.assertNotEqual(plain["metrics"]["crps_bps"], backtest["metrics"]["crps_bps"])
+
+    def selection(self):
+        spec = importlib.util.spec_from_file_location("pid_constant_selection", self.SELECTION)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = self.tmp / "selection.json"
+        self.assertEqual(
+            module.main([
+                "--panel", str(self.panel), "--calibration-folds", "3",
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--replications", "20", "--report", str(report), *self.COMMON,
+            ]),
+            0,
+        )
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_the_three_records_carry_the_nested_selection_figures(self):
+        """`--calibration conformal_pid_nested` is #125's `nested_pid` (rulings #136, #134).
+
+        The published funding declaration is republished with conformal PID
+        whose constants are chosen by nested walk-forward selection. On one
+        panel and window, the backtest's CRPS and coverage, the comparison's
+        CRPS for its PID side, and the exceedance record's Brier at +5 and
+        +10 bp each equal what `scripts/pid_constant_selection.py` reports for
+        `nested_pid`, and every record names the point chosen at each refit
+        block, as the script does.
+
+        Red first: written before the commands took the name (each run was
+        refused by `ml.fit_gradient_boosted_quantiles` as an unknown
+        calibration, exit 2).
+        """
+
+        selection = self.selection()
+        nested = selection["methods"]["nested_pid"]
+        chosen = [block["chosen"] for block in selection["nested_selection"]]
+        flags = ("--calibration", "conformal_pid_nested", "--splits", str(self.SPLITS))
+        backtest = self.backtest(*flags)
+        self.assertAlmostEqual(
+            backtest["metrics"]["crps_bps"], nested["crps_bps"]["all"]["all"]["mean"], places=12
+        )
+        self.assertAlmostEqual(
+            backtest["metrics"]["interval_coverage"], nested["coverage"]["all"]["all"]["mean"],
+            places=12,
+        )
+        compare = self.record(
+            "compare.json", "compare", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model-a", "persistence", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "spread_bps", "--feature-b", "sofr_volume",
+            "--calibration-b", "conformal_pid_nested", "--loss", "crps",
+            "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        self.assertAlmostEqual(
+            compare["comparison"]["model_b"]["crps_bps"],
+            nested["crps_bps"]["all"]["all"]["mean"],
+            places=12,
+        )
+        exceedance = self.record(
+            "exceedance.json", "exceedance-backtest", "--panel", str(self.panel),
+            "--thresholds", str(self.THRESHOLDS), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            *flags, *self.COMMON,
+        )
+        for tau in ("5", "10"):
+            self.assertAlmostEqual(
+                exceedance["metrics"]["by_tau"][tau]["brier"],
+                nested["brier"][tau + "bp"]["all"]["all"]["mean"],
+                places=12,
+            )
+        for declaration, account in (
+            (backtest["declaration"], backtest["calibration_account"]),
+            (compare["declaration"]["model_b"], compare["calibration_account_b"]),
+            (exceedance["declaration"], exceedance["calibration_account"]),
+        ):
+            self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+            self.assertNotIn("calibration_folds", declaration)
+            self.assertEqual(declaration["calibration_selection"]["refit_every"], 20)
+            self.assertEqual([block["chosen"] for block in account["blocks"]], chosen)
+        self.assertNotIn("calibration_account_a", compare)
+
+    def test_a_limitation_is_recorded_as_given(self):
+        text = "Scored only before 2026-01-01; the 2020 regression is stated in #122."
+        backtest = self.backtest(
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+            "--limitation", text, "--limitation", "A second one.",
+        )
+        self.assertEqual(backtest["limitations"], [text, "A second one."])
+        self.assertNotIn("limitations", self.backtest())
+
+    def test_what_conformal_pid_cannot_take_is_refused(self):
+        base = ("backtest", str(self.panel), "--registry", str(self.REGISTRY),
+                "--feature", "spread_bps", "--feature", "sofr_volume", *self.COMMON,
+                "--report", str(self.tmp / "refused.json"))
+        for extra, phrase in (
+            (("--model", "gbm", "--calibration", "conformal_pid"), "--splits"),
+            (("--model", "gbm", "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+              "--calibration-folds", "5"), "calibration-folds"),
+            (("--model", "persistence", "--calibration", "conformal_pid",
+              "--splits", str(self.SPLITS)), "takes no band calibration"),
+        ):
+            with self.subTest(extra=extra):
+                code, err = self.run_cli(*base, *extra)
+                self.assertEqual(code, 2)
+                self.assertIn(phrase, err)
+                self.assertFalse((self.tmp / "refused.json").exists())
 
 
 if __name__ == "__main__":
