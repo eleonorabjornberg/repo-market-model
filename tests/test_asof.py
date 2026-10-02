@@ -27,7 +27,7 @@ from repo_model.registry import RegistryContractError
 from repo_model.splits import LookAheadError, SplitError
 
 sys.path.insert(0, str(Path(__file__).parent))
-from test_contract import on_rrp_from_operation_results
+from test_contract import on_rrp_from_operation_results, srf_from_operation_results
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
@@ -618,6 +618,83 @@ class OnRrpAvailabilityTests(unittest.TestCase):
         )
 
     def test_every_on_rrp_read_passes_both_guards(self):
+        information = rule(self.FEATURES)
+        for scored in range(3, len(DATES)):
+            information.check(DATES, information.information_set(DATES, scored))
+
+
+class SrfAvailabilityTests(unittest.TestCase):
+    """`srf_take_up` is read at the next business day's decision instant (#127).
+
+    The Standing Repo Facility runs a 13:45 ET operation, and an 08:30 ET one
+    daily from 26 June 2025. Its results carry a `lastUpdated` write time a
+    minute or so after each close, but the Desk states no publication time, and
+    a few records were rewritten days later (2021-09-03 and 2021-09-10, on
+    2021-09-16). `nyfed_srf.release_lag` therefore takes #45's conservative
+    reading for the same endpoint: a day's take-up is available at 16:00 ET on
+    the next panel business day. So at the 16:00 decision on Wednesday 21
+    January, Wednesday's take-up (closed 13:45 that day) is invisible, and the
+    latest read is Tuesday's.
+
+    Written red first: on `main` there was no `contract.SRF_OPERATION_RESULTS_FIELDS`
+    and no `nyfed_srf` in the registry, so `setUp` raised `AttributeError`.
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy:
+    `metadata/sources.json`, `nyfed_srf.release_lag`, `"days": 1` mutated to
+    `"days": 0` (a take-up public at 16:00 on its own operation date).
+    `test_a_take_up_after_the_decision_instant_is_invisible` then fails with
+    `AssertionError` (`datetime.date(2026, 1, 21) != datetime.date(2026, 1,
+    20)`): the forecast reads the operation that closed the afternoon of its
+    own decision.
+    """
+
+    FEATURES = ("spread_bps", "srf_take_up")
+    FIELDS = (("nyfed_srf", "srf_total_accepted"),)
+
+    def setUp(self):
+        # Off in the published map (`contract.SRF_OPERATION_RESULTS_FIELDS`);
+        # switched on for these tests.
+        switch = srf_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
+
+    def rows(self):
+        # `srf_take_up` encodes its own row, 700 + i, so a read is legible.
+        return [
+            DailyObservation(row.date, {**row.values, "srf_take_up": 700.0 + index})
+            for index, row in enumerate(ROWS)
+        ]
+
+    def test_a_take_up_after_the_decision_instant_is_invisible(self):
+        """The leakage test: Wednesday's take-up is not read at Wednesday's decision."""
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 22))  # Thursday; decision Wed 21st 16:00
+        info = information.information_set(DATES, scored)
+        read = read_of(info, "srf_take_up")
+
+        self.assertEqual(read.fields, self.FIELDS)
+        self.assertEqual(DATES[read.row], date(2026, 1, 20))
+        self.assertEqual(read.available_at, datetime(2026, 1, 21, 16, 0))
+        wednesday = scored - 1
+        self.assertEqual(DATES[wednesday], date(2026, 1, 21))
+        self.assertGreater(
+            information.availability(DATES, self.FIELDS, wednesday),
+            info.decision_instant,
+        )
+        observed = information.observation(self.rows(), info)
+        self.assertEqual(observed.values["srf_take_up"], 700.0 + read.row)
+        # And a read forced onto Wednesday's row is leakage.
+        forced = info._replace(
+            reads=tuple(
+                entry._replace(row=wednesday) if entry.feature == "srf_take_up" else entry
+                for entry in info.reads
+            )
+        )
+        with self.assertRaises(LookAheadError):
+            information.check(DATES, forced)
+
+    def test_every_srf_read_passes_both_guards(self):
         information = rule(self.FEATURES)
         for scored in range(3, len(DATES)):
             information.check(DATES, information.information_set(DATES, scored))

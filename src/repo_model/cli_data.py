@@ -19,6 +19,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 from .data import (
+    OPT_IN_COLUMNS,
     PANEL_COLUMNS,
     REQUIRED_FIELDS,
     audit_panel,
@@ -34,8 +35,11 @@ from .ingest import (
     build_point_in_time_snapshot,
     check_scheduled_settlements,
     fetch_fred_macro,
+    fetch_frb_h8_archive,
+    fetch_nyfed_effr,
     fetch_nyfed_fr2004,
     fetch_nyfed_on_rrp,
+    fetch_nyfed_srf,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
     fetch_treasury_bill_rates,
@@ -83,6 +87,10 @@ def _fetch(args: argparse.Namespace) -> int:
             start=args.start,
             end=args.end,
         )
+    elif args.source == "effr":
+        artifacts = fetch_nyfed_effr(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
     elif args.source == "treasury-bill-rates":
         artifacts = fetch_treasury_bill_rates(
             output_root=args.output_root, start=args.start, end=args.end
@@ -91,6 +99,14 @@ def _fetch(args: argparse.Namespace) -> int:
         artifacts = fetch_nyfed_fr2004(output_root=args.output_root)
     elif args.source == "on-rrp":
         artifacts = fetch_nyfed_on_rrp(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
+    elif args.source == "srf":
+        artifacts = fetch_nyfed_srf(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
+    elif args.source == "h8":
+        artifacts = fetch_frb_h8_archive(
             output_root=args.output_root, start=args.start, end=args.end
         )
     else:
@@ -199,12 +215,12 @@ def _requested_columns(requested: list[str]) -> tuple[str, ...]:
             )
         seen.add(column)
     for column in requested:
-        if column not in PANEL_COLUMNS:
+        if column not in PANEL_COLUMNS + OPT_IN_COLUMNS:
             raise ValueError(
                 f"--column names {column!r}, which is not a panel column; "
-                f"choose from: {', '.join(PANEL_COLUMNS)}"
+                f"choose from: {', '.join(PANEL_COLUMNS + OPT_IN_COLUMNS)}"
             )
-    return tuple(column for column in PANEL_COLUMNS if column in seen)
+    return tuple(column for column in PANEL_COLUMNS + OPT_IN_COLUMNS if column in seen)
 
 
 def _build(args: argparse.Namespace) -> int:
@@ -355,12 +371,13 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch.add_argument(
         "source",
         choices=NYFED_RATE_SOURCES
-        + ("fred-macro", "treasury-bill-rates", "fr2004", "on-rrp"),
+        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8"),
     )
     fetch.add_argument(
         "--start",
         default="2018-04-03",
-        help="effective start date (treasury-bill-rates: every year from here to --end; "
+        help="effective start date (treasury-bill-rates and effr: every year from here to --end; "
+        "h8: every archived release from here to --end; "
         "fr2004 and fred-macro take no range)",
     )
     fetch.add_argument(
