@@ -38,6 +38,13 @@ unaffected -- and step 3 raises `PrePurgeRuleRecord`, naming the rule. The
 re-scoring pull request replaces the record with one scored under the as-of
 rule, and from then on all three steps run again.
 
+**Nor is a record whose scored days reach a locked tier.** The lockbox
+(`docs/decisions/lockbox.md`, `metadata/lockbox.json`) refuses to score a day
+in a tier that has not been opened, and the published record was scored
+through the end of the panel, inside the near-blind tier. Steps 1 and 2 still
+run and must pass, and step 3 raises `LockedRecord`, naming the tier. The day
+the tier is opened, all three steps run again with no edit here.
+
 Everything is written to a temporary directory, so the checkout is left as it
 was found. Standard library only.
 
@@ -62,7 +69,9 @@ REGISTRY = ROOT / "metadata" / "sources.json"
 # Declaration keys this script knows how to turn back into `backtest`
 # arguments. A record declaring anything else is refused rather than re-run
 # without it: dropping a declared argument re-runs a different experiment.
-DECLARATION_KEYS = {"decision_time", "features", "minimum_history", "model", "refit_every"}
+DECLARATION_KEYS = {
+    "decision_time", "end", "features", "minimum_history", "model", "refit_every",
+}
 
 # Whole blocks of the record that describe the run, and the panel keys that do.
 COMPARED_BLOCKS = ("declaration", "derived", "folds", "metrics")
@@ -75,6 +84,34 @@ class ReproductionError(Exception):
 
 class PrePurgeRuleRecord(ReproductionError):
     """The record was scored under the purge rule, which the code no longer runs."""
+
+
+class LockedRecord(ReproductionError):
+    """The record scored days in a locked tier, which the code refuses to score."""
+
+
+def locked_tier_refusal(record):
+    """The lockbox's refusal of the record's scored days, or `None`.
+
+    The record's first and last scored days are checked by the guard every
+    scoring entry point calls (`repo_model.lockbox.require_unlocked`), so this
+    says what step 3 would meet without running it. The tiers are contiguous
+    to the end of time, so the two ends of the record's scored days decide it.
+    """
+    if str(ROOT / "src") not in sys.path:
+        sys.path.insert(0, str(ROOT / "src"))
+    from datetime import date
+
+    from repo_model.lockbox import require_unlocked
+    from repo_model.splits import LookAheadError
+
+    folds = record["folds"]
+    days = [date.fromisoformat(folds[end]["scored_date"]) for end in ("first", "last")]
+    try:
+        require_unlocked(days, where=str(RECORD.relative_to(ROOT)))
+    except LookAheadError as exc:
+        return str(exc)
+    return None
 
 
 def scored_under_purge_rule(record):
@@ -176,7 +213,7 @@ def reproduce(workdir):
     """Run the three steps in `workdir`. Returns the list of disagreements.
 
     Raises `PrePurgeRuleRecord` after steps 1 and 2 when the record was scored
-    under the purge rule.
+    under the purge rule, and `LockedRecord` when it scored a locked day.
     """
     record = json.loads(RECORD.read_text(encoding="utf-8"))
     declaration = record["declaration"]
@@ -196,6 +233,13 @@ def reproduce(workdir):
             % (RECORD.relative_to(ROOT), record["derived"]["purge_days"])
         )
 
+    refusal = locked_tier_refusal(record)
+    if refusal is not None:
+        raise LockedRecord(
+            "%s; the record is not re-scored while the tier is locked. The "
+            "panel it was scored on still reproduces." % refusal
+        )
+
     report = Path(workdir) / "persistence_funding.json"
     arguments = [
         "backtest", str(panel),
@@ -206,6 +250,8 @@ def reproduce(workdir):
         "--refit-every", str(declaration.get("refit_every", 1)),
         "--report", str(report),
     ]
+    if "end" in declaration:
+        arguments += ["--end", declaration["end"]]
     for feature in declaration["features"]:
         arguments += ["--feature", feature]
     # A record split by regime and pressure-day type (#27) names the

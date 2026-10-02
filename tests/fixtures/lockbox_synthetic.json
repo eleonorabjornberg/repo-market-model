@@ -1,0 +1,18 @@
+{
+  "decision": "tests/lockbox_support.py",
+  "tiers": [
+    {
+      "end": "2100-12-31",
+      "name": "synthetic_near_blind",
+      "opened": null,
+      "start": "2100-01-01"
+    },
+    {
+      "end": null,
+      "name": "synthetic_blind",
+      "opened": null,
+      "start": "2101-01-01"
+    }
+  ],
+  "version": 1
+}
