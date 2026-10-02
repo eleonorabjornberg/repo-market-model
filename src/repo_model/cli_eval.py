@@ -553,6 +553,8 @@ class _FitterChoice:
     takes_arx_feature: bool = False
     #: Does this model take `--tail`? The same rule again.
     takes_tail: bool = False
+    #: Does this model take `--training-pairs`? The same rule again (#37).
+    takes_training_pairs: bool = False
 
     @property
     def factory(self) -> Callable[..., FittedForecastModel]:
@@ -651,8 +653,9 @@ FITTER_FACTORIES = MappingProxyType(
         # published gbm record was produced with, and the fitter's own
         # defaults decide the rest. The gap between the fit and calibration
         # slices is not bound here: the fold loop derives it and hands it over.
-        # `--spread-change-lags`, `--volatility-feature`, `--arx-feature` and
-        # `--tail` by the same rule: bound only when given.
+        # `--spread-change-lags`, `--volatility-feature`, `--arx-feature`,
+        # `--tail` and `--training-pairs` by the same rule: bound only when
+        # given.
         "gbm": _FitterChoice(
             declared=_DeferredFactory("fit_gradient_boosted_quantiles"),
             build=lambda factory, regressors, regime, window, settings: functools.partial(
@@ -664,6 +667,7 @@ FITTER_FACTORIES = MappingProxyType(
             takes_volatility_feature=True,
             takes_arx_feature=True,
             takes_tail=True,
+            takes_training_pairs=True,
         ),
     }
 )
@@ -727,6 +731,9 @@ def _select_fitter(
     )
     settings.update(_arx_feature(args, name, choice.takes_arx_feature, side=side))
     settings.update(_tail(args, name, choice.takes_tail, side=side))
+    settings.update(
+        _training_pairs(args, name, choice.takes_training_pairs, side=side)
+    )
     return name, choice.construct(
         regressors=regressors,
         regime_variable=regime_variable,
@@ -870,6 +877,32 @@ def _arx_feature(
             "took effect -- here, as a model that saw an ARX's forecast"
         )
     return {"arx_feature": feature}
+
+
+def _training_pairs(
+    args: argparse.Namespace,
+    name: str,
+    takes_pairs: bool,
+    *,
+    side: str = "",
+) -> Mapping[str, Any]:
+    """Resolve `--training-pairs`, or refuse. `_arx_feature`'s shape and rule (#37).
+
+    Optional for gbm and refused for every other model; returned only when
+    given. An unknown value is refused by `ml.fit_gradient_boosted_quantiles`.
+    """
+
+    pairs = getattr(args, "training_pairs", None)
+    if pairs is None:
+        return {}
+    if not takes_pairs:
+        raise SplitError(
+            f"--training-pairs{side} {pairs} was given, but --model{side} {name} "
+            "is trained on no choice of pairs; only gbm is. A flag that is "
+            "accepted and ignored is read by the next person as a setting that "
+            "took effect"
+        )
+    return {"training_pairs": pairs}
 
 
 def _tail(
@@ -1096,8 +1129,8 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     `compare` declares each model separately -- `--model-a`, `--feature-a`,
     `--regime-variable-a`, `--residual-window-a`, `--calibration-a`,
     `--calibration-share-a`, `--calibration-folds-a`, `--spread-change-lags-a`,
-    `--volatility-feature-a`, `--arx-feature-a`, `--tail-a`, and the same
-    eleven for `b` --
+    `--volatility-feature-a`, `--arx-feature-a`, `--tail-a`,
+    `--training-pairs-a`, and the same twelve for `b` --
     because the two models being compared are usually declared over different
     columns and one shared `--feature` would either over-purge the simpler model
     or leave the richer one's columns unpriced. The window is per side for a
@@ -1131,6 +1164,7 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
         volatility_feature=getattr(args, f"volatility_feature_{side}"),
         arx_feature=getattr(args, f"arx_feature_{side}"),
         tail=getattr(args, f"tail_{side}"),
+        training_pairs=getattr(args, f"training_pairs_{side}"),
         minimum_history=args.minimum_history,
     )
 
@@ -1870,6 +1904,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "published gbm record was produced with. Refused for every model but gbm",
     )
     backtest.add_argument(
+        "--training-pairs",
+        metavar="NAME",
+        default=None,
+        help="train gbm on direct pairs: each target row with the as-of read "
+        "a forecast of it makes, the gap the model is served at; one-step pairs "
+        "when not given, which is the model every published gbm record was "
+        "produced with. Refused for every model but gbm",
+    )
+    backtest.add_argument(
         "--tail",
         metavar="NAME",
         default=None,
@@ -1995,6 +2038,14 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             f"design: declared, the ARX on --feature-{side}, fitted per fold on "
             f"the fit rows; none when not given; refused for --model-{side} "
             f"other than gbm",
+        )
+        compare.add_argument(
+            f"--training-pairs-{side}",
+            metavar="NAME",
+            default=None,
+            help=f"train the {side} model's gbm on direct pairs, each target "
+            f"with its own as-of read; one-step pairs when not given; refused "
+            f"for --model-{side} other than gbm",
         )
         compare.add_argument(
             f"--tail-{side}",
