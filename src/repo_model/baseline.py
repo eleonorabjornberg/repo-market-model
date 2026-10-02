@@ -7425,9 +7425,15 @@ def split_document(
 ) -> dict:
     """`series` split by the declared regimes and pressure-day types."""
 
-    from .evaluation_splits import DAY_TYPES, split_summary
+    from .evaluation_splits import (
+        DAY_TYPES,
+        QUARTER_END_WINDOW_GROUPS,
+        quarter_end_window_label,
+        split_summary,
+    )
 
     regimes, types = _split_labels(declaration, rows, scored_dates)
+    windows = [quarter_end_window_label(when) for when in scored_dates]
     common = dict(
         block_length=block_length,
         seed=seed,
@@ -7437,6 +7443,10 @@ def split_document(
     return {
         "by_regime": split_summary(regimes, series, declaration.regime_labels, **common),
         "by_day_type": split_summary(types, series, DAY_TYPES, **common),
+        # #140: beside the declared types, not among them.
+        "by_quarter_end_window": split_summary(
+            windows, series, QUARTER_END_WINDOW_GROUPS, **common
+        ),
     }
 
 

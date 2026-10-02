@@ -61,6 +61,13 @@ to the table and make `quarter_end` respect them.
 
 `days_to_month_end` and `tax_date` are unchanged, and neither reads the table.
 
+## A quarter-end window
+
+Decided by Eleonora, 2 October 2026 (#140; ruling on PR #186), in force once PR #186 merges.
+[`quarter-end-window.md`](quarter-end-window.md) adds a column `quarter_end_window` covering the quarter's last
+business day and the two business days either side, a split reported alongside the day types on every new record,
+and a per-quarter peak of SOFR − IORB. It leaves `quarter_end` as decided above.
+
 ## Why calendar days and not business days
 
 Three reasons, in the order they bind.
