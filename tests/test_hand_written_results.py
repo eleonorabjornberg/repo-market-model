@@ -44,12 +44,15 @@ plain words must use the record's strict wording ("more than", never "at least",
 changed: `AssertionError` from both tests.
 
 * `README.md`: "Status, honestly" restated the verdict ("the model beats persistence
-  out of sample, and the tail clause fails").
+  out of sample, and the tail clause fails"). "The tail clause, measured" described the
+  criterion in a result's words ("a model that beats persistence") and still called
+  the verdict re-opened.
 * `docs/PORTFOLIO_CASE_STUDY.md`: "Results and limitations" restated the key findings
   and the verdict ("beats the benchmark on average", "loses to persistence in
   2021-23", "a smaller but distinguishable win", "has skill at the two smaller
   thresholds", "is beaten at the two larger ones", "not distinguishable", "is met on
-  the first half and fails on the second").
+  the first half and fails on the second"). One description was refused too, and was
+  reworded: "whether a phase has met its exit criterion" now reads "reached".
 * `METHODOLOGY.md`: "Reading the pre-as-of records" restated the archived records'
   results ("won on CRPS", "carried skill", "beat it only at the lowest declared
   threshold"). The page also restated the event without linking to its record.
