@@ -22,7 +22,7 @@ import argparse
 import functools
 import json
 from dataclasses import dataclass
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Tuple, Union
@@ -31,8 +31,10 @@ from .baseline import (
     ExceedancePredictor,
     FittedForecastModel,
     ModelFitter,
+    EVENT_LEAD_DAYS,
     add_backtest_splits,
     add_comparison_splits,
+    add_exceedance_event_lists,
     add_exceedance_splits,
     arx_exceedance,
     backtest_document,
@@ -264,6 +266,52 @@ MODEL_FACTORIES = MappingProxyType(
             takes_spread_change_lags=True,
             takes_volatility_feature=True,
             takes_arx_feature=True,
+        ),
+        # The two direct pressure-probability candidates of pressure model v1
+        # (#114), behind the extra like gbm. Each reads the latest spread plus
+        # the declared regressors, and the pressure-day types from --splits.
+        "pressure_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_logistic_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_classifier_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        # The dynamic pressure logit and its ordinal version (#137): the
+        # direct design plus the lagged event indicator and the model's own
+        # lagged index, read off each forecast's as-of history.
+        "dynamic_logit": _ModelChoice(
+            declared=_DeferredFactory("dynamic_logit_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "dynamic_ordinal": _ModelChoice(
+            declared=_DeferredFactory("dynamic_ordinal_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
         ),
     }
 )
@@ -1066,6 +1114,7 @@ def _backtest(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
         fit_model=fit_model,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     # `--registry` is passed to the record as well as to the run: the record
@@ -1079,6 +1128,7 @@ def _backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         model=model_name,
     )
+    _declare_end(document, args)
     if args.splits is not None:
         add_backtest_splits(document, report, rows, load_split_declaration(args.splits))
     args.report.write_text(
@@ -1257,11 +1307,13 @@ def _compare(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
         loss=args.loss,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     document = paired_comparison_document(
         comparison, panel_path=args.path, registry_path=args.registry
     )
+    _declare_end(document, args)
     if args.splits is not None:
         add_comparison_splits(document, rows, load_split_declaration(args.splits))
     args.report.write_text(
@@ -1605,6 +1657,18 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
 
     declaration = load_stress_thresholds(args.thresholds)
     taus = tuple(float(tau) for tau in declaration["taus_bp"])
+    # Refused before any fit, as `add_exceedance_event_lists` would refuse
+    # them after: a run is not spent to learn its flags were wrong.
+    for tau in args.event_list or ():
+        if tau not in taus:
+            raise SplitError(
+                f"--event-list {tau:g} is not a declared threshold; the family "
+                f"is {', '.join(f'{t:g}' for t in taus)}"
+            )
+    if args.event_list and args.event_lead_days < 0:
+        raise ValueError(
+            f"--event-lead-days must be zero or more, got {args.event_lead_days}"
+        )
 
     report = rolling_exceedance_backtest(
         rows,
@@ -1616,6 +1680,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         taus=taus,
         minimum_history=args.minimum_history,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     # Both declaration files the run opened, identified in the record by the
@@ -1626,6 +1691,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         thresholds_path=args.thresholds,
     )
+    _declare_end(document, args)
     split_declaration = (
         None if args.splits is None else load_split_declaration(args.splits)
     )
@@ -1636,6 +1702,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     # The pressure-probability benchmarks (`--benchmark`), each scored on the
     # same panel under its own fixed declaration and guards, then paired with
     # the model day by day (`baseline.benchmark_comparison_document`).
+    bench_reports = []
     if benchmark_runs:
         document["benchmarks"] = {}
         for name, features, bench_predictor in benchmark_runs:
@@ -1649,6 +1716,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                 taus=taus,
                 minimum_history=args.minimum_history,
                 refit_every=args.refit_every,
+                end=args.end,
             )
             document["benchmarks"][name] = benchmark_comparison_document(
                 report,
@@ -1657,6 +1725,18 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                 rows=rows,
                 declaration=split_declaration,
             )
+            bench_reports.append(bench)
+    # A threshold reported event by event (`--event-list`, #130): its pooled
+    # figures, here and in the paired rows, give way to the event list. Absent
+    # the flag the record is byte-for-byte what it was.
+    if args.event_list:
+        add_exceedance_event_lists(
+            document,
+            report,
+            bench_reports,
+            args.event_list,
+            lead_days=args.event_lead_days,
+        )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1681,6 +1761,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                         else round(metric.brier_skill_score, 4)
                     )
                     for metric in report.metrics
+                    if metric.tau_bp not in (args.event_list or ())
                 },
                 "features": sorted(report.features),
                 "refit_every": report.refit_every,
@@ -1755,6 +1836,35 @@ def _add_refit_every(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_end(parser: argparse.ArgumentParser) -> None:
+    """`--end DATE`: score no day after DATE, recorded in the declaration.
+
+    The published panel runs into the locked tiers of
+    `docs/decisions/lockbox.md`, and every scoring entry point refuses a locked
+    scored day (`repo_model.lockbox`). So a run on that panel names the last
+    day it scores, before 2026-01-01. The fold grid stops at DATE; the panel
+    is read whole, so its digest and extent are still the file's, and no fold
+    reads a row after its own decision instant either way.
+    """
+
+    parser.add_argument(
+        "--end",
+        type=date.fromisoformat,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="score no day after this date; recorded in the record's "
+        "declaration. A run on the published "
+        "panel needs one before 2026-01-01, the start of the locked period",
+    )
+
+
+def _declare_end(document: dict, args: argparse.Namespace) -> None:
+    """Record `--end` in the document's declaration, when one was given."""
+
+    if args.end is not None:
+        document["declaration"]["end"] = args.end.isoformat()
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
@@ -1762,6 +1872,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "backtest", help="run the as-of rolling benchmark"
     )
     _add_refit_every(backtest)
+    _add_end(backtest)
     _add_splits(backtest)
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
@@ -1904,6 +2015,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "the paired difference",
     )
     _add_refit_every(compare)
+    _add_end(compare)
     _add_splits(compare)
     compare.add_argument("path", type=Path)
     compare.add_argument("--minimum-history", type=int, default=20)
@@ -2052,6 +2164,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="score an exceedance predictor at every row of the as-of grid",
     )
     _add_refit_every(exceedance)
+    _add_end(exceedance)
     _add_splits(exceedance)
     exceedance.add_argument(
         "--benchmark",
@@ -2065,6 +2178,27 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             "declaration; the record carries the paired Brier difference per "
             "threshold with a stationary-bootstrap interval"
         ),
+    )
+    exceedance.add_argument(
+        "--event-list",
+        action="append",
+        type=float,
+        default=None,
+        metavar="TAU",
+        help=(
+            "report this declared threshold (bp) event by event instead of "
+            "pooled, repeatable: the record lists each positive scored day with "
+            "every model's probabilities over the days before it, and carries "
+            "no skill score, interval or split there (#130). Off by default"
+        ),
+    )
+    exceedance.add_argument(
+        "--event-lead-days",
+        type=int,
+        default=EVENT_LEAD_DAYS,
+        metavar="N",
+        help="scored days before each event the event list shows; "
+        f"default {EVENT_LEAD_DAYS}",
     )
     exceedance.add_argument("--panel", type=Path, required=True)
     exceedance.add_argument("--thresholds", type=Path, required=True)

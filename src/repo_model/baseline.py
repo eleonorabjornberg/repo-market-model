@@ -174,6 +174,7 @@ from .contract import (
     field_sources_for_features,
 )
 from .data import DailyObservation, load_stress_thresholds
+from .lockbox import require_unlocked
 from .metrics import (
     CorpDecomposition,
     MetricError,
@@ -1527,7 +1528,20 @@ def _raw_regressor(
     which a `spread_bps` regime reads without the model declaring it as a
     regressor at all. A message naming the wrong read sends the reader to the
     wrong flag.
+
+    A derived feature other than the target (`contract.DERIVED_FEATURES`) is
+    not a panel column. It is read off `DailyObservation`'s property of the
+    same name, after each constituent column is read here: an absent one
+    raises as any column does, and an unobserved one makes the feature `None`.
+    The as-of rule reads every constituent at one row, so the property never
+    joins two days.
     """
+
+    if name not in row.values and name in DERIVED_FEATURES and name != SPREAD_VARIABLE:
+        for component in DERIVED_FEATURES[name]:
+            if _raw_regressor(row, component, where, role=f"a component of {name!r}") is None:
+                return None
+        return _raw_regressor(DailyObservation(row.date, {name: getattr(row, name)}), name, where)
 
     try:
         raw = row.values[name]
@@ -2761,11 +2775,17 @@ def _as_of_folds(
     *,
     minimum_history: int,
     refit_every: int,
+    entry: str,
+    end: Optional[date] = None,
 ) -> Iterable[_AsOfFold]:
     """Every scored row of the one grid, with its reads checked both ways.
 
     The grid is `asof.fold_grid`: every row from the first with
-    `minimum_history` observable labels, whatever the declaration. Rows are
+    `minimum_history` observable labels, whatever the declaration, through
+    `end` when one is given. Before the first row is yielded, and so before
+    any fit, the whole grid is checked against the lockbox
+    (`lockbox.require_unlocked`): a scored day in a locked tier raises
+    `LookAheadError`, naming `entry`, the tier and the first such day. Rows are
     taken in blocks of `refit_every`; the first row of each block carries the
     frame its fit is made on. Every row is checked by
     `InformationRule.check` (leakage and staleness) and, per read, by
@@ -2779,7 +2799,13 @@ def _as_of_folds(
         rule.registry,
         decision_time=rule.decision_time,
         minimum_history=minimum_history,
+        horizon=rule.horizon,
     )
+    if end is not None:
+        grid = [index for index in grid if dates[index] <= end]
+        if not grid:
+            raise SplitError(f"no row of the fold grid is scored on or before {end}")
+    require_unlocked((dates[index] for index in grid), where=entry)
     for block in refit_blocks(grid, refit_every):
         for index in block:
             info = rule.information_set(dates, index)
@@ -2792,6 +2818,7 @@ def _as_of_folds(
                     read.row,
                     index,
                     decision_time=rule.decision_time,
+                    horizon=rule.horizon,
                 )
             frame = rule.frame(rows, info) if index == block[0] else None
             if frame is not None and len(frame) < minimum_history:
@@ -2968,6 +2995,7 @@ def _check_decision_relative_availability(
     scored_index: int,
     *,
     decision_time: time,
+    horizon: int = 1,
 ) -> None:
     """Raise unless a read row had been published when the forecast was made.
 
@@ -2987,15 +3015,20 @@ def _check_decision_relative_availability(
     `LookAheadError`, per CLAUDE.md's "Leakage guards raise `LookAheadError`,
     never `assert`": `python -O` strips asserts.
 
+    At a declared `horizon` of `h` panel days (#114) the decision is made on
+    the panel day `h` rows before the scored one.
+
     Raises:
         LookAheadError: naming the field and the fold, when a field's declared
             availability for the row read is after the decision instant.
     """
 
-    if scored_index == 0:
-        return  # no panel date precedes the scored one, so no decision instant
+    if scored_index < horizon:
+        return  # no panel date `horizon` before the scored one, so no decision instant
+    # The deadline is computed here from `horizon`, never read off the rule:
+    # this guard checks the rule's decision instant rather than trusting it.
     deadline = datetime.combine(
-        dates[scored_index - 1], decision_time.replace(tzinfo=None)
+        dates[scored_index - horizon], decision_time.replace(tzinfo=None)
     )
     for source_id, field in field_sources:
         available = _declared_availability(
@@ -3060,6 +3093,7 @@ def rolling_persistence_backtest(
     interval_probability: Optional[float] = None,
     fit_model: Optional[ModelFitter] = None,
     refit_every: int = 1,
+    end: Optional[date] = None,
 ) -> BacktestReport:
     """Score every row of the one fold grid under the as-of information rule.
 
@@ -3110,8 +3144,12 @@ def rolling_persistence_backtest(
             fitted model`; `None` is persistence's `fit`. A fitter naming an
             `information` parameter is handed the run's `InformationRule`.
         refit_every: scored rows per fit, at least 1.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: if the panel is too short, `refit_every` is not a positive
             int, or `interval_probability` names an interval the declared
             levels do not produce.
@@ -3160,7 +3198,12 @@ def rolling_persistence_backtest(
     train_frame: Sequence[DailyObservation] = ()
 
     for fold in _as_of_folds(
-        rows, rule, minimum_history=minimum_history, refit_every=refit
+        rows,
+        rule,
+        minimum_history=minimum_history,
+        refit_every=refit,
+        entry="rolling_persistence_backtest",
+        end=end,
     ):
         index = fold.index
         if fold.frame is not None:
@@ -5065,6 +5108,7 @@ def paired_model_comparison(
     minimum_history: int = 20,
     loss: str = DEFAULT_COMPARISON_LOSS,
     refit_every: int = 1,
+    end: Optional[date] = None,
 ) -> PairedComparisonReport:
     """Score two continuous models at the same origins and interval the gap.
 
@@ -5163,11 +5207,15 @@ def paired_model_comparison(
             Defaults to `DEFAULT_COMPARISON_LOSS`, the absolute error, so every
             caller written before this argument existed keeps its meaning.
         refit_every: scored rows per fit, for both sides.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
 
     Returns:
         A `PairedComparisonReport`.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: the panel is too short for `minimum_history`, `loss` names
             a loss this module does not implement, or -- under `crps` -- a
             fitted model reports a quantile grid other than the declared one.
@@ -5218,8 +5266,22 @@ def paired_model_comparison(
     # sequences name the same rows in the same order, and the pairing is
     # checked on every row rather than trusted.
     for fold_a, fold_b in zip(
-        _as_of_folds(rows, rule_a, minimum_history=minimum_history, refit_every=refit),
-        _as_of_folds(rows, rule_b, minimum_history=minimum_history, refit_every=refit),
+        _as_of_folds(
+            rows,
+            rule_a,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="paired_model_comparison",
+            end=end,
+        ),
+        _as_of_folds(
+            rows,
+            rule_b,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="paired_model_comparison",
+            end=end,
+        ),
     ):
         if fold_a.index != fold_b.index:  # pragma: no cover - one grid by construction
             raise SplitError(
@@ -6067,7 +6129,8 @@ def persistence_logistic_exceedance(minimum_history: int = 20) -> ExceedancePred
         dates = [row.date for row in train_rows]
         xs: List[float] = []
         targets: List[float] = []
-        for position in range(1, len(train_rows)):
+        # From the first label with a decision instant: `horizon` rows in.
+        for position in range(information.horizon, len(train_rows)):
             anchor = information.anchor(dates, position)
             if anchor < 0:
                 continue
@@ -6359,6 +6422,9 @@ class ExceedanceBacktestReport:
     #: fit carried a tail, so a record of such a run grows no key.
     #: `RollingBacktestReport.tail_accounts`, on this path (B40).
     tail_accounts: Optional[Tuple[Mapping[str, Any], ...]] = None
+    #: How many panel days ahead each forecast was made (#114); 1 is the
+    #: rule every published record was scored under.
+    horizon: int = 1
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -6454,6 +6520,8 @@ def rolling_exceedance_backtest(
     taus: Sequence[float],
     minimum_history: int = 20,
     refit_every: int = 1,
+    end: Optional[date] = None,
+    horizon: int = 1,
 ) -> ExceedanceBacktestReport:
     """Score every row of the as-of grid, pool the curves, then score the pool.
 
@@ -6526,8 +6594,15 @@ def rolling_exceedance_backtest(
         minimum_history: the first origin scored and the shortest training
             frame any fit is allowed, for the scored model and the reference
             alike.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
+        horizon: how many panel days before each scored day its forecast is
+            made (`asof.InformationRule`, #114). 1, the default, is the rule
+            every published record was scored under.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: if the panel is too short for `minimum_history`, or
             `model_name` is empty.
         SplitError: on a malformed panel, tau family or prediction, or when the
@@ -6547,7 +6622,9 @@ def rolling_exceedance_backtest(
     # set has no information set, so it has no backtest.
     declared: Tuple[str, ...] = tuple(features)
     field_sources, sources = _resolve_fields(declared)
-    rule = InformationRule(registry, declared, decision_time=decision_time)
+    rule = InformationRule(
+        registry, declared, decision_time=decision_time, horizon=horizon
+    )
     refit = require_refit_every(refit_every)
 
     if not isinstance(model_name, str) or not model_name:
@@ -6589,7 +6666,14 @@ def rolling_exceedance_backtest(
     infos: List[InformationSet] = []
 
     for block in _refit_blocks_of(
-        _as_of_folds(rows, rule, minimum_history=minimum_history, refit_every=refit)
+        _as_of_folds(
+            rows,
+            rule,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="rolling_exceedance_backtest",
+            end=end,
+        )
     ):
         train_rows = tuple(block[0].frame)
         # One fit for the block (#57): the predictor is asked for every row's
@@ -6709,6 +6793,7 @@ def rolling_exceedance_backtest(
             if all(account is None for account in tail_accounts)
             else tuple(tail_accounts)
         ),
+        horizon=rule.horizon,
     )
 
 
@@ -7170,6 +7255,127 @@ def _tau_key(tau: float) -> str:
     """
 
     return f"{float(tau):g}"
+
+
+#: How many scored days before an event its event-list entry shows, when the
+#: caller does not say. Five, the far end of the headline's 1-5 business-day
+#: horizon; a draft for `docs/decisions/pressure-probability.md` (#130), not a
+#: rule until Eleonora merges it.
+EVENT_LEAD_DAYS = 5
+
+
+def exceedance_event_list(
+    report: ExceedanceBacktestReport,
+    benchmarks: Sequence[ExceedanceBacktestReport],
+    position: int,
+    *,
+    lead_days: int = EVENT_LEAD_DAYS,
+) -> List[dict]:
+    """Every positive scored day at one threshold, with each model's path to it.
+
+    The threshold at `position` of `report.taus` is one with too few positives
+    for a pooled claim (#130). Each scored day whose outcome is positive there
+    is one event: its date, the realised spread, and, for that day and the
+    `lead_days` scored days before it, the probability each model gave --
+    the scored model, the climatology reference its skill score is a ratio
+    against, and every benchmark. A path is cut short at the first scored day.
+
+    Every probability is read off the reports as scored, and the benchmarks
+    must be on the report's own grid, as `benchmark_comparison_document`
+    requires (`SplitError` otherwise). Nothing is aggregated.
+    """
+
+    if lead_days < 0:
+        raise ValueError(f"lead_days must be zero or more, got {lead_days}")
+    columns = {
+        report.model_name: report.at_tau(position)[0],
+        "reference_climatology": report.at_tau(position)[1],
+    }
+    for bench in benchmarks:
+        if tuple(bench.scored_dates) != tuple(report.scored_dates):
+            raise SplitError(
+                f"the benchmark {bench.model_name!r} was not scored on the "
+                f"model's grid; an event list reads one grid"
+            )
+        if bench.model_name in columns:
+            raise SplitError(f"two models named {bench.model_name!r} in one event list")
+        columns[bench.model_name] = bench.at_tau(position)[0]
+    outcomes = report.at_tau(position)[2]
+    events: List[dict] = []
+    for index, outcome in enumerate(outcomes):
+        if not outcome:
+            continue
+        start = max(0, index - lead_days)
+        events.append(
+            {
+                "date": report.scored_dates[index].isoformat(),
+                "realized_bps": report.realized_bps[index],
+                "forecasts": [
+                    {
+                        "scored_date": report.scored_dates[step].isoformat(),
+                        "feature_date": report.folds[step].feature_date.isoformat(),
+                        "days_before": index - step,
+                        "probability": {
+                            name: column[step]
+                            for name, column in sorted(columns.items())
+                        },
+                    }
+                    for step in range(start, index + 1)
+                ],
+            }
+        )
+    return events
+
+
+def add_exceedance_event_lists(
+    document: dict,
+    report: ExceedanceBacktestReport,
+    benchmarks: Sequence[ExceedanceBacktestReport],
+    taus_bp: Sequence[float],
+    *,
+    lead_days: int = EVENT_LEAD_DAYS,
+) -> dict:
+    """Report each of `taus_bp` event by event instead of pooled (#130).
+
+    For each listed threshold, `metrics.by_tau.<tau>` keeps the threshold, the
+    scored days and the positive count, and carries `events`
+    (`exceedance_event_list`) in place of every pooled figure: no skill score,
+    no bootstrap interval, no split, no decomposition. The benchmarks' paired
+    rows at that threshold are dropped for the same reason; their
+    probabilities are in the events. The declaration records the listed
+    thresholds and the lead. A threshold outside the run's declared family is
+    refused (`SplitError`): the family is `metadata/stress_thresholds.json`'s.
+    """
+
+    listed = sorted({float(tau) for tau in taus_bp})
+    for tau in listed:
+        if tau not in report.taus:
+            raise SplitError(
+                f"--event-list {tau:g} is not a declared threshold; the family "
+                f"is {', '.join(f'{t:g}' for t in report.taus)}"
+            )
+    if lead_days < 0:
+        raise ValueError(f"lead_days must be zero or more, got {lead_days}")
+    for tau in listed:
+        position = report.taus.index(tau)
+        key = _tau_key(tau)
+        pooled = document["metrics"]["by_tau"][key]
+        document["metrics"]["by_tau"][key] = {
+            "tau_bp": pooled["tau_bp"],
+            "scored_days": pooled["scored_days"],
+            "positives": pooled["positives"],
+            "reporting": "event_list",
+            "events": exceedance_event_list(
+                report, benchmarks, position, lead_days=lead_days
+            ),
+        }
+        for entry in document.get("benchmarks", {}).values():
+            entry["by_tau"].pop(key, None)
+    document["declaration"]["event_list"] = {
+        "taus_bp": listed,
+        "lead_days": lead_days,
+    }
+    return document
 
 
 # --------------------------------------------------------------------------

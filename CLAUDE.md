@@ -95,5 +95,5 @@ Nothing here is changed without her review.
 
 ## Delegated review
 
-Until directive 06 merges, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
+Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
 this file still applies.

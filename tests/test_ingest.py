@@ -27,6 +27,7 @@ from repo_model.data import (
     WITHHELD_FIELD_REASONS,
     WITHHELD_NO_FED_COUNTERPARTY,
     CrossSectionCoverage,
+    ON_RRP_MAX_GAP_DAYS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     absent_cells_from_quality_report,
@@ -4174,9 +4175,75 @@ class AvailableAtDerivationTests(unittest.TestCase):
             byte_count=len(payload),
         )
 
+    def on_rrp_snapshot(self, ref_date, retrieved, source_id=None):
+        """One operation in the operation-results JSON shape (#45; #127's SRF).
+
+        A reverse repo for `nyfed_on_rrp`; an overnight repo for `nyfed_srf`.
+        """
+
+        source_id = source_id or ingest.NYFED_ON_RRP_SOURCE_ID
+        srf = source_id == ingest.NYFED_SRF_SOURCE_ID
+        payload = json.dumps(
+            {
+                "repo": {
+                    "operations": [
+                        {
+                            "operationDate": ref_date,
+                            "operationType": "Repo" if srf else "Reverse Repo",
+                            "term": "Overnight",
+                            "totalAmtAccepted": 2_000_000_000,
+                        }
+                    ]
+                }
+            }
+        ).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "operations.json"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=source_id,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.NYFED_RP_RESULTS_URL}?startDate={ref_date}&endDate={ref_date}",
+            byte_count=len(payload),
+        )
+
+    def ddp_snapshot(self, ref_date, retrieved):
+        """One H.15 EFFR print, in the DDP package's SDMX shape (#129)."""
+
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?><m:MessageGroup xmlns:m="m" '
+            'xmlns:frb="f" xmlns:kf="k"><frb:DataSet id="H15">'
+            '<kf:Series SERIES_NAME="RIFSPFF_N.B">'
+            f'<frb:Obs OBS_STATUS="A" OBS_VALUE="4.33" TIME_PERIOD="{ref_date}" />'
+            "</kf:Series></frb:DataSet></m:MessageGroup>"
+        )
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("H15_data.xml", xml)
+        payload = buffer.getvalue()
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "h15.zip"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=ingest.FRB_DDP_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.FRB_DDP_OUTPUT_URL}?rel=H15&filetype=zip",
+            byte_count=len(payload),
+        )
+
     def source_snapshot(self, source_id, ref_date, retrieved):
+        if source_id == ingest.FRB_DDP_SOURCE_ID:
+            return self.ddp_snapshot(ref_date, retrieved)
         if source_id == FR2004_SOURCE_ID:
             return self.fr2004_snapshot(ref_date, retrieved)
+        if source_id in (ingest.NYFED_ON_RRP_SOURCE_ID, ingest.NYFED_SRF_SOURCE_ID):
+            return self.on_rrp_snapshot(ref_date, retrieved, source_id)
         return self.nyfed_snapshot(source_id, ref_date, retrieved)
 
     def nyfed_snapshot(self, source_id, ref_date, retrieved):
@@ -4237,7 +4304,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         self.assertEqual(
             self.ref_date_sources(),
-            ["nyfed_bgcr", "nyfed_fr2004", "nyfed_sofr", "nyfed_tgcr"],
+            ["frb_ddp", "nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_on_rrp", "nyfed_sofr", "nyfed_srf", "nyfed_tgcr"],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
@@ -6955,7 +7022,12 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
         # The bill-rate and FR 2004 fetchers are replaced outright so a trap
         # subtest over them never reaches the network; what they write is
         # `TreasuryBillRateAndFr2004FetchTests`' business, not this class's.
-        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004"):
+        for name in (
+            "fetch_treasury_bill_rates",
+            "fetch_nyfed_fr2004",
+            "fetch_nyfed_on_rrp",
+            "fetch_nyfed_effr",
+        ):
             self.addCleanup(setattr, cli_data, name, getattr(cli_data, name))
             setattr(cli_data, name, lambda **_kwargs: [])
 
@@ -7820,3 +7892,606 @@ class FredValueUnitTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NyFedOnRrpAdapterTests(unittest.TestCase):
+    """The ON RRP adapter: the Desk's operation results, summed per day (#45).
+
+    `fetch_nyfed_on_rrp` saves `rp/results/search.json` a calendar year at a
+    time; `_nyfed_on_rrp_rows` keeps `operationType == "Reverse Repo"` and sums
+    `totalAmtAccepted` over every such operation of an `operationDate`, small
+    value exercises included, in USD billions. Neither `propositions` nor `note`
+    is read. The two-operation days are A45's: FRED's `RRPONTSYD` alternates
+    between the sum and one leg on 2020-02-19 (95 + 5054 million) and
+    2020-11-18 (103 + 0), and this series is the sum.
+
+    The snapshots are tracked under `on_rrp_inputs/`, not `funding_inputs/`:
+    the published panel is built from every snapshot in `funding_inputs/`, and
+    `on_rrp` from this source is off in the published declaration until
+    Eleonora rules (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`).
+
+    Measured on the tracked snapshots (fetched 2 October 2026): on 431 of the
+    433 Wednesdays from 2018-04-04 to 2026-09-30 that `WLRRAOL`'s 2026-09-10
+    ALFRED vintage (`alfred-wlrraol/`) carries, the day's sum equals the
+    H.4.1's Wednesday level to the million. The two others are 2019-11-20, 71
+    million below because the 2019-11-19 term exercise was still outstanding,
+    and 2024-10-16, 1 million apart.
+    """
+
+    SNAPSHOTS = (
+        Path(__file__).parents[1]
+        / "tests/fixtures/snapshots/on_rrp_inputs"
+        / ingest.NYFED_ON_RRP_SOURCE_ID
+    )
+
+    def tracked(self):
+        artifacts = [
+            load_snapshot_manifest(path)
+            for path in sorted(self.SNAPSHOTS.glob("*.json.manifest.json"))
+        ]
+        rows = []
+        for artifact in artifacts:
+            rows.extend(
+                ingest._nyfed_on_rrp_rows(artifact, ingest._artifact_payload(artifact))
+            )
+        return artifacts, {row.ref_date: row for row in rows}
+
+    def test_the_tracked_snapshots_sum_every_reverse_repo_of_a_day(self):
+        artifacts, rows = self.tracked()
+        self.assertEqual(
+            sorted(artifact.url for artifact in artifacts)[0],
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2018-01-01&endDate=2018-12-31",
+        )
+        self.assertEqual(
+            {row.series_id for row in rows.values()}, {ingest.NYFED_ON_RRP_FIELD}
+        )
+        # A45's two-operation days: the sum, never one leg.
+        self.assertAlmostEqual(rows[date(2020, 2, 19)].value, 5.149, places=9)
+        self.assertAlmostEqual(rows[date(2020, 11, 18)].value, 0.103, places=9)
+        # The published panel's first date, in billions.
+        self.assertAlmostEqual(rows[date(2018, 4, 3)].value * 1e9 % 1e6, 0.0, places=3)
+        # The longest gap between operations is the carry bound.
+        days = sorted(rows)
+        self.assertEqual(
+            max((later - earlier).days for earlier, later in zip(days, days[1:])),
+            ON_RRP_MAX_GAP_DAYS,
+        )
+
+    def test_a_result_is_available_at_the_next_weekday_at_16(self):
+        _artifacts, rows = self.tracked()
+        friday = rows[date(2026, 1, 16)]
+        self.assertEqual(
+            friday.available_at,
+            datetime(2026, 1, 19, 16, 0, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+    def operations(self, *operations):
+        return json.dumps({"repo": {"operations": list(operations)}}).encode()
+
+    def artifact(self, directory, payload):
+        return ingest._save_snapshot(
+            ingest.NYFED_ON_RRP_SOURCE_ID,
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2026-01-01&endDate=2026-01-31",
+            payload,
+            Path(directory),
+            "json",
+            retrieved_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        )
+
+    def test_repo_operations_are_left_out_and_propositions_never_read(self):
+        payload = self.operations(
+            {"operationType": "Repo", "operationDate": "2026-01-05", "totalAmtAccepted": 9_000_000_000},
+            {
+                "operationType": "Reverse Repo",
+                "operationDate": "2026-01-05",
+                "totalAmtAccepted": 2_000_000_000,
+                "propositions": "not a list",
+                "note": {"not": "text"},
+            },
+            {"operationType": "Reverse Repo", "operationDate": "2026-01-05", "totalAmtAccepted": 50_000_000},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            (row,) = ingest._nyfed_on_rrp_rows(artifact, payload)
+        self.assertEqual(row.ref_date, date(2026, 1, 5))
+        self.assertAlmostEqual(row.value, 2.05, places=12)
+
+    def test_a_reverse_repo_without_an_accepted_amount_is_refused(self):
+        for accepted in (None, "2000000000", True):
+            payload = self.operations(
+                {"operationType": "Reverse Repo", "operationDate": "2026-01-05", "totalAmtAccepted": accepted}
+            )
+            with self.subTest(accepted=accepted), tempfile.TemporaryDirectory() as directory:
+                artifact = self.artifact(directory, payload)
+                with self.assertRaisesRegex(ValueError, "totalAmtAccepted"):
+                    ingest._nyfed_on_rrp_rows(artifact, payload)
+
+    def test_a_response_without_an_operations_list_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "repo.operations"):
+            ingest.fetch_nyfed_on_rrp(
+                Path("/nonexistent"),
+                "2026-01-01",
+                "2026-01-31",
+                downloader=lambda url: b'{"refRates": []}',
+            )
+
+    def test_the_fetch_saves_one_snapshot_per_calendar_year(self):
+        urls = []
+
+        def downloader(url):
+            urls.append(url)
+            return self.operations()
+
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = ingest.fetch_nyfed_on_rrp(
+                Path(directory), "2024-07-01", "2026-03-31", downloader=downloader
+            )
+            self.assertEqual(
+                {artifact.source_id for artifact in artifacts},
+                {ingest.NYFED_ON_RRP_SOURCE_ID},
+            )
+        windows = [
+            (parse_qs(urlparse(url).query)["startDate"][0], parse_qs(urlparse(url).query)["endDate"][0])
+            for url in urls
+        ]
+        self.assertEqual(
+            windows,
+            [
+                ("2024-07-01", "2024-12-31"),
+                ("2025-01-01", "2025-12-31"),
+                ("2026-01-01", "2026-03-31"),
+            ],
+        )
+        self.assertTrue(all(url.startswith(ingest.NYFED_RP_RESULTS_URL + "?") for url in urls))
+
+    def test_the_cli_fetches_it(self):
+        """`fetch on-rrp` reaches this fetcher, not the reference-rate one.
+
+        Not `nyfed-on-rrp`: `NyFedRateSourceChoiceTests` reads every `nyfed-`
+        choice as a secured reference rate, and this source is not one.
+        """
+
+        urls = []
+        real = cli_data.fetch_nyfed_on_rrp
+        self.addCleanup(setattr, cli_data, "fetch_nyfed_on_rrp", real)
+
+        def transport(url):
+            urls.append(url)
+            # Distinct bytes per window: a snapshot is named by its digest.
+            return json.dumps({"repo": {"operations": []}, "window": url}).encode()
+
+        cli_data.fetch_nyfed_on_rrp = lambda **kwargs: real(downloader=transport, **kwargs)
+        with tempfile.TemporaryDirectory() as directory:
+            argv = [
+                "fetch", "on-rrp",
+                "--start", "2025-06-01", "--end", "2026-01-31",
+                "--output-root", directory,
+            ]
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(argv), 0)
+            written = sorted(
+                path.parent.name for path in Path(directory).rglob("*.json")
+                if not path.name.endswith(".manifest.json")
+            )
+        self.assertEqual(written, [ingest.NYFED_ON_RRP_SOURCE_ID] * 2)
+        self.assertEqual(len(urls), 2)
+
+
+class NyFedSrfAdapterTests(unittest.TestCase):
+    """The Standing Repo Facility adapter: take-up per operation date (#127).
+
+    `fetch_nyfed_srf` saves the same `rp/results/search.json` as #45's ON RRP
+    source, a calendar year at a time, under its own source. `_nyfed_srf_rows`
+    keeps the overnight `Repo` operations from the facility's first operation
+    (`SRF_INCEPTION`, 29 July 2021) and sums `totalAmtAccepted` per
+    `operationDate`, both operations of a two-operation day, in USD billions.
+    A day the facility operated and nothing was taken is 0.0, not a hole.
+    Small-value exercises (operational tests, named in `note`) and term
+    operations are not take-up and are left out. Before the inception the
+    Desk's repo operations were temporary open market operations, not the
+    facility, and yield no row.
+
+    The snapshots are tracked under `srf_inputs/`, not `funding_inputs/`, so
+    the published panel does not move; `srf_take_up` is off in every published
+    declaration (`contract.SRF_OPERATION_RESULTS_FIELDS`).
+    """
+
+    SNAPSHOTS = (
+        Path(__file__).parents[1]
+        / "tests/fixtures/snapshots/srf_inputs"
+        / ingest.NYFED_SRF_SOURCE_ID
+    )
+
+    def tracked(self):
+        artifacts = [
+            load_snapshot_manifest(path)
+            for path in sorted(self.SNAPSHOTS.glob("*.json.manifest.json"))
+        ]
+        rows = []
+        for artifact in artifacts:
+            rows.extend(ingest._nyfed_srf_rows(artifact, ingest._artifact_payload(artifact)))
+        return artifacts, {row.ref_date: row for row in rows}
+
+    def test_the_tracked_snapshots_start_at_the_inception(self):
+        artifacts, rows = self.tracked()
+        self.assertEqual(
+            sorted(artifact.url for artifact in artifacts)[0],
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2021-01-01&endDate=2021-12-31",
+        )
+        self.assertEqual({row.series_id for row in rows.values()}, {ingest.NYFED_SRF_FIELD})
+        self.assertEqual(min(rows), ingest.SRF_INCEPTION)
+        self.assertEqual(rows[date(2021, 7, 29)].value, 0.0)
+        # Both operations of a two-operation day: 74.6 bn at 08:30 on the last
+        # day of 2025, and nothing at 13:45.
+        self.assertAlmostEqual(rows[date(2025, 12, 31)].value, 74.6, places=9)
+        # 2025-10-08's 10:30 small-value exercise (97 million) is not take-up;
+        # the day's 13:45 operation took 1 million.
+        self.assertAlmostEqual(rows[date(2025, 10, 8)].value, 0.001, places=9)
+
+    def test_a_take_up_is_available_at_the_next_weekday_at_16(self):
+        _artifacts, rows = self.tracked()
+        friday = rows[date(2026, 1, 16)]
+        self.assertEqual(
+            friday.available_at,
+            datetime(2026, 1, 19, 16, 0, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+    def operations(self, *operations):
+        return json.dumps({"repo": {"operations": list(operations)}}).encode()
+
+    def artifact(self, directory, payload):
+        return ingest._save_snapshot(
+            ingest.NYFED_SRF_SOURCE_ID,
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2026-01-01&endDate=2026-01-31",
+            payload,
+            Path(directory),
+            "json",
+            retrieved_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        )
+
+    @staticmethod
+    def repo(day, accepted, term="Overnight", note=""):
+        return {
+            "operationType": "Repo", "operationDate": day, "term": term,
+            "totalAmtAccepted": accepted, "note": note,
+        }
+
+    def test_a_day_sums_its_overnight_repos_and_leaves_out_tests_and_reverse_repos(self):
+        payload = self.operations(
+            self.repo("2026-01-05", 2_000_000_000),
+            self.repo("2026-01-05", 50_000_000),
+            self.repo("2026-01-05", 61_000_000, note="This operation is a Small Value Exercise (SVE)."),
+            self.repo("2026-01-05", 57_000_000, term="Term"),
+            {"operationType": "Reverse Repo", "operationDate": "2026-01-05", "totalAmtAccepted": 9e9},
+            self.repo("2026-01-06", 0),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            first, second = ingest._nyfed_srf_rows(artifact, payload)
+        self.assertEqual(first.ref_date, date(2026, 1, 5))
+        self.assertAlmostEqual(first.value, 2.05, places=12)
+        self.assertEqual((second.ref_date, second.value), (date(2026, 1, 6), 0.0))
+
+    def test_a_day_with_only_a_test_operation_yields_no_row(self):
+        payload = self.operations(
+            self.repo("2026-01-05", 61_000_000, note="this is a small value exercise"),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            self.assertEqual(ingest._nyfed_srf_rows(artifact, payload), [])
+
+    def test_repos_before_the_inception_are_not_the_facility(self):
+        payload = self.operations(
+            self.repo("2021-07-28", 1_000_000_000), self.repo("2021-07-29", 0),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            (row,) = ingest._nyfed_srf_rows(artifact, payload)
+        self.assertEqual(row.ref_date, date(2021, 7, 29))
+
+    def test_a_repo_without_an_accepted_amount_is_refused(self):
+        for accepted in (None, "2000000000", True):
+            payload = self.operations(self.repo("2026-01-05", accepted))
+            with self.subTest(accepted=accepted), tempfile.TemporaryDirectory() as directory:
+                artifact = self.artifact(directory, payload)
+                with self.assertRaisesRegex(ValueError, "totalAmtAccepted"):
+                    ingest._nyfed_srf_rows(artifact, payload)
+
+    def test_the_fetch_saves_one_snapshot_per_calendar_year_under_its_own_source(self):
+        urls = []
+
+        def downloader(url):
+            urls.append(url)
+            return self.operations()
+
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = ingest.fetch_nyfed_srf(
+                Path(directory), "2025-07-01", "2026-03-31", downloader=downloader
+            )
+        self.assertEqual({artifact.source_id for artifact in artifacts}, {ingest.NYFED_SRF_SOURCE_ID})
+        self.assertEqual(
+            urls,
+            [
+                f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2025-07-01&endDate=2025-12-31",
+                f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2026-01-01&endDate=2026-03-31",
+            ],
+        )
+
+    def test_parse_snapshots_dispatches_the_source_to_its_parser(self):
+        payload = self.operations(self.repo("2026-01-05", 1_000_000))
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            rows = ingest.parse_snapshots([artifact]).rows
+        self.assertEqual([(row.series_id, row.value) for row in rows], [(ingest.NYFED_SRF_FIELD, 0.001)])
+def _h8_page(release_date, weeks, values, *, layout="tables", stated="4:15"):
+    """A minimal archived H.8 page carrying the total-assets line, NSA.
+
+    `layout="tables"` is the 2020s page (an `<h4>` per table and a unit
+    `<span>`); `layout="pages"` is the earlier one (an `<h5>` per printed page,
+    the line on the table's "(continued)" page). Each page also carries the
+    seasonally adjusted table and the domestically chartered one, with
+    different values on the same line, so a parser that read either would be
+    caught.
+    """
+
+    def table(title, unit, line_values):
+        head = "".join(f"<th>{label}</th>" for label in weeks)
+        cells = "".join(f"<td>{value}</td>" for value in line_values)
+        monthly = "<td>1.0</td><td>2.0</td>"
+        if layout == "tables":
+            preamble = f'<h4 id="t">{title} <a href="#f1"><sup>1</sup></a></h4> <span class="tableunit">{unit}.</span>'
+        else:
+            preamble = f'<h5 class="tablehead">H.8; Page 5</h5> <p>{title} <sup>1</sup></p> <p>{unit} (continued)</p>'
+        return (
+            f"{preamble}<table><thead><tr><th colspan='2'>Account</th><th>2025 Aug</th>"
+            f"<th>2025 Sep</th><th colspan='{len(weeks)}'>Week ending</th></tr>"
+            f"<tr>{head}</tr></thead><tbody>"
+            f"<tr><th>32</th><th>Other assets</th>{monthly}{cells}</tr>"
+            f"<tr><th>33</th><th>Total assets</th>{monthly}{cells}</tr></tbody></table>"
+        )
+
+    us = "Assets and Liabilities of Commercial Banks in the United States"
+    stamp = "" if stated is None else f"<p>For release at {stated} p.m. Eastern Time</p>"
+    body = (
+        f"<html><body><h2>{us} - H.8</h2>{stamp}"
+        + table(f"Selected {us}", "Percent change at break adjusted, seasonally adjusted, annual rate", ["9.9"] * len(weeks))
+        + table(us, "Seasonally adjusted, billions of dollars", ["1,111.1"] * len(weeks))
+        + table(us, "Not seasonally adjusted, billions of dollars", values)
+        + table(
+            "Assets and Liabilities of Domestically Chartered Commercial Banks in the United States",
+            "Not seasonally adjusted, billions of dollars",
+            ["2,222.2"] * len(weeks),
+        )
+        + "<script>var x = '<table><tr><th>Total assets</th></tr></table>';</script>"
+        + "</body></html>"
+    )
+    return body.encode("utf-8")
+
+
+class FrbH8ArchiveParseTests(unittest.TestCase):
+    """#115: total assets of all commercial banks, NSA, from an archived H.8 page."""
+
+    WEEKS = ["Aug 27", "Sep 03", "Sep 10", "Sep 17"]
+    VALUES = ["24,559.7", "24,481.9", "24,488.0", "24,338.4"]
+    RELEASE = date(2025, 9, 26)
+
+    def test_both_layouts_read_the_nsa_all_banks_line(self):
+        expected = {
+            date(2025, 8, 27): 24559.7,
+            date(2025, 9, 3): 24481.9,
+            date(2025, 9, 10): 24488.0,
+            date(2025, 9, 17): 24338.4,
+        }
+        for layout in ("tables", "pages"):
+            with self.subTest(layout=layout):
+                release = ingest.parse_frb_h8_total_assets(
+                    _h8_page(self.RELEASE, self.WEEKS, self.VALUES, layout=layout), self.RELEASE
+                )
+                self.assertEqual(dict(release.weeks), expected)
+                self.assertEqual(release.release_date, self.RELEASE)
+
+    def test_the_stated_release_time_is_read_when_the_page_states_one(self):
+        page = _h8_page(self.RELEASE, self.WEEKS, self.VALUES)
+        self.assertEqual(
+            ingest.parse_frb_h8_total_assets(page, self.RELEASE).stated_time, time(16, 15)
+        )
+        page = _h8_page(self.RELEASE, self.WEEKS, self.VALUES, stated=None)
+        self.assertIsNone(ingest.parse_frb_h8_total_assets(page, self.RELEASE).stated_time)
+
+    def test_weeks_across_the_new_year_are_dated_to_the_earlier_year(self):
+        release = date(2026, 1, 9)
+        page = _h8_page(release, ["Dec 10", "Dec 17", "Dec 24", "Dec 31"], ["1.0", "2.0", "3.0", "4.0"])
+        weeks = ingest.parse_frb_h8_total_assets(page, release).weeks
+        self.assertEqual(sorted(weeks), [date(2025, 12, 10), date(2025, 12, 17),
+                                         date(2025, 12, 24), date(2025, 12, 31)])
+
+    def test_a_page_without_the_line_or_with_a_bad_value_raises(self):
+        with self.assertRaisesRegex(ValueError, "not exactly one"):
+            ingest.parse_frb_h8_total_assets(b"<html><table></table></html>", self.RELEASE)
+        bad = _h8_page(self.RELEASE, self.WEEKS, ["24,559.7", "n.a.", "1.0", "2.0"])
+        with self.assertRaisesRegex(ValueError, "not a number"):
+            ingest.parse_frb_h8_total_assets(bad, self.RELEASE)
+        not_wednesday = _h8_page(self.RELEASE, ["Aug 28", "Sep 03", "Sep 10", "Sep 17"], self.VALUES)
+        with self.assertRaisesRegex(ValueError, "Wednesdays"):
+            ingest.parse_frb_h8_total_assets(not_wednesday, self.RELEASE)
+
+    def test_the_release_date_index_parses_and_refuses_another_shape(self):
+        payload = json.dumps([
+            {"yearValue": "2025", "Months": [{"MonthName": "September", "Dates": ["20250926", "20250919"]}]},
+            {"yearValue": "2024", "Months": [{"MonthName": "December", "Dates": ["20241227"]}]},
+        ]).encode("utf-8-sig")
+        self.assertEqual(
+            ingest.parse_frb_h8_release_dates(payload),
+            (date(2024, 12, 27), date(2025, 9, 19), date(2025, 9, 26)),
+        )
+        with self.assertRaises(ValueError):
+            ingest.parse_frb_h8_release_dates(b'[{"Months": [{"Dates": ["2025-09-26"]}]}]')
+        with self.assertRaises(ValueError):
+            ingest.parse_frb_h8_release_dates(b"{}")
+
+
+class FrbH8FirstPrintTests(unittest.TestCase):
+    """A week's first print is its value in the earliest release that carries it."""
+
+    def release(self, day, weeks):
+        return ingest.FrbH8Release(day, time(16, 15), weeks)
+
+    def test_the_earliest_release_wins_and_revisions_are_not_read(self):
+        early = self.release(date(2025, 9, 19), {date(2025, 9, 3): 100.0, date(2025, 9, 10): 110.0})
+        late = self.release(date(2025, 9, 26), {date(2025, 9, 10): 999.0, date(2025, 9, 17): 120.0})
+        # Given out of order, as a directory listing might.
+        prints = ingest.frb_h8_first_prints([(late, "b" * 64), (early, "a" * 64)])
+        self.assertEqual(
+            [(p.week_ending, p.value, p.release_date, p.release_sha256[0]) for p in prints],
+            [
+                (date(2025, 9, 3), 100.0, date(2025, 9, 19), "a"),
+                (date(2025, 9, 10), 110.0, date(2025, 9, 19), "a"),
+                (date(2025, 9, 17), 120.0, date(2025, 9, 26), "b"),
+            ],
+        )
+
+    def test_one_release_given_twice_raises(self):
+        one = self.release(date(2025, 9, 19), {date(2025, 9, 10): 1.0})
+        with self.assertRaisesRegex(ValueError, "twice"):
+            ingest.frb_h8_first_prints([(one, "a" * 64), (one, "b" * 64)])
+
+
+class FrbH8FetchTests(unittest.TestCase):
+    """`fetch h8`: the index, then each release in range, paced and resumable."""
+
+    INDEX = json.dumps([
+        {"yearValue": "2025", "Months": [{"MonthName": "September", "Dates": ["20250919", "20250926"]}]},
+        {"yearValue": "2018", "Months": [{"MonthName": "January", "Dates": ["20180105"]}]},
+    ]).encode()
+
+    def transport(self, urls):
+        def download(url):
+            urls.append(url)
+            if url == ingest.FRB_H8_RELEASE_DATES_URL:
+                return self.INDEX
+            day = url.rstrip("/").rsplit("/", 1)[1]
+            release = date(int(day[:4]), int(day[4:6]), int(day[6:]))
+            return _h8_page(release, ["Aug 27", "Sep 03", "Sep 10", "Sep 17"] if release.month == 9 else ["Dec 13", "Dec 20", "Dec 27", "Jan 03"], ["1.0", "2.0", "3.0", day])
+        return download
+
+    def test_fetches_each_release_in_range_once_paced(self):
+        urls, pauses = [], []
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = ingest.fetch_frb_h8_archive(
+                root, "2025-01-01", "2025-12-31", downloader=self.transport(urls), pause=pauses.append
+            )
+            self.assertEqual(
+                [artifact.url for artifact in artifacts],
+                [
+                    ingest.FRB_H8_RELEASE_DATES_URL,
+                    "https://www.federalreserve.gov/releases/h8/20250919/",
+                    "https://www.federalreserve.gov/releases/h8/20250926/",
+                ],
+            )
+            self.assertEqual(pauses, [ingest.FRB_H8_REQUEST_PAUSE_SECONDS] * 2)
+            for artifact in artifacts:
+                self.assertEqual(artifact.source_id, ingest.FRB_H8_SOURCE_ID)
+                self.assertEqual(
+                    hashlib.sha256(artifact.path.read_bytes()).hexdigest(), artifact.sha256
+                )
+                self.assertTrue(Path(str(artifact.path) + ".manifest.json").is_file())
+            # A second run fetches the index again and no release page.
+            urls.clear()
+            again = ingest.fetch_frb_h8_archive(
+                root, "2025-01-01", "2025-12-31", downloader=self.transport(urls), pause=pauses.append
+            )
+            self.assertEqual(urls, [ingest.FRB_H8_RELEASE_DATES_URL])
+            self.assertEqual(len(again), 1)
+
+    def test_a_page_that_does_not_parse_is_not_saved(self):
+        def download(url):
+            return self.INDEX if url == ingest.FRB_H8_RELEASE_DATES_URL else b"<html>moved</html>"
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "not exactly one"):
+                ingest.fetch_frb_h8_archive(
+                    Path(directory), "2025-09-19", "2025-09-19", downloader=download, pause=lambda _s: None
+                )
+            pages = list(Path(directory).rglob("*.html"))
+        self.assertEqual(pages, [])
+
+    def test_the_cli_reaches_it(self):
+        urls = []
+        real = cli_data.fetch_frb_h8_archive
+        self.addCleanup(setattr, cli_data, "fetch_frb_h8_archive", real)
+        cli_data.fetch_frb_h8_archive = lambda **kwargs: real(
+            downloader=self.transport(urls), pause=lambda _s: None, **kwargs
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            argv = ["fetch", "h8", "--start", "2025-09-20", "--end", "2025-09-30",
+                    "--output-root", directory]
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(argv), 0)
+        self.assertEqual(
+            urls,
+            [ingest.FRB_H8_RELEASE_DATES_URL, "https://www.federalreserve.gov/releases/h8/20250926/"],
+        )
+
+
+class FrbH8ExtractRowsTests(unittest.TestCase):
+    """The tracked extract parses to one first-print observation per week."""
+
+    def artifact(self, directory, text, name="frb_h8/extract.csv"):
+        path = Path(directory) / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = text.encode("utf-8")
+        path.write_bytes(payload)
+        return ingest.SnapshotArtifact(
+            source_id=ingest.FRB_H8_SOURCE_ID,
+            path=path,
+            retrieved_at="2026-10-02T06:30:00+00:00",
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=ingest.FRB_H8_ARCHIVE_URL,
+            byte_count=len(payload),
+        )
+
+    def test_available_at_is_the_release_at_1615_new_york(self):
+        text = (
+            "week_ending,total_assets,release_date,release_sha256\n"
+            f"2025-09-10,24488.0,2025-09-19,{'a' * 64}\n"
+            f"2025-09-17,24338.4,2025-09-26,{'b' * 64}\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, text)
+            rows = ingest.parse_snapshots([artifact], registry=ingest.load_source_registry()).rows
+        self.assertEqual([row.series_id for row in rows], [ingest.FRB_H8_FIELD] * 2)
+        self.assertEqual(rows[1].ref_date, date(2025, 9, 17))
+        self.assertEqual(rows[1].value, 24338.4)
+        self.assertEqual(
+            rows[1].available_at,
+            datetime(2025, 9, 26, 16, 15, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+    def test_a_raw_archive_page_yields_no_observation(self):
+        """Every print of four weeks is on a page; only the extract's first prints are read."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            page = replace(
+                self.artifact(directory, "<html></html>", name="frb_h8/page.html"),
+                url="https://www.federalreserve.gov/releases/h8/20250926/",
+            )
+            index = replace(
+                self.artifact(directory, "[]", name="frb_h8/index.json"),
+                url=ingest.FRB_H8_RELEASE_DATES_URL,
+            )
+            rows = ingest.parse_snapshots(
+                [page, index], registry=ingest.load_source_registry()
+            ).rows
+        self.assertEqual(rows, ())
+
+    def test_a_week_released_on_or_before_its_own_date_is_refused(self):
+        text = (
+            "week_ending,total_assets,release_date,release_sha256\n"
+            f"2025-09-17,24338.4,2025-09-17,{'b' * 64}\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "released on"):
+                ingest.parse_snapshots(
+                    [self.artifact(directory, text)], registry=ingest.load_source_registry()
+                )

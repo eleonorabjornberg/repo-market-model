@@ -189,6 +189,7 @@ from repo_model.contract import (
     CALENDAR_FEATURES,
     DERIVED_FEATURES,
     FEATURE_FIELDS,
+    OVERLAY_FEATURES,
     FEATURE_SOURCES,
     QUANTILE_LEVELS,
     REVISION_POLICIES,
@@ -206,6 +207,7 @@ from repo_model.contract import (
 )
 from repo_model.data import (
     OPTIONAL_NUMERIC_FIELDS,
+    OPT_IN_COLUMNS,
     REQUIRED_FIELDS,
     DailyObservation,
     DataContractError,
@@ -217,6 +219,7 @@ from repo_model.data import (
 )
 from repo_model.event_eval import load_event_windows
 from repo_model.splits import LookAheadError
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -1669,6 +1672,51 @@ def _forecast_implementations(package=repo_model):
     return found
 
 
+def on_rrp_from_operation_results():
+    """`on_rrp` read from the New York Fed's operation results, for one test (#45).
+
+    `contract.ON_RRP_OPERATION_RESULTS_FIELDS` is declared and off: the
+    published `FEATURE_FIELDS` still maps `on_rrp` to `RRPONTSYD`, so the
+    published panel does not move. The tests of the new source switch it on for
+    their own duration. `FEATURE_SOURCES` is a projection taken at import, so it
+    is patched beside the map it was projected from.
+    """
+
+    fields = contract.ON_RRP_OPERATION_RESULTS_FIELDS
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "on_rrp": fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                "on_rrp": tuple(sorted({source for source, _field in fields})),
+            }
+        ),
+    )
+
+
+def srf_from_operation_results():
+    """`srf_take_up` read from the Desk's operation results, for one test (#127).
+
+    `contract.SRF_OPERATION_RESULTS_FIELDS` is declared and off: no published
+    `FEATURE_FIELDS` entry names it, so the published panel does not move. The
+    tests of the new source switch it on for their own duration, as
+    `on_rrp_from_operation_results` does for #45's.
+    """
+
+    fields = contract.SRF_OPERATION_RESULTS_FIELDS
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "srf_take_up": fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                "srf_take_up": tuple(sorted({source for source, _field in fields})),
+            }
+        ),
+    )
+
+
 def _import_test_modules_naming(mixin):
     """Import every test module whose source names `mixin`, and return their names.
 
@@ -2341,6 +2389,17 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
             field_sources_for_features(("tga",)),
             (("fred_macro_latest_vintage", "WTREGEN"),),
         )
+        # Off in the published map, on under the #45 switch.
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("on_rrp",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            )
+            self.assertEqual(sources_for_features(("on_rrp",)), ("nyfed_on_rrp",))
+        self.assertEqual(
+            field_sources_for_features(("on_rrp",)),
+            (("fred_macro_latest_vintage", "RRPONTSYD"),),
+        )
 
     def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):
         """Two walks, one classification. They must refuse the same names.
@@ -2623,9 +2682,11 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
     def _panel_columns(self):
         """Every column a modelling panel may carry, in model vocabulary."""
 
-        return tuple(
-            name for name in REQUIRED_FIELDS if name != "date"
-        ) + tuple(OPTIONAL_NUMERIC_FIELDS)
+        return (
+            tuple(name for name in REQUIRED_FIELDS if name != "date")
+            + tuple(OPTIONAL_NUMERIC_FIELDS)
+            + tuple(OPT_IN_COLUMNS)
+        )
 
     def test_every_mapped_source_exists_in_the_registry(self):
         """Catches a source renamed or removed on Track A's side.
@@ -2691,7 +2752,12 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
                 )
 
         declared = set().union(*collections.values())
-        strays = sorted(declared - set(self._panel_columns()) - set(DERIVED_FEATURES))
+        strays = sorted(
+            declared
+            - set(self._panel_columns())
+            - set(DERIVED_FEATURES)
+            - set(OVERLAY_FEATURES)
+        )
         self.assertEqual(
             strays,
             [],
@@ -2702,6 +2768,19 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
                 "tree in the other direction."
             ),
         )
+
+    def test_an_overlay_feature_is_sourced_and_is_not_a_panel_column(self):
+        """`OVERLAY_FEATURES` exempts a column from the stray check above, so
+        it is held to what the exemption claims: the column has a declared
+        source, the published panel does not carry it, and it names a module
+        of this package that exists."""
+
+        for column, module in OVERLAY_FEATURES.items():
+            with self.subTest(column=column):
+                self.assertIn(column, FEATURE_SOURCES)
+                self.assertNotIn(column, self._panel_columns())
+                self.assertTrue(module.startswith("repo_model."))
+                importlib.import_module(module)
 
     def test_a_derived_feature_declares_the_columns_its_implementation_reads(self):
         """Anchored to `data.py`, not to the declaration it is checking.
@@ -2723,6 +2802,7 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         readers = {
             "spread_bps": DailyObservation.spread_bps.fget,
             "sofr_iqr_bps": DailyObservation.sofr_iqr_bps.fget,
+            "effr_minus_iorb_bp": DailyObservation.effr_minus_iorb_bp.fget,
         }
         self.assertEqual(
             set(DERIVED_FEATURES),
@@ -3070,3 +3150,123 @@ class IdentityToleranceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OnRrpDepletionDeclarationTests(unittest.TestCase):
+    """The conditional scarcity features of #88, as declared.
+
+    The break is a constant fixed in advance from PR #87's memo (Q4), never a
+    value fitted on this repository's data, and each composed feature resolves
+    to the fields of exactly the inputs its implementation reads.
+    """
+
+    def test_the_break_is_100bn_and_a_literal(self):
+        self.assertEqual(contract.ON_RRP_DEPLETION_BREAK_BN, 100.0)
+        source = inspect.getsource(contract)
+        self.assertRegex(source, r"\nON_RRP_DEPLETION_BREAK_BN = 100\.0\n")
+        # Its declaration cites where it came from.
+        lines = source.splitlines()
+        at = lines.index("ON_RRP_DEPLETION_BREAK_BN = 100.0")
+        comment = "\n".join(lines[max(0, at - 15) : at])
+        self.assertIn("#87", comment)
+        self.assertIn("Q4", comment)
+
+    def test_each_composer_reads_exactly_its_declared_inputs(self):
+        """Anchored to the implementation, as the derived-feature test is."""
+
+        from repo_model import asof
+
+        self.assertEqual(set(asof.COMPOSERS), set(contract.COMPOSED_FEATURES))
+        for feature, composer in asof.COMPOSERS.items():
+            with self.subTest(feature=feature):
+                tree = ast.parse(textwrap.dedent(inspect.getsource(composer)))
+                read = {
+                    node.slice.value
+                    for node in ast.walk(tree)
+                    if isinstance(node, ast.Subscript)
+                    and isinstance(node.slice, ast.Constant)
+                    and isinstance(node.slice.value, str)
+                }
+                self.assertTrue(read)
+                self.assertEqual(set(contract.COMPOSED_FEATURES[feature]), read)
+
+    def test_the_composed_features_resolve_to_their_inputs_fields(self):
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("on_rrp_depleted",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            )
+            self.assertEqual(
+                field_sources_for_features(("reserves_when_depleted",)),
+                (
+                    ("fred_macro_latest_vintage", "WRESBAL"),
+                    ("nyfed_on_rrp", "reverse_repo_total_accepted"),
+                ),
+            )
+            self.assertEqual(
+                sources_for_features(("reserves_when_depleted",)),
+                ("fred_macro_latest_vintage", "nyfed_on_rrp"),
+            )
+
+    def test_a_composed_feature_is_not_a_panel_column_or_a_derived_one(self):
+        for feature in contract.COMPOSED_FEATURES:
+            with self.subTest(feature=feature):
+                self.assertNotIn(feature, FEATURE_FIELDS)
+                self.assertNotIn(feature, DERIVED_FEATURES)
+                self.assertNotIn(feature, CALENDAR_FEATURES)
+                for constituent in contract.COMPOSED_FEATURES[feature]:
+                    self.assertTrue(
+                        constituent in FEATURE_FIELDS
+                        or constituent in CALENDAR_FEATURES,
+                        constituent,
+                    )
+
+    def test_neither_feature_is_in_the_published_declaration(self):
+        """#88's acceptance: the features do not join it in this PR."""
+
+        for record in sorted((REPO_ROOT / "docs" / "runs").glob("*.json")):
+            text = record.read_text(encoding="utf-8")
+            for feature in contract.COMPOSED_FEATURES:
+                with self.subTest(record=record.name, feature=feature):
+                    self.assertNotIn(f'"{feature}"', text)
+
+
+class SettlementDayDeclarationTests(unittest.TestCase):
+    """The onset inputs of #97, as declared.
+
+    The flag is fixed in advance from existing panel columns (#96, points 4-5)
+    and never tuned on the data; the interaction reuses #88's depletion break.
+    """
+
+    def test_the_flag_is_composed_of_existing_columns_only(self):
+        self.assertEqual(
+            contract.COMPOSED_FEATURES["settlement_day"],
+            ("quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons"),
+        )
+        self.assertEqual(
+            contract.COMPOSED_FEATURES["settlement_day_when_depleted"],
+            contract.COMPOSED_FEATURES["settlement_day"] + ("on_rrp",),
+        )
+
+    def test_the_month_end_window_is_two_days_and_a_literal_citing_96(self):
+        self.assertEqual(contract.SETTLEMENT_DAY_MONTH_END_DAYS, 2)
+        source = inspect.getsource(contract)
+        self.assertRegex(source, r"\nSETTLEMENT_DAY_MONTH_END_DAYS = 2\n")
+        lines = source.splitlines()
+        at = lines.index("SETTLEMENT_DAY_MONTH_END_DAYS = 2")
+        comment = "\n".join(lines[max(0, at - 15) : at])
+        self.assertIn("#96", comment)
+        self.assertIn("#97", comment)
+
+    def test_the_features_resolve_to_their_inputs_fields(self):
+        coupons = ("treasury_auctions", "treasury_settlement_coupon")
+        self.assertEqual(field_sources_for_features(("settlement_day",)), (coupons,))
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("settlement_day_when_depleted",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"), coupons),
+            )
+            self.assertEqual(
+                sources_for_features(("settlement_day_when_depleted",)),
+                ("nyfed_on_rrp", "treasury_auctions"),
+            )

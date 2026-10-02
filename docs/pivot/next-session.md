@@ -31,6 +31,15 @@ state below comes with the command that checks it, and the command's output wins
 
   The expected digest is `4ddc3882…`, the panel with `reserve_balances` and `tga` in USD billions (#41). The
   records in `docs/runs/` are scored on it.
+- **Days from 2026-01-01 are locked** ([`lockbox.md`](../decisions/lockbox.md)). Every scoring
+  entry point refuses a scored day in a tier `metadata/lockbox.json` has not opened, so a
+  `backtest`, `compare` or `exceedance-backtest` on the published panel needs `--end` before
+  2026-01-01:
+
+  ```
+  PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv --registry metadata/sources.json --feature spread_bps --decision-time 16:00 --model persistence --minimum-history 61 --refit-every 21 --end 2025-12-31 --report /tmp/persistence.json
+  ```
+
 - **The records are re-scored** under the as-of rule (directive 03, #27), refitted every 21 scored days. The records
   scored under the earlier rule, on the panel before #41 and #44 (digest `d8b716cf…`), are in
   `docs/runs/archive/pre-asof/`.

@@ -33,7 +33,7 @@ Stdlib only. `repo_model.ml` is reached inside functions, as
 from __future__ import annotations
 
 from contextlib import contextmanager
-from datetime import time
+from datetime import date, time
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
 from .asof import InformationRule
@@ -364,6 +364,12 @@ def refit_knots(
         rule,
         minimum_history=minimum_history,
         refit_every=int(declaration.get("refit_every", 1)),
+        entry="tail_diagnostics.refit_knots",
+        end=(
+            None
+            if declaration.get("end") is None
+            else date.fromisoformat(declaration["end"])
+        ),
     ):
         index = fold.index
         if fold.frame is not None:

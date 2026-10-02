@@ -89,6 +89,25 @@ class DailyObservation:
             float(self.values["sofr_p75"]) - float(self.values["sofr_p25"])
         )
 
+    @property
+    def effr_minus_iorb_bp(self) -> Optional[float]:
+        """EFFR less IORB for the day, in whole basis points; `None` if either is.
+
+        Rounded to the whole basis point because both legs are published to
+        two decimals of a percent, so the difference is a whole number of
+        basis points that binary floating point misses by a hair (4.33 - 4.40
+        is -7.000000000000028). Unlike the target, an unobserved leg is an
+        unobserved feature rather than an error: this is a regressor, and a
+        regressor carried as `None` is imputed. `contract.DERIVED_FEATURES`
+        declares it over exactly the two columns read below.
+        """
+
+        effr = self.values["effr"]
+        iorb = self.values["iorb"]
+        if effr is None or iorb is None:
+            return None
+        return float(round(100.0 * (float(effr) - float(iorb))))
+
 
 @dataclass(frozen=True)
 class PointInTimeObservation:
@@ -2305,6 +2324,14 @@ PANEL_COLUMNS = tuple(
     field for field in REQUIRED_FIELDS if field != "date"
 ) + OPTIONAL_NUMERIC_FIELDS
 
+#: Panel columns built only when a build names them with `--column`, never by
+#: a build that names none. A column joins `PANEL_COLUMNS` when a published
+#: declaration reads it; until then it stays here, because the published
+#: panel's documented build names no columns and a new default column would be
+#: new bytes under its digest (REPRODUCIBILITY.md). `effr` is directive #98's
+#: candidate input, read by no published declaration.
+OPT_IN_COLUMNS = ("effr",)
+
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
 # 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See
 # `build_daily_panel` rule 8. This is the one place rule 8's exception to rule 4
@@ -2382,13 +2409,42 @@ WEEKLY_CARRY_MAX_STALENESS_DAYS = (
 #: `WTREGEN`. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
 #: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
 #: not an absence, and a calendar column is never a hole.
+#: The longest gap between two ON RRP operation dates, in calendar days. The
+#: facility does not operate on a Federal Reserve holiday or a SIFMA full close,
+#: and the operation before one is the balance still outstanding through it, as
+#: the H.4.1 shows (#45, step 4, decided under Eleonora's delegation on 1
+#: October 2026: carry, through the as-of rule). A45 measured gaps of up to 4
+#: calendar days over the panel, a Friday to the Tuesday after a Monday
+#: holiday, and the tracked snapshots, 2018-01-02 to 2026-09-30, show the same.
+ON_RRP_MAX_GAP_DAYS = 4
+
+#: Carry column -> its maximum staleness in calendar days. Every weekly entry is
+#: a column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
+#: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
+#: `WTREGEN`, and `frb_h8`'s `frequency` for `bank_total_assets` (#115; off in
+#: the published declaration, `contract.BANK_TOTAL_ASSETS_FIELDS`, so no
+#: published build carries it). That bound is the H.8 column's staleness rule:
+#: a week's first print stands in for one missed print and no more, and past it
+#: the column -- and the reserve-scarcity state read from it -- is a hole.
+#: `on_rrp` is daily, and carries only across a day with no
+#: operation. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
+#: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
+#: not an absence, and a calendar column is never a hole.
 CARRY_FORWARD_COLUMNS = MappingProxyType(
     {
         "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "bank_total_assets": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "on_rrp": ON_RRP_MAX_GAP_DAYS,
     }
 )
+
+#: Carry columns whose bound is a measured maximum gap rather than a tolerated
+#: missed print. Past the bound such a column is not a hole: a gap between
+#: operations longer than any the facility has had is a feed fault, and the
+#: build raises `DataContractError` naming it (#45, step 4).
+CARRY_FORWARD_REFUSED_BEYOND = frozenset({"on_rrp"})
 
 
 # The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them "a
@@ -3023,6 +3079,7 @@ def _carry_forward_values(
         if column not in CARRY_FORWARD_COLUMNS:
             continue
         observed = sorted(ref_date for name, ref_date in latest if name == column)
+        own = set(observed)
         fills: Dict[date, float] = {}
         for ref_date in grid:
             earlier = [day for day in observed if day < ref_date]
@@ -3030,6 +3087,15 @@ def _carry_forward_values(
                 continue
             source = max(earlier)
             if (ref_date - source).days > CARRY_FORWARD_COLUMNS[column]:
+                if column in CARRY_FORWARD_REFUSED_BEYOND and ref_date not in own:
+                    raise DataContractError(
+                        f"{column} has no observation on {ref_date}, and its "
+                        f"latest, {source}, is {(ref_date - source).days} calendar "
+                        f"days earlier, beyond the {CARRY_FORWARD_COLUMNS[column]} "
+                        f"days any gap between its observations has spanned; a "
+                        f"gap that long is a fault in the feed, not a day the "
+                        f"source did not operate"
+                    )
                 continue
             fills[ref_date] = latest[(column, source)].value
         carries[column] = fills
@@ -3218,6 +3284,11 @@ def build_daily_panel(
     * is counted in `carried_forward`, not in `holes`: a carried cell is
       neither a hole nor an observation of its own date.
 
+    `on_rrp` is daily, not weekly, and carries under the same rule across a
+    business day with no ON RRP operation, no further than
+    `ON_RRP_MAX_GAP_DAYS` (#45). Past that bound it is refused rather than left
+    a hole: see `CARRY_FORWARD_REFUSED_BEYOND`.
+
     **By `ref_date`, not by availability.** The carried value is the one whose
     `ref_date` is nearest before, whether or not it was yet published on the
     date it fills. That is rule 2, applied to a carry: the as-of read in
@@ -3229,8 +3300,9 @@ def build_daily_panel(
     hole.
 
     Raises `DataContractError` if the cutoff is naive, if no declared sourced
-    column survives pricing, if nothing is left to index, under rule 5, or
-    under rule 8.
+    column survives pricing, if nothing is left to index, under rule 5, under
+    rule 8, or when a column in `CARRY_FORWARD_REFUSED_BEYOND` has a gap
+    longer than its rule 10 bound.
     """
 
     from .contract import FEATURE_FIELDS

@@ -1,4 +1,93 @@
 {
+  "frb_ddp": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #129, from the H.15 release page fetched that day (https://www.federalreserve.gov/releases/h15/): 'The release is posted daily Monday through Friday at 4:15pm. The release is not posted on holidays or in the event that the Board is closed.' The release dated 1 October 2026 carried the effective federal funds rate through 30 September 2026, one business day earlier. The New York Fed publishes the same rate at about 09:00 ET (#98); this source is the Board's release, so its own posting time is the one declared.",
+      "publication": "H.15 Selected Interest Rates: posted each business day at 16:15 ET, carrying the effective federal funds rate for the previous business day. Policy Rates (IOER, IORB): administered rates announced with their effective dates before those dates, priced as the FRED IOER and IORB fields are under docs/decisions/iorb-availability.md."
+    },
+    "coverage": [
+      "effective federal funds rate (H.15, RIFSPFF_N.B)",
+      "interest rate on excess reserves (Policy Rates, RESBME_N.D)",
+      "interest rate on reserve balances (Policy Rates, RESBM_N.D)"
+    ],
+    "field_frequencies": {
+      "EFFR": "business_daily",
+      "IOER": "calendar_daily",
+      "IORB": "calendar_daily"
+    },
+    "field_release_lags": {
+      "IOER": {
+        "available_time": "16:15",
+        "basis": "record_date",
+        "days": 0,
+        "note": "The same administered rate as fred_macro_latest_vintage.IOER, priced the same way: IOER for a date is announced, with its effective date, before that date (docs/decisions/iorb-availability.md). REVISION STATEMENT: never revised. RESBME_N.D in the Policy Rates package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 eea3628f…) is identical to the three tracked ALFRED vintages of IOER (tests/fixtures/snapshots/alfred-ioer/: 2019-01-02, 2021-07-27, 2024-09-24) on every shared observation: 3739, 4676 and 4676 values from 2008-10-09. test_effr_history.FrbDdpRevisionTests re-runs the comparison.",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      },
+      "IORB": {
+        "available_time": "16:15",
+        "basis": "record_date",
+        "days": 0,
+        "note": "The same administered rate as fred_macro_latest_vintage.IORB, priced the same way (docs/decisions/iorb-availability.md). Carried for completeness of the Policy Rates package; the #129 study reads IOER only, because its history ends before IORB begins. REVISION STATEMENT: never revised. Administered, announced in advance; not compared against ALFRED here because the #129 study does not read it.",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      }
+    },
+    "fields": [
+      "EFFR",
+      "IOER",
+      "IORB"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Not a panel source. Read only by repo_model.effr_history for the pre-SOFR history study (#129): EFFR - IOER from 2008-12-16 to 2018-04-02. EFFR is unsecured overnight lending between depository institutions and GSEs (dominated after 2008 by Federal Home Loan Bank lending to banks that do not earn IOER at the full rate), a different market and a different target from SOFR - IORB. Before 1 March 2016 EFFR was a volume-weighted mean of brokered trades; from that date a volume-weighted median of FR 2420 transactions. The package is the whole release (filetype=zip), read one series at a time by ingest.frb_ddp_series; a date the Board marks ND (holidays) is not a value. The Board's DDP carried a notice on 1 October 2026 that its 'Build Your Package' feature is removed during the week of 9 November 2026 ahead of the DDP's retirement; the full-release package used here may follow.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:15",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "EFFR: the H.15 posts at 16:15 ET each business day, carrying the previous business day's rate, so a value is declared available at 16:15 ET one business day after its date. Later than the New York Fed's own 09:00 ET print of the same number; this source is the Board's release. REVISION STATEMENT: never revised. RIFSPFF_N.B in the H.15 package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 d5a661bd…) is identical to all eight tracked ALFRED vintages of DFF (tests/fixtures/snapshots/alfred-dff/ and alfred-dff-first-print/) on every shared business-day observation, back to 1954-07-01. test_effr_history.FrbDdpRevisionTests re-runs the comparison. The rate is computed by the New York Fed and published once.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the DDP schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://www.federalreserve.gov/datadownload/Output.aspx"
+  },
+  "frb_h8": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #115. The H.8 archive's release-date page (https://www.federalreserve.gov/releases/h8/, fetched 2 October 2026) says the data \"are released each Friday, generally at 4:15 p.m., unless Friday is a federal holiday, in which case the data will be released on Thursday, generally at 4:15 p.m.\" Each archived release page from 25 September 2020 on states \"For release at 4:15 p.m. Eastern Time\" (51 of the 456 releases from 5 January 2018 to 25 September 2026, all 4:15); the earlier layout states the release date only. 16:15 is after the 16:00 decision instant every published record uses, so a week printed on a Friday is read from the next business day's decision. scripts/extract_h8_first_prints.py refuses a page that states any other time.",
+      "publication": "Board of Governors, H.8 Assets and Liabilities of Commercial Banks in the United States, archived release pages at https://www.federalreserve.gov/releases/h8/<YYYYMMDD>/ and the release-date list releaseDates.json; released Fridays (Thursdays before a Friday holiday) at 4:15 p.m. Eastern Time."
+    },
+    "coverage": [
+      "total assets of all commercial banks in the United States, weekly, first print"
+    ],
+    "field_frequencies": {
+      "total_assets": "weekly"
+    },
+    "fields": [
+      "total_assets"
+    ],
+    "frequency": "weekly",
+    "identities": [],
+    "limitation": "total_assets is Table 3 (before the 2020s layout, the \"(continued)\" page of the same table), line 33, \"Total assets\", of \"Assets and Liabilities of Commercial Banks in the United States\": all commercial banks, NOT seasonally adjusted, USD billions, week ending Wednesday -- the series FRED carries as TLAACBW027NBOG (TLAACBW027SBOG is the seasonally adjusted Table 2 line, not read). The H.8 is revised: a week is printed in four consecutive releases and restated in later benchmark revisions. Only the FIRST PRINT is tracked -- each week's value in the earliest release that carries it (#115, Eleonora's ruling of 2 October 2026, option 3) -- in tests/fixtures/snapshots/h8_inputs/frb_h8/h8_total_assets_first_print.csv, cut by scripts/extract_h8_first_prints.py from the unmodified archive pages that `fetch h8` saves under the gitignored data/raw/frb_h8/; the pages' SHA-256 digests are in the extract's .releases.json. A release is dated by the later of its archive date and the date the page states: they differ once, the page archived as 20201221/ stating \"Release Date: December 18, 2020\". The index lists 2022-11-11 (Veterans Day); the archive serves that release as 20221110/, dated 10 November. Off in the published declaration (contract.BANK_TOTAL_ASSETS_FIELDS): it is the denominator of the reserve-scarcity state's reserves ratio (#115).",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:15",
+      "basis": "record_date",
+      "days": 12,
+      "note": "Declared 2 October 2026 for #115, at the measured maximum and not above it. The first print of a week ending Wednesday is released the second Friday after it, 16:15 New York time: nine calendar days for 443 of the 456 weeks from 2017-12-27 to 2026-09-16 in the tracked extract, eight for the nine weeks released on a Thursday before a Friday holiday, and twelve for four: the weeks ending 2020-12-09 (released Monday 2020-12-21), 2020-12-16 (Monday 2020-12-28), 2021-06-09 (Monday 2021-06-21, the first Juneteenth) and 2025-12-17 (Monday 2025-12-29). Twelve is that worst case, so every value is declared public no earlier than it was; an ordinary week is then read three days later than it could have been, which is staleness on the safe side, not leakage. The extract script refuses a week first printed later than this declaration, so a longer delay in a future release stops the extract rather than leaking. The values are first prints, which no later release changes in the extract.",
+      "timezone": "America/New_York",
+      "unit": "calendar_days"
+    },
+    "reviewed_note": "Structural-zero semantics are not applicable to a balance-sheet total; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://www.federalreserve.gov/releases/h8/"
+  },
   "fred_macro_latest_vintage": {
     "access": "public",
     "coverage": [
@@ -149,6 +238,48 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json"
+  },
+  "nyfed_effr": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Declared 2 October 2026 for directive #98. The publication time is declared conservatively rather than measured: no code here fetches the New York Fed's methodology page, and one retrieval of the rate data bounds the lag without measuring it. The instant is the one the secured rates carry, so EFFR and SOFR for a day are read at the same panel row. At this project's 16:00 decision time any declared instant from the morning print up to 16:00 on the next business day reads the same row, so the 15:00 instant costs no history against the 09:00 first print. The tracked snapshot, retrieved through repo_model.ingest.fetch_nyfed_effr one calendar year per request, carries an empty revisionIndicator on every record from 2018-01-02 to 2026-09-30.",
+      "publication": "New York Fed effective federal funds rate: calculated from the prior business day's FR 2420 overnight federal funds transactions and published at about 09:00 ET on the next business day. 15:00 ET on the next business day is declared as the conservative availability instant, after any same-morning correction, matching the instant the New York Fed's secured reference rates carry here."
+    },
+    "coverage": [
+      "EFFR rate",
+      "distribution percentiles"
+    ],
+    "field_frequencies": {
+      "EFFR": "business_daily",
+      "EFFR_p1": "business_daily",
+      "EFFR_p25": "business_daily",
+      "EFFR_p75": "business_daily",
+      "EFFR_p99": "business_daily"
+    },
+    "fields": [
+      "EFFR",
+      "EFFR_p1",
+      "EFFR_p25",
+      "EFFR_p75",
+      "EFFR_p99"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Publication occurs after the effective date; targets and features must respect that lag. Fetched from the New York Fed as published, not from FRED's DFF copy of the same rate.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "EFFR is first published at about 09:00 ET on the next business day; 15:00 ET that day is the conservative availability time, the one the secured reference rates carry.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rates/unsecured/effr/search.json"
   },
   "nyfed_fr2004": {
     "access": "public",
@@ -312,6 +443,39 @@
     "structural_zeros_reviewed": false,
     "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
   },
+  "nyfed_on_rrp": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #45. The Desk's own release time is not established (A45, Route B, item 2, in tests/test_registry.py): the reverse repo operation closes at 13:15 ET, and the Desk's FAQ says only that 'after the completion of a reverse repo operation, the Desk publishes a summary of results', with no clock time. The one timestamp in the data, lastUpdated, is a last-write time, not a publication time. The declaration therefore does not claim a same-day instant. It takes the conservative reading #45 offered: a result is available at the next business day's decision instant, 16:00 ET, the decision time every published record uses. That is at least 26 hours after the close, and later than any lastUpdated A45 measured on a regular operation's own day (latest 16:50:30 on 2024-10-16, an annotated small-value exercise).",
+      "publication": "New York Fed reverse repo operation results: the operation closes at 13:15 ET and the Desk publishes a summary of results after it completes, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
+    },
+    "coverage": [
+      "overnight reverse repo amounts accepted, per operation date"
+    ],
+    "field_frequencies": {
+      "reverse_repo_total_accepted": "business_daily"
+    },
+    "fields": [
+      "reverse_repo_total_accepted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "reverse_repo_total_accepted is totalAmtAccepted summed over every operation of an operationDate whose operationType is 'Reverse Repo', small-value exercises and the four term exercises of 2018-19 included, in USD billions (the API serves US dollars). It is the amount accepted that day, not the balance outstanding: on 2019-11-20 the H.4.1's WLRRAOL Wednesday level is 71 million above the day's sum because the 2019-11-19 term exercise was still outstanding. On the other 431 Wednesdays from 2018-04-04 to 2026-09-30 that WLRRAOL's 2026-09-10 ALFRED vintage carries, the sum equals WLRRAOL to the million but for 2024-10-16, 1 million apart. The facility does not operate on Federal Reserve holidays or SIFMA full closes (Good Friday among them), so a business day can carry no observation; the panel carries the latest operation forward across such a gap, no further than data.CARRY_FORWARD_COLUMNS allows (#45, step 4). propositions (added a month later) and note are never read. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Conservative, under docs/decisions/information-set.md (#45, step 3): a result is declared available at 16:00 ET on the next business day, not at its 13:15 close, because the Desk states no publication time. No value has been amended since publication: A45 compared 35 ALFRED vintages of RRPONTSYD against today's totalAmtAccepted on every single-operation day, and none differed. A record touched later (lastUpdated after the operation date) changed a note or the propositions, which are not read.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
   "nyfed_sofr": {
     "access": "public",
     "availability_provenance": {
@@ -357,6 +521,39 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
+  },
+  "nyfed_srf": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #127. The facility runs an overnight repo operation at 13:45 ET, with a second at 08:30 ET daily from 26 June 2025 (and on some days around the 2024 year-end and the first two 2025 quarter-ends before that, from 30 December 2024); the close times are each record's closeTime. The Desk states no clock time at which results are published. The one timestamp in the data, lastUpdated, is a last-write time: on the 1,617 overnight facility operations that are not small-value exercises, 2021-07-29 to 2026-09-30, it is a median 0.7 minutes and a 99th percentile 3.3 minutes after the close, so a same-day 16:00 reading is plausible, but five records were written later: 2021-12-28 at 16:10 and 2023-03-22 at 17:22 the same day, 2023-05-11 at 09:29 the next day, and 2021-09-03 and 2021-09-10 on 2021-09-16. Those two are rewrites of records already published, so lastUpdated cannot establish a first publication. The declaration therefore takes #45's conservative reading for the same endpoint (nyfed_on_rrp): a day's take-up is available at 16:00 ET on the next business day, at least 26 hours after the 13:45 close. Every snapshot fetched for this source on 2026-10-02 06:49 UTC is byte-identical to the nyfed_on_rrp snapshot of the same year fetched at 01:24 UTC the same day.",
+      "publication": "New York Fed repo operation results (the Standing Repo Facility): operations close at 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
+    },
+    "coverage": [
+      "Standing Repo Facility overnight repo amounts accepted, per operation date, from 2021-07-29"
+    ],
+    "field_frequencies": {
+      "srf_total_accepted": "business_daily"
+    },
+    "fields": [
+      "srf_total_accepted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "srf_total_accepted is totalAmtAccepted summed over every operation of an operationDate whose operationType is 'Repo' and term 'Overnight', from 2021-07-29 (the facility's first operation; the FOMC established it on 28 July 2021), in USD billions (the API serves US dollars). A day the facility operated and nothing was taken is 0.0. Small-value exercises (operational tests the Desk names in the note) and term repos (two tests since the inception) are left out. Repo operations before 2021-07-29 were temporary open market operations, not the facility, and yield no row. Most positive days are a few million dollars: from 2021-07-29 to 2025-12-31 the take-up is above zero on 397 operation days and at least 0.1 billion on 58. The same search serves nyfed_on_rrp; this source saves it under its own snapshots. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Conservative, under docs/decisions/information-set.md (#127): a day's take-up is declared available at 16:00 ET on the next business day, not at its 13:45 close, because the Desk states no publication time and lastUpdated is a write time that was rewritten days later on 2021-09-03 and 2021-09-10 (both on 2021-09-16). nyfed_on_rrp declares the same lag for the same endpoint.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding. A 0.0 on an operation day is the Desk's own accepted amount, not a filled hole.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
   },
   "nyfed_tgcr": {
     "access": "public",
@@ -555,22 +752,22 @@
       "timezone": "America/New_York",
       "unit": "calendar_days"
     },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "scheduled_availability": {
-      "basis": "announced_before_ref_date",
-      "unit": "business_days",
-      "days": 1,
       "available_time": "15:00",
-      "timezone": "America/New_York",
+      "basis": "announced_before_ref_date",
+      "days": 1,
+      "evidence": "The tracked snapshot tests/fixtures/snapshots/funding_inputs/treasury_auctions/20260914T051023Z_722359ea9bc7.json (Fiscal Data auctions_query, retrieved 2026-09-14T05:10:23Z) carries auction_date, issue_date and closing_time_comp for each of its 3828 auctions. On every auction settling on or after the published panel's first date, 2018-04-03, auction_date is strictly before issue_date; three cash management bills earlier in the snapshot were auctioned and settled on the same day (2017-09-08, 2017-12-08, 2018-01-19), so the claim is established for the panel's span and not as a rule of Treasury's. A same-day cash management bill inside the panel would make it false for that day, and ingest.check_settlement_schedule, run by every build (repo_model.cli build), refuses the build when any auction settling inside the panel window closed later than 15:00 New York time on the panel day before its settlement, a same-day settlement included. On the panel's own dates the auction falls at least one panel day before settlement (36 auctions exactly one panel day before, all closing at or before 13:00), and no auction closed for competitive bids later than 14:30 (two bill auctions on 2025-07-07; the rest at 10:00, 11:00, 11:30 or 13:00). tests/test_asof.py::DeclarationTests re-checks this on the tracked snapshot. offering_amt is fixed at the auction announcement, before the auction; soma_accepted is fixed by the auction result. Treasury's results-publication time, checked 1 October 2026 (#59): Treasury's auction procedure states no clock time, only that results are published on TreasuryDirect after the auction concludes (31 CFR 356.23(a); see the note). The 15:00 instant therefore rests on the auction data alone: it leaves 30 minutes after the latest close in the snapshot and two hours after the latest close of any auction settling the next panel day.",
       "fields": [
         "treasury_settlement",
         "treasury_settlement_bill",
         "treasury_settlement_coupon",
         "treasury_settlement_soma"
       ],
-      "evidence": "The tracked snapshot tests/fixtures/snapshots/funding_inputs/treasury_auctions/20260914T051023Z_722359ea9bc7.json (Fiscal Data auctions_query, retrieved 2026-09-14T05:10:23Z) carries auction_date, issue_date and closing_time_comp for each of its 3828 auctions. On every auction settling on or after the published panel's first date, 2018-04-03, auction_date is strictly before issue_date; three cash management bills earlier in the snapshot were auctioned and settled on the same day (2017-09-08, 2017-12-08, 2018-01-19), so the claim is established for the panel's span and not as a rule of Treasury's. A same-day cash management bill inside the panel would make it false for that day, and ingest.check_settlement_schedule, run by every build (repo_model.cli build), refuses the build when any auction settling inside the panel window closed later than 15:00 New York time on the panel day before its settlement, a same-day settlement included. On the panel's own dates the auction falls at least one panel day before settlement (36 auctions exactly one panel day before, all closing at or before 13:00), and no auction closed for competitive bids later than 14:30 (two bill auctions on 2025-07-07; the rest at 10:00, 11:00, 11:30 or 13:00). tests/test_asof.py::DeclarationTests re-checks this on the tracked snapshot. offering_amt is fixed at the auction announcement, before the auction; soma_accepted is fixed by the auction result. Treasury's results-publication time, checked 1 October 2026 (#59): Treasury's auction procedure states no clock time, only that results are published on TreasuryDirect after the auction concludes (31 CFR 356.23(a); see the note). The 15:00 instant therefore rests on the auction data alone: it leaves 30 minutes after the latest close in the snapshot and two hours after the latest close of any auction settling the next panel day.",
-      "note": "Approved by Eleonora on 30 September 2026 (docs/decisions/information-set.md, rule 2): settlements are scheduled inputs dated from the auction results time. The value for settlement date d is declared public at 15:00 New York time on the panel day before d. That instant rests on the auction data (the closing times and auction dates recorded in the snapshot), not on a published results-publication time, because Treasury publishes none. Its auction procedure, the Uniform Offering Circular, says only: \"After the conclusion of the auction, we will make the auction results available on our website at http://www.treasurydirect.gov.\" (31 CFR 356.23(a), https://www.ecfr.gov/current/title-31/section-356.23, read 1 October 2026, #59). TreasuryDirect's 'How auctions work' page (https://www.treasurydirect.gov/auctions/how-auctions-work/) gives one clock time, for TreasuryDirect account holders only: 'you can see the results of your bid after 5 PM Eastern time on auction day'; it gives none for the public results. The 15:00 instant precedes the 16:00 decision time every published run uses, and every build refuses an auction that contradicts it. release_lag above is unchanged: it still dates the point-in-time rows the panel is built from, so the panel's bytes do not move. This block governs only what a forecast may read, through repo_model.asof."
+      "note": "Approved by Eleonora on 30 September 2026 (docs/decisions/information-set.md, rule 2): settlements are scheduled inputs dated from the auction results time. The value for settlement date d is declared public at 15:00 New York time on the panel day before d. That instant rests on the auction data (the closing times and auction dates recorded in the snapshot), not on a published results-publication time, because Treasury publishes none. Its auction procedure, the Uniform Offering Circular, says only: \"After the conclusion of the auction, we will make the auction results available on our website at http://www.treasurydirect.gov.\" (31 CFR 356.23(a), https://www.ecfr.gov/current/title-31/section-356.23, read 1 October 2026, #59). TreasuryDirect's 'How auctions work' page (https://www.treasurydirect.gov/auctions/how-auctions-work/) gives one clock time, for TreasuryDirect account holders only: 'you can see the results of your bid after 5 PM Eastern time on auction day'; it gives none for the public results. The 15:00 instant precedes the 16:00 decision time every published run uses, and every build refuses an auction that contradicts it. release_lag above is unchanged: it still dates the point-in-time rows the panel is built from, so the panel's bytes do not move. This block governs only what a forecast may read, through repo_model.asof.",
+      "timezone": "America/New_York",
+      "unit": "business_days"
     },
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
@@ -634,5 +831,50 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_bill_rates"
+  },
+  "fed_iorb_announcements": {
+    "access": "public",
+    "coverage": [
+      "implementation-note announcement time",
+      "effective date",
+      "rate on reserve balances (IOER before 2021-07-29)"
+    ],
+    "field_frequencies": {
+      "iorb_announced_change_bps": "business_daily",
+      "iorb_days_to_announced_change": "business_daily"
+    },
+    "fields": [
+      "iorb_announced_change_bps",
+      "iorb_days_to_announced_change"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Not a panel column. src/repo_model/announced_iorb.py computes both fields per scored row from tests/fixtures/snapshots/fed-iorb-announcements/iorb_changes.csv, reading only the notes announced at or before that row's decision instant, and adds them to a panel in memory; the published panel does not carry them. The table holds every IOER/IORB implementation note that changed the rate from 2018-04 to its retrieval, plus the 2018-03-21 anchor and the 2021-07-28 note that replaced IOER by IORB at an unchanged rate. Announcement time is the FOMC statement's release time. Added by directive #38.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "23:59",
+      "basis": "record_date",
+      "days": 0,
+      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape as treasury_auctions states it, at the end-of-day convention on the value's own date, the conservative direction. No ingest adapter reads this source; repo_model.announced_iorb computes its fields.",
+      "timezone": "America/New_York",
+      "unit": "calendar_days"
+    },
+    "reviewed_note": "No structural zeros: a 0.0 change is a computed value, not a missing one.",
+    "scheduled_availability": {
+      "basis": "announced_before_ref_date",
+      "unit": "business_days",
+      "days": 1,
+      "available_time": "16:00",
+      "timezone": "America/New_York",
+      "fields": [
+        "iorb_announced_change_bps",
+        "iorb_days_to_announced_change"
+      ],
+      "evidence": "Keyed on the announcement time. The value for scored date T is computed by repo_model.announced_iorb.announced_iorb_features from the implementation notes whose announcement instant (the FOMC statement's 'For release at' time, America/New_York) is at or before 16:00 on the panel day before T, so it is public at that instant by construction. Every row of tests/fixtures/snapshots/fed-iorb-announcements/iorb_changes.csv is read from the fetched federalreserve.gov pages by scripts/build_iorb_table.py (--check rebuilds it), and check_announcements refuses a row whose effective date is not after its announcement date. tests/test_announced_iorb.py perturbs every note announced after a decision instant and requires the features at that instant unchanged, and pins 2020-03-16: the Sunday 2020-03-15 17:00 EDT cut is not read by the 2020-03-13 decision.",
+      "note": "16:00 is the published records' decision time. A run at an earlier decision time is refused by the availability guard rather than read late; the features must then be recomputed at that time."
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
   }
 }

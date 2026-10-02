@@ -33,6 +33,7 @@ from typing import (
     Sequence,
     Union,
 )
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
@@ -58,6 +59,9 @@ USER_AGENT = (
     "(+https://github.com/eleonorabjornberg/repo-market-model; academic research)"
 )
 NYFED_BASE = "https://markets.newyorkfed.org/api/rates/secured"
+#: The New York Fed's unsecured reference rates. EFFR is fetched from here, as
+#: published, and not from FRED's `DFF` copy of it (directive #98).
+NYFED_UNSECURED_BASE = "https://markets.newyorkfed.org/api/rates/unsecured"
 FRED_GRAPH_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 FRED_MACRO_SERIES = (
     "IORB",       # interest on reserve balances, 2021-present
@@ -87,6 +91,63 @@ TREASURY_BILL_RATES_BASE = (
 #: `_fr2004_rows` reads. Not `list/timeseries.json`, which is the catalogue of
 #: series names and carries no values.
 NYFED_FR2004_EXPORT_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+#: The Desk's repo and reverse-repo operation results, one JSON document per
+#: `startDate`/`endDate` search, operations under `repo.operations`. The source
+#: of `on_rrp` (#45): `fetch_nyfed_on_rrp` saves it a calendar year at a time and
+#: `_nyfed_on_rrp_rows` sums the reverse-repo operations of each date. Not
+#: `rp/reverserepo/all/results/search.json`, which answers 400 to a date search
+#: (A45, Route B).
+NYFED_RP_RESULTS_URL = "https://markets.newyorkfed.org/api/rp/results/search.json"
+#: The ON RRP source, named once for the fetcher, the parser and the dispatch in
+#: `parse_snapshots`.
+NYFED_ON_RRP_SOURCE_ID = "nyfed_on_rrp"
+#: Its one field: the day's accepted reverse-repo amount, summed over every
+#: reverse-repo operation of the operation date, in USD billions.
+NYFED_ON_RRP_FIELD = "reverse_repo_total_accepted"
+#: The Standing Repo Facility source (#127): the same operation results, saved
+#: under their own source a calendar year at a time by `fetch_nyfed_srf`, and
+#: read by `_nyfed_srf_rows` for the facility's overnight repo take-up.
+NYFED_SRF_SOURCE_ID = "nyfed_srf"
+#: Its one field: the day's accepted overnight repo amount at the facility,
+#: summed over the day's operations, in USD billions; 0.0 on a day it operated
+#: and nothing was taken.
+NYFED_SRF_FIELD = "srf_total_accepted"
+#: The facility's first operation: the FOMC established the Standing Repo
+#: Facility on 28 July 2021, and the Desk's daily overnight repo operation of
+#: the next day was its first. The Desk's repo operations before it were
+#: temporary open market operations, not the facility.
+SRF_INCEPTION = date(2021, 7, 29)
+#: The Board's Data Download Program, full-release packages (#129): the H.15
+#: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
+#: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
+#: release, saved unmodified; `frb_ddp_series` reads one series out of it. Not a
+#: panel source: `effr_history` reads it for the pre-SOFR history study.
+FRB_DDP_SOURCE_ID = "frb_ddp"
+FRB_DDP_OUTPUT_URL = "https://www.federalreserve.gov/datadownload/Output.aspx"
+FRB_DDP_RELEASES = ("H15", "PRATES")
+#: A DDP observation the Board marks not available (`OBS_STATUS="ND"`, value
+#: -9999): a holiday or a day the series did not print.
+FRB_DDP_NOT_AVAILABLE = "ND"
+#: The Board's H.8 archive (#115, Eleonora's ruling of 2 October 2026, option 3):
+#: one page per release at `<archive>/<YYYYMMDD>/`, and the list of release dates
+#: as `releaseDates.json`, which the archive's own index page loads. ALFRED, the
+#: point-in-time route the other revised series take, is refused by this
+#: environment's egress proxy (#115, first comment).
+FRB_H8_ARCHIVE_URL = "https://www.federalreserve.gov/releases/h8/"
+FRB_H8_RELEASE_DATES_URL = FRB_H8_ARCHIVE_URL + "releaseDates.json"
+#: The H.8 source, named once for the fetcher, the extract and the dispatch in
+#: `parse_snapshots`.
+FRB_H8_SOURCE_ID = "frb_h8"
+#: Its one field: total assets of all commercial banks in the United States,
+#: not seasonally adjusted, USD billions, week ending Wednesday, first print.
+FRB_H8_FIELD = "total_assets"
+#: Seconds between two H.8 archive requests. A backfill is several hundred pages
+#: of about 0.7 MB from one host, and the Board states no rate limit.
+FRB_H8_REQUEST_PAUSE_SECONDS = 1.0
+#: The release instant the registry declares (`frb_h8.release_lag`): the archive
+#: index says the data "are released each Friday, generally at 4:15 p.m.", and a
+#: page that states its own time says "For release at 4:15 p.m. Eastern Time".
+FRB_H8_RELEASE_TIME = time(16, 15)
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
 #: The declared set of Form N-MFP archives that constitutes the `sec_nmfp`
 #: source. Committed, because `data/raw/` is not: without it a checkout with an
@@ -287,6 +348,266 @@ def fetch_nyfed_reference_rate(
     return artifacts
 
 
+def fetch_nyfed_on_rrp(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the Desk's operation results, one snapshot per calendar year in range.
+
+    `fetch_nyfed_reference_rate`'s shape: a `startDate`/`endDate` JSON search on
+    the same host, saved unmodified. A year is at most 0.6 MB (A45), and each
+    window is its own snapshot, so a re-fetch of the year in progress leaves the
+    closed years' bytes alone. Repo and reverse-repo operations come together;
+    the parser keeps the reverse repos.
+    """
+
+    return _fetch_nyfed_operation_results(
+        NYFED_ON_RRP_SOURCE_ID, output_root, start, end, downloader
+    )
+
+
+def fetch_nyfed_srf(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """`fetch_nyfed_on_rrp`, saved under the Standing Repo Facility source (#127).
+
+    The same search; `_nyfed_srf_rows` keeps the facility's overnight repos.
+    """
+
+    return _fetch_nyfed_operation_results(
+        NYFED_SRF_SOURCE_ID, output_root, start, end, downloader
+    )
+
+
+def _fetch_nyfed_operation_results(
+    source_id: str,
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes],
+) -> List[SnapshotArtifact]:
+    """One operation-results snapshot per calendar year in range, as `source_id`."""
+
+    # Validate before interpolating caller-provided dates into a URL.
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("New York Fed operation-results start date must not follow end date")
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        window_start = max(start_date, date(year, 1, 1))
+        window_end = min(end_date, date(year, 12, 31))
+        query = urlencode(
+            {"startDate": window_start.isoformat(), "endDate": window_end.isoformat()}
+        )
+        url = f"{NYFED_RP_RESULTS_URL}?{query}"
+        payload = downloader(url)
+        _nyfed_operations(json.loads(payload))
+        artifacts.append(
+            _save_snapshot(
+                source_id=source_id,
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="json",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
+def parse_frb_h8_release_dates(payload: bytes) -> tuple:
+    """Every release date `releaseDates.json` lists, ascending.
+
+    The document is a list of years, each with `Months`, each with `Dates` as
+    `YYYYMMDD` strings: the shape the archive index's own script reads. A date
+    that does not parse, or a document of another shape, raises `ValueError`
+    rather than yielding a shorter list.
+    """
+
+    try:
+        parsed = json.loads(payload.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"H.8 release-date index is not JSON: {exc}") from exc
+    if not isinstance(parsed, list) or not parsed:
+        raise ValueError("H.8 release-date index is not a non-empty list of years")
+    found = set()
+    for year in parsed:
+        months = year.get("Months") if isinstance(year, dict) else None
+        if not isinstance(months, list):
+            raise ValueError("H.8 release-date index: a year has no Months list")
+        for month in months:
+            dates = month.get("Dates") if isinstance(month, dict) else None
+            if not isinstance(dates, list):
+                raise ValueError("H.8 release-date index: a month has no Dates list")
+            for raw in dates:
+                if not isinstance(raw, str) or not re.fullmatch(r"\d{8}", raw):
+                    raise ValueError(f"H.8 release-date index: {raw!r} is not YYYYMMDD")
+                found.add(date(int(raw[:4]), int(raw[4:6]), int(raw[6:])))
+    return tuple(sorted(found))
+
+
+def frb_h8_release_url(release_date: date) -> str:
+    """The archive page of one H.8 release."""
+
+    return f"{FRB_H8_ARCHIVE_URL}{release_date.strftime('%Y%m%d')}/"
+
+
+def _fetched_frb_h8_urls(output_root: Path) -> set:
+    """The URLs already saved under `output_root/frb_h8`, from their manifests."""
+
+    fetched = set()
+    for manifest in sorted((output_root / FRB_H8_SOURCE_ID).glob("*.manifest.json")):
+        stored = json.loads(manifest.read_text(encoding="utf-8")).get("url")
+        if isinstance(stored, str):
+            fetched.add(stored)
+    return fetched
+
+
+def fetch_frb_h8_archive(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+    pause: Callable[[float], None] = _sleep,
+) -> List[SnapshotArtifact]:
+    """Fetch the H.8 release-date index, then each release page in range.
+
+    Every response is saved unmodified as its own checksummed snapshot under
+    `frb_h8/`, with the usual sidecar manifest (URL, retrieval time, SHA-256),
+    so the extract `scripts/extract_h8_first_prints.py` cuts from them can be
+    rebuilt and checked. The index is fetched every time; a release page whose
+    URL a manifest under `output_root` already records is not fetched again,
+    because an archived release does not change and a backfill interrupted
+    part way resumes where it stopped. Requests are paced by
+    `FRB_H8_REQUEST_PAUSE_SECONDS`.
+
+    A listed Friday the archive refuses (403 or 404) is fetched from the
+    Thursday before it, and kept only if that page states the Thursday as its
+    release date: a Friday holiday moves the release a day earlier, and the
+    index does not always follow.
+
+    A release page is checked before it is saved: it must parse to exactly one
+    total-assets line (`parse_frb_h8_total_assets`), so a page of another shape
+    stops the backfill instead of becoming a snapshot nothing can read.
+    """
+
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("H.8 archive start date must not follow end date")
+    index_payload = downloader(FRB_H8_RELEASE_DATES_URL)
+    releases = [
+        day
+        for day in parse_frb_h8_release_dates(index_payload)
+        if start_date <= day <= end_date
+    ]
+    artifacts = [
+        _save_snapshot(
+            source_id=FRB_H8_SOURCE_ID,
+            url=FRB_H8_RELEASE_DATES_URL,
+            payload=index_payload,
+            output_root=output_root,
+            suffix="json",
+        )
+    ]
+    fetched = _fetched_frb_h8_urls(output_root)
+    for listed in releases:
+        url = frb_h8_release_url(listed)
+        thursday = listed - timedelta(days=1)
+        if url in fetched or frb_h8_release_url(thursday) in fetched:
+            continue
+        pause(FRB_H8_REQUEST_PAUSE_SECONDS)
+        release_date = listed
+        try:
+            payload = downloader(url)
+        except HTTPError as exc:
+            if exc.code not in (403, 404) or listed.weekday() != 4:
+                raise
+            # A Friday holiday moves the release to Thursday, and the archive
+            # files it there while the index can still list the Friday: the
+            # index lists 2022-11-11 (Veterans Day), and the page is
+            # `20221110/`, "Release Date: November 10, 2022".
+            release_date = thursday
+            url = frb_h8_release_url(thursday)
+            pause(FRB_H8_REQUEST_PAUSE_SECONDS)
+            payload = downloader(url)
+        release = parse_frb_h8_total_assets(payload, release_date)
+        if release_date != listed and release.stated_date != release_date:
+            raise ValueError(
+                f"the H.8 index lists {listed}, which the archive does not serve, "
+                f"and the page under {release_date} states "
+                f"{release.stated_date}; neither is the release"
+            )
+        artifacts.append(
+            _save_snapshot(
+                source_id=FRB_H8_SOURCE_ID,
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="html",
+            )
+        )
+    return artifacts
+
+
+def fetch_nyfed_effr(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the effective federal funds rate, one snapshot per calendar year.
+
+    The same response shape as `fetch_nyfed_reference_rate`'s rate leg, from
+    the unsecured endpoint, so `_nyfed_rows` reads it unchanged: the URL's
+    `effr` path segment names the series and `type=rate` selects the rate and
+    its percentiles. The window is cut at calendar years, as Treasury's bill
+    rates are, so each request is small and each year is its own unmodified
+    snapshot with its own checksum.
+    """
+
+    # Validate before interpolating caller-provided dates into a query.
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("EFFR start date must not follow end date")
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        window_start = max(start_date, date(year, 1, 1))
+        window_end = min(end_date, date(year, 12, 31))
+        query = urlencode(
+            {
+                "startDate": window_start.isoformat(),
+                "endDate": window_end.isoformat(),
+                "type": "rate",
+            }
+        )
+        url = f"{NYFED_UNSECURED_BASE}/effr/search.json?{query}"
+        payload = downloader(url)
+        parsed = json.loads(payload)
+        if not isinstance(parsed, dict) or not isinstance(parsed.get("refRates"), list):
+            raise ValueError("New York Fed response does not contain a refRates list")
+        artifacts.append(
+            _save_snapshot(
+                source_id="nyfed_effr",
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="json",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
 def fetch_fred_macro(
     output_root: Path,
     downloader: Callable[[str], bytes] = _download,
@@ -321,6 +642,153 @@ def fetch_fred_macro(
             suffix=suffix,
         )
     ]
+
+
+def fetch_frb_ddp(
+    output_root: Path,
+    release: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch one Data Download Program release package, the whole release.
+
+    One request, one zip of SDMX XML, saved unmodified under `frb_ddp`. A
+    payload that is not a zip carrying the release's `<release>_data.xml` is
+    refused before anything is written: the DDP answers an unknown query with an
+    empty 200, which would otherwise be saved as a snapshot.
+    """
+
+    if release not in FRB_DDP_RELEASES:
+        raise ValueError(f"{release!r} is not one of {list(FRB_DDP_RELEASES)}")
+    url = f"{FRB_DDP_OUTPUT_URL}?{urlencode({'rel': release, 'filetype': 'zip'})}"
+    payload = downloader(url)
+    _frb_ddp_data_member(payload, release)
+    return [
+        _save_snapshot(
+            source_id=FRB_DDP_SOURCE_ID,
+            url=url,
+            payload=payload,
+            output_root=output_root,
+            suffix="zip",
+        )
+    ]
+
+
+def _frb_ddp_data_member(payload: bytes, release: str) -> str:
+    if not payload.startswith(b"PK"):
+        raise ValueError(f"the DDP {release} response is not a zip package")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        member = f"{release}_data.xml"
+        if member not in archive.namelist():
+            raise ValueError(f"the DDP {release} package carries no {member}")
+    return member
+
+
+def frb_ddp_series(payload: bytes, release: str, series_name: str) -> Dict[date, Optional[float]]:
+    """One series of a DDP release package: date -> value, `None` where not available.
+
+    Streams the SDMX XML, so the H.15's 70 MB document is never held whole.
+    A date the Board marks `ND` maps to `None` rather than being dropped, so a
+    caller can tell a holiday from a date the package does not carry.
+
+    Raises:
+        ValueError: if the package does not carry the series, carries it twice,
+            or carries an observation that is neither a number nor `ND`.
+    """
+
+    import xml.etree.ElementTree as ElementTree
+
+    member = _frb_ddp_data_member(payload, release)
+    found = 0
+    inside = False
+    values: Dict[date, Optional[float]] = {}
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive, archive.open(member) as stream:
+        for event, element in ElementTree.iterparse(stream, events=("start", "end")):
+            tag = element.tag.rsplit("}", 1)[-1]
+            if event == "start" and tag == "Series":
+                inside = element.get("SERIES_NAME") == series_name
+                found += inside
+            elif event == "end" and tag == "Obs":
+                if inside:
+                    when = date.fromisoformat(str(element.get("TIME_PERIOD")))
+                    status = element.get("OBS_STATUS")
+                    raw = element.get("OBS_VALUE")
+                    if status == FRB_DDP_NOT_AVAILABLE:
+                        values[when] = None
+                    else:
+                        try:
+                            values[when] = float(str(raw))
+                        except ValueError as error:
+                            raise ValueError(
+                                f"{series_name} {when}: {raw!r} with status "
+                                f"{status!r} is neither a value nor not-available"
+                            ) from error
+                element.clear()
+            elif event == "end" and tag == "Series":
+                inside = False
+                element.clear()
+    if found != 1:
+        raise ValueError(
+            f"the DDP {release} package carries {series_name} {found} times, not once"
+        )
+    return values
+
+
+#: The DDP series each `frb_ddp` field is read from: (release, series name).
+FRB_DDP_FIELD_SERIES = {
+    "EFFR": ("H15", "RIFSPFF_N.B"),
+    "IOER": ("PRATES", "RESBME_N.D"),
+    "IORB": ("PRATES", "RESBM_N.D"),
+}
+
+
+def _frb_ddp_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+    """Point-in-time observations from one DDP package: its release's fields.
+
+    `available_at` is read off the registry on every call, as `_fr2004_rows`
+    reads its own: a `ref_date` field is public `days` business days (weekdays)
+    after its date, a `record_date` field `days` calendar days after it, each at
+    its `available_time` in its `timezone`, and never later than retrieval.
+    A date the Board marks not available yields no observation.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .contract import validate_release_lag
+    from .data import PointInTimeObservation
+
+    source = registry[FRB_DDP_SOURCE_ID]
+    query = parse_qs(urlparse(artifact.url).query)
+    release = (query.get("rel") or [""])[0]
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for field, (field_release, series_name) in FRB_DDP_FIELD_SERIES.items():
+        if field_release != release:
+            continue
+        lag = (source.get("field_release_lags") or {}).get(field) or source["release_lag"]
+        problems = validate_release_lag(f"{FRB_DDP_SOURCE_ID}.{field}", lag)
+        if problems:
+            raise ValueError("; ".join(problems))
+        moment = time.fromisoformat(lag["available_time"])
+        zone = ZoneInfo(lag["timezone"])
+        for ref_date, value in sorted(frb_ddp_series(payload, release, series_name).items()):
+            if value is None:
+                continue
+            if lag["basis"] == "ref_date":
+                day = _next_weekday(ref_date, int(lag["days"]))
+            else:
+                day = ref_date + timedelta(days=int(lag["days"]))
+            rows.append(
+                PointInTimeObservation(
+                    series_id=field,
+                    ref_date=ref_date,
+                    available_at=min(datetime.combine(day, moment, tzinfo=zone), retrieved),
+                    value=value,
+                    vintage_id=f"{artifact.retrieved_at}:{release}",
+                    source_sha=artifact.sha256,
+                )
+            )
+    if not rows:
+        raise ValueError(f"the DDP package {artifact.url} carries no frb_ddp field")
+    return rows
 
 
 def fetch_treasury_auctions(
@@ -1143,6 +1611,445 @@ def _nyfed_rows(
                     source_sha=artifact.sha256,
                 )
             )
+    return rows
+
+
+def _nyfed_operations(parsed: object) -> list:
+    """The `repo.operations` list of an operation-results response, or raise."""
+
+    repo = parsed.get("repo") if isinstance(parsed, dict) else None
+    operations = repo.get("operations") if isinstance(repo, dict) else None
+    if not isinstance(operations, list):
+        raise ValueError(
+            "New York Fed operation-results response does not contain a "
+            "repo.operations list"
+        )
+    return operations
+
+
+#: The `operationType` the ON RRP facility's operations carry. Repo operations
+#: share the endpoint and are left out.
+NYFED_REVERSE_REPO = "Reverse Repo"
+
+
+def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per operation date: the reverse repos accepted that day.
+
+    `totalAmtAccepted` (US dollars) is summed over every operation whose
+    `operationType` is `Reverse Repo`, small-value exercises included, because
+    that sum is what the H.4.1's `WLRRAOL` agrees with to the million and what
+    FRED's `RRPONTSYD` alternates away from on a two-operation day (A45, Route
+    B). The sum is converted to USD billions, the panel's money unit. Neither
+    `propositions` (added a month later) nor `note` is read.
+
+    `available_at` is the next weekday at 16:00 New York time, the registry's
+    conservative declaration (`nyfed_on_rrp.release_lag`): the Desk publishes
+    results after the 13:15 close but states no clock time.
+
+    Raises `ValueError` on a reverse-repo operation with no `operationDate` or
+    no numeric `totalAmtAccepted`, rather than summing the day without it.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    operations = _nyfed_operations(json.loads(payload))
+    totals: Dict[date, int] = {}
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != NYFED_REVERSE_REPO:
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed reverse-repo operation {number} has no valid "
+                f"operationDate"
+            ) from exc
+        accepted = operation.get("totalAmtAccepted")
+        if isinstance(accepted, bool) or not isinstance(accepted, (int, float)):
+            raise ValueError(
+                f"New York Fed reverse-repo operation {operation.get('operationId', number)!r} "
+                f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
+                f"day summed without one of its operations is not that day's total"
+            )
+        totals[ref_date] = totals.get(ref_date, 0) + accepted
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for ref_date in sorted(totals):
+        declared_available_at = datetime.combine(
+            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id=NYFED_ON_RRP_FIELD,
+                ref_date=ref_date,
+                available_at=min(declared_available_at, retrieved),
+                value=totals[ref_date] / 1e9,
+                vintage_id=f"{artifact.retrieved_at}:operations",
+                source_sha=artifact.sha256,
+            )
+        )
+    return rows
+
+
+def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
+    """Whether the Desk's `note` names the operation a small-value exercise.
+
+    A small-value exercise is the Desk's operational-readiness test, a few tens
+    of millions accepted by arrangement; it is not take-up. The Desk names it
+    in the note ("Small Value Exercise (SVE)", "small value exercise for
+    operational readiness testing"), and that is the only place it does.
+    """
+
+    note = operation.get("note")
+    return isinstance(note, str) and "small value exercise" in note.lower()
+
+
+def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per operation date: the facility's overnight take-up.
+
+    Keeps the operations whose `operationType` is `Repo` and `term` is
+    `Overnight`, on or after `SRF_INCEPTION`, that are not small-value
+    exercises (`_is_small_value_exercise`), and sums `totalAmtAccepted` (US
+    dollars) per `operationDate`, both operations of a two-operation day
+    included, in USD billions. A day the facility operated and nothing was
+    taken is 0.0. A day whose only operation was a test yields no row. Term
+    repos are left out: the facility is overnight, and its two term operations
+    since the inception were tests of a few tens of millions.
+
+    `available_at` is the next weekday at 16:00 New York time, the registry's
+    conservative declaration (`nyfed_srf.release_lag`): the Desk states no
+    publication time, and `lastUpdated` is a write time.
+
+    Raises `ValueError` on a kept operation with no `operationDate` or no
+    numeric `totalAmtAccepted`, rather than summing the day without it.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    operations = _nyfed_operations(json.loads(payload))
+    totals: Dict[date, int] = {}
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != "Repo" or operation.get("term") != "Overnight":
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed repo operation {number} has no valid operationDate"
+            ) from exc
+        if ref_date < SRF_INCEPTION or _is_small_value_exercise(operation):
+            continue
+        accepted = operation.get("totalAmtAccepted")
+        if isinstance(accepted, bool) or not isinstance(accepted, (int, float)):
+            raise ValueError(
+                f"New York Fed repo operation {operation.get('operationId', number)!r} "
+                f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
+                f"day summed without one of its operations is not that day's total"
+            )
+        totals[ref_date] = totals.get(ref_date, 0) + accepted
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for ref_date in sorted(totals):
+        declared_available_at = datetime.combine(
+            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id=NYFED_SRF_FIELD,
+                ref_date=ref_date,
+                available_at=min(declared_available_at, retrieved),
+                value=totals[ref_date] / 1e9,
+                vintage_id=f"{artifact.retrieved_at}:operations",
+                source_sha=artifact.sha256,
+            )
+        )
+    return rows
+
+
+#: The table the H.8 field is read from, by what its page says about it: the
+#: title of tables 2 and 3 (pages 2-5 before the 2020s layout), which is not
+#: table 1's "Selected Assets and Liabilities ...", and not the domestically
+#: chartered, large, small or foreign-related tables, whose titles name them.
+_FRB_H8_TITLE_RE = re.compile(
+    r"(?<!Selected )Assets and Liabilities of Commercial Banks in the United States"
+)
+#: Table 3's unit line, which is also what separates it from table 2.
+#: `TLAACBW027NBOG`, FRED's copy of the series, is this line, not seasonally
+#: adjusted; `TLAACBW027SBOG` is table 2's.
+_FRB_H8_UNIT = "Not seasonally adjusted, billions of dollars"
+_FRB_H8_LINE = "Total assets"
+_FRB_H8_WEEK_RE = re.compile(r"^([A-Z][a-z]{2})\.? (\d{1,2})$")
+_FRB_H8_MONTHS = {
+    name: number
+    for number, name in enumerate(
+        ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+        start=1,
+    )
+}
+_FRB_H8_STATED_TIME_RE = re.compile(
+    r"For release at\s+(\d{1,2}):(\d{2})\s*p\.m\.\s*Eastern Time", re.I
+)
+_FRB_H8_STATED_DATE_RE = re.compile(r"Release Date:\s*([A-Z][a-z]+ \d{1,2}, \d{4})")
+#: A week column is dated by the release that prints it. The four weeks a page
+#: carries end at most a few weeks before it; a candidate date more than this
+#: far back, or after the release, is the wrong year.
+_FRB_H8_MAX_WEEK_AGE_DAYS = 60
+
+
+@dataclass(frozen=True)
+class FrbH8Release:
+    """What one archived H.8 page says about total assets, week by week.
+
+    `weeks` maps each week-ending Wednesday the page prints to its value in USD
+    billions. `stated_time` is the release time the page states, or `None` for
+    a page that states none (the pre-2020s layout says only the date).
+    """
+
+    release_date: date
+    stated_time: Optional[time]
+    weeks: Mapping[date, float]
+    stated_date: Optional[date] = None
+
+    @property
+    def public_on(self) -> date:
+        """The day the page's values were public: the later of its two dates.
+
+        The archive date (`release_date`, from the URL) and the date the page
+        states ("Release Date: ...") almost always agree. Where they do not --
+        the page archived under Monday 21 December 2020 states Friday 18
+        December -- the later one is taken, which can only make a value appear
+        later than it was, never sooner.
+        """
+
+        if self.stated_date is None:
+            return self.release_date
+        return max(self.release_date, self.stated_date)
+
+
+def _frb_h8_text(fragment: str) -> str:
+    import html as _html
+
+    return " ".join(_html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
+
+
+def _frb_h8_week(label: str, release_date: date) -> date:
+    match = _FRB_H8_WEEK_RE.match(label)
+    if match is None or match.group(1) not in _FRB_H8_MONTHS:
+        raise ValueError(f"H.8 {release_date}: {label!r} is not a week label")
+    month, day = _FRB_H8_MONTHS[match.group(1)], int(match.group(2))
+    for year in (release_date.year, release_date.year - 1):
+        try:
+            candidate = date(year, month, day)
+        except ValueError:
+            continue
+        if 0 < (release_date - candidate).days <= _FRB_H8_MAX_WEEK_AGE_DAYS:
+            return candidate
+    raise ValueError(
+        f"H.8 {release_date}: week {label!r} is not within "
+        f"{_FRB_H8_MAX_WEEK_AGE_DAYS} days before the release"
+    )
+
+
+def _frb_h8_number(raw: str, release_date: date, week: date) -> float:
+    text = raw.replace(",", "").strip()
+    if not re.fullmatch(r"-?\d+(\.\d+)?", text):
+        raise ValueError(
+            f"H.8 {release_date}: total assets for the week of {week} is {raw!r}, "
+            f"not a number"
+        )
+    return float(text)
+
+
+def parse_frb_h8_total_assets(payload: bytes, release_date: date) -> FrbH8Release:
+    """Total assets of all commercial banks, NSA, from one archived H.8 page.
+
+    The line is read from the one table whose preamble carries the table title
+    (`_FRB_H8_TITLE_RE`) and the not-seasonally-adjusted unit line, by its label
+    `Total assets`; the week columns are the header cells that read as a month
+    and a day (`Mar 7`, `Sep 03`), dated by the release, and the values are the
+    line's last cells, one per week. Both page layouts the archive serves since
+    2018 have that shape: the table-per-heading layout of the 2020s, and the
+    earlier page-per-heading one, where the line sits on the table's
+    "(continued)" page.
+
+    Raises `ValueError` unless exactly one such line is found, with a number
+    for every week column, and the weeks are distinct, ascending Wednesdays.
+    """
+
+    page = payload.decode("utf-8", errors="strict")
+    page = re.sub(r"<script\b.*?</script>", "", page, flags=re.S | re.I)
+    header = _frb_h8_text(page[:200000])
+    stated = _FRB_H8_STATED_TIME_RE.search(header)
+    stated_time = (
+        None
+        if stated is None
+        else time(int(stated.group(1)) % 12 + 12, int(stated.group(2)))
+    )
+    stated_day = _FRB_H8_STATED_DATE_RE.search(header)
+    stated_date = (
+        None
+        if stated_day is None
+        else datetime.strptime(stated_day.group(1), "%B %d, %Y").date()
+    )
+    found = []
+    previous = 0
+    for table in re.finditer(r"<table\b.*?</table>", page, flags=re.S | re.I):
+        preamble = _frb_h8_text(page[previous:table.start()])[-600:]
+        previous = table.end()
+        if not _FRB_H8_TITLE_RE.search(preamble) or _FRB_H8_UNIT not in preamble:
+            continue
+        rows = [
+            [_frb_h8_text(cell) for cell in re.findall(r"<t[hd]\b.*?</t[hd]>", row, flags=re.S | re.I)]
+            for row in re.findall(r"<tr\b.*?</tr>", table.group(0), flags=re.S | re.I)
+        ]
+        lines = [
+            cells
+            for cells in rows
+            if len(cells) > 1 and re.sub(r"(\s+\d+)+$", "", cells[1]) == _FRB_H8_LINE
+        ]
+        if not lines:
+            continue
+        labels = [
+            cells
+            for cells in rows
+            if cells and all(_FRB_H8_WEEK_RE.match(cell) for cell in cells)
+        ]
+        if len(labels) != 1:
+            raise ValueError(
+                f"H.8 {release_date}: the total-assets table has {len(labels)} "
+                f"week-ending header rows, not one"
+            )
+        found.append((labels[0], lines))
+    if len(found) != 1 or len(found[0][1]) != 1:
+        raise ValueError(
+            f"H.8 {release_date}: found {sum(len(lines) for _labels, lines in found)} "
+            f"'{_FRB_H8_LINE}' lines in tables titled 'Assets and Liabilities of "
+            f"Commercial Banks in the United States' with the unit "
+            f"'{_FRB_H8_UNIT}', not exactly one"
+        )
+    labels, (line,) = found[0]
+    weeks = [_frb_h8_week(label, release_date) for label in labels]
+    if len(line) < 2 + len(weeks):
+        raise ValueError(
+            f"H.8 {release_date}: the total-assets line has {len(line) - 2} values "
+            f"for {len(weeks)} week columns"
+        )
+    if weeks != sorted(set(weeks)) or any(week.weekday() != 2 for week in weeks):
+        raise ValueError(
+            f"H.8 {release_date}: week columns {[w.isoformat() for w in weeks]} "
+            f"are not distinct ascending Wednesdays"
+        )
+    values = line[len(line) - len(weeks):]
+    return FrbH8Release(
+        release_date=release_date,
+        stated_time=stated_time,
+        stated_date=stated_date,
+        weeks={
+            week: _frb_h8_number(raw, release_date, week)
+            for week, raw in zip(weeks, values)
+        },
+    )
+
+
+@dataclass(frozen=True)
+class FrbH8FirstPrint:
+    """One week's total assets as first printed, and the release that printed it."""
+
+    week_ending: date
+    value: float
+    release_date: date
+    release_sha256: str
+
+
+def frb_h8_first_prints(releases: Iterable[tuple]) -> List[FrbH8FirstPrint]:
+    """The first print of every week, from `(FrbH8Release, sha256)` pairs.
+
+    A week's first print is its value in the earliest release that carries it
+    (#115, ruling of 2 October 2026); later releases revise it and are not read
+    for it. It is dated by `FrbH8Release.public_on`. Two pages for one release
+    date raise `ValueError`: which one is the release is not this function's to
+    choose.
+    """
+
+    by_date: Dict[date, tuple] = {}
+    for release, sha256 in releases:
+        if release.release_date in by_date:
+            raise ValueError(f"H.8 release {release.release_date} is given twice")
+        by_date[release.release_date] = (release, sha256)
+    first: Dict[date, FrbH8FirstPrint] = {}
+    for release_date in sorted(by_date):
+        release, sha256 = by_date[release_date]
+        for week, value in sorted(release.weeks.items()):
+            if week not in first:
+                first[week] = FrbH8FirstPrint(week, value, release.public_on, sha256)
+    return [first[week] for week in sorted(first)]
+
+
+#: The tracked extract's columns, in order.
+FRB_H8_EXTRACT_COLUMNS = ("week_ending", "total_assets", "release_date", "release_sha256")
+
+
+def _frb_h8_first_print_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per week from the tracked first-print extract.
+
+    The extract (`scripts/extract_h8_first_prints.py`) is one row per
+    week-ending Wednesday: the first print, the release that printed it, and
+    that release page's SHA-256. `available_at` is the release date at 16:15
+    New York time, the registry's declaration (`frb_h8.release_lag`), and never
+    later than the extract's own retrieval. Revisions are not in the extract, so
+    a week has one vintage: its first print. A raw archive snapshot yields
+    nothing.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    if artifact.url != FRB_H8_ARCHIVE_URL or artifact.path.suffix != ".csv":
+        # A raw archive page or the release-date index, as `fetch h8` saves them
+        # under `data/raw/frb_h8/`. They are the evidence the extract is cut
+        # from and contribute no observation of their own: a page carries every
+        # print of four weeks, revisions included, and the panel reads only
+        # first prints, which only the extract selects.
+        return []
+    text = payload.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(text))
+    if tuple(reader.fieldnames or ()) != FRB_H8_EXTRACT_COLUMNS:
+        raise ValueError(
+            f"H.8 extract {artifact.path}: columns {reader.fieldnames}, expected "
+            f"{list(FRB_H8_EXTRACT_COLUMNS)}"
+        )
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    seen = set()
+    for number, record in enumerate(reader, start=2):
+        week = date.fromisoformat(record["week_ending"])
+        if week in seen:
+            raise ValueError(f"H.8 extract line {number}: week {week} appears twice")
+        seen.add(week)
+        release_date = date.fromisoformat(record["release_date"])
+        if release_date <= week:
+            raise ValueError(
+                f"H.8 extract line {number}: week {week} released on {release_date}"
+            )
+        available_at = datetime.combine(
+            release_date, FRB_H8_RELEASE_TIME, tzinfo=ZoneInfo("America/New_York")
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id=FRB_H8_FIELD,
+                ref_date=week,
+                available_at=min(available_at, retrieved),
+                value=float(record["total_assets"]),
+                vintage_id=f"h8:{release_date.isoformat()}:first_print",
+                source_sha=artifact.sha256,
+            )
+        )
     return rows
 
 
@@ -3453,6 +4360,16 @@ def parse_snapshots(
             parsed_rows = _fr2004_rows(
                 artifact, payload, registry, absent_cells=absent_cells
             )
+        elif artifact.source_id == NYFED_ON_RRP_SOURCE_ID:
+            # Also before the prefix test: operation results, not a refRates list.
+            parsed_rows = _nyfed_on_rrp_rows(artifact, payload)
+        elif artifact.source_id == NYFED_SRF_SOURCE_ID:
+            # Also before the prefix test: operation results, not a refRates list.
+            parsed_rows = _nyfed_srf_rows(artifact, payload)
+        elif artifact.source_id == FRB_DDP_SOURCE_ID:
+            parsed_rows = _frb_ddp_rows(artifact, payload, registry)
+        elif artifact.source_id == FRB_H8_SOURCE_ID:
+            parsed_rows = _frb_h8_first_print_rows(artifact, payload)
         elif artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "fred_macro_latest_vintage":

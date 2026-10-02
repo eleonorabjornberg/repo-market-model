@@ -3,7 +3,8 @@
 `docs/decisions/information-set.md` decides the rule; this module is its one
 implementation. A forecast for the scored row `T` is made at the declared
 decision time on the panel day before it, `dates[T - 1]` -- the *decision
-instant*. At that instant:
+instant*; at a declared `horizon` of `h` panel days (#114), on `dates[T - h]`.
+At that instant:
 
 1. **Each declared input is read per field**, at the latest panel row whose
    declared first-observable instant is at or before the decision instant.
@@ -57,8 +58,11 @@ from typing import (
 from .contract import (
     AVAILABLE_TIME_RE,
     CALENDAR_FEATURES,
+    COMPOSED_FEATURES,
     DERIVED_FEATURES,
     END_OF_DAY,
+    ON_RRP_DEPLETION_BREAK_BN,
+    SETTLEMENT_DAY_MONTH_END_DAYS,
     field_sources_for_features,
 )
 from .data import DailyObservation
@@ -66,6 +70,7 @@ from .registry import RegistryContractError
 from .splits import LookAheadError, SplitError, ensure_strictly_ascending
 
 __all__ = [
+    "COMPOSERS",
     "FieldRead",
     "InformationRule",
     "InformationSet",
@@ -301,6 +306,88 @@ def _columns_of(feature: str) -> Tuple[str, ...]:
     return (feature,)
 
 
+def _on_rrp_depleted(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """`1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)`; a hole when `on_rrp` is one."""
+
+    on_rrp = values["on_rrp"]
+    if on_rrp is None:
+        return None
+    return 1.0 if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
+def _reserves_when_depleted(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """`reserve_balances * 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)`.
+
+    A hole when either input is: reserves not yet printed are not zero
+    reserves, and an unknown buffer is not a full one.
+    """
+
+    reserves = values["reserve_balances"]
+    on_rrp = values["on_rrp"]
+    if reserves is None or on_rrp is None:
+        return None
+    return float(reserves) if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
+def _settlement_day(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """The scored day's settlement calendar (#97); a hole when any input is one.
+
+    `quarter_end OR tax_date OR days_to_month_end <= SETTLEMENT_DAY_MONTH_END_DAYS
+    OR treasury_settlement_coupons > 0`. A coupon settlement not carried is not
+    no settlement.
+    """
+
+    inputs = (
+        values["quarter_end"],
+        values["tax_date"],
+        values["days_to_month_end"],
+        values["treasury_settlement_coupons"],
+    )
+    if any(value is None for value in inputs):
+        return None
+    quarter_end, tax_date, days_to_month_end, coupons = (float(v) for v in inputs)
+    flagged = (
+        quarter_end == 1.0
+        or tax_date == 1.0
+        or days_to_month_end <= SETTLEMENT_DAY_MONTH_END_DAYS
+        or coupons > 0.0
+    )
+    return 1.0 if flagged else 0.0
+
+
+def _settlement_day_when_depleted(
+    values: Mapping[str, Optional[float]],
+) -> Optional[float]:
+    """`settlement_day * 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)` (#97).
+
+    A hole when any input is: an unknown buffer is not a full one.
+    """
+
+    settlement = _settlement_day(
+        {
+            "quarter_end": values["quarter_end"],
+            "tax_date": values["tax_date"],
+            "days_to_month_end": values["days_to_month_end"],
+            "treasury_settlement_coupons": values["treasury_settlement_coupons"],
+        }
+    )
+    on_rrp = values["on_rrp"]
+    if settlement is None or on_rrp is None:
+        return None
+    return settlement if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
+#: How each `contract.COMPOSED_FEATURES` entry is formed from its inputs' reads
+#: (#88, #97). `tests/test_contract.py` parses each function to check it reads
+#: exactly the inputs the contract declares.
+COMPOSERS = {
+    "on_rrp_depleted": _on_rrp_depleted,
+    "reserves_when_depleted": _reserves_when_depleted,
+    "settlement_day": _settlement_day,
+    "settlement_day_when_depleted": _settlement_day_when_depleted,
+}
+
+
 class InformationRule:
     """The as-of rule for one declared feature set, one registry, one time.
 
@@ -315,18 +402,36 @@ class InformationRule:
         features: Sequence[str],
         *,
         decision_time: time,
+        horizon: int = 1,
     ) -> None:
         if not isinstance(decision_time, time):
             raise TypeError("decision_time must be a datetime.time")
+        if not _is_int(horizon) or horizon < 1:
+            raise ValueError(f"horizon must be an int of at least 1, got {horizon!r}")
         self.registry = registry
+        #: How many panel days before the scored day the decision is made
+        #: (#114). 1, the default, is the rule every published record was
+        #: scored under; a longer horizon moves the decision instant back and
+        #: every read follows from it.
+        self.horizon = int(horizon)
         self.features = tuple(features)
         self.decision_time = decision_time
         self._scheduled = _scheduled_blocks(registry)
         groups = [self._group(TARGET)]
+        seen = {TARGET}
         for feature in dict.fromkeys(self.features):
-            if feature != TARGET:
-                groups.append(self._group(feature))
+            # A composed feature is read as its inputs, each on its own
+            # declaration, and formed from those reads (`_composed`).
+            for part in COMPOSED_FEATURES.get(feature, (feature,)):
+                if part not in seen:
+                    seen.add(part)
+                    groups.append(self._group(part))
         self.groups: Tuple[_Group, ...] = tuple(groups)
+        #: The declared composed features, formed in `observation` and `frame`.
+        self.composed = tuple(
+            feature for feature in dict.fromkeys(self.features)
+            if feature in COMPOSED_FEATURES
+        )
         # Every column the declaration reads, less the target's own.
         self.columns = tuple(
             dict.fromkeys(
@@ -336,6 +441,22 @@ class InformationRule:
                 if column not in TARGET_COLUMNS
             )
         )
+
+    def _composed(
+        self, values: Mapping[str, Optional[float]]
+    ) -> Dict[str, Optional[float]]:
+        """`values` with each declared composed feature formed from its inputs.
+
+        A row that does not carry an input does not get the feature either, so
+        a model reading it meets the same absent-column refusal a plain
+        feature's absence meets, rather than a hole put there for it.
+        """
+
+        out = dict(values)
+        for feature in self.composed:
+            if all(part in values for part in COMPOSED_FEATURES[feature]):
+                out[feature] = COMPOSERS[feature](values)
+        return out
 
     def _group(self, feature: str) -> _Group:
         if feature in CALENDAR_FEATURES:
@@ -369,14 +490,15 @@ class InformationRule:
     # -- instants ---------------------------------------------------------
 
     def decision_instant(self, dates: Sequence[date], scored_index: int) -> datetime:
-        """The declared decision time on the panel day before `scored_index`."""
+        """The declared decision time `horizon` panel days before `scored_index`."""
 
-        if scored_index < 1:
+        if scored_index < self.horizon:
             raise SplitError(
-                f"row {scored_index} has no panel day before it, so no decision instant"
+                f"row {scored_index} has no panel day {self.horizon} before it, so "
+                f"no decision instant"
             )
         return datetime.combine(
-            dates[scored_index - 1], self.decision_time.replace(tzinfo=None)
+            dates[scored_index - self.horizon], self.decision_time.replace(tzinfo=None)
         )
 
     def availability(
@@ -575,7 +697,7 @@ class InformationRule:
                     )
                 taken[column] = read.row
                 values[column] = rows[read.row].values.get(column)
-        return DailyObservation(anchor.date, values)
+        return DailyObservation(anchor.date, self._composed(values))
 
     def frame(
         self, rows: Sequence[DailyObservation], info: InformationSet
@@ -588,6 +710,18 @@ class InformationRule:
         monotone in the row, so the scan stops at the first row whose every
         declared column was observable.
         """
+
+        frame = self._masked(rows, info)
+        if not self.composed:
+            return frame
+        return [
+            DailyObservation(row.date, self._composed(row.values)) for row in frame
+        ]
+
+    def _masked(
+        self, rows: Sequence[DailyObservation], info: InformationSet
+    ) -> List[DailyObservation]:
+        """`frame` before any composed feature is formed."""
 
         frame = list(rows[: info.anchor + 1])
         observed = [
@@ -644,18 +778,21 @@ def fold_grid(
     *,
     decision_time: time,
     minimum_history: int,
+    horizon: int = 1,
 ) -> Tuple[int, ...]:
     """The scored rows: every row from the first with `minimum_history` labels.
 
     Built from the target's declarations alone, so it is one grid for every
-    feature declaration on the same panel.
+    feature declaration on the same panel at one `horizon`.
     """
 
     ensure_strictly_ascending(dates)
     if not _is_int(minimum_history) or minimum_history < 1:
         raise SplitError(f"minimum_history must be an int of at least 1, got {minimum_history!r}")
-    target = InformationRule(registry, (TARGET,), decision_time=decision_time)
-    for index in range(1, len(dates)):
+    target = InformationRule(
+        registry, (TARGET,), decision_time=decision_time, horizon=horizon
+    )
+    for index in range(target.horizon, len(dates)):
         if target.anchor(dates, index) + 1 >= minimum_history:
             return tuple(range(index, len(dates)))
     raise SplitError(
@@ -691,8 +828,15 @@ def information_summary(
                 None if not hours else {"min": min(hours), "max": max(hours)}
             ),
         }
-    return {
+    summary: Dict[str, object] = {
         "rule": "as_of",
         "decision_instant": "decision_time on the panel day before the scored day",
         "features": features,
     }
+    if rule.horizon != 1:
+        # Only off the default, so a record scored at horizon 1 is unchanged.
+        summary["decision_instant"] = (
+            f"decision_time {rule.horizon} panel days before the scored day"
+        )
+        summary["horizon"] = rule.horizon
+    return summary

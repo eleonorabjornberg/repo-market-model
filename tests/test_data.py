@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
     CARRY_FORWARD_COLUMNS,
+    ON_RRP_MAX_GAP_DAYS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     build_daily_panel,
@@ -48,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).parents[0]))
 
 from repo_model.ingest import build_point_in_time_snapshot, fetch_sec_nmfp
 from test_ingest import nmfp_archive, registry_with_nmfp_coverage_floor
+from test_contract import on_rrp_from_operation_results
 
 
 def manifest_digest(manifest_path: Path) -> str:
@@ -732,9 +734,26 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
                 "this check runs only where the adapters have been run. It is not "
                 "waiting on an unwritten implementation."
             )
+        loaded = [
+            (path, json.loads(path.read_text(encoding="utf-8"))) for path in manifests
+        ]
+        # Both checks read only ref_date sources. A data/raw/ holding none (frb_h8
+        # alone, say) has nothing to check, so it skips rather than fails (#158).
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        found = sorted({manifest["source_id"] for _, manifest in loaded})
+        if not any(
+            registry.get(source_id, {}).get("release_lag", {}).get("basis") == "ref_date"
+            for source_id in found
+        ):
+            reason = (
+                f"raw snapshots under {self.RAW_ROOT} come from {', '.join(found)}; "
+                "none is a ref_date source, so there is no publication gap to check."
+            )
+            # unittest prints skip reasons only with -v.
+            print(f"\n{self.id()}: skipped: {reason}", file=sys.stderr)
+            self.skipTest(reason)
         artifacts = []
-        for manifest_path in manifests:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for manifest_path, manifest in loaded:
             artifacts.append(
                 SnapshotArtifact(
                     source_id=manifest["source_id"],
@@ -794,6 +813,114 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             )
             checked += 1
         self.assertGreater(checked, 0, "no ref_date rows were checked")
+
+
+class RealSnapshotPublicationGapSkipTests(unittest.TestCase):
+    """`RealSnapshotPublicationGapTests` on a `data/raw/` it cannot check (#158).
+
+    Both of its checks read only `ref_date` sources. A checkout whose `data/raw/`
+    holds only `record_date` sources (`frb_h8` after `fetch h8`, say) failed it
+    with "no ref_date rows were checked", so the result depended on which sources
+    a session happened to fetch. It now skips, naming the sources it found, and
+    writes that reason to stderr so a non-verbose run shows it too.
+
+    Test first: before the change, `test_record_date_only_raw_root_skips_with_a_stated_reason`
+    failed with `AssertionError` (the class reported 1 failure and 1 error, not
+    2 skips).
+    """
+
+    FIXTURES = Path(__file__).parent / "fixtures" / "snapshots"
+
+    def run_gap_tests(self, raw_root):
+        class Pointed(RealSnapshotPublicationGapTests):
+            RAW_ROOT = raw_root
+
+        result = unittest.TestResult()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            unittest.defaultTestLoader.loadTestsFromTestCase(Pointed).run(result)
+        return result, stderr.getvalue()
+
+    def copy_snapshot(self, raw_root, manifest_path):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        target = raw_root / manifest["source_id"]
+        target.mkdir(parents=True, exist_ok=True)
+        payload = manifest_path.parent / Path(manifest["path"]).name
+        (target / payload.name).write_bytes(payload.read_bytes())
+        (target / manifest_path.name).write_bytes(manifest_path.read_bytes())
+
+    def h8_only_root(self, tmp):
+        raw_root = Path(tmp)
+        for manifest_path in sorted(
+            (self.FIXTURES / "h8_inputs" / "frb_h8").glob("*.manifest.json")
+        ):
+            self.copy_snapshot(raw_root, manifest_path)
+        return raw_root
+
+    def test_record_date_only_raw_root_skips_with_a_stated_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result, stderr = self.run_gap_tests(self.h8_only_root(tmp))
+
+        self.assertEqual(result.failures, [])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.testsRun, 2)
+        self.assertEqual(len(result.skipped), 2)
+        for _, reason in result.skipped:
+            self.assertIn("frb_h8", reason)
+            self.assertIn("none is a ref_date source", reason)
+            # Printed in the default, non-verbose run, where unittest hides
+            # skip reasons.
+            self.assertIn(reason, stderr)
+
+    def test_a_ref_date_source_is_still_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            self.copy_snapshot(
+                raw_root,
+                self.FIXTURES
+                / "on_rrp_inputs"
+                / "nyfed_on_rrp"
+                / "20261002T012422Z_0dfe701aee28.json.manifest.json",
+            )
+            result, stderr = self.run_gap_tests(raw_root)
+
+        skipped = {test.id().rsplit(".", 1)[-1] for test, _ in result.skipped}
+        self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", skipped)
+        failed = {test.id().rsplit(".", 1)[-1] for test, _ in result.failures + result.errors}
+        self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", failed)
+        self.assertNotIn("none is a ref_date source", stderr)
+
+    def test_a_ref_date_source_with_no_rows_still_fails(self):
+        """`checked > 0` still holds once a `ref_date` source supplied a snapshot."""
+
+        payload = b'{ "repo": { "operations": [] } }'
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            target = raw_root / "nyfed_on_rrp"
+            target.mkdir()
+            (target / "empty.json").write_bytes(payload)
+            (target / "empty.json.manifest.json").write_text(
+                json.dumps(
+                    {
+                        "byte_count": len(payload),
+                        "path": "nyfed_on_rrp/empty.json",
+                        "retrieved_at": "2026-10-02T01:24:22+00:00",
+                        "sha256": hashlib.sha256(payload).hexdigest(),
+                        "source_id": "nyfed_on_rrp",
+                        "url": "https://markets.newyorkfed.org/api/rp/results/search.json",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result, _ = self.run_gap_tests(raw_root)
+
+        failures = {
+            test.id().rsplit(".", 1)[-1]: trace for test, trace in result.failures
+        }
+        self.assertIn("no ref_date rows were checked", failures.get(
+            "test_no_row_is_available_later_than_the_registry_declares", ""
+        ))
+
 
 class CoverageFloorDeclarationTests(unittest.TestCase):
     """`declared_coverage_floor` fails closed, and says which way it failed.
@@ -6738,6 +6865,136 @@ class WeeklyCarryForwardTests(unittest.TestCase):
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["holes"], dict(build.holes))
             self.assertNotIn("carried_forward", manifest)
+
+
+class OnRrpHolidayCarryTests(unittest.TestCase):
+    """`on_rrp` carries the latest operation across a day with none (#45, step 4).
+
+    Decided under Eleonora's delegation, 1 October 2026: carry, through the
+    as-of rule. On a day with no operation the latest published result is the
+    balance still outstanding, as the H.4.1 shows, so the panel gives the day
+    that result rather than a hole, and the as-of rule reads it like any other
+    row. The bound is `data.ON_RRP_MAX_GAP_DAYS`, the longest gap between
+    operations A45 measured (4 calendar days). A longer gap is a feed fault and
+    the build raises.
+
+    On the published panel no row needs the carry: every SOFR date from
+    2018-04-03 to 2026-09-03 has an operation. A Federal Reserve holiday is a
+    SIFMA close too, and the facility is closed on Good Friday when SOFR is.
+    The carry matters to a build whose grid holds a business day the Desk did
+    not operate on; the fixture below makes MLK Monday such a day.
+
+    **The fixture.** Weekdays 12 to 30 January 2026. `sofr` prints on every
+    one. `on_rrp` prints on every one except Monday 19 January, the holiday.
+
+    Mutation record, 2 October 2026, in a disposable copy built from
+    `git ls-files`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class
+    alone; unmutated control green before and after. Test written first: the
+    gap test failed with `AssertionError: DataContractError not raised` before
+    the refusal existed.
+
+    * The refusal (`src/repo_model/data.py`, `_carry_forward_values`): `if
+      column in CARRY_FORWARD_REFUSED_BEYOND and ref_date not in own:` mutated
+      to `if False and ...`. Kills `test_a_gap_longer_than_the_bound_raises`
+      alone: `AssertionError: DataContractError not raised`.
+    * The carry: `"on_rrp": ON_RRP_MAX_GAP_DAYS,` deleted from
+      `CARRY_FORWARD_COLUMNS`. Kills all four: the holiday test with
+      `AssertionError: None != 104.0`, the bound test with `KeyError:
+      'on_rrp'`.
+    """
+
+    SOFR_SHA = "e" * 64
+    RRP_SHA = "d" * 64
+    COLUMNS = ("sofr", "on_rrp")
+    HOLIDAY = date(2026, 1, 19)
+
+    @property
+    def grid(self):
+        start = date(2026, 1, 12)
+        days = (start + timedelta(days=offset) for offset in range(19))
+        return tuple(day for day in days if day.weekday() < 5)
+
+    def registry(self):
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {
+            "nyfed_sofr": {"release_lag": dict(real["nyfed_sofr"]["release_lag"])},
+            "nyfed_on_rrp": {"release_lag": dict(real["nyfed_on_rrp"]["release_lag"])},
+        }
+
+    def rows(self, missing):
+        rows = []
+        for index, ref_date in enumerate(self.grid):
+            available = datetime.combine(
+                ref_date + timedelta(days=1), time(21, 0), tzinfo=timezone.utc
+            )
+            rows.append(
+                PointInTimeObservation(
+                    series_id="SOFR",
+                    ref_date=ref_date,
+                    available_at=available,
+                    value=4.30 + index / 100,
+                    vintage_id=f"SOFR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+            if ref_date in missing:
+                continue
+            rows.append(
+                PointInTimeObservation(
+                    series_id="reverse_repo_total_accepted",
+                    ref_date=ref_date,
+                    available_at=available,
+                    value=100.0 + index,
+                    vintage_id=f"RRP-{ref_date.isoformat()}",
+                    source_sha=self.RRP_SHA,
+                )
+            )
+        return rows
+
+    def build(self, missing):
+        # `on_rrp` from the operation results, switched on for the test: it is
+        # off in the published map (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`).
+        with on_rrp_from_operation_results():
+            return build_daily_panel(
+                self.rows(missing),
+                self.registry(),
+                build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+                decision_time=time.fromisoformat("16:00"),
+                columns=self.COLUMNS,
+            )
+
+    def test_a_day_with_no_operation_reads_the_prior_operations_total(self):
+        build = self.build({self.HOLIDAY})
+        panel = {row.date: row.values["on_rrp"] for row in build.observations}
+        friday = date(2026, 1, 16)
+        self.assertEqual(tuple(panel), self.grid)
+        self.assertEqual(panel[friday], 100.0 + self.grid.index(friday))
+        self.assertEqual(panel[self.HOLIDAY], panel[friday])
+        # The carry stops at the next operation.
+        self.assertEqual(panel[date(2026, 1, 20)], 100.0 + self.grid.index(date(2026, 1, 20)))
+        self.assertEqual(build.holes["on_rrp"], 0)
+        self.assertEqual(build.carried_forward["on_rrp"], 1)
+
+    def test_the_bound_is_the_longest_measured_gap(self):
+        self.assertEqual(ON_RRP_MAX_GAP_DAYS, 4)
+        self.assertEqual(CARRY_FORWARD_COLUMNS["on_rrp"], ON_RRP_MAX_GAP_DAYS)
+
+    def test_a_gap_at_the_bound_carries(self):
+        # Friday 23rd to Tuesday 27th: four days, the Friday-to-Tuesday gap.
+        missing = {date(2026, 1, 26)}
+        build = self.build(missing)
+        panel = {row.date: row.values["on_rrp"] for row in build.observations}
+        self.assertEqual(panel[date(2026, 1, 26)], panel[date(2026, 1, 23)])
+
+    def test_a_gap_longer_than_the_bound_raises(self):
+        # Friday 23rd's result standing for Wednesday 28th: five days.
+        missing = {date(2026, 1, 26), date(2026, 1, 27), date(2026, 1, 28)}
+        with self.assertRaisesRegex(DataContractError, "on_rrp.*2026-01-28"):
+            self.build(missing)
 
 
 class PanelYear2025DiagnosticTests(unittest.TestCase):

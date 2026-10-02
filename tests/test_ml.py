@@ -257,6 +257,7 @@ from test_cli_eval import (
     declared_registry_file,
 )
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 #: The variable a job that exists to exercise the extra sets. See the module
 #: docstring: it is the only way this process can tell "no extra installed, and
@@ -2525,6 +2526,244 @@ class GradientBoostedCrossConformalTests(unittest.TestCase):
         with self.subTest("refusal: cross_conformal with no gap"):
             with self.assertRaisesRegex(SplitError, r"needs the run's as-of rule"):
                 self.fit(rows[:40], calibration="cross_conformal")
+
+
+def masking_frame(count, seed=20261002):
+    """Weekday rows whose spread follows `reserve_balances`, a column slower than the target.
+
+    Under the tracked registry `reserve_balances` (H.4.1, `WRESBAL`) is public
+    days after the target, so the frame the fold loop hands a fitter carries
+    it on rows whose label is already observable: the exposure
+    `information-set.md`'s Method notes describe. The spread moves with it so
+    the trees split on it, and a moved value can move a model.
+    """
+
+    rows = []
+    state = seed
+    when = date(2024, 1, 2)
+    while len(rows) < count:
+        if when.weekday() < 5:
+            state = (1103515245 * state + 12345) % (2 ** 31)
+            reserves = 3000.0 + (state % 500)
+            spread = 5.0 + 0.04 * (reserves - 3000.0) + (state % 7) / 3.0
+            rows.append(
+                DailyObservation(
+                    when,
+                    {
+                        "sofr": 4.30 + spread / 100.0,
+                        "iorb": 4.30,
+                        "reserve_balances": reserves,
+                        "sofr_volume": 2000.0 + (state % 911),
+                    },
+                )
+            )
+        when += timedelta(days=1)
+    return rows
+
+
+class CalibrationMaskingTests(unittest.TestCase):
+    """`calibration_masking="held_out_row"`: directive #78's option, test first.
+
+    **The bias.** `docs/decisions/information-set.md`, Method notes: a
+    cross-conformal fit scores each held-out row as a forecast read at its own
+    decision instant, but the excluding model that scores it trains on the
+    frame as masked at the **fold's** decision instant. A declared column
+    slower than the target can therefore reach that model's training rows
+    before the block with a value that was public at the fold's decision but
+    not yet at the held-out row's. The option masks those values, per held-out
+    row: each held-out row is scored by an excluding model whose training rows
+    before the block carry only what was public at that row's own decision.
+    Off by default, so every published record is unchanged.
+
+    **What the test sees, and on what.** The tracked registry, under which
+    `reserve_balances` is public days after the target, on a weekday frame
+    whose spread follows it. For each block, the values exposed to its first
+    held-out row are moved by 5000; every held-out row of that block that
+    could not yet see any moved value must keep its score bit for bit under
+    the option. The control: without the option, at least one such score
+    moves, so the fixture can see the bias the option removes.
+
+    Mutation record (#78)
+    ---------------------
+
+    Scratch copy under `/tmp` of the branch's tracked files, `PYTHONPATH=src`
+    (resolved to the copy), `/opt/rmm-venv` (CPython 3.11, numpy 2.4.6,
+    scikit-learn 1.9.1), this class alone. Unmutated control green; the anchor
+    found exactly once and confirmed applied.
+
+      * **The held-out row's frame taken unmasked** -- in `_held_out_mask`,
+        `seen = information.frame(rows, information.information_set(dates,
+        index))` replaced by `seen = list(rows[: info.anchor + 1])` (with
+        `info` the same information set), so no value is ever masked and every
+        held-out row is scored by the block's one model. `a held-out row never
+        trains on a value it could not yet see`, `AssertionError` in blocks 2
+        to 5, for example `-1.7636... != -1.7393... : block 2: the held-out row
+        2024-02-14 could see none of the moved values, and its score moved
+        with them`.
+    """
+
+    ROWS = 160
+    FOLDS = 5
+
+    def setUp(self):
+        require_extra(self)
+        from repo_model.asof import InformationRule
+
+        registry = json.loads(
+            (Path(__file__).resolve().parents[1] / "metadata" / "sources.json").read_text()
+        )
+        self.registry = registry
+        self.rule = InformationRule(
+            registry, ("spread_bps", "reserve_balances"), decision_time=time(16, 0)
+        )
+        fewer_boosting_iterations(self)
+
+    def frame(self, rows, rule=None):
+        rule = rule or self.rule
+        dates = [row.date for row in rows]
+        return rule.frame(rows, rule.information_set(dates, len(rows) - 1))
+
+    def fit(self, frame, regressors=("reserve_balances",), rule=None, **settings):
+        return ml.fit_gradient_boosted_quantiles(
+            frame,
+            regressors,
+            minimum_history=20,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            calibration="cross_conformal",
+            calibration_folds=self.FOLDS,
+            information=rule or self.rule,
+            **settings,
+        )
+
+    @staticmethod
+    def scores(fitted):
+        out = {}
+        for block in fitted.calibration_blocks:
+            for when, score in zip(block.scored_dates, block.scores):
+                if when in out:
+                    raise AssertionError(f"{when} was scored twice")
+                out[when] = score
+        return out
+
+    def test_a_held_out_row_never_trains_on_a_value_it_could_not_yet_see(self):
+        frame = self.frame(masking_frame(self.ROWS))
+        dates = [row.date for row in frame]
+        bounds = [len(frame) * number // self.FOLDS for number in range(self.FOLDS + 1)]
+        observed = self.rule.groups[1:]
+        (group,) = [g for g in observed if "reserve_balances" in g.columns]
+
+        def availability(position):
+            return self.rule.availability(dates, group.fields, position)
+
+        exercised = 0
+        moved_without = 0
+        for number in range(1, self.FOLDS):
+            start = bounds[number]
+            stop = bounds[number + 1]
+            before = self.rule.anchor(dates, start)
+            deadline = self.rule.decision_instant(dates, start)
+            exposed = [
+                position
+                for position in range(before + 1)
+                if frame[position].values.get("reserve_balances") is not None
+                and availability(position) > deadline
+            ]
+            self.assertTrue(
+                exposed,
+                msg=f"block {number + 1}: the fixture exposes no value, so it cannot see the bias",
+            )
+            moved = list(frame)
+            for position in exposed:
+                values = dict(moved[position].values)
+                values["reserve_balances"] = values["reserve_balances"] + 5000.0
+                moved[position] = DailyObservation(moved[position].date, values)
+            blind = [
+                dates[index]
+                for index in range(start, stop)
+                if all(
+                    availability(position) > self.rule.decision_instant(dates, index)
+                    for position in exposed
+                )
+            ]
+            with self.subTest("a held-out row never trains on a value it could not yet see", block=number + 1):
+                masked = self.scores(self.fit(frame, calibration_masking="held_out_row"))
+                masked_moved = self.scores(self.fit(moved, calibration_masking="held_out_row"))
+                checked = [when for when in blind if when in masked]
+                self.assertTrue(checked, msg=f"block {number + 1}: no blind held-out row is scored")
+                for when in checked:
+                    self.assertEqual(
+                        masked[when],
+                        masked_moved[when],
+                        msg=(
+                            f"block {number + 1}: the held-out row {when} could see none "
+                            f"of the moved values, and its score moved with them"
+                        ),
+                    )
+                exercised += len(checked)
+            plain = self.scores(self.fit(frame))
+            plain_moved = self.scores(self.fit(moved))
+            moved_without += sum(plain[when] != plain_moved[when] for when in blind if when in plain)
+        self.assertGreater(exercised, 0)
+        self.assertGreater(
+            moved_without,
+            0,
+            msg=(
+                "the control: without the option no blind held-out row's score moves "
+                "with the values it could not see, so this fixture cannot see the bias"
+            ),
+        )
+
+    def test_the_option_scores_the_same_rows_and_is_recorded(self):
+        frame = self.frame(masking_frame(self.ROWS))
+        plain = self.fit(frame)
+        masked = self.fit(frame, calibration_masking="held_out_row")
+        self.assertEqual(sorted(self.scores(plain)), sorted(self.scores(masked)))
+        self.assertNotIn("calibration_masking", plain.model_settings)
+        self.assertEqual(masked.model_settings["calibration_masking"], "held_out_row")
+        # The interior is the full fit's, which the option never touches.
+        row = frame[-1]
+        self.assertEqual(plain.predict(row)[1:-1], masked.predict(row)[1:-1])
+
+    def test_a_declaration_as_fast_as_the_target_is_unchanged_bit_for_bit(self):
+        from repo_model.asof import InformationRule
+
+        rule = InformationRule(
+            self.registry, ("spread_bps", "sofr_volume"), decision_time=time(16, 0)
+        )
+        frame = self.frame(masking_frame(self.ROWS), rule)
+        plain = self.fit(frame, ("sofr_volume",), rule)
+        masked = self.fit(frame, ("sofr_volume",), rule, calibration_masking="held_out_row")
+        self.assertEqual(self.scores(plain), self.scores(masked))
+        self.assertEqual(
+            [block.training_dates for block in plain.calibration_blocks],
+            [block.training_dates for block in masked.calibration_blocks],
+        )
+        for row in frame[-10:]:
+            self.assertEqual(plain.predict(row), masked.predict(row))
+
+    def test_refusals(self):
+        frame = self.frame(masking_frame(60))
+        with self.subTest("an unknown masking"):
+            with self.assertRaisesRegex(ValueError, "unknown calibration_masking"):
+                self.fit(frame, calibration_masking="fold")
+        for calibration in ("none", "conformal", "conformal_asymmetric"):
+            with self.subTest("a calibration with no excluding models", calibration=calibration):
+                with self.assertRaisesRegex(ValueError, "calibration_masking"):
+                    ml.fit_gradient_boosted_quantiles(
+                        frame,
+                        ("reserve_balances",),
+                        minimum_history=20,
+                        min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+                        calibration=calibration,
+                        information=self.rule,
+                        calibration_masking="held_out_row",
+                    )
+        with self.subTest("direct training pairs"):
+            # A direct pair reads only what was public at its own target's
+            # decision, earlier than any held-out row's after it: there is
+            # nothing to mask, so the combination is refused, not ignored.
+            with self.assertRaisesRegex(ValueError, "training_pairs 'direct'"):
+                self.fit(frame, calibration_masking="held_out_row", training_pairs="direct")
 
 
 class GradientBoostedCrossAsymmetricConformalTests(unittest.TestCase):
@@ -9136,6 +9375,948 @@ class DirectTrainingPairsTests(unittest.TestCase):
             SplitError, r"--training-pairs direct was given, but --model arx"
         ):
             cli_eval._select_fitter(arx)
+
+
+
+# --------------------------------------------------------------------------
+# Direct pressure-probability models (#114)
+# --------------------------------------------------------------------------
+
+_PRESSURE_REGISTRY = json.loads(
+    (Path(__file__).resolve().parents[1] / "metadata" / "sources.json").read_text()
+)
+_PRESSURE_SPLITS = Path(__file__).resolve().parents[1] / "metadata" / "evaluation_splits.json"
+_PRESSURE_CALENDAR = ("spread_bps", "sofr_volume", "days_to_month_end", "quarter_end", "tax_date")
+_PRESSURE_FULL = (
+    "spread_bps", "reserve_balances", "tga",
+    "days_to_month_end", "quarter_end", "tax_date",
+)
+
+
+def _pressure_splits():
+    from repo_model.evaluation_splits import load_split_declaration
+
+    return load_split_declaration(_PRESSURE_SPLITS)
+
+
+def _with_calendar(rows):
+    out = []
+    for index, row in enumerate(rows):
+        values = dict(row.values)
+        values["quarter_end"] = 1.0 if index % 11 == 10 else 0.0
+        values["days_to_month_end"] = float(index % 7)
+        values["tax_date"] = 1.0 if index % 5 == 0 else 0.0
+        out.append(DailyObservation(row.date, values))
+    return out
+
+
+def _pressure_panel(count=160):
+    """Weekday rows with a spread that rises on month-ends and scarce reserves.
+
+    `reserve_balances` (USD bn) and `tga` move weekly, as the H.4.1 prints do;
+    the calendar columns cycle so every pressure-day type occurs.
+    """
+
+    rows = []
+    when = date(2026, 1, 5)
+    state = 20261002
+    while len(rows) < count:
+        if when.weekday() < 5:
+            index = len(rows)
+            state = (1103515245 * state + 12345) % (2 ** 31)
+            week = index // 5
+            reserves = 3200.0 - 40.0 * (week % 9)
+            tga = 700.0 + 25.0 * ((week * 7) % 5)
+            month_end = index % 21 >= 19
+            spread = (
+                -3.0 + (state % 7) + (6.0 if month_end else 0.0)
+                + (3000.0 - reserves) / 40.0
+            )
+            rows.append(
+                DailyObservation(
+                    when,
+                    {
+                        "sofr": 4.0 + spread / 100.0,
+                        "iorb": 4.0,
+                        "sofr_volume": 2100.0 + (state % 1301) / 3.0,
+                        "reserve_balances": reserves,
+                        "tga": tga,
+                        "days_to_month_end": float(20 - index % 21),
+                        "quarter_end": 1.0 if index % 63 == 62 else 0.0,
+                        "tax_date": 1.0 if index % 21 == 10 else 0.0,
+                    },
+                )
+            )
+        when += timedelta(days=1)
+    return rows
+
+
+class _PressureConformance(ExceedancePredictorConformance):
+    """The conformance suite against a direct pressure model, rule bound."""
+
+    FACTORY = None
+
+    def setUp(self):
+        require_extra(self)
+
+    def frame(self):
+        from test_baseline import regressor_frame
+
+        return _with_calendar(regressor_frame())
+
+    def make_predictor(self):
+        predictor = type(self).FACTORY(
+            _PRESSURE_CALENDAR, _pressure_splits(), minimum_history=self.MINIMUM_HISTORY
+        )
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+
+        def bound(train_rows, feature_rows, taus):
+            return predictor(train_rows, feature_rows, taus, information=rule)
+
+        return bound
+
+
+class PressureLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_logistic_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_logistic_exceedance)
+    FACTORY = staticmethod(ml.pressure_logistic_exceedance)
+
+
+class PressureClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_classifier_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_classifier_exceedance)
+    FACTORY = staticmethod(ml.pressure_classifier_exceedance)
+
+
+class DirectPressureModelTests(unittest.TestCase):
+    """The direct pressure models' design, pairs and guards (#114)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+        self.dates = [row.date for row in self.rows]
+
+    def rule(self, horizon=1, features=_PRESSURE_FULL):
+        return ml.InformationRule(
+            _PRESSURE_REGISTRY, features, decision_time=time(16, 0), horizon=horizon
+        )
+
+    def test_a_product_term_is_the_product_of_its_two_as_of_reads(self):
+        """#127's product terms: a scheduled input times an observed one, as read.
+
+        The settlement is the scored day's (scheduled), the TGA change ends at
+        the TGA's as-of read; the product is formed from exactly those two
+        design values, and every other term is unchanged.
+        """
+
+        features = _PRESSURE_FULL + ("treasury_settlement",)
+        products = (("treasury_settlement", "tga_change"),)
+        design = ml._PressureDesign(features, _pressure_splits(), products=products)
+        base = ml._PressureDesign(features, _pressure_splits())
+        self.assertEqual(design.names, base.names + ("treasury_settlement_x_tga_change",))
+        rule = self.rule(features=features)
+        rows = [
+            DailyObservation(
+                row.date, {**row.values, "treasury_settlement": 10.0 + 5.0 * (index % 4)}
+            )
+            for index, row in enumerate(self.rows[:120])
+        ]
+        xs, ys = ml._pressure_pairs(design, rule, rows, {})
+        plain, plain_ys = ml._pressure_pairs(base, rule, rows, {})
+        self.assertEqual(ys, plain_ys)
+        self.assertTrue(xs)
+        settlement = base.names.index("treasury_settlement")
+        change = base.names.index("tga_change")
+        for got, want in zip(xs, plain):
+            self.assertEqual(got[:-1], want)
+            self.assertAlmostEqual(got[-1], want[settlement] * want[change], places=9)
+
+    def test_a_product_names_declared_terms(self):
+        for products in (
+            (("treasury_settlement", "tga_change"),),  # settlement not declared
+            (("spread_bps", "not_a_column"),),
+        ):
+            with self.subTest(products=products), self.assertRaisesRegex(ValueError, "product"):
+                ml._PressureDesign(_PRESSURE_FULL, _pressure_splits(), products=products)
+
+    def test_the_design_names_every_term_it_builds(self):
+        design = ml._PressureDesign(
+            _PRESSURE_FULL + ("treasury_settlement",), _pressure_splits()
+        )
+        self.assertEqual(
+            design.names,
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date", "treasury_settlement",
+                "quarter_end_x_scarcity", "month_end_x_scarcity",
+                "tax_date_x_scarcity", "treasury_settlement_x_scarcity",
+                "tga_change", "tga_change_x_scarcity",
+            ),
+        )
+
+    def test_a_partial_calendar_or_tga_without_reserves_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("spread_bps", "quarter_end"), _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("spread_bps", "tga"), _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("reserve_balances",), _pressure_splits())
+
+    def test_each_label_is_paired_with_what_its_own_decision_read(self):
+        """Direct pairs: at horizon 3 the spread is the row four back.
+
+        The calendar terms are the label's own day, the scarcity state the
+        reserves print public at the label's decision, and the TGA change ends
+        at the TGA print public then.
+        """
+
+        design = ml._PressureDesign(_PRESSURE_FULL, _pressure_splits())
+        rule = self.rule(horizon=3)
+        train = self.rows[:120]
+        xs, ys = ml._pressure_pairs(design, rule, train, {})
+        dates = [row.date for row in train]
+        expected_x, expected_y = [], []
+        for target in range(1, len(train)):
+            try:
+                info = rule.information_set(dates, target)
+            except SplitError:
+                continue
+            tga_row = [r for r in info.reads if r.feature == "tga"][0].row
+            reserves_row = [r for r in info.reads if r.feature == "reserve_balances"][0].row
+            if tga_row < ml.TGA_CHANGE_ROWS:
+                continue
+            self.assertEqual(info.anchor, target - 4)
+            self.assertLess(reserves_row, target - 3)
+            kind = _pressure_splits().day_type(train[target].values)
+            state = train[reserves_row].values["reserve_balances"] / 1000.0
+            terms = [1.0 if kind == name else 0.0 for name in ("quarter_end", "month_end", "tax_date")]
+            change = train[tga_row].values["tga"] - train[tga_row - 5].values["tga"]
+            expected_x.append(
+                [train[target - 4].spread_bps, state, *terms,
+                 *[term * state for term in terms], change, change * state]
+            )
+            expected_y.append(train[target].spread_bps)
+        self.assertEqual(len(xs), len(expected_x))
+        for got, want in zip(xs, expected_x):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, places=9)
+        self.assertEqual(ys, expected_y)
+
+    def test_the_logistic_is_scikit_learns_on_the_standardized_pairs(self):
+        from sklearn.linear_model import LogisticRegression
+        import numpy
+
+        design = ml._PressureDesign(_PRESSURE_CALENDAR, _pressure_splits())
+        rule = self.rule(features=_PRESSURE_CALENDAR)
+        rows = _with_calendar(self.rows)
+        train, served = rows[:-1], rows[-1:]
+        info = rule.information_set([row.date for row in rows], len(rows) - 1)
+        observation = rule.observation(rows, info)
+        predictor = ml.pressure_logistic_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        got = predictor(train, (observation,), (5.0,), information=rule).curves[0][0]
+
+        xs, ys = ml._pressure_pairs(design, rule, train, {})
+        x = numpy.asarray(xs)
+        centre, scale = x.mean(axis=0), x.std(axis=0)
+        scale[scale == 0.0] = 1.0
+        model = LogisticRegression(C=1.0, max_iter=5000).fit(
+            (x - centre) / scale, [1 if y > 5.0 else 0 for y in ys]
+        )
+        want = model.predict_proba(
+            (numpy.asarray([design.row(observation, None)]) - centre) / scale
+        )[0, 1]
+        self.assertAlmostEqual(got, float(want), places=12)
+
+    def test_a_backtest_at_horizon_two_runs_under_every_guard(self):
+        for factory in (ml.pressure_logistic_exceedance, ml.pressure_classifier_exceedance):
+            with self.subTest(factory=factory.__name__):
+                report = baseline.rolling_exceedance_backtest(
+                    self.rows,
+                    predictor=factory(_PRESSURE_FULL, _pressure_splits(), minimum_history=60),
+                    model_name=factory.__name__,
+                    features=_PRESSURE_FULL,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                    horizon=2,
+                )
+                self.assertEqual(report.horizon, 2)
+                for fold in report.folds:
+                    self.assertLessEqual(fold.feature_date, self.dates[self.dates.index(fold.scored_date) - 3])
+                self.assertIn("tga_change_x_scarcity", report.model_settings["design"])
+                self.assertEqual(report.model_settings["scarcity_state"], ml.SCARCITY_STATE)
+
+    def test_without_the_rule_it_refuses(self):
+        predictor = ml.pressure_logistic_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        rows = _with_calendar(self.rows)
+        with self.assertRaises(ValueError):
+            predictor(rows[:-1], rows[-1:], (5.0,))
+
+    def test_a_served_tga_change_must_start_at_the_as_of_read(self):
+        """The served TGA change is measured from the TGA value the forecast read.
+
+        Written red first: with the comparison against the observation's read
+        absent, the history below (whose latest public TGA is not the value the
+        observation read) gave a change and no refusal.
+
+        Recorded mutation (CLAUDE.md), the read check dropped: in
+        `ml._served_tga_change`, the condition `position < 0 or read is None or
+        float(history[position].values["tga"]) != float(read)` mutated to
+        `position < 0 or read is None`. This test then fails, raising
+        `AssertionError` ("LookAheadError not raised").
+        """
+
+        history = self.rows[:40]
+        observation = DailyObservation(
+            history[-1].date, {**history[-1].values, "tga": history[-1].values["tga"] + 1.0}
+        )
+        with self.assertRaises(LookAheadError):
+            ml._served_tga_change(history, observation)
+        # And the honest read gives the change from the history's own rows.
+        self.assertEqual(
+            ml._served_tga_change(history, history[-1]),
+            history[-1].values["tga"] - history[-6].values["tga"],
+        )
+
+    def test_both_are_selectable_by_name_and_read_the_splits(self):
+        for name in ("pressure_logistic", "pressure_classifier"):
+            choice = cli_eval.MODEL_FACTORIES[name]
+            self.assertTrue(choice.takes_splits)
+            self.assertTrue(choice.needs_ml_extra)
+
+
+def _history_rows(start, end):
+    """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
+
+    from repo_model import effr_history
+
+    effr, ioer, weekly = {}, {}, {"reserve_balances": {}, "tga": {}}
+    when, index = start, 0
+    printed_through = date(end.year + 1, 1, 2) if end.month == 12 else end + timedelta(days=100)
+    while when <= printed_through:
+        if when.weekday() < 5:
+            effr[when] = 0.25 + ((index % 13) - 6) / 100.0 + (0.08 if index % 13 == 12 else 0.0)
+            index += 1
+        ioer[when] = 0.25
+        if when.weekday() == 2:
+            weekly["reserve_balances"][when] = 1000.0 + 10.0 * (index % 7)
+            weekly["tga"][when] = 100.0 + 5.0 * (index % 3)
+        when += timedelta(days=1)
+    return effr_history.history_rows(effr, ioer, weekly, start=start, end=end)
+
+
+class PooledHistoryTests(unittest.TestCase):
+    """The direct logistic pooled with pre-SOFR history (#129)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def backtest(self, history, horizon=1):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=ml._direct_pressure_predictor(
+                "logistic", _PRESSURE_FULL, _pressure_splits(), 60, history=history
+            ),
+            model_name="pooled_logistic",
+            features=_PRESSURE_FULL,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def test_the_pool_joins_every_fit_behind_a_market_column(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        report = self.backtest((history, rule))
+        plain = self.backtest(None)
+        self.assertEqual(report.model_settings["design"][-1], ml.HISTORY_MARKET_COLUMN)
+        self.assertEqual(report.model_settings["design"][:-1], plain.model_settings["design"])
+        pairs = report.model_settings["pooled_history"]["pairs"]
+        self.assertGreater(pairs, 100)
+        self.assertEqual(report.scored_dates, plain.scored_dates)
+        self.assertNotEqual(report.forecast, plain.forecast)
+
+    def test_a_pooled_label_not_yet_public_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2026, 6, 30))
+        with self.assertRaises(LookAheadError):
+            self.backtest((history, rule))
+
+    def test_a_history_read_at_another_horizon_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=2)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        with self.assertRaisesRegex(ValueError, "horizon"):
+            self.backtest((history, rule))
+
+
+class RecalibrationPartsTests(unittest.TestCase):
+    """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
+
+    The calibration re-diagnosis rebuilds three bands from one CV+ backtest:
+    CV+'s own, conformal PID's from the uncalibrated vector, and Mondrian
+    CV+'s from the held-out terms restricted to a group. That is a fair
+    comparison only if the pieces put back together are CV+ to the bit, so
+    that the control is the published model and not a re-implementation of
+    it. Red first: written before either name existed (`AttributeError`).
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    TRAIN_ROWS = 240
+
+    def setUp(self):
+        require_extra(self)
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + 30)
+        self.train = rows[: self.TRAIN_ROWS]
+        self.forecasts = rows[self.TRAIN_ROWS - 1 :]
+        options = {"minimum_history": 20, "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF}
+        self.cross = ml.fit_gradient_boosted_quantiles(
+            self.train, self.REGRESSORS, calibration="cross_conformal",
+            information=gap_rule(0), **options,
+        )
+        self.plain = ml.fit_gradient_boosted_quantiles(self.train, self.REGRESSORS, **options)
+
+    def test_the_parts_rebuild_the_reported_vector_and_law_exactly(self):
+        levels = self.cross.levels
+        for row in self.forecasts:
+            parts = self.cross.cross_conformal_parts(row)
+            lower, upper = ml._cross_conformal_edges(parts.lows, parts.highs, levels)
+            self.assertEqual(ml._banded(parts.vector, lower, upper), self.cross.predict(row))
+            self.assertEqual(parts.vector, self.plain.predict(row))
+            self.assertEqual(
+                ml.law_from_band(
+                    parts.vector, lower, upper, parts.residual_low, parts.residual_high, levels
+                ),
+                self.cross.law_knots(row),
+            )
+
+    def test_every_held_out_term_is_dated_in_block_order(self):
+        parts = self.cross.cross_conformal_parts(self.forecasts[0])
+        dates = tuple(
+            when for block in self.cross.calibration_blocks for when in block.scored_dates
+        )
+        self.assertEqual(parts.held_out_dates, dates)
+        self.assertEqual(len(parts.lows), len(dates))
+        self.assertEqual(len(parts.highs), len(dates))
+        self.assertGreater(len(dates), 100)
+
+    def test_the_uncalibrated_law_is_the_band_left_where_it_is(self):
+        row = self.forecasts[3]
+        vector = self.plain.predict(row)
+        residuals = self.plain.residuals
+        self.assertEqual(
+            ml.law_from_band(
+                vector, vector[0], vector[-1], residuals[0], residuals[-1], self.plain.levels
+            ),
+            self.plain.law_knots(row),
+        )
+
+    def test_any_other_calibration_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.plain.cross_conformal_parts(self.forecasts[0])
+
+
+
+def write_recalibration_panel(path):
+    """A synthetic 2025 panel with the calendar the scorecaster reads (#116, #125)."""
+
+    days = business_days(date(2025, 6, 2), 170)
+    rng = random.Random(20261002)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
+             "days_to_month_end", "treasury_settlement_coupons"]
+        )
+        for index, when in enumerate(days):
+            last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
+            writer.writerow(
+                [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
+                 2000 + rng.randrange(300),
+                 1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
+                 1 if when.day == 15 else 0, (last - when).days,
+                 60 if when.day in (15, 30, 31) else 0]
+            )
+
+
+class CalibrationRediagnosisScriptTests(unittest.TestCase):
+    """`scripts/calibration_rediagnosis.py` end to end on a synthetic panel (#116).
+
+    It walks the one fold grid through `rolling_persistence_backtest`, so the
+    tracked lockbox refuses a locked scored day before any fit, and `--end`
+    before the tier scores. On the days it scores, the CV+ control is the band
+    the backtest reported (the script refuses otherwise), and all three
+    methods are scored on the same days.
+    """
+
+    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "calibration_rediagnosis.py"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+
+    def run_script(self, *extra):
+        report = self.tmp / "report.json"
+        argv = [
+            "--panel", str(self.panel), "--decision-time", "16:00",
+            "--minimum-history", "40", "--refit-every", "20", "--calibration-folds", "3",
+            "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--replications", "20", "--report", str(report), *extra,
+        ]
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.TRACKED_LOCKBOX):
+            self.assertEqual(self.module.main(argv), 0)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_a_locked_scored_day_is_refused_and_an_end_before_the_tier_scores(self):
+        with self.assertRaises(LookAheadError) as caught:
+            self.run_script()
+        self.assertIn("locked near_blind tier", str(caught.exception))
+        result = self.run_script("--end", "2025-12-31")
+        self.assertLessEqual(result["window"]["last"], "2025-12-31")
+        self.assertTrue(result["control_rebuilt_bit_for_bit"])
+        days = result["window"]["days"]
+        for method in ("cv_plus", "online_pid", "group_conditional"):
+            coverage = result["methods"][method]["coverage"]
+            self.assertEqual(coverage["all"]["all"]["count"], days)
+            self.assertEqual(
+                sum(entry["count"] for entry in coverage["volatility_tercile"].values()), days
+            )
+            self.assertIn("interval", coverage["all"]["all"])
+        self.assertAlmostEqual(
+            result["methods"]["cv_plus"]["crps_bps"], result["control_crps_bps"], places=12
+        )
+        paired = result["paired_cv_plus_minus_method"]
+        self.assertEqual(
+            set(paired["online_pid"]),
+            {"crps_difference_bps", "brier_difference_5bp", "brier_difference_10bp"},
+        )
+        self.assertEqual(sum(result["group_conditional"]["levels_used"].values()), days)
+
+
+
+class PidConstantSelectionScriptTests(unittest.TestCase):
+    """`scripts/pid_constant_selection.py` end to end on a synthetic panel (#125).
+
+    It walks the one fold grid as #116's script does, so the lockbox refuses a
+    locked scored day and `--end` before the tier scores. #122's constants in
+    it are #116's `online_pid` band, the nested scheme is chosen at every
+    refit block of the grid, and the three methods are scored on the same days.
+    """
+
+    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        self.modules = {}
+        for name in ("pid_constant_selection", "calibration_rediagnosis"):
+            spec = importlib.util.spec_from_file_location(name, self.SCRIPTS / f"{name}.py")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            self.modules[name] = module
+
+    def run_script(self, name, *extra):
+        report = self.tmp / f"{name}.json"
+        argv = [
+            "--panel", str(self.panel), "--decision-time", "16:00",
+            "--minimum-history", "40", "--refit-every", "20", "--calibration-folds", "3",
+            "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--replications", "20", "--report", str(report), *extra,
+        ]
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.TRACKED_LOCKBOX):
+            self.assertEqual(self.modules[name].main(argv), 0)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_a_locked_scored_day_is_refused(self):
+        with self.assertRaises(LookAheadError) as caught:
+            self.run_script("pid_constant_selection")
+        self.assertIn("locked near_blind tier", str(caught.exception))
+
+    def test_the_scheme_on_the_grid_before_the_tier(self):
+        from repo_model import recalibration
+
+        result = self.run_script("pid_constant_selection", "--end", "2025-12-31")
+        self.assertLessEqual(result["window"]["last"], "2025-12-31")
+        days = result["window"]["days"]
+        for method in ("nested_pid", "fixed_pid", "cv_plus"):
+            scores = result["methods"][method]
+            self.assertEqual(scores["coverage"]["all"]["all"]["count"], days)
+            self.assertIn("interval", scores["crps_bps"]["all"]["all"])
+        self.assertAlmostEqual(
+            result["methods"]["cv_plus"]["crps_bps"]["all"]["all"]["mean"],
+            result["control_crps_bps"], places=12,
+        )
+        earlier = self.run_script("calibration_rediagnosis", "--end", "2025-12-31")
+        self.assertAlmostEqual(
+            result["methods"]["fixed_pid"]["crps_bps"]["all"]["all"]["mean"],
+            earlier["methods"]["online_pid"]["crps_bps"], places=12,
+        )
+        blocks = result["nested_selection"]
+        self.assertEqual(len(blocks), -(-days // 20))
+        self.assertEqual(blocks[0]["past_days"], 0)
+        self.assertEqual(blocks[0]["chosen"], recalibration.DECLARED_PID._asdict())
+        for block in blocks:
+            self.assertLess(block["anchor"], block["first_scored"])
+        self.assertEqual(
+            set(result["paired_other_minus_nested"]),
+            {"fixed_pid_minus_nested_pid", "cv_plus_minus_nested_pid"},
+        )
+        self.assertEqual(len(result["full_grid"]["points"]), len(recalibration.PID_GRID))
+        self.assertIn("not for selection", result["full_grid"]["label"])
+        self.assertIn("never the selection", result["split_sample"]["label"])
+        self.assertEqual(result["split_sample"]["evaluation_window"]["days"], days)
+
+
+
+# --------------------------------------------------------------------------
+# Dynamic pressure logit, its ordinal version and the stacked combiner (#137)
+# --------------------------------------------------------------------------
+
+_DYNAMIC_FEATURES = (
+    "spread_bps", "reserve_balances", "days_to_month_end", "quarter_end", "tax_date",
+)
+
+
+class _DynamicConformance(_PressureConformance):
+    """The conformance suite against a dynamic pressure model.
+
+    Rule bound like the direct models, and handed each forecast's as-of
+    history, which the lagged index is read off: here the training frame.
+    """
+
+    def make_predictor(self):
+        predictor = type(self).FACTORY(
+            _PRESSURE_CALENDAR, _pressure_splits(), minimum_history=self.MINIMUM_HISTORY
+        )
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+
+        def bound(train_rows, feature_rows, taus):
+            return predictor(
+                train_rows, feature_rows, taus, information=rule,
+                histories=tuple(train_rows for _ in feature_rows),
+            )
+
+        return bound
+
+
+class DynamicLogitConformanceTests(_DynamicConformance, unittest.TestCase):
+    """The conformance suite against `ml.dynamic_logit_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.dynamic_logit_exceedance)
+    FACTORY = staticmethod(ml.dynamic_logit_exceedance)
+
+
+class DynamicOrdinalConformanceTests(_DynamicConformance, unittest.TestCase):
+    """The conformance suite against `ml.dynamic_ordinal_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.dynamic_ordinal_exceedance)
+    FACTORY = staticmethod(ml.dynamic_ordinal_exceedance)
+
+
+class DynamicPressureModelTests(unittest.TestCase):
+    """The dynamic logit's terms, its lagged index and the ordinal's coherence (#137)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def backtest(self, factory, horizon=1, taus=(5.0, 10.0)):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=factory(_DYNAMIC_FEATURES, _pressure_splits(), minimum_history=60),
+            model_name=factory.__name__,
+            features=_DYNAMIC_FEATURES,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=taus,
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def test_every_term_is_declared_in_the_settings(self):
+        """The design, the lagged event indicator and the lagged index, by name."""
+
+        report = self.backtest(ml.dynamic_logit_exceedance)
+        settings = report.model_settings
+        self.assertEqual(
+            tuple(settings["design"]),
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date",
+                "quarter_end_x_scarcity", "month_end_x_scarcity", "tax_date_x_scarcity",
+                "lagged_event",
+            ),
+        )
+        self.assertEqual(settings["lagged_index"], ml.DYNAMIC_LOGIT_SETTINGS["lagged_index"])
+        self.assertEqual(
+            tuple(settings["persistence_grid"]), ml.DYNAMIC_LOGIT_SETTINGS["persistence_grid"]
+        )
+        self.assertIn(settings["persistence"], ml.DYNAMIC_LOGIT_SETTINGS["persistence_grid"])
+
+    def test_coupon_settlement_is_a_scheduled_term_interacted_with_scarcity(self):
+        design = ml._PressureDesign(
+            ("spread_bps", "reserve_balances", "days_to_month_end", "quarter_end",
+             "tax_date", "treasury_settlement_coupons"),
+            _pressure_splits(),
+        )
+        self.assertEqual(
+            design.names,
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date", "treasury_settlement_coupons",
+                "quarter_end_x_scarcity", "month_end_x_scarcity", "tax_date_x_scarcity",
+                "treasury_settlement_coupons_x_scarcity",
+            ),
+        )
+
+    def test_the_lagged_index_is_the_chain_through_each_rows_anchor(self):
+        """`index_t = x_t + alpha * index_anchor(t)`; a chain starts stationary."""
+
+        import numpy
+
+        xs = [None, [1.0, 2.0], [3.0, 0.0], [0.5, 1.0], None, [2.0, 2.0]]
+        anchors = [-1, -1, 1, 1, 3, 4]
+        got = ml._index_chain(xs, anchors, 0.5)
+        self.assertIsNone(got[0])
+        numpy.testing.assert_allclose(got[1], [2.0, 4.0])  # x / (1 - alpha)
+        numpy.testing.assert_allclose(got[2], [3.0 + 1.0, 0.0 + 2.0])
+        numpy.testing.assert_allclose(got[3], [0.5 + 1.0, 1.0 + 2.0])
+        self.assertIsNone(got[4])
+        numpy.testing.assert_allclose(got[5], [4.0, 4.0])  # anchor has no index
+        at_zero = ml._index_chain(xs, anchors, 0.0)
+        numpy.testing.assert_allclose(at_zero[2], [3.0, 0.0])
+
+    def test_a_backtest_at_horizon_three_runs_under_every_guard(self):
+        """The lagged index is read off each forecast's own as-of history.
+
+        `history_ends` names each history's last row, so the fold loop checks
+        it ends at the forecast's anchor (stale or ahead are both refused).
+        """
+
+        for factory in (ml.dynamic_logit_exceedance, ml.dynamic_ordinal_exceedance):
+            with self.subTest(factory=factory.__name__):
+                report = self.backtest(factory, horizon=3)
+                self.assertEqual(report.horizon, 3)
+                self.assertGreater(len(report.folds), 40)
+
+    def test_the_ordinal_probabilities_are_coherent_on_every_day(self):
+        """P(> +10) <= P(> +5) on every scored day, from the joint fit itself."""
+
+        for horizon in (1, 2):
+            report = self.backtest(ml.dynamic_ordinal_exceedance, horizon=horizon)
+            for when, (above_5, above_10) in zip(report.scored_dates, report.forecast):
+                with self.subTest(horizon=horizon, day=when):
+                    self.assertLessEqual(above_10, above_5)
+                    self.assertGreater(above_5, 0.0)
+                    self.assertLess(above_5, 1.0)
+
+    def test_the_ordinal_thresholds_are_ordered_by_construction(self):
+        """The fit's cut points rise with tau whatever the data, so no running minimum is needed."""
+
+        import numpy
+
+        rng = numpy.random.default_rng(137)
+        x = rng.normal(size=(200, 3))
+        categories = numpy.clip((x[:, 0] * 1.5 + rng.normal(size=200)).round().astype(int) + 1, 0, 2)
+        fit = ml._fit_ordinal(x, categories, 2)
+        self.assertLess(fit.thresholds[0], fit.thresholds[1])
+        p = fit.exceedance(rng.normal(size=(50, 3)) * 5.0)
+        self.assertTrue(numpy.all(p[:, 1] <= p[:, 0]))
+
+    def test_without_histories_it_refuses(self):
+        rows = _with_calendar(self.rows)
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+        for factory in (ml.dynamic_logit_exceedance, ml.dynamic_ordinal_exceedance):
+            predictor = factory(_PRESSURE_CALENDAR, _pressure_splits())
+            with self.subTest(factory=factory.__name__), self.assertRaises(ValueError):
+                predictor(rows[:-1], rows[-1:], (5.0,), information=rule)
+
+    def test_the_ordinal_refuses_taus_out_of_order(self):
+        rows = _with_calendar(self.rows)
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+        predictor = ml.dynamic_ordinal_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        with self.assertRaises(ValueError):
+            predictor(rows[:-1], rows[-1:], (10.0, 5.0), information=rule, histories=(rows[:-1],))
+
+    def test_both_are_selectable_by_name_and_read_the_splits(self):
+        for name in ("dynamic_logit", "dynamic_ordinal"):
+            choice = cli_eval.MODEL_FACTORIES[name]
+            self.assertTrue(choice.takes_splits)
+            self.assertTrue(choice.needs_ml_extra)
+
+
+class StackedCombinerTests(unittest.TestCase):
+    """The stacked combiner is fitted on out-of-fold base forecasts only (#137)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from test_pressure import backtest, spreads, weekday_rows
+        from repo_model import pressure
+        from repo_model.baseline import calendar_climatology_exceedance
+
+        cls.rows = weekday_rows(spreads())
+        persistence = backtest(cls.rows, horizon=3)
+        calendar = baseline.rolling_exceedance_backtest(
+            cls.rows,
+            predictor=calendar_climatology_exceedance(_pressure_splits(), minimum_history=40),
+            model_name="calendar_climatology",
+            features=("spread_bps", "days_to_month_end", "quarter_end", "tax_date"),
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=40,
+            refit_every=21,
+            horizon=3,
+        )
+        cls.bases = {
+            "persistence_logistic": persistence,
+            "calendar_climatology": calendar,
+            "recalibrated": pressure.recalibrated(persistence),
+        }
+        cls.options = {"minimum_pairs": 60, "minimum_events": 5}
+
+    def setUp(self):
+        require_extra(self)
+
+    def blocks(self, report):
+        folds = report.folds
+        starts = [i for i in range(len(folds)) if i == 0 or folds[i].train_end != folds[i - 1].train_end]
+        return list(zip(starts, starts[1:] + [len(folds)]))
+
+    def test_the_combiner_never_sees_an_in_sample_base_forecast(self):
+        """A base forecast made by a fit whose training labels include its own day is refused.
+
+        The combiner's pairs are base forecasts of days whose outcomes were
+        observable at the combiner's fit. Each must be out of fold: made by a
+        base fit trained only on labels before the day it forecast. Here one
+        base's fold is relabelled as fitted through its own scored day, as an
+        in-sample (fitted-value) forecast would be, inside the first fitted
+        block's window.
+
+        Written red first: before `_check_out_of_fold` existed the combiner
+        fitted on that pair and returned (`AssertionError`, "LookAheadError not
+        raised").
+
+        Recorded mutation (CLAUDE.md), the out-of-fold check dropped: in
+        `ml._check_out_of_fold`, `if fold.train_end >= fold.scored_date:`
+        mutated to `if False:`. This test then fails, raising `AssertionError`
+        ("LookAheadError not raised").
+        """
+
+        import dataclasses as dc
+
+        base = self.bases["calendar_climatology"]
+        folds = list(base.folds)
+        folds[5] = dc.replace(folds[5], train_end=folds[5].scored_date)
+        bad = {**self.bases, "calendar_climatology": dc.replace(base, folds=tuple(folds))}
+        with self.assertRaises(LookAheadError):
+            ml.stacked_combiner(bad, **self.options)
+        # And the honest bases combine.
+        ml.stacked_combiner(self.bases, **self.options)
+
+    def test_each_block_is_the_fit_on_its_observable_out_of_fold_past(self):
+        """At horizon 3 a block's last days are not yet observable at the next fit."""
+
+        import numpy
+
+        combined = ml.stacked_combiner(self.bases, **self.options)
+        names = list(self.bases)
+        floor = ml.STACKED_COMBINER["probability_floor"]
+
+        def logit(p):
+            p = min(1 - floor, max(floor, p))
+            return math.log(p / (1 - p))
+
+        checked = 0
+        report = self.bases[names[0]]
+        for start, stop in self.blocks(report):
+            end_label = report.folds[start].train_end
+            past = [i for i in range(start) if report.folds[i].scored_date <= end_label]
+            fits = []
+            for position in range(2):
+                outcomes = [report.outcomes[i][position] for i in past]
+                if len(past) < 60 or not 5 <= sum(outcomes) < len(past):
+                    fits.append(None)
+                    continue
+                x = numpy.asarray(
+                    [[logit(self.bases[n].forecast[i][position]) for n in names] for i in past]
+                )
+                fits.append(ml._fit_logit(x, numpy.asarray(outcomes)))
+            if None in fits:
+                continue
+            for index in range(start, stop):
+                want = [
+                    float(fit.probability(numpy.asarray(
+                        [[logit(self.bases[n].forecast[index][position]) for n in names]]
+                    ))[0])
+                    for position, fit in enumerate(fits)
+                ]
+                # The curve is non-increasing in tau by a running minimum.
+                self.assertAlmostEqual(combined.forecast[index][0], want[0], places=12)
+                self.assertAlmostEqual(combined.forecast[index][1], min(want), places=12)
+                checked += 1
+        self.assertGreater(checked, 50)
+        self.assertEqual(combined.model_name, "stacked_combiner")
+        self.assertEqual(combined.scored_dates, report.scored_dates)
+
+    def test_before_the_minimum_it_is_the_mean_logit(self):
+        combined = ml.stacked_combiner(self.bases, minimum_pairs=10_000, minimum_events=5)
+        floor = ml.STACKED_COMBINER["probability_floor"]
+
+        def logit(p):
+            p = min(1 - floor, max(floor, p))
+            return math.log(p / (1 - p))
+
+        for index in (0, len(combined.folds) - 1):
+            mean = sum(logit(b.forecast[index][0]) for b in self.bases.values()) / len(self.bases)
+            self.assertAlmostEqual(combined.forecast[index][0], 1 / (1 + math.exp(-mean)), places=12)
+
+    def test_bases_on_different_grids_are_refused(self):
+        import dataclasses as dc
+
+        base = self.bases["calendar_climatology"]
+        short = dc.replace(
+            base,
+            folds=base.folds[1:], scored_dates=base.scored_dates[1:],
+            forecast=base.forecast[1:], outcomes=base.outcomes[1:],
+        )
+        with self.assertRaises(ValueError):
+            ml.stacked_combiner({**self.bases, "calendar_climatology": short}, **self.options)
 
 
 if __name__ == "__main__":

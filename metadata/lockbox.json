@@ -1,0 +1,18 @@
+{
+  "decision": "docs/decisions/lockbox.md",
+  "tiers": [
+    {
+      "end": "2026-09-03",
+      "name": "near_blind",
+      "opened": null,
+      "start": "2026-01-01"
+    },
+    {
+      "end": null,
+      "name": "blind",
+      "opened": null,
+      "start": "2026-09-04"
+    }
+  ],
+  "version": 1
+}
