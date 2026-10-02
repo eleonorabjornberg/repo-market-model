@@ -54,10 +54,14 @@ __all__ = [
     "UndeclaredFeatureError",
     "FEATURE_FIELDS",
     "FEATURE_SOURCES",
+    "COMPOSED_FEATURES",
+    "ON_RRP_DEPLETION_BREAK_BN",
+    "SETTLEMENT_DAY_MONTH_END_DAYS",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
+    "OVERLAY_FEATURES",
     "sources_for_features",
     "TREASURY_BILL_SECURITY_TYPES",
     "TREASURY_COUPON_SECURITY_TYPES",
@@ -286,6 +290,10 @@ FEATURE_FIELDS = MappingProxyType(
             ("fred_macro_latest_vintage", "IOER"),
         ),
         "tgcr": (("nyfed_tgcr", "TGCR"),),
+        # The effective federal funds rate, from the New York Fed as published,
+        # not FRED's `DFF` copy (directive #98). Read by no published
+        # declaration; it enters a model only as `effr_minus_iorb_bp`.
+        "effr": (("nyfed_effr", "EFFR"),),
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
@@ -312,6 +320,16 @@ FEATURE_FIELDS = MappingProxyType(
         # documented, not converted.
         "tbill_4w": (("treasury_bill_rates", "tbill_4w_coupon_equivalent"),),
         "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
+        # Announced IORB (directive #38): computed per scored row from the dated
+        # implementation-note table by `announced_iorb`, which adds them to a
+        # panel in memory. Not built into the published panel; scheduled under
+        # the source's `scheduled_availability` declaration.
+        "iorb_announced_change_bps": (
+            ("fed_iorb_announcements", "iorb_announced_change_bps"),
+        ),
+        "iorb_days_to_announced_change": (
+            ("fed_iorb_announcements", "iorb_days_to_announced_change"),
+        ),
     }
 )
 
@@ -327,6 +345,14 @@ FEATURE_FIELDS = MappingProxyType(
 #: with this one and rebuilding the panel, in a later pull request.
 ON_RRP_OPERATION_RESULTS_FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
 
+#: `srf_take_up` (#127): the Standing Repo Facility's overnight take-up per
+#: operation date, in USD billions, from the Desk's operation results
+#: (`ingest._nyfed_srf_rows`). Declared, scored and tested, and **off**: no
+#: `FEATURE_FIELDS` entry names it, so the published panel and every published
+#: record are unchanged. Whether it joins a published declaration is
+#: Eleonora's to rule (`docs/decisions/workflow.md`, "A question about
+#: publishing does not hold back the measurement").
+SRF_OPERATION_RESULTS_FIELDS = (("nyfed_srf", "srf_total_accepted"),)
 #: `bank_total_assets` (#115): total assets of all commercial banks in the
 #: United States, not seasonally adjusted, USD billions, week ending Wednesday,
 #: the first print of each week from the Board's H.8 archive. The denominator
@@ -377,6 +403,58 @@ DERIVED_FEATURES = MappingProxyType(
         # percentile columns are rates in percent and every threshold in this
         # project is stated in basis points.
         "sofr_iqr_bps": ("sofr_p25", "sofr_p75"),
+        # EFFR less the as-of IORB the panel already carries, in whole basis
+        # points: a slow gauge of how ample reserves are (directive #98). EFFR
+        # and SOFR share a publication instant, so the as-of rule reads this
+        # at the target's own row.
+        "effr_minus_iorb_bp": ("effr", "iorb"),
+    }
+)
+
+#: The ON RRP balance, in USD billions, below which the facility's buffer is
+#: read as depleted (#88). Fixed in advance from the advisor evidence pack, PR
+#: #87, `docs/advisor/evidence-pack/MEMO.md`, Q4: weekly SOFR - IORB at +5 bp
+#: or more was rare with ON RRP above $100bn and frequent below it. It is never
+#: fitted, chosen or tuned on this repository's data; #88's sensitivity runs at
+#: $50bn and $200bn are reported beside it and select nothing.
+ON_RRP_DEPLETION_BREAK_BN = 100.0
+
+#: The month-end clause of `settlement_day` (#97): a scored day within this
+#: many calendar days of the month's last day is a settlement day. Fixed in
+#: advance by the directive from finding #96 (points 4-5: about half of the
+#: days above +5 bp in both pressure eras fall on settlement-calendar dates),
+#: with the flag's other clauses, from existing panel columns only. It is never
+#: tuned on this repository's data.
+SETTLEMENT_DAY_MONTH_END_DAYS = 2
+
+# Features composed at the decision instant from inputs each read per field
+# (#88). Unlike `DERIVED_FEATURES`, which are read at one row where every
+# constituent is observable, each input here is read on its own declaration
+# (`docs/decisions/information-set.md`, rule 1), and the feature is formed
+# from those reads by `asof.COMPOSERS`. So a composed feature never sees a
+# value of an input later than that input's own as-of read. Not panel columns:
+# the panel carries the inputs, and the composition happens per forecast.
+COMPOSED_FEATURES = MappingProxyType(
+    {
+        # 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN).
+        "on_rrp_depleted": ("on_rrp",),
+        # reserve_balances * on_rrp_depleted.
+        "reserves_when_depleted": ("reserve_balances", "on_rrp"),
+        # The settlement calendar of the scored day (#97, from finding #96):
+        # quarter_end OR tax_date OR days_to_month_end <=
+        # SETTLEMENT_DAY_MONTH_END_DAYS OR treasury_settlement_coupons > 0.
+        # Three calendar columns and one scheduled input, all known before
+        # the decision instant (`docs/decisions/calendar-columns.md`,
+        # `information-set.md`, rule 2).
+        "settlement_day": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+        ),
+        # settlement_day * on_rrp_depleted: a settlement day with the
+        # buffer depleted (#97).
+        "settlement_day_when_depleted": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+            "on_rrp",
+        ),
     }
 )
 
@@ -410,6 +488,22 @@ CALENDAR_FEATURES = frozenset(
     }
 )
 
+# Columns a model may read that the published panel does not carry: a named
+# module adds them to a panel in memory, from a tracked snapshot, after the
+# build. Each maps to that module. They are in `FEATURE_FIELDS`, so the as-of
+# rule prices and guards them like any other read; this set is only what
+# exempts them from `tests/test_contract.py`'s rule that every classified
+# column is a panel column. `tests/test_announced_iorb.py` checks the module
+# adds exactly these. Adding one does not move the published panel's bytes.
+# Per-use exception (Eleonora, 2 October 2026, #38/PR #154): adding a column
+# here is her decision.
+OVERLAY_FEATURES = MappingProxyType(
+    {
+        "iorb_announced_change_bps": "repo_model.announced_iorb",
+        "iorb_days_to_announced_change": "repo_model.announced_iorb",
+    }
+)
+
 # Declared panel columns with no ingesting source. Using one raises, with the
 # reason, rather than resolving to an empty source set. Empty since the FR 2004
 # adapter gave `dealer_treasury_position` its source; the mechanism stays, and
@@ -426,10 +520,23 @@ UNSOURCED_FEATURES = MappingProxyType({})
 # reason. Adding a column for a source means deleting its entry here.
 UNMODELLED_SOURCES = MappingProxyType(
     {
+        "frb_ddp": (
+            "#129: the Board's H.15 effective federal funds rate and IOER, read "
+            "only by repo_model.effr_history for the separate pre-SOFR history "
+            "study (EFFR - IOER from December 2008). No panel column draws on "
+            "it, and no published declaration reads it."
+        ),
         "nyfed_on_rrp": (
             "#45: on_rrp from the Desk's operation results is declared in "
             "ON_RRP_OPERATION_RESULTS_FIELDS and off in the published "
             "declaration until Eleonora rules whether it joins it "
+            "(docs/decisions/workflow.md, 'A question about publishing does "
+            "not hold back the measurement'). Turning it on removes this entry."
+        ),
+        "nyfed_srf": (
+            "#127: srf_take_up from the Desk's operation results is declared in "
+            "SRF_OPERATION_RESULTS_FIELDS and off in every published "
+            "declaration until Eleonora rules whether it joins one "
             "(docs/decisions/workflow.md, 'A question about publishing does "
             "not hold back the measurement'). Turning it on removes this entry."
         ),
@@ -446,7 +553,7 @@ UNMODELLED_SOURCES = MappingProxyType(
 def sources_for_features(names):
     """The source IDs a feature set draws on, for `max_release_lag_days`.
 
-    Derived features resolve to their constituents. Calendar features
+    Derived and composed features resolve to their constituents. Calendar features
     contribute nothing. An unknown name raises, and so does a declared name
     with no source -- the message carries the reason.
 
@@ -467,6 +574,9 @@ def sources_for_features(names):
         seen.add(name)
         if name in DERIVED_FEATURES:
             pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in COMPOSED_FEATURES:
+            pending.extend(COMPOSED_FEATURES[name])
             continue
         if name in CALENDAR_FEATURES:
             continue
@@ -516,6 +626,9 @@ def field_sources_for_features(names):
         seen.add(name)
         if name in DERIVED_FEATURES:
             pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in COMPOSED_FEATURES:
+            pending.extend(COMPOSED_FEATURES[name])
             continue
         if name in CALENDAR_FEATURES:
             continue

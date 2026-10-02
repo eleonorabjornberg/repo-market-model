@@ -638,7 +638,9 @@ class StressLabelTests(unittest.TestCase):
     def test_fixed_bp_labels_use_strict_exceedance(self):
         declaration = {"primary_rule": "fixed_bp", "taus_bp": [5, 10, 20, 50]}
 
-        rows = fixed_bp_stress_label_columns([5.0, 10.01, 51.0], declaration)
+        # Whole basis points (#155): a spread of 10.01 bp reads as 10, which is
+        # not above 10, so the row above +10 bp is 11.
+        rows = fixed_bp_stress_label_columns([5.0, 11.0, 51.0], declaration)
 
         self.assertEqual(rows[0]["stress_gt_5bp"], 0)
         self.assertEqual(rows[1]["stress_gt_5bp"], 1)
@@ -734,9 +736,26 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
                 "this check runs only where the adapters have been run. It is not "
                 "waiting on an unwritten implementation."
             )
+        loaded = [
+            (path, json.loads(path.read_text(encoding="utf-8"))) for path in manifests
+        ]
+        # Both checks read only ref_date sources. A data/raw/ holding none (frb_h8
+        # alone, say) has nothing to check, so it skips rather than fails (#158).
+        registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
+        found = sorted({manifest["source_id"] for _, manifest in loaded})
+        if not any(
+            registry.get(source_id, {}).get("release_lag", {}).get("basis") == "ref_date"
+            for source_id in found
+        ):
+            reason = (
+                f"raw snapshots under {self.RAW_ROOT} come from {', '.join(found)}; "
+                "none is a ref_date source, so there is no publication gap to check."
+            )
+            # unittest prints skip reasons only with -v.
+            print(f"\n{self.id()}: skipped: {reason}", file=sys.stderr)
+            self.skipTest(reason)
         artifacts = []
-        for manifest_path in manifests:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for manifest_path, manifest in loaded:
             artifacts.append(
                 SnapshotArtifact(
                     source_id=manifest["source_id"],
@@ -796,6 +815,114 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             )
             checked += 1
         self.assertGreater(checked, 0, "no ref_date rows were checked")
+
+
+class RealSnapshotPublicationGapSkipTests(unittest.TestCase):
+    """`RealSnapshotPublicationGapTests` on a `data/raw/` it cannot check (#158).
+
+    Both of its checks read only `ref_date` sources. A checkout whose `data/raw/`
+    holds only `record_date` sources (`frb_h8` after `fetch h8`, say) failed it
+    with "no ref_date rows were checked", so the result depended on which sources
+    a session happened to fetch. It now skips, naming the sources it found, and
+    writes that reason to stderr so a non-verbose run shows it too.
+
+    Test first: before the change, `test_record_date_only_raw_root_skips_with_a_stated_reason`
+    failed with `AssertionError` (the class reported 1 failure and 1 error, not
+    2 skips).
+    """
+
+    FIXTURES = Path(__file__).parent / "fixtures" / "snapshots"
+
+    def run_gap_tests(self, raw_root):
+        class Pointed(RealSnapshotPublicationGapTests):
+            RAW_ROOT = raw_root
+
+        result = unittest.TestResult()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            unittest.defaultTestLoader.loadTestsFromTestCase(Pointed).run(result)
+        return result, stderr.getvalue()
+
+    def copy_snapshot(self, raw_root, manifest_path):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        target = raw_root / manifest["source_id"]
+        target.mkdir(parents=True, exist_ok=True)
+        payload = manifest_path.parent / Path(manifest["path"]).name
+        (target / payload.name).write_bytes(payload.read_bytes())
+        (target / manifest_path.name).write_bytes(manifest_path.read_bytes())
+
+    def h8_only_root(self, tmp):
+        raw_root = Path(tmp)
+        for manifest_path in sorted(
+            (self.FIXTURES / "h8_inputs" / "frb_h8").glob("*.manifest.json")
+        ):
+            self.copy_snapshot(raw_root, manifest_path)
+        return raw_root
+
+    def test_record_date_only_raw_root_skips_with_a_stated_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result, stderr = self.run_gap_tests(self.h8_only_root(tmp))
+
+        self.assertEqual(result.failures, [])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.testsRun, 2)
+        self.assertEqual(len(result.skipped), 2)
+        for _, reason in result.skipped:
+            self.assertIn("frb_h8", reason)
+            self.assertIn("none is a ref_date source", reason)
+            # Printed in the default, non-verbose run, where unittest hides
+            # skip reasons.
+            self.assertIn(reason, stderr)
+
+    def test_a_ref_date_source_is_still_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            self.copy_snapshot(
+                raw_root,
+                self.FIXTURES
+                / "on_rrp_inputs"
+                / "nyfed_on_rrp"
+                / "20261002T012422Z_0dfe701aee28.json.manifest.json",
+            )
+            result, stderr = self.run_gap_tests(raw_root)
+
+        skipped = {test.id().rsplit(".", 1)[-1] for test, _ in result.skipped}
+        self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", skipped)
+        failed = {test.id().rsplit(".", 1)[-1] for test, _ in result.failures + result.errors}
+        self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", failed)
+        self.assertNotIn("none is a ref_date source", stderr)
+
+    def test_a_ref_date_source_with_no_rows_still_fails(self):
+        """`checked > 0` still holds once a `ref_date` source supplied a snapshot."""
+
+        payload = b'{ "repo": { "operations": [] } }'
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            target = raw_root / "nyfed_on_rrp"
+            target.mkdir()
+            (target / "empty.json").write_bytes(payload)
+            (target / "empty.json.manifest.json").write_text(
+                json.dumps(
+                    {
+                        "byte_count": len(payload),
+                        "path": "nyfed_on_rrp/empty.json",
+                        "retrieved_at": "2026-10-02T01:24:22+00:00",
+                        "sha256": hashlib.sha256(payload).hexdigest(),
+                        "source_id": "nyfed_on_rrp",
+                        "url": "https://markets.newyorkfed.org/api/rp/results/search.json",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result, _ = self.run_gap_tests(raw_root)
+
+        failures = {
+            test.id().rsplit(".", 1)[-1]: trace for test, trace in result.failures
+        }
+        self.assertIn("no ref_date rows were checked", failures.get(
+            "test_no_row_is_available_later_than_the_registry_declares", ""
+        ))
+
 
 class CoverageFloorDeclarationTests(unittest.TestCase):
     """`declared_coverage_floor` fails closed, and says which way it failed.

@@ -25,7 +25,11 @@ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
   it.
 - **Publishing a record** follows `docs/decisions/publish-rule.md`. A publish is a PR that adds
   the records and regenerates the pages rendered from them (`python scripts/emit_results.py`)
-  in the same commit. Those generated blocks are never hand-edited.
+  in the same commit. Those generated blocks are never hand-edited. The same PR runs
+  `python3 scripts/emit_visual.py`, which regenerates the results page (`site/index.html`) and its data
+  (`docs/visual/data/`); `tests/test_visual.py` refuses a stale page. Like `docs/status.json`, the page is
+  stamped with the latest commit that changed one of its inputs (`INPUTS` in the script), so a PR that
+  changes one regenerates it in a commit after that change.
 - **`docs/status.json`** is regenerated in the PR that changes its inputs (`PLAN.md`, the
   top-level records in `docs/runs/`, `metadata/events.json`, `pyproject.toml`), in a commit
   after the one that changes them: it is stamped with that commit. Run

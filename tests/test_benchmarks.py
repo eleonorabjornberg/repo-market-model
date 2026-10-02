@@ -229,7 +229,8 @@ class CalendarClimatologyTests(unittest.TestCase):
             same = [r.spread_bps for r in train if declaration.day_type(r.values) == kind]
             self.assertTrue(same)
             expected = tuple(
-                sum(1 for value in same if value > tau) / len(same) for tau in EXCEEDANCE_TAUS
+                sum(1 for value in same if round(value) > tau) / len(same)
+                for tau in EXCEEDANCE_TAUS
             )
             self.assertEqual(curve, expected)
 
@@ -242,7 +243,9 @@ class CalendarClimatologyTests(unittest.TestCase):
         predictor = calendar_climatology_exceedance(splits(), minimum_history=20)
         curve = predictor(train, feature, EXCEEDANCE_TAUS).curves[0]
         pooled = tuple(
-            sum(1 for r in train if r.spread_bps > tau) / len(train) for tau in EXCEEDANCE_TAUS
+            # Whole basis points (#155): a spread on tau is not above it.
+            sum(1 for r in train if round(r.spread_bps) > tau) / len(train)
+            for tau in EXCEEDANCE_TAUS
         )
         self.assertEqual(curve, pooled)
 
@@ -493,3 +496,132 @@ class BenchmarkCommandTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EventListTests(unittest.TestCase):
+    """`exceedance-backtest --event-list TAU`: a threshold reported event by event.
+
+    Drafted for `docs/decisions/pressure-probability.md` (#130): at a
+    threshold with too few positives to validate a pooled claim, the record
+    carries no pooled skill and no bootstrap interval there, and lists each
+    positive scored day with every model's probabilities over the scored days
+    before it. Without the flag the record is what it was, so no published
+    record changes until a publish passes it.
+    """
+
+    # `BenchmarkCommandTests`' panel and command, borrowed rather than
+    # inherited, so its tests are not run twice.
+    setUp = BenchmarkCommandTests.setUp
+    run_command = BenchmarkCommandTests.run_command
+
+    def event_run(self, *extra):
+        return self.run_command(
+            "--benchmark", "persistence_logistic",
+            "--splits", str(SPLITS),
+            *extra,
+            model="climatology",
+        )
+
+    def test_an_event_listed_threshold_lists_every_positive_day_and_no_pooled_claim(self):
+        code, err, record = self.event_run(
+            "--event-list", "10", "--event-lead-days", "3"
+        )
+        self.assertEqual(code, 0, msg=err)
+        self.assertEqual(
+            record["declaration"]["event_list"], {"taus_bp": [10.0], "lead_days": 3}
+        )
+        entry = record["metrics"]["by_tau"]["10"]
+        self.assertEqual(entry["reporting"], "event_list")
+        for pooled in (
+            "brier", "brier_skill_score", "brier_skill_score_interval",
+            "brier_splits", "decomposition", "reliability_curve",
+            "average_precision", "reference_brier", "base_rate", "log_score",
+        ):
+            self.assertNotIn(pooled, entry)
+        events = entry["events"]
+        self.assertGreater(len(events), 0)
+        self.assertEqual(entry["positives"], len(events))
+        self.assertEqual(entry["scored_days"], record["metrics"]["scored_days"])
+        for event in events:
+            self.assertGreater(event["realized_bps"], 10.0)
+            path = event["forecasts"]
+            self.assertLessEqual(len(path), 4)
+            self.assertEqual(path[-1]["scored_date"], event["date"])
+            self.assertEqual([step["days_before"] for step in path],
+                             list(range(len(path) - 1, -1, -1)))
+            for step in path:
+                self.assertEqual(
+                    sorted(step["probability"]),
+                    ["climatology", "persistence_logistic", "reference_climatology"],
+                )
+        # The threshold beside it keeps its pooled claim, here and paired.
+        self.assertIn("brier_skill_score", record["metrics"]["by_tau"]["5"])
+        paired = record["benchmarks"]["persistence_logistic"]["by_tau"]
+        self.assertNotIn("10", paired)
+        self.assertIn("5", paired)
+
+    def test_a_threshold_no_day_crossed_lists_no_event_and_says_so(self):
+        code, err, record = self.event_run("--event-list", "50")
+        self.assertEqual(code, 0, msg=err)
+        entry = record["metrics"]["by_tau"]["50"]
+        self.assertEqual(entry["positives"], 0)
+        self.assertEqual(entry["events"], [])
+        self.assertEqual(record["declaration"]["event_list"]["lead_days"], 5)
+
+    def test_without_the_flag_the_record_has_no_event_list(self):
+        code, err, record = self.event_run()
+        self.assertEqual(code, 0, msg=err)
+        self.assertNotIn("event_list", record["declaration"])
+        for entry in record["metrics"]["by_tau"].values():
+            self.assertNotIn("events", entry)
+            self.assertNotIn("reporting", entry)
+        self.assertIn("brier_skill_score_interval", record["metrics"]["by_tau"]["5"])
+
+    def test_a_threshold_outside_the_declared_family_is_refused(self):
+        code, err, _ = self.event_run("--event-list", "15")
+        self.assertNotEqual(code, 0)
+        self.assertIn("15", err)
+
+    def test_a_negative_lead_is_refused(self):
+        code, err, _ = self.event_run("--event-list", "10", "--event-lead-days", "-1")
+        self.assertNotEqual(code, 0)
+
+
+class EventListDocumentTests(unittest.TestCase):
+    """`baseline.exceedance_event_list` reads the report's own probabilities."""
+
+    def test_each_probability_is_the_report_s_own_forecast_for_that_day(self):
+        from repo_model.baseline import (
+            climatology_exceedance,
+            exceedance_event_list,
+            rolling_exceedance_backtest,
+        )
+
+        spreads = [2.0 + ((i * 7) % 13) / 2.0 + (8.0 if i % 9 == 8 else 0.0) for i in range(80)]
+        rows = spread_rows(spreads)
+        common = dict(
+            features=("spread_bps",), registry=REGISTRY, decision_time=DECISION,
+            taus=EXCEEDANCE_TAUS, minimum_history=30, refit_every=5,
+        )
+        report = rolling_exceedance_backtest(
+            rows, predictor=climatology_exceedance(minimum_history=30),
+            model_name="climatology", **common,
+        )
+        bench = rolling_exceedance_backtest(
+            rows, predictor=persistence_logistic_exceedance(minimum_history=30),
+            model_name="persistence_logistic", **common,
+        )
+        position = list(report.taus).index(10.0)
+        events = exceedance_event_list(report, [bench], position, lead_days=2)
+        index = {when: i for i, when in enumerate(report.scored_dates)}
+        positives = [i for i, day in enumerate(report.outcomes) if day[position]]
+        self.assertGreater(len(positives), 0)
+        self.assertEqual([event["date"] for event in events],
+                         [report.scored_dates[i].isoformat() for i in positives])
+        for event in events:
+            for step in event["forecasts"]:
+                i = index[date.fromisoformat(step["scored_date"])]
+                self.assertEqual(step["feature_date"], report.folds[i].feature_date.isoformat())
+                self.assertEqual(step["probability"]["climatology"], report.forecast[i][position])
+                self.assertEqual(step["probability"]["reference_climatology"], report.reference[i][position])
+                self.assertEqual(step["probability"]["persistence_logistic"], bench.forecast[i][position])

@@ -59,6 +59,19 @@ class DataContractError(ValueError):
     """Raised when a modeling panel violates its declared contract."""
 
 
+def exceeds_bp(spread_bps: float, tau: float) -> bool:
+    """The decided event: the spread, on whole basis points, strictly above `tau`.
+
+    `docs/decisions/pressure-probability.md` ("The event is strictly greater
+    than"): both rates are quoted in whole basis points, so a day exactly on
+    `tau` is not above it (#155). The float spread misses the whole basis point
+    by a hair -- SOFR 2.00 less IORB 1.95 is 5.000000000000004 bp -- so every
+    comparison of a spread with a threshold rounds first and goes through here.
+    """
+
+    return round(float(spread_bps)) > tau
+
+
 @dataclass(frozen=True)
 class DailyObservation:
     date: date
@@ -88,6 +101,25 @@ class DailyObservation:
         return 100.0 * (
             float(self.values["sofr_p75"]) - float(self.values["sofr_p25"])
         )
+
+    @property
+    def effr_minus_iorb_bp(self) -> Optional[float]:
+        """EFFR less IORB for the day, in whole basis points; `None` if either is.
+
+        Rounded to the whole basis point because both legs are published to
+        two decimals of a percent, so the difference is a whole number of
+        basis points that binary floating point misses by a hair (4.33 - 4.40
+        is -7.000000000000028). Unlike the target, an unobserved leg is an
+        unobserved feature rather than an error: this is a regressor, and a
+        regressor carried as `None` is imputed. `contract.DERIVED_FEATURES`
+        declares it over exactly the two columns read below.
+        """
+
+        effr = self.values["effr"]
+        iorb = self.values["iorb"]
+        if effr is None or iorb is None:
+            return None
+        return float(round(100.0 * (float(effr) - float(iorb))))
 
 
 @dataclass(frozen=True)
@@ -2244,7 +2276,7 @@ def fixed_bp_stress_label_columns(
     taus = _finite_values(raw_taus)  # type: ignore[arg-type]
     values = _finite_values(spreads_bp)
     return [
-        {f"stress_gt_{tau:g}bp": int(spread > tau) for tau in taus}
+        {f"stress_gt_{tau:g}bp": int(exceeds_bp(spread, tau)) for tau in taus}
         for spread in values
     ]
 
@@ -2304,6 +2336,14 @@ def audit_panel(observations: Iterable[DailyObservation]) -> AuditReport:
 PANEL_COLUMNS = tuple(
     field for field in REQUIRED_FIELDS if field != "date"
 ) + OPTIONAL_NUMERIC_FIELDS
+
+#: Panel columns built only when a build names them with `--column`, never by
+#: a build that names none. A column joins `PANEL_COLUMNS` when a published
+#: declaration reads it; until then it stays here, because the published
+#: panel's documented build names no columns and a new default column would be
+#: new bytes under its digest (REPRODUCIBILITY.md). `effr` is directive #98's
+#: candidate input, read by no published declaration.
+OPT_IN_COLUMNS = ("effr",)
 
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
 # 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See

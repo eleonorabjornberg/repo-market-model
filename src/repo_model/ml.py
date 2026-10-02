@@ -584,7 +584,7 @@ from .baseline import (
     fit_arx,
 )
 from .contract import QUANTILE_LEVELS
-from .data import DailyObservation, load_stress_thresholds
+from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
 from .asof import InformationRule
 from .splits import (
@@ -3956,9 +3956,18 @@ class _PressureDesign:
     * With `tga` and `reserve_balances` declared, the TGA's change over
       `TGA_CHANGE_ROWS` panel rows ending at its as-of read, and that change
       times the scarcity state.
+    * Each declared product (#127), last: the product of two terms, each a
+      declared column other than a calendar one, or `tga_change`, as read, in
+      their own units. Empty by default, so pressure model v1's design is
+      unchanged.
     """
 
-    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+    def __init__(
+        self,
+        features: Sequence[str],
+        declaration: Any,
+        products: Sequence[Tuple[str, str]] = (),
+    ) -> None:
         declared = tuple(dict.fromkeys(str(name) for name in features))
         if "spread_bps" not in declared:
             raise ValueError(
@@ -4006,6 +4015,19 @@ class _PressureDesign:
             names += [f"{name}_x_scarcity" for name in scheduled]
         if self.tga:
             names += ["tga_change", "tga_change_x_scarcity"]
+        self.products = tuple((str(a), str(b)) for a, b in products)
+        for pair in self.products:
+            for term in pair:
+                known = (term == "tga_change" and self.tga) or (
+                    term in declared and term not in _CALENDAR_INPUTS
+                )
+                if not known:
+                    raise ValueError(
+                        f"a product term reads {term!r}, which this design does not "
+                        f"declare (a declared non-calendar column, or tga_change "
+                        f"with tga and reserve_balances declared)"
+                    )
+            names.append(f"{pair[0]}_x_{pair[1]}")
         self.names = tuple(names)
 
     def needs_history(self) -> bool:
@@ -4041,7 +4063,22 @@ class _PressureDesign:
                 if tga_change is None:  # pragma: no cover - callers supply it
                     raise ValueError("the TGA change is required when tga is declared")
                 values += [tga_change, tga_change * state]
+        for a, b in self.products:
+            values.append(self._term(observation, a, tga_change) * self._term(observation, b, tga_change))
         return values
+
+    def _term(
+        self, observation: DailyObservation, name: str, tga_change: Optional[float]
+    ) -> float:
+        """One product factor: `tga_change`, or a declared column as read."""
+
+        if name == "tga_change":
+            if tga_change is None:  # pragma: no cover - callers supply it
+                raise ValueError("the TGA change is required for a product with it")
+            return tga_change
+        if name == "spread_bps":
+            return float(observation.spread_bps)
+        return self._value(observation, name)
 
 
 def _tga_change_at(rows: Sequence[DailyObservation], position: int) -> Optional[float]:
@@ -4145,15 +4182,36 @@ def _pressure_pairs(
     return xs, ys
 
 
+#: The pooled design's last column (#129): 1 on a pre-SOFR history pair, 0 on
+#: every SOFR pair and every served row.
+HISTORY_MARKET_COLUMN = "effr_market"
+
+
 def _direct_pressure_predictor(
-    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int,
+    products: Sequence[Tuple[str, str]] = (),
+    history: Optional[Tuple[Sequence[Any], Any]] = None,
 ) -> Any:
-    """The fit-and-predict behind both direct models; `kind` picks the estimator."""
+    """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `history`, for the pre-SOFR history study (#129) only: `(rows, rule)`, the
+    `effr_history` rows and their as-of rule. Their direct pairs are built with
+    this design (`effr_history.history_pairs`), pooled with every fit's SOFR
+    pairs, and told apart by `HISTORY_MARKET_COLUMN`; a forecast is served as
+    the SOFR market. Every fit refuses a pooled label not public before its
+    last training day (`effr_history.require_pool_public`), and a rule whose
+    horizon is not the run's. No public factory takes it: it is a study
+    candidate, not a declared model.
+    """
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
-    design = _PressureDesign(features, declaration)
+    design = _PressureDesign(features, declaration, products)
     cache: dict = {}
+    pooled: dict = {}
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -4190,12 +4248,28 @@ def _direct_pressure_predictor(
             )
             for day, row in enumerate(feature_rows)
         ]
+        if history is not None:
+            from . import effr_history
+
+            history_rows, history_rule = history
+            if history_rule.horizon != information.horizon:
+                raise ValueError(
+                    f"the history is read at horizon {history_rule.horizon}, the run "
+                    f"at {information.horizon}"
+                )
+            if "pool" not in pooled:
+                pooled["pool"] = effr_history.history_pairs(design, history_rule, history_rows)
+            pool = pooled["pool"]
+            effr_history.require_pool_public(pool.available_at, train_rows[-1].date)
+            xs = [list(x) + [0.0] for x in xs] + [list(x) + [1.0] for x in pool.xs]
+            spreads = list(spreads) + list(pool.spreads)
+            served = [list(x) + [0.0] for x in served]
         columns: List[List[float]] = []
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
         for tau in taus:
-            labels = [1 if value > float(tau) else 0 for value in spreads]
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
                 continue
@@ -4214,10 +4288,21 @@ def _direct_pressure_predictor(
             PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
         )
         settings["design"] = list(design.names)
+        if history is not None:
+            pool = pooled["pool"]
+            settings["design"].append(HISTORY_MARKET_COLUMN)
+            settings["pooled_history"] = {
+                "pairs": len(pool.xs),
+                "first": pool.dates[0].isoformat() if pool.dates else None,
+                "last": pool.dates[-1].isoformat() if pool.dates else None,
+                "horizon": pool.horizon,
+            }
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:
             settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        if design.products:
+            settings["products"] = [list(pair) for pair in design.products]
         return ExceedanceCurves(
             tuple(curves),
             design.features,
@@ -4275,7 +4360,10 @@ def _fit_classifier(
 
 
 def pressure_logistic_exceedance(
-    features: Sequence[str], declaration: Any, minimum_history: int = 20
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    products: Sequence[Tuple[str, str]] = (),
 ) -> ExceedancePredictor:
     """A direct logistic model of the pressure label (#114).
 
@@ -4292,6 +4380,8 @@ def pressure_logistic_exceedance(
         declaration: the split declaration that defines the pressure-day types
             (`evaluation_splits.load_split_declaration`).
         minimum_history: the shortest training frame that may produce a fit.
+        products: product terms added to the design (`_PressureDesign`, #127);
+            empty for pressure model v1.
 
     Raises:
         ValueError: on a design the features cannot support, a short frame, or
@@ -4300,7 +4390,9 @@ def pressure_logistic_exceedance(
             read (`_served_tga_change`).
     """
 
-    return _direct_pressure_predictor("logistic", features, declaration, minimum_history)
+    return _direct_pressure_predictor(
+        "logistic", features, declaration, minimum_history, products
+    )
 
 
 def pressure_classifier_exceedance(
@@ -4677,7 +4769,7 @@ def _with_indicators(
     """Each design row with `1(lagged spread > cut)` appended per cut."""
 
     return [
-        None if x is None else [*x, *(1.0 if x[0] > cut else 0.0 for cut in cuts)]
+        None if x is None else [*x, *(1.0 if exceeds_bp(x[0], cut) else 0.0 for cut in cuts)]
         for x in xs
     ]
 
@@ -4742,7 +4834,9 @@ def _dynamic_predictor(
         trainable = [t for t in range(len(train_rows)) if base[t] is not None]
         if not trainable:
             raise ValueError("no training label has a complete as-of read")
-        labels_at = {tau: [1 if spreads[t] > tau else 0 for t in trainable] for tau in taus}
+        labels_at = {
+            tau: [1 if exceeds_bp(spreads[t], tau) else 0 for t in trainable] for tau in taus
+        }
 
         def chained(cuts: Sequence[float], alpha: float) -> Tuple[Any, Any]:
             chain = _index_chain(_with_indicators(base, cuts), anchors, alpha)

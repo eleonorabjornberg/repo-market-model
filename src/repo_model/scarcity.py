@@ -49,7 +49,7 @@ from types import MappingProxyType
 from typing import Dict, Iterator, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from . import contract
-from .data import DailyObservation
+from .data import DailyObservation, exceeds_bp
 from .metrics import stationary_bootstrap_interval
 
 __all__ = [
@@ -380,7 +380,7 @@ def tabulate(
             "above_iorb_days": sum(day.spread_bps > 0.0 for day in days),
             **{
                 f"gt_{threshold:g}bp": _frequency_cell(
-                    [int(day.spread_bps > threshold) for day in days], seed=seed
+                    [int(exceeds_bp(day.spread_bps, threshold)) for day in days], seed=seed
                 )
                 for threshold in thresholds
             },
@@ -406,7 +406,7 @@ def tabulate(
             "above_iorb_days": sum(day.spread_bps > 0.0 for day in days),
             **{
                 f"gt_{threshold:g}bp": _frequency_cell(
-                    [int(day.spread_bps > threshold) for day in days], seed=seed
+                    [int(exceeds_bp(day.spread_bps, threshold)) for day in days], seed=seed
                 )
                 for threshold in thresholds
             },
