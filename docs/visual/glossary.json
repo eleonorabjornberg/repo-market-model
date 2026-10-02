@@ -1,0 +1,133 @@
+{
+  "about": "Every term the newcomer layer of site/index.html (the \"Start here\" block) uses, with a one-line plain definition and a primary source. scripts/emit_visual.py turns each into a {{dfn_<key>}} placeholder: a <dfn> with a keyboard-reachable disclosure that shows the definition. tests/test_visual.py refuses a term used in the block before its <dfn>, and an entry without a definition or a source. `text` is the form the page prints; `match` lists the patterns (Python regular expressions) that count as a use of the term.",
+  "terms": [
+    {
+      "key": "repo",
+      "term": "Repo",
+      "text": "repo",
+      "match": ["\\b[Rr]epos?\\b"],
+      "definition": "A loan of cash against securities: one side sells a security and agrees to buy it back the next day, and the price difference is the interest.",
+      "src": "https://www.newyorkfed.org/markets/repo-agreement-ops-faq"
+    },
+    {
+      "key": "overnight",
+      "term": "Overnight",
+      "text": "overnight",
+      "match": ["\\b[Oo]vernight\\b"],
+      "definition": "Lent today and repaid on the next business day.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    },
+    {
+      "key": "sofr",
+      "term": "SOFR",
+      "text": "SOFR",
+      "match": ["\\bSOFR\\b"],
+      "definition": "The Secured Overnight Financing Rate: the New York Fed's measure of what overnight loans of cash against Treasury securities cost, from the volume-weighted median of the day's trades.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/sofr"
+    },
+    {
+      "key": "iorb",
+      "term": "IORB (and IOER)",
+      "text": "IORB",
+      "match": ["\\bIORB\\b", "\\bIOER\\b"],
+      "definition": "The interest rate the Fed pays banks on the reserves they hold with it. Before IORB the Fed paid IOER, its rate on excess reserves.",
+      "src": "https://www.federalreserve.gov/monetarypolicy/reserve-balances.htm"
+    },
+    {
+      "key": "bp",
+      "term": "Basis point (bp)",
+      "text": "basis points (bp)",
+      "match": ["\\b[Bb]asis points?\\b", "\\bbp\\b"],
+      "definition": "One hundredth of a percentage point: 0.05 percent is 5 bp. The project states its pressure thresholds in whole basis points.",
+      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md"
+    },
+    {
+      "key": "reserves",
+      "term": "Reserves",
+      "text": "reserves",
+      "match": ["\\b[Rr]eserves\\b"],
+      "definition": "Cash that banks hold in their accounts at the Fed, on which the Fed pays IORB.",
+      "src": "https://www.federalreserve.gov/monetarypolicy/reserve-balances.htm"
+    },
+    {
+      "key": "on_rrp",
+      "term": "ON RRP",
+      "text": "the Fed's overnight reverse repo (ON RRP)",
+      "match": ["\\bON RRP\\b", "\\b[Rr]everse repo\\b"],
+      "definition": "The Fed's overnight reverse repo facility: money market funds and other non-banks lend cash to the Fed overnight against its securities.",
+      "src": "https://www.newyorkfed.org/markets/desk-operations/reverse-repo"
+    },
+    {
+      "key": "tga",
+      "term": "TGA",
+      "text": "the Treasury General Account (TGA)",
+      "match": ["\\bTGA\\b", "\\bTreasury General Account\\b"],
+      "definition": "The U.S. Treasury's own account at the Fed. Payments into it, such as taxes, move cash out of bank accounts and drain reserves.",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"
+    },
+    {
+      "key": "dealer",
+      "term": "Dealer",
+      "text": "dealers",
+      "match": ["\\b[Dd]ealers?\\b"],
+      "definition": "A firm that buys and sells Treasury securities and borrows in repo to finance the ones it holds. Primary dealers trade directly with the New York Fed.",
+      "src": "https://www.newyorkfed.org/markets/primarydealers"
+    },
+    {
+      "key": "money_fund",
+      "term": "Money fund",
+      "text": "money market funds",
+      "match": ["\\b[Mm]oney(?:-market| market)? funds?\\b"],
+      "definition": "A fund that invests its investors' cash in short, safe loans; in tri-party repo, money market funds lend cash to dealers.",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"
+    },
+    {
+      "key": "triparty",
+      "term": "Tri-party repo",
+      "text": "tri-party repo",
+      "match": ["\\b[Tt]ri-party\\b"],
+      "definition": "Repo settled through a clearing bank that holds the collateral for both sides; the New York Fed's TGCR measures its rate.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    },
+    {
+      "key": "dvp",
+      "term": "DVP repo",
+      "text": "DVP repo",
+      "match": ["\\bDVP\\b", "\\b[Dd]elivery-versus-[Pp]ayment\\b"],
+      "definition": "Delivery-versus-payment repo cleared through FICC, in which each trade names the security it settles.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    },
+    {
+      "key": "gcf",
+      "term": "GCF Repo",
+      "text": "GCF Repo",
+      "match": ["\\bGCF\\b"],
+      "definition": "FICC's general collateral finance repo service; the New York Fed's BGCR adds its trades to tri-party repo.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    },
+    {
+      "key": "srf",
+      "term": "Standing repo (SRF)",
+      "text": "the Fed's standing repo operations (SRF)",
+      "match": ["\\bSRF\\b", "\\b[Ss]tanding [Rr]epo\\b"],
+      "definition": "The Fed lends cash overnight in repo to eligible dealers and banks, at a rate it sets; often called the Standing Repo Facility.",
+      "src": "https://www.newyorkfed.org/markets/repo-agreement-ops-faq"
+    },
+    {
+      "key": "effr",
+      "term": "EFFR",
+      "text": "EFFR",
+      "match": ["\\bEFFR\\b", "\\b[Ee]ffective federal funds rate\\b"],
+      "definition": "The effective federal funds rate: the New York Fed's measure of what banks pay to borrow reserves overnight without collateral.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/effr"
+    },
+    {
+      "key": "percentile",
+      "term": "Percentile",
+      "text": "percentile",
+      "match": ["\\b[Pp]ercentiles?\\b"],
+      "definition": "The rate below which a given share of the day's trading volume was struck: the 99th percentile is near the top of the day's rates.",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    }
+  ]
+}

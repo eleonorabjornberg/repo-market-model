@@ -10,17 +10,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
 :root{
-  --paper:#F5F7F6; --ink:#16212A; --ink-2:#4B5863; --ink-3:#7B8791; --rule:#D6DCDB; --panel:#E9EEEC;
+  --paper:#F5F7F6; --ink:#16212A; --ink-2:#4B5863; --ink-3:#5B6771; --rule:#D6DCDB; --panel:#E9EEEC;
   --sofr:#1D57A5; --pressure:#B3261E; --band:#E3E9ED; --on-hot:#FFFFFF;
   --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#7C8992; --rule:#28333B; --panel:#18232B;
+  --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#8794A0; --rule:#28333B; --panel:#18232B;
   --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419; } }
 :root[data-theme="dark"]{
-  --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#7C8992; --rule:#28333B; --panel:#18232B;
+  --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#8794A0; --rule:#28333B; --panel:#18232B;
   --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419; }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -50,7 +50,7 @@ figcaption .s{font-size:.86rem;color:var(--ink-2);margin-top:2px}
 .seg button{all:unset;cursor:pointer;font-size:.83rem;padding:6px 11px;color:var(--ink-2);border-right:1px solid var(--rule)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-.seg button:focus-visible,.years button:focus-visible,summary:focus-visible,.ev:focus-visible{outline:2px solid var(--sofr);outline-offset:2px}
+button:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible,.seg button:focus-visible,.years button:focus-visible,.ev:focus-visible{outline:2px solid var(--sofr);outline-offset:2px}
 label.tog{font-size:.83rem;color:var(--ink-2);display:inline-flex;gap:7px;align-items:center;cursor:pointer}
 label.tog input{accent-color:var(--sofr)}
 .chart{position:relative;width:100%}
@@ -112,6 +112,20 @@ ol.steps li b::before{content:counter(s) "  ";color:var(--sofr)}
 ul.guards{font-family:var(--sans);font-size:.9rem;color:var(--ink-2);padding-left:1.2em;max-width:74ch}
 ul.guards li{margin:0 0 8px} ul.guards b{color:var(--ink);font-weight:600}
 @media (max-width:720px){ .flow{grid-template-columns:1fr} }
+#start{margin:56px 0 0;border-top:3px solid var(--ink);padding-top:18px}
+#start .kicker{font-family:var(--sans);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0}
+#start > .prose{margin-top:6px}
+#start nav{margin-top:16px}
+#start section{margin-top:44px}
+#start h2 .n{font-size:.8em}
+dfn{font-style:normal}
+dfn .term{cursor:pointer;font-weight:600;border-bottom:1px dotted var(--ink-2)}
+dfn .term[aria-expanded="true"]{border-bottom-style:solid}
+dfn .term:focus-visible{outline:2px solid var(--sofr);outline-offset:2px;border-radius:2px}
+.def{display:block;margin:6px 0 8px;padding:8px 12px;border-left:3px solid var(--sofr);background:var(--panel);font-family:var(--sans);font-size:.88rem;line-height:1.5;color:var(--ink)}
+.def[hidden]{display:none}
+.def a{color:var(--ink-2)}
+.held-note{font-family:var(--sans);font-size:.82rem;color:var(--ink-2);margin:10px 0 0;max-width:74ch}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 </head>
@@ -135,6 +149,43 @@ ul.guards li{margin:0 0 8px} ul.guards b{color:var(--ink);font-weight:600}
     </ol>
   </nav>
 </header>
+
+<!-- start-here -->
+<div id="start">
+  <p class="kicker">Start here</p>
+  <div class="prose"><p>New to this market? These views are for you, in order. Each says what it shows in one sentence, draws it, explains it in plain words, and ends with a fold that leads into the technical chapter below.</p></div>
+  <nav aria-label="Start here">{{newcomer_nav}}</nav>
+
+<section id="n1" aria-labelledby="n1-title">
+  <h2 id="n1-title"><span class="n">N1</span>What is pressure?</h2>
+  <p class="prose lede">From {{n1_first}} to {{n1_last}}, {{dfn_sofr}} closed more than +{{pressure_bp}} {{dfn_bp}} above {{dfn_iorb}}, the Fed's rate on bank {{dfn_reserves}}, on {{n1_pressure_of}} business days counted here. {{n1_clusters}}</p>
+  <figure>
+    <figcaption><div class="t">SOFR minus the Fed's rate on bank reserves</div>
+      <div class="s">Basis points, each business day from {{first_day}} to {{last_day}}. Red dots: days more than +{{pressure_bp}} bp above</div></figcaption>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Scale" id="n1scale"><button type="button" data-full="0" aria-pressed="true">Clip at +{{clip_bp}} bp</button><button type="button" data-full="1" aria-pressed="false">Show full range</button></div>
+    </div>
+    <div class="chart" id="n1chart"><div class="tip"></div></div>
+    <p class="held-note">{{n1_held_note}}</p>
+  </figure>
+  <ol class="events" id="n1events">{{n1_episode_list}}</ol>
+  <div class="prose">
+    <p>SOFR is the typical rate on {{dfn_overnight}} {{dfn_repo}}: cash lent until the next business day against Treasury securities. Much of that cash comes from {{dfn_money_fund}} and goes to {{dfn_dealer}} (<a href="{{n1_src_triparty}}">source</a>).</p>
+    <p>The zero line is not &ldquo;normal&rdquo;. It is the rate the Fed pays banks on their reserves: below it, cash in the market costs less than that, and above it, more. SOFR closed at or below zero on {{n1_at_or_below}}. More than +{{pressure_bp}} bp above it, the project calls a day a pressure day.</p>
+    <p>This shows what happened, not what could have been predicted. {{c_sofr_publication}}</p>
+  </div>
+  <details>
+    <summary>Go deeper: how this line is drawn</summary>
+    <ul>
+      <li>The line is SOFR minus the Fed's rate on reserves, each in percent as published, so the difference is a whole number of basis points. Before {{n1_iorb_from}} the Fed paid IOER, its rate on excess reserves, and the line uses it.</li>
+      <li>The +{{pressure_bp}} bp line is the project's headline pressure threshold, and a day counts only when it is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>).</li>
+      <li>With the scale clipped at +{{clip_bp}} bp, {{n1_off_scale}} counted here rise above it and are drawn as triangles on the top edge; the largest was {{n1_spike}}.</li>
+    </ul>
+    <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">chapter 2</a>.</p>
+  </details>
+</section>
+</div>
+<!-- /start-here -->
 
 <section id="plumbing">
   <h2><span class="n">1</span>The plumbing</h2>
@@ -565,7 +616,113 @@ function renderClock() {
   svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", cy - 9).attr("text-anchor", "end").text("known in advance");
 }
 
-const renderAll = () => { renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
+// ---- N1 "What is pressure?": every panel day drawn; held-out days grey, never coloured or counted.
+const N1 = D.newcomer_n1;
+const n1Held = N1.held_out.map(t => [parse(t.start), parse(t.end)]);
+const isHeld = d => n1Held.some(([a, b]) => d >= a && d <= b);
+const n1Rows = rows.map(r => ({...r, held: isHeld(r.date)}));
+const n1Episodes = N1.episodes.map(e => ({...e, d: parse(e.date)}));
+let n1Full = false;
+
+function renderN1() {
+  const host = d3.select("#n1chart"); host.select("svg").remove();
+  const W = host.node().clientWidth, narrow = W < 560, H = narrow ? 300 : 380;
+  const m = {t: narrow ? 74 : 40, r: narrow ? 12 : 168, b: 28, l: 38};
+  const top = n1Full ? 5 * Math.ceil((d3.max(n1Rows, r => r.s) + 5) / 5) : N1.clip_bp;
+  const low = 5 * Math.floor(d3.min(n1Rows, r => r.s) / 5);
+  const x = d3.scaleUtc(d3.extent(n1Rows, r => r.date), [m.l, W - m.r]);
+  const y = d3.scaleLinear([low, top], [H - m.b, m.t]);
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("role", "img").attr("aria-label", `Line chart of SOFR minus the Fed's rate on bank reserves, in basis points, each business day, ${n1Full ? "full range" : `clipped at +${N1.clip_bp} bp`}. Days more than +${N1.pressure_bp} bp above are marked with red dots. Days from ${N1.held_out.length ? fmt(n1Held[0][0]) : "none"} are held out and drawn in grey.`);
+  const defs = svg.append("defs");
+  defs.append("clipPath").attr("id", "n1-cp").append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", H - m.t - m.b);
+  const hatch = defs.append("pattern").attr("id", "n1-hatch").attr("width", 6).attr("height", 6).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
+  hatch.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 6).style("stroke", "var(--ink-3)").style("stroke-width", 1.2).style("opacity", .45);
+  n1Held.forEach(([a, b]) => {
+    const xa = x(a), xb = Math.max(x(b), xa + 2);
+    svg.append("rect").attr("x", xa).attr("y", m.t).attr("width", xb - xa).attr("height", H - m.t - m.b).style("fill", "url(#n1-hatch)");
+    svg.append("text").attr("class", "lab").attr("x", xb).attr("y", m.t - 6).attr("text-anchor", "end").style("font-weight", 600).text("held out");
+  });
+  svg.append("g").selectAll("line").data(y.ticks(6)).join("line")
+    .attr("x1", m.l).attr("x2", W - m.r).attr("y1", d => y(d)).attr("y2", d => y(d)).style("stroke", "var(--rule)").style("stroke-width", d => d === 0 ? 0 : 1);
+  svg.append("g").attr("class", "axis").selectAll("text").data(y.ticks(6)).join("text")
+    .attr("x", m.l - 8).attr("y", d => y(d) + 4).attr("text-anchor", "end").text(d => sgn(d));
+  svg.append("text").attr("class", "lab").attr("x", m.l - 8).attr("y", m.t - 22).attr("text-anchor", "end").text("bp");
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickSizeOuter(0));
+  // Direct labels: in the right margin, the zero label below its line and the pressure label above
+  // its own; on a phone, as a key above the plot so neither sits on the data.
+  const zero = ["0: the Fed's rate on bank", "reserves (IORB; IOER", `before ${fmt(parse(N1.iorb_from))})`];
+  const press = [`+${N1.pressure_bp} bp: the pressure line`];
+  svg.append("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y(0)).attr("y2", y(0)).style("stroke", "var(--ink-2)");
+  svg.append("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y(N1.pressure_bp)).attr("y2", y(N1.pressure_bp)).style("stroke", "var(--pressure)").style("stroke-dasharray", "3 3");
+  if (narrow) {
+    [[[press[0]], "var(--pressure)", "3 3"], [["0: the Fed's rate on bank reserves", `(IORB; IOER before ${fmt(parse(N1.iorb_from))})`], "var(--ink-2)", null]]
+      .forEach(([lines, c, dash], i) => {
+        const ky = 10 + i * 18;
+        svg.append("line").attr("x1", 4).attr("x2", 22).attr("y1", ky).attr("y2", ky).style("stroke", c).style("stroke-dasharray", dash);
+        lines.forEach((t, k) => svg.append("text").attr("class", "lab").attr("x", 28).attr("y", ky + 4 + k * 13).style("fill", c).style("font-weight", 600).text(t));
+      });
+  } else {
+    const block = (lines, y0, c) => { const t = svg.append("text").attr("class", "lab").style("fill", c).style("font-weight", 600);
+      lines.forEach((l, i) => t.append("tspan").attr("x", W - m.r + 6).attr("y", y0 + i * 12).text(l)); };
+    block(zero, y(0) + 4, "var(--ink-2)");
+    block(press, Math.min(y(N1.pressure_bp) + 4, y(0) - 10), "var(--pressure)");
+  }
+  const g = svg.append("g").attr("clip-path", "url(#n1-cp)");
+  const line = held => d3.line().defined((r, i, a) => held ? r.held || (i + 1 < a.length && a[i + 1].held) : !r.held).x(r => x(r.date)).y(r => y(Math.min(r.s, top)));
+  g.append("path").datum(n1Rows).attr("d", line(false)).style("fill", "none").style("stroke", "var(--sofr)").style("stroke-width", 1.2).style("stroke-linejoin", "round");
+  g.append("path").datum(n1Rows).attr("d", line(true)).style("fill", "none").style("stroke", "var(--ink-3)").style("stroke-width", 1.2).style("stroke-linejoin", "round");
+  const hot = n1Rows.filter(r => !r.held && r.s > N1.pressure_bp);
+  svg.append("g").selectAll("path").data(hot).join("path")
+    .attr("transform", r => `translate(${x(r.date)},${r.s > top ? m.t : y(r.s)})`)
+    .attr("d", r => d3.symbol(r.s > top ? d3.symbolTriangle : d3.symbolCircle, r.s > top ? 40 : 14)())
+    .style("fill", "var(--pressure)");
+  const off = hot.filter(r => r.s > top);
+  if (off.length) {
+    const r = off.reduce((a, b) => (b.s > a.s ? b : a)), px = x(r.date), right = px < W - 200;
+    svg.append("text").attr("class", "lab").attr("x", px + (right ? 8 : -8)).attr("y", m.t + 4).attr("text-anchor", right ? "start" : "end")
+      .style("fill", "var(--pressure)").style("font-weight", 600).text(`${sgn(r.s)} bp on ${fmt(r.date)}, off the scale`);
+  }
+  n1Episodes.forEach((e, i) => {
+    const px = x(e.d), cy = H - m.b - 12;
+    svg.append("line").attr("x1", px).attr("x2", px).attr("y1", m.t).attr("y2", cy - 8).style("stroke", "var(--ink-3)").style("stroke-dasharray", "1 3");
+    svg.append("circle").attr("cx", px).attr("cy", cy).attr("r", 8).style("fill", "var(--paper)").style("stroke", "var(--ink-2)");
+    svg.append("text").attr("x", px).attr("y", cy + 3.5).attr("text-anchor", "middle").style("font-size", "10px").style("font-weight", 600).style("fill", "var(--ink)").text(i + 1);
+  });
+  const cross = svg.append("g").style("display", "none");
+  cross.append("line").attr("y1", m.t).attr("y2", H - m.b).style("stroke", "var(--ink-3)");
+  cross.append("circle").attr("r", 3.5).style("fill", "var(--paper)").style("stroke", "var(--ink)").style("stroke-width", 1.5);
+  svg.append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", H - m.t - m.b).style("fill", "transparent")
+    .on("pointermove", ev => {
+      const [px] = d3.pointer(ev), r = n1Rows[d3.bisector(d => d.date).center(n1Rows, x.invert(px))];
+      if (!r) return;
+      cross.style("display", null).attr("transform", `translate(${x(r.date)},0)`);
+      cross.select("circle").attr("cy", y(Math.min(r.s, top)));
+      const rate = r.date < iorbFrom ? "IOER" : "IORB";
+      tipAt(host, `<b>${fmt(r.date)}</b><br>SOFR ${r.sofr.toFixed(2)}%&nbsp;&nbsp;${rate} ${r.iorb.toFixed(2)}%<br>Spread <span class="${!r.held && r.s > N1.pressure_bp ? "hot" : ""}">${sgn(r.s)} bp</span>${r.held ? "<br>Held out: not counted" : ""}`, x(r.date), y(Math.min(r.s, top)));
+    })
+    .on("pointerleave", () => { cross.style("display", "none"); hideTip(host); });
+}
+d3.selectAll("#n1scale button").on("click", function () {
+  n1Full = this.dataset.full === "1";
+  d3.selectAll("#n1scale button").attr("aria-pressed", function () { return String((this.dataset.full === "1") === n1Full); });
+  renderN1();
+});
+
+// ---- Glossary terms: Enter, Space or a tap opens the definition in place; Esc closes it and returns focus.
+document.querySelectorAll("dfn .term").forEach(b => {
+  const def = document.getElementById(b.getAttribute("aria-controls"));
+  const set = open => { b.setAttribute("aria-expanded", String(open)); def.hidden = !open; };
+  const toggle = () => set(b.getAttribute("aria-expanded") !== "true");
+  b.addEventListener("click", toggle);
+  b.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); }
+    if (ev.key === "Escape") set(false);
+  });
+  def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
+});
+
+const renderAll = () => { renderN1(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
