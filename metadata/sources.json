@@ -831,5 +831,50 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_bill_rates"
+  },
+  "fed_iorb_announcements": {
+    "access": "public",
+    "coverage": [
+      "implementation-note announcement time",
+      "effective date",
+      "rate on reserve balances (IOER before 2021-07-29)"
+    ],
+    "field_frequencies": {
+      "iorb_announced_change_bps": "business_daily",
+      "iorb_days_to_announced_change": "business_daily"
+    },
+    "fields": [
+      "iorb_announced_change_bps",
+      "iorb_days_to_announced_change"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Not a panel column. src/repo_model/announced_iorb.py computes both fields per scored row from tests/fixtures/snapshots/fed-iorb-announcements/iorb_changes.csv, reading only the notes announced at or before that row's decision instant, and adds them to a panel in memory; the published panel does not carry them. The table holds every IOER/IORB implementation note that changed the rate from 2018-04 to its retrieval, plus the 2018-03-21 anchor and the 2021-07-28 note that replaced IOER by IORB at an unchanged rate. Announcement time is the FOMC statement's release time. Added by directive #38.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "23:59",
+      "basis": "record_date",
+      "days": 0,
+      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape as treasury_auctions states it, at the end-of-day convention on the value's own date, the conservative direction. No ingest adapter reads this source; repo_model.announced_iorb computes its fields.",
+      "timezone": "America/New_York",
+      "unit": "calendar_days"
+    },
+    "reviewed_note": "No structural zeros: a 0.0 change is a computed value, not a missing one.",
+    "scheduled_availability": {
+      "basis": "announced_before_ref_date",
+      "unit": "business_days",
+      "days": 1,
+      "available_time": "16:00",
+      "timezone": "America/New_York",
+      "fields": [
+        "iorb_announced_change_bps",
+        "iorb_days_to_announced_change"
+      ],
+      "evidence": "Keyed on the announcement time. The value for scored date T is computed by repo_model.announced_iorb.announced_iorb_features from the implementation notes whose announcement instant (the FOMC statement's 'For release at' time, America/New_York) is at or before 16:00 on the panel day before T, so it is public at that instant by construction. Every row of tests/fixtures/snapshots/fed-iorb-announcements/iorb_changes.csv is read from the fetched federalreserve.gov pages by scripts/build_iorb_table.py (--check rebuilds it), and check_announcements refuses a row whose effective date is not after its announcement date. tests/test_announced_iorb.py perturbs every note announced after a decision instant and requires the features at that instant unchanged, and pins 2020-03-16: the Sunday 2020-03-15 17:00 EDT cut is not read by the 2020-03-13 decision.",
+      "note": "16:00 is the published records' decision time. A run at an earlier decision time is refused by the availability guard rather than read late; the features must then be recomputed at that time."
+    },
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
   }
 }
