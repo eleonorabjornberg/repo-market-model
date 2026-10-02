@@ -72,7 +72,7 @@ between folds.
 I defined the research question, designed the data model and its validation rules, set the
 point-in-time and model-risk controls, and specified the evaluation protocol and the staged
 plan. I make the methodological decisions this repository records: what may count as a zero,
-what a purge must guarantee, which calibration is adopted, and whether a phase has met its exit
+what a purge must guarantee, which calibration is adopted, and whether a phase has reached its exit
 criterion. AI coding agents implement much of the code, one session per pull request, and nothing
 lands on `main` without CI and my review. Nicholas Beroud advises on the
 funding market itself — which public series carry its mechanics and what they mean — and is not
@@ -80,28 +80,26 @@ a co-owner of the code.
 
 ## Results and limitations
 
-**The machine-learning model beats the benchmark on average.** Gradient-boosted quantile
-regression scores a better CRPS than as-of persistence across thousands of scored days, with the
-paired difference clear of zero, uncalibrated and cross-conformal alike. The win is not uniform:
-every variant loses to persistence in 2021-23, and the uncalibrated model loses on quarter ends.
+The results are not restated on this page: a copy here is a copy that the next re-score leaves
+behind. They are generated from the run records into `README.md`, and the verdict lives in
+`PLAN.md`.
 
-**Calibration is a trade, not a free repair.** The uncalibrated model's intervals are far too
-narrow. Cross-conformal calibration, which keeps the whole fitted model, widens them past the
-stated coverage and keeps a smaller but distinguishable win over persistence.
+- **[Key findings](../README.md#key-findings).** Gradient-boosted quantile regression,
+  uncalibrated and cross-conformal, against as-of persistence on CRPS and on interval coverage,
+  each difference paired with a stationary-bootstrap interval and split by regime and by type of
+  day.
+- **[The tail clause, measured](../README.md#the-tail-clause-measured).** The pressure
+  probabilities at the pre-declared stress thresholds, against calendar-type climatology and
+  the persistence-logistic benchmark. Where a forecast assigns probability zero to an event
+  that occurs, the record reports no log score, because it refuses to replace an infinite loss
+  with a finite one somebody chose.
+- **The verdict** on Phase 2's exit criterion, which asks for out-of-sample performance against
+  persistence and calibration in the tails, is in [`PLAN.md`](../PLAN.md). Which candidate may
+  supply the headline pressure probability is decided under
+  [`decisions/pressure-probability.md`](decisions/pressure-probability.md).
 
-**The tail is where it fails, and that is the finding.** Against a climatology at pre-declared
-stress thresholds, the model has skill at the two smaller thresholds and is beaten at the two
-larger ones, each interval clear of zero. Against the harder benchmark, a persistence-logistic
-model on the latest public spread, it is not distinguishable at either threshold the two are
-compared on, so it does not earn the headline pressure probability. At several thresholds the record reports no log score
-at all, because the forecast assigned probability zero to an event that occurred and the record
-refuses to replace an infinite loss with a finite one somebody chose.
-
-**The verdict.** The exit criterion — beat persistence out of sample and stay calibrated in the
-tails — is met on the first half and fails on the second, on the as-of records
-([`../PLAN.md`](../PLAN.md)). The earlier diagnosis of why the tail flattens, read from the
-fitted law's knots, was made on the archived records and has not been re-measured under the
-as-of rule.
+The earlier diagnosis of why the tail flattens, read from the fitted law's knots, was made on
+the archived records and has not been re-measured under the as-of rule.
 
 Nothing here is live forward performance: every result is a backtest on a frozen panel, and no
 part of this is a basis for a decision about money.
