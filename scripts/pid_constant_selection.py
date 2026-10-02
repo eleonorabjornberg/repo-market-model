@@ -53,13 +53,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from calibration_rediagnosis import _recording_fitter, _summaries  # noqa: E402
 from repo_model import recalibration  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
     _maximum_horizon_overlap,
+    _seed_from,
     panel_sha256,
     rolling_persistence_backtest,
 )
@@ -67,6 +66,7 @@ from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import (  # noqa: E402
     DAY_TYPES,
     load_split_declaration,
+    split_summary,
 )
 from repo_model.ingest import load_source_registry  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
@@ -78,6 +78,50 @@ NOMINAL = 0.90
 #: window starts on the next day (#125, item 3).
 SPLIT_SELECTION_LAST = date(2022, 12, 31)
 SPLIT_EVALUATION_FIRST = date(2023, 1, 1)
+
+
+class _Recording:
+    """A fitted model that records its `cross_conformal_parts` at each `predict`.
+
+    As in `calibration_rediagnosis.py`: the backtest calls `predict` once per
+    scored day, so the recorded parts align with its folds.
+    """
+
+    def __init__(self, model, sink):
+        self._model = model
+        self._sink = sink
+
+    def __getattr__(self, name):
+        return getattr(self._model, name)
+
+    def with_history(self, history):
+        return _Recording(self._model.with_history(history), self._sink)
+
+    def predict(self, feature_row):
+        self._sink.append(self._model.cross_conformal_parts(feature_row))
+        return self._model.predict(feature_row)
+
+
+def _recording_fitter(fitter, sink):
+    def fit(train_frame, minimum_history=20, information=None):
+        return _Recording(
+            fitter(train_frame, minimum_history=minimum_history, information=information),
+            sink,
+        )
+
+    return fit
+
+
+def _summaries(labels, series, order, *, block_length, seed_parts, replications):
+    return split_summary(
+        labels,
+        series,
+        order,
+        block_length=block_length,
+        seed=_seed_from(seed_parts),
+        replications=replications,
+        level=0.90,
+    )
 
 
 def _constants(point):
