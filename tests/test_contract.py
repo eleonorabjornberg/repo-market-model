@@ -3170,7 +3170,11 @@ class OnRrpDepletionDeclarationTests(unittest.TestCase):
                 self.assertNotIn(feature, DERIVED_FEATURES)
                 self.assertNotIn(feature, CALENDAR_FEATURES)
                 for constituent in contract.COMPOSED_FEATURES[feature]:
-                    self.assertIn(constituent, FEATURE_FIELDS)
+                    self.assertTrue(
+                        constituent in FEATURE_FIELDS
+                        or constituent in CALENDAR_FEATURES,
+                        constituent,
+                    )
 
     def test_neither_feature_is_in_the_published_declaration(self):
         """#88's acceptance: the features do not join it in this PR."""
@@ -3180,3 +3184,46 @@ class OnRrpDepletionDeclarationTests(unittest.TestCase):
             for feature in contract.COMPOSED_FEATURES:
                 with self.subTest(record=record.name, feature=feature):
                     self.assertNotIn(f'"{feature}"', text)
+
+
+class SettlementDayDeclarationTests(unittest.TestCase):
+    """The onset input of #97, as declared.
+
+    The flag is fixed in advance from the panel's existing columns (#96, points
+    4 and 5) and never tuned: its one number, the month-end window, is a
+    literal that cites #96.
+    """
+
+    def test_the_month_end_window_is_two_days_and_a_literal(self):
+        self.assertEqual(contract.SETTLEMENT_DAY_MONTH_END_DAYS, 2)
+        source = inspect.getsource(contract)
+        self.assertRegex(source, r"\nSETTLEMENT_DAY_MONTH_END_DAYS = 2\n")
+        lines = source.splitlines()
+        at = lines.index("SETTLEMENT_DAY_MONTH_END_DAYS = 2")
+        comment = "\n".join(lines[max(0, at - 15) : at])
+        self.assertIn("#96", comment)
+
+    def test_the_flag_reads_only_existing_panel_columns(self):
+        inputs = contract.COMPOSED_FEATURES["settlement_day"]
+        self.assertEqual(
+            inputs,
+            ("quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons"),
+        )
+        self.assertEqual(
+            contract.COMPOSED_FEATURES["settlement_day_when_depleted"],
+            inputs + ("on_rrp",),
+        )
+
+    def test_the_features_resolve_to_their_inputs_fields(self):
+        self.assertEqual(
+            field_sources_for_features(("settlement_day",)),
+            (("treasury_auctions", "treasury_settlement_coupon"),),
+        )
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("settlement_day_when_depleted",)),
+                (
+                    ("nyfed_on_rrp", "reverse_repo_total_accepted"),
+                    ("treasury_auctions", "treasury_settlement_coupon"),
+                ),
+            )

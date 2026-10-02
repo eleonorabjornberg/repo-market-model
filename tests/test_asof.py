@@ -778,3 +778,182 @@ class OnRrpDepletionTests(unittest.TestCase):
             self.composed(rows),
             {"on_rrp_depleted": None, "reserves_when_depleted": None},
         )
+
+
+class SettlementDayTests(unittest.TestCase):
+    """The onset input of #97: the settlement calendar, and it times a thin buffer.
+
+    `settlement_day` is `quarter_end OR tax_date OR days_to_month_end <= 2 OR
+    treasury_settlement_coupons > 0`, each read at the scored day: three
+    calendar columns and one scheduled field, all known in advance
+    (`docs/decisions/calendar-columns.md`). `settlement_day_when_depleted` is
+    `settlement_day * on_rrp_depleted`, the depletion indicator of #88 read on
+    `on_rrp`'s own as-of declaration.
+
+    The scored day is Thursday 22 January, decided at Wednesday 16:00. It is
+    made a coupon settlement day. `on_rrp` is read at Tuesday the 20th:
+    Wednesday's result is public only on Thursday at 16:00.
+
+    Written first: before the features were declared, every test here raised
+    `UndeclaredFeatureError` ('settlement_day' is not in
+    contract.FEATURE_FIELDS, ...).
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy of
+    `src/` and `tests/`: in `asof.InformationRule.observation`, the line
+    `return DailyObservation(anchor.date, self._composed(values))` mutated to
+    `return DailyObservation(anchor.date, self._composed({**values, "on_rrp":
+    rows[info.scored_index - 1].values.get("on_rrp")}))`, the buffer read off
+    the decision day's own row. `test_a_future_on_rrp_crossing_the_break_
+    leaves_the_interaction_unchanged` then fails with `AssertionError`
+    (`{'settlement_day': 1.0, 'settlement_day_when_depleted': 1.0} !=
+    {'settlement_day': 1.0, 'settlement_day_when_depleted': 0.0}`): Wednesday's
+    result, below the break and not public until Thursday, turned the
+    interaction on. Two other tests here fail with it.
+    """
+
+    FEATURES = ("spread_bps", "settlement_day", "settlement_day_when_depleted")
+    COMPOSED = ("settlement_day", "settlement_day_when_depleted")
+    CALENDAR = {
+        "quarter_end": 0.0,
+        "tax_date": 0.0,
+        "days_to_month_end": 10.0,
+        "treasury_settlement_coupons": 0.0,
+    }
+
+    def setUp(self):
+        switch = on_rrp_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
+        self.information = rule(self.FEATURES)
+        self.scored = index_of(date(2026, 1, 22))  # decision Wed 21st 16:00
+        self.info = self.information.information_set(DATES, self.scored)
+
+    def rows(self, on_rrp=None, scored=None):
+        """`ROWS` on an ordinary calendar with `on_rrp` at 500bn.
+
+        `on_rrp` maps dates to buffer values; `scored` overrides the scored
+        day's calendar, which by default is a coupon settlement day.
+        """
+
+        on_rrp = on_rrp or {}
+        day = {**self.CALENDAR, "treasury_settlement_coupons": 25.0, **(scored or {})}
+        out = []
+        for row in ROWS:
+            calendar = day if row.date == date(2026, 1, 22) else self.CALENDAR
+            out.append(
+                DailyObservation(
+                    row.date,
+                    {**row.values, **calendar, "on_rrp": on_rrp.get(row.date, 500.0)},
+                )
+            )
+        return out
+
+    def composed(self, rows):
+        observed = self.information.observation(rows, self.info)
+        return {name: observed.values[name] for name in self.COMPOSED}
+
+    def test_a_future_on_rrp_crossing_the_break_leaves_the_interaction_unchanged(self):
+        """The leakage test (#97, step 3)."""
+
+        wednesday = index_of(date(2026, 1, 21))
+        self.assertGreater(
+            self.information.availability(
+                DATES, (("nyfed_on_rrp", "reverse_repo_total_accepted"),), wednesday
+            ),
+            self.info.decision_instant,
+        )
+        above = self.composed(self.rows())
+        self.assertEqual(
+            above, {"settlement_day": 1.0, "settlement_day_when_depleted": 0.0}
+        )
+        future = {when: 50.0 for when in DATES if when >= date(2026, 1, 21)}
+        self.assertEqual(self.composed(self.rows(on_rrp=future)), above)
+
+    def test_a_depletion_public_by_the_decision_turns_the_interaction_on(self):
+        composed = self.composed(self.rows(on_rrp={date(2026, 1, 20): 50.0}))
+        self.assertEqual(
+            composed, {"settlement_day": 1.0, "settlement_day_when_depleted": 1.0}
+        )
+
+    def test_a_depleted_buffer_off_the_calendar_leaves_both_off(self):
+        composed = self.composed(
+            self.rows(
+                on_rrp={date(2026, 1, 20): 50.0},
+                scored={"treasury_settlement_coupons": 0.0},
+            )
+        )
+        self.assertEqual(
+            composed, {"settlement_day": 0.0, "settlement_day_when_depleted": 0.0}
+        )
+
+    def test_each_part_of_the_rule_turns_the_flag_on_alone(self):
+        ordinary = {"treasury_settlement_coupons": 0.0}
+        cases = [
+            ({}, 0.0),
+            ({"quarter_end": 1.0}, 1.0),
+            ({"tax_date": 1.0}, 1.0),
+            ({"days_to_month_end": 0.0}, 1.0),
+            ({"days_to_month_end": 2.0}, 1.0),
+            ({"days_to_month_end": 3.0}, 0.0),
+            ({"treasury_settlement_coupons": 0.001}, 1.0),
+        ]
+        for override, expected in cases:
+            with self.subTest(override=override):
+                composed = self.composed(self.rows(scored={**ordinary, **override}))
+                self.assertEqual(composed["settlement_day"], expected)
+
+    def test_the_calendar_is_read_at_the_scored_day_and_guarded(self):
+        groups = {group.feature: group for group in self.information.groups}
+        self.assertEqual(
+            list(groups),
+            [
+                "spread_bps",
+                "quarter_end",
+                "tax_date",
+                "days_to_month_end",
+                "treasury_settlement_coupons",
+                "on_rrp",
+            ],
+        )
+        self.assertEqual(groups["treasury_settlement_coupons"].kind, "scheduled")
+        for feature in ("quarter_end", "tax_date", "days_to_month_end"):
+            self.assertEqual(groups[feature].kind, "calendar")
+        for read in self.info.reads:
+            if read.feature in ("quarter_end", "tax_date", "days_to_month_end",
+                                "treasury_settlement_coupons"):
+                self.assertEqual(read.row, self.scored, read.feature)
+        for scored in range(3, len(DATES)):
+            self.information.check(DATES, self.information.information_set(DATES, scored))
+
+    def test_the_frame_composes_each_row_from_its_own_calendar(self):
+        rows = self.rows(on_rrp={date(2026, 1, 16): 50.0, date(2026, 1, 20): 50.0})
+        rows[index_of(date(2026, 1, 16))] = DailyObservation(
+            date(2026, 1, 16),
+            {**rows[index_of(date(2026, 1, 16))].values, "days_to_month_end": 1.0},
+        )
+        frame = self.information.frame(rows, self.info)
+        self.assertEqual(frame[-1].date, date(2026, 1, 20))
+        for row in frame:
+            settlement = 1.0 if row.date == date(2026, 1, 16) else 0.0
+            self.assertEqual(row.values["settlement_day"], settlement, row.date)
+            self.assertEqual(
+                row.values["settlement_day_when_depleted"], settlement, row.date
+            )
+
+    def test_a_hole_in_any_input_is_a_hole(self):
+        for column in ("quarter_end", "tax_date", "days_to_month_end",
+                       "treasury_settlement_coupons"):
+            with self.subTest(column=column):
+                self.assertEqual(
+                    self.composed(self.rows(scored={column: None})),
+                    {"settlement_day": None, "settlement_day_when_depleted": None},
+                )
+        rows = self.rows()
+        tuesday = index_of(date(2026, 1, 20))
+        rows[tuesday] = DailyObservation(
+            rows[tuesday].date, {**rows[tuesday].values, "on_rrp": None}
+        )
+        self.assertEqual(
+            self.composed(rows),
+            {"settlement_day": 1.0, "settlement_day_when_depleted": None},
+        )

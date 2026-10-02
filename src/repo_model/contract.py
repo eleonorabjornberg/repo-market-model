@@ -56,6 +56,7 @@ __all__ = [
     "FEATURE_SOURCES",
     "COMPOSED_FEATURES",
     "ON_RRP_DEPLETION_BREAK_BN",
+    "SETTLEMENT_DAY_MONTH_END_DAYS",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
@@ -366,6 +367,25 @@ DERIVED_FEATURES = MappingProxyType(
 #: $50bn and $200bn are reported beside it and select nothing.
 ON_RRP_DEPLETION_BREAK_BN = 100.0
 
+#: The settlement-calendar flag of #97, fixed in advance from issue #96 (points
+#: 4 and 5: about half of the days with SOFR - IORB above +5 bp fall on
+#: settlement dates, and the 2025 episode began on them). `settlement_day` is
+#: `quarter_end OR tax_date OR days_to_month_end <= 2 OR
+#: treasury_settlement_coupons > 0`, from the panel's existing columns only,
+#: each read at the scored day: three calendar columns and a scheduled field,
+#: all known in advance (`docs/decisions/calendar-columns.md`). This is the
+#: month-end window, in calendar days to the last day of the month. It is
+#: declared once here and never tuned to the data.
+SETTLEMENT_DAY_MONTH_END_DAYS = 2
+
+#: The panel columns `settlement_day` reads, in the order the rule names them.
+SETTLEMENT_DAY_INPUTS = (
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end",
+    "treasury_settlement_coupons",
+)
+
 # Features composed at the decision instant from inputs each read per field
 # (#88). Unlike `DERIVED_FEATURES`, which are read at one row where every
 # constituent is observable, each input here is read on its own declaration
@@ -379,6 +399,12 @@ COMPOSED_FEATURES = MappingProxyType(
         "on_rrp_depleted": ("on_rrp",),
         # reserve_balances * on_rrp_depleted.
         "reserves_when_depleted": ("reserve_balances", "on_rrp"),
+        # The settlement calendar (#97): quarter_end OR tax_date OR
+        # days_to_month_end <= SETTLEMENT_DAY_MONTH_END_DAYS OR
+        # treasury_settlement_coupons > 0, each read at the scored day.
+        "settlement_day": SETTLEMENT_DAY_INPUTS,
+        # settlement_day * on_rrp_depleted (#97).
+        "settlement_day_when_depleted": SETTLEMENT_DAY_INPUTS + ("on_rrp",),
     }
 )
 
