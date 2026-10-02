@@ -9505,6 +9505,44 @@ class DirectPressureModelTests(unittest.TestCase):
             _PRESSURE_REGISTRY, features, decision_time=time(16, 0), horizon=horizon
         )
 
+    def test_a_product_term_is_the_product_of_its_two_as_of_reads(self):
+        """#127's product terms: a scheduled input times an observed one, as read.
+
+        The settlement is the scored day's (scheduled), the TGA change ends at
+        the TGA's as-of read; the product is formed from exactly those two
+        design values, and every other term is unchanged.
+        """
+
+        features = _PRESSURE_FULL + ("treasury_settlement",)
+        products = (("treasury_settlement", "tga_change"),)
+        design = ml._PressureDesign(features, _pressure_splits(), products=products)
+        base = ml._PressureDesign(features, _pressure_splits())
+        self.assertEqual(design.names, base.names + ("treasury_settlement_x_tga_change",))
+        rule = self.rule(features=features)
+        rows = [
+            DailyObservation(
+                row.date, {**row.values, "treasury_settlement": 10.0 + 5.0 * (index % 4)}
+            )
+            for index, row in enumerate(self.rows[:120])
+        ]
+        xs, ys = ml._pressure_pairs(design, rule, rows, {})
+        plain, plain_ys = ml._pressure_pairs(base, rule, rows, {})
+        self.assertEqual(ys, plain_ys)
+        self.assertTrue(xs)
+        settlement = base.names.index("treasury_settlement")
+        change = base.names.index("tga_change")
+        for got, want in zip(xs, plain):
+            self.assertEqual(got[:-1], want)
+            self.assertAlmostEqual(got[-1], want[settlement] * want[change], places=9)
+
+    def test_a_product_names_declared_terms(self):
+        for products in (
+            (("treasury_settlement", "tga_change"),),  # settlement not declared
+            (("spread_bps", "not_a_column"),),
+        ):
+            with self.subTest(products=products), self.assertRaisesRegex(ValueError, "product"):
+                ml._PressureDesign(_PRESSURE_FULL, _pressure_splits(), products=products)
+
     def test_the_design_names_every_term_it_builds(self):
         design = ml._PressureDesign(
             _PRESSURE_FULL + ("treasury_settlement",), _pressure_splits()
