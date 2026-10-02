@@ -26,7 +26,10 @@ its result.
 **The groups** (`GROUPS`): each input on its own; the volume pair together
 (`dvp_volume_pair`); and the three DVP inputs together (`dvp_all`). The OFR
 rate and `dvp_all` are scored on the OFR window, 2020-09-09 to 2025-12-31 (the
-days the rate was public); every other group on 2018-06-29 to 2025-12-31. No
+days the rate was public): their panel, and their control's, starts on
+2020-09-09, because a model cannot be fitted on a training window where a
+regressor is never observed, so the first scored day is the first after the
+minimum history. Every other group is scored on 2018-06-29 to 2025-12-31. No
 day on or after 2026-01-01 is scored (`docs/decisions/lockbox.md`).
 
 **Sensitivities** (`SENSITIVITIES`) are information only. They sit outside the
@@ -45,8 +48,10 @@ the experiment win by luck"), fixed before any scoring:
    (horizon 1). `family_size()` states its size.
 2. *Family-wise control.* Each comparison gets a one-sided paired
    stationary-bootstrap p-value for improvement, and one for deterioration
-   (`ml.paired_bootstrap_p_values`, `P_VALUE_REPLICATIONS` replications, each
-   comparison's own block length and seed). Improvement p-values are Holm
+   (`ml.paired_bootstrap_p_values`, `P_VALUE_REPLICATIONS` replications,
+   block length h + 1 as the tables' intervals use; the comparisons scored
+   on one grid of days share one seed, `p_value_seed`, and so their
+   resamples). Improvement p-values are Holm
    corrected across the whole family at `FAMILY_LEVEL`; so, separately, are
    the deterioration p-values. The 90% intervals in the tables decide nothing.
 3. *A win*, for one group at one threshold, needs every one of:
@@ -80,6 +85,7 @@ from datetime import date
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .data import DailyObservation
+from .ingest import OFR_STFM_REAL_TIME_START, OFR_STFM_SOURCE_ID
 
 __all__ = [
     "CANDIDATES",
@@ -103,15 +109,16 @@ __all__ = [
     "comparison_key",
     "family_size",
     "holm",
+    "p_value_seed",
 ]
 
 #: The OFR's Short-term Funding Monitor repo collection (#187).
-OFR_SOURCE_ID = "ofr_stfm_repo"
+OFR_SOURCE_ID = OFR_STFM_SOURCE_ID
 #: The overnight/open DVP average rate, preliminary: the input's series.
 OFR_DVP_RATE_FIELD = "REPO-DVP_AR_OO-P"
 #: The OFR began publishing its repo data in real time on 2020-09-09; every
 #: value before it was filled in later, and was not public on its own day.
-OFR_REAL_TIME_START = date(2020, 9, 9)
+OFR_REAL_TIME_START = OFR_STFM_REAL_TIME_START
 
 #: The change window of `dvp_volume_share_chg20`, in panel rows.
 VOLUME_CHANGE_ROWS = 20
@@ -298,6 +305,15 @@ def build_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
         values["ofr_dvp_minus_bgcr_bp"] = None if row.date < OFR_REAL_TIME_START else spread
         out.append(DailyObservation(row.date, values))
     return out
+
+
+def p_value_seed(*parts: object) -> int:
+    """The p-value seed of one grid of scored days: a 31-bit digest of its name."""
+
+    import hashlib
+
+    material = "\x00".join(["#187 p-values", *(str(part) for part in parts)])
+    return int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big") & 0x7FFFFFFF
 
 
 def family_size() -> int:

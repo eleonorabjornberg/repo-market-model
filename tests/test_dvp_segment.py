@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
+from types import MappingProxyType
+from unittest import mock
 
-from repo_model import dvp_segment
+from repo_model import contract, dvp_segment
+from repo_model.asof import InformationRule
 from repo_model.data import DailyObservation
+from repo_model.splits import LookAheadError
 from repo_model.dvp_segment import (
     BENCHMARKS,
     GROUPS,
@@ -18,6 +24,29 @@ from repo_model.dvp_segment import (
     comparison_key,
     holm,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
+
+
+def switched_on():
+    """`dvp_segment.COLUMN_FIELDS` in the feature map, for one test only (off when published)."""
+
+    fields = dict(dvp_segment.COLUMN_FIELDS)
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                **{
+                    column: tuple(sorted({source for source, _f in pairs}))
+                    for column, pairs in fields.items()
+                },
+            }
+        ),
+    )
 
 
 def weekdays(start, count):
@@ -73,6 +102,12 @@ class BuildColumnsTests(unittest.TestCase):
         The OFR filled in its values before 2020-09-09 later; at any decision
         instant the as-of rule would read such a row at, the value was not
         public. Only the backfill sensitivity's column keeps it.
+
+        Recorded mutation (CLAUDE.md), 2 October 2026, in a
+        disposable copy: `src/repo_model/dvp_segment.py`, `values["ofr_dvp_minus_bgcr_bp"]
+        = None if row.date < OFR_REAL_TIME_START else spread` mutated to
+        `values["ofr_dvp_minus_bgcr_bp"] = spread`. This test then fails with
+        `AssertionError` (`5.0 is not None`).
         """
 
         dates = [date(2020, 9, 4), date(2020, 9, 8), date(2020, 9, 9)]
@@ -81,6 +116,85 @@ class BuildColumnsTests(unittest.TestCase):
         self.assertIsNone(built[1].values["ofr_dvp_minus_bgcr_bp"])
         self.assertEqual(built[2].values["ofr_dvp_minus_bgcr_bp"], 5.0)
         self.assertEqual(built[0].values["ofr_dvp_minus_bgcr_bp_backfill"], 5.0)
+
+
+class OfrAvailabilityTests(unittest.TestCase):
+    """`ofr_dvp_minus_bgcr_bp` is read two business days after its date (#187).
+
+    The OFR's API states no publication time and keeps no vintages: its one
+    timestamp, the series' `last_update`, is a last-write time (2026-10-02
+    13:49:37 when fetched, with 2026-10-01 the latest observation). That is
+    one observation of a next-business-day release, not a history of them, so
+    `ofr_stfm_repo.release_lag` is declared conservatively, as #187 directs:
+    a day's rate is available at 16:00 ET two business days after it. At the
+    16:00 decision on Wednesday 21 January 2026, Monday's rate is the latest
+    public one; Tuesday's is not, though Tuesday's BGCR is.
+
+    Written red first: before `ofr_stfm_repo` was in `metadata/sources.json`,
+    `InformationRule` raised `RegistryContractError` ("the registry declares
+    no source 'ofr_stfm_repo'"), and two of these tests errored.
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy:
+    `metadata/sources.json`, `ofr_stfm_repo.release_lag`, `"days": 2` mutated
+    to `"days": 1` (a rate public at 16:00 on the next business day).
+    `test_a_rate_two_days_old_is_the_latest_read` then fails with
+    `AssertionError` (`datetime.date(2026, 1, 20) != datetime.date(2026, 1,
+    19)`): the forecast reads Tuesday's rate at Wednesday's decision.
+    """
+
+    FEATURES = ("spread_bps", "ofr_dvp_minus_bgcr_bp")
+
+    def setUp(self):
+        switch = switched_on()
+        switch.start()
+        self.addCleanup(switch.stop)
+        self.dates = weekdays(date(2026, 1, 5), 20)
+
+    def rule(self, horizon=1):
+        return InformationRule(REGISTRY, self.FEATURES, decision_time=time(16, 0), horizon=horizon)
+
+    def test_a_rate_two_days_old_is_the_latest_read(self):
+        """The leakage test: Tuesday's rate is not read at Wednesday's decision."""
+
+        rule = self.rule()
+        thursday = self.dates.index(date(2026, 1, 22))  # decision Wed 21st 16:00
+        info = rule.information_set(self.dates, thursday)
+        (read,) = [r for r in info.reads if r.feature == "ofr_dvp_minus_bgcr_bp"]
+        self.assertEqual(self.dates[read.row], date(2026, 1, 19))
+        self.assertEqual(read.available_at, datetime(2026, 1, 21, 16, 0))
+        tuesday = self.dates.index(date(2026, 1, 20))
+        self.assertGreater(
+            rule.availability(self.dates, dvp_segment.COLUMN_FIELDS["ofr_dvp_minus_bgcr_bp"], tuesday),
+            info.decision_instant,
+        )
+        forced = info._replace(
+            reads=tuple(
+                r._replace(row=tuesday) if r.feature == "ofr_dvp_minus_bgcr_bp" else r
+                for r in info.reads
+            )
+        )
+        with self.assertRaises(LookAheadError):
+            rule.check(self.dates, forced)
+
+    def test_every_read_passes_both_guards_at_every_horizon(self):
+        columns = tuple(dvp_segment.COLUMN_FIELDS)
+        for horizon in (1, 3, 5):
+            rule = InformationRule(
+                REGISTRY, ("spread_bps",) + columns, decision_time=time(16, 0), horizon=horizon
+            )
+            for scored in range(8, len(self.dates)):
+                rule.check(self.dates, rule.information_set(self.dates, scored))
+
+    def test_the_volume_share_is_read_with_sofr_and_bgcr(self):
+        """Both volumes print with their rates the next business day."""
+
+        rule = InformationRule(
+            REGISTRY, ("spread_bps", "dvp_volume_share"), decision_time=time(16, 0)
+        )
+        thursday = self.dates.index(date(2026, 1, 22))
+        info = rule.information_set(self.dates, thursday)
+        (read,) = [r for r in info.reads if r.feature == "dvp_volume_share"]
+        self.assertEqual(self.dates[read.row], date(2026, 1, 20))
 
 
 class HolmTests(unittest.TestCase):

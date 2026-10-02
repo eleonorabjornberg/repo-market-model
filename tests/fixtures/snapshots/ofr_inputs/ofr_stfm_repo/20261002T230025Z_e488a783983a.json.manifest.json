@@ -1,0 +1,8 @@
+{
+  "byte_count": 44623,
+  "path": "ofr_stfm_repo/20261002T230025Z_e488a783983a.json",
+  "retrieved_at": "2026-10-02T23:00:25.596587+00:00",
+  "sha256": "e488a783983a0d0ec0dbc9fa76b93640d2ed085ad0e2340e8501788958a4bb94",
+  "source_id": "ofr_stfm_repo",
+  "url": "https://data.financialresearch.gov/v1/series/timeseries?mnemonic=REPO-DVP_AR_OO-F"
+}
