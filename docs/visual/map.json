@@ -1,0 +1,352 @@
+{
+  "about": "Editorial content of view N4's market map (#141 §3, #144): the parties, the flows of cash between them, and the tags that measure each flow. Every flow rests on a sourced claim in docs/visual/annotations.json. A tag names the registry (source, field) pairs it reads and the issues that concern it. No status is written here: scripts/emit_visual.py derives each tag's status from the sources registry, the panel manifest, the published run-record declarations, the tracked fixtures and docs/visual/issues.json. A pair the registry does not carry is marked expect: unregistered, and the generator refuses it once the registry does.",
+  "parties": {
+    "fed": "The Fed",
+    "treasury": "The Treasury",
+    "money_funds": "Money funds",
+    "banks": "Banks",
+    "dealers": "Dealers",
+    "hedge_funds": "Hedge funds and others"
+  },
+  "flows": {
+    "mmf_dealers": {
+      "from": "money_funds",
+      "to": "dealers",
+      "kind": "repo",
+      "claim": "triparty_actors"
+    },
+    "dealers_hf": {
+      "from": "dealers",
+      "to": "hedge_funds",
+      "kind": "repo",
+      "claim": "cleared_actors"
+    },
+    "sofr_all": {
+      "from": "dealers",
+      "to": "hedge_funds",
+      "kind": "repo",
+      "claim": "segments_sofr"
+    },
+    "mmf_fed": {
+      "from": "money_funds",
+      "to": "fed",
+      "kind": "balance",
+      "claim": "fed_cash"
+    },
+    "fed_banks": {
+      "from": "fed",
+      "to": "banks",
+      "kind": "balance",
+      "claim": "fed_cash"
+    },
+    "fed_dealers": {
+      "from": "fed",
+      "to": "dealers",
+      "kind": "repo",
+      "claim": "standing_repo"
+    },
+    "treasury_fed": {
+      "from": "treasury",
+      "to": "fed",
+      "kind": "balance",
+      "claim": "tax_date"
+    },
+    "treasury_dealers": {
+      "from": "treasury",
+      "to": "dealers",
+      "kind": "settlement",
+      "claim": "settlement"
+    }
+  },
+  "tags": [
+    {
+      "key": "on_rrp",
+      "label": "ON RRP balance",
+      "flow": "mmf_fed",
+      "fields": [
+        {
+          "source": "nyfed_on_rrp",
+          "field": "reverse_repo_total_accepted"
+        }
+      ],
+      "issues": [
+        88
+      ],
+      "fixtures": "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
+    },
+    {
+      "key": "tgcr",
+      "label": "TGCR",
+      "flow": "mmf_dealers",
+      "fields": [
+        {
+          "source": "nyfed_tgcr",
+          "field": "TGCR"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed_tgcr"
+    },
+    {
+      "key": "bgcr",
+      "label": "BGCR",
+      "flow": "mmf_dealers",
+      "fields": [
+        {
+          "source": "nyfed_bgcr",
+          "field": "BGCR"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed_bgcr"
+    },
+    {
+      "key": "nmfp",
+      "label": "Money fund repo holdings (N-MFP, monthly)",
+      "flow": "mmf_dealers",
+      "fields": [
+        {
+          "source": "sec_nmfp",
+          "field": "mmf_repo_holdings"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": null
+    },
+    {
+      "key": "tga",
+      "label": "TGA balance",
+      "flow": "treasury_fed",
+      "fields": [
+        {
+          "source": "fred_macro_latest_vintage",
+          "field": "WTREGEN"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage"
+    },
+    {
+      "key": "settlement",
+      "label": "Treasury settlements",
+      "flow": "treasury_dealers",
+      "fields": [
+        {
+          "source": "treasury_auctions",
+          "field": "treasury_settlement"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/treasury_auctions"
+    },
+    {
+      "key": "bills",
+      "label": "Bill yields, 4 and 13 weeks",
+      "flow": "treasury_dealers",
+      "fields": [
+        {
+          "source": "treasury_bill_rates",
+          "field": "tbill_4w_coupon_equivalent"
+        },
+        {
+          "source": "treasury_bill_rates",
+          "field": "tbill_13w_coupon_equivalent"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/treasury_bill_rates"
+    },
+    {
+      "key": "fr2004",
+      "label": "Dealer Treasury positions (FR 2004)",
+      "flow": "treasury_dealers",
+      "fields": [
+        {
+          "source": "nyfed_fr2004",
+          "field": "PDPOSGST-TOT"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed_fr2004"
+    },
+    {
+      "key": "reserves",
+      "label": "Reserve balances",
+      "flow": "fed_banks",
+      "fields": [
+        {
+          "source": "fred_macro_latest_vintage",
+          "field": "WRESBAL"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage"
+    },
+    {
+      "key": "iorb_announced",
+      "label": "Announced IORB changes",
+      "flow": "fed_banks",
+      "fields": [
+        {
+          "source": "fed_iorb_announcements",
+          "field": "iorb_announced_change_bps"
+        },
+        {
+          "source": "fed_iorb_announcements",
+          "field": "iorb_days_to_announced_change"
+        }
+      ],
+      "issues": [
+        38
+      ],
+      "fixtures": "tests/fixtures/snapshots/fed-iorb-announcements"
+    },
+    {
+      "key": "scarcity",
+      "label": "Reserve-scarcity state (#115)",
+      "flow": "fed_banks",
+      "fields": [
+        {
+          "source": "frb_h8",
+          "field": "total_assets"
+        },
+        {
+          "source": "fred_macro_latest_vintage",
+          "field": "WRESBAL"
+        }
+      ],
+      "issues": [
+        115
+      ],
+      "fixtures": "tests/fixtures/snapshots/h8_inputs/frb_h8"
+    },
+    {
+      "key": "effr_iorb",
+      "label": "EFFR − IORB",
+      "flow": "fed_banks",
+      "fields": [
+        {
+          "source": "nyfed_effr",
+          "field": "EFFR"
+        },
+        {
+          "source": "fred_macro_latest_vintage",
+          "field": "IORB"
+        }
+      ],
+      "issues": [
+        98
+      ],
+      "fixtures": "tests/fixtures/snapshots/nyfed_effr_inputs/nyfed_effr"
+    },
+    {
+      "key": "srf",
+      "label": "Standing repo take-up",
+      "flow": "fed_dealers",
+      "fields": [
+        {
+          "source": "nyfed_srf",
+          "field": "srf_total_accepted"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/srf_inputs/nyfed_srf"
+    },
+    {
+      "key": "sofr",
+      "label": "SOFR and its volume",
+      "flow": "sofr_all",
+      "fields": [
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR"
+        },
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR_volume"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-rate"
+    },
+    {
+      "key": "sofr_mid",
+      "label": "SOFR 25th and 75th percentiles",
+      "flow": "sofr_all",
+      "fields": [
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR_p25"
+        },
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR_p75"
+        }
+      ],
+      "issues": [],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-rate"
+    },
+    {
+      "key": "sofr_tails",
+      "label": "SOFR 1st and 99th percentiles",
+      "flow": "sofr_all",
+      "fields": [
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR_p1"
+        },
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR_p99"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-rate"
+    },
+    {
+      "key": "sofr_tgcr",
+      "label": "SOFR − TGCR",
+      "flow": "dealers_hf",
+      "fields": [
+        {
+          "source": "nyfed_sofr",
+          "field": "SOFR"
+        },
+        {
+          "source": "nyfed_tgcr",
+          "field": "TGCR"
+        }
+      ],
+      "issues": [
+        127
+      ],
+      "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-rate"
+    },
+    {
+      "key": "ofr",
+      "label": "Cleared repo by segment (OFR)",
+      "flow": "dealers_hf",
+      "fields": [
+        {
+          "source": "ofr_short_term_funding",
+          "field": "dvp_gcf_volume",
+          "expect": "unregistered"
+        }
+      ],
+      "issues": [],
+      "fixtures": null
+    }
+  ]
+}

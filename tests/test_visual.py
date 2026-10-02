@@ -584,5 +584,279 @@ class NewcomerHeldOutDayTests(unittest.TestCase):
         self.assertEqual(data["counted"]["n"], len(self.rows))
         self.assertEqual(fills["n1_held_note"], "No day on this chart is held out.")
 
+
+# ---------------------------------------------------------------- N4's tag-status engine (#141 §3, #144)
+
+
+def synthetic(fields=("X",), expect=None, issues=(1,)):
+    """A one-tag map, a registry, no published use and a closed directive: the base the tests vary."""
+    pairs = [dict({"source": "src_a", "field": f}, **({"expect": expect} if expect else {})) for f in fields]
+    tag_map = {"flows": {"f": {"from": "money_funds", "to": "dealers", "kind": "repo", "claim": "triparty_actors"}},
+               "tags": [{"key": "t", "label": "Tag", "flow": "f", "fields": pairs, "issues": list(issues),
+                         "fixtures": None}]}
+    registry = {"src_a": {"fields": ["X", "Y"]}}
+    records = {"docs/runs/base.json": {"declaration": {"model": "m", "features": []},
+                                       "derived": {"fields": []}}}
+    snapshot = {"retrieved_at": "2026-10-02T00:00:00Z",
+                "issues": [{"number": n, "title": f"Directive {n}", "state": "closed", "labels": ["directive"],
+                            "open_prs": []} for n in issues]}
+    return tag_map, registry, records, snapshot
+
+
+def comparison(extra_b, lower, upper, model_b="m"):
+    """A published comparison record: model_b is model_a plus `extra_b` registry fields."""
+    return {"comparison": {"loss": "crps_bps", "mean_difference_interval": {"lower": lower, "upper": upper,
+                                                                              "level": 0.9}},
+            "declaration": {"model_a": {"model": "m", "features": []},
+                            "model_b": {"model": model_b, "features": []}},
+            "derived": {"model_a": {"fields": []}, "model_b": {"fields": [f"src_a.{f}" for f in extra_b]}}}
+
+
+class TagStatusTests(unittest.TestCase):
+    """The status engine on a synthetic registry: every status, a flip, and "unregistered stays unregistered".
+
+    No status is typed anywhere: each comes from the registry, the published
+    declarations, the published comparison records and the issue snapshot.
+    """
+
+    def status(self, tag_map, registry, records, snapshot):
+        notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+        emit_visual.check_map(tag_map, registry, notes)
+        manifest = {"built_columns": [], "refused_columns": {}}
+        return emit_visual.tag_statuses(tag_map, registry, manifest, records, snapshot, tracked=())[0]
+
+    def test_registered_but_unused(self):
+        row = self.status(*synthetic())
+        self.assertEqual(row["status"], "registered_unused")
+        self.assertIsNone(row["sub"])
+
+    def test_used_when_a_published_declaration_carries_the_field(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.X"]
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "used")
+        self.assertIn("docs/runs/base.json", row["reason"])
+
+    def test_used_needs_every_field_in_one_record(self):
+        tag_map, registry, records, snapshot = synthetic(fields=("X", "Y"))
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.X"]
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_an_archived_record_does_not_make_a_tag_used(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/archive/old.json"] = {"declaration": {"features": []}, "derived": {"fields": ["src_a.X"]}}
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_tried_and_hurt_from_a_published_comparison(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/compare.json"] = comparison(["X"], -0.3, -0.1)
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "tried_and_hurt")
+        self.assertIn("docs/runs/compare.json", row["reason"])
+
+    def test_no_verdict_when_the_interval_spans_zero_or_the_field_helped(self):
+        for lower, upper in ((-0.3, 0.1), (0.1, 0.3)):
+            with self.subTest(interval=(lower, upper)):
+                tag_map, registry, records, snapshot = synthetic()
+                records["docs/runs/compare.json"] = comparison(["X"], lower, upper)
+                self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_no_verdict_when_the_models_differ_by_more_than_the_field(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/compare.json"] = comparison(["X"], -0.3, -0.1, model_b="other")
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_in_progress_from_the_label_or_an_open_pr(self):
+        for labels, prs in ((["directive", "in-progress"], []), (["directive"], [7])):
+            with self.subTest(labels=labels, prs=prs):
+                tag_map, registry, records, snapshot = synthetic()
+                snapshot["issues"][0].update(state="open", labels=labels, open_prs=prs)
+                row = self.status(tag_map, registry, records, snapshot)
+                self.assertEqual(row["status"], "in_progress")
+                self.assertIn("#1", row["reason"])
+
+    def test_in_progress_while_its_publish_question_is_open(self):
+        tag_map, registry, records, snapshot = synthetic()
+        snapshot["issues"].append({"number": 9, "title": "Publish? Directive 1 (#1)", "state": "open",
+                                   "labels": ["needs-eleonora"], "open_prs": []})
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "in_progress")
+        self.assertIn("#9", row["reason"])
+
+    def test_queued_directive_keeps_registered_but_unused_with_a_sub_line(self):
+        tag_map, registry, records, snapshot = synthetic()
+        snapshot["issues"][0].update(state="open")
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "registered_unused")
+        self.assertEqual(row["sub"], "queued: #1")
+
+    def test_not_registered(self):
+        row = self.status(*synthetic(fields=("Z",), expect="unregistered"))
+        self.assertEqual(row["status"], "not_registered")
+
+    def test_registering_the_field_flips_the_status(self):
+        tag_map, registry, records, snapshot = synthetic(fields=("Z",))
+        registry["src_a"]["fields"].append("Z")
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.Z"]
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "used")
+
+    def test_a_pair_the_registry_lacks_is_refused_unless_marked_unregistered(self):
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(*synthetic(fields=("Z",)))
+        with self.assertRaises(emit_visual.VisualError):
+            tag_map, registry, records, snapshot = synthetic()
+            tag_map["tags"][0]["fields"][0]["source"] = "no_such_source"
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_unregistered_stays_unregistered(self):
+        """A pair marked `expect: "unregistered"` that the registry now carries is refused.
+
+        A directive that registers the field forces the map to be revisited.
+
+        Recorded mutation: in `check_map`, `if pair.get("expect") == "unregistered" and registered:`
+        -> `if False:`. This test then failed with AssertionError (VisualError not raised).
+        """
+        tag_map, registry, records, snapshot = synthetic(fields=("Z",), expect="unregistered")
+        self.status(tag_map, registry, records, snapshot)
+        registry["src_a"]["fields"].append("Z")
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_an_issue_missing_from_the_snapshot_is_refused(self):
+        tag_map, registry, records, snapshot = synthetic(issues=(1, 2))
+        snapshot["issues"] = snapshot["issues"][:1]
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_a_flow_without_a_sourced_claim_is_refused(self):
+        tag_map, registry, records, snapshot = synthetic()
+        tag_map["flows"]["f"]["claim"] = "no_such_claim"
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_tracked_data_needs_a_snapshot_manifest(self):
+        tag_map, registry, records, snapshot = synthetic()
+        tag_map["tags"][0]["fixtures"] = "tests/fixtures/snapshots/a"
+        manifest = {"built_columns": [], "refused_columns": {}}
+        for tracked, expected in ((("tests/fixtures/snapshots/a/x.json.manifest.json",), True),
+                                  (("tests/fixtures/snapshots/a/x.json",), False),
+                                  (("tests/fixtures/snapshots/ab/x.json.manifest.json",), False)):
+            with self.subTest(tracked=tracked):
+                row = emit_visual.tag_statuses(tag_map, registry, manifest, records, snapshot, tracked)[0]
+                self.assertIs(row["data_in_repo"], expected)
+
+
+class PublishedMapTests(unittest.TestCase):
+    """The committed map and issue snapshot, read the way the page reads them."""
+
+    tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def test_no_status_is_written_in_the_map(self):
+        self.assertNotRegex(json.dumps(self.tag_map), r'"status"')
+        for tag in self.tag_map["tags"]:
+            self.assertNotIn("status", tag)
+
+    def test_every_tag_is_in_the_generated_table_with_a_derived_status(self):
+        data = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n4.json").read_text(encoding="utf-8"))["data"]
+        self.assertEqual([t["key"] for t in data["tags"]], [t["key"] for t in self.tag_map["tags"]])
+        names = {key for key, _, _ in emit_visual.STATUSES}
+        block = newcomer_block(self.page)
+        for row in data["tags"]:
+            with self.subTest(tag=row["key"]):
+                self.assertIn(row["status"], names)
+                self.assertIn(f'id="tag-{row["key"]}"', block)
+
+    def test_status_is_shown_by_more_than_colour(self):
+        block = newcomer_block(self.page)
+        for key, icon, word_ in emit_visual.STATUSES:
+            for cell in re.findall(rf'<span class="status s-{key}">(.*?)</span>', block):
+                with self.subTest(status=key):
+                    self.assertIn(icon, cell)
+                    self.assertIn(word_, cell)
+
+    def test_changing_the_snapshot_changes_the_status(self):
+        registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        snapshot = json.loads((ROOT / emit_visual.ISSUES).read_text(encoding="utf-8"))
+        records = emit_visual.run_record_declarations(ROOT)
+        tag = next(t for t in self.tag_map["tags"] if t["issues"])
+        base = emit_visual.tag_statuses({**self.tag_map, "tags": [tag]}, registry, manifest, records, snapshot, ())[0]
+        moved = copy.deepcopy(snapshot)
+        for entry in moved["issues"]:
+            if entry["number"] == tag["issues"][0]:
+                entry.update(state="open", labels=["directive", "in-progress"])
+        row = emit_visual.tag_statuses({**self.tag_map, "tags": [tag]}, registry, manifest, records, moved, ())[0]
+        if base["status"] in ("used", "tried_and_hurt"):
+            self.assertEqual(row["status"], base["status"])
+        else:
+            self.assertEqual(row["status"], "in_progress")
+
+    def test_generation_reads_the_snapshot_and_never_fetches(self):
+        def refuse(*args, **kwargs):
+            raise AssertionError("generation fetched")
+
+        original = emit_visual.gh_fetch
+        emit_visual.gh_fetch = refuse
+        try:
+            emit_visual.generate(ROOT, committed_commit())
+        finally:
+            emit_visual.gh_fetch = original
+
+
+class RefreshIssuesTests(unittest.TestCase):
+    """`--refresh-issues` writes the snapshot the page reads; regeneration stays byte-reproducible."""
+
+    PAGES = [
+        [{"number": 1, "title": "Directive 1", "state": "open", "labels": [{"name": "in-progress"},
+                                                                          {"name": "directive"}], "body": "x"},
+         {"number": 2, "title": "Not on the map", "state": "open", "labels": [], "body": ""},
+         {"number": 3, "title": "Publish? Directive 1 (#1)", "state": "open", "labels": [{"name": "needs-eleonora"}],
+          "body": ""},
+         {"number": 4, "title": "A pull request", "state": "open", "labels": [], "pull_request": {},
+          "body": "Some text.\n\nCloses #1"},
+         {"number": 5, "title": "A closed pull request", "state": "closed", "labels": [], "pull_request": {},
+          "body": "Closes #1"}],
+        [],
+    ]
+
+    def fetch(self, path):
+        page = int(re.search(r"page=(\d+)", path).group(1))
+        self.calls.append(path)
+        return self.PAGES[page - 1] if page <= len(self.PAGES) else []
+
+    def test_snapshot_keeps_the_map_issues_their_publish_questions_and_open_prs(self):
+        self.calls = []
+        tag_map = synthetic()[0]
+        out = emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z")
+        doc = json.loads(out)
+        self.assertEqual(doc["retrieved_at"], "2026-10-02T12:00:00Z")
+        self.assertEqual([e["number"] for e in doc["issues"]], [1, 3])
+        self.assertEqual(doc["issues"][0], {"number": 1, "title": "Directive 1", "state": "open",
+                                            "labels": ["directive", "in-progress"], "open_prs": [4]})
+        self.assertTrue(all(c.startswith(f"repos/{emit_visual.REPOSITORY}/issues?") for c in self.calls))
+
+    def test_the_same_answers_give_the_same_bytes(self):
+        self.calls = []
+        tag_map = synthetic()[0]
+        self.assertEqual(emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z"),
+                         emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z"))
+
+    def test_a_map_issue_the_repository_does_not_have_is_refused(self):
+        self.calls = []
+        tag_map = synthetic(issues=(1, 99))[0]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z")
+
+    def test_the_committed_snapshot_covers_every_map_issue(self):
+        tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
+        snapshot = json.loads((ROOT / emit_visual.ISSUES).read_text(encoding="utf-8"))
+        have = {e["number"] for e in snapshot["issues"]}
+        for tag in tag_map["tags"]:
+            for n in tag["issues"]:
+                self.assertIn(n, have)
+
+
 if __name__ == "__main__":
     unittest.main()
