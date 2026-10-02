@@ -29,6 +29,13 @@ Two parts, both printed as JSON:
   mechanical, so for `|e|` only lags beyond the widest window are reported;
   those are what a scale model could exploit.
 
+**The fold walk stops at `--end`.** `_as_of_folds` checks every scored day
+against the lockbox (`docs/decisions/lockbox.md`, `repo_model.lockbox`) and
+refuses one in a locked tier with `LookAheadError`, and the frozen panel runs
+into the near-blind tier. So a run on it passes `--end`, the last scored day,
+before 2026-01-01, as the CLI's scoring commands do. The daily-change part
+reads every panel row and scores nothing, so `--end` does not touch it.
+
 Reads the gitignored frozen panel, so it is not a test, the same posture as
 `scripts/nmfp_identity_residuals.py`. Nothing here is published by being run;
 a page quoting these numbers cites this script and the panel digest it prints.
@@ -38,7 +45,7 @@ Usage:
     PYTHONPATH=src python3 scripts/spread_change_autocorrelation.py \
         [--panel data/processed/funding_panel.csv] \
         [--registry metadata/sources.json] [--decision-time 16:00] \
-        [--minimum-history 61] [--lags 10] \
+        [--minimum-history 61] [--lags 10] --end 2025-12-31 \
         [--feature spread_bps --feature sofr_volume ...] [--json OUT.json]
 
 `--lags` must be even: the Ljung-Box p-value uses the closed-form chi-square
@@ -52,7 +59,7 @@ import argparse
 import json
 import math
 import sys
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 
 from repo_model.asof import InformationRule
@@ -112,6 +119,14 @@ def main(argv=None):
     parser.add_argument("--minimum-history", type=int, default=61)
     parser.add_argument("--lags", type=int, default=10)
     parser.add_argument("--feature", action="append")
+    parser.add_argument(
+        "--end",
+        type=date.fromisoformat,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="the last scored day of the fold walk; before 2026-01-01 on the "
+        "frozen panel, whose later days are locked",
+    )
     parser.add_argument("--json", type=Path)
     args = parser.parse_args(argv)
     if args.lags < 2 or args.lags % 2:
@@ -128,7 +143,12 @@ def main(argv=None):
     )
     errors, widths = [], []
     for fold in _as_of_folds(
-        rows, rule, minimum_history=args.minimum_history, refit_every=1
+        rows,
+        rule,
+        minimum_history=args.minimum_history,
+        refit_every=1,
+        entry="scripts/spread_change_autocorrelation.py",
+        end=args.end,
     ):
         scored = fold.index
         feature = fold.info.anchor
@@ -155,6 +175,7 @@ def main(argv=None):
             "features": list(features),
             "information_rule": "as_of",
             "minimum_history": args.minimum_history,
+            "end": None if args.end is None else args.end.isoformat(),
             "origins": len(errors),
             "window_rows": {"min": min(widths), "max": width},
             "e": describe(errors, args.lags),

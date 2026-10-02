@@ -2170,6 +2170,13 @@ def validate_accounting_identities(
     return evaluations
 
 
+# Every key a stress-threshold declaration may carry. Anything else is a rule
+# this module does not implement, and is refused rather than ignored.
+_STRESS_THRESHOLD_KEYS = frozenset(
+    {"label_columns", "primary_rule", "target", "taus_bp", "version"}
+)
+
+
 def load_stress_thresholds(
     path: Path = DEFAULT_STRESS_THRESHOLDS,
 ) -> Mapping[str, object]:
@@ -2199,15 +2206,14 @@ def load_stress_thresholds(
     expected_columns = [f"stress_gt_{tau:g}bp" for tau in taus]
     if declaration.get("label_columns") != expected_columns:
         raise DataContractError("stress label_columns must match the declared taus_bp")
-    secondary = declaration.get("secondary_rule")
-    if not isinstance(secondary, dict):
-        raise DataContractError("stress threshold metadata needs a secondary_rule")
-    if secondary.get("type") != "trailing_percentile":
-        raise DataContractError("secondary stress rule must be 'trailing_percentile'")
-    if secondary.get("history") != "rows_strictly_before_label_row":
-        raise DataContractError("trailing stress rule must use only pre-label rows")
-    if secondary.get("full_sample_allowed") is not False:
-        raise DataContractError("full-sample stress percentiles are prohibited")
+    undeclared = sorted(set(declaration) - _STRESS_THRESHOLD_KEYS)
+    if undeclared:
+        raise DataContractError(
+            f"stress threshold metadata declares {undeclared}: fixed bp is the only "
+            "threshold rule, fixed relative to IORB with no rolling anchor "
+            "(Eleonora's 1 October 2026 ruling on #87; the secondary rule was "
+            "retired by #91)"
+        )
     return declaration
 
 
@@ -2221,36 +2227,6 @@ def _finite_values(values: Sequence[float]) -> List[float]:
             raise DataContractError(f"stress value {position} is not finite")
         checked.append(number)
     return checked
-
-
-def stress_label_threshold(
-    values: Sequence[float],
-    index: int,
-    window: int,
-    probability: float,
-) -> float:
-    """Return a trailing percentile based strictly on rows before ``index``."""
-
-    if isinstance(index, bool) or not isinstance(index, int):
-        raise DataContractError("stress label index must be an integer")
-    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:
-        raise DataContractError("stress label window must be a positive integer")
-    if index < window or index > len(values):
-        raise DataContractError("stress label threshold has insufficient trailing history")
-    if isinstance(probability, bool) or not isinstance(probability, (int, float)):
-        raise DataContractError("stress label probability must be numeric")
-    quantile = float(probability)
-    if not 0.0 <= quantile <= 1.0:
-        raise DataContractError("stress label probability must be in [0, 1]")
-
-    history = sorted(_finite_values(values[index - window : index]))
-    position = (len(history) - 1) * quantile
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return history[lower]
-    weight = position - lower
-    return history[lower] * (1.0 - weight) + history[upper] * weight
 
 
 def fixed_bp_stress_label_columns(
@@ -2406,13 +2382,36 @@ WEEKLY_CARRY_MAX_STALENESS_DAYS = (
 #: `WTREGEN`. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
 #: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
 #: not an absence, and a calendar column is never a hole.
+#: The longest gap between two ON RRP operation dates, in calendar days. The
+#: facility does not operate on a Federal Reserve holiday or a SIFMA full close,
+#: and the operation before one is the balance still outstanding through it, as
+#: the H.4.1 shows (#45, step 4, decided under Eleonora's delegation on 1
+#: October 2026: carry, through the as-of rule). A45 measured gaps of up to 4
+#: calendar days over the panel, a Friday to the Tuesday after a Monday
+#: holiday, and the tracked snapshots, 2018-01-02 to 2026-09-30, show the same.
+ON_RRP_MAX_GAP_DAYS = 4
+
+#: Carry column -> its maximum staleness in calendar days. Every weekly entry is
+#: a column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
+#: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
+#: `WTREGEN`. `on_rrp` is daily, and carries only across a day with no
+#: operation. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
+#: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
+#: not an absence, and a calendar column is never a hole.
 CARRY_FORWARD_COLUMNS = MappingProxyType(
     {
         "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "on_rrp": ON_RRP_MAX_GAP_DAYS,
     }
 )
+
+#: Carry columns whose bound is a measured maximum gap rather than a tolerated
+#: missed print. Past the bound such a column is not a hole: a gap between
+#: operations longer than any the facility has had is a feed fault, and the
+#: build raises `DataContractError` naming it (#45, step 4).
+CARRY_FORWARD_REFUSED_BEYOND = frozenset({"on_rrp"})
 
 
 # The calendar columns (A31). `contract.CALENDAR_FEATURES` declares them "a
@@ -3047,6 +3046,7 @@ def _carry_forward_values(
         if column not in CARRY_FORWARD_COLUMNS:
             continue
         observed = sorted(ref_date for name, ref_date in latest if name == column)
+        own = set(observed)
         fills: Dict[date, float] = {}
         for ref_date in grid:
             earlier = [day for day in observed if day < ref_date]
@@ -3054,6 +3054,15 @@ def _carry_forward_values(
                 continue
             source = max(earlier)
             if (ref_date - source).days > CARRY_FORWARD_COLUMNS[column]:
+                if column in CARRY_FORWARD_REFUSED_BEYOND and ref_date not in own:
+                    raise DataContractError(
+                        f"{column} has no observation on {ref_date}, and its "
+                        f"latest, {source}, is {(ref_date - source).days} calendar "
+                        f"days earlier, beyond the {CARRY_FORWARD_COLUMNS[column]} "
+                        f"days any gap between its observations has spanned; a "
+                        f"gap that long is a fault in the feed, not a day the "
+                        f"source did not operate"
+                    )
                 continue
             fills[ref_date] = latest[(column, source)].value
         carries[column] = fills
@@ -3242,6 +3251,11 @@ def build_daily_panel(
     * is counted in `carried_forward`, not in `holes`: a carried cell is
       neither a hole nor an observation of its own date.
 
+    `on_rrp` is daily, not weekly, and carries under the same rule across a
+    business day with no ON RRP operation, no further than
+    `ON_RRP_MAX_GAP_DAYS` (#45). Past that bound it is refused rather than left
+    a hole: see `CARRY_FORWARD_REFUSED_BEYOND`.
+
     **By `ref_date`, not by availability.** The carried value is the one whose
     `ref_date` is nearest before, whether or not it was yet published on the
     date it fills. That is rule 2, applied to a carry: the as-of read in
@@ -3253,8 +3267,9 @@ def build_daily_panel(
     hole.
 
     Raises `DataContractError` if the cutoff is naive, if no declared sourced
-    column survives pricing, if nothing is left to index, under rule 5, or
-    under rule 8.
+    column survives pricing, if nothing is left to index, under rule 5, under
+    rule 8, or when a column in `CARRY_FORWARD_REFUSED_BEYOND` has a gap
+    longer than its rule 10 bound.
     """
 
     from .contract import FEATURE_FIELDS

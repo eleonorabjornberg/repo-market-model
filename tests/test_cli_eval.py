@@ -137,6 +137,7 @@ from repo_model.metrics import (
 )
 from repo_model.registry import max_release_lag_days
 from repo_model.event_eval import config_digest, read_journal
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -3591,7 +3592,23 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
         decomposition = document["metrics"]["by_tau"]["5"]["decomposition"]
         self.assertIn("reliability", decomposition)
         self.assertIn("resolution", decomposition)
-        self.assertNotIn("ece", json.dumps(document))
+        # No ECE: no metric anywhere in the record is keyed by it. Checked over
+        # the keys, not the serialised text, which also carries the commit SHA
+        # and fails whenever a SHA happens to contain the letters "ece".
+        def keys(node):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    yield key
+                    yield from keys(value)
+            elif isinstance(node, list):
+                for value in node:
+                    yield from keys(value)
+
+        metric_keys = {key.lower() for key in keys(document["metrics"])}
+        self.assertNotIn("ece", metric_keys)
+        self.assertFalse(
+            {key for key in metric_keys if "expected_calibration" in key}
+        )
 
     def test_every_selectable_model_runs_on_this_command(self):
         """One mapping, and this command reaches all of it.

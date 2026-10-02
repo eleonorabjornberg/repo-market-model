@@ -76,15 +76,15 @@ What this module deliberately does not own
 
 The stress label. `AGENT_CONTRACT.md`, "Ownership", puts "the label column and
 its point-in-time rule" with the data layer, and `CLAUDE.md` puts it outside
-Track B in as many words. A `trailing_percentile` lived here for one commit,
-implementing the contract's secondary trailing-window rule so that the label at
-an event boundary could be shown to use pre-event rows only. It was a second
-implementation of a Track A rule, which is prohibited even as a stopgap and for
-a good reason -- two implementations of a point-in-time rule agree until they
-do not, and the disagreement surfaces as a scoring result nobody can explain.
-It was deleted, and the property it demonstrated now lives as
-`tests/test_contract.py::TargetSchemaTests::test_the_stress_label_is_point_in_time_and_never_full_sample`,
-an `expectedFailure` spec Track A must satisfy.
+Track B in as many words. A trailing-percentile threshold lived here for one
+commit, implementing the contract's then-secondary trailing-window rule. It was a
+second implementation of a Track A rule, which is prohibited even as a stopgap
+and for a good reason -- two implementations of a point-in-time rule agree until
+they do not, and the disagreement surfaces as a scoring result nobody can
+explain. It was deleted. The trailing rule itself has since been retired (#91,
+under Eleonora's 1 October 2026 ruling on #87): the label is fixed bp only, and
+`tests/test_contract.py::StressLabelContractTests` checks that a row's label
+reads that row's spread and nothing else.
 
 What this module deliberately does not compute
 ----------------------------------------------
@@ -154,6 +154,7 @@ from .contract import (
     validate_event_windows_document,
 )
 from .data import DailyObservation
+from .lockbox import require_unlocked
 from .splits import (
     LookAheadError,
     SplitError,
@@ -504,7 +505,9 @@ def evaluate_event_window(
     Raises:
         SplitError: malformed panel, window, taus or predictions, or a window
             with no observable label before it.
-        LookAheadError: a read is newer than its decision instant, the
+        LookAheadError: a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), checked
+            before any read or fit; or a read is newer than its decision instant, the
             training set reaches past the window's first anchor or into the
             window, the scored rows are not exactly the declared window, or
             the predictor read a column outside `features`, or a positional
@@ -545,6 +548,10 @@ def evaluate_event_window(
             f"the window opens on the panel's first row, {ordered_dates[0]}, so "
             f"there is no decision instant before it to train at"
         )
+
+    require_unlocked(
+        (ordered_dates[i] for i in scored_index), where="evaluate_event_window"
+    )
 
     # One information set per scored day, each checked both ways. The training
     # frame is the one at the window's first decision instant: every label
