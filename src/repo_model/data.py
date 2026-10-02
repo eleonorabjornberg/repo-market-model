@@ -2394,7 +2394,12 @@ ON_RRP_MAX_GAP_DAYS = 4
 #: Carry column -> its maximum staleness in calendar days. Every weekly entry is
 #: a column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
 #: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
-#: `WTREGEN`. `on_rrp` is daily, and carries only across a day with no
+#: `WTREGEN`, and `frb_h8`'s `frequency` for `bank_total_assets` (#115; off in
+#: the published declaration, `contract.BANK_TOTAL_ASSETS_FIELDS`, so no
+#: published build carries it). That bound is the H.8 column's staleness rule:
+#: a week's first print stands in for one missed print and no more, and past it
+#: the column -- and the reserve-scarcity state read from it -- is a hole.
+#: `on_rrp` is daily, and carries only across a day with no
 #: operation. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
 #: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
 #: not an absence, and a calendar column is never a hole.
@@ -2403,6 +2408,7 @@ CARRY_FORWARD_COLUMNS = MappingProxyType(
         "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "bank_total_assets": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "on_rrp": ON_RRP_MAX_GAP_DAYS,
     }
 )
