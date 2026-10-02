@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
 import unittest
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
@@ -24,6 +25,9 @@ from repo_model.asof import (
 from repo_model.data import DailyObservation
 from repo_model.registry import RegistryContractError
 from repo_model.splits import LookAheadError, SplitError
+
+sys.path.insert(0, str(Path(__file__).parent))
+from test_contract import on_rrp_from_operation_results
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
@@ -545,6 +549,13 @@ class OnRrpAvailabilityTests(unittest.TestCase):
 
     FEATURES = ("spread_bps", "on_rrp")
     FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
+
+    def setUp(self):
+        # Off in the published map (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`);
+        # switched on for these tests.
+        switch = on_rrp_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
 
     def rows(self):
         # `on_rrp` encodes its own row, 500 + i, so a read is legible.

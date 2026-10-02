@@ -1669,30 +1669,25 @@ def _forecast_implementations(package=repo_model):
     return found
 
 
-def pre_45_on_rrp():
-    """`on_rrp` read through FRED's `RRPONTSYD` again, for one test.
+def on_rrp_from_operation_results():
+    """`on_rrp` read from the New York Fed's operation results, for one test (#45).
 
-    Until #45, `on_rrp` was the real-registry exemplar of a field its source
-    does not price: it read `fred_macro_latest_vintage.RRPONTSYD`, which
-    declares no revision policy on a `snapshot_retrieved_at` source. #45 moved
-    the column to the Desk's own operation results, which price, and no column
-    reads `RRPONTSYD` now. The registry still refuses that field, unchanged, so
-    the tests that hold the refusal patch the old mapping back in for their own
-    duration rather than lose the exemplar.
+    `contract.ON_RRP_OPERATION_RESULTS_FIELDS` is declared and off: the
+    published `FEATURE_FIELDS` still maps `on_rrp` to `RRPONTSYD`, so the
+    published panel does not move. The tests of the new source switch it on for
+    their own duration. `FEATURE_SOURCES` is a projection taken at import, so it
+    is patched beside the map it was projected from.
     """
 
-    # `FEATURE_SOURCES` is a projection taken at import, so it is patched
-    # beside the map it was projected from.
+    fields = contract.ON_RRP_OPERATION_RESULTS_FIELDS
     return mock.patch.multiple(
         contract,
-        FEATURE_FIELDS=MappingProxyType(
-            {
-                **contract.FEATURE_FIELDS,
-                "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
-            }
-        ),
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "on_rrp": fields}),
         FEATURE_SOURCES=MappingProxyType(
-            {**contract.FEATURE_SOURCES, "on_rrp": ("fred_macro_latest_vintage",)}
+            {
+                **contract.FEATURE_SOURCES,
+                "on_rrp": tuple(sorted({source for source, _field in fields})),
+            }
         ),
     )
 
@@ -2351,8 +2346,7 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         )
         self.assertEqual(
             sources_for_features(("sofr_volume", "on_rrp", "quarter_end")),
-            # The Desk's operation results since #45, not FRED's `RRPONTSYD`.
-            ("nyfed_on_rrp", "nyfed_sofr"),
+            ("fred_macro_latest_vintage", "nyfed_sofr"),
         )
         self.assertEqual(
             field_sources_for_features(("spread_bps",)),
@@ -2370,9 +2364,16 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
             field_sources_for_features(("tga",)),
             (("fred_macro_latest_vintage", "WTREGEN"),),
         )
+        # Off in the published map, on under the #45 switch.
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("on_rrp",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            )
+            self.assertEqual(sources_for_features(("on_rrp",)), ("nyfed_on_rrp",))
         self.assertEqual(
             field_sources_for_features(("on_rrp",)),
-            (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            (("fred_macro_latest_vintage", "RRPONTSYD"),),
         )
 
     def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):

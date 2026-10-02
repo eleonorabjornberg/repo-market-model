@@ -49,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).parents[0]))
 
 from repo_model.ingest import build_point_in_time_snapshot, fetch_sec_nmfp
 from test_ingest import nmfp_archive, registry_with_nmfp_coverage_floor
+from test_contract import on_rrp_from_operation_results
 
 
 def manifest_digest(manifest_path: Path) -> str:
@@ -5508,8 +5509,7 @@ class EmptyColumnTests(unittest.TestCase):
             "nyfed_sofr": {"release_lag": dict(self.LAG)},
             "nyfed_tgcr": {"release_lag": dict(self.LAG)},
             "nyfed_bgcr": {"release_lag": dict(self.LAG)},
-            # `on_rrp`'s source since #45; it was `fred_macro_latest_vintage`.
-            "nyfed_on_rrp": {"release_lag": dict(self.LAG)},
+            "fred_macro_latest_vintage": {"release_lag": dict(self.LAG)},
             "treasury_auctions": {
                 "release_lag": dict(real["treasury_auctions"]["release_lag"])
             },
@@ -6831,13 +6831,16 @@ class OnRrpHolidayCarryTests(unittest.TestCase):
         return rows
 
     def build(self, missing):
-        return build_daily_panel(
-            self.rows(missing),
-            self.registry(),
-            build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
-            decision_time=time.fromisoformat("16:00"),
-            columns=self.COLUMNS,
-        )
+        # `on_rrp` from the operation results, switched on for the test: it is
+        # off in the published map (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`).
+        with on_rrp_from_operation_results():
+            return build_daily_panel(
+                self.rows(missing),
+                self.registry(),
+                build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+                decision_time=time.fromisoformat("16:00"),
+                columns=self.COLUMNS,
+            )
 
     def test_a_day_with_no_operation_reads_the_prior_operations_total(self):
         build = self.build({self.HOLIDAY})

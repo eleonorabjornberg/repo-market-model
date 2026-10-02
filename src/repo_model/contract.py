@@ -262,8 +262,7 @@ class UndeclaredFeatureError(ValueError):
 #:
 #: Both halves are stated because neither is derivable from the other: the
 #: registry declares fields in source vocabulary and the panel uses model
-#: vocabulary, and `SOFR`->`sofr`, `WTREGEN`->`tga`,
-#: `reverse_repo_total_accepted`->`on_rrp`,
+#: vocabulary, and `SOFR`->`sofr`, `WTREGEN`->`tga`, `RRPONTSYD`->`on_rrp`,
 #: `mmf_net_assets`->`mmf_assets` are renames with no rule behind them. The
 #: field is what makes a field-level release lag addressable: one source can
 #: carry an administered rate that is never revised beside a statistical
@@ -290,10 +289,8 @@ FEATURE_FIELDS = MappingProxyType(
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
-        # The Desk's own operation results, summed over every reverse-repo
-        # operation of the day, not FRED's `RRPONTSYD`, which alternates between
-        # the sum and one leg on a two-operation day (#45; A45, Route B).
-        "on_rrp": (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+        # Off in the published panel: see `ON_RRP_OPERATION_RESULTS_FIELDS`.
+        "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
         "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
         # The split as panel columns (human decision, 11 Sep 2026): a gross
         # aggregate hides three different pressures. Bill settlements drain cash
@@ -317,6 +314,18 @@ FEATURE_FIELDS = MappingProxyType(
         "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
     }
 )
+
+#: `on_rrp` from the New York Fed's own operation results (#45): the day's
+#: `totalAmtAccepted` summed over every reverse-repo operation, not FRED's
+#: `RRPONTSYD`, which alternates between the sum and one leg on a two-operation
+#: day (A45, Route B). Declared, scored and tested, and **off**: `FEATURE_FIELDS`
+#: still maps `on_rrp` to `RRPONTSYD`, which the registry refuses, so the
+#: published panel and every published record are unchanged. Whether `on_rrp`
+#: joins the published declaration is Eleonora's to rule
+#: (`docs/decisions/workflow.md`, "A question about publishing does not hold
+#: back the measurement"); turning it on is replacing the `on_rrp` entry above
+#: with this one and rebuilding the panel, in a later pull request.
+ON_RRP_OPERATION_RESULTS_FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
 
 #: The source IDs alone, projected from `FEATURE_FIELDS`. Derived rather than
 #: declared: a second literal would be a second thing to keep current, and a

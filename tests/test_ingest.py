@@ -7865,6 +7865,11 @@ class NyFedOnRrpAdapterTests(unittest.TestCase):
     between the sum and one leg on 2020-02-19 (95 + 5054 million) and
     2020-11-18 (103 + 0), and this series is the sum.
 
+    The snapshots are tracked under `on_rrp_inputs/`, not `funding_inputs/`:
+    the published panel is built from every snapshot in `funding_inputs/`, and
+    `on_rrp` from this source is off in the published declaration until
+    Eleonora rules (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`).
+
     Measured on the tracked snapshots (fetched 2 October 2026): on 431 of the
     433 Wednesdays from 2018-04-04 to 2026-09-30 that `WLRRAOL`'s 2026-09-10
     ALFRED vintage (`alfred-wlrraol/`) carries, the day's sum equals the
@@ -7875,7 +7880,7 @@ class NyFedOnRrpAdapterTests(unittest.TestCase):
 
     SNAPSHOTS = (
         Path(__file__).parents[1]
-        / "tests/fixtures/snapshots/funding_inputs"
+        / "tests/fixtures/snapshots/on_rrp_inputs"
         / ingest.NYFED_ON_RRP_SOURCE_ID
     )
 

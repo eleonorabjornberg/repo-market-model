@@ -29,8 +29,8 @@ state below comes with the command that checks it, and the command's output wins
   PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv --manifest metadata/funding_panel_manifest.json
   ```
 
-  The expected digest is `9f7d6881…`, the panel with `on_rrp` from the New York Fed's operation results (#45). The
-  records in `docs/runs/` were scored on the panel before it, `4ddc3882…` (#41).
+  The expected digest is `4ddc3882…`, the panel with `reserve_balances` and `tga` in USD billions (#41). The
+  records in `docs/runs/` are scored on it.
 - **The records are re-scored** under the as-of rule (directive 03, #27), refitted every 21 scored days. The records
   scored under the earlier rule, on the panel before #41 and #44 (digest `d8b716cf…`), are in
   `docs/runs/archive/pre-asof/`.

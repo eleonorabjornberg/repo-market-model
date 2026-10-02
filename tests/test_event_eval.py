@@ -199,7 +199,6 @@ from repo_model.event_eval import (
     load_events_file,
     read_journal,
 )
-from test_contract import pre_45_on_rrp
 from repo_model.registry import RegistryContractError
 
 # The registry fixture, imported rather than copied. `tests/test_baseline.py`
@@ -1080,18 +1079,6 @@ class RegimeDeclarationTests(EvaluatorHarness):
     BASE_PURGE = 2
     REGIME_PURGE = 3
 
-    def regime_registry(self):
-        """`mixed_registry`, with the regressor `on_rrp`'s source at the base price.
-
-        `on_rrp` shared `spread_bps`'s source until #45 moved it to
-        `nyfed_on_rrp`, so `mixed_registry` priced it at the base lag without
-        naming it. It is named now, at the same base lag.
-        """
-
-        registry = mixed_registry(self.BASE_PURGE, self.REGIME_PURGE)
-        registry.update(declared_registry(self.BASE_PURGE, (COVARIATE,)))
-        return registry
-
     def regime_report(self, **overrides):
         kwargs = dict(
             observations=REGIME_PANEL_ROWS,
@@ -1101,7 +1088,7 @@ class RegimeDeclarationTests(EvaluatorHarness):
                 minimum_history=self.MINIMUM_HISTORY,
             ),
             features=REGIME_FEATURES,
-            registry=self.regime_registry(),
+            registry=mixed_registry(self.BASE_PURGE, self.REGIME_PURGE),
             model_config={
                 "model": "threshold",
                 "regressors": list(REGIME_REGRESSORS),
@@ -1362,8 +1349,7 @@ class DerivedGapTests(EvaluatorHarness):
                 encoding="utf-8"
             )
         )
-        # `on_rrp` as it read before #45: see `test_contract.pre_45_on_rrp`.
-        with pre_45_on_rrp(), self.assertRaises(RegistryContractError) as caught:
+        with self.assertRaises(RegistryContractError) as caught:
             self.evaluate(registry=real)
         message = str(caught.exception)
         self.assertIn("fred_macro_latest_vintage", message)
