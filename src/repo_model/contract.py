@@ -311,6 +311,16 @@ FEATURE_FIELDS = MappingProxyType(
         # documented, not converted.
         "tbill_4w": (("treasury_bill_rates", "tbill_4w_coupon_equivalent"),),
         "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
+        # Announced IORB (directive #38): computed per scored row from the dated
+        # implementation-note table by `announced_iorb`, which adds them to a
+        # panel in memory. Not built into the published panel; scheduled under
+        # the source's `scheduled_availability` declaration.
+        "iorb_announced_change_bps": (
+            ("fed_iorb_announcements", "iorb_announced_change_bps"),
+        ),
+        "iorb_days_to_announced_change": (
+            ("fed_iorb_announcements", "iorb_days_to_announced_change"),
+        ),
     }
 )
 
