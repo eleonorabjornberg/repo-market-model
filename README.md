@@ -158,65 +158,57 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 
 A realised-coverage interval that excludes the nominal probability is a calibration finding. None of these models has one.
 
-**The pressure probability against its two benchmarks.** Every exceedance record on this window is scored on the same 2042 days; the event is the spread strictly above the threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks are those of `docs/decisions/pressure-probability.md`: a calendar-type climatology and a persistence-logistic model, each scored in the same run under its own declaration and paired with the model day by day. The difference is the benchmark's Brier score minus the model's, so a positive value favours the model; its interval is a stationary bootstrap on the per-day differences. Average precision is the area under the precision-recall curve, against a no-skill value equal to the base rate.
-
-*Threshold 5 bp, exceeded on 8.1% of days.*
-
-| Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
-|---|---|---|---|---|
-| calendar-type climatology | 0.0772 | 0.148 | — | — |
-| climatology | 0.0765 | 0.139 | +0.0007 (-0.0012 to +0.0026), not distinguishable | -0.0224 (-0.0280 to -0.0172), loses to it |
-| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0534 | 0.531 | +0.0238 (+0.0172 to +0.0311), beats it | +0.0008 (-0.0024 to +0.0042), not distinguishable |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0562 | 0.547 | +0.0210 (+0.0146 to +0.0283), beats it | -0.0021 (-0.0053 to +0.0013), not distinguishable |
-| persistence-logistic | 0.0542 | 0.511 | +0.0231 (+0.0175 to +0.0290), beats it | — |
-
-*Threshold 10 bp, exceeded on 3.5% of days.*
-
-| Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
-|---|---|---|---|---|
-| calendar-type climatology | 0.0348 | 0.082 | — | — |
-| climatology | 0.0340 | 0.049 | +0.0008 (-0.0012 to +0.0026), not distinguishable | -0.0033 (-0.0053 to -0.0015), loses to it |
-| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0310 | 0.239 | +0.0038 (+0.0006 to +0.0073), beats it | -0.0002 (-0.0022 to +0.0019), not distinguishable |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0332 | 0.252 | +0.0016 (-0.0018 to +0.0053), not distinguishable | -0.0024 (-0.0048 to +0.0001), not distinguishable |
-| persistence-logistic | 0.0307 | 0.259 | +0.0040 (+0.0015 to +0.0068), beats it | — |
-
-**The paired Brier difference against the persistence-logistic, 5 bp, by regime and by pressure-day type** (benchmark minus model, with its 90% interval):
-
-| | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
-|---|---|---|---|---|---|
-| climatology | -0.0438 (-0.0637 to -0.0258) | -0.0287 (-0.0376 to -0.0179) | -0.0156 (-0.0163 to -0.0149) | -0.0006 (-0.0063 to +0.0065) | -0.0246 (-0.0443 to -0.0081) |
-| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0044 (-0.0104 to +0.0207) | +0.0106 (+0.0048 to +0.0182) | -0.0019 (-0.0021 to -0.0018) | -0.0002 (-0.0026 to +0.0028) | -0.0028 (-0.0090 to +0.0032) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0108 (-0.0031 to +0.0262) | +0.0051 (-0.0005 to +0.0127) | -0.0112 (-0.0126 to -0.0099) | -0.0002 (-0.0032 to +0.0035) | -0.0027 (-0.0091 to +0.0039) |
-
-| | month end | ordinary | quarter end | tax date |
-|---|---|---|---|---|
-| climatology | -0.0291 (-0.0523 to -0.0115) | -0.0212 (-0.0268 to -0.0160) | -0.0571 (-0.1061 to -0.0197) | -0.0188 (-0.0414 to +0.0003) |
-| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | -0.0029 (-0.0172 to +0.0087) | +0.0014 (-0.0018 to +0.0049) | +0.0057 (-0.0241 to +0.0321) | -0.0063 (-0.0226 to +0.0129) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | -0.0040 (-0.0147 to +0.0058) | -0.0024 (-0.0056 to +0.0011) | +0.0234 (-0.0006 to +0.0485) | -0.0016 (-0.0179 to +0.0181) |
-
 *Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
 
-*Threshold 5 bp, exceeded on 8.4% of days.*
+**The pressure probability against its two benchmarks.** Every exceedance record on this window is scored on the same 1873 days; the event is the spread strictly above the threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks are those of `docs/decisions/pressure-probability.md`: a calendar-type climatology and a persistence-logistic model, each scored in the same run under its own declaration and paired with the model day by day. The difference is the benchmark's Brier score minus the model's, so a positive value favours the model; its interval is a stationary bootstrap on the per-day differences. Average precision is the area under the precision-recall curve, against a no-skill value equal to the base rate.
+
+*Threshold 5 bp, exceeded on 7.5% of days.*
 
 | Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0507 | 0.580 | +0.0293 (+0.0229 to +0.0359), beats it | +0.0045 (+0.0015 to +0.0076), beats it |
+| calendar-type climatology | 0.0714 | 0.143 | — | — |
+| climatology | 0.0708 | 0.125 | +0.0006 (-0.0015 to +0.0026), not distinguishable | -0.0145 (-0.0190 to -0.0103), loses to it |
+| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0525 | 0.492 | +0.0189 (+0.0117 to +0.0266), beats it | +0.0038 (-0.0004 to +0.0088), not distinguishable |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0496 | 0.514 | +0.0218 (+0.0153 to +0.0287), beats it | +0.0067 (+0.0030 to +0.0105), beats it |
+| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0551 | 0.498 | +0.0163 (+0.0092 to +0.0241), beats it | +0.0012 (-0.0030 to +0.0061), not distinguishable |
+| persistence-logistic | 0.0563 | 0.397 | +0.0151 (+0.0102 to +0.0200), beats it | — |
 
-*Threshold 10 bp, exceeded on 3.7% of days.*
+*Threshold 10 bp, exceeded on 3.3% of days.*
 
 | Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0314 | 0.307 | +0.0058 (+0.0027 to +0.0095), beats it | +0.0014 (-0.0007 to +0.0037), not distinguishable |
+| calendar-type climatology | 0.0327 | 0.076 | — | — |
+| climatology | 0.0319 | 0.044 | +0.0008 (-0.0012 to +0.0027), not distinguishable | -0.0024 (-0.0041 to -0.0008), loses to it |
+| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0301 | 0.214 | +0.0026 (-0.0008 to +0.0061), not distinguishable | -0.0006 (-0.0027 to +0.0018), not distinguishable |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0286 | 0.273 | +0.0041 (+0.0010 to +0.0077), beats it | +0.0008 (-0.0013 to +0.0033), not distinguishable |
+| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0323 | 0.228 | +0.0004 (-0.0032 to +0.0045), not distinguishable | -0.0028 (-0.0053 to +0.0001), not distinguishable |
+| persistence-logistic | 0.0295 | 0.234 | +0.0032 (+0.0007 to +0.0058), beats it | — |
 
 **The paired Brier difference against the persistence-logistic, 5 bp, by regime and by pressure-day type** (benchmark minus model, with its 90% interval):
 
 | | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0175 (+0.0053 to +0.0295) | +0.0118 (+0.0062 to +0.0187) | -0.0020 (-0.0021 to -0.0018) | +0.0020 (-0.0014 to +0.0063) | -0.0006 (-0.0098 to +0.0097) |
+| climatology | -0.0178 (-0.0323 to -0.0038) | -0.0177 (-0.0239 to -0.0097) | -0.0115 (-0.0120 to -0.0111) | -0.0013 (-0.0049 to +0.0027) | -0.0282 (-0.0515 to -0.0076) |
+| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0170 (-0.0025 to +0.0388) | +0.0107 (+0.0061 to +0.0163) | -0.0015 (-0.0017 to -0.0014) | -0.0020 (-0.0057 to +0.0014) | -0.0011 (-0.0135 to +0.0110) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0294 (+0.0129 to +0.0459) | +0.0119 (+0.0079 to +0.0165) | -0.0016 (-0.0017 to -0.0014) | +0.0002 (-0.0015 to +0.0022) | -0.0011 (-0.0123 to +0.0112) |
+| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0237 (+0.0049 to +0.0454) | +0.0052 (+0.0011 to +0.0108) | -0.0108 (-0.0122 to -0.0095) | -0.0020 (-0.0058 to +0.0019) | +0.0027 (-0.0106 to +0.0156) |
 
 | | month end | ordinary | quarter end | tax date |
 |---|---|---|---|---|
-| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0038 (-0.0078 to +0.0141) | +0.0038 (+0.0008 to +0.0071) | +0.0163 (-0.0007 to +0.0352) | +0.0129 (+0.0007 to +0.0274) |
+| climatology | -0.0258 (-0.0449 to -0.0102) | -0.0127 (-0.0171 to -0.0088) | -0.0416 (-0.0796 to -0.0123) | -0.0163 (-0.0352 to -0.0018) |
+| gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0023 (-0.0138 to +0.0174) | +0.0035 (-0.0009 to +0.0086) | +0.0294 (-0.0086 to +0.0685) | +0.0025 (-0.0190 to +0.0277) |
+| gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0089 (-0.0041 to +0.0207) | +0.0051 (+0.0012 to +0.0091) | +0.0397 (+0.0107 to +0.0719) | +0.0207 (+0.0014 to +0.0425) |
+| gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0026 (-0.0109 to +0.0164) | -0.0002 (-0.0047 to +0.0048) | +0.0482 (+0.0124 to +0.0868) | +0.0074 (-0.0158 to +0.0337) |
+
+**Pressure model v1 by horizon.** The probability read from the published funding declaration's distribution and recalibrated out of fold (`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days and paired day by day with both benchmarks. Each cell is the benchmark's Brier score minus the model's, with its 90% stationary-bootstrap interval; a positive value favours the model.
+
+| Horizon | Scored days | vs calendar-type climatology, 5 bp | vs persistence-logistic, 5 bp | vs calendar-type climatology, 10 bp | vs persistence-logistic, 10 bp |
+|---|---|---|---|---|---|
+| 1 | 1873 | +0.0219 (+0.0158 to +0.0282), beats it | +0.0068 (+0.0031 to +0.0107), beats it | +0.0039 (+0.0015 to +0.0065), beats it | +0.0007 (-0.0010 to +0.0024), not distinguishable |
+| 2 | 1872 | +0.0180 (+0.0120 to +0.0247), beats it | +0.0080 (+0.0037 to +0.0125), beats it | +0.0030 (+0.0004 to +0.0056), beats it | +0.0028 (+0.0006 to +0.0053), beats it |
+| 3 | 1871 | +0.0166 (+0.0104 to +0.0235), beats it | +0.0103 (+0.0053 to +0.0153), beats it | +0.0024 (-0.0003 to +0.0053), not distinguishable | +0.0018 (-0.0003 to +0.0040), not distinguishable |
+| 4 | 1870 | +0.0141 (+0.0082 to +0.0206), beats it | +0.0057 (+0.0013 to +0.0105), beats it | +0.0019 (-0.0008 to +0.0047), not distinguishable | -0.0003 (-0.0022 to +0.0018), not distinguishable |
+| 5 | 1869 | +0.0136 (+0.0075 to +0.0204), beats it | +0.0060 (+0.0011 to +0.0114), beats it | +0.0017 (-0.0009 to +0.0043), not distinguishable | -0.0003 (-0.0021 to +0.0015), not distinguishable |
 
 **Limitations the records state.** Each is quoted from the records named after it, which carry it beside their figures.
 
@@ -225,15 +217,26 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 - Coverage of the 0.05-0.95 band is 0.887 against 0.90 nominal on this window (#135: 0.887 [0.873, 0.901]); nested selection trades coverage for width (10.75 bp against 12.79 bp for #122's fixed constants). Tax-date coverage falls to 0.809. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
 - The 2020 regression: #122 measured conformal PID at its fixed constants worse than CV+ in the 2020 regime, paired day by day (CV+ minus PID, 90% stationary-bootstrap interval): CRPS -0.107 bp [-0.150, -0.065], Brier at +5 bp -0.00312 [-0.00490, -0.00141], Brier at +10 bp -0.00259 [-0.00413, -0.00100]. Under nested selection (#135, CV+ minus nested PID) the 2020 gap is CRPS +0.008 bp [-0.048, +0.052], Brier at +5 bp +0.00157 [-0.00121, +0.00399], Brier at +10 bp -0.00124 [-0.00363, +0.00047]: no longer distinguishable from zero, and not shown to be better than CV+ in 2020. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
 - Where nested selection does not help (#135, #122's fixed constants minus nested PID, 90% interval): in 2021-23 (CRPS -0.007 bp [-0.018, +0.002]) and on tax dates (CRPS -0.011 bp [-0.104, +0.066], Brier at +5 bp -0.00231 [-0.00694, +0.00069]). Most of its pooled CRPS gain over the fixed constants (+0.021 bp [+0.009, +0.032]) is in 2020 (+0.115 bp [+0.050, +0.172]). (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- The Brier figures these limitations quote from #122 and #135 were measured on the labels before #155's correction; the CRPS and coverage figures do not depend on the labels. (`backtest_gbm_conformal_pid_nested_funding.json`, `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`, `exceedance_gbm_conformal_pid_nested_funding.json`)
+- Scored only on days before 2026-01-01 (--end 2025-12-31), under docs/decisions/lockbox.md. The record of the same name it replaces, archived in docs/runs/archive/pre-whole-bp/, was scored through 2026-09-03, so no figure here is comparable with it. (`exceedance_calendar_climatology.json`, `exceedance_climatology.json`, `exceedance_gbm.json`, `exceedance_gbm_cross_conformal.json`, `exceedance_persistence_logistic.json`)
+- Labels read the spread on whole basis points, strictly above the threshold (#155, docs/decisions/pressure-probability.md): a day exactly on +5 or +10 bp is not above it. The records published before this correction are archived, unedited, in docs/runs/archive/pre-whole-bp/. (`exceedance_calendar_climatology.json`, `exceedance_climatology.json`, `exceedance_gbm.json`, `exceedance_gbm_conformal_pid_nested_funding.json`, `exceedance_gbm_cross_conformal.json`, `exceedance_persistence_logistic.json`, `pressure_model_v1_h1.json`, `pressure_model_v1_h2.json`, `pressure_model_v1_h3.json`, `pressure_model_v1_h4.json`, `pressure_model_v1_h5.json`)
+- Eleonora's wording (ruling of 2 October 2026 on #169): at +5 bp, "It beats the persistence-logistic by a small margin. The previous published model (CV+) tied it. The gain comes mainly from the switch to nested-selection calibration (#136); the #155 correction removed 18 threshold days." (`exceedance_gbm_conformal_pid_nested_funding.json`)
+- Eleonora's wording (ruling of 2 October 2026 on #169): "At +10 bp it beats calendar climatology by a small margin but not the persistence-logistic." (`exceedance_gbm_conformal_pid_nested_funding.json`)
+- Eleonora's wording (ruling of 2 October 2026 on #169): "On onset days it does not beat the persistence-logistic: it trails at +10 bp, and at +5 bp the two cannot be told apart." Onset days are scored days whose previous panel day was not above +5 bp (#160); the paired figures are in no record; they are in the pull request that published this record (#169). (`exceedance_gbm_conformal_pid_nested_funding.json`, `pressure_model_v1_h1.json`, `pressure_model_v1_h2.json`, `pressure_model_v1_h3.json`, `pressure_model_v1_h4.json`, `pressure_model_v1_h5.json`)
+- Pressure model v1 (#133, #134): the probability read from the published funding declaration's distribution (gbm on its nine features, conformal PID with nested selection of its constants), recalibrated out of fold, at the record's horizon in business days. Scored only on days before 2026-01-01 (--end 2025-12-31), under docs/decisions/lockbox.md. (`pressure_model_v1_h1.json`, `pressure_model_v1_h2.json`, `pressure_model_v1_h3.json`, `pressure_model_v1_h4.json`, `pressure_model_v1_h5.json`)
+- At horizons of 2 or more, treasury_settlement is not public at the decision instant, so the model drops it and its conformal PID scorecaster drops the coupon-settlement indicator (Eleonora's ruling on #170, option A); the record's declaration carries scorecaster_variant. Horizon 1 is unchanged. (`pressure_model_v1_h1.json`, `pressure_model_v1_h2.json`, `pressure_model_v1_h3.json`, `pressure_model_v1_h4.json`, `pressure_model_v1_h5.json`)
+- Eleonora's wording (ruling of 2 October 2026 on #169): "Beats the persistence-logistic at +5 bp one to five days ahead; at +10 bp, a small gain two days ahead only." (`pressure_model_v1_h1.json`, `pressure_model_v1_h2.json`, `pressure_model_v1_h3.json`, `pressure_model_v1_h4.json`, `pressure_model_v1_h5.json`)
 
-**The control that licenses every skill number.** A climatology scored against climatology must show no skill. Over the same 2042 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one.
+**The control that licenses every skill number.** A climatology scored against climatology must show no skill. Over its 1873 scored days its Brier skill score is 0.000 at every threshold it reports pooled (5, 10 bp), and its reference Brier score equals its own at each one.
+
+At 20 and 50 bp the record makes no pooled claim: it lists each day above the threshold event by event, with every model's forecasts over the days before it (`docs/decisions/pressure-probability.md`, #130).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/reliability-dark.svg">
   <img alt="Reliability of the exceedance forecasts at each declared threshold" src="docs/figures/reliability.svg">
 </picture>
 
-CORP reliability curves with 90% stationary-bootstrap bands, one panel per declared stress threshold. The diagonal is perfect calibration; the base rate under each panel is how often the threshold was actually exceeded.
+CORP reliability curves with 90% stationary-bootstrap bands, one panel per threshold reported pooled. The diagonal is perfect calibration; the base rate under each panel is how often the threshold was actually exceeded.
 
 <!-- end generated: key-findings -->
 
@@ -248,22 +251,20 @@ published as measured.
 <!-- Generated by scripts/emit_results.py from docs/runs/. Do not edit by hand:
      the block is regenerated from the run record and checked in the suite. -->
 
-The conditional model's exceedance probabilities, scored over 2042 days under the as-of rule, refitted every 21 scored days, against a climatology refitted on each fit's training rows. Run at `cd6be36`.
+The conditional model's exceedance probabilities, scored over 1873 days under the as-of rule, refitted every 21 scored days, against a climatology refitted on each fit's training rows. Run at `1b6e0b9`.
 
 | Threshold | Exceeded on | Brier skill vs climatology | 90% interval | Discrimination realised |
 |---|---|---|---|---|
-| τ = 5 bp | 8.1% of days | **+0.303** | +0.234 to +0.370 | 33.21% |
-| τ = 10 bp | 3.5% of days | **+0.089** | +0.004 to +0.158 | 14.14% |
-| τ = 20 bp | 1.0% of days | **-0.199** | -0.421 to -0.097 | 3.05% |
-| τ = 50 bp | 0.2% of days | **-0.776** | -3.094 to -0.385 | 0.00% |
+| τ = 5 bp | 7.5% of days | **+0.258** | +0.169 to +0.339 | 30.91% |
+| τ = 10 bp | 3.3% of days | **+0.056** | -0.039 to +0.129 | 12.50% |
 
-**Where the skill is.** The skill interval excludes zero above climatology at 5 and 10 bp, and below it at 20 and 50 bp. The last column is resolution as a share of uncertainty -- how much of the discrimination a sample had available the forecasts actually realised. It is the honest form of the comparison, because resolution and uncertainty both collapse as the event gets rarer and a resolution quoted alone cannot tell a model that stopped discriminating from a sample with nothing left to discriminate. It falls from 33.21% at 5 bp to 0.00% at 50 bp.
+**Where the skill is.** The skill interval excludes zero above climatology at 5 bp. The last column is resolution as a share of uncertainty -- how much of the discrimination a sample had available the forecasts actually realised. It is the honest form of the comparison, because resolution and uncertainty both collapse as the event gets rarer and a resolution quoted alone cannot tell a model that stopped discriminating from a sample with nothing left to discriminate. It falls from 30.91% at 5 bp to 12.50% at 10 bp.
+
+At 20 and 50 bp the record makes no pooled claim: it lists each day above the threshold event by event, with every model's forecasts over the days before it (`docs/decisions/pressure-probability.md`, #130).
 
 **At 5 bp the record reports no log score.** The forecast assigned probability 0 to an event that occurred, so the mean negative log likelihood is infinite. It is not clipped: a clip replaces an infinite loss with a finite one chosen by whoever picked the clip, and hides the failure worth seeing.
 
 **At 10 bp the record reports no log score.** The forecast assigned probability 0 to an event that occurred, so the mean negative log likelihood is infinite. It is not clipped: a clip replaces an infinite loss with a finite one chosen by whoever picked the clip, and hides the failure worth seeing.
-
-**At 50 bp the record reports no log score.** The forecast assigned probability 0 to an event that occurred, so the mean negative log likelihood is infinite. It is not clipped: a clip replaces an infinite loss with a finite one chosen by whoever picked the clip, and hides the failure worth seeing.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/reliability-gbm-dark.svg">

@@ -36,7 +36,7 @@ greater than** the threshold, as the exceedance path, the `stress_gt_*` labels a
 This record said ≥ before. Both rates are quoted in whole basis points, so the two differ on every day that sits
 exactly on the threshold, and this record now states what the code and the published records measure.
 
-**Draft, for Eleonora's approval; not in force until she approves it.** 2 October 2026
+2 October 2026
 ([#155](https://github.com/eleonorabjornberg/repo-market-model/issues/155)): the records published before
 #155's correction counted a day exactly on +5 or +10 bp as above it, so on those days they did not measure the
 strict event; from the corrected publication ([#124](https://github.com/eleonorabjornberg/repo-market-model/issues/124))

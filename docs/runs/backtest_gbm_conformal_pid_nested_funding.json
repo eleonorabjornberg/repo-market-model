@@ -1233,7 +1233,8 @@
     "Calibrated by conformal PID with the calendar scorecaster, its constants chosen by nested walk-forward selection (#125; Eleonora's rulings on #123 and #136): at each 21-day refit, the point of the 45-point grid declared in src/repo_model/recalibration.py before any scoring with the least pooled CRPS over the days whose labels were observable then. The first block, before any label is observable, uses #122's constants and carries the uncalibrated band. From late 2019 the choice mostly sits at the grid's smallest step, 0.01, its edge; the grid was not widened.",
     "Coverage of the 0.05-0.95 band is 0.887 against 0.90 nominal on this window (#135: 0.887 [0.873, 0.901]); nested selection trades coverage for width (10.75 bp against 12.79 bp for #122's fixed constants). Tax-date coverage falls to 0.809.",
     "The 2020 regression: #122 measured conformal PID at its fixed constants worse than CV+ in the 2020 regime, paired day by day (CV+ minus PID, 90% stationary-bootstrap interval): CRPS -0.107 bp [-0.150, -0.065], Brier at +5 bp -0.00312 [-0.00490, -0.00141], Brier at +10 bp -0.00259 [-0.00413, -0.00100]. Under nested selection (#135, CV+ minus nested PID) the 2020 gap is CRPS +0.008 bp [-0.048, +0.052], Brier at +5 bp +0.00157 [-0.00121, +0.00399], Brier at +10 bp -0.00124 [-0.00363, +0.00047]: no longer distinguishable from zero, and not shown to be better than CV+ in 2020.",
-    "Where nested selection does not help (#135, #122's fixed constants minus nested PID, 90% interval): in 2021-23 (CRPS -0.007 bp [-0.018, +0.002]) and on tax dates (CRPS -0.011 bp [-0.104, +0.066], Brier at +5 bp -0.00231 [-0.00694, +0.00069]). Most of its pooled CRPS gain over the fixed constants (+0.021 bp [+0.009, +0.032]) is in 2020 (+0.115 bp [+0.050, +0.172])."
+    "Where nested selection does not help (#135, #122's fixed constants minus nested PID, 90% interval): in 2021-23 (CRPS -0.007 bp [-0.018, +0.002]) and on tax dates (CRPS -0.011 bp [-0.104, +0.066], Brier at +5 bp -0.00231 [-0.00694, +0.00069]). Most of its pooled CRPS gain over the fixed constants (+0.021 bp [+0.009, +0.032]) is in 2020 (+0.115 bp [+0.050, +0.172]).",
+    "The Brier figures these limitations quote from #122 and #135 were measured on the labels before #155's correction; the CRPS and coverage figures do not depend on the labels."
   ],
   "metrics": {
     "crps_bps": 1.6591929132088845,
@@ -26666,6 +26667,24 @@
           "mean": 6.703582996117085
         }
       },
+      "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+          "count": 1722,
+          "interval": {
+            "lower": 1.7639492430978767,
+            "upper": 2.4635501830984685
+          },
+          "mean": 2.0577702018318202
+        },
+        "quarter_end_window": {
+          "count": 151,
+          "interval": {
+            "lower": 3.2262834937084524,
+            "upper": 6.2565151659364915
+          },
+          "mean": 4.628242601796485
+        }
+      },
       "by_regime": {
         "2018-19": {
           "count": 375,
@@ -26765,7 +26784,7 @@
         "treasury_settlement_soma": 0
       },
       "incomplete_dates": 4744,
-      "path": "/tmp/funding_panel.csv",
+      "path": "/tmp/s169/panel.csv",
       "refused_columns": {
         "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
         "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
@@ -26810,20 +26829,20 @@
     },
     "first_date": "2018-04-03",
     "last_date": "2026-09-03",
-    "path": "/tmp/funding_panel.csv",
+    "path": "/tmp/s169/panel.csv",
     "row_count": 2104,
     "sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
   },
   "provenance": {
     "code": {
-      "commit": "639f34170de5c07346062e78e8d3a8da70be8503",
+      "commit": "1b6e0b932a60f38b915653214148a452160145b6",
       "tree_modified": false,
       "untracked_files_present": false
     },
     "inputs": {
       "source_registry": {
         "path": "metadata/sources.json",
-        "sha256": "6b46ea8c0bb104ad2f8c26584ceede09c204fccdad50e73764a72d27d7c11d41"
+        "sha256": "bb33d708731c3d7cdda3d65cae1b0b3b16f2c5b9c2d31972ff494e53a31e3e32"
       }
     },
     "ml_libraries": {
