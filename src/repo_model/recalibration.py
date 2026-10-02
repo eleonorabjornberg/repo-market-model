@@ -62,6 +62,34 @@ CV+ itself. The level used is reported per day.
 
 Every constant here was declared before any fold was scored with it, and none
 was searched.
+
+**The search grid (#125).** #122 scored conformal PID at the constants above,
+chosen by its session and never searched. Eleonora's ruling of 2 October 2026
+asks for them to be re-examined by nested walk-forward selection, from a grid
+declared in code before any scoring and never widened after. `PidConstants`
+names the four that are searched, each by its role in Angelopoulos, Barber and
+Bates (2023):
+
+* `step`, the **P** part: quantile tracking's learning rate, `eta / B`. Larger
+  steps react faster to a run of misses and wander more on calm days.
+  Grid: `PID_GRID_STEPS`, 0.01, 0.05 (#122) and 0.2.
+* `integrator_gain` and `saturation`, the **I** part: the saturating
+  integrator `K_I * B * tan(E log(n + 1) / (C_sat (n + 1)))` over the summed
+  coverage error `E`. The gain `K_I` sets how far a long-run coverage error
+  moves the band; `C_sat` how soon the tangent saturates (a larger `C_sat`
+  acts later). Grid: `PID_GRID_INTEGRATOR_GAINS`, 0 (no integrator), 0.1
+  (#122) and 0.5; `PID_GRID_SATURATIONS`, 1 (#122) and 5. With a zero gain the
+  saturation is moot, so those points appear once, at the first saturation.
+* `scorecaster_minimum`, the **D** part: the scorecaster forecasting the day's
+  score from its calendar, here the number of observed labels before it is
+  fitted at all. Grid: `PID_GRID_SCORECASTER_MINIMUMS`, `None` (no
+  scorecaster), 20 (#122) and 60.
+
+`PID_GRID` is their product, 45 points, #122's (`DECLARED_PID`) among them.
+`nested_selection` chooses among them at each refit from the days scored
+before it (`select_constants` is the guard). The rest of the method is held at #122's values and not searched:
+`PID_STEP_WINDOW`, `PID_SCALE_FLOOR`, `PID_TANGENT_LIMIT`,
+`SCORECASTER_INDICATOR_MINIMUM` and `SCORECASTER_INDICATORS`.
 """
 
 from __future__ import annotations
@@ -69,6 +97,7 @@ from __future__ import annotations
 import math
 from collections import deque
 from datetime import date, datetime
+from itertools import product
 from typing import Deque, List, NamedTuple, Optional, Sequence, Tuple
 
 from .asof import InformationRule
@@ -106,6 +135,45 @@ SCORECASTER_MINIMUM = 20
 
 #: Observed days with, and without, an indicator before it enters the fit.
 SCORECASTER_INDICATOR_MINIMUM = 5
+
+
+class PidConstants(NamedTuple):
+    """The constants of conformal PID that #125 searches.
+
+    `step` is `eta / B` (P), `integrator_gain` and `saturation` are `K_I` and
+    `C_sat` (I), and `scorecaster_minimum` the observed labels before the
+    scorecaster is fitted, `None` for no scorecaster (D).
+    """
+
+    step: float
+    integrator_gain: float
+    saturation: float
+    scorecaster_minimum: Optional[int]
+
+
+#: #122's constants, the control: the point every other is compared with.
+DECLARED_PID = PidConstants(
+    PID_STEP, PID_INTEGRATOR_GAIN, PID_SATURATION, SCORECASTER_MINIMUM
+)
+
+#: The search grid's values per constant, declared before any scoring (#125).
+PID_GRID_STEPS = (0.01, 0.05, 0.2)
+PID_GRID_INTEGRATOR_GAINS = (0.0, 0.1, 0.5)
+PID_GRID_SATURATIONS = (1.0, 5.0)
+PID_GRID_SCORECASTER_MINIMUMS: Tuple[Optional[int], ...] = (None, 20, 60)
+
+#: The search grid: the product of the values above, without the duplicates a
+#: zero integrator gain makes of the saturation.
+PID_GRID: Tuple[PidConstants, ...] = tuple(
+    PidConstants(step, gain, saturation, minimum)
+    for step, gain, saturation, minimum in product(
+        PID_GRID_STEPS,
+        PID_GRID_INTEGRATOR_GAINS,
+        PID_GRID_SATURATIONS,
+        PID_GRID_SCORECASTER_MINIMUMS,
+    )
+    if gain != 0.0 or saturation == PID_GRID_SATURATIONS[0]
+)
 
 
 class OnlineDay(NamedTuple):
@@ -175,7 +243,8 @@ def _solve(gram: List[List[float]], moment: List[float]) -> Optional[Tuple[float
 class PidState:
     """Conformal PID's state: what the labels observed so far have taught it."""
 
-    def __init__(self, levels: Sequence[float]) -> None:
+    def __init__(self, levels: Sequence[float], constants: PidConstants = DECLARED_PID) -> None:
+        self.constants = constants
         self.alpha = _miss_rate(levels)
         self.tracker = 0.0
         self.error_sum = 0.0
@@ -196,10 +265,10 @@ class PidState:
         if not self.observed:
             return 0.0, False
         n = self.observed
-        argument = self.error_sum * math.log(n + 1) / (PID_SATURATION * (n + 1))
+        argument = self.error_sum * math.log(n + 1) / (self.constants.saturation * (n + 1))
         saturated = abs(argument) > PID_TANGENT_LIMIT
         argument = max(-PID_TANGENT_LIMIT, min(PID_TANGENT_LIMIT, argument))
-        return PID_INTEGRATOR_GAIN * self._scale() * math.tan(argument), saturated
+        return self.constants.integrator_gain * self._scale() * math.tan(argument), saturated
 
     def _fit(self) -> Tuple[Tuple[int, ...], Tuple[float, ...]]:
         if self._coefficients is None:
@@ -220,7 +289,8 @@ class PidState:
         return self._coefficients
 
     def scorecast(self, calendar: Sequence[int]) -> float:
-        if self.observed < SCORECASTER_MINIMUM:
+        minimum = self.constants.scorecaster_minimum
+        if minimum is None or self.observed < minimum:
             return 0.0
         active, coefficients = self._fit()
         row = (1,) + tuple(calendar)
@@ -265,7 +335,7 @@ class PidState:
             )
         score = _score(day.vector, actual)
         miss = 0.0 if band.vector[0] <= actual <= band.vector[-1] else 1.0
-        self.tracker += PID_STEP * self._scale() * (miss - self.alpha)
+        self.tracker += self.constants.step * self._scale() * (miss - self.alpha)
         self.error_sum += miss - self.alpha
         self.observed += 1
         self.last_observed = day.scored_date
@@ -281,13 +351,17 @@ class PidState:
 
 
 def conformal_pid(
-    days: Sequence[OnlineDay], actuals: Sequence[float], levels: Sequence[float]
+    days: Sequence[OnlineDay],
+    actuals: Sequence[float],
+    levels: Sequence[float],
+    constants: PidConstants = DECLARED_PID,
 ) -> Tuple[OnlineBand, ...]:
     """Conformal PID's band for every day, each from the labels its decision saw.
 
     `days` and `actuals` are aligned, in scored-date order. Before each day's
     band is issued, every earlier day whose label is observable at its
     decision (scored on or before its anchor) is observed, in date order.
+    `constants` defaults to #122's.
 
     Raises:
         ValueError: on misaligned inputs, days out of order, or anchors that
@@ -311,7 +385,7 @@ def conformal_pid(
                 f"{day.scored_date} is anchored at {day.anchor}: its own label "
                 f"would be observable before its band is issued"
             )
-    state = PidState(levels)
+    state = PidState(levels, constants)
     pending: Deque[Tuple[OnlineDay, OnlineBand, float]] = deque()
     bands: List[OnlineBand] = []
     for day, actual in zip(days, actuals):
@@ -414,3 +488,105 @@ def group_conditional_edges(
     raise ValueError(
         f"{len(lows)} held-out terms, fewer than the {minimum} a band needs"
     )
+
+
+class SelectedBlock(NamedTuple):
+    """One refit block of nested selection: when it starts, and what it chose.
+
+    `anchor` is the refit's latest observable label; `past_days` the scored
+    days the choice was made on; `chosen` the index of the candidate used for
+    every day of the block.
+    """
+
+    first_scored: date
+    anchor: date
+    past_days: int
+    chosen: int
+
+
+class NestedSelection(NamedTuple):
+    """The candidate used on each scored day, and the choice made at each refit."""
+
+    per_day: Tuple[int, ...]
+    blocks: Tuple[SelectedBlock, ...]
+
+
+def select_constants(
+    history: Sequence[Tuple[date, Sequence[float]]],
+    anchor: date,
+    candidates: int,
+    *,
+    fallback: int,
+) -> Tuple[int, int]:
+    """The candidate with the least pooled loss over `history`, and its length.
+
+    `history` holds `(scored_date, losses)` for past scored days, `losses[k]`
+    the loss candidate `k` scored that day. Ties go to the earlier candidate.
+    With no history the choice is `fallback`.
+
+    Raises:
+        LookAheadError: a day in `history` is scored after `anchor`, so its
+            label was not observable at the refit the choice is made for.
+        ValueError: a day's losses are not `candidates` finite numbers.
+    """
+
+    totals = [0.0] * candidates
+    for scored_date, losses in history:
+        if scored_date > anchor:
+            raise LookAheadError(
+                f"the loss of {scored_date} is not observable at a refit whose "
+                f"latest observable label is {anchor}; constants are chosen only "
+                f"from days scored before the refit"
+            )
+        if len(losses) != candidates or not all(math.isfinite(loss) for loss in losses):
+            raise ValueError(
+                f"{scored_date}: losses {tuple(losses)} are not {candidates} finite numbers"
+            )
+        for k, loss in enumerate(losses):
+            totals[k] += loss
+    if not history:
+        return fallback, 0
+    return totals.index(min(totals)), len(history)
+
+
+def nested_selection(
+    scored_dates: Sequence[date],
+    anchors: Sequence[date],
+    losses: Sequence[Sequence[float]],
+    refit_every: int,
+    *,
+    fallback: int,
+) -> NestedSelection:
+    """Nested walk-forward selection on the one fold grid.
+
+    The scored days are cut into the backtest's refit blocks
+    (`asof.refit_blocks`). At each block's refit the candidate is chosen by
+    pooled loss over every scored day whose label was observable there
+    (scored on or before the first row's anchor), and used for every day of
+    the block. `fallback` is used while no such day exists.
+
+    Raises:
+        ValueError: on misaligned inputs.
+        LookAheadError: from `select_constants`, if a later day reaches it.
+    """
+
+    from .asof import refit_blocks
+
+    if not len(scored_dates) == len(anchors) == len(losses):
+        raise ValueError(
+            f"{len(scored_dates)} scored days, {len(anchors)} anchors and "
+            f"{len(losses)} loss rows; they are aligned"
+        )
+    candidates = len(losses[0]) if losses else 0
+    per_day: List[int] = [fallback] * len(scored_dates)
+    blocks: List[SelectedBlock] = []
+    for block in refit_blocks(range(len(scored_dates)), refit_every):
+        anchor = anchors[block[0]]
+        history = [
+            (when, loss) for when, loss in zip(scored_dates, losses) if when <= anchor
+        ]
+        chosen, past = select_constants(history, anchor, candidates, fallback=fallback)
+        for position in block:
+            per_day[position] = chosen
+        blocks.append(SelectedBlock(scored_dates[block[0]], anchor, past, chosen))
+    return NestedSelection(tuple(per_day), tuple(blocks))
