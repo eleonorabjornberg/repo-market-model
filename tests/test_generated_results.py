@@ -281,6 +281,14 @@ class MilestoneAReproductionTests(unittest.TestCase):
         name rather than compare a new rule's numbers against an old record.
         The moment the record carries no `derived.purge_days`, the full
         comparison below runs again, with no edit here.
+
+        **The same holds for the lockbox** (`docs/decisions/lockbox.md`). The
+        record scored days through 2026-09-03, in the near-blind tier, which
+        the scoring path refuses while the tier is locked: the panel must
+        still rebuild and verify, and the script must refuse step 3 naming the
+        tier (`LockedRecord`). When the tier is opened in
+        `metadata/lockbox.json`, the full comparison runs again, with no edit
+        here.
         """
 
         import tempfile
@@ -292,6 +300,12 @@ class MilestoneAReproductionTests(unittest.TestCase):
                 with self.assertRaises(script.PrePurgeRuleRecord) as caught:
                     script.reproduce(workdir)
                 self.assertIn("purge rule", str(caught.exception))
+                self.assertTrue((Path(workdir) / "funding_panel.csv").exists())
+                return
+            if script.locked_tier_refusal(record) is not None:
+                with self.assertRaises(script.LockedRecord) as caught:
+                    script.reproduce(workdir)
+                self.assertIn("locked near_blind tier", str(caught.exception))
                 self.assertTrue((Path(workdir) / "funding_panel.csv").exists())
                 return
             try:

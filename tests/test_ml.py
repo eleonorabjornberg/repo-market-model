@@ -257,6 +257,7 @@ from test_cli_eval import (
     declared_registry_file,
 )
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 #: The variable a job that exists to exercise the extra sets. See the module
 #: docstring: it is the only way this process can tell "no extra installed, and
