@@ -9378,6 +9378,281 @@ class DirectTrainingPairsTests(unittest.TestCase):
 
 
 
+# --------------------------------------------------------------------------
+# Direct pressure-probability models (#114)
+# --------------------------------------------------------------------------
+
+_PRESSURE_REGISTRY = json.loads(
+    (Path(__file__).resolve().parents[1] / "metadata" / "sources.json").read_text()
+)
+_PRESSURE_SPLITS = Path(__file__).resolve().parents[1] / "metadata" / "evaluation_splits.json"
+_PRESSURE_CALENDAR = ("spread_bps", "sofr_volume", "days_to_month_end", "quarter_end", "tax_date")
+_PRESSURE_FULL = (
+    "spread_bps", "reserve_balances", "tga",
+    "days_to_month_end", "quarter_end", "tax_date",
+)
+
+
+def _pressure_splits():
+    from repo_model.evaluation_splits import load_split_declaration
+
+    return load_split_declaration(_PRESSURE_SPLITS)
+
+
+def _with_calendar(rows):
+    out = []
+    for index, row in enumerate(rows):
+        values = dict(row.values)
+        values["quarter_end"] = 1.0 if index % 11 == 10 else 0.0
+        values["days_to_month_end"] = float(index % 7)
+        values["tax_date"] = 1.0 if index % 5 == 0 else 0.0
+        out.append(DailyObservation(row.date, values))
+    return out
+
+
+def _pressure_panel(count=160):
+    """Weekday rows with a spread that rises on month-ends and scarce reserves.
+
+    `reserve_balances` (USD bn) and `tga` move weekly, as the H.4.1 prints do;
+    the calendar columns cycle so every pressure-day type occurs.
+    """
+
+    rows = []
+    when = date(2026, 1, 5)
+    state = 20261002
+    while len(rows) < count:
+        if when.weekday() < 5:
+            index = len(rows)
+            state = (1103515245 * state + 12345) % (2 ** 31)
+            week = index // 5
+            reserves = 3200.0 - 40.0 * (week % 9)
+            tga = 700.0 + 25.0 * ((week * 7) % 5)
+            month_end = index % 21 >= 19
+            spread = (
+                -3.0 + (state % 7) + (6.0 if month_end else 0.0)
+                + (3000.0 - reserves) / 40.0
+            )
+            rows.append(
+                DailyObservation(
+                    when,
+                    {
+                        "sofr": 4.0 + spread / 100.0,
+                        "iorb": 4.0,
+                        "sofr_volume": 2100.0 + (state % 1301) / 3.0,
+                        "reserve_balances": reserves,
+                        "tga": tga,
+                        "days_to_month_end": float(20 - index % 21),
+                        "quarter_end": 1.0 if index % 63 == 62 else 0.0,
+                        "tax_date": 1.0 if index % 21 == 10 else 0.0,
+                    },
+                )
+            )
+        when += timedelta(days=1)
+    return rows
+
+
+class _PressureConformance(ExceedancePredictorConformance):
+    """The conformance suite against a direct pressure model, rule bound."""
+
+    FACTORY = None
+
+    def setUp(self):
+        require_extra(self)
+
+    def frame(self):
+        from test_baseline import regressor_frame
+
+        return _with_calendar(regressor_frame())
+
+    def make_predictor(self):
+        predictor = type(self).FACTORY(
+            _PRESSURE_CALENDAR, _pressure_splits(), minimum_history=self.MINIMUM_HISTORY
+        )
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+
+        def bound(train_rows, feature_rows, taus):
+            return predictor(train_rows, feature_rows, taus, information=rule)
+
+        return bound
+
+
+class PressureLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_logistic_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_logistic_exceedance)
+    FACTORY = staticmethod(ml.pressure_logistic_exceedance)
+
+
+class PressureClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_classifier_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_classifier_exceedance)
+    FACTORY = staticmethod(ml.pressure_classifier_exceedance)
+
+
+class DirectPressureModelTests(unittest.TestCase):
+    """The direct pressure models' design, pairs and guards (#114)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+        self.dates = [row.date for row in self.rows]
+
+    def rule(self, horizon=1, features=_PRESSURE_FULL):
+        return ml.InformationRule(
+            _PRESSURE_REGISTRY, features, decision_time=time(16, 0), horizon=horizon
+        )
+
+    def test_the_design_names_every_term_it_builds(self):
+        design = ml._PressureDesign(
+            _PRESSURE_FULL + ("treasury_settlement",), _pressure_splits()
+        )
+        self.assertEqual(
+            design.names,
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date", "treasury_settlement",
+                "quarter_end_x_scarcity", "month_end_x_scarcity",
+                "tax_date_x_scarcity", "treasury_settlement_x_scarcity",
+                "tga_change", "tga_change_x_scarcity",
+            ),
+        )
+
+    def test_a_partial_calendar_or_tga_without_reserves_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("spread_bps", "quarter_end"), _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("spread_bps", "tga"), _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("reserve_balances",), _pressure_splits())
+
+    def test_each_label_is_paired_with_what_its_own_decision_read(self):
+        """Direct pairs: at horizon 3 the spread is the row four back.
+
+        The calendar terms are the label's own day, the scarcity state the
+        reserves print public at the label's decision, and the TGA change ends
+        at the TGA print public then.
+        """
+
+        design = ml._PressureDesign(_PRESSURE_FULL, _pressure_splits())
+        rule = self.rule(horizon=3)
+        train = self.rows[:120]
+        xs, ys = ml._pressure_pairs(design, rule, train, {})
+        dates = [row.date for row in train]
+        expected_x, expected_y = [], []
+        for target in range(1, len(train)):
+            try:
+                info = rule.information_set(dates, target)
+            except SplitError:
+                continue
+            tga_row = [r for r in info.reads if r.feature == "tga"][0].row
+            reserves_row = [r for r in info.reads if r.feature == "reserve_balances"][0].row
+            if tga_row < ml.TGA_CHANGE_ROWS:
+                continue
+            self.assertEqual(info.anchor, target - 4)
+            self.assertLess(reserves_row, target - 3)
+            kind = _pressure_splits().day_type(train[target].values)
+            state = train[reserves_row].values["reserve_balances"] / 1000.0
+            terms = [1.0 if kind == name else 0.0 for name in ("quarter_end", "month_end", "tax_date")]
+            change = train[tga_row].values["tga"] - train[tga_row - 5].values["tga"]
+            expected_x.append(
+                [train[target - 4].spread_bps, state, *terms,
+                 *[term * state for term in terms], change, change * state]
+            )
+            expected_y.append(train[target].spread_bps)
+        self.assertEqual(len(xs), len(expected_x))
+        for got, want in zip(xs, expected_x):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, places=9)
+        self.assertEqual(ys, expected_y)
+
+    def test_the_logistic_is_scikit_learns_on_the_standardized_pairs(self):
+        from sklearn.linear_model import LogisticRegression
+        import numpy
+
+        design = ml._PressureDesign(_PRESSURE_CALENDAR, _pressure_splits())
+        rule = self.rule(features=_PRESSURE_CALENDAR)
+        rows = _with_calendar(self.rows)
+        train, served = rows[:-1], rows[-1:]
+        info = rule.information_set([row.date for row in rows], len(rows) - 1)
+        observation = rule.observation(rows, info)
+        predictor = ml.pressure_logistic_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        got = predictor(train, (observation,), (5.0,), information=rule).curves[0][0]
+
+        xs, ys = ml._pressure_pairs(design, rule, train, {})
+        x = numpy.asarray(xs)
+        centre, scale = x.mean(axis=0), x.std(axis=0)
+        scale[scale == 0.0] = 1.0
+        model = LogisticRegression(C=1.0, max_iter=5000).fit(
+            (x - centre) / scale, [1 if y > 5.0 else 0 for y in ys]
+        )
+        want = model.predict_proba(
+            (numpy.asarray([design.row(observation, None)]) - centre) / scale
+        )[0, 1]
+        self.assertAlmostEqual(got, float(want), places=12)
+
+    def test_a_backtest_at_horizon_two_runs_under_every_guard(self):
+        for factory in (ml.pressure_logistic_exceedance, ml.pressure_classifier_exceedance):
+            with self.subTest(factory=factory.__name__):
+                report = baseline.rolling_exceedance_backtest(
+                    self.rows,
+                    predictor=factory(_PRESSURE_FULL, _pressure_splits(), minimum_history=60),
+                    model_name=factory.__name__,
+                    features=_PRESSURE_FULL,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                    horizon=2,
+                )
+                self.assertEqual(report.horizon, 2)
+                for fold in report.folds:
+                    self.assertLessEqual(fold.feature_date, self.dates[self.dates.index(fold.scored_date) - 3])
+                self.assertIn("tga_change_x_scarcity", report.model_settings["design"])
+                self.assertEqual(report.model_settings["scarcity_state"], ml.SCARCITY_STATE)
+
+    def test_without_the_rule_it_refuses(self):
+        predictor = ml.pressure_logistic_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        rows = _with_calendar(self.rows)
+        with self.assertRaises(ValueError):
+            predictor(rows[:-1], rows[-1:], (5.0,))
+
+    def test_a_served_tga_change_must_start_at_the_as_of_read(self):
+        """The served TGA change is measured from the TGA value the forecast read.
+
+        Written red first: with the comparison against the observation's read
+        absent, the history below (whose latest public TGA is not the value the
+        observation read) gave a change and no refusal.
+
+        Recorded mutation (CLAUDE.md), the read check dropped: in
+        `ml._served_tga_change`, the condition `position < 0 or read is None or
+        float(history[position].values["tga"]) != float(read)` mutated to
+        `position < 0 or read is None`. This test then fails, raising
+        `AssertionError` ("LookAheadError not raised").
+        """
+
+        history = self.rows[:40]
+        observation = DailyObservation(
+            history[-1].date, {**history[-1].values, "tga": history[-1].values["tga"] + 1.0}
+        )
+        with self.assertRaises(LookAheadError):
+            ml._served_tga_change(history, observation)
+        # And the honest read gives the change from the history's own rows.
+        self.assertEqual(
+            ml._served_tga_change(history, history[-1]),
+            history[-1].values["tga"] - history[-6].values["tga"],
+        )
+
+    def test_both_are_selectable_by_name_and_read_the_splits(self):
+        for name in ("pressure_logistic", "pressure_classifier"):
+            choice = cli_eval.MODEL_FACTORIES[name]
+            self.assertTrue(choice.takes_splits)
+            self.assertTrue(choice.needs_ml_extra)
+
+
 class RecalibrationPartsTests(unittest.TestCase):
     """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
 

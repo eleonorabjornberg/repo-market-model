@@ -267,6 +267,29 @@ MODEL_FACTORIES = MappingProxyType(
             takes_volatility_feature=True,
             takes_arx_feature=True,
         ),
+        # The two direct pressure-probability candidates of pressure model v1
+        # (#114), behind the extra like gbm. Each reads the latest spread plus
+        # the declared regressors, and the pressure-day types from --splits.
+        "pressure_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_logistic_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_classifier_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
     }
 )
 
