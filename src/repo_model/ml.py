@@ -430,6 +430,32 @@ declaration, and the purge is already sized over every column the ARX reads.
 
 Absent is the default and is today's gbm, bit for bit.
 
+**Direct (horizon-matched) training pairs, opt-in (#37).** The default design
+is one-step pairs: row `p`'s own values train on row `p + 1`'s spread, and the
+fitted model is then served the as-of observation, which sits two or more rows
+before the scored day. `training_pairs="direct"` trains on the gap it is served
+at instead. Each target row `t` is paired with the observation a forecast of
+`t` reads -- `asof.InformationRule.observation` at `t`'s own decision instant,
+every declared field at its latest row observable there -- and its lags and
+GARCH variance end at `t`'s anchor, as a forecast's do. It is the read a
+calibration row is already scored from, so under a calibration the fit and the
+held-out scores are made at one horizon.
+
+* **Guarded as a forecast is.** Every pair's read goes through
+  `InformationRule.check`, the leakage and staleness guards a scored day's
+  read goes through, and is refused with their exceptions. A target with no
+  read at its decision -- the frame's first rows -- trains no pair.
+* **Needs the run's rule.** `information` is required, under every
+  calibration, `none` included, and its absence is `SplitError`.
+* **Under the cross-conformal calibrations**, an excluding model trains a
+  pair only if its target and every row its read touches are rows it may
+  train on, by the rule its one-step pairs follow; `training_dates` lists
+  all of them.
+* **The ARX feature is unchanged**: `fit_arx` is a one-step model, fitted on
+  its own pairs, and its forecast is a column read off the feature row.
+
+Absent is the default and is today's gbm, bit for bit.
+
 **A generalised Pareto tail, opt-in (B36).** `tail="gpd"` continues the law
 `predict_stress` inverts above its top declared quantile with `_fit_gpd_pwm`'s
 fitted tail, where the knot law has only one straight segment to the largest
@@ -549,6 +575,7 @@ __all__ = [
     "SCALE_FLOOR_BPS",
     "SCALE_WINDOW",
     "TAIL_FAMILIES",
+    "TRAINING_PAIRS",
     "VOLATILITY_FEATURES",
     "FittedTail",
     "MissingMLExtraError",
@@ -665,6 +692,10 @@ ARX_FEATURES = ("declared",)
 
 #: The design name of the ARX forecast column.
 _ARX_COLUMN = "arx_forecast"
+
+#: The training pairings gbm can be built with besides the default one-step
+#: pairs. See the module docstring (#37).
+TRAINING_PAIRS = ("direct",)
 
 #: The tail families gbm's law can be continued with above its top declared
 #: quantile. See the module docstring.
@@ -1573,6 +1604,8 @@ class FittedGradientBoostedQuantiles:
     * `arx_feature`, `arx` --- the ARX feature the design carries (`None` when
       it carries none) and the `baseline.FittedArx` fitted on the fit rows,
       whose point forecast from a feature row is that row's column.
+    * `training_pairs` --- `"direct"` when the design was trained on direct
+      pairs, `None` for one-step pairs. See the module docstring.
     * `tail`, `tail_fit` --- the tail family the law is continued with above
       its top declared quantile (`None` when it is not) and the `FittedTail`
       fitted to the calibration rows' excesses above that quantile. Four
@@ -1635,6 +1668,7 @@ class FittedGradientBoostedQuantiles:
         "spread_change_lags",
         "tail",
         "tail_fit",
+        "training_pairs",
         "volatility_feature",
         "widening",
     )
@@ -1668,7 +1702,9 @@ class FittedGradientBoostedQuantiles:
         tail: Optional[str] = None,
         tail_fit: Optional[FittedTail] = None,
         edge_widenings: Tuple[float, float] = (0.0, 0.0),
+        training_pairs: Optional[str] = None,
     ) -> None:
+        self.training_pairs: Optional[str] = training_pairs
         self.edge_widenings: Tuple[float, float] = (
             float(edge_widenings[0]),
             float(edge_widenings[1]),
@@ -1782,8 +1818,8 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
-        the same rule: named when set, absent when not. Each calibration names its own setting and
+        `spread_change_lags`, `volatility_feature`, `arx_feature`, `tail` and
+        `training_pairs` by the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal` and
         `conformal_asymmetric`, `calibration_folds` for `cross_conformal`,
         `cross_conformal_asymmetric`, `cross_conformal_scaled` and
@@ -1810,6 +1846,8 @@ class FittedGradientBoostedQuantiles:
             settings["arx_feature"] = self.arx_feature
         if self.tail is not None:
             settings["tail"] = self.tail
+        if self.training_pairs is not None:
+            settings["training_pairs"] = self.training_pairs
         return MappingProxyType(settings)
 
     @property
@@ -2411,6 +2449,7 @@ def _training_design(
     arx_feature: Optional[str] = None,
     arx_frame: Sequence[DailyObservation] = (),
     arx_origins: Optional[Sequence[int]] = None,
+    pairs: Optional[Sequence[Tuple[int, DailyObservation, int]]] = None,
 ) -> Tuple[
     Mapping[str, float],
     Optional[Tuple[float, float, float]],
@@ -2423,7 +2462,10 @@ def _training_design(
     """One fit's imputations, GARCH, ARX, design and targets, over the pairs at `origins`.
 
     `origins` are frame positions `p` whose one-step pair `(p, p + 1)` trains;
-    every one is at least `lags`. `spreads` is what the training lags and
+    every one is at least `lags`. `pairs`, when given, replaces them with
+    direct pairs `(anchor, observation, target)` from `_direct_pairs`: the
+    lags and variance are read at `anchor`, the regressors off `observation`,
+    and the target is row `target`'s spread. `spreads` is what the training lags and
     variances are read off -- the frame's own, or, for an excluding model, the
     frame's with every row it may not train on made a hole -- and
     `garch_spreads` what the GARCH is fitted on. The ARX is `fit_arx` on
@@ -2438,6 +2480,9 @@ def _training_design(
     """
 
     change_names = _spread_change_names(lags)
+    if pairs is None:
+        pairs = [(position, rows[position], position + 1) for position in origins]
+    origins = [anchor for anchor, _, _ in pairs]
 
     # The GARCH(1,1), fitted on `garch_spreads` and nothing after them, then
     # filtered over `spreads` with those parameters: rows it did not fit on are
@@ -2468,9 +2513,9 @@ def _training_design(
         for name, change in zip(change_names, row_changes):
             if change is not None:
                 observed[name].append(change)
-    for position in origins:
+    for _, feature, _ in pairs:
         for name in names:
-            value = _raw_regressor(rows[position], name, "training row")
+            value = _raw_regressor(feature, name, "training row")
             if value is not None:
                 observed[name].append(value)
 
@@ -2499,12 +2544,12 @@ def _training_design(
 
     design = []
     targets = []
-    for position, row_changes in zip(origins, changes):
+    for (position, feature, target), row_changes in zip(pairs, changes):
         # The origin's variance and ARX forecast, `position`: the target row's
         # would read the target.
         design.append(
             _design(
-                rows[position],
+                feature,
                 names,
                 imputations,
                 "training row",
@@ -2513,8 +2558,50 @@ def _training_design(
                 arx,
             )
         )
-        targets.append(float(rows[position + 1].spread_bps))
+        targets.append(float(rows[target].spread_bps))
     return imputations, garch, initial, design, targets, variances, arx
+
+
+def _direct_pairs(
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    targets: Sequence[int],
+    lags: int,
+    kept: Optional[Sequence[bool]] = None,
+) -> Tuple[List[Tuple[int, DailyObservation, int]], List[int]]:
+    """The direct pairs at `targets`, and every row they read (#37).
+
+    Each target `t` is paired with its as-of read at its own decision instant,
+    checked by both guards, as `_held_out_read` reads a held-out row. A target
+    with no read, or whose anchor has fewer than `lags` rows before it, trains
+    no pair. With `kept`, a pair trains only if its target and every row its
+    read touches are kept: an excluding model reads nothing of its block
+    through a feature.
+
+    Returns `(pairs, read)`: the `(anchor, observation, target)` triples in
+    target order, and the ascending positions of every row they read,
+    targets included.
+    """
+
+    pairs: List[Tuple[int, DailyObservation, int]] = []
+    read: set = set()
+    for target in targets:
+        if target < 1:
+            continue
+        try:
+            info = information.information_set(dates, target)
+        except SplitError:
+            continue
+        information.check(dates, info)
+        if info.anchor < lags:
+            continue
+        touched = {target, info.anchor, *(field.row for field in info.reads)}
+        if kept is not None and not all(kept[position] for position in touched):
+            continue
+        pairs.append((info.anchor, information.observation(rows, info), target))
+        read.update(touched)
+    return pairs, sorted(read)
 
 
 def _fitted_levels(
@@ -2596,6 +2683,7 @@ def fit_gradient_boosted_quantiles(
     calibration_folds: Optional[int] = None,
     arx_feature: Optional[str] = None,
     tail: Optional[str] = None,
+    training_pairs: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -2671,6 +2759,11 @@ def fit_gradient_boosted_quantiles(
             rows' residual excesses above their reported top quantile and
             continues the law above that quantile with it; `conformal` only.
             See the module docstring.
+        training_pairs: one of `TRAINING_PAIRS`, or `None`, the default,
+            which trains on one-step pairs and is the model every published
+            gbm record was produced with. `"direct"` pairs each target row
+            with its own as-of read, the gap a forecast is served at, and
+            needs `information`. See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -2880,6 +2973,21 @@ def fit_gradient_boosted_quantiles(
             f"excluding model, cross_conformal's missing sample, and its "
             f"correction scaled per row besides. Use calibration 'conformal'"
         )
+    if training_pairs is not None and training_pairs not in TRAINING_PAIRS:
+        raise ValueError(
+            f"unknown training_pairs {training_pairs!r}; this model can be "
+            f"trained on {', '.join(TRAINING_PAIRS)} pairs, or on one-step "
+            f"pairs by leaving the setting out. A misspelt pairing fitted on "
+            f"one-step pairs would publish today's gbm under a declaration "
+            f"naming another"
+        )
+    direct = training_pairs == "direct"
+    if direct and not isinstance(information, InformationRule):
+        raise SplitError(
+            f"training_pairs 'direct' pairs each target with its as-of read and "
+            f"needs the run's as-of rule to read it (information=), got "
+            f"{information!r}"
+        )
     scaled = calibration == _SCALED_CALIBRATION
     partial = calibration == _PARTIAL_CALIBRATION
     trailing = calibration in _TRAILING_SCALE_CALIBRATIONS
@@ -2967,6 +3075,19 @@ def fit_gradient_boosted_quantiles(
     # calibration rows are run through the recursion, never fitted on.
     # The ARX is fitted on the fit rows as one frame, which is what
     # `--model arx` fits on the same rows.
+    # Direct pairs: every fit row as a target, read as a forecast of it is.
+    # Every read is before its target, so inside the fit rows.
+    fit_pairs = (
+        _direct_pairs(information, rows, dates, range(len(fit_rows)), lags)[0]
+        if direct
+        else None
+    )
+    if direct and not fit_pairs:
+        raise ValueError(
+            f"training_pairs 'direct' leaves no training pair in the "
+            f"{len(fit_rows)} fit rows: no target has an as-of read with "
+            f"{lags} rows before its anchor"
+        )
     imputations, garch, initial, design, targets, variances, arx = _training_design(
         rows,
         dates,
@@ -2979,6 +3100,7 @@ def fit_gradient_boosted_quantiles(
         "fit rows",
         arx_feature,
         fit_rows,
+        pairs=fit_pairs,
     )
 
     # The cross-conformal blocks, planned and designed before anything is
@@ -3011,6 +3133,17 @@ def fit_gradient_boosted_quantiles(
                     for position in range(lags, len(rows) - 1)
                     if kept[position] and kept[position + 1]
                 ]
+            block_pairs = None
+            training_positions = sorted(
+                {p for origin in origins for p in (origin, origin + 1)}
+            )
+            if direct and start < stop:
+                # Direct: a pair trains only if its target and every row its
+                # read touches do.
+                block_pairs, training_positions = _direct_pairs(
+                    information, rows, dates, range(len(rows)), lags, kept
+                )
+                origins = [anchor for anchor, _, _ in block_pairs]
             if not origins:
                 raise ValueError(
                     f"cross-conformal block {number + 1} of {folds} holds out "
@@ -3056,6 +3189,7 @@ def fit_gradient_boosted_quantiles(
                 arx_feature,
                 rows,
                 arx_origins,
+                pairs=block_pairs,
             )
             # Its scored rows' inputs are every row at or before their feature
             # row, as a forecast's are; only what the model learned is its own.
@@ -3107,7 +3241,7 @@ def fit_gradient_boosted_quantiles(
                 (
                     start,
                     stop,
-                    origins,
+                    training_positions,
                     block_imputations,
                     block_garch,
                     block_initial,
@@ -3229,7 +3363,7 @@ def fit_gradient_boosted_quantiles(
     for (
         start,
         stop,
-        origins,
+        training_positions,
         block_imputations,
         block_garch,
         block_initial,
@@ -3260,9 +3394,7 @@ def fit_gradient_boosted_quantiles(
                 arx=block_arx,
                 held_out_start=dates[start],
                 held_out_end=dates[stop - 1],
-                training_dates=sorted(
-                    {dates[p] for origin in origins for p in (origin, origin + 1)}
-                ),
+                training_dates=[dates[p] for p in training_positions],
                 scored_dates=[when for _, _, when, _ in held_out],
                 scores=[
                     max(vector[0] - target, target - vector[-1])
@@ -3325,6 +3457,7 @@ def fit_gradient_boosted_quantiles(
         tail=tail,
         tail_fit=tail_fit,
         edge_widenings=edge_widenings,
+        training_pairs=training_pairs,
     )
 
 
