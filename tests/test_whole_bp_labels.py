@@ -116,6 +116,17 @@ class LabelTests(unittest.TestCase):
         self.assertEqual(by_value[0], {(0, 0)})
 
 
+    def test_the_event_list_lists_no_day_on_tau(self):
+        """#130's event list reads the outcomes: no +5 bp day is an event."""
+
+        from repo_model.baseline import exceedance_event_list
+
+        report = backtest(weekday_rows([0, 0, 5, 6, 0, 5, 0, 6, 6, 0] * 8))
+        events = exceedance_event_list(report, (), 0, lead_days=0)
+        self.assertTrue(events)
+        self.assertEqual({round(event["realized_bps"]) for event in events}, {6})
+
+
 class TrainingCountTests(unittest.TestCase):
     def test_the_climatology_counts_no_day_on_tau(self):
         train = weekday_rows([5, 5, 5, 6] * 10)
