@@ -404,6 +404,8 @@ CALENDAR_FEATURES = frozenset(
 # exempts them from `tests/test_contract.py`'s rule that every classified
 # column is a panel column. `tests/test_announced_iorb.py` checks the module
 # adds exactly these. Adding one does not move the published panel's bytes.
+# Per-use exception (Eleonora, 2 October 2026, #38/PR #154): adding a column
+# here is her decision.
 OVERLAY_FEATURES = MappingProxyType(
     {
         "iorb_announced_change_bps": "repo_model.announced_iorb",
