@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "3a16f8b",
+  "commit": "512c068",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -38,7 +38,12 @@
     "exceedance_gbm_cross_conformal.json",
     "exceedance_persistence_logistic.json",
     "funding_panel.manifest.json",
-    "persistence_funding.json"
+    "persistence_funding.json",
+    "pressure_model_v1_h1.json",
+    "pressure_model_v1_h2.json",
+    "pressure_model_v1_h3.json",
+    "pressure_model_v1_h4.json",
+    "pressure_model_v1_h5.json"
   ],
   "total_phases": 8
 }
