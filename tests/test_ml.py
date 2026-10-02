@@ -6707,8 +6707,10 @@ class ExceedanceTailTests(unittest.TestCase):
 
         with self.subTest("1. the setting reaches the fit"):
             self.assertTrue(tailed.folds)
-            self.assertEqual(len(tail_fits), len(tailed.folds))
-            self.assertEqual(len(plain_fits), len(plain.folds))
+            # Two fits per fold: the declared curves, and the leap levels
+            # `exceedance-backtest` asks for in a separate call (#139).
+            self.assertEqual(len(tail_fits), 2 * len(tailed.folds))
+            self.assertEqual(len(plain_fits), 2 * len(plain.folds))
             for (model, kwargs), (bare, bare_kwargs) in zip(tail_fits, plain_fits):
                 self.assertEqual(kwargs.get("tail"), "gpd")
                 self.assertEqual(kwargs.get("calibration"), "conformal")
@@ -6766,6 +6768,9 @@ class ExceedanceTailTests(unittest.TestCase):
         with self.subTest("4. a run asking for neither publishes this base's record"):
             code, err, _, _, default_document = self.run_command(name="default")
             self.assertEqual(code, 0, msg=err)
+            # The onset view (#139) is added beside the base record, not into it.
+            self.assertIn("onset", default_document)
+            default_document = {k: v for k, v in default_document.items() if k != "onset"}
             self.assertEqual(default_document, self.base_document())
 
         with self.subTest("5. refusals"):
@@ -7548,13 +7553,15 @@ class ExceedanceFeatureSettingsTests(unittest.TestCase):
 
         with self.subTest("1. each setting reaches every fold's fit, and only it"):
             self.assertTrue(plain.folds)
-            self.assertEqual(len(plain_fits), len(plain.folds))
+            # Two fits per fold: the declared curves, and the leap levels
+            # `exceedance-backtest` asks for in a separate call (#139).
+            self.assertEqual(len(plain_fits), 2 * len(plain.folds))
             for model, kwargs in plain_fits:
                 for other in keys:
                     self.assertIsNone(kwargs.get(other), msg=other)
                     self.assertIsNone(getattr(model, other), msg=other)
             for flags, key, value, fits, report, _ in runs:
-                self.assertEqual(len(fits), len(report.folds), msg=str(flags))
+                self.assertEqual(len(fits), 2 * len(report.folds), msg=str(flags))
                 self.assertEqual(len(report.folds), len(plain.folds), msg=str(flags))
                 for model, kwargs in fits:
                     self.assertEqual(kwargs.get(key), value, msg=str(flags))
@@ -7593,6 +7600,9 @@ class ExceedanceFeatureSettingsTests(unittest.TestCase):
                         self.assertNotIn(other, declaration, msg=f"{flags}: {other}")
             for other in keys:
                 self.assertNotIn(other, plain_document["declaration"])
+            # The onset view (#139) is added beside the base record, not into it.
+            self.assertIn("onset", plain_document)
+            plain_document = {k: v for k, v in plain_document.items() if k != "onset"}
             self.assertEqual(plain_document, self.base_document())
 
         with self.subTest("4. refusals"):
