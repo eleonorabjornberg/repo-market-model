@@ -15,8 +15,8 @@ What is held here:
   any model is fitted, and scores the same panel when its scored days stop
   before the tier;
 * the entry points are enumerated, and the enumeration is checked against the
-  code: a new function that selects scored days, or a new CLI subcommand, fails
-  here until it is classified;
+  code (`src/repo_model/` and `scripts/`): a new function that selects scored
+  days, or a new CLI subcommand, fails here until it is classified;
 * an opened tier is allowed, and opening needs a ruling reference.
 """
 
@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import ast
 import contextlib
+import csv
+import importlib.util
 import io
 import json
 import tempfile
@@ -47,9 +49,10 @@ from repo_model.splits import LookAheadError
 from repo_model.tail_diagnostics import refit_knots
 
 from test_baseline import record_date_registry
-from test_cli_eval import EventHoldoutHarness, THRESHOLDS
+from test_cli_eval import EventHoldoutHarness, PANEL_COLUMNS, THRESHOLDS, business_days
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "repo_model"
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 TRACKED = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
 
 FEATURES = ("spread_bps",)
@@ -229,6 +232,14 @@ LIBRARY_ENTRY_POINTS = {
     "tail_diagnostics.refit_knots": _refit_knots,
 }
 
+#: Every tracked script function that walks the fold grid to score, as
+#: `scripts/<file>.<function>`. Each reaches the guard through `_as_of_folds`
+#: and is run below (`ScriptTests`).
+SCRIPT_ENTRY_POINTS = (
+    "scripts/spread_change_autocorrelation.main",
+    "scripts/threshold_regime_sizes.main",
+)
+
 #: Every CLI subcommand that scores days. Each is run below.
 SCORING_COMMANDS = ("backtest", "compare", "exceedance-backtest", "event-holdout")
 
@@ -246,6 +257,9 @@ NOT_ENTRY_POINTS = {
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
     "ml._held_out_read": "a calibration read inside a fit's own training frame",
+    "scripts/calibration_masking_exposure.exposure": (
+        "counts masked training pairs per refit block; scores nothing"
+    ),
 }
 
 
@@ -500,6 +514,109 @@ class CommandTests(EventHoldoutHarness):
                 )
 
 
+def _load_script(name):
+    """A tracked script as a module, without running it."""
+
+    spec = importlib.util.spec_from_file_location(
+        f"lockbox_script_{name}", SCRIPTS / f"{name}.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class ScriptTests(EventHoldoutHarness):
+    """Every script in `SCRIPT_ENTRY_POINTS` walks its folds as far as the guard.
+
+    The panel is business days from 2025-06-02 into January 2026, read under
+    the tracked registry. Run
+    whole, each script's fold walk reaches the guard and is refused; with
+    `--end` before the tier, it walks to its end and reports. So a change to
+    `_as_of_folds`'s signature, or a script that stops reaching the guard,
+    fails here rather than on the next hand run.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Long enough before the tier for a two-regime fit at the first origin.
+        self.days = business_days(date(2025, 6, 2), 170)
+        self.panel = self.write_panel()
+
+    def write_panel(self, path=None):
+        """Business days into 2026, with spread and volume that move every day.
+
+        The scripts estimate autocorrelations and fit a threshold, so a
+        constant stretch would divide by zero; the values are otherwise
+        arbitrary, and nothing here pins a number.
+        """
+
+        path = path or self.tmp / "panel.csv"
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(PANEL_COLUMNS)
+            for index, when in enumerate(self.days):
+                spread = 3.0 + ((index * 7) % 11) * 0.5
+                volume = 2000 + ((index * 5) % 13) * 25
+                writer.writerow(
+                    [when.isoformat(), round(4.30 + spread / 100.0, 6), 4.30,
+                     volume, 4.30 + (index % 3) * 0.001, 4.32, 4.30, 4.31,
+                     3200, 720, 115, "", "", "", 0, 0]
+                )
+        return path
+
+    #: The tracked registry: the scripts read theirs through
+    #: `load_source_registry`, which refuses the harness's unevidenced one.
+    REGISTRY = Path(__file__).resolve().parents[1] / "metadata" / "sources.json"
+
+    def argv(self, entry, end=None):
+        argv = [
+            "--panel", str(self.panel),
+            "--registry", str(self.REGISTRY),
+            "--decision-time", "16:00",
+            "--minimum-history", "60",
+        ]
+        if entry == "scripts/spread_change_autocorrelation.main":
+            argv += ["--feature", "spread_bps", "--lags", "2"]
+        else:
+            argv += [
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--feature", "sofr_p25", "--regime-variable", "sofr_volume", "--every", "1000",
+            ]
+        if end is not None:
+            argv += ["--end", end]
+        return argv
+
+    def run_script(self, entry, end=None):
+        name, function = entry[len("scripts/"):].split(".")
+        main = getattr(_load_script(name), function)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main(self.argv(entry, end))
+        return code, out.getvalue()
+
+    def test_every_script_refuses_a_locked_scored_day(self):
+        for entry in SCRIPT_ENTRY_POINTS:
+            with self.subTest(entry_point=entry):
+                with self.assertRaises(LookAheadError) as caught:
+                    self.run_script(entry)
+                message = str(caught.exception)
+                self.assertIn("locked near_blind tier", message)
+                self.assertIn(entry.split(".")[0], message)
+
+    def test_every_script_walks_to_an_end_before_the_tier(self):
+        for entry in SCRIPT_ENTRY_POINTS:
+            with self.subTest(entry_point=entry):
+                code, out = self.run_script(entry, end="2025-12-31")
+                self.assertEqual(code, 0)
+                self.assertTrue(json.loads(out))
+
+    def test_end_inside_the_tier_is_still_refused(self):
+        for entry in SCRIPT_ENTRY_POINTS:
+            with self.subTest(entry_point=entry):
+                with self.assertRaises(LookAheadError):
+                    self.run_script(entry, end="2026-01-05")
+
+
 class EnumerationTests(unittest.TestCase):
     """The entry points above are all of them, checked against the code."""
 
@@ -509,12 +626,15 @@ class EnumerationTests(unittest.TestCase):
         `InformationRule.information_set` is what turns a scored row into its
         reads, and `_as_of_folds` is the fold loop built on it; a function
         that calls either outside `asof.py` selects days to score, or reads
-        inside a fit. Each must be an entry point above or be named, with a
+        inside a fit. The scan covers `src/repo_model/*.py` and the tracked
+        `scripts/*.py`. Each must be an entry point above or be named, with a
         reason, in `NOT_ENTRY_POINTS`.
         """
 
         found = set()
-        for path in sorted(SRC.glob("*.py")):
+        paths = [(path, path.stem) for path in sorted(SRC.glob("*.py"))]
+        paths += [(path, f"scripts/{path.stem}") for path in sorted(SCRIPTS.glob("*.py"))]
+        for path, module in paths:
             if path.name == "asof.py":
                 continue
             tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -526,11 +646,13 @@ class EnumerationTests(unittest.TestCase):
                         continue
                     name = getattr(call.func, "attr", getattr(call.func, "id", None))
                     if name in ("information_set", "_as_of_folds", "fold_grid"):
-                        found.add(f"{path.stem}.{node.name}")
+                        found.add(f"{module}.{node.name}")
         self.assertEqual(
-            found, set(LIBRARY_ENTRY_POINTS) | set(NOT_ENTRY_POINTS),
-            "classify each new function as a scoring entry point (and add it "
-            "to LIBRARY_ENTRY_POINTS) or as NOT_ENTRY_POINTS with a reason",
+            found,
+            set(LIBRARY_ENTRY_POINTS) | set(SCRIPT_ENTRY_POINTS) | set(NOT_ENTRY_POINTS),
+            "classify each new function as a scoring entry point (add it to "
+            "LIBRARY_ENTRY_POINTS, or SCRIPT_ENTRY_POINTS for scripts/) or as "
+            "NOT_ENTRY_POINTS with a reason",
         )
 
     def test_every_cli_subcommand_is_classified(self):
