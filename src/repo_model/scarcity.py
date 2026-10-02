@@ -377,7 +377,7 @@ def tabulate(
         by_state[str(state)] = {
             "label": STATE_LABELS.get(state, str(state)),
             "days": len(days),
-            "above_iorb_days": sum(exceeds_bp(day.spread_bps, 0.0) for day in days),
+            "above_iorb_days": sum(day.spread_bps > 0.0 for day in days),
             **{
                 f"gt_{threshold:g}bp": _frequency_cell(
                     [int(exceeds_bp(day.spread_bps, threshold)) for day in days], seed=seed
@@ -403,7 +403,7 @@ def tabulate(
                 for state in states
             },
             "unknown_state_days": sum(1 for day in days if day.state is None),
-            "above_iorb_days": sum(exceeds_bp(day.spread_bps, 0.0) for day in days),
+            "above_iorb_days": sum(day.spread_bps > 0.0 for day in days),
             **{
                 f"gt_{threshold:g}bp": _frequency_cell(
                     [int(exceeds_bp(day.spread_bps, threshold)) for day in days], seed=seed

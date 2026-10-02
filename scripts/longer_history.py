@@ -176,7 +176,7 @@ def episodes_command(args) -> int:
             "mean_bps": round(statistics.fmean(spreads), 2),
             "min_bps": round(min(spreads), 2),
             "max_bps": round(max(spreads), 2),
-            "days_above_0": sum(exceeds_bp(value, 0.0) for value in spreads),
+            "days_above_0": sum(value > 0 for value in spreads),
             "reserves_min_bn": round(min(reserves), 1) if reserves else None,
             "reserves_max_bn": round(max(reserves), 1) if reserves else None,
         })
