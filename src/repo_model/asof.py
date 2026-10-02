@@ -59,6 +59,7 @@ from .contract import (
     CALENDAR_FEATURES,
     DERIVED_FEATURES,
     END_OF_DAY,
+    PER_FIELD_DERIVED_FEATURES,
     field_sources_for_features,
 )
 from .data import DailyObservation
@@ -323,10 +324,23 @@ class InformationRule:
         self.decision_time = decision_time
         self._scheduled = _scheduled_blocks(registry)
         groups = [self._group(TARGET)]
+        composed: List[str] = []
         for feature in dict.fromkeys(self.features):
-            if feature != TARGET:
+            if feature in PER_FIELD_DERIVED_FEATURES:
+                composed.append(feature)
+            elif feature != TARGET:
                 groups.append(self._group(feature))
+        # A per-field derived feature is no read of its own: each input is read
+        # as any declared input is, and the feature is computed from those
+        # reads (`contract.PER_FIELD_DERIVED_FEATURES`, #88).
+        named = {group.feature for group in groups}
+        for feature in composed:
+            for part in DERIVED_FEATURES[feature]:
+                if part not in named:
+                    groups.append(self._group(part))
+                    named.add(part)
         self.groups: Tuple[_Group, ...] = tuple(groups)
+        self.composed: Tuple[str, ...] = tuple(composed)
         # Every column the declaration reads, less the target's own.
         self.columns = tuple(
             dict.fromkeys(
@@ -575,7 +589,22 @@ class InformationRule:
                     )
                 taken[column] = read.row
                 values[column] = rows[read.row].values.get(column)
-        return DailyObservation(anchor.date, values)
+        return self._compose(DailyObservation(anchor.date, values))
+
+    def _compose(self, row: DailyObservation) -> DailyObservation:
+        """`row` with each per-field derived feature computed from its columns.
+
+        In `observation` the columns are the inputs' own as-of reads, so the
+        feature combines exactly what was public at the decision instant; in
+        `frame` they are the training row's, masked where not yet observable,
+        and a masked input makes the feature a hole.
+        """
+
+        if not self.composed:
+            return row
+        values = dict(row.values)
+        values.update((name, getattr(row, name)) for name in self.composed)
+        return DailyObservation(row.date, values)
 
     def frame(
         self, rows: Sequence[DailyObservation], info: InformationSet
@@ -595,7 +624,7 @@ class InformationRule:
             if group.kind == KIND_OBSERVED and group.fields != self._target_fields()
         ]
         if not observed:
-            return frame
+            return [self._compose(row) for row in frame]
         dates = [row.date for row in rows]
         deadline = info.decision_instant
         for position in range(len(frame) - 1, -1, -1):
@@ -612,7 +641,7 @@ class InformationRule:
             for column in late:
                 values[column] = None
             frame[position] = DailyObservation(frame[position].date, values)
-        return frame
+        return [self._compose(row) for row in frame]
 
 
 def require_refit_every(refit_every: object) -> int:

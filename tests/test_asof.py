@@ -621,3 +621,112 @@ class OnRrpAvailabilityTests(unittest.TestCase):
         information = rule(self.FEATURES)
         for scored in range(3, len(DATES)):
             information.check(DATES, information.information_set(DATES, scored))
+
+
+class ScarcityFeatureLeakageTests(unittest.TestCase):
+    """The conditional scarcity features read nothing after the decision (#88).
+
+    `on_rrp_depleted` is `1(on_rrp < 100bn)` and `reserves_when_depleted` is
+    `reserve_balances * on_rrp_depleted`. Each input is read per field, as of
+    the one decision instant: `on_rrp` at its next-business-day 16:00 release
+    (#45), `reserve_balances` at its latest H.4.1 print. The leakage test puts
+    an `on_rrp` result that crosses the break on every row after the latest
+    one public at the decision instant, and both features must not move.
+
+    Written first, and red before the features existed:
+    `UndeclaredFeatureError` ("feature 'on_rrp_depleted' is not in
+    contract.FEATURE_FIELDS, contract.DERIVED_FEATURES, ...").
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy:
+    `src/repo_model/asof.py`, `InformationRule.observation`, the line
+    `return self._compose(DailyObservation(anchor.date, values))` mutated to
+    `return self._compose(rows[info.scored_index - 1])` (the features computed
+    off the decision day's own row, whose `on_rrp` is published the next day).
+    `test_a_crossing_result_after_the_decision_instant_moves_neither_feature`
+    then fails with `AssertionError` (`1.0 != 0.0` for `on_rrp_depleted`,
+    `4011.0 != 0.0` for `reserves_when_depleted`).
+    """
+
+    FEATURES = ("spread_bps", "on_rrp_depleted", "reserves_when_depleted")
+    ABOVE = 500.0  # USD billions: a full buffer
+    BELOW = 5.0  # a depleted one
+
+    def setUp(self):
+        switch = on_rrp_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
+
+    def rows(self, crossing_after=None):
+        """`on_rrp` above the break everywhere, or below it after `crossing_after`."""
+
+        return [
+            DailyObservation(
+                row.date,
+                {
+                    **row.values,
+                    "on_rrp": (
+                        self.BELOW
+                        if crossing_after is not None and index > crossing_after
+                        else self.ABOVE
+                    ),
+                },
+            )
+            for index, row in enumerate(ROWS)
+        ]
+
+    def test_a_crossing_result_after_the_decision_instant_moves_neither_feature(self):
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 22))  # Thursday; decision Wed 21st 16:00
+        info = information.information_set(DATES, scored)
+        information.check(DATES, info)
+        on_rrp_row = read_of(info, "on_rrp").row
+        self.assertEqual(DATES[on_rrp_row], date(2026, 1, 20))
+        # The first result the crossing lands on is not public at the decision.
+        self.assertGreater(
+            information.availability(
+                DATES, (("nyfed_on_rrp", "reverse_repo_total_accepted"),), on_rrp_row + 1
+            ),
+            info.decision_instant,
+        )
+
+        clean = information.observation(self.rows(), info)
+        crossed = information.observation(self.rows(crossing_after=on_rrp_row), info)
+        for feature in ("on_rrp_depleted", "reserves_when_depleted"):
+            with self.subTest(feature=feature):
+                self.assertEqual(clean.values[feature], 0.0)
+                self.assertEqual(crossed.values[feature], clean.values[feature])
+
+        # The training frame at that instant does not see it either.
+        clean_frame = information.frame(self.rows(), info)
+        crossed_frame = information.frame(self.rows(crossing_after=on_rrp_row), info)
+        for before, after in zip(clean_frame, crossed_frame):
+            for feature in ("on_rrp_depleted", "reserves_when_depleted"):
+                self.assertEqual(after.values[feature], before.values[feature])
+
+    def test_the_same_crossing_one_row_earlier_moves_both(self):
+        """The control: the test above is not vacuous."""
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 22))
+        info = information.information_set(DATES, scored)
+        on_rrp_row = read_of(info, "on_rrp").row
+        reserves_row = read_of(info, "reserve_balances").row
+        crossed = information.observation(
+            self.rows(crossing_after=on_rrp_row - 1), info
+        )
+        self.assertEqual(crossed.values["on_rrp_depleted"], 1.0)
+        self.assertEqual(
+            crossed.values["reserves_when_depleted"],
+            ROWS[reserves_row].values["reserve_balances"],
+        )
+
+    def test_each_input_is_read_per_field_at_one_decision_instant(self):
+        """`reserve_balances` at its latest print, `on_rrp` at its own latest."""
+
+        information = rule(self.FEATURES)
+        for scored in range(10, len(DATES)):
+            info = information.information_set(DATES, scored)
+            information.check(DATES, info)
+            for feature in ("on_rrp", "reserve_balances"):
+                read = read_of(info, feature)
+                self.assertLessEqual(read.available_at, info.decision_instant)

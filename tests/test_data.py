@@ -7277,3 +7277,42 @@ def replace_observation(observation, ref_date):
         ref_date=ref_date,
         available_at=observation.available_at + shift,
     )
+
+
+class ScarcityFeatureTests(unittest.TestCase):
+    """The conditional scarcity features (#88) and their fixed break."""
+
+    def row(self, on_rrp, reserves=3000.0):
+        from repo_model.data import DailyObservation
+
+        return DailyObservation(
+            date(2025, 10, 1), {"on_rrp": on_rrp, "reserve_balances": reserves}
+        )
+
+    def test_the_break_is_100bn_and_declared_once(self):
+        """Fixed in advance from PR #87, Q4; never fitted on this repository's data."""
+
+        from repo_model import data
+
+        self.assertEqual(data.ON_RRP_DEPLETED_BELOW_BN, 100.0)
+        source = Path(data.__file__).read_text(encoding="utf-8")
+        declaration = source.split("ON_RRP_DEPLETED_BELOW_BN = ", 1)[1].split("@dataclass", 1)[0]
+        self.assertIn("PR #87", declaration)
+        self.assertIn("Q4", declaration)
+        self.assertEqual(source.count("ON_RRP_DEPLETED_BELOW_BN = "), 1)
+        self.assertNotIn("100.0", source.split("def on_rrp_depleted", 1)[1].split("@property", 1)[0])
+
+    def test_below_the_break_is_depleted_and_at_it_is_not(self):
+        self.assertEqual(self.row(99.999).on_rrp_depleted, 1.0)
+        self.assertEqual(self.row(100.0).on_rrp_depleted, 0.0)
+        self.assertEqual(self.row(2400.0).on_rrp_depleted, 0.0)
+        self.assertEqual(self.row(0.0).on_rrp_depleted, 1.0)
+
+    def test_reserves_count_only_when_the_buffer_is_gone(self):
+        self.assertEqual(self.row(5.0, 2900.0).reserves_when_depleted, 2900.0)
+        self.assertEqual(self.row(500.0, 2900.0).reserves_when_depleted, 0.0)
+
+    def test_a_hole_in_either_input_is_a_hole(self):
+        self.assertIsNone(self.row(None).on_rrp_depleted)
+        self.assertIsNone(self.row(None).reserves_when_depleted)
+        self.assertIsNone(self.row(5.0, None).reserves_when_depleted)

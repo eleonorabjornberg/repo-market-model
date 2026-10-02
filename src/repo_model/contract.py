@@ -55,6 +55,7 @@ __all__ = [
     "FEATURE_FIELDS",
     "FEATURE_SOURCES",
     "DERIVED_FEATURES",
+    "PER_FIELD_DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
@@ -353,8 +354,23 @@ DERIVED_FEATURES = MappingProxyType(
         # percentile columns are rates in percent and every threshold in this
         # project is stated in basis points.
         "sofr_iqr_bps": ("sofr_p25", "sofr_p75"),
+        # The conditional scarcity input (#88): whether the ON RRP buffer is
+        # below `data.ON_RRP_DEPLETED_BELOW_BN`, and reserves when it is. Both
+        # are in `PER_FIELD_DERIVED_FEATURES`.
+        "on_rrp_depleted": ("on_rrp",),
+        "reserves_when_depleted": ("reserve_balances", "on_rrp"),
     }
 )
+
+#: Derived features a model reads as a column, each computed from its inputs'
+#: own as-of reads at one decision instant (#88): `asof.InformationRule` reads
+#: every input per field, at its latest value public by the decision, and
+#: computes the feature from those reads. A derived feature not named here
+#: (`spread_bps`, `sofr_iqr_bps`) is read at one row where all its inputs are
+#: observable. These two combine a daily input with a weekly one, so one row
+#: would read `on_rrp` as stale as the H.4.1; per field, neither input is read
+#: later than it was public, nor earlier than its latest public value.
+PER_FIELD_DERIVED_FEATURES = frozenset({"on_rrp_depleted", "reserves_when_depleted"})
 
 # Features that are a function of the scored date alone. These contribute no
 # source. They are enumerated rather than inferred: a feature that

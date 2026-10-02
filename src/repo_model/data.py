@@ -59,6 +59,18 @@ class DataContractError(ValueError):
     """Raised when a modeling panel violates its declared contract."""
 
 
+ON_RRP_DEPLETED_BELOW_BN = 100.0
+"""The ON RRP balance, in USD billions, below which the buffer counts as gone (#88).
+
+Fixed in advance from Nicholas's evidence pack, PR #87,
+`docs/advisor/evidence-pack/MEMO.md`, Q4: weekly SOFR - IORB >= +5 bp is rare
+above $100bn of ON RRP and frequent below it. It is never fitted or chosen from
+this repository's data. The $50bn and $200bn sensitivities #88 asks for are
+scratch re-scores, reported and never selected; this value stays $100bn
+whatever they show.
+"""
+
+
 @dataclass(frozen=True)
 class DailyObservation:
     date: date
@@ -88,6 +100,35 @@ class DailyObservation:
         return 100.0 * (
             float(self.values["sofr_p75"]) - float(self.values["sofr_p25"])
         )
+
+    @property
+    def on_rrp_depleted(self) -> Optional[float]:
+        """`1.0` when `on_rrp` is below `ON_RRP_DEPLETED_BELOW_BN`, else `0.0` (#88).
+
+        `None` when `on_rrp` is a hole, so a model imputes it rather than
+        reading an unobserved buffer as a full one. `contract.DERIVED_FEATURES`
+        declares this over the one column read below.
+        """
+
+        on_rrp = self.values["on_rrp"]
+        if on_rrp is None:
+            return None
+        return 1.0 if float(on_rrp) < ON_RRP_DEPLETED_BELOW_BN else 0.0
+
+    @property
+    def reserves_when_depleted(self) -> Optional[float]:
+        """`reserve_balances * on_rrp_depleted`, in USD billions (#88).
+
+        Reserves where the ON RRP buffer is gone, and 0 where it is not: the
+        memo's conditional scarcity effect. `None` when either input is a hole.
+        """
+
+        reserves = self.values["reserve_balances"]
+        on_rrp = self.values["on_rrp"]
+        if reserves is None or on_rrp is None:
+            return None
+        depleted = 1.0 if float(on_rrp) < ON_RRP_DEPLETED_BELOW_BN else 0.0
+        return float(reserves) * depleted
 
 
 @dataclass(frozen=True)

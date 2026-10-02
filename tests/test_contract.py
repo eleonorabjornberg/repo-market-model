@@ -2757,6 +2757,8 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         readers = {
             "spread_bps": DailyObservation.spread_bps.fget,
             "sofr_iqr_bps": DailyObservation.sofr_iqr_bps.fget,
+            "on_rrp_depleted": DailyObservation.on_rrp_depleted.fget,
+            "reserves_when_depleted": DailyObservation.reserves_when_depleted.fget,
         }
         self.assertEqual(
             set(DERIVED_FEATURES),
