@@ -54,6 +54,8 @@ __all__ = [
     "UndeclaredFeatureError",
     "FEATURE_FIELDS",
     "FEATURE_SOURCES",
+    "COMPOSED_FEATURES",
+    "ON_RRP_DEPLETION_BREAK_BN",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
@@ -397,6 +399,30 @@ DERIVED_FEATURES = MappingProxyType(
     }
 )
 
+#: The ON RRP balance, in USD billions, below which the facility's buffer is
+#: read as depleted (#88). Fixed in advance from the advisor evidence pack, PR
+#: #87, `docs/advisor/evidence-pack/MEMO.md`, Q4: weekly SOFR - IORB at +5 bp
+#: or more was rare with ON RRP above $100bn and frequent below it. It is never
+#: fitted, chosen or tuned on this repository's data; #88's sensitivity runs at
+#: $50bn and $200bn are reported beside it and select nothing.
+ON_RRP_DEPLETION_BREAK_BN = 100.0
+
+# Features composed at the decision instant from inputs each read per field
+# (#88). Unlike `DERIVED_FEATURES`, which are read at one row where every
+# constituent is observable, each input here is read on its own declaration
+# (`docs/decisions/information-set.md`, rule 1), and the feature is formed
+# from those reads by `asof.COMPOSERS`. So a composed feature never sees a
+# value of an input later than that input's own as-of read. Not panel columns:
+# the panel carries the inputs, and the composition happens per forecast.
+COMPOSED_FEATURES = MappingProxyType(
+    {
+        # 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN).
+        "on_rrp_depleted": ("on_rrp",),
+        # reserve_balances * on_rrp_depleted.
+        "reserves_when_depleted": ("reserve_balances", "on_rrp"),
+    }
+)
+
 # Features that are a function of the scored date alone. These contribute no
 # source. They are enumerated rather than inferred: a feature that
 # contributes nothing to the purge is exactly the shape of an error, and the
@@ -476,7 +502,7 @@ UNMODELLED_SOURCES = MappingProxyType(
 def sources_for_features(names):
     """The source IDs a feature set draws on, for `max_release_lag_days`.
 
-    Derived features resolve to their constituents. Calendar features
+    Derived and composed features resolve to their constituents. Calendar features
     contribute nothing. An unknown name raises, and so does a declared name
     with no source -- the message carries the reason.
 
@@ -497,6 +523,9 @@ def sources_for_features(names):
         seen.add(name)
         if name in DERIVED_FEATURES:
             pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in COMPOSED_FEATURES:
+            pending.extend(COMPOSED_FEATURES[name])
             continue
         if name in CALENDAR_FEATURES:
             continue
@@ -546,6 +575,9 @@ def field_sources_for_features(names):
         seen.add(name)
         if name in DERIVED_FEATURES:
             pending.extend(DERIVED_FEATURES[name])
+            continue
+        if name in COMPOSED_FEATURES:
+            pending.extend(COMPOSED_FEATURES[name])
             continue
         if name in CALENDAR_FEATURES:
             continue

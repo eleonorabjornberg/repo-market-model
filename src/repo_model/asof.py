@@ -58,8 +58,10 @@ from typing import (
 from .contract import (
     AVAILABLE_TIME_RE,
     CALENDAR_FEATURES,
+    COMPOSED_FEATURES,
     DERIVED_FEATURES,
     END_OF_DAY,
+    ON_RRP_DEPLETION_BREAK_BN,
     field_sources_for_features,
 )
 from .data import DailyObservation
@@ -67,6 +69,7 @@ from .registry import RegistryContractError
 from .splits import LookAheadError, SplitError, ensure_strictly_ascending
 
 __all__ = [
+    "COMPOSERS",
     "FieldRead",
     "InformationRule",
     "InformationSet",
@@ -302,6 +305,38 @@ def _columns_of(feature: str) -> Tuple[str, ...]:
     return (feature,)
 
 
+def _on_rrp_depleted(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """`1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)`; a hole when `on_rrp` is one."""
+
+    on_rrp = values["on_rrp"]
+    if on_rrp is None:
+        return None
+    return 1.0 if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
+def _reserves_when_depleted(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """`reserve_balances * 1(on_rrp < ON_RRP_DEPLETION_BREAK_BN)`.
+
+    A hole when either input is: reserves not yet printed are not zero
+    reserves, and an unknown buffer is not a full one.
+    """
+
+    reserves = values["reserve_balances"]
+    on_rrp = values["on_rrp"]
+    if reserves is None or on_rrp is None:
+        return None
+    return float(reserves) if float(on_rrp) < ON_RRP_DEPLETION_BREAK_BN else 0.0
+
+
+#: How each `contract.COMPOSED_FEATURES` entry is formed from its inputs' reads
+#: (#88). `tests/test_contract.py` parses each function to check it reads
+#: exactly the inputs the contract declares.
+COMPOSERS = {
+    "on_rrp_depleted": _on_rrp_depleted,
+    "reserves_when_depleted": _reserves_when_depleted,
+}
+
+
 class InformationRule:
     """The as-of rule for one declared feature set, one registry, one time.
 
@@ -332,10 +367,20 @@ class InformationRule:
         self.decision_time = decision_time
         self._scheduled = _scheduled_blocks(registry)
         groups = [self._group(TARGET)]
+        seen = {TARGET}
         for feature in dict.fromkeys(self.features):
-            if feature != TARGET:
-                groups.append(self._group(feature))
+            # A composed feature is read as its inputs, each on its own
+            # declaration, and formed from those reads (`_composed`).
+            for part in COMPOSED_FEATURES.get(feature, (feature,)):
+                if part not in seen:
+                    seen.add(part)
+                    groups.append(self._group(part))
         self.groups: Tuple[_Group, ...] = tuple(groups)
+        #: The declared composed features, formed in `observation` and `frame`.
+        self.composed = tuple(
+            feature for feature in dict.fromkeys(self.features)
+            if feature in COMPOSED_FEATURES
+        )
         # Every column the declaration reads, less the target's own.
         self.columns = tuple(
             dict.fromkeys(
@@ -345,6 +390,22 @@ class InformationRule:
                 if column not in TARGET_COLUMNS
             )
         )
+
+    def _composed(
+        self, values: Mapping[str, Optional[float]]
+    ) -> Dict[str, Optional[float]]:
+        """`values` with each declared composed feature formed from its inputs.
+
+        A row that does not carry an input does not get the feature either, so
+        a model reading it meets the same absent-column refusal a plain
+        feature's absence meets, rather than a hole put there for it.
+        """
+
+        out = dict(values)
+        for feature in self.composed:
+            if all(part in values for part in COMPOSED_FEATURES[feature]):
+                out[feature] = COMPOSERS[feature](values)
+        return out
 
     def _group(self, feature: str) -> _Group:
         if feature in CALENDAR_FEATURES:
@@ -585,7 +646,7 @@ class InformationRule:
                     )
                 taken[column] = read.row
                 values[column] = rows[read.row].values.get(column)
-        return DailyObservation(anchor.date, values)
+        return DailyObservation(anchor.date, self._composed(values))
 
     def frame(
         self, rows: Sequence[DailyObservation], info: InformationSet
@@ -598,6 +659,18 @@ class InformationRule:
         monotone in the row, so the scan stops at the first row whose every
         declared column was observable.
         """
+
+        frame = self._masked(rows, info)
+        if not self.composed:
+            return frame
+        return [
+            DailyObservation(row.date, self._composed(row.values)) for row in frame
+        ]
+
+    def _masked(
+        self, rows: Sequence[DailyObservation], info: InformationSet
+    ) -> List[DailyObservation]:
+        """`frame` before any composed feature is formed."""
 
         frame = list(rows[: info.anchor + 1])
         observed = [
