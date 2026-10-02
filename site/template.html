@@ -526,7 +526,7 @@ function renderClock() {
       return;
     }
     const px = x(c.offset), sched = c.kind === "scheduled";
-    const g = svg.append("g").attr("tabindex", 0).attr("role", "button")
+    const g = svg.append("g").attr("class", "ev").attr("tabindex", 0).attr("role", "button")
       .attr("aria-label", `${c.label}: ${sched ? "announced" : "first public"} ${Math.abs(c.days)} ${c.unit.replace("_", " ")} ${sched ? "before" : "after"} the day, at ${c.time}`);
     g.append("path").attr("transform", `translate(${px},${cy})`).attr("d", d3.symbol(sched ? d3.symbolDiamond : d3.symbolCircle, sched ? 70 : 55)())
       .style("fill", sched ? "var(--paper)" : "var(--sofr)").style("stroke", "var(--sofr)").style("stroke-width", 1.6);
