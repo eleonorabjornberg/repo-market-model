@@ -1684,6 +1684,34 @@ def _forecast_implementations(package=repo_model):
     return found
 
 
+def pre_45_on_rrp():
+    """`on_rrp` read through FRED's `RRPONTSYD` again, for one test.
+
+    Until #45, `on_rrp` was the real-registry exemplar of a field its source
+    does not price: it read `fred_macro_latest_vintage.RRPONTSYD`, which
+    declares no revision policy on a `snapshot_retrieved_at` source. #45 moved
+    the column to the Desk's own operation results, which price, and no column
+    reads `RRPONTSYD` now. The registry still refuses that field, unchanged, so
+    the tests that hold the refusal patch the old mapping back in for their own
+    duration rather than lose the exemplar.
+    """
+
+    # `FEATURE_SOURCES` is a projection taken at import, so it is patched
+    # beside the map it was projected from.
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType(
+            {
+                **contract.FEATURE_FIELDS,
+                "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
+            }
+        ),
+        FEATURE_SOURCES=MappingProxyType(
+            {**contract.FEATURE_SOURCES, "on_rrp": ("fred_macro_latest_vintage",)}
+        ),
+    )
+
+
 def _import_test_modules_naming(mixin):
     """Import every test module whose source names `mixin`, and return their names.
 
@@ -2338,7 +2366,8 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         )
         self.assertEqual(
             sources_for_features(("sofr_volume", "on_rrp", "quarter_end")),
-            ("fred_macro_latest_vintage", "nyfed_sofr"),
+            # The Desk's operation results since #45, not FRED's `RRPONTSYD`.
+            ("nyfed_on_rrp", "nyfed_sofr"),
         )
         self.assertEqual(
             field_sources_for_features(("spread_bps",)),
@@ -2355,6 +2384,10 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         self.assertEqual(
             field_sources_for_features(("tga",)),
             (("fred_macro_latest_vintage", "WTREGEN"),),
+        )
+        self.assertEqual(
+            field_sources_for_features(("on_rrp",)),
+            (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
         )
 
     def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):

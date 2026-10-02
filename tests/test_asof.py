@@ -522,3 +522,91 @@ class SettlementScheduleGuardTests(unittest.TestCase):
 
         source = Path(cli_data.__file__).read_text(encoding="utf-8")
         self.assertIn("check_scheduled_settlements(", source)
+
+
+class OnRrpAvailabilityTests(unittest.TestCase):
+    """`on_rrp` is read at the next business day's decision instant (#45, step 3).
+
+    The Desk's operation closes at 13:15 ET and its results are published at no
+    stated clock time (A45, Route B, item 2). `nyfed_on_rrp.release_lag` takes
+    the conservative reading #45 offered instead of establishing one: a result
+    is available at 16:00 ET on the next panel business day. So at the 16:00
+    decision on Wednesday 21 January the Wednesday result, closed at 13:15 that
+    day, is invisible, and the latest read is Tuesday's.
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy:
+    `metadata/sources.json`, `nyfed_on_rrp.release_lag`, `"days": 1` mutated to
+    `"days": 0` (a result public at 16:00 on its own operation date).
+    `test_a_result_after_the_decision_instant_is_invisible` then fails with
+    `AssertionError` (`datetime.date(2026, 1, 21) != datetime.date(2026, 1,
+    20)`): the forecast reads the operation that closed the afternoon of its
+    own decision.
+    """
+
+    FEATURES = ("spread_bps", "on_rrp")
+    FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
+
+    def rows(self):
+        # `on_rrp` encodes its own row, 500 + i, so a read is legible.
+        return [
+            DailyObservation(row.date, {**row.values, "on_rrp": 500.0 + index})
+            for index, row in enumerate(ROWS)
+        ]
+
+    def test_a_result_after_the_decision_instant_is_invisible(self):
+        """The leakage test: Wednesday's result is not read at Wednesday's decision."""
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 22))  # Thursday; decision Wed 21st 16:00
+        info = information.information_set(DATES, scored)
+        read = read_of(info, "on_rrp")
+
+        self.assertEqual(read.fields, self.FIELDS)
+        self.assertEqual(DATES[read.row], date(2026, 1, 20))
+        self.assertEqual(read.available_at, datetime(2026, 1, 21, 16, 0))
+        # The result placed after the decision instant: Wednesday's, available
+        # Thursday at 16:00.
+        wednesday = scored - 1
+        self.assertEqual(DATES[wednesday], date(2026, 1, 21))
+        self.assertGreater(
+            information.availability(DATES, self.FIELDS, wednesday),
+            info.decision_instant,
+        )
+        observed = information.observation(self.rows(), info)
+        self.assertEqual(observed.values["on_rrp"], 500.0 + read.row)
+        self.assertNotEqual(observed.values["on_rrp"], 500.0 + wednesday)
+        # And a read forced onto it is leakage.
+        forced = info._replace(
+            reads=tuple(
+                entry._replace(row=wednesday) if entry.feature == "on_rrp" else entry
+                for entry in info.reads
+            )
+        )
+        with self.assertRaises(LookAheadError):
+            information.check(DATES, forced)
+
+    def test_across_a_holiday_the_prior_operation_is_read(self):
+        """#45, step 4: the holiday carry, through the as-of rule.
+
+        MLK Monday, 19 January, is not a panel date and the facility does not
+        operate. At the 16:00 decision on Tuesday the 20th, the latest
+        published result is Friday the 16th's, available at Tuesday 16:00, and
+        that is the row the rule reads: no hole, and no special case.
+        """
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 21))  # decision Tue 20th 16:00
+        info = information.information_set(DATES, scored)
+        read = read_of(info, "on_rrp")
+        self.assertEqual(DATES[read.row], date(2026, 1, 16))
+        self.assertEqual(read.available_at, datetime(2026, 1, 20, 16, 0))
+        information.check(DATES, info)
+        self.assertEqual(
+            information.observation(self.rows(), info).values["on_rrp"],
+            500.0 + index_of(date(2026, 1, 16)),
+        )
+
+    def test_every_on_rrp_read_passes_both_guards(self):
+        information = rule(self.FEATURES)
+        for scored in range(3, len(DATES)):
+            information.check(DATES, information.information_set(DATES, scored))

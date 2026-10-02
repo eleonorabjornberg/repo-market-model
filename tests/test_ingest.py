@@ -27,6 +27,7 @@ from repo_model.data import (
     WITHHELD_FIELD_REASONS,
     WITHHELD_NO_FED_COUNTERPARTY,
     CrossSectionCoverage,
+    ON_RRP_MAX_GAP_DAYS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     absent_cells_from_quality_report,
@@ -4174,9 +4175,40 @@ class AvailableAtDerivationTests(unittest.TestCase):
             byte_count=len(payload),
         )
 
+    def on_rrp_snapshot(self, ref_date, retrieved):
+        """One reverse-repo operation, in the operation-results JSON shape (#45)."""
+
+        payload = json.dumps(
+            {
+                "repo": {
+                    "operations": [
+                        {
+                            "operationDate": ref_date,
+                            "operationType": "Reverse Repo",
+                            "totalAmtAccepted": 2_000_000_000,
+                        }
+                    ]
+                }
+            }
+        ).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "operations.json"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=ingest.NYFED_ON_RRP_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.NYFED_RP_RESULTS_URL}?startDate={ref_date}&endDate={ref_date}",
+            byte_count=len(payload),
+        )
+
     def source_snapshot(self, source_id, ref_date, retrieved):
         if source_id == FR2004_SOURCE_ID:
             return self.fr2004_snapshot(ref_date, retrieved)
+        if source_id == ingest.NYFED_ON_RRP_SOURCE_ID:
+            return self.on_rrp_snapshot(ref_date, retrieved)
         return self.nyfed_snapshot(source_id, ref_date, retrieved)
 
     def nyfed_snapshot(self, source_id, ref_date, retrieved):
@@ -4237,7 +4269,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         self.assertEqual(
             self.ref_date_sources(),
-            ["nyfed_bgcr", "nyfed_fr2004", "nyfed_sofr", "nyfed_tgcr"],
+            ["nyfed_bgcr", "nyfed_fr2004", "nyfed_on_rrp", "nyfed_sofr", "nyfed_tgcr"],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
@@ -6955,7 +6987,7 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
         # The bill-rate and FR 2004 fetchers are replaced outright so a trap
         # subtest over them never reaches the network; what they write is
         # `TreasuryBillRateAndFr2004FetchTests`' business, not this class's.
-        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004"):
+        for name in ("fetch_treasury_bill_rates", "fetch_nyfed_fr2004", "fetch_nyfed_on_rrp"):
             self.addCleanup(setattr, cli_data, name, getattr(cli_data, name))
             setattr(cli_data, name, lambda **_kwargs: [])
 
@@ -7820,3 +7852,181 @@ class FredValueUnitTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NyFedOnRrpAdapterTests(unittest.TestCase):
+    """The ON RRP adapter: the Desk's operation results, summed per day (#45).
+
+    `fetch_nyfed_on_rrp` saves `rp/results/search.json` a calendar year at a
+    time; `_nyfed_on_rrp_rows` keeps `operationType == "Reverse Repo"` and sums
+    `totalAmtAccepted` over every such operation of an `operationDate`, small
+    value exercises included, in USD billions. Neither `propositions` nor `note`
+    is read. The two-operation days are A45's: FRED's `RRPONTSYD` alternates
+    between the sum and one leg on 2020-02-19 (95 + 5054 million) and
+    2020-11-18 (103 + 0), and this series is the sum.
+
+    Measured on the tracked snapshots (fetched 2 October 2026): on 431 of the
+    433 Wednesdays from 2018-04-04 to 2026-09-30 that `WLRRAOL`'s 2026-09-10
+    ALFRED vintage (`alfred-wlrraol/`) carries, the day's sum equals the
+    H.4.1's Wednesday level to the million. The two others are 2019-11-20, 71
+    million below because the 2019-11-19 term exercise was still outstanding,
+    and 2024-10-16, 1 million apart.
+    """
+
+    SNAPSHOTS = (
+        Path(__file__).parents[1]
+        / "tests/fixtures/snapshots/funding_inputs"
+        / ingest.NYFED_ON_RRP_SOURCE_ID
+    )
+
+    def tracked(self):
+        artifacts = [
+            load_snapshot_manifest(path)
+            for path in sorted(self.SNAPSHOTS.glob("*.json.manifest.json"))
+        ]
+        rows = []
+        for artifact in artifacts:
+            rows.extend(
+                ingest._nyfed_on_rrp_rows(artifact, ingest._artifact_payload(artifact))
+            )
+        return artifacts, {row.ref_date: row for row in rows}
+
+    def test_the_tracked_snapshots_sum_every_reverse_repo_of_a_day(self):
+        artifacts, rows = self.tracked()
+        self.assertEqual(
+            sorted(artifact.url for artifact in artifacts)[0],
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2018-01-01&endDate=2018-12-31",
+        )
+        self.assertEqual(
+            {row.series_id for row in rows.values()}, {ingest.NYFED_ON_RRP_FIELD}
+        )
+        # A45's two-operation days: the sum, never one leg.
+        self.assertAlmostEqual(rows[date(2020, 2, 19)].value, 5.149, places=9)
+        self.assertAlmostEqual(rows[date(2020, 11, 18)].value, 0.103, places=9)
+        # The published panel's first date, in billions.
+        self.assertAlmostEqual(rows[date(2018, 4, 3)].value * 1e9 % 1e6, 0.0, places=3)
+        # The longest gap between operations is the carry bound.
+        days = sorted(rows)
+        self.assertEqual(
+            max((later - earlier).days for earlier, later in zip(days, days[1:])),
+            ON_RRP_MAX_GAP_DAYS,
+        )
+
+    def test_a_result_is_available_at_the_next_weekday_at_16(self):
+        _artifacts, rows = self.tracked()
+        friday = rows[date(2026, 1, 16)]
+        self.assertEqual(
+            friday.available_at,
+            datetime(2026, 1, 19, 16, 0, tzinfo=ZoneInfo("America/New_York")),
+        )
+
+    def operations(self, *operations):
+        return json.dumps({"repo": {"operations": list(operations)}}).encode()
+
+    def artifact(self, directory, payload):
+        return ingest._save_snapshot(
+            ingest.NYFED_ON_RRP_SOURCE_ID,
+            f"{ingest.NYFED_RP_RESULTS_URL}?startDate=2026-01-01&endDate=2026-01-31",
+            payload,
+            Path(directory),
+            "json",
+            retrieved_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        )
+
+    def test_repo_operations_are_left_out_and_propositions_never_read(self):
+        payload = self.operations(
+            {"operationType": "Repo", "operationDate": "2026-01-05", "totalAmtAccepted": 9_000_000_000},
+            {
+                "operationType": "Reverse Repo",
+                "operationDate": "2026-01-05",
+                "totalAmtAccepted": 2_000_000_000,
+                "propositions": "not a list",
+                "note": {"not": "text"},
+            },
+            {"operationType": "Reverse Repo", "operationDate": "2026-01-05", "totalAmtAccepted": 50_000_000},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = self.artifact(directory, payload)
+            (row,) = ingest._nyfed_on_rrp_rows(artifact, payload)
+        self.assertEqual(row.ref_date, date(2026, 1, 5))
+        self.assertAlmostEqual(row.value, 2.05, places=12)
+
+    def test_a_reverse_repo_without_an_accepted_amount_is_refused(self):
+        for accepted in (None, "2000000000", True):
+            payload = self.operations(
+                {"operationType": "Reverse Repo", "operationDate": "2026-01-05", "totalAmtAccepted": accepted}
+            )
+            with self.subTest(accepted=accepted), tempfile.TemporaryDirectory() as directory:
+                artifact = self.artifact(directory, payload)
+                with self.assertRaisesRegex(ValueError, "totalAmtAccepted"):
+                    ingest._nyfed_on_rrp_rows(artifact, payload)
+
+    def test_a_response_without_an_operations_list_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "repo.operations"):
+            ingest.fetch_nyfed_on_rrp(
+                Path("/nonexistent"),
+                "2026-01-01",
+                "2026-01-31",
+                downloader=lambda url: b'{"refRates": []}',
+            )
+
+    def test_the_fetch_saves_one_snapshot_per_calendar_year(self):
+        urls = []
+
+        def downloader(url):
+            urls.append(url)
+            return self.operations()
+
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = ingest.fetch_nyfed_on_rrp(
+                Path(directory), "2024-07-01", "2026-03-31", downloader=downloader
+            )
+            self.assertEqual(
+                {artifact.source_id for artifact in artifacts},
+                {ingest.NYFED_ON_RRP_SOURCE_ID},
+            )
+        windows = [
+            (parse_qs(urlparse(url).query)["startDate"][0], parse_qs(urlparse(url).query)["endDate"][0])
+            for url in urls
+        ]
+        self.assertEqual(
+            windows,
+            [
+                ("2024-07-01", "2024-12-31"),
+                ("2025-01-01", "2025-12-31"),
+                ("2026-01-01", "2026-03-31"),
+            ],
+        )
+        self.assertTrue(all(url.startswith(ingest.NYFED_RP_RESULTS_URL + "?") for url in urls))
+
+    def test_the_cli_fetches_it(self):
+        """`fetch on-rrp` reaches this fetcher, not the reference-rate one.
+
+        Not `nyfed-on-rrp`: `NyFedRateSourceChoiceTests` reads every `nyfed-`
+        choice as a secured reference rate, and this source is not one.
+        """
+
+        urls = []
+        real = cli_data.fetch_nyfed_on_rrp
+        self.addCleanup(setattr, cli_data, "fetch_nyfed_on_rrp", real)
+
+        def transport(url):
+            urls.append(url)
+            # Distinct bytes per window: a snapshot is named by its digest.
+            return json.dumps({"repo": {"operations": []}, "window": url}).encode()
+
+        cli_data.fetch_nyfed_on_rrp = lambda **kwargs: real(downloader=transport, **kwargs)
+        with tempfile.TemporaryDirectory() as directory:
+            argv = [
+                "fetch", "on-rrp",
+                "--start", "2025-06-01", "--end", "2026-01-31",
+                "--output-root", directory,
+            ]
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(argv), 0)
+            written = sorted(
+                path.parent.name for path in Path(directory).rglob("*.json")
+                if not path.name.endswith(".manifest.json")
+            )
+        self.assertEqual(written, [ingest.NYFED_ON_RRP_SOURCE_ID] * 2)
+        self.assertEqual(len(urls), 2)

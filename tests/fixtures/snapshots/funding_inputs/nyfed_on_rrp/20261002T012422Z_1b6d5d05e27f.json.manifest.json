@@ -1,0 +1,8 @@
+{
+  "byte_count": 432383,
+  "path": "nyfed_on_rrp/20261002T012422Z_1b6d5d05e27f.json",
+  "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+  "sha256": "1b6d5d05e27fce64f8256e8eeecbde73313c27001ce1fa0641b5751c2f6a1825",
+  "source_id": "nyfed_on_rrp",
+  "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2022-01-01&endDate=2022-12-31"
+}

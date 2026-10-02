@@ -262,7 +262,8 @@ class UndeclaredFeatureError(ValueError):
 #:
 #: Both halves are stated because neither is derivable from the other: the
 #: registry declares fields in source vocabulary and the panel uses model
-#: vocabulary, and `SOFR`->`sofr`, `WTREGEN`->`tga`, `RRPONTSYD`->`on_rrp`,
+#: vocabulary, and `SOFR`->`sofr`, `WTREGEN`->`tga`,
+#: `reverse_repo_total_accepted`->`on_rrp`,
 #: `mmf_net_assets`->`mmf_assets` are renames with no rule behind them. The
 #: field is what makes a field-level release lag addressable: one source can
 #: carry an administered rate that is never revised beside a statistical
@@ -289,7 +290,10 @@ FEATURE_FIELDS = MappingProxyType(
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
-        "on_rrp": (("fred_macro_latest_vintage", "RRPONTSYD"),),
+        # The Desk's own operation results, summed over every reverse-repo
+        # operation of the day, not FRED's `RRPONTSYD`, which alternates between
+        # the sum and one leg on a two-operation day (#45; A45, Route B).
+        "on_rrp": (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
         "treasury_settlement": (("treasury_auctions", "treasury_settlement"),),
         # The split as panel columns (human decision, 11 Sep 2026): a gross
         # aggregate hides three different pressures. Bill settlements drain cash

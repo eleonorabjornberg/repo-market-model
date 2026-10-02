@@ -430,7 +430,7 @@ from repo_model.splits import LookAheadError, SplitError
 # every module has loaded), so this direction is acyclic, and a test module
 # importing another is how
 # `tests/test_event_eval.py` already reaches this one's fixtures.
-from test_contract import _import_test_modules_naming, _package_modules
+from test_contract import _import_test_modules_naming, _package_modules, pre_45_on_rrp
 
 SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
@@ -2319,7 +2319,8 @@ class PurgedBacktestTests(unittest.TestCase):
         )
         self.assertGreater(len(priced.forecasts), 0)
 
-        with self.assertRaises(RegistryContractError) as caught:
+        # `on_rrp` as it read before #45: see `test_contract.pre_45_on_rrp`.
+        with pre_45_on_rrp(), self.assertRaises(RegistryContractError) as caught:
             rolling_persistence_backtest(
                 rows,
                 features=("spread_bps", "on_rrp"),

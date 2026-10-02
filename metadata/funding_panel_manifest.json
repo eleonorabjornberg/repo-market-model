@@ -10,6 +10,7 @@
     "bgcr",
     "reserve_balances",
     "tga",
+    "on_rrp",
     "treasury_settlement",
     "treasury_settlement_bills",
     "treasury_settlement_coupons",
@@ -28,6 +29,7 @@
     "days_to_month_end": 0,
     "dealer_treasury_position": 0,
     "iorb": 0,
+    "on_rrp": 0,
     "quarter_end": 0,
     "reserve_balances": 0,
     "sofr": 0,
@@ -46,6 +48,30 @@
   },
   "incomplete_dates": 4744,
   "inputs": [
+    {
+      "byte_count": 496091,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_0dfe701aee28.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "0dfe701aee28cdd3b385830d42a3fa55f4bf4bb34f6588d8f3fca5717a19741f",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2020-01-01&endDate=2020-12-31"
+    },
+    {
+      "byte_count": 444788,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_1924b339852f.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "1924b339852fac0314dc706d173507fc1e7f197e3703a405deb2b32e1e928847",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2023-01-01&endDate=2023-12-31"
+    },
+    {
+      "byte_count": 432383,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_1b6d5d05e27f.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "1b6d5d05e27fce64f8256e8eeecbde73313c27001ce1fa0641b5751c2f6a1825",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2022-01-01&endDate=2022-12-31"
+    },
     {
       "byte_count": 213838,
       "path": "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-volume/20260906T195746Z_242476de8f3b.json",
@@ -111,12 +137,36 @@
       "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=issue_date%3Agte%3A2017-01-03%2Cissue_date%3Alte%3A2026-09-14&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
     },
     {
+      "byte_count": 587315,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_7ee18cd29791.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "7ee18cd29791f3aace4bbe0cc0f0999d32687249b43669e3fedc6ca519430b36",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2025-01-01&endDate=2025-12-31"
+    },
+    {
+      "byte_count": 393053,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_7ffd26c8ad5c.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "7ffd26c8ad5c0147a738247bc180912bffae8229a289b462b9da18882aaba9a4",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2021-01-01&endDate=2021-12-31"
+    },
+    {
       "byte_count": 20297,
       "path": "tests/fixtures/snapshots/funding_inputs/treasury_bill_rates/20260914T002815Z_aa024dfde770.csv",
       "retrieved_at": "2026-09-14T00:28:15.251265+00:00",
       "sha256": "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
       "source_id": "treasury_bill_rates",
       "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2025/all?type=daily_treasury_bill_rates&field_tdr_date_value=2025&_format=csv"
+    },
+    {
+      "byte_count": 323076,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_abd95e0266b2.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "abd95e0266b20dc0d13cbf5800617b7500777e4632a8fa8622beca84c4364795",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2019-01-01&endDate=2019-12-31"
     },
     {
       "byte_count": 213013,
@@ -175,6 +225,14 @@
       "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json?startDate=2018-04-03&endDate=2026-09-05&type=rate"
     },
     {
+      "byte_count": 450297,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_d39f14dbd746.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "d39f14dbd746cc7126604b812d2141a5604f19dd596d67e69383df481e3316ab",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2026-01-01&endDate=2026-09-30"
+    },
+    {
       "byte_count": 15581,
       "path": "tests/fixtures/snapshots/funding_inputs/treasury_bill_rates/20260914T002815Z_e45398cf008a.csv",
       "retrieved_at": "2026-09-14T00:28:15.251265+00:00",
@@ -183,18 +241,33 @@
       "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2021/all?type=daily_treasury_bill_rates&field_tdr_date_value=2021&_format=csv"
     },
     {
+      "byte_count": 218037,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_e8290f9b0e79.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "e8290f9b0e79b056805d49b24bf44bb4514d66779ff8894ecb94812df9b0bab3",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2018-01-01&endDate=2018-12-31"
+    },
+    {
       "byte_count": 15520,
       "path": "tests/fixtures/snapshots/funding_inputs/treasury_bill_rates/20260914T002815Z_f0396ee6dfaa.csv",
       "retrieved_at": "2026-09-14T00:28:15.251265+00:00",
       "sha256": "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
       "source_id": "treasury_bill_rates",
       "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019&_format=csv"
+    },
+    {
+      "byte_count": 453905,
+      "path": "tests/fixtures/snapshots/funding_inputs/nyfed_on_rrp/20261002T012422Z_fcd76cc62218.json",
+      "retrieved_at": "2026-10-02T01:24:22.573116+00:00",
+      "sha256": "fcd76cc622184264a95ecfbedf3cda3a4dd2211e52d4f68f20d4da5dd91f07de",
+      "source_id": "nyfed_on_rrp",
+      "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2024-01-01&endDate=2024-12-31"
     }
   ],
   "path": "data/processed/funding_panel.csv",
   "refused_columns": {
-    "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day",
-    "on_rrp": "fred_macro_latest_vintage: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
+    "mmf_assets": "sec_nmfp: a snapshot_retrieved_at source is priced from rows only for a field declaring revision_policy in ['never_revised'] with revision_evidence. A row's available_at says when it arrived, not whether the latest vintage is the value that stood on the day"
   },
   "required_columns": [
     "sofr",
@@ -202,8 +275,11 @@
   ],
   "row_count": 2104,
   "run_record": "docs/runs/persistence_funding.json",
-  "sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "sha256": "9f7d6881a2181b35394daf8097a10e8ad3567250c75383072d11ecb78132e30a",
   "source_shas": [
+    "0dfe701aee28cdd3b385830d42a3fa55f4bf4bb34f6588d8f3fca5717a19741f",
+    "1924b339852fac0314dc706d173507fc1e7f197e3703a405deb2b32e1e928847",
+    "1b6d5d05e27fce64f8256e8eeecbde73313c27001ce1fa0641b5751c2f6a1825",
     "242476de8f3b9226c5cefa537e1efe9250d8abc60b2cda95682b349ef34c7617",
     "359621178c04d9734d379c5aef5b3b723d4b963408d01692da4aae0e37975523",
     "3a5e2244641595a89daa35a0643e0d1d5328e9149496d3a172cad784314519e1",
@@ -212,7 +288,10 @@
     "5e87d2b7aa4815c0bc20e58190d094801a32fbaa89b1ea6565b0582a5deca563",
     "6f037e225a3f296613f620404667971df9f202743e70540d9ffbf5c7d30a3a51",
     "722359ea9bc7a629ac5de8adec79c372ed360810bc858aef835653100b3782e7",
+    "7ee18cd29791f3aace4bbe0cc0f0999d32687249b43669e3fedc6ca519430b36",
+    "7ffd26c8ad5c0147a738247bc180912bffae8229a289b462b9da18882aaba9a4",
     "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
+    "abd95e0266b20dc0d13cbf5800617b7500777e4632a8fa8622beca84c4364795",
     "afcffe123cf95f16b413f3ac0098512e59a6a26f42084cfa1ed6645bb5d14eae",
     "b1cd7969ac8f1bd245feccb4ae544c44d28c1b73faf98710a8b0d29cc70c08b2",
     "c98524ef8e4850efad54b979f26561e1641a62aeda009de9cdf240bbd4c9764b",
@@ -220,8 +299,11 @@
     "cbefb07dbf11e06537a78518959a949d697b8e61779989e4e69595bec0fea34b",
     "cc29ccb650fe49ce04781e97332cecba11c20e466b053a08d6fb15b6b24dbd20",
     "cdaf52e9638cc977f31e3f010bbbe0a52aad9018f285904c7e74c83b2d0bb59b",
+    "d39f14dbd746cc7126604b812d2141a5604f19dd596d67e69383df481e3316ab",
     "e45398cf008aeca21679fe1ebcc7d051add07f0819ef62723fe472a1ea00377d",
-    "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a"
+    "e8290f9b0e79b056805d49b24bf44bb4514d66779ff8894ecb94812df9b0bab3",
+    "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
+    "fcd76cc622184264a95ecfbedf3cda3a4dd2211e52d4f68f20d4da5dd91f07de"
   ],
   "start_date": "2018-04-03"
 }

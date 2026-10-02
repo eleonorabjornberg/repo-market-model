@@ -138,6 +138,9 @@ from repo_model.metrics import (
 from repo_model.registry import max_release_lag_days
 from repo_model.event_eval import config_digest, read_journal
 
+sys.path.insert(0, str(Path(__file__).parent))
+from test_contract import pre_45_on_rrp
+
 
 REPO_ROOT = Path(__file__).parents[1]
 THRESHOLDS = REPO_ROOT / "metadata" / "stress_thresholds.json"
@@ -1400,7 +1403,13 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         move -- `model_config` carries no information-set key.
         """
 
-        code, out, err = self.run_command(model="climatology")
+        # The harness declares `on_rrp`, which read FRED's `RRPONTSYD` at the
+        # branch point; #45 moved it to `nyfed_on_rrp`. The pin is about keys
+        # the default path must not grow, not about that source, so the run is
+        # made under the branch point's mapping (`test_contract.pre_45_on_rrp`).
+        with pre_45_on_rrp():
+            code, out, err = self.run_command(model="climatology")
+            expected = config_digest(self.expected_config("climatology", self.FEATURES))
         self.assertEqual(code, 0, msg=f"command failed: {err.strip()}")
         self.assertEqual(out, HOLDOUT_DEFAULT_STDOUT_AT_69AD231)
         self.assertEqual(
@@ -1413,7 +1422,7 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         record, = read_journal(self.journal)
         self.assertEqual(
             record["config_sha256"],
-            config_digest(self.expected_config("climatology", self.FEATURES)),
+            expected,
             msg="the no-flag config hash moved; a new key joined model_config "
             "on the default path",
         )
@@ -1437,12 +1446,12 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         if not _extra_installed():
             self.skipTest("--model gbm needs the optional ml extra")
 
-        self.run_command(model="gbm")
+        # Under the branch point's `on_rrp` mapping, as the climatology run.
+        with pre_45_on_rrp():
+            self.run_command(model="gbm")
+            expected = config_digest(self.expected_config("gbm", self.FEATURES))
         record, = read_journal(self.journal)
-        self.assertEqual(
-            record["config_sha256"],
-            config_digest(self.expected_config("gbm", self.FEATURES)),
-        )
+        self.assertEqual(record["config_sha256"], expected)
         self.assertEqual(
             record["config_sha256"],
             "f24b7e07c87e9e8c8b1dd6bb8eaa8b67533dc38ad90b970c595af5397badbc6c",
@@ -3343,7 +3352,9 @@ class RealRegistryTests(unittest.TestCase):
         `tests/test_baseline.py::PurgedBacktestTests::test_two_features_on_one_source_price_differently`.
         """
 
-        code, out, err, written = self._run(FEATURE, "on_rrp")
+        # `on_rrp` as it read before #45: see `test_contract.pre_45_on_rrp`.
+        with pre_45_on_rrp():
+            code, out, err, written = self._run(FEATURE, "on_rrp")
 
         self.assertEqual(code, 2)
         self.assertIn("fred_macro_latest_vintage", err)
