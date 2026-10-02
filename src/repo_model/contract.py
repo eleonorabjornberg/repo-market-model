@@ -286,6 +286,10 @@ FEATURE_FIELDS = MappingProxyType(
             ("fred_macro_latest_vintage", "IOER"),
         ),
         "tgcr": (("nyfed_tgcr", "TGCR"),),
+        # The effective federal funds rate, from the New York Fed as published,
+        # not FRED's `DFF` copy (directive #98). Read by no published
+        # declaration; it enters a model only as `effr_minus_iorb_bp`.
+        "effr": (("nyfed_effr", "EFFR"),),
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
@@ -385,6 +389,11 @@ DERIVED_FEATURES = MappingProxyType(
         # percentile columns are rates in percent and every threshold in this
         # project is stated in basis points.
         "sofr_iqr_bps": ("sofr_p25", "sofr_p75"),
+        # EFFR less the as-of IORB the panel already carries, in whole basis
+        # points: a slow gauge of how ample reserves are (directive #98). EFFR
+        # and SOFR share a publication instant, so the as-of rule reads this
+        # at the target's own row.
+        "effr_minus_iorb_bp": ("effr", "iorb"),
     }
 )
 
