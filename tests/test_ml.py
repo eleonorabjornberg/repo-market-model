@@ -10227,9 +10227,9 @@ class PressureModelPublishTests(unittest.TestCase):
 
     At horizons of 2 or more the scorecaster's coupon-settlement indicator is
     not public at the decision instant under its declaration (one business day
-    ahead), so the run is refused there (`scorecaster_calendar`), as it should
-    be: how the band is calibrated at those horizons is Eleonora's question
-    (#124, #134), not something the script settles.
+    ahead). Eleonora's ruling on #170 (option A) drops it from the scorecaster
+    there, a declared variant the record states; until then the run was
+    refused with `LookAheadError`, which this class pinned.
     """
 
     TRACKED = Path(__file__).resolve().parents[1]
@@ -10288,14 +10288,39 @@ class PressureModelPublishTests(unittest.TestCase):
                 record["metrics"]["by_tau"][tau]["brier"], paired["model_brier"], places=12
             )
 
-    def test_a_horizon_whose_settlement_is_not_public_is_refused(self):
-        with self.assertRaises(LookAheadError) as caught:
-            self.module.main([
+    def test_a_longer_horizon_runs_the_declared_variant(self):
+        from repo_model import recalibration
+
+        report = self.tmp / "pressure_h2.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
                 "publish", "--panel", str(self.panel), "--horizon", "2",
-                "--report", str(self.tmp / "refused.json"),
+                "--report", str(report),
             ])
-        self.assertIn("coupon settlement", str(caught.exception))
-        self.assertFalse((self.tmp / "refused.json").exists())
+        self.assertEqual(code, 0)
+        declaration = json.loads(report.read_text(encoding="utf-8"))["declaration"]
+        self.assertEqual(declaration["horizon"], 2)
+        self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+        self.assertEqual(
+            declaration["calibration_constants"]["SCORECASTER_INDICATORS"],
+            list(recalibration.SCORECASTER_INDICATORS_LONG_HORIZON),
+        )
+        self.assertEqual(declaration["scorecaster_variant"], recalibration.SCORECASTER_VARIANT)
+
+    def test_horizon_one_declares_no_variant(self):
+        from repo_model import recalibration
+
+        report = self.tmp / "pressure_h1.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1", "--report", str(report),
+            ])
+        declaration = json.loads(report.read_text(encoding="utf-8"))["declaration"]
+        self.assertEqual(
+            declaration["calibration_constants"]["SCORECASTER_INDICATORS"],
+            list(recalibration.SCORECASTER_INDICATORS),
+        )
+        self.assertNotIn("scorecaster_variant", declaration)
 
 
 # --------------------------------------------------------------------------

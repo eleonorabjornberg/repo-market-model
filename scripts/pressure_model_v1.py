@@ -36,8 +36,11 @@ shape of an `exceedance-backtest` record, and is scored from a clean tree:
 
 At horizons of 2 or more `treasury_settlement` is not public at the decision
 instant under its declaration (`metadata/sources.json`, `treasury_auctions`:
-one business day ahead), so every declaration drops it there. Each candidate is
-also reported recalibrated out of fold (`pressure.RECALIBRATION`).
+one business day ahead), so every declaration drops it there, and the
+published record's conformal PID scorecaster drops its coupon-settlement
+indicator (Eleonora's ruling on #170, option A; the record's declaration
+carries `scorecaster_variant`). Each candidate is also reported recalibrated
+out of fold (`pressure.RECALIBRATION`).
 """
 
 from __future__ import annotations

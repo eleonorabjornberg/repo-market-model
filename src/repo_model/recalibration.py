@@ -96,6 +96,15 @@ Bates (2023):
   fitted at all. Grid: `PID_GRID_SCORECASTER_MINIMUMS`, `None` (no
   scorecaster), 20 (#122) and 60.
 
+**At horizons of 2 or more (#170).** A coupon settlement is public one
+business day ahead (`metadata/sources.json`, `treasury_auctions`), so at a
+decision two or more panel days before the scored day it is not yet public,
+and `scorecaster_calendar` refuses it. Eleonora's ruling on #170 (option A):
+there the scorecaster drops its coupon-settlement indicator
+(`scorecaster_indicators`), a declared variant of the calibration that a
+record states (`FoldPid.settings`, `scorecaster_variant`). At h = 1 nothing
+changes, and the guard on the indicator itself stays.
+
 `PID_GRID` is their product, 45 points, #122's (`DECLARED_PID`) among them.
 `nested_selection` chooses among them at each refit from the days scored
 before it (`select_constants` is the guard). The rest of the method is held at #122's values and not searched:
@@ -118,6 +127,17 @@ from .splits import LookAheadError
 
 #: The scorecaster's calendar, in column order after the intercept.
 SCORECASTER_INDICATORS = ("month_end", "quarter_end", "tax_date", "coupon_settlement")
+
+#: The scorecaster's calendar at horizons of 2 or more: without coupon
+#: settlement, which is not yet public there (#170, option A).
+SCORECASTER_INDICATORS_LONG_HORIZON = ("month_end", "quarter_end", "tax_date")
+
+#: What a record says of the long-horizon variant.
+SCORECASTER_VARIANT = (
+    "at horizons of 2 or more the scorecaster drops its coupon-settlement "
+    "indicator, which is public one business day ahead and so not at the "
+    "decision instant (#170, option A)"
+)
 
 #: The panel column the coupon settlement indicator is read off: the scored
 #: day's coupon settlement, in USD billions, a scheduled field.
@@ -251,21 +271,37 @@ def _solve(gram: List[List[float]], moment: List[float]) -> Optional[Tuple[float
     return tuple(solution)
 
 
-class PidState:
-    """Conformal PID's state: what the labels observed so far have taught it."""
+def scorecaster_indicators(horizon: int) -> Tuple[str, ...]:
+    """The scorecaster's calendar at `horizon`: all four at 1, no settlement after (#170)."""
 
-    def __init__(self, levels: Sequence[float], constants: PidConstants = DECLARED_PID) -> None:
+    return SCORECASTER_INDICATORS if horizon == 1 else SCORECASTER_INDICATORS_LONG_HORIZON
+
+
+class PidState:
+    """Conformal PID's state: what the labels observed so far have taught it.
+
+    `indicators` names the scorecaster's calendar columns (`SCORECASTER_INDICATORS`
+    by default; `scorecaster_indicators`).
+    """
+
+    def __init__(
+        self,
+        levels: Sequence[float],
+        constants: PidConstants = DECLARED_PID,
+        indicators: Sequence[str] = SCORECASTER_INDICATORS,
+    ) -> None:
         self.constants = constants
+        self.indicators = tuple(indicators)
         self.alpha = _miss_rate(levels)
         self.tracker = 0.0
         self.error_sum = 0.0
         self.observed = 0
         self.last_observed: Optional[date] = None
         self.recent: Deque[float] = deque(maxlen=PID_STEP_WINDOW)
-        width = 1 + len(SCORECASTER_INDICATORS)
+        width = 1 + len(self.indicators)
         self.gram = [[0.0] * width for _ in range(width)]
         self.moment = [0.0] * width
-        self.flagged = [0] * len(SCORECASTER_INDICATORS)
+        self.flagged = [0] * len(self.indicators)
         self._coefficients: Optional[Tuple[Tuple[int, ...], Tuple[float, ...]]] = None
 
     def _scale(self) -> float:
@@ -310,10 +346,10 @@ class PidState:
     def band(self, day: OnlineDay) -> OnlineBand:
         """The band issued for `day` from the labels observed so far."""
 
-        if len(day.calendar) != len(SCORECASTER_INDICATORS):
+        if len(day.calendar) != len(self.indicators):
             raise ValueError(
                 f"{day.scored_date}: {len(day.calendar)} calendar indicators, "
-                f"expected {len(SCORECASTER_INDICATORS)} ({SCORECASTER_INDICATORS})"
+                f"expected {len(self.indicators)} ({self.indicators})"
             )
         integrator, saturated = self._integrator()
         scorecast = self.scorecast(day.calendar)
@@ -370,8 +406,13 @@ class OnlinePid:
     its anchor) is observed, in date order.
     """
 
-    def __init__(self, levels: Sequence[float], constants: PidConstants = DECLARED_PID) -> None:
-        self.state = PidState(levels, constants)
+    def __init__(
+        self,
+        levels: Sequence[float],
+        constants: PidConstants = DECLARED_PID,
+        indicators: Sequence[str] = SCORECASTER_INDICATORS,
+    ) -> None:
+        self.state = PidState(levels, constants, indicators)
         self._pending: Deque[Tuple[OnlineDay, OnlineBand, float]] = deque()
         self._last: Optional[OnlineDay] = None
 
@@ -418,13 +459,14 @@ def conformal_pid(
     actuals: Sequence[float],
     levels: Sequence[float],
     constants: PidConstants = DECLARED_PID,
+    indicators: Sequence[str] = SCORECASTER_INDICATORS,
 ) -> Tuple[OnlineBand, ...]:
     """Conformal PID's band for every day, each from the labels its decision saw.
 
     `days` and `actuals` are aligned, in scored-date order. Before each day's
     band is issued, every earlier day whose label is observable at its
     decision (scored on or before its anchor) is observed, in date order.
-    `constants` defaults to #122's.
+    `constants` defaults to #122's, `indicators` to the four of h = 1.
     decision (scored on or before its anchor) is observed, in date order
     (`OnlinePid`).
 
@@ -450,7 +492,7 @@ def conformal_pid(
                 f"{day.scored_date} is anchored at {day.anchor}: its own label "
                 f"would be observable before its band is issued"
             )
-    online = OnlinePid(levels, constants)
+    online = OnlinePid(levels, constants, indicators)
     bands: List[OnlineBand] = []
     for day, actual in zip(days, actuals):
         band = online.issue(day)
@@ -465,6 +507,8 @@ def scorecaster_calendar(
     scored_index: int,
     splits,
     dates: Optional[Sequence[date]] = None,
+    *,
+    indicators: Sequence[str] = SCORECASTER_INDICATORS,
 ) -> Tuple[int, ...]:
     """The scorecaster's indicators for `rows[scored_index]`, read at its decision.
 
@@ -472,7 +516,9 @@ def scorecaster_calendar(
     window; quarter end and tax date are their calendar flags. Coupon
     settlement is `treasury_settlement_coupons > 0`, read only when its
     declared availability for the scored row is at or before the scored day's
-    decision instant.
+    decision instant. `indicators` is `SCORECASTER_INDICATORS` or, at
+    horizons of 2 or more, `SCORECASTER_INDICATORS_LONG_HORIZON`, which does
+    not read the settlement at all (#170).
 
     Raises:
         LookAheadError: the settlement was not yet announced at the decision.
@@ -480,11 +526,19 @@ def scorecaster_calendar(
             not read as zero.
     """
 
+    indicators = tuple(indicators)
+    if indicators not in (SCORECASTER_INDICATORS, SCORECASTER_INDICATORS_LONG_HORIZON):
+        raise ValueError(
+            f"the scorecaster's calendar is {SCORECASTER_INDICATORS} or "
+            f"{SCORECASTER_INDICATORS_LONG_HORIZON}, not {indicators}"
+        )
+    settled = "coupon_settlement" in indicators
     if dates is None:
         dates = [row.date for row in rows]
     values = rows[scored_index].values
     read = {}
-    for column in ("days_to_month_end", "quarter_end", "tax_date", SETTLEMENT_COLUMN):
+    columns = ("days_to_month_end", "quarter_end", "tax_date") + ((SETTLEMENT_COLUMN,) if settled else ())
+    for column in columns:
         value = values.get(column)
         if value is None or not math.isfinite(float(value)):
             raise ValueError(
@@ -492,6 +546,13 @@ def scorecaster_calendar(
                 f"calendar is read, never assumed"
             )
         read[column] = float(value)
+    calendar = (
+        1 if read["days_to_month_end"] <= splits.month_end_window else 0,
+        1 if read["quarter_end"] == 1.0 else 0,
+        1 if read["tax_date"] == 1.0 else 0,
+    )
+    if not settled:
+        return calendar
     decision: datetime = rule.decision_instant(dates, scored_index)
     available = rule.availability(
         dates, field_sources_for_features((SETTLEMENT_COLUMN,)), scored_index
@@ -501,12 +562,7 @@ def scorecaster_calendar(
             f"the coupon settlement for {dates[scored_index]} is declared "
             f"observable at {available}, after the {decision} decision"
         )
-    return (
-        1 if read["days_to_month_end"] <= splits.month_end_window else 0,
-        1 if read["quarter_end"] == 1.0 else 0,
-        1 if read["tax_date"] == 1.0 else 0,
-        1 if read[SETTLEMENT_COLUMN] > 0.0 else 0,
-    )
+    return calendar + (1 if read[SETTLEMENT_COLUMN] > 0.0 else 0,)
 
 
 def group_conditional_edges(
@@ -713,7 +769,8 @@ class FoldPid:
     only at a later decision whose anchor has reached its day (`OnlinePid`,
     `PidState.observe`). The scorecaster's calendar is read for the scored day
     at its decision instant (`scorecaster_calendar`), off `splits`' month-end
-    window.
+    window. At the rule's horizon of 2 or more the scorecaster runs without
+    coupon settlement (`scorecaster_indicators`, #170), and `settings` says so.
 
     Raises (from `view`, `law` and `label`):
         LookAheadError: a day anchored on or after its own scored day; a
@@ -730,6 +787,7 @@ class FoldPid:
         self._dates = [row.date for row in rows]
         self._rule = rule
         self._splits = splits
+        self._indicators = scorecaster_indicators(getattr(rule, "horizon", 1))
         self._online: Optional[OnlinePid] = None
         self._open: Optional[Tuple[int, OnlineDay, OnlineBand]] = None
         self._bands: List[OnlineBand] = []
@@ -739,8 +797,18 @@ class FoldPid:
         """The declaration a record carries: the method and its constants."""
 
         constants = {name: globals()[name] for name in _PID_CONSTANT_NAMES}
-        constants["SCORECASTER_INDICATORS"] = list(SCORECASTER_INDICATORS)
-        return {"calibration": self.name, "calibration_constants": constants}
+        constants["SCORECASTER_INDICATORS"] = list(self._indicators)
+        return {"calibration": self.name, "calibration_constants": constants, **self._variant()}
+
+    def _variant(self) -> dict:
+        if self._indicators == SCORECASTER_INDICATORS:
+            return {}
+        return {"scorecaster_variant": SCORECASTER_VARIANT}
+
+    def _calendar(self, index: int) -> Tuple[int, ...]:
+        return scorecaster_calendar(
+            self._rows, self._rule, index, self._splits, self._dates, indicators=self._indicators
+        )
 
     def account(self) -> dict:
         """What the run did: its days, its burn-in, its clipped days, its mean `q_t`."""
@@ -761,12 +829,12 @@ class FoldPid:
                 f"day's band"
             )
         if self._online is None:
-            self._online = OnlinePid(levels)
+            self._online = OnlinePid(levels, indicators=self._indicators)
         day = OnlineDay(
             scored_date=self._dates[index],
             anchor=anchor,
             vector=tuple(vector),
-            calendar=scorecaster_calendar(self._rows, self._rule, index, self._splits, self._dates),
+            calendar=self._calendar(index),
         )
         band = self._online.issue(day)
         self._open = (index, day, band)
@@ -896,8 +964,9 @@ class NestedFoldPid(FoldPid):
         """The method, the constants it holds fixed, and how it chooses the rest."""
 
         constants = {name: globals()[name] for name in _PID_FIXED_NAMES}
-        constants["SCORECASTER_INDICATORS"] = list(SCORECASTER_INDICATORS)
+        constants["SCORECASTER_INDICATORS"] = list(self._indicators)
         return {
+            **self._variant(),
             "calibration": self.name,
             "calibration_constants": constants,
             "calibration_selection": {
@@ -939,12 +1008,12 @@ class NestedFoldPid(FoldPid):
             )
         if self._onlines is None:
             self._levels = tuple(levels)
-            self._onlines = [OnlinePid(levels, point) for point in self._grid]
+            self._onlines = [OnlinePid(levels, point, self._indicators) for point in self._grid]
         day = OnlineDay(
             scored_date=self._dates[index],
             anchor=anchor,
             vector=tuple(vector),
-            calendar=scorecaster_calendar(self._rows, self._rule, index, self._splits, self._dates),
+            calendar=self._calendar(index),
         )
         bands = tuple(online.issue(day) for online in self._onlines)
         if len(self._bands) % self._refit_every == 0:

@@ -20,6 +20,8 @@ in `tests/test_ml.py::RecalibrationPartsTests`.
 * `NestedFoldPidTests`: conformal PID with nested walk-forward selection of
   its constants inside a fold loop (#124), the published funding
   declaration's calibration since her rulings on #136 and #134.
+* `LongHorizonScorecasterTests`: at horizons of 2 or more the scorecaster
+  drops its coupon-settlement indicator, a declared variant (#170, option A).
 """
 
 from __future__ import annotations
@@ -819,6 +821,116 @@ class NestedFoldPidTests(unittest.TestCase):
 
     def test_a_calibrated_base_is_refused(self):
         FoldPidTests.test_a_calibrated_or_tailed_base_is_refused(self)
+
+
+class LongHorizonScorecasterTests(unittest.TestCase):
+    """At horizons of 2 or more the scorecaster drops coupon settlement (#170).
+
+    A coupon settlement is public one business day ahead
+    (`metadata/sources.json`, `treasury_auctions`), so at a decision two or
+    more panel days before the scored day it is not yet public, and
+    `scorecaster_calendar` refuses it (`LookAheadError`). Eleonora's ruling on
+    #170 (option A): at h >= 2 the indicator is dropped from the scorecaster,
+    a declared variant of the calibration that the record states; h = 1 is
+    unchanged, and the guard on the indicator itself stays.
+
+    Red first: written before `scorecaster_indicators` existed
+    (`AttributeError`), when a horizon-2 fold loop was refused with
+    `LookAheadError`.
+    """
+
+    LAG = FoldPidTests.LAG
+    REFIT_EVERY = NestedFoldPidTests.REFIT_EVERY
+
+    def setUp(self):
+        FoldPidTests.setUp(self)
+        self.rule = InformationRule(
+            self.registry, ("spread_bps",), decision_time=time(16, 0), horizon=2
+        )
+        self.long = ("month_end", "quarter_end", "tax_date")
+
+    drive = FoldPidTests.drive
+
+    def test_the_indicators_per_horizon(self):
+        self.assertEqual(
+            recalibration.scorecaster_indicators(1), recalibration.SCORECASTER_INDICATORS
+        )
+        for horizon in (2, 3, 4, 5):
+            with self.subTest(horizon=horizon):
+                self.assertEqual(recalibration.scorecaster_indicators(horizon), self.long)
+
+    def test_the_guard_on_the_indicator_stays(self):
+        settled = [i for i, row in enumerate(self.rows) if row.values["treasury_settlement_coupons"] > 0]
+        index = settled[-1]
+        with self.assertRaises(LookAheadError) as caught:
+            recalibration.scorecaster_calendar(self.rows, self.rule, index, self.splits)
+        self.assertIn("coupon settlement", str(caught.exception))
+        calendar = recalibration.scorecaster_calendar(
+            self.rows, self.rule, index, self.splits, indicators=self.long
+        )
+        self.assertEqual(
+            calendar,
+            recalibration.scorecaster_calendar(
+                self.rows, InformationRule(self.registry, ("spread_bps",), decision_time=time(16, 0)),
+                index, self.splits,
+            )[:3],
+        )
+
+    def test_the_nested_fold_loop_runs_the_variant_to_the_bit(self):
+        model = _UncalibratedModel()
+        days = [
+            recalibration.OnlineDay(
+                scored_date=self.dates[index],
+                anchor=self.dates[index - self.LAG],
+                vector=model.predict(self.rows[index - self.LAG]),
+                calendar=recalibration.scorecaster_calendar(
+                    self.rows, self.rule, index, self.splits, self.dates, indicators=self.long
+                ),
+            )
+            for index in self.scored
+        ]
+        actuals = [self.rows[index].spread_bps for index in self.scored]
+        grid = recalibration.PID_GRID
+        runs = [
+            recalibration.conformal_pid(days, actuals, LEVELS, constants=point, indicators=self.long)
+            for point in grid
+        ]
+        losses = [
+            tuple(crps_from_quantiles(LEVELS, run[i].vector, actual) for run in runs)
+            for i, actual in enumerate(actuals)
+        ]
+        nested = recalibration.nested_selection(
+            [day.scored_date for day in days], [day.anchor for day in days], losses,
+            self.REFIT_EVERY, fallback=grid.index(recalibration.DECLARED_PID),
+        )
+        pid = recalibration.NestedFoldPid(
+            self.rows, self.rule, splits=self.splits, refit_every=self.REFIT_EVERY
+        )
+        issued = self.drive(pid, model)
+        self.assertEqual(
+            [vector for vector, _ in issued],
+            [runs[chosen][i].vector for i, chosen in enumerate(nested.per_day)],
+        )
+        self.assertEqual(pid.blocks, nested.blocks)
+
+    def test_the_settings_declare_the_variant(self):
+        for factory in (
+            lambda rule: recalibration.FoldPid(self.rows, rule, splits=self.splits),
+            lambda rule: recalibration.NestedFoldPid(
+                self.rows, rule, splits=self.splits, refit_every=self.REFIT_EVERY
+            ),
+        ):
+            long = factory(self.rule).settings
+            self.assertEqual(long["calibration_constants"]["SCORECASTER_INDICATORS"], list(self.long))
+            self.assertIn("#170", long["scorecaster_variant"])
+            short = factory(
+                InformationRule(self.registry, ("spread_bps",), decision_time=time(16, 0))
+            ).settings
+            self.assertEqual(
+                short["calibration_constants"]["SCORECASTER_INDICATORS"],
+                list(recalibration.SCORECASTER_INDICATORS),
+            )
+            self.assertNotIn("scorecaster_variant", short)
 
 
 if __name__ == "__main__":
