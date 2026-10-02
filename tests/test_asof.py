@@ -623,6 +623,163 @@ class OnRrpAvailabilityTests(unittest.TestCase):
             information.check(DATES, information.information_set(DATES, scored))
 
 
+class OnRrpDepletionTests(unittest.TestCase):
+    """The conditional scarcity features (#88), composed from per-field reads.
+
+    `on_rrp_depleted` is `1(on_rrp < 100bn)` and `reserves_when_depleted` is
+    `reserve_balances * on_rrp_depleted`. Each input is read as-of on its own
+    declaration and the product is formed at the decision instant, so neither
+    feature sees a value of either input later than the input's own read.
+
+    At the 16:00 decision on Wednesday 21 January, `on_rrp` is read at Tuesday
+    the 20th (Wednesday's result is public Thursday at 16:00) and
+    `reserve_balances` at Thursday the 15th (record date plus five calendar
+    days at 16:15).
+
+    Written first: before `contract.COMPOSED_FEATURES` existed, every test here
+    raised `UndeclaredFeatureError` ('on_rrp_depleted' is not in
+    contract.FEATURE_FIELDS, ...).
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy of
+    `src/` and `tests/`: in `asof.InformationRule.observation`, the line
+    `return DailyObservation(anchor.date, self._composed(values))` mutated to
+    `return DailyObservation(anchor.date,
+    self._composed(dict(rows[info.scored_index - 1].values)))`, the features
+    formed from the decision day's own row. `test_a_result_after_the_decision_
+    instant_crossing_the_break_changes_neither_feature` then fails with
+    `AssertionError` (`1.0 != 0.0`): Wednesday's result, below the break and not
+    public until Thursday, turned the indicator on. Three other tests here fail
+    with it.
+    """
+
+    FEATURES = (
+        "spread_bps",
+        "reserve_balances",
+        "on_rrp",
+        "on_rrp_depleted",
+        "reserves_when_depleted",
+    )
+    COMPOSED = ("on_rrp_depleted", "reserves_when_depleted")
+
+    def setUp(self):
+        switch = on_rrp_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
+        self.information = rule(self.FEATURES)
+        self.scored = index_of(date(2026, 1, 22))  # decision Wed 21st 16:00
+        self.info = self.information.information_set(DATES, self.scored)
+
+    def rows(self, **on_rrp):
+        """`ROWS` with `on_rrp` at 500bn, but for the dates named in `on_rrp`."""
+
+        overrides = {date.fromisoformat(key[1:].replace("_", "-")): value
+                     for key, value in on_rrp.items()}
+        return [
+            DailyObservation(
+                row.date, {**row.values, "on_rrp": overrides.get(row.date, 500.0)}
+            )
+            for row in ROWS
+        ]
+
+    def composed(self, rows):
+        observed = self.information.observation(rows, self.info)
+        return {name: observed.values[name] for name in self.COMPOSED}
+
+    def test_a_result_after_the_decision_instant_crossing_the_break_changes_neither_feature(self):
+        """The leakage test (#88, step 3)."""
+
+        wednesday = index_of(date(2026, 1, 21))
+        self.assertGreater(
+            self.information.availability(
+                DATES, (("nyfed_on_rrp", "reverse_repo_total_accepted"),), wednesday
+            ),
+            self.info.decision_instant,
+        )
+        above = self.composed(self.rows())
+        crossed = self.composed(self.rows(d2026_01_21=50.0))
+        self.assertEqual(above, {"on_rrp_depleted": 0.0, "reserves_when_depleted": 0.0})
+        self.assertEqual(crossed["on_rrp_depleted"], above["on_rrp_depleted"])
+        self.assertEqual(
+            crossed["reserves_when_depleted"], above["reserves_when_depleted"]
+        )
+
+    def test_a_crossing_public_by_the_decision_turns_both_on(self):
+        """Tuesday's result is public at Wednesday 16:00: the features read it."""
+
+        composed = self.composed(self.rows(d2026_01_20=50.0))
+        reserves = ROWS[index_of(date(2026, 1, 15))].values["reserve_balances"]
+        self.assertEqual(composed["on_rrp_depleted"], 1.0)
+        # The weekly read, not Tuesday's row: each input is read on its own
+        # declaration, never both at one row.
+        self.assertEqual(composed["reserves_when_depleted"], reserves)
+        self.assertNotEqual(
+            reserves, ROWS[index_of(date(2026, 1, 20))].values["reserve_balances"]
+        )
+
+    def test_a_later_reserves_print_changes_nothing(self):
+        later = [
+            DailyObservation(
+                row.date,
+                {**row.values, "reserve_balances": -1.0}
+                if row.date > date(2026, 1, 15)
+                else row.values,
+            )
+            for row in self.rows(d2026_01_20=50.0)
+        ]
+        self.assertEqual(
+            self.composed(later), self.composed(self.rows(d2026_01_20=50.0))
+        )
+
+    def test_the_break_is_strict(self):
+        self.assertEqual(
+            self.composed(self.rows(d2026_01_20=100.0))["on_rrp_depleted"], 0.0
+        )
+        self.assertEqual(
+            self.composed(self.rows(d2026_01_20=99.999))["on_rrp_depleted"], 1.0
+        )
+
+    def test_the_constituents_are_read_and_guarded_as_their_own_fields(self):
+        groups = [group.feature for group in self.information.groups]
+        self.assertEqual(groups, ["spread_bps", "reserve_balances", "on_rrp"])
+        alone = rule(("spread_bps", "reserves_when_depleted"))
+        self.assertEqual(
+            [group.feature for group in alone.groups],
+            ["spread_bps", "reserve_balances", "on_rrp"],
+        )
+        # From the first decision with a weekly reserves print behind it.
+        for scored in range(index_of(date(2026, 1, 13)), len(DATES)):
+            alone.check(DATES, alone.information_set(DATES, scored))
+
+    def test_the_frame_composes_each_row_from_what_was_observable(self):
+        rows = self.rows(d2026_01_16=50.0, d2026_01_20=50.0)
+        frame = self.information.frame(rows, self.info)
+        self.assertEqual(frame[-1].date, date(2026, 1, 20))
+        for position, row in enumerate(frame):
+            on_rrp = rows[position].values["on_rrp"]
+            depleted = 1.0 if on_rrp < 100.0 else 0.0
+            self.assertEqual(row.values["on_rrp_depleted"], depleted, row.date)
+            reserves = row.values["reserve_balances"]
+            if row.date > date(2026, 1, 15):
+                # Not yet printed at the decision: a hole, and so is the product.
+                self.assertIsNone(reserves, row.date)
+                self.assertIsNone(row.values["reserves_when_depleted"], row.date)
+            else:
+                self.assertEqual(
+                    row.values["reserves_when_depleted"], reserves * depleted, row.date
+                )
+
+    def test_a_hole_in_on_rrp_is_a_hole_in_both(self):
+        rows = self.rows()
+        tuesday = index_of(date(2026, 1, 20))
+        rows[tuesday] = DailyObservation(
+            rows[tuesday].date, {**rows[tuesday].values, "on_rrp": None}
+        )
+        self.assertEqual(
+            self.composed(rows),
+            {"on_rrp_depleted": None, "reserves_when_depleted": None},
+        )
+
+
 class SrfAvailabilityTests(unittest.TestCase):
     """`srf_take_up` is read at the next business day's decision instant (#127).
 
