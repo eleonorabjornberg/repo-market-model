@@ -60,6 +60,7 @@ __all__ = [
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
+    "OVERLAY_FEATURES",
     "sources_for_features",
     "TREASURY_BILL_SECURITY_TYPES",
     "TREASURY_COUPON_SECURITY_TYPES",
@@ -318,6 +319,16 @@ FEATURE_FIELDS = MappingProxyType(
         # documented, not converted.
         "tbill_4w": (("treasury_bill_rates", "tbill_4w_coupon_equivalent"),),
         "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
+        # Announced IORB (directive #38): computed per scored row from the dated
+        # implementation-note table by `announced_iorb`, which adds them to a
+        # panel in memory. Not built into the published panel; scheduled under
+        # the source's `scheduled_availability` declaration.
+        "iorb_announced_change_bps": (
+            ("fed_iorb_announcements", "iorb_announced_change_bps"),
+        ),
+        "iorb_days_to_announced_change": (
+            ("fed_iorb_announcements", "iorb_days_to_announced_change"),
+        ),
     }
 )
 
@@ -450,6 +461,22 @@ CALENDAR_FEATURES = frozenset(
         # month ends, and the evidence that motivated this column was measured
         # in calendar days.
         "days_to_month_end",
+    }
+)
+
+# Columns a model may read that the published panel does not carry: a named
+# module adds them to a panel in memory, from a tracked snapshot, after the
+# build. Each maps to that module. They are in `FEATURE_FIELDS`, so the as-of
+# rule prices and guards them like any other read; this set is only what
+# exempts them from `tests/test_contract.py`'s rule that every classified
+# column is a panel column. `tests/test_announced_iorb.py` checks the module
+# adds exactly these. Adding one does not move the published panel's bytes.
+# Per-use exception (Eleonora, 2 October 2026, #38/PR #154): adding a column
+# here is her decision.
+OVERLAY_FEATURES = MappingProxyType(
+    {
+        "iorb_announced_change_bps": "repo_model.announced_iorb",
+        "iorb_days_to_announced_change": "repo_model.announced_iorb",
     }
 )
 

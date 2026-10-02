@@ -189,6 +189,7 @@ from repo_model.contract import (
     CALENDAR_FEATURES,
     DERIVED_FEATURES,
     FEATURE_FIELDS,
+    OVERLAY_FEATURES,
     FEATURE_SOURCES,
     QUANTILE_LEVELS,
     REVISION_POLICIES,
@@ -2751,7 +2752,12 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
                 )
 
         declared = set().union(*collections.values())
-        strays = sorted(declared - set(self._panel_columns()) - set(DERIVED_FEATURES))
+        strays = sorted(
+            declared
+            - set(self._panel_columns())
+            - set(DERIVED_FEATURES)
+            - set(OVERLAY_FEATURES)
+        )
         self.assertEqual(
             strays,
             [],
@@ -2762,6 +2768,19 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
                 "tree in the other direction."
             ),
         )
+
+    def test_an_overlay_feature_is_sourced_and_is_not_a_panel_column(self):
+        """`OVERLAY_FEATURES` exempts a column from the stray check above, so
+        it is held to what the exemption claims: the column has a declared
+        source, the published panel does not carry it, and it names a module
+        of this package that exists."""
+
+        for column, module in OVERLAY_FEATURES.items():
+            with self.subTest(column=column):
+                self.assertIn(column, FEATURE_SOURCES)
+                self.assertNotIn(column, self._panel_columns())
+                self.assertTrue(module.startswith("repo_model."))
+                importlib.import_module(module)
 
     def test_a_derived_feature_declares_the_columns_its_implementation_reads(self):
         """Anchored to `data.py`, not to the declaration it is checking.
