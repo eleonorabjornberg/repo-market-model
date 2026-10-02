@@ -431,6 +431,10 @@ COMPOSED_FEATURES = MappingProxyType(
 CALENDAR_FEATURES = frozenset(
     {
         "quarter_end",
+        # The quarter's last business day and the two business days either
+        # side (#140, drafted for Eleonora's ruling). An opt-in column: no
+        # published declaration reads it.
+        "quarter_end_window",
         "tax_date",
         # Calendar days remaining until the last day of the month: 0 on the
         # last day, 30 on the first of a 31-day month, 27 on the first of
