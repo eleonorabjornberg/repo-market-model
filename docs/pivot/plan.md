@@ -119,7 +119,7 @@ Each step is one directive. Briefs are in [`directives/`](directives).
 3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md): done in the directive 03 pull request (#27). Records refit every 21 scored days, the two pressure-probability benchmarks scored and paired, every result split by regime and pressure-day type (`metadata/evaluation_splits.json`, provisional), the purge-rule records archived in `docs/runs/archive/pre-asof/`.
 4. **Retire the legacy ownership gates:** [`04`](directives/04-retire-legacy-gates.md): done, PR #30.
 5. **Review CI and the test suite:** [`05`](directives/05-review-ci-and-tests.md), after 04.
-6. **Pressure model v1 and the scarcity indicator**, after step 3.
+6. **Pressure model v1 and the scarcity indicator**, after step 3. The scarcity indicator is measured for #115: a declared regime state from SR 1019's 12–13% satiation band and the $100bn ON RRP buffer (`src/repo_model/scarcity.py`), with H.8 bank assets as first prints from the Board's archive, validated on pressure-day frequency by `scripts/scarcity_validation.py`. It is off in every published declaration; whether it is published is Eleonora's.
 7. **Calibration re-diagnosis:** CV+ against online conformal: measured for #116 by `scripts/calibration_rediagnosis.py` (CV+, conformal PID with a calendar scorecaster, Mondrian CV+ over calendar type × regime; `src/repo_model/recalibration.py`). Nothing published changed; which method, if any, replaces CV+ is Eleonora's.
 8. **Data additions** (§2), each priced as-of.
 9. **Model documentation and validation report,** in a model-risk structure: purpose and use, data, methodology,
