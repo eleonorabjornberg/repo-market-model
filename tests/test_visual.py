@@ -64,13 +64,21 @@ class RegenerationTests(unittest.TestCase):
                 self.assertEqual(prov["panel"]["sha256"], manifest["sha256"])
                 self.assertTrue(prov["inputs"])
 
-    def test_no_run_record_is_read(self):
-        """No figure from a run record: no input under docs/runs/, and no record chapter yet."""
+    def test_no_run_record_result_is_read(self):
+        """No figure from a run record: only N4's status engine reads docs/runs/, and only declarations.
+
+        `run_record_declarations` keeps a record's declaration, its derived
+        fields and a comparison's verdict, and nothing else (#141 §3).
+        """
         self.assertEqual(emit_visual.MODEL_RECORDS, ())
         for rel, data in self.outputs.items():
-            if rel.endswith(".json"):
+            if rel.endswith(".json") and not rel.endswith("/newcomer_n4.json"):
                 for path in json.loads(data)["provenance"]["inputs"]:
                     self.assertFalse(path.startswith("docs/runs"), path)
+        for rel, kept in emit_visual.run_record_declarations(ROOT).items():
+            with self.subTest(record=rel):
+                self.assertLessEqual(set(kept), {"declaration", "derived", "comparison"})
+                self.assertLessEqual(set(kept.get("comparison", {})), {"loss", "mean_difference_interval"})
 
     def test_commit_stamp_is_the_latest_input_commit(self):
         shallow = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
@@ -822,7 +830,7 @@ class RefreshIssuesTests(unittest.TestCase):
     ]
 
     def fetch(self, path):
-        page = int(re.search(r"page=(\d+)", path).group(1))
+        page = int(re.search(r"[?&]page=(\d+)", path).group(1))
         self.calls.append(path)
         return self.PAGES[page - 1] if page <= len(self.PAGES) else []
 

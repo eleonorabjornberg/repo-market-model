@@ -960,7 +960,7 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
                       else f"#{n} is being worked on")
         elif registered and asking:
             n, q = asking[0]
-            status, reason = "in_progress", f"scored and off in #{n}; its publishing question #{q} is open"
+            status, reason = "in_progress", f"directive #{n} is done, and its publishing question #{q} is open"
         elif registered:
             status, reason = "registered_unused", "registered, and no published declaration reads it"
             sub = ("queued: " + ", ".join(f"#{n}" for n in queued)) if queued else None
