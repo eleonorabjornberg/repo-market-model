@@ -58,7 +58,8 @@ state below comes with the command that checks it, and the command's output wins
 3. [`03`](directives/03-rescore-publish.md): re-score and publish: done in the directive 03 pull request (#27).
 4. [`04`](directives/04-retire-legacy-gates.md): retire the legacy ownership gates: done in PR #30.
 5. [`05`](directives/05-review-ci-and-tests.md): review CI and the test suite, after 04.
-6. The rest of [`plan.md`](plan.md) §7, each drafted as a directive when its turn comes.
+6. [`06`](directives/06-visual-layer.md): the visual layer, descriptive half (#40): plan §7 step 10's first half.
+7. The rest of [`plan.md`](plan.md) §7, each drafted as a directive when its turn comes.
 
 ## Open for Eleonora
 
