@@ -14,6 +14,10 @@ the project was built. Nothing on the page is typed:
   current FOMC implementation note, never transcribed.
 * A placeholder left unfilled is an error, and so is a run record that does
   not declare the as-of information rule (`require_as_of`).
+* The "Start here" block above the chapters is the newcomer layer (#141). Its
+  terms come from `docs/visual/glossary.json`, each with a primary source, and
+  days in a lockbox tier not yet opened (`metadata/lockbox.json`) are drawn
+  grey, labelled "held out", and left out of every count and sentence it writes.
 
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
 the SHA-256 of each input file read. The commit is the latest one that changed
@@ -46,6 +50,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from repo_model import lockbox  # noqa: E402
 from repo_model.asof import declared_availability  # noqa: E402
 from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
@@ -57,6 +62,8 @@ EVENTS = "metadata/events.json"
 THRESHOLDS = "metadata/stress_thresholds.json"
 SPLITS = "metadata/evaluation_splits.json"
 ANNOTATIONS = "docs/visual/annotations.json"
+GLOSSARY = "docs/visual/glossary.json"
+LOCKBOX = "metadata/lockbox.json"
 TEMPLATE = "site/template.html"
 PAGE = "site/index.html"
 DATA_DIR = "docs/visual/data"
@@ -67,12 +74,14 @@ INPUTS = (
     "scripts/emit_visual.py",
     TEMPLATE,
     "docs/visual/annotations.json",
+    GLOSSARY,
     "docs/visual/sources",
     MANIFEST,
     SOURCES,
     EVENTS,
     THRESHOLDS,
     SPLITS,
+    LOCKBOX,
     FIXTURES,
 )
 
@@ -85,6 +94,20 @@ MODEL_RECORDS = ()
 RESERVE_BILLIONS = (100.0, 100_000.0)
 
 CLIP_BP = 45  # top of the full-period scale; days above it are drawn off the frame
+
+#: The newcomer layer's views (#141), in reading order: (section id, title, subtitle).
+#: The "Start here" nav lists only those whose section the template carries, so
+#: a half-built layer never shows a dead link.
+NEWCOMER_VIEWS = (
+    ("n1", "What is pressure?", "The line this project watches"),
+    ("n2", "Why is this hard?", "Pressure days are rare"),
+    ("n3", "When does it happen?", "Scarce cash and the calendar"),
+    ("n4", "Who lends to whom", "The market map"),
+    ("n5", "A quarter-end squeeze", "Step by step"),
+)
+
+#: Events from `annotations.json` that N1 marks on its chart, by date.
+N1_EPISODES = ("2019-09-17", "2020-03-15", "2022-06-01", "2025-12-01")
 TYPES = ["Quarter-end", "Month-end", "Tax window", "Coupon settlement", "Other"]
 NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
                 "ten", "eleven", "twelve"]
@@ -202,6 +225,63 @@ def check_annotations(notes):
         src = entry.get("src", "")
         if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
             raise VisualError(f"annotation {entry} has no primary-source URL")
+
+
+def check_glossary(glossary):
+    """Every glossary term has a unique key, a printed form, a definition and a primary source."""
+    seen = set()
+    for entry in glossary["terms"]:
+        key = entry.get("key", "")
+        if not re.fullmatch(r"\w+", key) or key in seen:
+            raise VisualError(f"glossary entry {entry} has no unique key")
+        seen.add(key)
+        for field in ("term", "text", "definition"):
+            if not str(entry.get(field, "")).strip():
+                raise VisualError(f"glossary term {key!r} has no {field}")
+        if not entry.get("match"):
+            raise VisualError(f"glossary term {key!r} lists no pattern")
+        if not any(str(entry.get("src", "")).startswith(prefix) for prefix in ALLOWED_SOURCES):
+            raise VisualError(f"glossary term {key!r} has no primary-source URL")
+
+
+def dfn_fills(glossary):
+    """`{{dfn_<key>}}`: the term as a <dfn>, with a keyboard-reachable disclosure for its definition.
+
+    The definition is in the page, not in a `title`: the term is an inline
+    control (`role="button"`, in the tab order) that toggles it by tap, Enter or
+    Space, and Esc closes it. A <button> would let a line break open beside the
+    term and strand the punctuation after it.
+    """
+    out = {}
+    for entry in glossary["terms"]:
+        key = entry["key"]
+        out[f"dfn_{key}"] = (
+            f'<dfn id="term-{key}" data-term="{key}"><span class="term" role="button" tabindex="0" aria-expanded="false" '
+            f'aria-controls="def-{key}">{html.escape(entry["text"])}</span></dfn>'
+            f'<span class="def" id="def-{key}" role="note" hidden> <b>{html.escape(entry["term"])}:</b> '
+            f'{html.escape(entry["definition"])} <a href="{entry["src"]}">Source</a></span><!--/def-->')
+    return out
+
+
+def newcomer_nav(template):
+    """The "Start here" nav: the views the template carries, in reading order."""
+    items = "".join(
+        f'<li class="live"><b>N{i}</b><span><a href="#{sid}">{title}</a><small>{sub}</small></span></li>'
+        for i, (sid, title, sub) in enumerate(NEWCOMER_VIEWS, 1) if f'<section id="{sid}"' in template)
+    return f"<ol>{items}</ol>"
+
+
+# ---------------------------------------------------------------- held-out days
+
+
+def held_out_tiers(repo):
+    """The lockbox tiers not yet opened, from `metadata/lockbox.json`; no date is typed here."""
+    return [tier for tier in lockbox.load_lockbox(Path(repo) / LOCKBOX) if tier.opened is None]
+
+
+def is_held(iso, tiers):
+    d = date.fromisoformat(iso)
+    return any(tier.opened is None and tier.contains(d) for tier in tiers)
 
 
 def fill(template, fills):
@@ -543,6 +623,100 @@ def history(rows, notes, thresholds, regimes, windows):
     return data, fills
 
 
+# ---------------------------------------------------------------- the newcomer layer (#141)
+
+
+def cluster_years(by_year):
+    """The fewest years that hold more than half of the days, listed in date order.
+
+    Years are taken by count, most first (the earlier year on a tie), until
+    together they hold more than half; the rule reads only the counts.
+    """
+    total = sum(by_year.values())
+    if not total:
+        return []
+    picked, held = [], 0
+    for year, k in sorted(by_year.items(), key=lambda kv: (-kv[1], kv[0])):
+        picked.append(year)
+        held += k
+        if 2 * held > total:
+            break
+    return sorted(picked)
+
+
+def year_list(years):
+    years = [str(y) for y in years]
+    return years[0] if len(years) == 1 else ", ".join(years[:-1]) + " and " + years[-1]
+
+
+def newcomer_n1(rows, tiers, thresholds, notes):
+    """N1 "What is pressure?": what the page says about SOFR − IORB, from unlocked days only.
+
+    The chart draws every panel day from the history series; days in a lockbox
+    tier not yet opened are drawn grey and labelled "held out". Every count,
+    share and sentence here is computed from `counted`, which leaves them out,
+    so a locked day's value cannot move anything this view writes.
+    """
+    pressure_bp = int(thresholds["taus_bp"][0])
+    held = lambda iso: is_held(iso, tiers)
+    counted = [r for r in rows if not held(r["date"])]
+    if not counted:
+        raise VisualError("every panel day is held out; N1 has nothing to count")
+    for r in counted:
+        r["n1_s"] = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
+    hot = [r for r in counted if r["n1_s"] > pressure_bp]
+    by_year = {}
+    for r in hot:
+        by_year[int(r["date"][:4])] = by_year.get(int(r["date"][:4]), 0) + 1
+    at_or_below = sum(1 for r in counted if r["n1_s"] <= 0)
+    off = [r for r in counted if r["n1_s"] > CLIP_BP]
+    spike = max(counted, key=lambda r: r["n1_s"])
+    iorb_from = next(e["date"] for e in notes["events"] if e.get("role") == "iorb_from")
+    by_date = {e["date"]: e for e in notes["events"]}
+    missing = [d for d in N1_EPISODES if d not in by_date]
+    if missing:
+        raise VisualError(f"N1 marks events {missing} that annotations.json does not carry")
+    episodes = [{"date": d, "src": by_date[d]["src"],
+                 "text": by_date[d]["text"].format(spike_sofr=f"{float(spike['sofr']):.2f}%",
+                                                   spike_bp=spike["n1_s"])}
+                for d in N1_EPISODES if not held(d)]
+    last = rows[-1]["date"]
+    spans = [{"name": t.name, "start": t.start.isoformat(),
+              "end": min(last, t.end.isoformat()) if t.end else last}
+             for t in tiers if t.start.isoformat() <= last]
+    clusters = cluster_years(by_year)
+    rest = sorted(set(by_year) - set(clusters))
+    data = {
+        "held_out": spans, "pressure_bp": pressure_bp, "clip_bp": CLIP_BP, "iorb_from": iorb_from,
+        "episodes": episodes,
+        "counted": {"first": counted[0]["date"], "last": counted[-1]["date"], "n": len(counted),
+                    "pressure": len(hot), "at_or_below_zero": at_or_below, "off_scale": len(off),
+                    "by_year": {str(y): k for y, k in sorted(by_year.items())},
+                    "cluster_years": clusters},
+    }
+    fills = {
+        "n1_first": day(counted[0]["date"]), "n1_last": day(counted[-1]["date"]),
+        "n1_pressure_of": f"{len(hot):,} of the {len(counted):,}",
+        "n1_clusters": (f"Most of those days came in {year_list(clusters)}" if clusters else "There were none")
+                       + (f"; the rest in {year_list(rest)}." if rest else "."),
+        "n1_at_or_below": f"{at_or_below:,} of the {len(counted):,} days counted here "
+                          f"({round(100 * at_or_below / len(counted))}%)",
+        "n1_off_scale": days(len(off)),
+        "n1_spike": f"{bp(spike['n1_s'])} bp on {day(spike['date'])}",
+        "n1_src_triparty": notes["claims"]["triparty_actors"]["src"],
+        "n1_held_note": (f"Days from {day(spans[0]['start'])} on are held out for the project's final test "
+                         f"(<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/"
+                         f"decisions/lockbox.md'>the lockbox rule</a>). They are drawn in grey, labelled "
+                         f"&ldquo;held out&rdquo;, and left out of every count and sentence in this view."
+                         if spans else "No day on this chart is held out."),
+        "n1_iorb_from": day(iorb_from),
+        "n1_episode_list": "".join(
+            f"<li><time>{short_day(e['date'])}</time> {e['text']}. <a href='{e['src']}'>Source</a></li>"
+            for e in episodes),
+    }
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -555,7 +729,10 @@ def generate(repo, commit=None):
     thresholds = read_json(THRESHOLDS, repo)
     regimes = read_json(SPLITS, repo)["regimes"]
     windows = read_json(EVENTS, repo)["windows"]
+    glossary = read_json(GLOSSARY, repo)
     check_annotations(notes)
+    check_glossary(glossary)
+    tiers = held_out_tiers(repo)
     for path in MODEL_RECORDS:
         load_run_record(repo / path)
     commit = commit or input_commit(repo)
@@ -566,7 +743,10 @@ def generate(repo, commit=None):
     check_reserve_units(rows)
     decision = time.fromisoformat(manifest["decision_time"])
 
+    n1, n1_fills = newcomer_n1([dict(r) for r in rows], tiers, thresholds, notes)
     hist, fills = history(rows, notes, thresholds, regimes, windows)
+    fills.update(n1_fills)
+    fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]
     iorb_last = Decimal(last["iorb"])
@@ -612,7 +792,8 @@ def generate(repo, commit=None):
     })
 
     inputs = {rel: sha256(repo / rel) for rel in
-              (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, ANNOTATIONS, TEMPLATE, notes["implementation_note"]["path"])}
+              (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, ANNOTATIONS, GLOSSARY, LOCKBOX, TEMPLATE,
+               notes["implementation_note"]["path"])}
     provenance = {
         "commit": commit,
         "generator": "scripts/emit_visual.py",
@@ -622,14 +803,15 @@ def generate(repo, commit=None):
     }
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
-    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build}
+    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1}
     out = {}
     for name, payload in payloads.items():
         doc = {"provenance": provenance, "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
-    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock")}
+    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1")}
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
+    fills["newcomer_nav"] = newcomer_nav(template)
     if "/*__DATA__*/null" not in template:
         raise VisualError("the template has no /*__DATA__*/null slot")
     page = template.replace("/*__DATA__*/null", json.dumps(page_data, sort_keys=True, separators=(",", ":"),
