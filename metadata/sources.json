@@ -656,12 +656,11 @@
     "provider": "Board of Governors of the Federal Reserve System",
     "release_lag": {
       "available_time": "23:59",
-      "basis": "ref_date",
+      "basis": "record_date",
       "days": 0,
-      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape, at the end-of-day convention, the conservative direction.",
+      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape as treasury_auctions states it, at the end-of-day convention on the value's own date, the conservative direction. No ingest adapter reads this source; repo_model.announced_iorb computes its fields.",
       "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 5
+      "unit": "calendar_days"
     },
     "reviewed_note": "No structural zeros: a 0.0 change is a computed value, not a missing one.",
     "scheduled_availability": {
