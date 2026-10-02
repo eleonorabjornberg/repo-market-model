@@ -35,6 +35,7 @@ from .ingest import (
     check_scheduled_settlements,
     fetch_fred_macro,
     fetch_nyfed_fr2004,
+    fetch_nyfed_on_rrp,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
     fetch_treasury_bill_rates,
@@ -88,6 +89,10 @@ def _fetch(args: argparse.Namespace) -> int:
         )
     elif args.source == "fr2004":
         artifacts = fetch_nyfed_fr2004(output_root=args.output_root)
+    elif args.source == "on-rrp":
+        artifacts = fetch_nyfed_on_rrp(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
     else:
         artifacts = fetch_fred_macro(output_root=args.output_root)
     print(json.dumps([artifact.as_dict() for artifact in artifacts], indent=2))
@@ -349,7 +354,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     fetch.add_argument(
         "source",
-        choices=NYFED_RATE_SOURCES + ("fred-macro", "treasury-bill-rates", "fr2004"),
+        choices=NYFED_RATE_SOURCES
+        + ("fred-macro", "treasury-bill-rates", "fr2004", "on-rrp"),
     )
     fetch.add_argument(
         "--start",
