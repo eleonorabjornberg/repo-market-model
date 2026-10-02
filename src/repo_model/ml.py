@@ -542,7 +542,7 @@ from dataclasses import dataclass
 from datetime import date
 from fractions import Fraction
 from types import MappingProxyType
-from typing import Any, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .baseline import (
     SPREAD_COMPONENTS,
@@ -2260,16 +2260,64 @@ class FittedGradientBoostedQuantiles:
         """
 
         interior, down, up = self._reported(feature_row)
-        anchor = interior[self.levels.index(_MEDIAN_LEVEL)]
-        pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
-        bottom = anchor + self._residuals[0]
-        top = anchor + self._residuals[-1]
-        if down or up:
-            bottom -= down
-            top += up
-        low = bottom if bottom < interior[0] else interior[0] - pad
-        high = top if top > interior[-1] else interior[-1] + pad
-        return (low,) + interior + (high,), (0.0,) + self.levels + (1.0,)
+        return _law_knots(
+            interior, down, up, self._residuals[0], self._residuals[-1], self.levels
+        )
+
+    def cross_conformal_parts(self, feature_row: DailyObservation) -> "CrossConformalParts":
+        """What CV+'s band at `feature_row` is built from, for a recalibration (#116).
+
+        The full fit's rearranged vector before its edges move, every
+        held-out row's terms `Q_lo_-k(i)(x) - s_i` and `Q_hi_-k(i)(x) + s_i`
+        read at this feature row, in block and date order, with each row's
+        date, and the residual range the law's tails are laid from.
+        `_banded(vector, *_cross_conformal_edges(lows, highs, levels))` is
+        `predict`'s vector, and `law_from_band` at those edges is
+        `law_knots`', bit for bit: the terms are computed exactly as
+        `_reported` computes them.
+
+        Raises:
+            ValueError: unless this model is calibrated by `cross_conformal`
+                and carries no tail; under any other calibration the terms are
+                not CV+'s, and a tail's law is not `law_from_band`'s.
+        """
+
+        if self.calibration != "cross_conformal" or self.tail_fit is not None:
+            raise ValueError(
+                f"cross_conformal_parts reads a cross_conformal fit with no tail; "
+                f"this one is calibrated by {self.calibration!r}"
+                f"{' and carries a tail' if self.tail_fit is not None else ''}"
+            )
+        vector = self._quantile_vector(self.design_row(feature_row))
+        dates: List[date] = []
+        lows: List[float] = []
+        highs: List[float] = []
+        for block in self.calibration_blocks:
+            if not block.scores:
+                continue
+            excluded = _rearranged(
+                block.estimators,
+                [
+                    self._design_row(
+                        feature_row,
+                        block.imputations,
+                        block.garch_parameters,
+                        block.garch_initial_variance,
+                        block.arx,
+                    )
+                ],
+            )[0]
+            dates.extend(block.scored_dates)
+            lows.extend(excluded[0] - score for score in block.scores)
+            highs.extend(excluded[-1] + score for score in block.scores)
+        return CrossConformalParts(
+            vector,
+            tuple(dates),
+            tuple(lows),
+            tuple(highs),
+            self._residuals[0],
+            self._residuals[-1],
+        )
 
     def _shared_law(
         self, feature_row: DailyObservation
@@ -2383,6 +2431,67 @@ class FittedGradientBoostedQuantiles:
             else _exceedance_from_law(values, levels, tau)
             for tau in family
         )
+
+
+class CrossConformalParts(NamedTuple):
+    """`FittedGradientBoostedQuantiles.cross_conformal_parts` for one feature row."""
+
+    vector: Tuple[float, ...]
+    held_out_dates: Tuple[date, ...]
+    lows: Tuple[float, ...]
+    highs: Tuple[float, ...]
+    residual_low: float
+    residual_high: float
+
+
+def _law_knots(
+    interior: Sequence[float],
+    down: float,
+    up: float,
+    residual_low: float,
+    residual_high: float,
+    levels: Sequence[float],
+) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    """`FittedGradientBoostedQuantiles._law`'s knots from its parts; see there."""
+
+    interior = tuple(interior)
+    anchor = interior[tuple(levels).index(_MEDIAN_LEVEL)]
+    pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
+    bottom = anchor + residual_low
+    top = anchor + residual_high
+    if down or up:
+        bottom -= down
+        top += up
+    low = bottom if bottom < interior[0] else interior[0] - pad
+    high = top if top > interior[-1] else interior[-1] + pad
+    return (low,) + interior + (high,), (0.0,) + tuple(levels) + (1.0,)
+
+
+def law_from_band(
+    vector: Sequence[float],
+    lower: float,
+    upper: float,
+    residual_low: float,
+    residual_high: float,
+    levels: Sequence[float],
+) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    """The law of an uncalibrated `vector` whose band edges move to `lower`, `upper`.
+
+    `_law`'s rule for a calibrated fit, given the pieces
+    `cross_conformal_parts` hands out: the outer levels move by `_banded`'s
+    neighbour rule, and each tail by as much as its own edge did. At CV+'s
+    edges it is `law_knots`; at another calibration's edges it is the law that
+    calibration would report (#116).
+    """
+
+    return _law_knots(
+        _banded(vector, lower, upper),
+        vector[0] - lower,
+        upper - vector[-1],
+        residual_low,
+        residual_high,
+        levels,
+    )
 
 
 def _rearranged(

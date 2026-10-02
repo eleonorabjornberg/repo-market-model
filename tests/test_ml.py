@@ -9139,5 +9139,151 @@ class DirectTrainingPairsTests(unittest.TestCase):
             cli_eval._select_fitter(arx)
 
 
+
+class RecalibrationPartsTests(unittest.TestCase):
+    """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
+
+    The calibration re-diagnosis rebuilds three bands from one CV+ backtest:
+    CV+'s own, conformal PID's from the uncalibrated vector, and Mondrian
+    CV+'s from the held-out terms restricted to a group. That is a fair
+    comparison only if the pieces put back together are CV+ to the bit, so
+    that the control is the published model and not a re-implementation of
+    it. Red first: written before either name existed (`AttributeError`).
+    """
+
+    REGRESSORS = ("on_rrp", "sofr_volume")
+    TRAIN_ROWS = 240
+
+    def setUp(self):
+        require_extra(self)
+        rows = heteroscedastic_frame(self.TRAIN_ROWS + 30)
+        self.train = rows[: self.TRAIN_ROWS]
+        self.forecasts = rows[self.TRAIN_ROWS - 1 :]
+        options = {"minimum_history": 20, "min_samples_leaf": FIXTURE_MIN_SAMPLES_LEAF}
+        self.cross = ml.fit_gradient_boosted_quantiles(
+            self.train, self.REGRESSORS, calibration="cross_conformal",
+            information=gap_rule(0), **options,
+        )
+        self.plain = ml.fit_gradient_boosted_quantiles(self.train, self.REGRESSORS, **options)
+
+    def test_the_parts_rebuild_the_reported_vector_and_law_exactly(self):
+        levels = self.cross.levels
+        for row in self.forecasts:
+            parts = self.cross.cross_conformal_parts(row)
+            lower, upper = ml._cross_conformal_edges(parts.lows, parts.highs, levels)
+            self.assertEqual(ml._banded(parts.vector, lower, upper), self.cross.predict(row))
+            self.assertEqual(parts.vector, self.plain.predict(row))
+            self.assertEqual(
+                ml.law_from_band(
+                    parts.vector, lower, upper, parts.residual_low, parts.residual_high, levels
+                ),
+                self.cross.law_knots(row),
+            )
+
+    def test_every_held_out_term_is_dated_in_block_order(self):
+        parts = self.cross.cross_conformal_parts(self.forecasts[0])
+        dates = tuple(
+            when for block in self.cross.calibration_blocks for when in block.scored_dates
+        )
+        self.assertEqual(parts.held_out_dates, dates)
+        self.assertEqual(len(parts.lows), len(dates))
+        self.assertEqual(len(parts.highs), len(dates))
+        self.assertGreater(len(dates), 100)
+
+    def test_the_uncalibrated_law_is_the_band_left_where_it_is(self):
+        row = self.forecasts[3]
+        vector = self.plain.predict(row)
+        residuals = self.plain.residuals
+        self.assertEqual(
+            ml.law_from_band(
+                vector, vector[0], vector[-1], residuals[0], residuals[-1], self.plain.levels
+            ),
+            self.plain.law_knots(row),
+        )
+
+    def test_any_other_calibration_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.plain.cross_conformal_parts(self.forecasts[0])
+
+
+
+class CalibrationRediagnosisScriptTests(unittest.TestCase):
+    """`scripts/calibration_rediagnosis.py` end to end on a synthetic panel (#116).
+
+    It walks the one fold grid through `rolling_persistence_backtest`, so the
+    tracked lockbox refuses a locked scored day before any fit, and `--end`
+    before the tier scores. On the days it scores, the CV+ control is the band
+    the backtest reported (the script refuses otherwise), and all three
+    methods are scored on the same days.
+    """
+
+    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "calibration_rediagnosis.py"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        days = business_days(date(2025, 6, 2), 170)
+        rng = random.Random(20261002)
+        self.panel = self.tmp / "panel.csv"
+        with self.panel.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(
+                ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
+                 "days_to_month_end", "treasury_settlement_coupons"]
+            )
+            for index, when in enumerate(days):
+                last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
+                writer.writerow(
+                    [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
+                     2000 + rng.randrange(300),
+                     1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
+                     1 if when.day == 15 else 0, (last - when).days,
+                     60 if when.day in (15, 30, 31) else 0]
+                )
+        spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+
+    def run_script(self, *extra):
+        report = self.tmp / "report.json"
+        argv = [
+            "--panel", str(self.panel), "--decision-time", "16:00",
+            "--minimum-history", "40", "--refit-every", "20", "--calibration-folds", "3",
+            "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--replications", "20", "--report", str(report), *extra,
+        ]
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.TRACKED_LOCKBOX):
+            self.assertEqual(self.module.main(argv), 0)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_a_locked_scored_day_is_refused_and_an_end_before_the_tier_scores(self):
+        with self.assertRaises(LookAheadError) as caught:
+            self.run_script()
+        self.assertIn("locked near_blind tier", str(caught.exception))
+        result = self.run_script("--end", "2025-12-31")
+        self.assertLessEqual(result["window"]["last"], "2025-12-31")
+        self.assertTrue(result["control_rebuilt_bit_for_bit"])
+        days = result["window"]["days"]
+        for method in ("cv_plus", "online_pid", "group_conditional"):
+            coverage = result["methods"][method]["coverage"]
+            self.assertEqual(coverage["all"]["all"]["count"], days)
+            self.assertEqual(
+                sum(entry["count"] for entry in coverage["volatility_tercile"].values()), days
+            )
+            self.assertIn("interval", coverage["all"]["all"])
+        self.assertAlmostEqual(
+            result["methods"]["cv_plus"]["crps_bps"], result["control_crps_bps"], places=12
+        )
+        paired = result["paired_cv_plus_minus_method"]
+        self.assertEqual(
+            set(paired["online_pid"]),
+            {"crps_difference_bps", "brier_difference_5bp", "brier_difference_10bp"},
+        )
+        self.assertEqual(sum(result["group_conditional"]["levels_used"].values()), days)
+
+
 if __name__ == "__main__":
     unittest.main()
