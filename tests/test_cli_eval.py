@@ -1144,8 +1144,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-14",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9803921568627451,' + '\n'
-    '          0.5490196078431373,' + '\n'
+    '          0.9607843137254902,' + '\n'
+    '          0.49019607843137253,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1155,8 +1155,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-15",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9803921568627451,' + '\n'
-    '          0.5490196078431373,' + '\n'
+    '          0.9607843137254902,' + '\n'
+    '          0.49019607843137253,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1166,8 +1166,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-16",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9803921568627451,' + '\n'
-    '          0.5490196078431373,' + '\n'
+    '          0.9607843137254902,' + '\n'
+    '          0.49019607843137253,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1177,8 +1177,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-19",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9803921568627451,' + '\n'
-    '          0.5490196078431373,' + '\n'
+    '          0.9607843137254902,' + '\n'
+    '          0.49019607843137253,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1188,8 +1188,8 @@ HOLDOUT_DEFAULT_STDOUT_AT_69AD231 = (
     '      {' + '\n'
     '        "date": "2026-01-20",' + '\n'
     '        "exceedance": [' + '\n'
-    '          0.9803921568627451,' + '\n'
-    '          0.5490196078431373,' + '\n'
+    '          0.9607843137254902,' + '\n'
+    '          0.49019607843137253,' + '\n'
     '          0.0,' + '\n'
     '          0.0' + '\n'
     '        ],' + '\n'
@@ -1399,6 +1399,11 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         moves the climatology's training rows and so its curve, and
         `purge_days` became `information_rule`. The journal hash below did not
         move -- `model_config` carries no information-set key.
+
+        **Re-captured again for #155**, whose labels read the spread on whole
+        basis points: the climatology's training count no longer counts a
+        spread on +5 or +10 bp as above it, so the first two probabilities
+        moved and nothing else did.
         """
 
         code, out, err = self.run_command(model="climatology")
@@ -1406,7 +1411,7 @@ class HoldoutCalibrationTests(ConditionalModelHarness):
         self.assertEqual(out, HOLDOUT_DEFAULT_STDOUT_AT_69AD231)
         self.assertEqual(
             hashlib.sha256(out.encode("utf-8")).hexdigest(),
-            "c5b6e6c23fa43bbef84b7dcf1d7ad58f9c2f007a68d5fab22a8ba0b2ac21b60c",
+            "51fa383d8c985ea436cb878e03f25f1227540d6f6855e130280726699db76f1e",
             msg="the pinned stdout literal was edited; re-capture it from the "
             "base rather than copying what the command prints now",
         )

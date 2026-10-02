@@ -229,7 +229,8 @@ class CalendarClimatologyTests(unittest.TestCase):
             same = [r.spread_bps for r in train if declaration.day_type(r.values) == kind]
             self.assertTrue(same)
             expected = tuple(
-                sum(1 for value in same if value > tau) / len(same) for tau in EXCEEDANCE_TAUS
+                sum(1 for value in same if round(value) > tau) / len(same)
+                for tau in EXCEEDANCE_TAUS
             )
             self.assertEqual(curve, expected)
 
@@ -242,7 +243,9 @@ class CalendarClimatologyTests(unittest.TestCase):
         predictor = calendar_climatology_exceedance(splits(), minimum_history=20)
         curve = predictor(train, feature, EXCEEDANCE_TAUS).curves[0]
         pooled = tuple(
-            sum(1 for r in train if r.spread_bps > tau) / len(train) for tau in EXCEEDANCE_TAUS
+            # Whole basis points (#155): a spread on tau is not above it.
+            sum(1 for r in train if round(r.spread_bps) > tau) / len(train)
+            for tau in EXCEEDANCE_TAUS
         )
         self.assertEqual(curve, pooled)
 

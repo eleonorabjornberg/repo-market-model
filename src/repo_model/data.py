@@ -59,6 +59,19 @@ class DataContractError(ValueError):
     """Raised when a modeling panel violates its declared contract."""
 
 
+def exceeds_bp(spread_bps: float, tau: float) -> bool:
+    """The decided event: the spread, on whole basis points, strictly above `tau`.
+
+    `docs/decisions/pressure-probability.md` ("The event is strictly greater
+    than"): both rates are quoted in whole basis points, so a day exactly on
+    `tau` is not above it (#155). The float spread misses the whole basis point
+    by a hair -- SOFR 2.00 less IORB 1.95 is 5.000000000000004 bp -- so every
+    comparison of a spread with a threshold rounds first and goes through here.
+    """
+
+    return round(float(spread_bps)) > tau
+
+
 @dataclass(frozen=True)
 class DailyObservation:
     date: date
@@ -2263,7 +2276,7 @@ def fixed_bp_stress_label_columns(
     taus = _finite_values(raw_taus)  # type: ignore[arg-type]
     values = _finite_values(spreads_bp)
     return [
-        {f"stress_gt_{tau:g}bp": int(spread > tau) for tau in taus}
+        {f"stress_gt_{tau:g}bp": int(exceeds_bp(spread, tau)) for tau in taus}
         for spread in values
     ]
 
