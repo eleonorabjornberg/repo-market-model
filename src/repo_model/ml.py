@@ -3832,6 +3832,7 @@ def gbm_exceedance(
         taus: Sequence[float],
         information: Optional[InformationRule] = None,
         histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+        uncalibrated: bool = False,
     ) -> ExceedanceCurves:
         model = fit_gradient_boosted_quantiles(
             train_rows,
@@ -3877,6 +3878,17 @@ def gbm_exceedance(
             # Where each curve's positional reads ended, for the evaluator's
             # staleness check (`baseline._check_history_end`).
             history_ends=tuple(view.history_end for view in views),
+            # What an online calibration moves (#124), when the fold loop asks
+            # (`uncalibrated`), from an uncalibrated fit without a tail only: the vector each view reports, and the
+            # residual range its law's tails are laid from.
+            uncalibrated=(
+                tuple(
+                    (view.predict(row), model.residuals[0], model.residuals[-1])
+                    for view, row in zip(views, feature_rows)
+                )
+                if uncalibrated and calibration == "none" and tail is None
+                else None
+            ),
         )
 
     return fit_predict
