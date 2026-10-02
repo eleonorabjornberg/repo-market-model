@@ -3,6 +3,7 @@ import contextlib
 import hashlib
 import io
 import re
+import shutil
 import sys
 import tempfile
 import unittest
@@ -751,9 +752,45 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
         # Payload checksums are verified on read, so a tampered snapshot fails here.
         return list(observations_from_snapshots(artifacts))
 
+    def skip_without_a_ref_date_source(self, registry):
+        """Skip, saying so, when no snapshot comes from a `ref_date` source (#158).
+
+        Which sources `data/raw/` holds is whatever a session fetched. Both
+        checks read only `ref_date` sources, so without one there is nothing to
+        check. The reason also goes to stderr, because unittest prints a skip
+        reason only with -v.
+        """
+
+        from repo_model.ingest import LEGACY_SOURCE_IDS
+
+        found = sorted(
+            {
+                LEGACY_SOURCE_IDS.get(source_id, source_id)
+                for source_id in (
+                    json.loads(path.read_text(encoding="utf-8"))["source_id"]
+                    for path in self.RAW_ROOT.glob("*/*.manifest.json")
+                )
+            }
+        )
+        ref_date_sources = {
+            source_id
+            for source_id, source in registry.items()
+            if source.get("release_lag", {}).get("basis") == "ref_date"
+        }
+        if not ref_date_sources.intersection(found):
+            reason = (
+                f"{self.RAW_ROOT} holds snapshots from {', '.join(found)}, and none "
+                "is a ref_date source in metadata/sources.json, so no row has a "
+                "ref_date release lag to check."
+            )
+            print(f"\nskipped: {reason}", file=sys.stderr)
+            self.skipTest(reason)
+
     def test_no_observed_publication_gap_exceeds_the_declared_bound(self):
         registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
-        validate_publication_gaps(self.observations(), registry)
+        observations = self.observations()
+        self.skip_without_a_ref_date_source(registry)
+        validate_publication_gaps(observations, registry)
 
     def test_no_row_is_available_later_than_the_registry_declares(self):
         """Row resolution, where the bound is only source resolution.
@@ -772,8 +809,11 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             for series_id in source["fields"]:
                 declarations[series_id] = lag
 
+        observations = self.observations()
+        self.skip_without_a_ref_date_source(registry)
+
         checked = 0
-        for row in self.observations():
+        for row in observations:
             lag = declarations.get(row.series_id)
             if lag is None:
                 continue
@@ -796,6 +836,86 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             )
             checked += 1
         self.assertGreater(checked, 0, "no ref_date rows were checked")
+
+
+class RealSnapshotPublicationGapSourceMixTests(unittest.TestCase):
+    """`RealSnapshotPublicationGapTests` turns on which sources `data/raw/` holds (#158).
+
+    Its row check asserts that some `ref_date` row was checked. A `data/raw/`
+    holding only `record_date` sources -- `frb_h8` after `fetch h8`, say -- used
+    to fail it with "no ref_date rows were checked", so the result depended on
+    what a session happened to fetch. Both of its checks read only `ref_date`
+    sources, so such a tree now skips both, with a reason that names the sources
+    found and is also written to stderr, because unittest prints skip reasons
+    only with `-v`. A tree with a `ref_date` source still has to check a row.
+
+    Each case runs the real class against a temporary `data/raw/` built from the
+    tracked fixture snapshots.
+    """
+
+    FIXTURES = Path(__file__).parent / "fixtures" / "snapshots"
+
+    ROW_CHECK = "test_no_row_is_available_later_than_the_registry_declares"
+    BOUND_CHECK = "test_no_observed_publication_gap_exceeds_the_declared_bound"
+
+    def _run(self, sources, registry=None, method=ROW_CHECK):
+        """Run one check on a raw root holding `sources`; return (result, stderr)."""
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        raw_root = Path(directory.name) / "raw"
+        for source in sources:
+            shutil.copytree(self.FIXTURES / source, raw_root / Path(source).name)
+        attributes = {"RAW_ROOT": raw_root}
+        if registry is not None:
+            registry_path = Path(directory.name) / "sources.json"
+            registry_path.write_text(json.dumps(registry), encoding="utf-8")
+            attributes["REGISTRY_PATH"] = registry_path
+        case = type(
+            "Case", (RealSnapshotPublicationGapTests,), attributes
+        )(method)
+        result = unittest.TestResult()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            case.run(result)
+        return result, stderr.getvalue()
+
+    def test_only_record_date_sources_skip_and_name_the_sources(self):
+        result, stderr = self._run(["h8_inputs/frb_h8"])
+        self.assertEqual(result.failures + result.errors, [])
+        self.assertEqual(len(result.skipped), 1)
+        reason = result.skipped[0][1]
+        self.assertIn("frb_h8", reason)
+        self.assertIn("none is a ref_date source", reason)
+        self.assertIn(reason, stderr)
+
+    def test_the_bound_check_skips_on_only_record_date_sources_too(self):
+        result, stderr = self._run(["h8_inputs/frb_h8"], method=self.BOUND_CHECK)
+        self.assertEqual(result.failures + result.errors, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn("none is a ref_date source", result.skipped[0][1])
+        self.assertIn(result.skipped[0][1], stderr)
+
+    def test_a_legacy_source_id_is_named_by_its_registry_id(self):
+        result, _ = self._run(["funding_inputs/fred-macro-latest-vintage"])
+        self.assertEqual(result.failures + result.errors, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn("fred_macro_latest_vintage", result.skipped[0][1])
+
+    def test_a_ref_date_source_is_checked_and_passes(self):
+        result, stderr = self._run(["h8_inputs/frb_h8", "funding_inputs/nyfed_tgcr"])
+        self.assertEqual(result.failures + result.errors + result.skipped, [])
+        self.assertEqual(stderr, "")
+
+    def test_a_ref_date_source_with_no_checked_row_still_fails(self):
+        registry = json.loads(
+            RealSnapshotPublicationGapTests.REGISTRY_PATH.read_text(encoding="utf-8")
+        )
+        registry["nyfed_tgcr"]["fields"] = ["not_a_series_the_snapshot_carries"]
+        result, _ = self._run(["funding_inputs/nyfed_tgcr"], registry=registry)
+        self.assertEqual(len(result.failures), 1)
+        self.assertIn("no ref_date rows were checked", result.failures[0][1])
+
 
 class CoverageFloorDeclarationTests(unittest.TestCase):
     """`declared_coverage_floor` fails closed, and says which way it failed.
