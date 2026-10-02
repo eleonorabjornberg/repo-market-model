@@ -79,7 +79,11 @@ SETTLEMENT = "treasury_settlement"
 
 # The reports carry read-only mappings; pickle them as the dicts they wrap, so
 # the slow distributional run can be cached and the horizons run in parallel.
-copyreg.pickle(MappingProxyType, lambda proxy: (MappingProxyType, (dict(proxy),)))
+def _proxy(mapping):
+    return MappingProxyType(mapping)
+
+
+copyreg.pickle(MappingProxyType, lambda proxy: (_proxy, (dict(proxy),)))
 
 
 def _distributional(rows, h, cache):
