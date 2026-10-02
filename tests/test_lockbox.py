@@ -479,6 +479,49 @@ class LockedScoredDayTests(unittest.TestCase):
         return path
 
 
+class LockedTierTests(unittest.TestCase):
+    """`locked_tiers` and `locked_tier`: the helper a page uses to hold locked days out of its counts.
+
+    Not a scoring entry point: it selects nothing and refuses nothing. It tells
+    a descriptive page (`scripts/emit_visual.py`) which days to grey and leave
+    out of every count, read from a declaration the caller names.
+    """
+
+    def declaration(self, opened=()):
+        document = json.loads(TRACKED.read_text(encoding="utf-8"))
+        for tier in document["tiers"]:
+            if tier["name"] in opened:
+                tier["opened"] = {"date": "2026-10-02",
+                                  "ruling": "a test fixture standing in for Eleonora's ruling"}
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "lockbox.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        return path
+
+    def test_the_tracked_declaration_locks_both_tiers(self):
+        self.assertEqual([tier.name for tier in lockbox.locked_tiers()], ["near_blind", "blind"])
+
+    def test_an_opened_tier_is_ordinary_history(self):
+        tiers = lockbox.locked_tiers(self.declaration(opened=("near_blind",)))
+        self.assertEqual([tier.name for tier in tiers], ["blind"])
+        self.assertIsNone(lockbox.locked_tier(date(2026, 3, 2), tiers))
+        self.assertEqual(lockbox.locked_tier(date(2026, 9, 4), tiers).name, "blind")
+
+    def test_each_day_is_placed_in_its_tier(self):
+        tiers = lockbox.locked_tiers(self.declaration())
+        self.assertIsNone(lockbox.locked_tier(date(2025, 12, 31), tiers))
+        self.assertEqual(lockbox.locked_tier(date(2026, 1, 1), tiers).name, "near_blind")
+        self.assertEqual(lockbox.locked_tier(date(2026, 9, 3), tiers).name, "near_blind")
+        self.assertEqual(lockbox.locked_tier(date(2026, 9, 4), tiers).name, "blind")
+        self.assertEqual(lockbox.locked_tier(date(2031, 1, 1), tiers).name, "blind")
+
+    def test_no_locked_tier_locks_nothing(self):
+        tiers = lockbox.locked_tiers(self.declaration(opened=("near_blind", "blind")))
+        self.assertEqual(tiers, ())
+        self.assertIsNone(lockbox.locked_tier(date(2026, 1, 1), tiers))
+
+
 class CommandTests(EventHoldoutHarness):
     """Every scoring subcommand refuses a locked day; `--end` scores before it.
 

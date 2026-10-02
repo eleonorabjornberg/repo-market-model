@@ -18,6 +18,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from repo_model import lockbox
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -161,6 +162,124 @@ class ReserveUnitGuardTests(unittest.TestCase):
     def test_trillions_refused(self):
         with self.assertRaises(emit_visual.VisualError):
             emit_visual.check_reserve_units(self.rescaled(1e-3))
+
+
+class HeldOutDayTests(unittest.TestCase):
+    """Locked days are drawn greyed and counted nowhere (#141 ruling 3, #182).
+
+    The tiers are read from `metadata/lockbox.json` through
+    `repo_model.lockbox.locked_tiers`; a tier marked opened is ordinary history.
+
+    Recorded mutation: `return [r for r in rows if locked_tier(...) is None]`
+    -> `return list(rows)` in `counted`. test_no_counted_day_is_locked,
+    test_perturbing_a_locked_day_changes_no_count_or_sentence and
+    test_period_labels_name_only_counted_years then failed with AssertionError.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+        cls.rows = list(csv.DictReader(raw.decode().splitlines()))
+        cls.inputs = [emit_visual.read_json(rel, ROOT) for rel in
+                      (emit_visual.ANNOTATIONS, emit_visual.THRESHOLDS)]
+        cls.inputs += [emit_visual.read_json(emit_visual.SPLITS, ROOT)["regimes"],
+                       emit_visual.read_json(emit_visual.EVENTS, ROOT)["windows"]]
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def history(self, rows, locked):
+        return emit_visual.history(copy.deepcopy(rows), *self.inputs, locked)
+
+    def is_locked(self, row, locked):
+        return lockbox.locked_tier(emit_visual.date.fromisoformat(row["date"]), locked) is not None
+
+    def opened(self):
+        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        for tier in document["tiers"]:
+            tier["opened"] = {"date": "2026-10-02", "ruling": "a test fixture standing in for her ruling"}
+        import tempfile
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "lockbox.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        return lockbox.locked_tiers(path)
+
+    @staticmethod
+    def table_counts(table):
+        """[(pressure days, days)] for every cell of the day-type x year table that carries counts."""
+        return [(int(k), int(n)) for k, n in re.findall(r"<b>(\d+)</b><span> of (\d+)</span>", table)]
+
+    def test_the_panel_reaches_a_locked_tier(self):
+        """Otherwise the tests below would hold vacuously."""
+        self.assertTrue(any(self.is_locked(r, self.locked) for r in self.rows))
+
+    def test_no_counted_day_is_locked(self):
+        kept = emit_visual.counted(self.rows, self.locked)
+        self.assertFalse([r["date"] for r in kept if self.is_locked(r, self.locked)])
+        self.assertEqual(len(kept), sum(1 for r in self.rows if not self.is_locked(r, self.locked)))
+        data, fills = self.history(self.rows, self.locked)
+        self.assertEqual(sum(n for _, n in self.table_counts(fills["heat_table"])), len(kept))
+        held = {r["date"] for r in self.rows if self.is_locked(r, self.locked)}
+        spans = data["held_out"]
+        self.assertTrue(spans)
+        self.assertTrue(all(any(s["start"] <= d <= s["end"] for s in spans) for d in held))
+
+    def test_perturbing_a_locked_day_changes_no_count_or_sentence(self):
+        """Every held-out day made a far-off-scale spike on scarce reserves: no figure or sentence moves."""
+        perturbed = copy.deepcopy(self.rows)
+        for r in perturbed:
+            if self.is_locked(r, self.locked):
+                r["sofr"] = str(float(r["sofr"]) + 1.0)
+                r["reserve_balances"] = str(float(r["reserve_balances"]) / 2)
+                r["sofr_p25"] = r["sofr_p75"] = ""
+        base, fills = self.history(self.rows, self.locked)
+        moved, moved_fills = self.history(perturbed, self.locked)
+        self.assertEqual(fills, moved_fills)
+        drawn = ("rows", "views", "res_domain")
+        self.assertEqual({k: v for k, v in base.items() if k not in drawn},
+                         {k: v for k, v in moved.items() if k not in drawn})
+        self.assertEqual(emit_visual.counted(self.rows, self.locked)[-1],
+                         emit_visual.counted(perturbed, self.locked)[-1])
+
+    def test_opening_the_tier_brings_the_days_back(self):
+        opened = self.opened()
+        self.assertEqual(opened, ())
+        self.assertEqual(len(emit_visual.counted(self.rows, opened)), len(self.rows))
+        _, fills = self.history(self.rows, opened)
+        _, locked_fills = self.history(self.rows, self.locked)
+        self.assertEqual(sum(n for _, n in self.table_counts(fills["heat_table"])), len(self.rows))
+        self.assertNotIn("held out", fills["heat_table"])
+        self.assertEqual(fills["held_out_note"], "")
+        self.assertNotEqual(fills["above_late"], locked_fills["above_late"])
+        last_year = self.rows[-1]["date"][:4]
+        self.assertIn(f"{last_year} (to ", fills["heat_table"])
+
+    def test_the_held_out_year_is_greyed_without_counts(self):
+        _, fills = self.history(self.rows, self.locked)
+        held_years = {r["date"][:4] for r in self.rows} - {r["date"][:4] for r in
+                                                           emit_visual.counted(self.rows, self.locked)}
+        self.assertTrue(held_years)
+        for year in held_years:
+            self.assertIn(f"<th scope='col' class='held'>{year}<br>held out</th>", fills["heat_table"])
+
+    def test_period_labels_name_only_counted_years(self):
+        _, fills = self.history(self.rows, self.locked)
+        kept = emit_visual.counted(self.rows, self.locked)
+        last_counted_year = int(kept[-1]["date"][:4])
+        for key in ("early", "late", "ample"):
+            years = [int(y) for y in re.findall(r"\d{4}", fills[key])]
+            years += [int(fills[key][:2] + y) for y in re.findall(r"–(\d{2})\b", fills[key])]
+            with self.subTest(key=key, label=fills[key]):
+                self.assertTrue(all(y <= last_counted_year for y in years))
+
+    def test_the_page_draws_and_captions_the_held_out_days(self):
+        self.assertIn("held out", self.page)
+        self.assertIn("docs/decisions/lockbox.md", self.page)
+        shown = emit_visual.counted(self.rows, self.locked)[-1]["date"]
+        self.assertIn(f"Rates on {emit_visual.day(shown)}", self.page)
 
 
 class FailClosedGateTests(unittest.TestCase):
