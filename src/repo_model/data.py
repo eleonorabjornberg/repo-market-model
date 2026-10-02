@@ -89,6 +89,25 @@ class DailyObservation:
             float(self.values["sofr_p75"]) - float(self.values["sofr_p25"])
         )
 
+    @property
+    def effr_minus_iorb_bp(self) -> Optional[float]:
+        """EFFR less IORB for the day, in whole basis points; `None` if either is.
+
+        Rounded to the whole basis point because both legs are published to
+        two decimals of a percent, so the difference is a whole number of
+        basis points that binary floating point misses by a hair (4.33 - 4.40
+        is -7.000000000000028). Unlike the target, an unobserved leg is an
+        unobserved feature rather than an error: this is a regressor, and a
+        regressor carried as `None` is imputed. `contract.DERIVED_FEATURES`
+        declares it over exactly the two columns read below.
+        """
+
+        effr = self.values["effr"]
+        iorb = self.values["iorb"]
+        if effr is None or iorb is None:
+            return None
+        return float(round(100.0 * (float(effr) - float(iorb))))
+
 
 @dataclass(frozen=True)
 class PointInTimeObservation:
@@ -2305,6 +2324,14 @@ PANEL_COLUMNS = tuple(
     field for field in REQUIRED_FIELDS if field != "date"
 ) + OPTIONAL_NUMERIC_FIELDS
 
+#: Panel columns built only when a build names them with `--column`, never by
+#: a build that names none. A column joins `PANEL_COLUMNS` when a published
+#: declaration reads it; until then it stays here, because the published
+#: panel's documented build names no columns and a new default column would be
+#: new bytes under its digest (REPRODUCIBILITY.md). `effr` is directive #98's
+#: candidate input, read by no published declaration.
+OPT_IN_COLUMNS = ("effr",)
+
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
 # 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See
 # `build_daily_panel` rule 8. This is the one place rule 8's exception to rule 4
@@ -2394,7 +2421,12 @@ ON_RRP_MAX_GAP_DAYS = 4
 #: Carry column -> its maximum staleness in calendar days. Every weekly entry is
 #: a column the registry declares weekly: `nyfed_fr2004`'s `frequency`, and
 #: `fred_macro_latest_vintage`'s `field_frequencies` for `WRESBAL` and
-#: `WTREGEN`. `on_rrp` is daily, and carries only across a day with no
+#: `WTREGEN`, and `frb_h8`'s `frequency` for `bank_total_assets` (#115; off in
+#: the published declaration, `contract.BANK_TOTAL_ASSETS_FIELDS`, so no
+#: published build carries it). That bound is the H.8 column's staleness rule:
+#: a week's first print stands in for one missed print and no more, and past it
+#: the column -- and the reserve-scarcity state read from it -- is a hole.
+#: `on_rrp` is daily, and carries only across a day with no
 #: operation. None is a `REQUIRED_FIELDS`, settlement-zero or calendar column:
 #: rule 6 makes the grid before a carry is written, rule 8's zero is a value and
 #: not an absence, and a calendar column is never a hole.
@@ -2403,6 +2435,7 @@ CARRY_FORWARD_COLUMNS = MappingProxyType(
         "reserve_balances": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "tga": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "dealer_treasury_position": WEEKLY_CARRY_MAX_STALENESS_DAYS,
+        "bank_total_assets": WEEKLY_CARRY_MAX_STALENESS_DAYS,
         "on_rrp": ON_RRP_MAX_GAP_DAYS,
     }
 )

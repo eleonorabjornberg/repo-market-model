@@ -9505,6 +9505,44 @@ class DirectPressureModelTests(unittest.TestCase):
             _PRESSURE_REGISTRY, features, decision_time=time(16, 0), horizon=horizon
         )
 
+    def test_a_product_term_is_the_product_of_its_two_as_of_reads(self):
+        """#127's product terms: a scheduled input times an observed one, as read.
+
+        The settlement is the scored day's (scheduled), the TGA change ends at
+        the TGA's as-of read; the product is formed from exactly those two
+        design values, and every other term is unchanged.
+        """
+
+        features = _PRESSURE_FULL + ("treasury_settlement",)
+        products = (("treasury_settlement", "tga_change"),)
+        design = ml._PressureDesign(features, _pressure_splits(), products=products)
+        base = ml._PressureDesign(features, _pressure_splits())
+        self.assertEqual(design.names, base.names + ("treasury_settlement_x_tga_change",))
+        rule = self.rule(features=features)
+        rows = [
+            DailyObservation(
+                row.date, {**row.values, "treasury_settlement": 10.0 + 5.0 * (index % 4)}
+            )
+            for index, row in enumerate(self.rows[:120])
+        ]
+        xs, ys = ml._pressure_pairs(design, rule, rows, {})
+        plain, plain_ys = ml._pressure_pairs(base, rule, rows, {})
+        self.assertEqual(ys, plain_ys)
+        self.assertTrue(xs)
+        settlement = base.names.index("treasury_settlement")
+        change = base.names.index("tga_change")
+        for got, want in zip(xs, plain):
+            self.assertEqual(got[:-1], want)
+            self.assertAlmostEqual(got[-1], want[settlement] * want[change], places=9)
+
+    def test_a_product_names_declared_terms(self):
+        for products in (
+            (("treasury_settlement", "tga_change"),),  # settlement not declared
+            (("spread_bps", "not_a_column"),),
+        ):
+            with self.subTest(products=products), self.assertRaisesRegex(ValueError, "product"):
+                ml._PressureDesign(_PRESSURE_FULL, _pressure_splits(), products=products)
+
     def test_the_design_names_every_term_it_builds(self):
         design = ml._PressureDesign(
             _PRESSURE_FULL + ("treasury_settlement",), _pressure_splits()
@@ -9651,6 +9689,80 @@ class DirectPressureModelTests(unittest.TestCase):
             choice = cli_eval.MODEL_FACTORIES[name]
             self.assertTrue(choice.takes_splits)
             self.assertTrue(choice.needs_ml_extra)
+
+
+def _history_rows(start, end):
+    """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
+
+    from repo_model import effr_history
+
+    effr, ioer, weekly = {}, {}, {"reserve_balances": {}, "tga": {}}
+    when, index = start, 0
+    printed_through = date(end.year + 1, 1, 2) if end.month == 12 else end + timedelta(days=100)
+    while when <= printed_through:
+        if when.weekday() < 5:
+            effr[when] = 0.25 + ((index % 13) - 6) / 100.0 + (0.08 if index % 13 == 12 else 0.0)
+            index += 1
+        ioer[when] = 0.25
+        if when.weekday() == 2:
+            weekly["reserve_balances"][when] = 1000.0 + 10.0 * (index % 7)
+            weekly["tga"][when] = 100.0 + 5.0 * (index % 3)
+        when += timedelta(days=1)
+    return effr_history.history_rows(effr, ioer, weekly, start=start, end=end)
+
+
+class PooledHistoryTests(unittest.TestCase):
+    """The direct logistic pooled with pre-SOFR history (#129)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def backtest(self, history, horizon=1):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=ml._direct_pressure_predictor(
+                "logistic", _PRESSURE_FULL, _pressure_splits(), 60, history=history
+            ),
+            model_name="pooled_logistic",
+            features=_PRESSURE_FULL,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def test_the_pool_joins_every_fit_behind_a_market_column(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        report = self.backtest((history, rule))
+        plain = self.backtest(None)
+        self.assertEqual(report.model_settings["design"][-1], ml.HISTORY_MARKET_COLUMN)
+        self.assertEqual(report.model_settings["design"][:-1], plain.model_settings["design"])
+        pairs = report.model_settings["pooled_history"]["pairs"]
+        self.assertGreater(pairs, 100)
+        self.assertEqual(report.scored_dates, plain.scored_dates)
+        self.assertNotEqual(report.forecast, plain.forecast)
+
+    def test_a_pooled_label_not_yet_public_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2026, 6, 30))
+        with self.assertRaises(LookAheadError):
+            self.backtest((history, rule))
+
+    def test_a_history_read_at_another_horizon_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=2)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        with self.assertRaisesRegex(ValueError, "horizon"):
+            self.backtest((history, rule))
 
 
 class RecalibrationPartsTests(unittest.TestCase):
@@ -9881,6 +9993,330 @@ class PidConstantSelectionScriptTests(unittest.TestCase):
         self.assertIn("not for selection", result["full_grid"]["label"])
         self.assertIn("never the selection", result["split_sample"]["label"])
         self.assertEqual(result["split_sample"]["evaluation_window"]["days"], days)
+
+
+
+# --------------------------------------------------------------------------
+# Dynamic pressure logit, its ordinal version and the stacked combiner (#137)
+# --------------------------------------------------------------------------
+
+_DYNAMIC_FEATURES = (
+    "spread_bps", "reserve_balances", "days_to_month_end", "quarter_end", "tax_date",
+)
+
+
+class _DynamicConformance(_PressureConformance):
+    """The conformance suite against a dynamic pressure model.
+
+    Rule bound like the direct models, and handed each forecast's as-of
+    history, which the lagged index is read off: here the training frame.
+    """
+
+    def make_predictor(self):
+        predictor = type(self).FACTORY(
+            _PRESSURE_CALENDAR, _pressure_splits(), minimum_history=self.MINIMUM_HISTORY
+        )
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+
+        def bound(train_rows, feature_rows, taus):
+            return predictor(
+                train_rows, feature_rows, taus, information=rule,
+                histories=tuple(train_rows for _ in feature_rows),
+            )
+
+        return bound
+
+
+class DynamicLogitConformanceTests(_DynamicConformance, unittest.TestCase):
+    """The conformance suite against `ml.dynamic_logit_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.dynamic_logit_exceedance)
+    FACTORY = staticmethod(ml.dynamic_logit_exceedance)
+
+
+class DynamicOrdinalConformanceTests(_DynamicConformance, unittest.TestCase):
+    """The conformance suite against `ml.dynamic_ordinal_exceedance`."""
+
+    IMPLEMENTATION = staticmethod(ml.dynamic_ordinal_exceedance)
+    FACTORY = staticmethod(ml.dynamic_ordinal_exceedance)
+
+
+class DynamicPressureModelTests(unittest.TestCase):
+    """The dynamic logit's terms, its lagged index and the ordinal's coherence (#137)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def backtest(self, factory, horizon=1, taus=(5.0, 10.0)):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=factory(_DYNAMIC_FEATURES, _pressure_splits(), minimum_history=60),
+            model_name=factory.__name__,
+            features=_DYNAMIC_FEATURES,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=taus,
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def test_every_term_is_declared_in_the_settings(self):
+        """The design, the lagged event indicator and the lagged index, by name."""
+
+        report = self.backtest(ml.dynamic_logit_exceedance)
+        settings = report.model_settings
+        self.assertEqual(
+            tuple(settings["design"]),
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date",
+                "quarter_end_x_scarcity", "month_end_x_scarcity", "tax_date_x_scarcity",
+                "lagged_event",
+            ),
+        )
+        self.assertEqual(settings["lagged_index"], ml.DYNAMIC_LOGIT_SETTINGS["lagged_index"])
+        self.assertEqual(
+            tuple(settings["persistence_grid"]), ml.DYNAMIC_LOGIT_SETTINGS["persistence_grid"]
+        )
+        self.assertIn(settings["persistence"], ml.DYNAMIC_LOGIT_SETTINGS["persistence_grid"])
+
+    def test_coupon_settlement_is_a_scheduled_term_interacted_with_scarcity(self):
+        design = ml._PressureDesign(
+            ("spread_bps", "reserve_balances", "days_to_month_end", "quarter_end",
+             "tax_date", "treasury_settlement_coupons"),
+            _pressure_splits(),
+        )
+        self.assertEqual(
+            design.names,
+            (
+                "spread_bps", "reserve_balances",
+                "quarter_end", "month_end", "tax_date", "treasury_settlement_coupons",
+                "quarter_end_x_scarcity", "month_end_x_scarcity", "tax_date_x_scarcity",
+                "treasury_settlement_coupons_x_scarcity",
+            ),
+        )
+
+    def test_the_lagged_index_is_the_chain_through_each_rows_anchor(self):
+        """`index_t = x_t + alpha * index_anchor(t)`; a chain starts stationary."""
+
+        import numpy
+
+        xs = [None, [1.0, 2.0], [3.0, 0.0], [0.5, 1.0], None, [2.0, 2.0]]
+        anchors = [-1, -1, 1, 1, 3, 4]
+        got = ml._index_chain(xs, anchors, 0.5)
+        self.assertIsNone(got[0])
+        numpy.testing.assert_allclose(got[1], [2.0, 4.0])  # x / (1 - alpha)
+        numpy.testing.assert_allclose(got[2], [3.0 + 1.0, 0.0 + 2.0])
+        numpy.testing.assert_allclose(got[3], [0.5 + 1.0, 1.0 + 2.0])
+        self.assertIsNone(got[4])
+        numpy.testing.assert_allclose(got[5], [4.0, 4.0])  # anchor has no index
+        at_zero = ml._index_chain(xs, anchors, 0.0)
+        numpy.testing.assert_allclose(at_zero[2], [3.0, 0.0])
+
+    def test_a_backtest_at_horizon_three_runs_under_every_guard(self):
+        """The lagged index is read off each forecast's own as-of history.
+
+        `history_ends` names each history's last row, so the fold loop checks
+        it ends at the forecast's anchor (stale or ahead are both refused).
+        """
+
+        for factory in (ml.dynamic_logit_exceedance, ml.dynamic_ordinal_exceedance):
+            with self.subTest(factory=factory.__name__):
+                report = self.backtest(factory, horizon=3)
+                self.assertEqual(report.horizon, 3)
+                self.assertGreater(len(report.folds), 40)
+
+    def test_the_ordinal_probabilities_are_coherent_on_every_day(self):
+        """P(> +10) <= P(> +5) on every scored day, from the joint fit itself."""
+
+        for horizon in (1, 2):
+            report = self.backtest(ml.dynamic_ordinal_exceedance, horizon=horizon)
+            for when, (above_5, above_10) in zip(report.scored_dates, report.forecast):
+                with self.subTest(horizon=horizon, day=when):
+                    self.assertLessEqual(above_10, above_5)
+                    self.assertGreater(above_5, 0.0)
+                    self.assertLess(above_5, 1.0)
+
+    def test_the_ordinal_thresholds_are_ordered_by_construction(self):
+        """The fit's cut points rise with tau whatever the data, so no running minimum is needed."""
+
+        import numpy
+
+        rng = numpy.random.default_rng(137)
+        x = rng.normal(size=(200, 3))
+        categories = numpy.clip((x[:, 0] * 1.5 + rng.normal(size=200)).round().astype(int) + 1, 0, 2)
+        fit = ml._fit_ordinal(x, categories, 2)
+        self.assertLess(fit.thresholds[0], fit.thresholds[1])
+        p = fit.exceedance(rng.normal(size=(50, 3)) * 5.0)
+        self.assertTrue(numpy.all(p[:, 1] <= p[:, 0]))
+
+    def test_without_histories_it_refuses(self):
+        rows = _with_calendar(self.rows)
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+        for factory in (ml.dynamic_logit_exceedance, ml.dynamic_ordinal_exceedance):
+            predictor = factory(_PRESSURE_CALENDAR, _pressure_splits())
+            with self.subTest(factory=factory.__name__), self.assertRaises(ValueError):
+                predictor(rows[:-1], rows[-1:], (5.0,), information=rule)
+
+    def test_the_ordinal_refuses_taus_out_of_order(self):
+        rows = _with_calendar(self.rows)
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0)
+        )
+        predictor = ml.dynamic_ordinal_exceedance(_PRESSURE_CALENDAR, _pressure_splits())
+        with self.assertRaises(ValueError):
+            predictor(rows[:-1], rows[-1:], (10.0, 5.0), information=rule, histories=(rows[:-1],))
+
+    def test_both_are_selectable_by_name_and_read_the_splits(self):
+        for name in ("dynamic_logit", "dynamic_ordinal"):
+            choice = cli_eval.MODEL_FACTORIES[name]
+            self.assertTrue(choice.takes_splits)
+            self.assertTrue(choice.needs_ml_extra)
+
+
+class StackedCombinerTests(unittest.TestCase):
+    """The stacked combiner is fitted on out-of-fold base forecasts only (#137)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from test_pressure import backtest, spreads, weekday_rows
+        from repo_model import pressure
+        from repo_model.baseline import calendar_climatology_exceedance
+
+        cls.rows = weekday_rows(spreads())
+        persistence = backtest(cls.rows, horizon=3)
+        calendar = baseline.rolling_exceedance_backtest(
+            cls.rows,
+            predictor=calendar_climatology_exceedance(_pressure_splits(), minimum_history=40),
+            model_name="calendar_climatology",
+            features=("spread_bps", "days_to_month_end", "quarter_end", "tax_date"),
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=40,
+            refit_every=21,
+            horizon=3,
+        )
+        cls.bases = {
+            "persistence_logistic": persistence,
+            "calendar_climatology": calendar,
+            "recalibrated": pressure.recalibrated(persistence),
+        }
+        cls.options = {"minimum_pairs": 60, "minimum_events": 5}
+
+    def setUp(self):
+        require_extra(self)
+
+    def blocks(self, report):
+        folds = report.folds
+        starts = [i for i in range(len(folds)) if i == 0 or folds[i].train_end != folds[i - 1].train_end]
+        return list(zip(starts, starts[1:] + [len(folds)]))
+
+    def test_the_combiner_never_sees_an_in_sample_base_forecast(self):
+        """A base forecast made by a fit whose training labels include its own day is refused.
+
+        The combiner's pairs are base forecasts of days whose outcomes were
+        observable at the combiner's fit. Each must be out of fold: made by a
+        base fit trained only on labels before the day it forecast. Here one
+        base's fold is relabelled as fitted through its own scored day, as an
+        in-sample (fitted-value) forecast would be, inside the first fitted
+        block's window.
+
+        Written red first: before `_check_out_of_fold` existed the combiner
+        fitted on that pair and returned (`AssertionError`, "LookAheadError not
+        raised").
+
+        Recorded mutation (CLAUDE.md), the out-of-fold check dropped: in
+        `ml._check_out_of_fold`, `if fold.train_end >= fold.scored_date:`
+        mutated to `if False:`. This test then fails, raising `AssertionError`
+        ("LookAheadError not raised").
+        """
+
+        import dataclasses as dc
+
+        base = self.bases["calendar_climatology"]
+        folds = list(base.folds)
+        folds[5] = dc.replace(folds[5], train_end=folds[5].scored_date)
+        bad = {**self.bases, "calendar_climatology": dc.replace(base, folds=tuple(folds))}
+        with self.assertRaises(LookAheadError):
+            ml.stacked_combiner(bad, **self.options)
+        # And the honest bases combine.
+        ml.stacked_combiner(self.bases, **self.options)
+
+    def test_each_block_is_the_fit_on_its_observable_out_of_fold_past(self):
+        """At horizon 3 a block's last days are not yet observable at the next fit."""
+
+        import numpy
+
+        combined = ml.stacked_combiner(self.bases, **self.options)
+        names = list(self.bases)
+        floor = ml.STACKED_COMBINER["probability_floor"]
+
+        def logit(p):
+            p = min(1 - floor, max(floor, p))
+            return math.log(p / (1 - p))
+
+        checked = 0
+        report = self.bases[names[0]]
+        for start, stop in self.blocks(report):
+            end_label = report.folds[start].train_end
+            past = [i for i in range(start) if report.folds[i].scored_date <= end_label]
+            fits = []
+            for position in range(2):
+                outcomes = [report.outcomes[i][position] for i in past]
+                if len(past) < 60 or not 5 <= sum(outcomes) < len(past):
+                    fits.append(None)
+                    continue
+                x = numpy.asarray(
+                    [[logit(self.bases[n].forecast[i][position]) for n in names] for i in past]
+                )
+                fits.append(ml._fit_logit(x, numpy.asarray(outcomes)))
+            if None in fits:
+                continue
+            for index in range(start, stop):
+                want = [
+                    float(fit.probability(numpy.asarray(
+                        [[logit(self.bases[n].forecast[index][position]) for n in names]]
+                    ))[0])
+                    for position, fit in enumerate(fits)
+                ]
+                # The curve is non-increasing in tau by a running minimum.
+                self.assertAlmostEqual(combined.forecast[index][0], want[0], places=12)
+                self.assertAlmostEqual(combined.forecast[index][1], min(want), places=12)
+                checked += 1
+        self.assertGreater(checked, 50)
+        self.assertEqual(combined.model_name, "stacked_combiner")
+        self.assertEqual(combined.scored_dates, report.scored_dates)
+
+    def test_before_the_minimum_it_is_the_mean_logit(self):
+        combined = ml.stacked_combiner(self.bases, minimum_pairs=10_000, minimum_events=5)
+        floor = ml.STACKED_COMBINER["probability_floor"]
+
+        def logit(p):
+            p = min(1 - floor, max(floor, p))
+            return math.log(p / (1 - p))
+
+        for index in (0, len(combined.folds) - 1):
+            mean = sum(logit(b.forecast[index][0]) for b in self.bases.values()) / len(self.bases)
+            self.assertAlmostEqual(combined.forecast[index][0], 1 / (1 + math.exp(-mean)), places=12)
+
+    def test_bases_on_different_grids_are_refused(self):
+        import dataclasses as dc
+
+        base = self.bases["calendar_climatology"]
+        short = dc.replace(
+            base,
+            folds=base.folds[1:], scored_dates=base.scored_dates[1:],
+            forecast=base.forecast[1:], outcomes=base.outcomes[1:],
+        )
+        with self.assertRaises(ValueError):
+            ml.stacked_combiner({**self.bases, "calendar_climatology": short}, **self.options)
 
 
 if __name__ == "__main__":
