@@ -86,6 +86,7 @@ def quarter_peak_table(
     rows = []
     for year, quarter in _quarters(first, last):
         window = quarter_end_window_days(year, quarter)
+        centre = window[QUARTER_END_WINDOW_BUSINESS_DAYS]
         read = [day for day in window if day <= end]
         require_unlocked(read, where="quarter_peaks.quarter_peak_table")
         observed = [day for day in read if day in spreads]
@@ -112,9 +113,11 @@ def quarter_peak_table(
                 "window_days_without_spread": len(read) - len(observed),
                 "peak_bps": peak,
                 "peak_day": None if peak_day is None else peak_day.isoformat(),
-                # The window's centre is the day `quarter_end` marks.
-                "peak_on_quarter_end": peak_day is not None
-                and peak_day == window[QUARTER_END_WINDOW_BUSINESS_DAYS],
+                # Does the day `quarter_end` marks, the window's centre, reach
+                # the peak? Read on whole bp, so a tie is not a tie-break.
+                "peak_on_quarter_end": peak is not None
+                and centre in observed
+                and round(float(spreads[centre])) == round(peak),
                 "above": {
                     _tau_key(tau): (peak is not None and round(peak) > tau) for tau in taus
                 },
