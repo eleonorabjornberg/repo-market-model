@@ -239,6 +239,48 @@
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rates/secured/bgcr/search.json"
   },
+  "nyfed_effr": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Declared 2 October 2026 for directive #98. The publication time is declared conservatively rather than measured: no code here fetches the New York Fed's methodology page, and one retrieval of the rate data bounds the lag without measuring it. The instant is the one the secured rates carry, so EFFR and SOFR for a day are read at the same panel row. At this project's 16:00 decision time any declared instant from the morning print up to 16:00 on the next business day reads the same row, so the 15:00 instant costs no history against the 09:00 first print. The tracked snapshot, retrieved through repo_model.ingest.fetch_nyfed_effr one calendar year per request, carries an empty revisionIndicator on every record from 2018-01-02 to 2026-09-30.",
+      "publication": "New York Fed effective federal funds rate: calculated from the prior business day's FR 2420 overnight federal funds transactions and published at about 09:00 ET on the next business day. 15:00 ET on the next business day is declared as the conservative availability instant, after any same-morning correction, matching the instant the New York Fed's secured reference rates carry here."
+    },
+    "coverage": [
+      "EFFR rate",
+      "distribution percentiles"
+    ],
+    "field_frequencies": {
+      "EFFR": "business_daily",
+      "EFFR_p1": "business_daily",
+      "EFFR_p25": "business_daily",
+      "EFFR_p75": "business_daily",
+      "EFFR_p99": "business_daily"
+    },
+    "fields": [
+      "EFFR",
+      "EFFR_p1",
+      "EFFR_p25",
+      "EFFR_p75",
+      "EFFR_p99"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Publication occurs after the effective date; targets and features must respect that lag. Fetched from the New York Fed as published, not from FRED's DFF copy of the same rate.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "EFFR is first published at about 09:00 ET on the next business day; 15:00 ET that day is the conservative availability time, the one the secured reference rates carry.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed response schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rates/unsecured/effr/search.json"
+  },
   "nyfed_fr2004": {
     "access": "public",
     "availability_provenance": {

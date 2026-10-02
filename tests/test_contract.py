@@ -206,6 +206,7 @@ from repo_model.contract import (
 )
 from repo_model.data import (
     OPTIONAL_NUMERIC_FIELDS,
+    OPT_IN_COLUMNS,
     REQUIRED_FIELDS,
     DailyObservation,
     DataContractError,
@@ -2680,9 +2681,11 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
     def _panel_columns(self):
         """Every column a modelling panel may carry, in model vocabulary."""
 
-        return tuple(
-            name for name in REQUIRED_FIELDS if name != "date"
-        ) + tuple(OPTIONAL_NUMERIC_FIELDS)
+        return (
+            tuple(name for name in REQUIRED_FIELDS if name != "date")
+            + tuple(OPTIONAL_NUMERIC_FIELDS)
+            + tuple(OPT_IN_COLUMNS)
+        )
 
     def test_every_mapped_source_exists_in_the_registry(self):
         """Catches a source renamed or removed on Track A's side.
@@ -2780,6 +2783,7 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         readers = {
             "spread_bps": DailyObservation.spread_bps.fget,
             "sofr_iqr_bps": DailyObservation.sofr_iqr_bps.fget,
+            "effr_minus_iorb_bp": DailyObservation.effr_minus_iorb_bp.fget,
         }
         self.assertEqual(
             set(DERIVED_FEATURES),
