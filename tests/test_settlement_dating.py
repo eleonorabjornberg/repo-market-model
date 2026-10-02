@@ -64,14 +64,15 @@ class ResultDatingTests(unittest.TestCase):
     (`ModuleNotFoundError`).
 
     Mutation record. In a `git archive` copy of the tree under /tmp, CPython
-    3.11, this class run alone, unmutated control green. In `known_amount`, the
-    guard `and result.public_at <= instant` was mutated to
+    3.11 (`/opt/rmm-venv`), this class run alone, unmutated control green. In
+    `known_amount`, the guard `and result.public_at <= instant` was mutated to
     `and result.public_at is not None` (every result on file treated as public
     at any instant). The target was found once before the change and was gone
-    after. Killed: `test_a_result_after_the_decision_is_invisible` and
-    `test_reading_a_result_after_the_decision_raises` failed with
-    `AssertionError` (the second as `LookAheadError not raised`), and
-    `test_a_result_not_on_file_is_in_no_sum` failed with `AssertionError`.
+    after. Killed, 5 failures, all `AssertionError`:
+    `test_a_result_after_the_decision_is_invisible` (both subtests, `40.0 !=
+    0.0`), `test_reading_a_result_after_the_decision_raises` (`LookAheadError
+    not raised`), `test_leaving_out_a_public_result_raises` (`StaleReadError
+    not raised`) and `test_a_partly_announced_day_counts_only_the_announced_part`.
     """
 
     def setUp(self):
