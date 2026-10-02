@@ -62,7 +62,7 @@ from repo_model.baseline import (  # noqa: E402
     persistence_logistic_exceedance,
     rolling_exceedance_backtest,
 )
-from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
+from repo_model.data import audit_panel, exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
 
@@ -272,7 +272,7 @@ def horizon_command(args) -> int:
     card = pressure.scorecard(candidates, benchmarks, rows=rows, declaration=splits, panel_sha256=digest)
     pool_positives = {
         f"{tau:g}": sum(
-            spread > tau
+            exceeds_bp(spread, tau)
             for spread in effr_history.history_pairs(
                 ml._PressureDesign(POOLED_FEATURES, splits), rule, history
             ).spreads

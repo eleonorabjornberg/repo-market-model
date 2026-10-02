@@ -584,7 +584,7 @@ from .baseline import (
     fit_arx,
 )
 from .contract import QUANTILE_LEVELS
-from .data import DailyObservation, load_stress_thresholds
+from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
 from .asof import InformationRule
 from .splits import (
@@ -4257,7 +4257,7 @@ def _direct_pressure_predictor(
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
         for tau in taus:
-            labels = [1 if value > float(tau) else 0 for value in spreads]
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
                 continue
@@ -4757,7 +4757,7 @@ def _with_indicators(
     """Each design row with `1(lagged spread > cut)` appended per cut."""
 
     return [
-        None if x is None else [*x, *(1.0 if x[0] > cut else 0.0 for cut in cuts)]
+        None if x is None else [*x, *(1.0 if exceeds_bp(x[0], cut) else 0.0 for cut in cuts)]
         for x in xs
     ]
 
@@ -4822,7 +4822,9 @@ def _dynamic_predictor(
         trainable = [t for t in range(len(train_rows)) if base[t] is not None]
         if not trainable:
             raise ValueError("no training label has a complete as-of read")
-        labels_at = {tau: [1 if spreads[t] > tau else 0 for t in trainable] for tau in taus}
+        labels_at = {
+            tau: [1 if exceeds_bp(spreads[t], tau) else 0 for t in trainable] for tau in taus
+        }
 
         def chained(cuts: Sequence[float], alpha: float) -> Tuple[Any, Any]:
             chain = _index_chain(_with_indicators(base, cuts), anchors, alpha)

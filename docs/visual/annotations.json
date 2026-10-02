@@ -1,0 +1,104 @@
+{
+  "about": "Every event label and every claim about market structure on site/index.html, each with a primary source: the Federal Reserve, the New York Fed, Treasury, or a record in this repository. scripts/emit_visual.py reads this file and nothing in metadata/ carries these. tests/test_visual.py refuses an entry without a source URL.",
+  "events": [
+    {"date": "2019-07-31", "text": "FOMC ends balance-sheet runoff two months early, effective August",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20190731a.htm"},
+    {"date": "2019-09-17", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IOER",
+     "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
+    {"date": "2019-10-11", "text": "Fed announces Treasury bill purchases to keep reserves ample",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm"},
+    {"date": "2020-03-15", "text": "Fed cuts rates to near zero and announces large asset purchases",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm"},
+    {"date": "2021-07-29", "text": "IORB replaces IOER as the Fed's rate on reserves", "role": "iorb_from",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/iorb-availability.md"},
+    {"date": "2022-06-01", "text": "Balance-sheet runoff resumes",
+     "src": "https://www.federalreserve.gov/monetarypolicy/policy-normalization.htm"},
+    {"date": "2025-12-01", "text": "Runoff ends, as announced on 29 Oct 2025",
+     "src": "https://www.federalreserve.gov/monetarypolicy/policy-normalization.htm"},
+    {"date": "2025-12-10", "text": "FOMC starts reserve-management purchases of bills",
+     "src": "https://www.newyorkfed.org/medialibrary/media/markets/omo/omo2025-pdf.pdf"}
+  ],
+  "runoff": [
+    {"start": "2017-10-01", "end": "2019-08-01",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20190731a.htm"},
+    {"start": "2022-06-01", "end": "2025-12-01",
+     "src": "https://www.federalreserve.gov/monetarypolicy/policy-normalization.htm"}
+  ],
+  "implementation_note": {
+    "about": "The current FOMC implementation note, fetched once and checksummed. Chapter 1 shows only the rates it states, parsed from these bytes; none is typed.",
+    "path": "docs/visual/sources/monetary20260916a1.htm",
+    "sha256": "ca952b275bbb6fccc07ef2ec02715f5e405b1185538985b40ac4fe496b55105b",
+    "retrieved_at": "2026-10-02T02:01:09Z",
+    "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm"
+  },
+  "claims": {
+    "segments_tgcr": {
+      "text": "TGCR measures overnight tri-party general collateral repo backed by Treasuries",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "segments_bgcr": {
+      "text": "BGCR adds the trades cleared through FICC's GCF Repo service",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "segments_sofr": {
+      "text": "SOFR adds the bilateral trades cleared through FICC's delivery-versus-payment (DVP) service, where each trade names the security it settles",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "sofr_trim": {
+      "text": "To keep trades for one scarce security from pulling the rate down, the New York Fed removes the lowest-rate 20 percent of DVP volume each day before taking the volume-weighted median",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "sofr_publication": {
+      "text": "SOFR is published at about 8:00 a.m. ET on the next business day, and may be revised at about 2:30 p.m. that day",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "triparty_actors": {
+      "text": "In the tri-party segment the largest borrowers are primary dealers, borrowing cash from money market funds to finance the Treasuries they hold",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "cleared_actors": {
+      "text": "In the centrally cleared segment, dealers lend cash on to hedge funds and other institutions",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "coupon_demand": {
+      "text": "Dealers and hedge funds borrow in repo to finance coupon Treasuries, so days when new coupon securities are issued raise the demand for repo cash",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "fed_cash": {
+      "text": "Reserves and overnight reverse repo balances are cash held at the Fed by banks and by non-banks respectively",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "standing_repo": {
+      "text": "In standing repo operations, dealers and banks can borrow from the Fed in a repo; their use helps limit upward pressure on repo rates",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "reserve_ratio": {
+      "text": "New York Fed research measures reserves against total bank assets, and puts the point where reserves stop being plentiful at about 12–13% of bank assets",
+      "src": "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr1019.pdf"},
+    "quarter_end": {
+      "text": "Around quarter-ends, and to a lesser extent some month-ends, some dealers scale back repo intermediation for regulatory and accounting reporting, and the spreads they charge widen",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"},
+    "tax_date": {
+      "text": "On corporate tax dates, payments move from bank and money-fund accounts into the Treasury's account at the Fed, which drains reserves",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
+    "settlement": {
+      "text": "When Treasury auctions settle, primary dealers pay for the securities they bought and finance them in repo, so more Treasuries need financing with the same cash",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"}
+  },
+  "process": [
+    {"step": "Directive", "text": "Work starts from a directive: an issue with a goal, acceptance criteria and the files to read",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
+    {"step": "Session", "text": "One session works one directive on its own branch, test first",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
+    {"step": "Pull request", "text": "The pull request is the report: what changed, the evidence, what was checked and what was not",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
+    {"step": "Review", "text": "A separate reviewer checks every acceptance criterion against the tree, and judgement calls go to Eleonora",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
+    {"step": "Publish", "text": "A record is published only while nothing that computes a figure, declares a source or supplies the panel has changed since it was scored",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/publish-rule.md"}
+  ],
+  "guards": [
+    {"name": "The as-of rule", "text": "Each forecast reads every input at its latest value public at the decision time the day before, field by field",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/information-set.md"},
+    {"name": "Leakage and staleness guards", "text": "A read newer than the decision instant raises LookAheadError; a read older than the latest admissible value raises StaleReadError",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/src/repo_model/asof.py"},
+    {"name": "The panel digest", "text": "The panel rebuilds from tracked files and is refused unless its SHA-256 matches the published manifest",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/funding_panel_manifest.json"},
+    {"name": "A locked test period", "text": "Recent days are held back from every model comparison until a phase verdict opens them",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/lockbox.md"}
+  ],
+  "validation": {
+    "text": "An audit of the scoring code found that every published record had read its inputs later than they were public. That leaks nothing, but it is not what a forecaster at the decision time would have had, so every record was archived and re-scored under the as-of rule",
+    "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/pivot/lag-assessment.md"
+  }
+}

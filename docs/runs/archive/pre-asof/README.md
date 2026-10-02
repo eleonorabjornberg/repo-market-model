@@ -17,3 +17,10 @@ manifest beside them, `funding_panel.manifest.json`, is that panel's.
 for the comparison in the directive 03 pull request of which earlier conclusions survive, change or reverse
 (`docs/pivot/lag-assessment.md` §4). No page is generated from them: `scripts/emit_results.py` renders from the
 records at the top level of `docs/runs/` only.
+
+**The labels they were scored on (#155).** Every record here compared the floating-point spread with each threshold,
+so a day exactly on τ counted as above τ: SOFR 2.00 less IORB 1.95 is 5.000000000000004 bp, labelled above +5 bp.
+`docs/decisions/pressure-probability.md` says the event is the spread, in whole basis points, strictly above τ, and
+the code reads it that way from #155. Their +5 and +10 bp event figures (Brier, average precision, skill, the
+benchmark pairs) therefore count some days on the threshold as pressure days. They are not re-scored, and the
+records themselves are unedited.

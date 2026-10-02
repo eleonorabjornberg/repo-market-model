@@ -62,7 +62,7 @@ from repo_model.baseline import (  # noqa: E402
     panel_sha256,
     rolling_persistence_backtest,
 )
-from repo_model.data import load_daily_panel  # noqa: E402
+from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import (  # noqa: E402
     DAY_TYPES,
     load_split_declaration,
@@ -203,7 +203,9 @@ def select(
         briers = {}
         for tau in taus:
             probabilities = [ml._exceedance_from_law(values, knots, tau) for values, knots in laws]
-            briers[tau] = [(p - (1.0 if y > tau else 0.0)) ** 2 for p, y in zip(probabilities, actuals)]
+            briers[tau] = [
+                (p - (1.0 if exceeds_bp(y, tau) else 0.0)) ** 2 for p, y in zip(probabilities, actuals)
+            ]
         return {
             "vectors": vectors,
             "covered": [1.0 if v[0] <= y <= v[-1] else 0.0 for v, y in zip(vectors, actuals)],

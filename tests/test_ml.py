@@ -10190,6 +10190,78 @@ class DynamicPressureModelTests(unittest.TestCase):
             self.assertTrue(choice.needs_ml_extra)
 
 
+def _on_tau_panel():
+    """`_pressure_panel` with every spread moved to 0 or exactly +5 bp (#155).
+
+    +5 bp is SOFR 2.00 against IORB 1.95 as two-decimal legs, which binary
+    floating point reads as just above five; the last row is +6 bp, a positive
+    no fold trains on.
+    """
+
+    rows = _pressure_panel()
+    out = []
+    for index, row in enumerate(rows):
+        if index == len(rows) - 1:
+            legs = (2.01, 1.95)
+        else:
+            legs = (2.00, 1.95) if row.spread_bps > 2.0 else (1.95, 1.95)
+        out.append(DailyObservation(row.date, {**row.values, "sofr": legs[0], "iorb": legs[1]}))
+    return out
+
+
+class WholeBpLabelTests(unittest.TestCase):
+    """The ml models' labels and lagged indicators read whole basis points (#155).
+
+    Written red first: on main the day exactly on +5 bp was labelled above it,
+    so each fit had two label values and served a probability above zero, and
+    the lagged indicator was 1.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _on_tau_panel()
+        on_tau = [row.spread_bps for row in self.rows[:-1] if row.spread_bps > 1.0]
+        self.assertTrue(on_tau)
+        self.assertTrue(all(value > 5.0 and round(value) == 5 for value in on_tau))
+
+    def test_the_lagged_indicator_is_zero_on_tau(self):
+        self.assertEqual(
+            ml._with_indicators([[5.000000000000004, 1.0]], (5.0,)),
+            [[5.000000000000004, 1.0, 0.0]],
+        )
+        self.assertEqual(ml._with_indicators([[6.0, 1.0]], (5.0,)), [[6.0, 1.0, 1.0]])
+
+    def test_the_direct_models_label_no_day_on_tau(self):
+        rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0), horizon=1
+        )
+        rows = _with_calendar(self.rows[:-1])
+        info = rule.information_set([row.date for row in rows], len(rows) - 1)
+        observation = rule.observation(rows, info)
+        for factory in (ml.pressure_logistic_exceedance, ml.pressure_classifier_exceedance):
+            with self.subTest(factory=factory.__name__):
+                predictor = factory(_PRESSURE_CALENDAR, _pressure_splits())
+                got = predictor(rows[:-1], (observation,), (5.0,), information=rule)
+                self.assertEqual(got.curves[0][0], 0.0)
+
+    def test_the_dynamic_models_label_no_day_on_tau(self):
+        for factory in (ml.dynamic_logit_exceedance, ml.dynamic_ordinal_exceedance):
+            with self.subTest(factory=factory.__name__):
+                report = baseline.rolling_exceedance_backtest(
+                    self.rows,
+                    predictor=factory(_DYNAMIC_FEATURES, _pressure_splits(), minimum_history=60),
+                    model_name=factory.__name__,
+                    features=_DYNAMIC_FEATURES,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                )
+                self.assertEqual({curve[0] for curve in report.forecast}, {0.0})
+                self.assertEqual(report.outcomes[-1], (1, 0))
+
+
 class StackedCombinerTests(unittest.TestCase):
     """The stacked combiner is fitted on out-of-fold base forecasts only (#137)."""
 
