@@ -229,7 +229,7 @@ from fractions import Fraction
 from pathlib import Path
 from unittest import mock
 
-from repo_model import baseline, cli, cli_eval, ml
+from repo_model import baseline, cli, cli_eval, ml, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.contract import event_window_digest
@@ -9445,6 +9445,33 @@ class RecalibrationPartsTests(unittest.TestCase):
 
 
 
+def write_rediagnosis_panel(path):
+    """The synthetic panel the re-diagnosis and its publish are tested on.
+
+    170 business days from 2025-06-02, so its last weeks fall in the locked
+    tier, with the calendar columns and the coupon settlement the
+    scorecaster reads.
+    """
+
+    days = business_days(date(2025, 6, 2), 170)
+    rng = random.Random(20261002)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
+             "days_to_month_end", "treasury_settlement_coupons"]
+        )
+        for index, when in enumerate(days):
+            last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
+            writer.writerow(
+                [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
+                 2000 + rng.randrange(300),
+                 1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
+                 1 if when.day == 15 else 0, (last - when).days,
+                 60 if when.day in (15, 30, 31) else 0]
+            )
+
+
 class CalibrationRediagnosisScriptTests(unittest.TestCase):
     """`scripts/calibration_rediagnosis.py` end to end on a synthetic panel (#116).
 
@@ -9463,24 +9490,8 @@ class CalibrationRediagnosisScriptTests(unittest.TestCase):
         fewer_boosting_iterations(self)
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
-        days = business_days(date(2025, 6, 2), 170)
-        rng = random.Random(20261002)
         self.panel = self.tmp / "panel.csv"
-        with self.panel.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.writer(handle)
-            writer.writerow(
-                ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
-                 "days_to_month_end", "treasury_settlement_coupons"]
-            )
-            for index, when in enumerate(days):
-                last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
-                writer.writerow(
-                    [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
-                     2000 + rng.randrange(300),
-                     1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
-                     1 if when.day == 15 else 0, (last - when).days,
-                     60 if when.day in (15, 30, 31) else 0]
-                )
+        write_rediagnosis_panel(self.panel)
         spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
@@ -9521,6 +9532,147 @@ class CalibrationRediagnosisScriptTests(unittest.TestCase):
             {"crps_difference_bps", "brier_difference_5bp", "brier_difference_10bp"},
         )
         self.assertEqual(sum(result["group_conditional"]["levels_used"].values()), days)
+
+
+
+class ConformalPidPublishTests(unittest.TestCase):
+    """`--calibration conformal_pid` on `backtest`, `compare` and `exceedance-backtest` (#124).
+
+    Eleonora's ruling on #123 publishes the funding declaration's gbm with
+    conformal PID and the calendar scorecaster, exactly as #122 scored it, with
+    the same constants. So the records the three commands write must carry
+    #122's PID figures: on one panel and window, the backtest's CRPS and
+    coverage, the comparison's CRPS for the PID side, and the exceedance
+    record's Brier at +5 and +10 bp each equal what
+    `scripts/calibration_rediagnosis.py` reports for `online_pid`.
+
+    Red first: written before the commands took the name (each run was refused
+    by `ml.fit_gradient_boosted_quantiles` as an unknown calibration, exit 2).
+    """
+
+    TRACKED = Path(__file__).resolve().parents[1]
+    SCRIPT = TRACKED / "scripts" / "calibration_rediagnosis.py"
+    SPLITS = TRACKED / "metadata" / "evaluation_splits.json"
+    REGISTRY = TRACKED / "metadata" / "sources.json"
+    THRESHOLDS = TRACKED / "metadata" / "stress_thresholds.json"
+    LOCKBOX = TRACKED / "metadata" / "lockbox.json"
+    COMMON = ("--decision-time", "16:00", "--minimum-history", "40", "--refit-every", "20",
+              "--end", "2025-12-31")
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_rediagnosis_panel(self.panel)
+        lockbox = mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.LOCKBOX)
+        lockbox.start()
+        self.addCleanup(lockbox.stop)
+
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(list(argv))
+        return code, " ".join(err.getvalue().split())
+
+    def record(self, name, *argv):
+        report = self.tmp / name
+        code, err = self.run_cli(*argv, "--report", str(report))
+        self.assertEqual(code, 0, err)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def rediagnosis(self):
+        spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = self.tmp / "rediagnosis.json"
+        self.assertEqual(
+            module.main([
+                "--panel", str(self.panel), "--calibration-folds", "3",
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--replications", "20", "--report", str(report), *self.COMMON,
+            ]),
+            0,
+        )
+        return json.loads(report.read_text(encoding="utf-8"))["methods"]["online_pid"]
+
+    def backtest(self, *extra):
+        return self.record(
+            "backtest.json", "backtest", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            *self.COMMON, *extra,
+        )
+
+    def test_the_three_records_carry_the_rediagnosis_pid_figures(self):
+        pid = self.rediagnosis()
+        backtest = self.backtest("--calibration", "conformal_pid", "--splits", str(self.SPLITS))
+        self.assertAlmostEqual(backtest["metrics"]["crps_bps"], pid["crps_bps"], places=12)
+        self.assertAlmostEqual(
+            backtest["metrics"]["interval_coverage"], pid["coverage"]["all"]["all"]["mean"],
+            places=12,
+        )
+        compare = self.record(
+            "compare.json", "compare", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model-a", "persistence", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "spread_bps", "--feature-b", "sofr_volume",
+            "--calibration-b", "conformal_pid", "--loss", "crps",
+            "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        self.assertAlmostEqual(
+            compare["comparison"]["model_b"]["crps_bps"], pid["crps_bps"], places=12
+        )
+        exceedance = self.record(
+            "exceedance.json", "exceedance-backtest", "--panel", str(self.panel),
+            "--thresholds", str(self.THRESHOLDS), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        for tau in ("5", "10"):
+            self.assertAlmostEqual(
+                exceedance["metrics"]["by_tau"][tau]["brier"], pid["brier"][tau + ".0"],
+                places=12,
+            )
+        for declaration in (
+            backtest["declaration"], compare["declaration"]["model_b"], exceedance["declaration"]
+        ):
+            self.assertEqual(declaration["calibration"], "conformal_pid")
+            self.assertNotIn("calibration_folds", declaration)
+            constants = declaration["calibration_constants"]
+            self.assertEqual(constants["PID_STEP"], recalibration.PID_STEP)
+            self.assertEqual(
+                constants["SCORECASTER_INDICATORS"], list(recalibration.SCORECASTER_INDICATORS)
+            )
+        self.assertNotIn("calibration", compare["declaration"]["model_a"])
+        # And it is not the uncalibrated model's record.
+        plain = self.backtest()
+        self.assertNotEqual(plain["metrics"]["crps_bps"], backtest["metrics"]["crps_bps"])
+
+    def test_a_limitation_is_recorded_as_given(self):
+        text = "Scored only before 2026-01-01; the 2020 regression is stated in #122."
+        backtest = self.backtest(
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+            "--limitation", text, "--limitation", "A second one.",
+        )
+        self.assertEqual(backtest["limitations"], [text, "A second one."])
+        self.assertNotIn("limitations", self.backtest())
+
+    def test_what_conformal_pid_cannot_take_is_refused(self):
+        base = ("backtest", str(self.panel), "--registry", str(self.REGISTRY),
+                "--feature", "spread_bps", "--feature", "sofr_volume", *self.COMMON,
+                "--report", str(self.tmp / "refused.json"))
+        for extra, phrase in (
+            (("--model", "gbm", "--calibration", "conformal_pid"), "--splits"),
+            (("--model", "gbm", "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+              "--calibration-folds", "5"), "calibration-folds"),
+            (("--model", "persistence", "--calibration", "conformal_pid",
+              "--splits", str(self.SPLITS)), "takes no band calibration"),
+        ):
+            with self.subTest(extra=extra):
+                code, err = self.run_cli(*base, *extra)
+                self.assertEqual(code, 2)
+                self.assertIn(phrase, err)
+                self.assertFalse((self.tmp / "refused.json").exists())
 
 
 if __name__ == "__main__":

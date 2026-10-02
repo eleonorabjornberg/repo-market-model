@@ -60,6 +60,17 @@ the least at which both ranks exist, has no finite band; it falls back to the
 scored day's calendar type across regimes, and then to every term, which is
 CV+ itself. The level used is reported per day.
 
+**In a fold loop: `FoldPid`** (#124). Eleonora's ruling on #123 makes
+conformal PID, with the calendar scorecaster and exactly these constants, the
+published funding declaration's calibration (`--calibration conformal_pid`).
+The fold loops issue one band per scored day, in date order, and learn a day's
+label only after it is scored; `FoldPid` is the method in that shape. It reads
+the block's uncalibrated fit at each scored day (a gbm fitted with calibration
+`none`, whose vector and residual range are the CV+ fit's own before its edges
+move), issues the band through `OnlinePid`, the same steps `conformal_pid`
+takes, and is told the label once the day is scored. Its declaration is
+`settings`: the method's name and every constant below.
+
 Every constant here was declared before any fold was scored with it, and none
 was searched.
 """
@@ -72,7 +83,7 @@ from datetime import date, datetime
 from typing import Deque, List, NamedTuple, Optional, Sequence, Tuple
 
 from .asof import InformationRule
-from .contract import field_sources_for_features
+from .contract import QUANTILE_LEVELS, field_sources_for_features
 from .data import DailyObservation
 from .splits import LookAheadError
 
@@ -280,6 +291,58 @@ class PidState:
         self._coefficients = None
 
 
+class OnlinePid:
+    """Conformal PID one day at a time: issue a day's band, later learn its label.
+
+    The steps `conformal_pid` takes for each day, held between calls so a fold
+    loop can take them as it scores: before a day's band is issued, every
+    earlier day whose label is observable at its decision (scored on or before
+    its anchor) is observed, in date order.
+    """
+
+    def __init__(self, levels: Sequence[float]) -> None:
+        self.state = PidState(levels)
+        self._pending: Deque[Tuple[OnlineDay, OnlineBand, float]] = deque()
+        self._last: Optional[OnlineDay] = None
+
+    def issue(self, day: OnlineDay) -> OnlineBand:
+        """`day`'s band, from the labels observable at its decision.
+
+        Raises:
+            LookAheadError: if `day` is anchored on or after its own scored
+                date, which would make its own label observable before its
+                band is issued.
+            ValueError: if `day` is not after the last day issued, or its
+                anchor moves back.
+        """
+
+        if day.anchor >= day.scored_date:
+            raise LookAheadError(
+                f"{day.scored_date} is anchored at {day.anchor}: its own label "
+                f"would be observable before its band is issued"
+            )
+        last = self._last
+        if last is not None and (
+            day.scored_date <= last.scored_date or day.anchor < last.anchor
+        ):
+            raise ValueError(
+                f"days must be in scored-date order with anchors that do not move "
+                f"back: {last.scored_date} (anchor {last.anchor}) is followed by "
+                f"{day.scored_date} (anchor {day.anchor})"
+            )
+        while self._pending and self._pending[0][0].scored_date <= day.anchor:
+            earlier, issued, label = self._pending.popleft()
+            self.state.observe(earlier, issued, label, day)
+        band = self.state.band(day)
+        self._last = day
+        return band
+
+    def record(self, day: OnlineDay, band: OnlineBand, actual: float) -> None:
+        """`day`'s label, held until a later decision can observe it."""
+
+        self._pending.append((day, band, float(actual)))
+
+
 def conformal_pid(
     days: Sequence[OnlineDay], actuals: Sequence[float], levels: Sequence[float]
 ) -> Tuple[OnlineBand, ...]:
@@ -287,7 +350,8 @@ def conformal_pid(
 
     `days` and `actuals` are aligned, in scored-date order. Before each day's
     band is issued, every earlier day whose label is observable at its
-    decision (scored on or before its anchor) is observed, in date order.
+    decision (scored on or before its anchor) is observed, in date order
+    (`OnlinePid`).
 
     Raises:
         ValueError: on misaligned inputs, days out of order, or anchors that
@@ -311,16 +375,12 @@ def conformal_pid(
                 f"{day.scored_date} is anchored at {day.anchor}: its own label "
                 f"would be observable before its band is issued"
             )
-    state = PidState(levels)
-    pending: Deque[Tuple[OnlineDay, OnlineBand, float]] = deque()
+    online = OnlinePid(levels)
     bands: List[OnlineBand] = []
     for day, actual in zip(days, actuals):
-        while pending and pending[0][0].scored_date <= day.anchor:
-            earlier, issued, label = pending.popleft()
-            state.observe(earlier, issued, label, day)
-        band = state.band(day)
+        band = online.issue(day)
         bands.append(band)
-        pending.append((day, band, float(actual)))
+        online.record(day, band, actual)
     return tuple(bands)
 
 
@@ -414,3 +474,190 @@ def group_conditional_edges(
     raise ValueError(
         f"{len(lows)} held-out terms, fewer than the {minimum} a band needs"
     )
+
+
+#: The calibrations a fold loop runs alongside an uncalibrated fit, rather
+#: than a fit runs on its own training frame (`--calibration`, #124).
+ONLINE_CALIBRATIONS = ("conformal_pid",)
+
+#: The names of the constants conformal PID is declared with, as a record
+#: names them.
+_PID_CONSTANT_NAMES = (
+    "PID_STEP",
+    "PID_STEP_WINDOW",
+    "PID_SCALE_FLOOR",
+    "PID_INTEGRATOR_GAIN",
+    "PID_SATURATION",
+    "PID_TANGENT_LIMIT",
+    "SCORECASTER_MINIMUM",
+    "SCORECASTER_INDICATOR_MINIMUM",
+)
+
+
+class _PidView:
+    """The block's fit as one scored day reads it under conformal PID.
+
+    `predict` is the issued band; everything else is the fit's own, so the
+    point forecast is the uncalibrated median, which a band never moves.
+    """
+
+    def __init__(self, model, feature_date: date, vector: Tuple[float, ...]) -> None:
+        self._model = model
+        self._feature_date = feature_date
+        self._vector = vector
+
+    def __getattr__(self, name):
+        return getattr(self._model, name)
+
+    def predict(self, feature_row: DailyObservation) -> Tuple[float, ...]:
+        if feature_row.date != self._feature_date:
+            raise ValueError(
+                f"this band was issued for the forecast read at {self._feature_date}, "
+                f"not {feature_row.date}"
+            )
+        return self._vector
+
+
+class FoldPid:
+    """Conformal PID alongside a fold loop, over one panel and one as-of rule.
+
+    The loop hands over each scored day once, in date order: `view` (or `law`)
+    issues the day's band from the block's uncalibrated fit, and `label` tells
+    it the day's realised spread after the day is scored. A label is observed
+    only at a later decision whose anchor has reached its day (`OnlinePid`,
+    `PidState.observe`). The scorecaster's calendar is read for the scored day
+    at its decision instant (`scorecaster_calendar`), off `splits`' month-end
+    window.
+
+    Raises (from `view`, `law` and `label`):
+        LookAheadError: a day anchored on or after its own scored day; a
+            settlement not yet public at the decision.
+        ValueError: a base fit that is calibrated or carries a tail; a band
+            issued while the previous day's label is outstanding, or a label
+            for a day other than the one issued.
+    """
+
+    name = "conformal_pid"
+
+    def __init__(self, rows: Sequence[DailyObservation], rule: InformationRule, *, splits) -> None:
+        self._rows = rows
+        self._dates = [row.date for row in rows]
+        self._rule = rule
+        self._splits = splits
+        self._online: Optional[OnlinePid] = None
+        self._open: Optional[Tuple[int, OnlineDay, OnlineBand]] = None
+        self._bands: List[OnlineBand] = []
+
+    @property
+    def settings(self) -> dict:
+        """The declaration a record carries: the method and its constants."""
+
+        constants = {name: globals()[name] for name in _PID_CONSTANT_NAMES}
+        constants["SCORECASTER_INDICATORS"] = list(SCORECASTER_INDICATORS)
+        return {"calibration": self.name, "calibration_constants": constants}
+
+    def account(self) -> dict:
+        """What the run did: its days, its burn-in, its clipped days, its mean `q_t`."""
+
+        bands = self._bands
+        return {
+            "days": len(bands),
+            "days_before_first_label": sum(1 for band in bands if band.observed == 0),
+            "saturated_days": sum(1 for band in bands if band.saturated),
+            "mean_quantile_bps": sum(band.quantile for band in bands) / len(bands) if bands else None,
+        }
+
+    def _issue(self, index: int, anchor: date, vector: Sequence[float], levels: Sequence[float]) -> OnlineBand:
+        if self._open is not None:
+            raise ValueError(
+                f"the band for {self._dates[self._open[0]]} was issued and its label "
+                f"not yet given; a fold loop learns each day's label before the next "
+                f"day's band"
+            )
+        if self._online is None:
+            self._online = OnlinePid(levels)
+        day = OnlineDay(
+            scored_date=self._dates[index],
+            anchor=anchor,
+            vector=tuple(vector),
+            calendar=scorecaster_calendar(self._rows, self._rule, index, self._splits, self._dates),
+        )
+        band = self._online.issue(day)
+        self._open = (index, day, band)
+        self._bands.append(band)
+        return band
+
+    @staticmethod
+    def _require_uncalibrated(model) -> None:
+        settings = getattr(model, "model_settings", None) or {}
+        if "calibration" in settings or getattr(model, "tail_fit", None) is not None:
+            raise ValueError(
+                f"conformal PID moves an uncalibrated band; this fit is calibrated "
+                f"by {settings.get('calibration')!r}"
+                f"{' and carries a tail' if getattr(model, 'tail_fit', None) is not None else ''}"
+            )
+
+    def view(self, model, index: int, feature_row: DailyObservation) -> _PidView:
+        """`model` as scored day `rows[index]` reads it: the issued band, at `feature_row`."""
+
+        self._require_uncalibrated(model)
+        vector = tuple(model.predict(feature_row))
+        band = self._issue(index, feature_row.date, vector, model.levels)
+        return _PidView(model, feature_row.date, band.vector)
+
+    def law(
+        self,
+        index: int,
+        anchor: date,
+        vector: Sequence[float],
+        residual_low: float,
+        residual_high: float,
+        levels: Sequence[float] = QUANTILE_LEVELS,
+    ) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+        """The law of scored day `rows[index]`, from its uncalibrated vector.
+
+        `ml.law_from_band` at the issued edges: the outer levels move by
+        `q_t`, and each tail by as much as its edge did.
+        """
+
+        from . import ml
+
+        vector = tuple(vector)
+        band = self._issue(index, anchor, vector, levels)
+        return ml.law_from_band(
+            vector,
+            vector[0] - band.quantile,
+            vector[-1] + band.quantile,
+            residual_low,
+            residual_high,
+            levels,
+        )
+
+    def curve(
+        self,
+        index: int,
+        anchor: date,
+        vector: Sequence[float],
+        residual_low: float,
+        residual_high: float,
+        taus: Sequence[float],
+    ) -> Tuple[float, ...]:
+        """`P(spread > tau)` per tau on scored day `rows[index]`, off `law`."""
+
+        from . import ml
+
+        values, knots = self.law(index, anchor, vector, residual_low, residual_high)
+        return tuple(ml._exceedance_from_law(values, knots, tau) for tau in taus)
+
+    def label(self, index: int, actual: float) -> None:
+        """The realised spread of scored day `rows[index]`, after it is scored."""
+
+        if self._open is None or self._open[0] != index:
+            raise ValueError(
+                f"a label for {self._dates[index]} was given, but the band open is "
+                f"{'none' if self._open is None else self._dates[self._open[0]]}; "
+                f"a label is learned once, after its own day's band"
+            )
+        _, day, band = self._open
+        self._online.record(day, band, actual)
+        self._open = None
