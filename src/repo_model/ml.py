@@ -4170,19 +4170,36 @@ def _pressure_pairs(
     return xs, ys
 
 
+#: The pooled design's last column (#129): 1 on a pre-SOFR history pair, 0 on
+#: every SOFR pair and every served row.
+HISTORY_MARKET_COLUMN = "effr_market"
+
+
 def _direct_pressure_predictor(
     kind: str,
     features: Sequence[str],
     declaration: Any,
     minimum_history: int,
     products: Sequence[Tuple[str, str]] = (),
+    history: Optional[Tuple[Sequence[Any], Any]] = None,
 ) -> Any:
-    """The fit-and-predict behind both direct models; `kind` picks the estimator."""
+    """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `history`, for the pre-SOFR history study (#129) only: `(rows, rule)`, the
+    `effr_history` rows and their as-of rule. Their direct pairs are built with
+    this design (`effr_history.history_pairs`), pooled with every fit's SOFR
+    pairs, and told apart by `HISTORY_MARKET_COLUMN`; a forecast is served as
+    the SOFR market. Every fit refuses a pooled label not public before its
+    last training day (`effr_history.require_pool_public`), and a rule whose
+    horizon is not the run's. No public factory takes it: it is a study
+    candidate, not a declared model.
+    """
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
     design = _PressureDesign(features, declaration, products)
     cache: dict = {}
+    pooled: dict = {}
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -4219,6 +4236,22 @@ def _direct_pressure_predictor(
             )
             for day, row in enumerate(feature_rows)
         ]
+        if history is not None:
+            from . import effr_history
+
+            history_rows, history_rule = history
+            if history_rule.horizon != information.horizon:
+                raise ValueError(
+                    f"the history is read at horizon {history_rule.horizon}, the run "
+                    f"at {information.horizon}"
+                )
+            if "pool" not in pooled:
+                pooled["pool"] = effr_history.history_pairs(design, history_rule, history_rows)
+            pool = pooled["pool"]
+            effr_history.require_pool_public(pool.available_at, train_rows[-1].date)
+            xs = [list(x) + [0.0] for x in xs] + [list(x) + [1.0] for x in pool.xs]
+            spreads = list(spreads) + list(pool.spreads)
+            served = [list(x) + [0.0] for x in served]
         columns: List[List[float]] = []
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
@@ -4243,6 +4276,15 @@ def _direct_pressure_predictor(
             PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
         )
         settings["design"] = list(design.names)
+        if history is not None:
+            pool = pooled["pool"]
+            settings["design"].append(HISTORY_MARKET_COLUMN)
+            settings["pooled_history"] = {
+                "pairs": len(pool.xs),
+                "first": pool.dates[0].isoformat() if pool.dates else None,
+                "last": pool.dates[-1].isoformat() if pool.dates else None,
+                "horizon": pool.horizon,
+            }
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:
