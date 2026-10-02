@@ -86,7 +86,8 @@ Bates (2023):
   scorecaster), 20 (#122) and 60.
 
 `PID_GRID` is their product, 45 points, #122's (`DECLARED_PID`) among them.
-The rest of the method is held at #122's values and not searched:
+`nested_selection` chooses among them at each refit from the days scored
+before it (`select_constants` is the guard). The rest of the method is held at #122's values and not searched:
 `PID_STEP_WINDOW`, `PID_SCALE_FLOOR`, `PID_TANGENT_LIMIT`,
 `SCORECASTER_INDICATOR_MINIMUM` and `SCORECASTER_INDICATORS`.
 """
@@ -487,3 +488,105 @@ def group_conditional_edges(
     raise ValueError(
         f"{len(lows)} held-out terms, fewer than the {minimum} a band needs"
     )
+
+
+class SelectedBlock(NamedTuple):
+    """One refit block of nested selection: when it starts, and what it chose.
+
+    `anchor` is the refit's latest observable label; `past_days` the scored
+    days the choice was made on; `chosen` the index of the candidate used for
+    every day of the block.
+    """
+
+    first_scored: date
+    anchor: date
+    past_days: int
+    chosen: int
+
+
+class NestedSelection(NamedTuple):
+    """The candidate used on each scored day, and the choice made at each refit."""
+
+    per_day: Tuple[int, ...]
+    blocks: Tuple[SelectedBlock, ...]
+
+
+def select_constants(
+    history: Sequence[Tuple[date, Sequence[float]]],
+    anchor: date,
+    candidates: int,
+    *,
+    fallback: int,
+) -> Tuple[int, int]:
+    """The candidate with the least pooled loss over `history`, and its length.
+
+    `history` holds `(scored_date, losses)` for past scored days, `losses[k]`
+    the loss candidate `k` scored that day. Ties go to the earlier candidate.
+    With no history the choice is `fallback`.
+
+    Raises:
+        LookAheadError: a day in `history` is scored after `anchor`, so its
+            label was not observable at the refit the choice is made for.
+        ValueError: a day's losses are not `candidates` finite numbers.
+    """
+
+    totals = [0.0] * candidates
+    for scored_date, losses in history:
+        if scored_date > anchor:
+            raise LookAheadError(
+                f"the loss of {scored_date} is not observable at a refit whose "
+                f"latest observable label is {anchor}; constants are chosen only "
+                f"from days scored before the refit"
+            )
+        if len(losses) != candidates or not all(math.isfinite(loss) for loss in losses):
+            raise ValueError(
+                f"{scored_date}: losses {tuple(losses)} are not {candidates} finite numbers"
+            )
+        for k, loss in enumerate(losses):
+            totals[k] += loss
+    if not history:
+        return fallback, 0
+    return totals.index(min(totals)), len(history)
+
+
+def nested_selection(
+    scored_dates: Sequence[date],
+    anchors: Sequence[date],
+    losses: Sequence[Sequence[float]],
+    refit_every: int,
+    *,
+    fallback: int,
+) -> NestedSelection:
+    """Nested walk-forward selection on the one fold grid.
+
+    The scored days are cut into the backtest's refit blocks
+    (`asof.refit_blocks`). At each block's refit the candidate is chosen by
+    pooled loss over every scored day whose label was observable there
+    (scored on or before the first row's anchor), and used for every day of
+    the block. `fallback` is used while no such day exists.
+
+    Raises:
+        ValueError: on misaligned inputs.
+        LookAheadError: from `select_constants`, if a later day reaches it.
+    """
+
+    from .asof import refit_blocks
+
+    if not len(scored_dates) == len(anchors) == len(losses):
+        raise ValueError(
+            f"{len(scored_dates)} scored days, {len(anchors)} anchors and "
+            f"{len(losses)} loss rows; they are aligned"
+        )
+    candidates = len(losses[0]) if losses else 0
+    per_day: List[int] = [fallback] * len(scored_dates)
+    blocks: List[SelectedBlock] = []
+    for block in refit_blocks(range(len(scored_dates)), refit_every):
+        anchor = anchors[block[0]]
+        history = [
+            (when, loss) for when, loss in zip(scored_dates, losses) if when <= anchor
+        ]
+        chosen, past = select_constants(history, anchor, candidates, fallback=fallback)
+        for position in block:
+            per_day[position] = chosen
+        blocks.append(SelectedBlock(scored_dates[block[0]], anchor, past, chosen))
+    return NestedSelection(tuple(per_day), tuple(blocks))

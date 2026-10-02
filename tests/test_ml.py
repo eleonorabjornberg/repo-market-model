@@ -9445,6 +9445,28 @@ class RecalibrationPartsTests(unittest.TestCase):
 
 
 
+def write_recalibration_panel(path):
+    """A synthetic 2025 panel with the calendar the scorecaster reads (#116, #125)."""
+
+    days = business_days(date(2025, 6, 2), 170)
+    rng = random.Random(20261002)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
+             "days_to_month_end", "treasury_settlement_coupons"]
+        )
+        for index, when in enumerate(days):
+            last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
+            writer.writerow(
+                [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
+                 2000 + rng.randrange(300),
+                 1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
+                 1 if when.day == 15 else 0, (last - when).days,
+                 60 if when.day in (15, 30, 31) else 0]
+            )
+
+
 class CalibrationRediagnosisScriptTests(unittest.TestCase):
     """`scripts/calibration_rediagnosis.py` end to end on a synthetic panel (#116).
 
@@ -9463,24 +9485,8 @@ class CalibrationRediagnosisScriptTests(unittest.TestCase):
         fewer_boosting_iterations(self)
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
-        days = business_days(date(2025, 6, 2), 170)
-        rng = random.Random(20261002)
         self.panel = self.tmp / "panel.csv"
-        with self.panel.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.writer(handle)
-            writer.writerow(
-                ["date", "sofr", "iorb", "sofr_volume", "quarter_end", "tax_date",
-                 "days_to_month_end", "treasury_settlement_coupons"]
-            )
-            for index, when in enumerate(days):
-                last = date(when.year + (when.month == 12), when.month % 12 + 1, 1) - timedelta(days=1)
-                writer.writerow(
-                    [when.isoformat(), round(4.33 + rng.gauss(0.0, 0.04), 6), 4.30,
-                     2000 + rng.randrange(300),
-                     1 if (when.month % 3 == 0 and (last - when).days < 1) else 0,
-                     1 if when.day == 15 else 0, (last - when).days,
-                     60 if when.day in (15, 30, 31) else 0]
-                )
+        write_recalibration_panel(self.panel)
         spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
@@ -9521,6 +9527,85 @@ class CalibrationRediagnosisScriptTests(unittest.TestCase):
             {"crps_difference_bps", "brier_difference_5bp", "brier_difference_10bp"},
         )
         self.assertEqual(sum(result["group_conditional"]["levels_used"].values()), days)
+
+
+
+class PidConstantSelectionScriptTests(unittest.TestCase):
+    """`scripts/pid_constant_selection.py` end to end on a synthetic panel (#125).
+
+    It walks the one fold grid as #116's script does, so the lockbox refuses a
+    locked scored day and `--end` before the tier scores. #122's constants in
+    it are #116's `online_pid` band, the nested scheme is chosen at every
+    refit block of the grid, and the three methods are scored on the same days.
+    """
+
+    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        self.modules = {}
+        for name in ("pid_constant_selection", "calibration_rediagnosis"):
+            spec = importlib.util.spec_from_file_location(name, self.SCRIPTS / f"{name}.py")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            self.modules[name] = module
+
+    def run_script(self, name, *extra):
+        report = self.tmp / f"{name}.json"
+        argv = [
+            "--panel", str(self.panel), "--decision-time", "16:00",
+            "--minimum-history", "40", "--refit-every", "20", "--calibration-folds", "3",
+            "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--replications", "20", "--report", str(report), *extra,
+        ]
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.TRACKED_LOCKBOX):
+            self.assertEqual(self.modules[name].main(argv), 0)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_a_locked_scored_day_is_refused(self):
+        with self.assertRaises(LookAheadError) as caught:
+            self.run_script("pid_constant_selection")
+        self.assertIn("locked near_blind tier", str(caught.exception))
+
+    def test_the_scheme_on_the_grid_before_the_tier(self):
+        from repo_model import recalibration
+
+        result = self.run_script("pid_constant_selection", "--end", "2025-12-31")
+        self.assertLessEqual(result["window"]["last"], "2025-12-31")
+        days = result["window"]["days"]
+        for method in ("nested_pid", "fixed_pid", "cv_plus"):
+            scores = result["methods"][method]
+            self.assertEqual(scores["coverage"]["all"]["all"]["count"], days)
+            self.assertIn("interval", scores["crps_bps"]["all"]["all"])
+        self.assertAlmostEqual(
+            result["methods"]["cv_plus"]["crps_bps"]["all"]["all"]["mean"],
+            result["control_crps_bps"], places=12,
+        )
+        earlier = self.run_script("calibration_rediagnosis", "--end", "2025-12-31")
+        self.assertAlmostEqual(
+            result["methods"]["fixed_pid"]["crps_bps"]["all"]["all"]["mean"],
+            earlier["methods"]["online_pid"]["crps_bps"], places=12,
+        )
+        blocks = result["nested_selection"]
+        self.assertEqual(len(blocks), -(-days // 20))
+        self.assertEqual(blocks[0]["past_days"], 0)
+        self.assertEqual(blocks[0]["chosen"], recalibration.DECLARED_PID._asdict())
+        for block in blocks:
+            self.assertLess(block["anchor"], block["first_scored"])
+        self.assertEqual(
+            set(result["paired_other_minus_nested"]),
+            {"fixed_pid_minus_nested_pid", "cv_plus_minus_nested_pid"},
+        )
+        self.assertEqual(len(result["full_grid"]["points"]), len(recalibration.PID_GRID))
+        self.assertIn("not for selection", result["full_grid"]["label"])
+        self.assertIn("never the selection", result["split_sample"]["label"])
+        self.assertEqual(result["split_sample"]["evaluation_window"]["days"], days)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,8 @@ in `tests/test_ml.py::RecalibrationPartsTests`.
   its declared fallback.
 * `PidGridTests`: the conformal PID constants' search grid, declared before
   any scoring (#125), and #122's constants as one of its points.
+* `NestedSelectionGuardTests`: the constants used for a refit block are chosen
+  only from days whose labels were observable at that block's refit (#125).
 """
 
 from __future__ import annotations
@@ -272,6 +274,102 @@ class PidGridTests(unittest.TestCase):
             for step in (0.01, 0.2)
         )
         self.assertNotEqual(slow[50].quantile, fast[50].quantile)
+
+
+def selection_stream(count, candidates, *, lag=1, start=date(2021, 1, 4), seed=125):
+    """`count` scored business days, each anchored `lag` rows back, with random losses."""
+
+    dates = []
+    when = start
+    while len(dates) < count + lag:
+        if when.weekday() < 5:
+            dates.append(when)
+        when += timedelta(days=1)
+    rng = random.Random(seed)
+    losses = [tuple(rng.random() for _ in range(candidates)) for _ in range(count)]
+    return dates[lag:], dates[: count], losses
+
+
+class NestedSelectionGuardTests(unittest.TestCase):
+    """Nested walk-forward selection reads only past scored days (#125, item 5).
+
+    At each refit the constants for the coming block are chosen by pooled loss
+    over the days scored before it, and only those whose label was observable
+    at the refit's decision instant: scored on or before the block's anchor
+    (the first row's `ScoredFold.feature_date`). `select_constants` refuses a
+    history holding any later day with `LookAheadError`, and
+    `nested_selection` hands it only days that qualify.
+
+    Red first: written before `select_constants` and `nested_selection`
+    existed; every test failed with `AttributeError`.
+
+    Mutation record. In a disposable copy of the tree under /tmp (checked to
+    resolve to the copy's `src/`), `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`,
+    CPython 3.11, this class run alone; unmutated control green; the mutation
+    applied, as confirmed by `diff`:
+    `if scored_date > anchor:` in `select_constants` replaced by
+    `if scored_date > anchor + timedelta(days=7):` (with `timedelta` added to
+    the module's `datetime` import), a guard that lets through a week of
+    labels not yet observable. Killed:
+    `test_a_day_scored_after_the_refit_anchor_is_refused` failed with
+    `AssertionError: LookAheadError not raised`.
+    """
+
+    def test_a_day_scored_after_the_refit_anchor_is_refused(self):
+        anchor = date(2022, 3, 1)
+        history = [(date(2022, 2, 28), (1.0, 2.0)), (date(2022, 3, 2), (2.0, 1.0))]
+        with self.assertRaises(LookAheadError) as caught:
+            recalibration.select_constants(history, anchor, 2, fallback=0)
+        self.assertIn("2022-03-02", str(caught.exception))
+        index, past = recalibration.select_constants(history[:1], anchor, 2, fallback=1)
+        self.assertEqual((index, past), (0, 1))
+
+    def test_no_choice_moves_with_a_loss_its_refit_could_not_see(self):
+        scored, anchors, losses = selection_stream(200, 4)
+        chosen = recalibration.nested_selection(scored, anchors, losses, 21, fallback=2)
+        for block in chosen.blocks:
+            first = scored.index(block.first_scored)
+            perturbed = list(losses)
+            for position in range(first, len(perturbed)):
+                perturbed[position] = (0.0,) + (9.0,) * 3 if block.chosen else (9.0,) + (0.0,) * 3
+            again = recalibration.nested_selection(scored, anchors, perturbed, 21, fallback=2)
+            self.assertEqual(
+                again.blocks[chosen.blocks.index(block)].chosen, block.chosen,
+                f"block from {block.first_scored} moved with a later loss",
+            )
+
+    def test_the_choice_is_the_least_pooled_past_loss_and_is_used_for_its_block(self):
+        scored, anchors, losses = selection_stream(100, 3)
+        chosen = recalibration.nested_selection(scored, anchors, losses, 21, fallback=1)
+        self.assertEqual(len(chosen.per_day), 100)
+        self.assertEqual(len(chosen.blocks), 5)
+        first = chosen.blocks[0]
+        self.assertEqual(first.past_days, 0)
+        self.assertEqual(first.chosen, 1, "no past day: the fallback")
+        for block in chosen.blocks[1:]:
+            past = [loss for when, loss in zip(scored, losses) if when <= block.anchor]
+            self.assertEqual(block.past_days, len(past))
+            means = [sum(loss[k] for loss in past) / len(past) for k in range(3)]
+            self.assertEqual(block.chosen, means.index(min(means)))
+            start = scored.index(block.first_scored)
+            for position in range(start, min(start + 21, 100)):
+                self.assertEqual(chosen.per_day[position], block.chosen)
+        self.assertEqual(chosen.blocks[1].anchor, anchors[21])
+
+    def test_ties_go_to_the_earlier_grid_point(self):
+        history = [(date(2022, 1, 3), (1.0, 1.0, 1.0))]
+        self.assertEqual(recalibration.select_constants(history, date(2022, 1, 3), 3, fallback=2)[0], 0)
+
+    def test_malformed_losses_are_refused(self):
+        with self.assertRaises(ValueError):
+            recalibration.select_constants([(date(2022, 1, 3), (1.0,))], date(2022, 1, 3), 2, fallback=0)
+        with self.assertRaises(ValueError):
+            recalibration.select_constants(
+                [(date(2022, 1, 3), (1.0, math.nan))], date(2022, 1, 3), 2, fallback=0
+            )
+        scored, anchors, losses = selection_stream(30, 2)
+        with self.assertRaises(ValueError):
+            recalibration.nested_selection(scored, anchors[:-1], losses, 21, fallback=0)
 
 
 class ScorecasterCalendarTests(unittest.TestCase):
