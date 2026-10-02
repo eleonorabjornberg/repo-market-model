@@ -547,6 +547,7 @@ def history(rows, notes, thresholds, regimes, windows, locked):
     table = f"<table><thead><tr><th></th>{head}</tr></thead><tbody>{''.join(body)}</tbody></table>"
 
     held = held_out_spans(rows, locked)
+    held_from = " and ".join(f"from {day(h['start'])} to {day(h['end'])}" for h in held)
     spike = max(kept, key=lambda r: r["s"])
     tail = [r for r in kept if r["s"] > tail_bp]
     tail_years = sorted({yr(r) for r in tail})
@@ -591,12 +592,12 @@ def history(rows, notes, thresholds, regimes, windows, locked):
         "c_settlement": link(notes["claims"]["settlement"]),
         "c_coupon_demand": link(notes["claims"]["coupon_demand"]),
         "held_out_note": (
-            "<p class='note'>Grey, labelled “held out”: " + " and ".join(span(h["start"], h["end"]) for h in held)
+            "<p class='note'>Grey, labelled “held out”: the days " + held_from
             + ", the project's locked final test period (<a href='" + LOCKBOX_RULE + "'>lockbox rule</a>). "
             "These days are drawn but not coloured, counted or described anywhere on this page.</p>") if held else "",
         "held_out_dots": " Grey dots: held-out days, not counted." if held else "",
         "held_out_footer": (
-            " Days from " + " and ".join(span(h["start"], h["end"]) for h in held) + " are held out under the "
+            " The days " + held_from + " are held out under the "
             "<a href='" + LOCKBOX_RULE + "'>lockbox rule</a>: they are drawn greyed and left out of every count, "
             "median and sentence.") if held else "",
     }
