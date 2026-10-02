@@ -4179,12 +4179,15 @@ class ClimatologyExceedanceTests(ExceedancePredictorConformance, unittest.TestCa
         self.assertEqual(self.curves().features_read, ("spread_bps",))
 
     def test_the_curve_is_the_fraction_of_training_spreads_strictly_above_tau(self):
-        """The arithmetic, restated independently of the implementation."""
+        """The arithmetic, restated independently of the implementation.
+
+        On whole basis points (#155): a spread on tau is not above it.
+        """
 
         train, feature_rows = self.split()
         history = [row.spread_bps for row in train]
         expected = tuple(
-            sum(1 for value in history if value > tau) / len(history)
+            sum(1 for value in history if round(value) > tau) / len(history)
             for tau in EXCEEDANCE_TAUS
         )
         self.assertEqual(self.curves().curves[0], expected)
