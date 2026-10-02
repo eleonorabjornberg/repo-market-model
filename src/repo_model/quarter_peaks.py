@@ -29,7 +29,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from .data import quarter_end_window_days
+from .data import QUARTER_END_WINDOW_BUSINESS_DAYS, quarter_end_window_days
 from .lockbox import require_unlocked
 
 __all__ = ["quarter_peak_table"]
@@ -112,6 +112,9 @@ def quarter_peak_table(
                 "window_days_without_spread": len(read) - len(observed),
                 "peak_bps": peak,
                 "peak_day": None if peak_day is None else peak_day.isoformat(),
+                # The window's centre is the day `quarter_end` marks.
+                "peak_on_quarter_end": peak_day is not None
+                and peak_day == window[QUARTER_END_WINDOW_BUSINESS_DAYS],
                 "above": {
                     _tau_key(tau): (peak is not None and round(peak) > tau) for tau in taus
                 },

@@ -294,6 +294,7 @@ class QuarterPeakTableTests(unittest.TestCase):
         self.assertEqual(row["window"], list(WINDOWS[(2019, 3)]))
         self.assertEqual(row["peak_bps"], 10.0)
         self.assertEqual(row["peak_day"], "2019-10-01")
+        self.assertFalse(row["peak_on_quarter_end"])
         self.assertEqual(row["above"], {"5": True, "10": False})
         peaks = row["forecast_peaks"]["model"]
         self.assertEqual(peaks["5"], {"max": 0.9, "day": "2019-09-26", "days_forecast": 5})
@@ -311,6 +312,7 @@ class QuarterPeakTableTests(unittest.TestCase):
         self.assertEqual(row["window_days_after_end"], 2)
         self.assertEqual(row["peak_bps"], 9.0)
         self.assertEqual(row["peak_day"], "2019-09-30")
+        self.assertTrue(row["peak_on_quarter_end"])
         self.assertEqual(row["forecast_peaks"]["model"]["10"]["max"], 0.05)
         self.assertEqual(row["forecast_peaks"]["model"]["10"]["days_forecast"], 3)
 

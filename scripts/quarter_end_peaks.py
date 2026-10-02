@@ -178,7 +178,7 @@ def assemble(args):
         json.dumps({"panel_sha256": digest, "end": END.isoformat(), "quarters": table},
                    indent=1, sort_keys=True) + "\n"
     )
-    header = ["Quarter", "Window", "Peak (bp)", "Peak day", "> +5", "> +10"]
+    header = ["Quarter", "Window", "Peak (bp)", "Peak day", "On quarter_end?", "> +5", "> +10"]
     for name in names:
         header += [f"{name} P(>5)", f"{name} P(>10)"]
     lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
@@ -188,6 +188,7 @@ def assemble(args):
             window += f" ({row['window_days_after_end']} after {END} not read)"
         cells = [
             row["quarter"], window, _cell(row["peak_bps"], 0), row["peak_day"] or "–",
+            "yes" if row["peak_on_quarter_end"] else "no",
             "yes" if row["above"]["5"] else "no", "yes" if row["above"]["10"] else "no",
         ]
         for name in names:
