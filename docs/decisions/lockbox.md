@@ -37,8 +37,8 @@ It trades test strength against what comparisons can learn from. On the publishe
 | **2026-01-01** | **169** | **5** | **0** | **29** |
 | 2026-03-01 | 130 | 2 | 0 | 32 |
 
-A start of 2025-09-04 would lock every 2025–26 pressure day. Comparisons would then see no pressure in the current
-scarcity era, and the regime split would say nothing about it. It would not make that period blind either: the
+A start of 2025-09-04 would lock every 2025–26 pressure day. Comparisons would then see no pressure in the 2025–26
+regime, and the regime split would say nothing about it. It would not make that period blind either: the
 October 2025 episode is already in published records and in `docs/advisor/evidence-pack/MEMO.md`. A start of
 2026-01-01 keeps October 2025 for learning, and locks a period with few pressure days. The near-blind tier is
 therefore a weak test above +10 bp until the blind tier adds to it.
