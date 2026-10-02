@@ -37,12 +37,13 @@ make -- the windows themselves, which belong in `metadata/events.json`. The
 fixture-level spec Track A codes that file against is
 `tests/test_events_metadata.py`.
 
-The two label tests in `StressLabelContractTests` are likewise specs rather than tests
-of existing code. The stress label column and its point-in-time rule are Track
-A's, per `AGENT_CONTRACT.md` "Ownership" and `CLAUDE.md`; a `trailing_percentile`
-in `repo_model.event_eval` briefly implemented the trailing rule and was deleted
-as a second implementation of a Track A rule, with its behaviour preserved here
-as a requirement on Track A rather than as model-eval code.
+The two label tests in `StressLabelContractTests` pin the stress label. The label
+column and its point-in-time rule are Track A's, per `AGENT_CONTRACT.md`
+"Ownership". The label is fixed bp only: a trailing-percentile secondary rule was
+declared once, implemented in `repo_model.data` and never used, and was retired
+by #91 under Eleonora's 1 October 2026 ruling on #87, which fixes the pressure
+thresholds relative to IORB with no rolling anchor. `load_stress_thresholds`
+now refuses a declaration that carries any other rule.
 
 `SplitterPurgeTests` tested `repo_model.splits.rolling_origin`, the purged
 splitter, against the purge gap, the no-look-ahead invariant and fold ordering.
@@ -81,30 +82,14 @@ A fourth, on the strict purge boundary shared by the splitter and the event
 evaluator, is recorded in `tests/test_event_eval.py` beside the tests that
 catch it, along with two on the window-pinning guards.
 
-Mutation record, the label spec. An `expectedFailure` is only worth having if
-it discriminates, so `test_the_stress_label_is_point_in_time_and_never_full_
-sample` was run against four stand-in implementations of
-`repo_model.data.stress_label_threshold`, injected at runtime rather than
-written to Track A's module:
-
-  * Correct trailing rule, plus declared threshold metadata: both label tests
-    go to unexpected success -- a red build, which is the intended handoff
-    signal and not a defect.
-  * Full-sample percentile, the rule the contract prohibits by name: stays an
-    expected failure. Caught by assertion 2.
-  * Off-by-one including the current row -- the subtle version, where the
-    label on the first day of a knowledge-holdout window is informed by that
-    day: stays an expected failure. Caught by assertion 1. This is the one
-    worth having, because it is the mistake an implementation makes by
-    accident rather than by choice.
-  * Correct rule but no threshold metadata: the label test succeeds
-    unexpectedly while the tau-declaration test stays failing, so the two
-    tests are independent rather than one test in two pieces.
-
-The spec therefore accepts exactly the implementations the contract describes
-and rejects both leak shapes. It says nothing about whether fixed-bp labels are
-computed correctly, only that a trailing threshold does not reach forward; the
-primary fixed-bp rule has no leak of this class to have.
+Mutation record, the label spec. `test_the_stress_label_is_point_in_time_and_
+never_full_sample` was run against `repo_model.data.fixed_bp_stress_label_columns`
+with its threshold replaced by the 90th percentile of every spread passed in --
+a full-sample percentile, the rule the contract prohibits by name: the label
+line mutated to `int(spread > sorted(values)[int(0.9 * (len(values) - 1))])`. The test then
+failed with `AssertionError`, on the first assertion: a shock to the other rows
+moved the unshocked row's label. (The record for the retired trailing rule's spec is in
+git history, with the rule.)
 
 Neither of the first two runs is a claim about the whole contract -- both leaks
 live in the interval, the only learned parameter here. A leak in a future point
@@ -227,8 +212,8 @@ from repo_model.data import (
     audit_panel,
     load_daily_panel,
     load_point_in_time_panel,
+    fixed_bp_stress_label_columns,
     load_stress_thresholds,
-    stress_label_threshold,
 )
 from repo_model.event_eval import load_event_windows
 from repo_model.splits import LookAheadError
@@ -961,33 +946,34 @@ class PointInTimePanelTests(unittest.TestCase):
 
 
 class StressLabelContractTests(unittest.TestCase):
-    """The fixed primary target and leak-free trailing secondary threshold."""
+    """The fixed-bp stress label: point in time, and never a full-sample percentile."""
 
     def test_the_stress_label_is_point_in_time_and_never_full_sample(self):
-        window, probability = 10, 0.9
-        values = [4.30 + 0.01 * (index % 5) for index in range(40)]
+        """A row's label reads that row's spread against a declared constant.
+
+        Shocking every other row -- before and after -- leaves a row's labels
+        unchanged, so no percentile of the sample, full or trailing, can be the
+        threshold. And the threshold is the declared tau itself, compared
+        strictly.
+        """
+
+        declared = load_stress_thresholds()
+        values = [4.0 + 3.0 * (index % 7) for index in range(40)]
         event_index = 25
         shocked = [
-            value + 50.0 if position >= event_index else value
+            value - 50.0 if position != event_index else value
             for position, value in enumerate(values)
         ]
 
+        labels = fixed_bp_stress_label_columns(values, declared)
         self.assertEqual(
-            stress_label_threshold(shocked, event_index, window, probability),
-            stress_label_threshold(values, event_index, window, probability),
-            msg="the trailing threshold reached into the event boundary",
+            fixed_bp_stress_label_columns(shocked, declared)[event_index],
+            labels[event_index],
+            msg="a row's label moved when only other rows changed",
         )
-        self.assertNotEqual(
-            stress_label_threshold(shocked, event_index, window, probability),
-            stress_label_threshold(shocked, len(shocked), len(shocked), probability),
-            msg="the trailing threshold is a prohibited full-sample percentile",
-        )
-        later = event_index + window
-        self.assertNotEqual(
-            stress_label_threshold(shocked, later, window, probability),
-            stress_label_threshold(values, later, window, probability),
-            msg="the future shock is not visible when it enters the trailing window",
-        )
+        for spread, row in zip(values, labels):
+            for tau in declared["taus_bp"]:
+                self.assertEqual(row[f"stress_gt_{tau:g}bp"], int(spread > tau))
 
     def test_fixed_bp_thresholds_are_the_primary_label_and_are_declared(self):
         declared = load_stress_thresholds()
@@ -996,10 +982,9 @@ class StressLabelContractTests(unittest.TestCase):
         self.assertEqual(tuple(declared["taus_bp"]), (5.0, 10.0, 20.0, 50.0))
         self.assertEqual(declared["primary_rule"], "fixed_bp")
         self.assertEqual(
-            declared["secondary_rule"]["history"],
-            "rows_strictly_before_label_row",
+            set(declared),
+            {"label_columns", "primary_rule", "target", "taus_bp", "version"},
         )
-        self.assertIs(declared["secondary_rule"]["full_sample_allowed"], False)
 
 
 def distinct_residual_frame(count=60, seed=20260908):
