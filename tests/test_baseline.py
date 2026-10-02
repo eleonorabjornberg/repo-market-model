@@ -582,10 +582,11 @@ def on_consecutive_days(rows):
     reaching into it would make every later change to it a cross-track change.
 
     **Why re-dating is the only fix here, and not a preference.**
-    `data/sample/daily_market.csv` is weekday dates with MLK Monday 2026-01-19
-    absent. For the fold scored Tuesday 2026-01-20 at a one-day gap, the last
-    training row that clears the purge is Friday 2026-01-16 -- and the last
-    panel date strictly before the scored date is *also* Friday 2026-01-16,
+    `data/sample/daily_market.csv` is weekday dates with MLK Monday 2025-01-20
+    absent (2026-01-19 before #113 re-dated the sample back 52 weeks). For the
+    fold scored Tuesday 2025-01-21 at a one-day gap, the last training row that
+    clears the purge is Friday 2025-01-17 -- and the last panel date strictly
+    before the scored date is *also* Friday 2025-01-17,
     because the Monday is not on the panel. The decision is taken on the same
     day as the row it would have to read, so every positive release lag puts
     that row's availability after it, and `max_release_lag_days` refuses to
@@ -2673,11 +2674,11 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
 
         **Late.** A `record_date` lag of six calendar days at midnight prices
         to a six-day gap, and `rolling_origin` builds twelve folds from it. One
-        of those folds scores Monday 2026-02-02 from a last training row of
-        Monday 2026-01-26. The row clears the purge -- 26 January plus six days
-        is 1 February, strictly before 2 February -- and it is first observable
-        at midnight on Sunday 1 February, while the forecast was made at 16:00
-        on Friday 30 January, the last panel date before the scored one. The
+        of those folds scores Monday 2025-02-03 from a last training row of
+        Monday 2025-01-27. The row clears the purge -- 27 January plus six days
+        is 2 February, strictly before 3 February -- and it is first observable
+        at midnight on Sunday 2 February, while the forecast was made at 16:00
+        on Friday 31 January, the last panel date before the scored one. The
         purge is satisfied and the forecast read a number that did not exist.
         The message names the field and both dates, because "a fold leaked" is
         not something an auditor can act on.
@@ -2714,16 +2715,19 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
                 "timezone": "America/New_York",
             }
         )
-        # The row the purge rule read for the fold scoring Monday 2 February:
-        # Monday 26 January, observable from midnight on Sunday 1 February,
-        # after the Friday 30 January 16:00 decision.
+        # The row the purge rule read for the fold scoring Monday 3 February:
+        # Monday 27 January, observable from midnight on Sunday 2 February,
+        # after the Friday 31 January 16:00 decision. The sample was re-dated
+        # back 52 weeks (#113), so these are the same weekdays, and the same
+        # weekend gap, as the 26 January / 2 February 2026 pair pinned here
+        # before.
         with self.assertRaises(LookAheadError) as caught:
             _check_decision_relative_availability(
                 undeliverable,
                 field_sources_for_features(FEATURES),
                 dates,
-                dates.index(date(2026, 1, 26)),
-                dates.index(date(2026, 2, 2)),
+                dates.index(date(2025, 1, 27)),
+                dates.index(date(2025, 2, 3)),
                 decision_time=DECISION_TIME,
             )
         message = str(caught.exception)
@@ -2734,9 +2738,9 @@ class DecisionRelativeAvailabilityTests(unittest.TestCase):
         self.assertIn(f"{first_source}.{first_field}", message)
         # The fold: the row that was read, the decision that read it, and the
         # day it was scoring.
-        self.assertIn("2026-01-26", message)
-        self.assertIn("2026-01-30 16:00:00", message)
-        self.assertIn("2026-02-02", message)
+        self.assertIn("2025-01-27", message)
+        self.assertIn("2025-01-31 16:00:00", message)
+        self.assertIn("2025-02-03", message)
 
         # Under the as-of rule the same declaration is read around, not past:
         # every fold's row is observable by its decision, so the backtest runs

@@ -120,7 +120,7 @@ Each step is one directive. Briefs are in [`directives/`](directives).
 4. **Retire the legacy ownership gates:** [`04`](directives/04-retire-legacy-gates.md): done, PR #30.
 5. **Review CI and the test suite:** [`05`](directives/05-review-ci-and-tests.md), after 04.
 6. **Pressure model v1 and the scarcity indicator**, after step 3.
-7. **Calibration re-diagnosis:** CV+ against online conformal.
+7. **Calibration re-diagnosis:** CV+ against online conformal: measured for #116 by `scripts/calibration_rediagnosis.py` (CV+, conformal PID with a calendar scorecaster, Mondrian CV+ over calendar type × regime; `src/repo_model/recalibration.py`). Nothing published changed; which method, if any, replaces CV+ is Eleonora's.
 8. **Data additions** (§2), each priced as-of.
 9. **Model documentation and validation report,** in a model-risk structure: purpose and use, data, methodology,
    assumptions and limitations, performance by regime, outcomes analysis, monitoring. The lag finding goes in as a
