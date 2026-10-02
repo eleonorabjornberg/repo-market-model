@@ -104,6 +104,19 @@ NYFED_ON_RRP_SOURCE_ID = "nyfed_on_rrp"
 #: Its one field: the day's accepted reverse-repo amount, summed over every
 #: reverse-repo operation of the operation date, in USD billions.
 NYFED_ON_RRP_FIELD = "reverse_repo_total_accepted"
+#: The Standing Repo Facility source (#127): the same operation results, saved
+#: under their own source a calendar year at a time by `fetch_nyfed_srf`, and
+#: read by `_nyfed_srf_rows` for the facility's overnight repo take-up.
+NYFED_SRF_SOURCE_ID = "nyfed_srf"
+#: Its one field: the day's accepted overnight repo amount at the facility,
+#: summed over the day's operations, in USD billions; 0.0 on a day it operated
+#: and nothing was taken.
+NYFED_SRF_FIELD = "srf_total_accepted"
+#: The facility's first operation: the FOMC established the Standing Repo
+#: Facility on 28 July 2021, and the Desk's daily overnight repo operation of
+#: the next day was its first. The Desk's repo operations before it were
+#: temporary open market operations, not the facility.
+SRF_INCEPTION = date(2021, 7, 29)
 #: The Board's Data Download Program, full-release packages (#129): the H.15
 #: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
 #: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
@@ -350,6 +363,36 @@ def fetch_nyfed_on_rrp(
     the parser keeps the reverse repos.
     """
 
+    return _fetch_nyfed_operation_results(
+        NYFED_ON_RRP_SOURCE_ID, output_root, start, end, downloader
+    )
+
+
+def fetch_nyfed_srf(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """`fetch_nyfed_on_rrp`, saved under the Standing Repo Facility source (#127).
+
+    The same search; `_nyfed_srf_rows` keeps the facility's overnight repos.
+    """
+
+    return _fetch_nyfed_operation_results(
+        NYFED_SRF_SOURCE_ID, output_root, start, end, downloader
+    )
+
+
+def _fetch_nyfed_operation_results(
+    source_id: str,
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes],
+) -> List[SnapshotArtifact]:
+    """One operation-results snapshot per calendar year in range, as `source_id`."""
+
     # Validate before interpolating caller-provided dates into a URL.
     start_date = date.fromisoformat(start)
     end_date = date.fromisoformat(end)
@@ -368,7 +411,7 @@ def fetch_nyfed_on_rrp(
         _nyfed_operations(json.loads(payload))
         artifacts.append(
             _save_snapshot(
-                source_id=NYFED_ON_RRP_SOURCE_ID,
+                source_id=source_id,
                 url=url,
                 payload=payload,
                 output_root=output_root,
@@ -1641,6 +1684,84 @@ def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
         rows.append(
             PointInTimeObservation(
                 series_id=NYFED_ON_RRP_FIELD,
+                ref_date=ref_date,
+                available_at=min(declared_available_at, retrieved),
+                value=totals[ref_date] / 1e9,
+                vintage_id=f"{artifact.retrieved_at}:operations",
+                source_sha=artifact.sha256,
+            )
+        )
+    return rows
+
+
+def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
+    """Whether the Desk's `note` names the operation a small-value exercise.
+
+    A small-value exercise is the Desk's operational-readiness test, a few tens
+    of millions accepted by arrangement; it is not take-up. The Desk names it
+    in the note ("Small Value Exercise (SVE)", "small value exercise for
+    operational readiness testing"), and that is the only place it does.
+    """
+
+    note = operation.get("note")
+    return isinstance(note, str) and "small value exercise" in note.lower()
+
+
+def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per operation date: the facility's overnight take-up.
+
+    Keeps the operations whose `operationType` is `Repo` and `term` is
+    `Overnight`, on or after `SRF_INCEPTION`, that are not small-value
+    exercises (`_is_small_value_exercise`), and sums `totalAmtAccepted` (US
+    dollars) per `operationDate`, both operations of a two-operation day
+    included, in USD billions. A day the facility operated and nothing was
+    taken is 0.0. A day whose only operation was a test yields no row. Term
+    repos are left out: the facility is overnight, and its two term operations
+    since the inception were tests of a few tens of millions.
+
+    `available_at` is the next weekday at 16:00 New York time, the registry's
+    conservative declaration (`nyfed_srf.release_lag`): the Desk states no
+    publication time, and `lastUpdated` is a write time.
+
+    Raises `ValueError` on a kept operation with no `operationDate` or no
+    numeric `totalAmtAccepted`, rather than summing the day without it.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    operations = _nyfed_operations(json.loads(payload))
+    totals: Dict[date, int] = {}
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != "Repo" or operation.get("term") != "Overnight":
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed repo operation {number} has no valid operationDate"
+            ) from exc
+        if ref_date < SRF_INCEPTION or _is_small_value_exercise(operation):
+            continue
+        accepted = operation.get("totalAmtAccepted")
+        if isinstance(accepted, bool) or not isinstance(accepted, (int, float)):
+            raise ValueError(
+                f"New York Fed repo operation {operation.get('operationId', number)!r} "
+                f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
+                f"day summed without one of its operations is not that day's total"
+            )
+        totals[ref_date] = totals.get(ref_date, 0) + accepted
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for ref_date in sorted(totals):
+        declared_available_at = datetime.combine(
+            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id=NYFED_SRF_FIELD,
                 ref_date=ref_date,
                 available_at=min(declared_available_at, retrieved),
                 value=totals[ref_date] / 1e9,
@@ -4242,6 +4363,9 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_ON_RRP_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_on_rrp_rows(artifact, payload)
+        elif artifact.source_id == NYFED_SRF_SOURCE_ID:
+            # Also before the prefix test: operation results, not a refRates list.
+            parsed_rows = _nyfed_srf_rows(artifact, payload)
         elif artifact.source_id == FRB_DDP_SOURCE_ID:
             parsed_rows = _frb_ddp_rows(artifact, payload, registry)
         elif artifact.source_id == FRB_H8_SOURCE_ID:
