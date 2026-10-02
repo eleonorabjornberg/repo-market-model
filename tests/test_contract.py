@@ -3104,3 +3104,78 @@ class IdentityToleranceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OnRrpDepletionDeclarationTests(unittest.TestCase):
+    """The conditional scarcity features of #88, as declared.
+
+    The break is a constant fixed in advance from PR #87's memo (Q4), never a
+    value fitted on this repository's data, and each composed feature resolves
+    to the fields of exactly the inputs its implementation reads.
+    """
+
+    def test_the_break_is_100bn_and_a_literal(self):
+        self.assertEqual(contract.ON_RRP_DEPLETION_BREAK_BN, 100.0)
+        source = inspect.getsource(contract)
+        self.assertRegex(source, r"\nON_RRP_DEPLETION_BREAK_BN = 100\.0\n")
+        # Its declaration cites where it came from.
+        lines = source.splitlines()
+        at = lines.index("ON_RRP_DEPLETION_BREAK_BN = 100.0")
+        comment = "\n".join(lines[max(0, at - 15) : at])
+        self.assertIn("#87", comment)
+        self.assertIn("Q4", comment)
+
+    def test_each_composer_reads_exactly_its_declared_inputs(self):
+        """Anchored to the implementation, as the derived-feature test is."""
+
+        from repo_model import asof
+
+        self.assertEqual(set(asof.COMPOSERS), set(contract.COMPOSED_FEATURES))
+        for feature, composer in asof.COMPOSERS.items():
+            with self.subTest(feature=feature):
+                tree = ast.parse(textwrap.dedent(inspect.getsource(composer)))
+                read = {
+                    node.slice.value
+                    for node in ast.walk(tree)
+                    if isinstance(node, ast.Subscript)
+                    and isinstance(node.slice, ast.Constant)
+                    and isinstance(node.slice.value, str)
+                }
+                self.assertTrue(read)
+                self.assertEqual(set(contract.COMPOSED_FEATURES[feature]), read)
+
+    def test_the_composed_features_resolve_to_their_inputs_fields(self):
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("on_rrp_depleted",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            )
+            self.assertEqual(
+                field_sources_for_features(("reserves_when_depleted",)),
+                (
+                    ("fred_macro_latest_vintage", "WRESBAL"),
+                    ("nyfed_on_rrp", "reverse_repo_total_accepted"),
+                ),
+            )
+            self.assertEqual(
+                sources_for_features(("reserves_when_depleted",)),
+                ("fred_macro_latest_vintage", "nyfed_on_rrp"),
+            )
+
+    def test_a_composed_feature_is_not_a_panel_column_or_a_derived_one(self):
+        for feature in contract.COMPOSED_FEATURES:
+            with self.subTest(feature=feature):
+                self.assertNotIn(feature, FEATURE_FIELDS)
+                self.assertNotIn(feature, DERIVED_FEATURES)
+                self.assertNotIn(feature, CALENDAR_FEATURES)
+                for constituent in contract.COMPOSED_FEATURES[feature]:
+                    self.assertIn(constituent, FEATURE_FIELDS)
+
+    def test_neither_feature_is_in_the_published_declaration(self):
+        """#88's acceptance: the features do not join it in this PR."""
+
+        for record in sorted((REPO_ROOT / "docs" / "runs").glob("*.json")):
+            text = record.read_text(encoding="utf-8")
+            for feature in contract.COMPOSED_FEATURES:
+                with self.subTest(record=record.name, feature=feature):
+                    self.assertNotIn(f'"{feature}"', text)
