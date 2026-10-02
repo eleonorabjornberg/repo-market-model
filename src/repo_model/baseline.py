@@ -173,7 +173,7 @@ from .contract import (
     QUANTILE_LEVELS,
     field_sources_for_features,
 )
-from .data import DailyObservation, load_stress_thresholds
+from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .lockbox import require_unlocked
 from .metrics import (
     CorpDecomposition,
@@ -5811,7 +5811,7 @@ def climatology_exceedance(minimum_history: int = 20) -> ExceedancePredictor:
             )
         denominator = float(len(history))
         curve = tuple(
-            sum(1 for value in history if value > float(tau)) / denominator
+            sum(1 for value in history if exceeds_bp(value, float(tau))) / denominator
             for tau in taus
         )
         # `("spread_bps",)` for the same reason `FittedPersistence` reports it:
@@ -6141,7 +6141,7 @@ def persistence_logistic_exceedance(minimum_history: int = 20) -> ExceedancePred
         served = [float(row.spread_bps) for row in feature_rows]
         columns: List[List[float]] = []
         for tau in taus:
-            labels = [1 if value > float(tau) else 0 for value in targets]
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in targets]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
                 continue
@@ -6217,7 +6217,10 @@ def calendar_climatology_exceedance(
             history = groups.get(declaration.day_type(row.values)) or pooled
             count = float(len(history))
             curves.append(
-                tuple(sum(1 for value in history if value > float(tau)) / count for tau in taus)
+                tuple(
+                    sum(1 for value in history if exceeds_bp(value, float(tau))) / count
+                    for tau in taus
+                )
             )
         return ExceedanceCurves(
             tuple(curves), ("spread_bps", "days_to_month_end", "quarter_end", "tax_date")
@@ -6732,13 +6735,14 @@ def rolling_exceedance_backtest(
             scored_dates.append(rows[index].date)
             realized_bps.append(rows[index].spread_bps)
 
-    # Strictly greater, matching the contract's `P(spread > tau)`, the
-    # `stress_gt_*` label columns and `climatology_exceedance`'s own count.
+    # Strictly greater on whole basis points (`exceeds_bp`, #155), matching
+    # the contract's `P(spread > tau)`, the `stress_gt_*` label columns and
+    # `climatology_exceedance`'s own count.
     # Built from `tau_family` in the same order the curves were produced at, so
     # a curve and the outcome it is scored against cannot come from two
     # different readings of the declaration.
     outcomes = tuple(
-        tuple(1 if value > tau else 0 for tau in tau_family)
+        tuple(1 if exceeds_bp(value, tau) else 0 for tau in tau_family)
         for value in realized_bps
     )
 

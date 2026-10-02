@@ -45,7 +45,12 @@ from typing import (
 )
 
 from .asof import NEVER_ON_THIS_PANEL, declared_availability
-from .data import WEEKLY_CARRY_MAX_STALENESS_DAYS, days_to_month_end, tax_date
+from .data import (
+    WEEKLY_CARRY_MAX_STALENESS_DAYS,
+    days_to_month_end,
+    exceeds_bp,
+    tax_date,
+)
 from .splits import LookAheadError, SplitError
 
 #: The FOMC's 16 December 2008 decision set the target range at 0-25 bp with
@@ -394,7 +399,7 @@ def episodes(rows: Sequence[HistoryRow], tau: float) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     run: List[HistoryRow] = []
     for row in list(rows) + [None]:  # type: ignore[list-item]
-        if row is not None and row.spread_bps > tau:
+        if row is not None and exceeds_bp(row.spread_bps, tau):
             run.append(row)
             continue
         if run:

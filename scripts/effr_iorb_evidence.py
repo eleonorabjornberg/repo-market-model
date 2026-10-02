@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model import cli, cli_eval  # noqa: E402
+from repo_model.data import exceeds_bp  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 
@@ -231,7 +232,7 @@ def _tables(args):
         [a - b for a, b in zip(persistence, with_)], regimes, types,
     )
     lines.append("")
-    onset = [i for i, w in enumerate(dates) if w in previous and spread(previous[w]) <= ONSET_BP]
+    onset = [i for i, w in enumerate(dates) if w in previous and not exceeds_bp(spread(previous[w]), ONSET_BP)]
     lines += _split_rows(
         f"Onset view (previous panel day not above +{ONSET_BP:g} bp): CRPS, without minus with",
         [dates[i] for i in onset], [without[i] - with_[i] for i in onset], regimes, types,
@@ -252,11 +253,11 @@ def _tables(args):
         raise SystemExit("a locked day was scored")
     eregimes = {w: regime(w) for w in edates}
     etypes = {w: day_type(w) for w in edates}
-    eonset = [i for i, w in enumerate(edates) if w in previous and spread(previous[w]) <= ONSET_BP]
+    eonset = [i for i, w in enumerate(edates) if w in previous and not exceeds_bp(spread(previous[w]), ONSET_BP)]
 
     for tau in (5.0, 10.0):
         k = taus.index(tau)
-        outcome = [1.0 if d["realized_bps"] > tau else 0.0 for d in days_without]
+        outcome = [1.0 if exceeds_bp(d["realized_bps"], tau) else 0.0 for d in days_without]
 
         def brier(days, key):
             return [(d[key][k] - y) ** 2 for d, y in zip(days, outcome)]

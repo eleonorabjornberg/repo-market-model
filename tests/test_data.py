@@ -638,7 +638,9 @@ class StressLabelTests(unittest.TestCase):
     def test_fixed_bp_labels_use_strict_exceedance(self):
         declaration = {"primary_rule": "fixed_bp", "taus_bp": [5, 10, 20, 50]}
 
-        rows = fixed_bp_stress_label_columns([5.0, 10.01, 51.0], declaration)
+        # Whole basis points (#155): a spread of 10.01 bp reads as 10, which is
+        # not above 10, so the row above +10 bp is 11.
+        rows = fixed_bp_stress_label_columns([5.0, 11.0, 51.0], declaration)
 
         self.assertEqual(rows[0]["stress_gt_5bp"], 0)
         self.assertEqual(rows[1]["stress_gt_5bp"], 1)
