@@ -1,4 +1,36 @@
 {
+  "frb_h8": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #115. The H.8 archive's release-date page (https://www.federalreserve.gov/releases/h8/, fetched 2 October 2026) says the data \"are released each Friday, generally at 4:15 p.m., unless Friday is a federal holiday, in which case the data will be released on Thursday, generally at 4:15 p.m.\" Each archived release page from 25 September 2020 on states \"For release at 4:15 p.m. Eastern Time\" (51 of the 456 releases from 5 January 2018 to 25 September 2026, all 4:15); the earlier layout states the release date only. 16:15 is after the 16:00 decision instant every published record uses, so a week printed on a Friday is read from the next business day's decision. scripts/extract_h8_first_prints.py refuses a page that states any other time.",
+      "publication": "Board of Governors, H.8 Assets and Liabilities of Commercial Banks in the United States, archived release pages at https://www.federalreserve.gov/releases/h8/<YYYYMMDD>/ and the release-date list releaseDates.json; released Fridays (Thursdays before a Friday holiday) at 4:15 p.m. Eastern Time."
+    },
+    "coverage": [
+      "total assets of all commercial banks in the United States, weekly, first print"
+    ],
+    "field_frequencies": {
+      "total_assets": "weekly"
+    },
+    "fields": [
+      "total_assets"
+    ],
+    "frequency": "weekly",
+    "identities": [],
+    "limitation": "total_assets is Table 3 (before the 2020s layout, the \"(continued)\" page of the same table), line 33, \"Total assets\", of \"Assets and Liabilities of Commercial Banks in the United States\": all commercial banks, NOT seasonally adjusted, USD billions, week ending Wednesday -- the series FRED carries as TLAACBW027NBOG (TLAACBW027SBOG is the seasonally adjusted Table 2 line, not read). The H.8 is revised: a week is printed in four consecutive releases and restated in later benchmark revisions. Only the FIRST PRINT is tracked -- each week's value in the earliest release that carries it (#115, Eleonora's ruling of 2 October 2026, option 3) -- in tests/fixtures/snapshots/h8_inputs/frb_h8/h8_total_assets_first_print.csv, cut by scripts/extract_h8_first_prints.py from the unmodified archive pages that `fetch h8` saves under the gitignored data/raw/frb_h8/; the pages' SHA-256 digests are in the extract's .releases.json. A release is dated by the later of its archive date and the date the page states: they differ once, the page archived as 20201221/ stating \"Release Date: December 18, 2020\". The index lists 2022-11-11 (Veterans Day); the archive serves that release as 20221110/, dated 10 November. Off in the published declaration (contract.BANK_TOTAL_ASSETS_FIELDS): it is the denominator of the reserve-scarcity state's reserves ratio (#115).",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:15",
+      "basis": "record_date",
+      "days": 12,
+      "note": "Declared 2 October 2026 for #115, at the measured maximum and not above it. The first print of a week ending Wednesday is released the second Friday after it, 16:15 New York time: nine calendar days for 443 of the 456 weeks from 2017-12-27 to 2026-09-16 in the tracked extract, eight for the nine weeks released on a Thursday before a Friday holiday, and twelve for four: the weeks ending 2020-12-09 (released Monday 2020-12-21), 2020-12-16 (Monday 2020-12-28), 2021-06-09 (Monday 2021-06-21, the first Juneteenth) and 2025-12-17 (Monday 2025-12-29). Twelve is that worst case, so every value is declared public no earlier than it was; an ordinary week is then read three days later than it could have been, which is staleness on the safe side, not leakage. The extract script refuses a week first printed later than this declaration, so a longer delay in a future release stops the extract rather than leaking. The values are first prints, which no later release changes in the extract.",
+      "timezone": "America/New_York",
+      "unit": "calendar_days"
+    },
+    "reviewed_note": "Structural-zero semantics are not applicable to a balance-sheet total; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://www.federalreserve.gov/releases/h8/"
+  },
   "fred_macro_latest_vintage": {
     "access": "public",
     "coverage": [
@@ -630,22 +662,22 @@
       "timezone": "America/New_York",
       "unit": "calendar_days"
     },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "scheduled_availability": {
-      "basis": "announced_before_ref_date",
-      "unit": "business_days",
-      "days": 1,
       "available_time": "15:00",
-      "timezone": "America/New_York",
+      "basis": "announced_before_ref_date",
+      "days": 1,
+      "evidence": "The tracked snapshot tests/fixtures/snapshots/funding_inputs/treasury_auctions/20260914T051023Z_722359ea9bc7.json (Fiscal Data auctions_query, retrieved 2026-09-14T05:10:23Z) carries auction_date, issue_date and closing_time_comp for each of its 3828 auctions. On every auction settling on or after the published panel's first date, 2018-04-03, auction_date is strictly before issue_date; three cash management bills earlier in the snapshot were auctioned and settled on the same day (2017-09-08, 2017-12-08, 2018-01-19), so the claim is established for the panel's span and not as a rule of Treasury's. A same-day cash management bill inside the panel would make it false for that day, and ingest.check_settlement_schedule, run by every build (repo_model.cli build), refuses the build when any auction settling inside the panel window closed later than 15:00 New York time on the panel day before its settlement, a same-day settlement included. On the panel's own dates the auction falls at least one panel day before settlement (36 auctions exactly one panel day before, all closing at or before 13:00), and no auction closed for competitive bids later than 14:30 (two bill auctions on 2025-07-07; the rest at 10:00, 11:00, 11:30 or 13:00). tests/test_asof.py::DeclarationTests re-checks this on the tracked snapshot. offering_amt is fixed at the auction announcement, before the auction; soma_accepted is fixed by the auction result. Treasury's results-publication time, checked 1 October 2026 (#59): Treasury's auction procedure states no clock time, only that results are published on TreasuryDirect after the auction concludes (31 CFR 356.23(a); see the note). The 15:00 instant therefore rests on the auction data alone: it leaves 30 minutes after the latest close in the snapshot and two hours after the latest close of any auction settling the next panel day.",
       "fields": [
         "treasury_settlement",
         "treasury_settlement_bill",
         "treasury_settlement_coupon",
         "treasury_settlement_soma"
       ],
-      "evidence": "The tracked snapshot tests/fixtures/snapshots/funding_inputs/treasury_auctions/20260914T051023Z_722359ea9bc7.json (Fiscal Data auctions_query, retrieved 2026-09-14T05:10:23Z) carries auction_date, issue_date and closing_time_comp for each of its 3828 auctions. On every auction settling on or after the published panel's first date, 2018-04-03, auction_date is strictly before issue_date; three cash management bills earlier in the snapshot were auctioned and settled on the same day (2017-09-08, 2017-12-08, 2018-01-19), so the claim is established for the panel's span and not as a rule of Treasury's. A same-day cash management bill inside the panel would make it false for that day, and ingest.check_settlement_schedule, run by every build (repo_model.cli build), refuses the build when any auction settling inside the panel window closed later than 15:00 New York time on the panel day before its settlement, a same-day settlement included. On the panel's own dates the auction falls at least one panel day before settlement (36 auctions exactly one panel day before, all closing at or before 13:00), and no auction closed for competitive bids later than 14:30 (two bill auctions on 2025-07-07; the rest at 10:00, 11:00, 11:30 or 13:00). tests/test_asof.py::DeclarationTests re-checks this on the tracked snapshot. offering_amt is fixed at the auction announcement, before the auction; soma_accepted is fixed by the auction result. Treasury's results-publication time, checked 1 October 2026 (#59): Treasury's auction procedure states no clock time, only that results are published on TreasuryDirect after the auction concludes (31 CFR 356.23(a); see the note). The 15:00 instant therefore rests on the auction data alone: it leaves 30 minutes after the latest close in the snapshot and two hours after the latest close of any auction settling the next panel day.",
-      "note": "Approved by Eleonora on 30 September 2026 (docs/decisions/information-set.md, rule 2): settlements are scheduled inputs dated from the auction results time. The value for settlement date d is declared public at 15:00 New York time on the panel day before d. That instant rests on the auction data (the closing times and auction dates recorded in the snapshot), not on a published results-publication time, because Treasury publishes none. Its auction procedure, the Uniform Offering Circular, says only: \"After the conclusion of the auction, we will make the auction results available on our website at http://www.treasurydirect.gov.\" (31 CFR 356.23(a), https://www.ecfr.gov/current/title-31/section-356.23, read 1 October 2026, #59). TreasuryDirect's 'How auctions work' page (https://www.treasurydirect.gov/auctions/how-auctions-work/) gives one clock time, for TreasuryDirect account holders only: 'you can see the results of your bid after 5 PM Eastern time on auction day'; it gives none for the public results. The 15:00 instant precedes the 16:00 decision time every published run uses, and every build refuses an auction that contradicts it. release_lag above is unchanged: it still dates the point-in-time rows the panel is built from, so the panel's bytes do not move. This block governs only what a forecast may read, through repo_model.asof."
+      "note": "Approved by Eleonora on 30 September 2026 (docs/decisions/information-set.md, rule 2): settlements are scheduled inputs dated from the auction results time. The value for settlement date d is declared public at 15:00 New York time on the panel day before d. That instant rests on the auction data (the closing times and auction dates recorded in the snapshot), not on a published results-publication time, because Treasury publishes none. Its auction procedure, the Uniform Offering Circular, says only: \"After the conclusion of the auction, we will make the auction results available on our website at http://www.treasurydirect.gov.\" (31 CFR 356.23(a), https://www.ecfr.gov/current/title-31/section-356.23, read 1 October 2026, #59). TreasuryDirect's 'How auctions work' page (https://www.treasurydirect.gov/auctions/how-auctions-work/) gives one clock time, for TreasuryDirect account holders only: 'you can see the results of your bid after 5 PM Eastern time on auction day'; it gives none for the public results. The 15:00 instant precedes the 16:00 decision time every published run uses, and every build refuses an auction that contradicts it. release_lag above is unchanged: it still dates the point-in-time rows the panel is built from, so the panel's bytes do not move. This block governs only what a forecast may read, through repo_model.asof.",
+      "timezone": "America/New_York",
+      "unit": "business_days"
     },
-    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the Treasury auction data dictionary; the empty declaration is not a finding.",
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
