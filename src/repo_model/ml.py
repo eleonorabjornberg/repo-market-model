@@ -582,6 +582,12 @@ __all__ = [
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
     "gbm_exceedance",
+    "PRESSURE_CLASSIFIER_SETTINGS",
+    "PRESSURE_LOGISTIC_SETTINGS",
+    "SCARCITY_STATE",
+    "TGA_CHANGE_ROWS",
+    "pressure_classifier_exceedance",
+    "pressure_logistic_exceedance",
 ]
 
 #: The level the point forecast is read at. The contract grid carries it, and a
@@ -3602,3 +3608,421 @@ def gbm_exceedance(
         )
 
     return fit_predict
+
+
+# --------------------------------------------------------------------------
+# Direct pressure-probability models (#114)
+# --------------------------------------------------------------------------
+#
+# `docs/decisions/pressure-probability.md` lets the pressure probability come
+# from a model fitted to the exceedance label directly, beside the exceedance
+# read off a predictive distribution. These are the two direct candidates of
+# pressure model v1 (plan §1): a logistic and a gradient-boosted classifier,
+# fitted per threshold to the label `spread > tau` and served under the as-of
+# rule. Both read one design, built by `_PressureDesign` from the declared
+# features, so the two differ only in the estimator.
+
+
+#: The settings the two direct models are fitted with, declared once and named
+#: in every curve's `model_settings`. Not tuned: chosen before scoring, as the
+#: scikit-learn defaults where they exist, and stated so a record can say so.
+PRESSURE_LOGISTIC_SETTINGS = MappingProxyType(
+    {"C": 1.0, "penalty": "l2", "standardized": True, "max_iter": 5000}
+)
+PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
+    {
+        "estimator": "HistGradientBoostingClassifier",
+        "learning_rate": 0.05,
+        "max_iter": 200,
+        "max_leaf_nodes": 15,
+        "min_samples_leaf": 20,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+
+#: The panel days over which the TGA change is measured: one week of panel
+#: rows, the H.4.1 print's cadence.
+TGA_CHANGE_ROWS = 5
+
+#: The scarcity state the scheduled-pressure terms are interacted with:
+#: reserve balances in USD trillions, read as-of. Provisional until the
+#: declared scarcity state (#115) exists; a record names it.
+SCARCITY_STATE = "reserve_balances_usd_tn"
+
+_CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
+_PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
+
+
+class _PressureDesign:
+    """The direct models' design, from the declared features.
+
+    * `spread_bps`, required: the latest spread public at the decision.
+    * Each other observed declared column, linearly, as read as-of. With
+      `reserve_balances` declared it is the scarcity state, in USD trillions.
+    * The three calendar columns, all declared or none: the scored day's
+      pressure-day type, as the split declaration defines it, one indicator
+      per type other than `ordinary`.
+    * `treasury_settlement`, a scheduled input, linearly, in USD billions.
+    * With `reserve_balances` declared, each scheduled-pressure term (the type
+      indicators and the settlement) times the scarcity state.
+    * With `tga` and `reserve_balances` declared, the TGA's change over
+      `TGA_CHANGE_ROWS` panel rows ending at its as-of read, and that change
+      times the scarcity state.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        if "spread_bps" not in declared:
+            raise ValueError(
+                "a direct pressure model reads the latest public spread; declare "
+                "spread_bps"
+            )
+        calendar = [name for name in _CALENDAR_INPUTS if name in declared]
+        if calendar and len(calendar) != len(_CALENDAR_INPUTS):
+            raise ValueError(
+                f"the pressure-day type is read from {list(_CALENDAR_INPUTS)} "
+                f"together; {calendar} were declared"
+            )
+        self.calendar = bool(calendar)
+        if self.calendar and not hasattr(declaration, "day_type"):
+            raise ValueError(
+                "the pressure-day type needs the split declaration that defines it"
+            )
+        self.declaration = declaration
+        self.features = declared
+        self.scarcity = "reserve_balances" in declared
+        self.tga = "tga" in declared and self.scarcity
+        self.settlement = "treasury_settlement" in declared
+        self.linear = tuple(
+            name
+            for name in declared
+            if name not in _CALENDAR_INPUTS
+            and name not in ("spread_bps", "tga", "treasury_settlement")
+            and name not in SPREAD_COMPONENTS
+        )
+        if "tga" in declared and not self.scarcity:
+            # Read only through the change × reserves term.
+            raise ValueError(
+                "tga enters the direct pressure models only as its change times "
+                "reserves; declare reserve_balances with it"
+            )
+        names: List[str] = ["spread_bps"]
+        names += list(self.linear)
+        scheduled: List[str] = []
+        if self.calendar:
+            scheduled += list(_PRESSURE_DAY_TYPES)
+        if self.settlement:
+            scheduled.append("treasury_settlement")
+        names += scheduled
+        if self.scarcity:
+            names += [f"{name}_x_scarcity" for name in scheduled]
+        if self.tga:
+            names += ["tga_change", "tga_change_x_scarcity"]
+        self.names = tuple(names)
+
+    def needs_history(self) -> bool:
+        return self.tga
+
+    def _value(self, row: DailyObservation, column: str) -> float:
+        value = row.values.get(column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{row.date}: the as-of read of {column!r} is missing; a direct "
+                f"pressure model is not fitted on an unobserved input"
+            )
+        return float(value)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        """One design row from an as-of observation and its TGA change."""
+
+        values = [float(observation.spread_bps)]
+        for name in self.linear:
+            value = self._value(observation, name)
+            values.append(value / 1000.0 if name == "reserve_balances" else value)
+        scheduled: List[float] = []
+        if self.calendar:
+            kind = self.declaration.day_type(observation.values)
+            scheduled += [1.0 if kind == name else 0.0 for name in _PRESSURE_DAY_TYPES]
+        if self.settlement:
+            scheduled.append(self._value(observation, "treasury_settlement"))
+        values += scheduled
+        if self.scarcity:
+            state = self._value(observation, "reserve_balances") / 1000.0
+            values += [term * state for term in scheduled]
+            if self.tga:
+                if tga_change is None:  # pragma: no cover - callers supply it
+                    raise ValueError("the TGA change is required when tga is declared")
+                values += [tga_change, tga_change * state]
+        return values
+
+
+def _tga_change_at(rows: Sequence[DailyObservation], position: int) -> Optional[float]:
+    """The TGA's change over `TGA_CHANGE_ROWS` rows ending at row `position`.
+
+    `None` when the earlier row is off the frame or either value is a hole.
+    Every row before an as-of read is older than it, and every declared lag is
+    monotone in the row, so both values were public whenever the read was.
+    """
+
+    earlier = position - TGA_CHANGE_ROWS
+    if earlier < 0:
+        return None
+    now = rows[position].values.get("tga")
+    before = rows[earlier].values.get("tga")
+    if now is None or before is None:
+        return None
+    return float(now) - float(before)
+
+
+def _served_tga_change(
+    history: Sequence[DailyObservation], observation: DailyObservation
+) -> float:
+    """The TGA change a forecast reads, off its own as-of history.
+
+    The history is the as-of frame at the forecast's decision instant: each
+    declared column a hole where it was not yet public. Its latest row with a
+    TGA value is the TGA's as-of read, and that value must be the one the
+    observation carries.
+
+    Raises:
+        LookAheadError: if the history's latest public TGA is not the value the
+            observation read, so the change would be measured from a row other
+            than the as-of read.
+        ValueError: if the history is too short to measure a change.
+    """
+
+    position = len(history) - 1
+    while position >= 0 and history[position].values.get("tga") is None:
+        position -= 1
+    read = observation.values.get("tga")
+    if position < 0 or read is None or float(history[position].values["tga"]) != float(read):
+        raise LookAheadError(
+            f"the forecast read tga {read!r} at {observation.date}, but its as-of "
+            f"history's latest public tga is "
+            f"{None if position < 0 else history[position].values['tga']!r}; the "
+            f"change would be measured from a row other than the as-of read"
+        )
+    change = _tga_change_at(history, position)
+    if change is None:
+        raise ValueError(
+            f"{observation.date}: fewer than {TGA_CHANGE_ROWS} rows of TGA history "
+            f"before its as-of read"
+        )
+    return change
+
+
+def _pressure_pairs(
+    design: _PressureDesign,
+    information: InformationRule,
+    train_rows: Sequence[DailyObservation],
+    cache: dict,
+) -> Tuple[List[List[float]], List[float]]:
+    """Direct (horizon-matched) training pairs under the as-of rule.
+
+    Each label `t` is paired with the design row a forecast of `t` would have
+    read at its own decision instant (`information.information_set`), checked
+    by both guards. A label with no read, a missing input or no TGA history
+    trains no pair. Cached by date: a pair reads only rows public by its own
+    decision, which every later frame carries unmasked.
+    """
+
+    dates = [row.date for row in train_rows]
+    xs: List[List[float]] = []
+    ys: List[float] = []
+    key_base = (information.horizon, information.features)
+    for target in range(1, len(train_rows)):
+        key = (key_base, dates[target])
+        if key not in cache:
+            cache[key] = None
+            try:
+                info = information.information_set(dates, target)
+            except SplitError:
+                continue
+            information.check(dates, info)
+            tga_change: Optional[float] = None
+            if design.tga:
+                (read,) = [r for r in info.reads if r.feature == "tga"]
+                tga_change = _tga_change_at(train_rows, read.row)
+                if tga_change is None:
+                    continue
+            try:
+                features = design.row(information.observation(train_rows, info), tga_change)
+            except ValueError:
+                continue
+            cache[key] = (features, float(train_rows[target].spread_bps))
+        pair = cache[key]
+        if pair is not None:
+            xs.append(pair[0])
+            ys.append(pair[1])
+    return xs, ys
+
+
+def _direct_pressure_predictor(
+    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+) -> Any:
+    """The fit-and-predict behind both direct models; `kind` picks the estimator."""
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _PressureDesign(features, declaration)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a direct pressure model pairs each training label with what was "
+                "public at that label's own decision instant, which only the as-of "
+                "rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a direct pressure model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (
+            histories is None or len(histories) != len(feature_rows)
+        ):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; "
+                "one history per feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        columns: List[List[float]] = []
+        # Two thresholds with no training spread between them have one label
+        # vector, so one fit: the estimator is deterministic in its labels.
+        fitted: dict = {}
+        for tau in taus:
+            labels = [1 if value > float(tau) else 0 for value in spreads]
+            if len(set(labels)) < 2:
+                columns.append([float(labels[0])] * len(served))
+                continue
+            key = tuple(labels)
+            if key not in fitted:
+                fitted[key] = _fit_classifier(kind, xs, labels, served)
+            columns.append(fitted[key])
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(
+            PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
+        )
+        settings["design"] = list(design.names)
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
+def _fit_classifier(
+    kind: str,
+    xs: Sequence[Sequence[float]],
+    labels: Sequence[int],
+    served: Sequence[Sequence[float]],
+) -> List[float]:
+    """Fit one estimator to one threshold's labels; P(label = 1) at `served`."""
+
+    _estimator_class()  # the extra's refusal, in this repository's vocabulary
+    import numpy
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(labels, dtype=int)
+    z = numpy.asarray(served, dtype=float)
+    if kind == "logistic":
+        from sklearn.linear_model import LogisticRegression
+
+        centre = x.mean(axis=0)
+        scale = x.std(axis=0)
+        scale[scale == 0.0] = 1.0
+        model = LogisticRegression(
+            C=PRESSURE_LOGISTIC_SETTINGS["C"],
+            max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
+        )
+        model.fit((x - centre) / scale, y)
+        return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    settings = PRESSURE_CLASSIFIER_SETTINGS
+    model = HistGradientBoostingClassifier(
+        learning_rate=settings["learning_rate"],
+        max_iter=settings["max_iter"],
+        max_leaf_nodes=settings["max_leaf_nodes"],
+        min_samples_leaf=settings["min_samples_leaf"],
+        random_state=settings["random_state"],
+        early_stopping=False,
+    )
+    model.fit(x, y)
+    return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def pressure_logistic_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A direct logistic model of the pressure label (#114).
+
+    At each threshold, a logistic regression of `spread > tau` on
+    `_PressureDesign`'s design, standardized on the training pairs, with the
+    settings in `PRESSURE_LOGISTIC_SETTINGS`. The pairs are direct: each label
+    is paired with what a forecast of it would have read under the run's
+    as-of rule, at the run's horizon (`_pressure_pairs`). A threshold whose
+    training labels are all one value gets that value. The curve is made
+    non-increasing in tau by a running minimum.
+
+    Args:
+        features: the declared feature set; the design follows from it.
+        declaration: the split declaration that defines the pressure-day types
+            (`evaluation_splits.load_split_declaration`).
+        minimum_history: the shortest training frame that may produce a fit.
+
+    Raises:
+        ValueError: on a design the features cannot support, a short frame, or
+            a call without the as-of rule.
+        LookAheadError: if a served TGA change would not start at its as-of
+            read (`_served_tga_change`).
+    """
+
+    return _direct_pressure_predictor("logistic", features, declaration, minimum_history)
+
+
+def pressure_classifier_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A gradient-boosted classifier of the pressure label (#114).
+
+    `pressure_logistic_exceedance` with a histogram gradient-boosted classifier
+    in place of the logistic, fitted with `PRESSURE_CLASSIFIER_SETTINGS`, on the
+    same design and the same direct pairs.
+    """
+
+    return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
