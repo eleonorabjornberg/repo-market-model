@@ -268,8 +268,9 @@ class ExceedanceCurves:
     #: Per curve, the uncalibrated fit's parts an online calibration reads
     #: (#124): the quantile vector at the declared levels, and the residual
     #: range the law's tails are laid from, `(vector, residual_low,
-    #: residual_high)`. `None` from a predictor whose fit is calibrated or
-    #: carries a tail, and from every predictor in this module.
+    #: residual_high)`. `None` unless the fold loop asked for them, from a
+    #: predictor whose fit is calibrated or carries a tail, and from every
+    #: predictor in this module.
     uncalibrated: Optional[Tuple[Tuple[Tuple[float, ...], float, float], ...]] = None
 
 
@@ -2928,6 +2929,7 @@ def _exceedance_at_folds(
     *,
     reads_information: bool,
     reads_histories: bool,
+    uncalibrated: bool = False,
 ) -> ExceedanceCurves:
     """One exceedance predictor call for the folds of one refit block, checked.
 
@@ -2947,6 +2949,10 @@ def _exceedance_at_folds(
         keywords["histories"] = tuple(
             _as_of_history(rows, rule, fold) for fold in folds
         )
+    if uncalibrated and _names_parameter(predictor, "uncalibrated"):
+        # Asked only under an online calibration (#124): handing over the
+        # parts costs each row a second read of the fit.
+        keywords["uncalibrated"] = True
     predicted = predictor(
         train_rows, tuple(fold.feature_row for fold in folds), taus, **keywords
     )
@@ -6721,6 +6727,7 @@ def rolling_exceedance_backtest(
             tau_family,
             reads_information=reads_information,
             reads_histories=reads_histories,
+            uncalibrated=online is not None,
         )
         curves = _validate_prediction(predicted, len(block), tau_family)
         if online is not None:
