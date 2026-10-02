@@ -122,6 +122,33 @@ regression, done causally inside the one training frame a fold hands over:
 Runtime is the full fit plus one fit per block, and every forecast reads each
 excluding model once more.
 
+**Per-held-out-row masking, opt-in (#78).** `docs/decisions/information-set.md`
+(Method notes) accepts one bias in the cross-conformal calibrations: the frame
+a fold hands over is masked at the **fold's** decision instant, so a declared
+column slower than the target (the H.4.1 weeklies) can reach an excluding
+model's training rows before its block with a value that was public at the
+fold's decision but not yet at a held-out row's. `calibration_masking=
+"held_out_row"` removes it for measurement:
+
+* each held-out row's mask is the set of declared values on the training rows
+  before its block that `InformationRule.frame` would hole at that row's own
+  decision instant. Rows after the block are not masked: CV+ trains on them,
+  labels included, by construction, and the Method note is about the declared
+  columns before the block;
+* the held-out rows of a block are grouped by their mask, and each group is
+  scored by its own excluding model, fitted on the block's training pairs with
+  that mask applied (a masked value is a hole, so it takes the model's fitted
+  imputation, as any hole does). The group with the empty mask is the block's
+  model as `None` fits it, bit for bit; a declaration with no column slower
+  than the target therefore fits exactly what `None` fits;
+* the band is CV+'s as before: each score is paired with the excluding model
+  that produced it, so `calibration_blocks` may hold more than one model per
+  block, each carrying its own rows' scores;
+* the full fit, and so the reported interior, is untouched.
+
+Refused under `none`, `conformal` and `conformal_asymmetric`, which train no
+excluding model. Runtime grows by one fit per extra mask group.
+
 **Asymmetric split-conformal, opt-in (B51).** B51 introduced this as the half of
 `cross_conformal`'s change that is not the fit, on the reading that CV+ takes its
 two edges from separate order statistics. **That reading was an equivocation;
@@ -607,6 +634,14 @@ _CROSS_CALIBRATIONS = (
     "cross_conformal_scaled",
     "cross_conformal_partial",
 )
+
+#: How a cross-conformal excluding model's training rows are masked. `None`,
+#: the default, is the model every published record was produced with: the
+#: frame as the fold masked it. `"held_out_row"` masks, for each held-out row,
+#: the declared values on the training rows before its block that were not yet
+#: public at that row's own decision instant (directive #78; see the module
+#: docstring).
+CALIBRATION_MASKINGS = ("held_out_row",)
 
 #: The calibration whose scores are divided by `_trailing_scale`.
 _SCALED_CALIBRATION = "cross_conformal_scaled"
@@ -1620,6 +1655,7 @@ class FittedGradientBoostedQuantiles:
         "calibration_blocks",
         "calibration_end",
         "calibration_folds",
+        "calibration_masking",
         "calibration_share",
         "calibration_start",
         "cutoff",
@@ -1668,7 +1704,9 @@ class FittedGradientBoostedQuantiles:
         tail: Optional[str] = None,
         tail_fit: Optional[FittedTail] = None,
         edge_widenings: Tuple[float, float] = (0.0, 0.0),
+        calibration_masking: Optional[str] = None,
     ) -> None:
+        self.calibration_masking: Optional[str] = calibration_masking
         self.edge_widenings: Tuple[float, float] = (
             float(edge_widenings[0]),
             float(edge_widenings[1]),
@@ -1782,8 +1820,8 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
-        the same rule: named when set, absent when not. Each calibration names its own setting and
+        `spread_change_lags`, `volatility_feature`, `arx_feature`, `tail` and
+        `calibration_masking` by the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal` and
         `conformal_asymmetric`, `calibration_folds` for `cross_conformal`,
         `cross_conformal_asymmetric`, `cross_conformal_scaled` and
@@ -1810,6 +1848,8 @@ class FittedGradientBoostedQuantiles:
             settings["arx_feature"] = self.arx_feature
         if self.tail is not None:
             settings["tail"] = self.tail
+        if self.calibration_masking is not None:
+            settings["calibration_masking"] = self.calibration_masking
         return MappingProxyType(settings)
 
     @property
@@ -2580,6 +2620,58 @@ def _held_out_read(
     return info.anchor, information.observation(rows, info)
 
 
+def _held_out_mask(
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    before: int,
+    index: int,
+) -> Tuple[Tuple[int, Tuple[str, ...]], ...]:
+    """The declared values before a block that held-out row `index` could not yet see.
+
+    `(position, columns)` for every row at or before `before` -- the last row
+    the block's excluding model may train on before the block -- whose
+    declared `columns` carry a value in the frame that `InformationRule.frame`
+    holes at `index`'s own decision instant, ascending by position. Empty when
+    every such value was public by then. The frame masks only its tail, so the
+    scan stops at the first row the held-out row's frame leaves as it is.
+    """
+
+    if before < 0:
+        return ()
+    seen = information.frame(rows, information.information_set(dates, index))
+    mask = []
+    for position in range(before, -1, -1):
+        if seen[position] is rows[position]:
+            break
+        columns = tuple(
+            sorted(
+                column
+                for column, value in seen[position].values.items()
+                if value is None and rows[position].values.get(column) is not None
+            )
+        )
+        if columns:
+            mask.append((position, columns))
+    return tuple(reversed(mask))
+
+
+def _masked_rows(
+    rows: Sequence[DailyObservation], mask: Sequence[Tuple[int, Tuple[str, ...]]]
+) -> Sequence[DailyObservation]:
+    """`rows` with every value `mask` names made a hole; `rows` itself when it names none."""
+
+    if not mask:
+        return rows
+    out = list(rows)
+    for position, columns in mask:
+        values = dict(out[position].values)
+        for column in columns:
+            values[column] = None
+        out[position] = DailyObservation(out[position].date, values)
+    return out
+
+
 def fit_gradient_boosted_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
@@ -2596,6 +2688,7 @@ def fit_gradient_boosted_quantiles(
     calibration_folds: Optional[int] = None,
     arx_feature: Optional[str] = None,
     tail: Optional[str] = None,
+    calibration_masking: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -2671,6 +2764,13 @@ def fit_gradient_boosted_quantiles(
             rows' residual excesses above their reported top quantile and
             continues the law above that quantile with it; `conformal` only.
             See the module docstring.
+        calibration_masking: one of `CALIBRATION_MASKINGS`, or `None`, the
+            default, which trains each excluding model on the frame as the
+            fold masked it and is the model every published record was
+            produced with. `"held_out_row"` scores each held-out row with an
+            excluding model whose training rows before its block carry only
+            the declared values public at that row's own decision instant.
+            Cross-conformal calibrations only. See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -2718,7 +2818,9 @@ def fit_gradient_boosted_quantiles(
             `conformal_asymmetric`, `cross_conformal_asymmetric`,
             `cross_conformal_scaled` or `cross_conformal_partial` (not wired). Under `conformal_asymmetric` and
             `cross_conformal_asymmetric` the score floor is the per-side one,
-            not `conformal`'s or `cross_conformal`'s.
+            not `conformal`'s or `cross_conformal`'s; and, for the masking, if
+            `calibration_masking` is not one of `CALIBRATION_MASKINGS`, or is
+            given to a calibration that trains no excluding model.
     """
 
     grid = _validate_levels(levels)
@@ -2748,6 +2850,21 @@ def fit_gradient_boosted_quantiles(
             f"that is accepted and ignored is read by the next person as a "
             f"setting that took effect"
         )
+    if calibration_masking is not None:
+        if calibration_masking not in CALIBRATION_MASKINGS:
+            raise ValueError(
+                f"unknown calibration_masking {calibration_masking!r}; this model "
+                f"can be built with {', '.join(CALIBRATION_MASKINGS)}, or None for "
+                f"the frame as the fold masked it"
+            )
+        if calibration not in _CROSS_CALIBRATIONS:
+            raise ValueError(
+                f"calibration_masking {calibration_masking!r} was given, but "
+                f"calibration {calibration!r} trains no excluding model to mask; "
+                f"only {', '.join(_CROSS_CALIBRATIONS)} do. A setting that is "
+                f"accepted and ignored is read by the next person as a setting "
+                f"that took effect"
+            )
     folds: Optional[int] = None
     if calibration == "none":
         if calibration_share is not None:
@@ -3035,36 +3152,7 @@ def fit_gradient_boosted_quantiles(
                 for position in range(len(rows) - 1)
                 if kept[position] and kept[position + 1]
             ]
-            (
-                block_imputations,
-                block_garch,
-                block_initial,
-                block_design,
-                block_targets,
-                _,
-                block_arx,
-            ) = _training_design(
-                rows,
-                dates,
-                masked,
-                masked,
-                origins,
-                names,
-                lags,
-                volatility_feature,
-                label,
-                arx_feature,
-                rows,
-                arx_origins,
-            )
-            # Its scored rows' inputs are every row at or before their feature
-            # row, as a forecast's are; only what the model learned is its own.
-            filtered = (
-                _garch_variances(_squared_changes(spreads), block_garch, block_initial)
-                if volatility_feature is not None
-                else []
-            )
-            held_out = []
+            reads = []
             for index in range(start, stop):
                 # No row of the frame is observable at this row's decision, or
                 # a declared field has none yet, or its feature row has too few
@@ -3082,7 +3170,56 @@ def fit_gradient_boosted_quantiles(
                 scale = _trailing_scale(spreads, position) if trailing else None
                 if trailing and scale is None:
                     continue
-                held_out.append(
+                reads.append((index, position, feature, scale))
+            # One excluding model per mask: under `calibration_masking` each
+            # held-out row is scored by a model whose training rows before the
+            # block carry only what was public at its own decision; otherwise,
+            # and for the rows whose mask is empty, the block's one model.
+            groups: dict = {}
+            for entry in reads:
+                mask = (
+                    _held_out_mask(information, rows, dates, before, entry[0])
+                    if calibration_masking is not None
+                    else ()
+                )
+                groups.setdefault(mask, []).append(entry)
+            if not groups:
+                groups[()] = []
+            for mask, entries in groups.items():
+                training = _masked_rows(rows, mask)
+                (
+                    block_imputations,
+                    block_garch,
+                    block_initial,
+                    block_design,
+                    block_targets,
+                    _,
+                    block_arx,
+                ) = _training_design(
+                    training,
+                    dates,
+                    masked,
+                    masked,
+                    origins,
+                    names,
+                    lags,
+                    volatility_feature,
+                    label,
+                    arx_feature,
+                    training,
+                    arx_origins,
+                )
+                # Its scored rows' inputs are every row at or before their
+                # feature row, as a forecast's are; only what the model learned
+                # is its own.
+                filtered = (
+                    _garch_variances(
+                        _squared_changes(spreads), block_garch, block_initial
+                    )
+                    if volatility_feature is not None
+                    else []
+                )
+                held_out = [
                     (
                         _design(
                             feature,
@@ -3102,21 +3239,22 @@ def fit_gradient_boosted_quantiles(
                         dates[index],
                         scale,
                     )
+                    for index, position, feature, scale in entries
+                ]
+                plans.append(
+                    (
+                        start,
+                        stop,
+                        origins,
+                        block_imputations,
+                        block_garch,
+                        block_initial,
+                        block_arx,
+                        block_design,
+                        block_targets,
+                        held_out,
+                    )
                 )
-            plans.append(
-                (
-                    start,
-                    stop,
-                    origins,
-                    block_imputations,
-                    block_garch,
-                    block_initial,
-                    block_arx,
-                    block_design,
-                    block_targets,
-                    held_out,
-                )
-            )
         count = sum(len(plan[-1]) for plan in plans)
         needed = (
             _minimum_asymmetric_calibration_rows(grid)
@@ -3325,6 +3463,7 @@ def fit_gradient_boosted_quantiles(
         tail=tail,
         tail_fit=tail_fit,
         edge_widenings=edge_widenings,
+        calibration_masking=calibration_masking,
     )
 
 
@@ -3340,6 +3479,7 @@ def gbm_exceedance(
     spread_change_lags: Optional[int] = None,
     volatility_feature: Optional[str] = None,
     arx_feature: Optional[str] = None,
+    calibration_masking: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -3384,6 +3524,9 @@ def gbm_exceedance(
             settings that change the design the law is fitted on, by the same
             rule: passed straight to `fit_gradient_boosted_quantiles`, neither
             checked nor re-derived here, defaulting to its own (B42).
+        calibration_masking: passed straight to
+            `fit_gradient_boosted_quantiles` by the same rule, defaulting to
+            its own `None` (#78).
 
     **The as-of rule reaches the fit from the fold loop.** `fit_predict` names
     `information`, so `rolling_exceedance_backtest` and
@@ -3437,6 +3580,7 @@ def gbm_exceedance(
             spread_change_lags=spread_change_lags,
             volatility_feature=volatility_feature,
             arx_feature=arx_feature,
+            calibration_masking=calibration_masking,
         )
         # One model per feature row: the fit, reading history by position
         # from that row's own as-of history where the evaluator handed one.
