@@ -171,9 +171,11 @@ class HeldOutDayTests(unittest.TestCase):
     `repo_model.lockbox.locked_tiers`; a tier marked opened is ordinary history.
 
     Recorded mutation: `return [r for r in rows if locked_tier(...) is None]`
-    -> `return list(rows)` in `counted`. test_no_counted_day_is_locked,
-    test_perturbing_a_locked_day_changes_no_count_or_sentence and
-    test_period_labels_name_only_counted_years then failed with AssertionError.
+    -> `return list(rows)` in `counted`. Every test below except
+    test_the_panel_reaches_a_locked_tier then failed with AssertionError,
+    among them test_no_counted_day_is_locked (the 2026 days were counted) and
+    test_perturbing_a_locked_day_changes_no_count_or_sentence ("111 days"
+    became "238 days").
     """
 
     @classmethod
@@ -267,8 +269,7 @@ class HeldOutDayTests(unittest.TestCase):
 
     def test_period_labels_name_only_counted_years(self):
         _, fills = self.history(self.rows, self.locked)
-        kept = emit_visual.counted(self.rows, self.locked)
-        last_counted_year = int(kept[-1]["date"][:4])
+        last_counted_year = max(int(r["date"][:4]) for r in self.rows if not self.is_locked(r, self.locked))
         for key in ("early", "late", "ample"):
             years = [int(y) for y in re.findall(r"\d{4}", fills[key])]
             years += [int(fills[key][:2] + y) for y in re.findall(r"–(\d{2})\b", fills[key])]
