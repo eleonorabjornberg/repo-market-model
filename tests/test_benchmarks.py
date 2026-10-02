@@ -468,6 +468,35 @@ class BenchmarkCommandTests(unittest.TestCase):
             total = sum(entry["count"] * entry.get("mean", 0.0) for entry in groups.values())
             self.assertAlmostEqual(total / count, pooled, places=9)
 
+    def assert_window_split(self, splits, count):
+        """#140, ruling of 2 October 2026: every new record carries the window split."""
+
+        window = splits["by_quarter_end_window"]
+        self.assertEqual(
+            sorted(window), ["outside_quarter_end_window", "quarter_end_window"]
+        )
+        self.assertEqual(sum(entry["count"] for entry in window.values()), count)
+        # The panel spans 2025 Q4's window, 2025-12-29 to 2026-01-05.
+        self.assertGreater(window["quarter_end_window"]["count"], 0)
+
+    def test_a_new_record_carries_the_quarter_end_window_split(self):
+        code, err, record = self.run_command(
+            "--benchmark", "persistence_logistic", "--splits", str(SPLITS),
+            model="climatology",
+        )
+        self.assertEqual(code, 0, msg=err)
+        count = record["metrics"]["scored_days"]
+        for key, row in record["metrics"]["by_tau"].items():
+            self.assert_window_split(row["brier_splits"], count)
+            paired = record["benchmarks"]["persistence_logistic"]["by_tau"][key]
+            self.assert_window_split(paired["paired_brier_difference"]["splits"], count)
+        backtest = self.run_continuous(
+            "backtest", "--model", "persistence", "--feature", "spread_bps"
+        )
+        self.assert_window_split(
+            backtest["metrics"]["mae_bps_splits"], backtest["metrics"]["forecast_count"]
+        )
+
     def test_backtest_splits_its_absolute_errors(self):
         record = self.run_continuous(
             "backtest", "--model", "persistence", "--feature", "spread_bps"
