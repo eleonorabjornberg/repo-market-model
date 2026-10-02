@@ -1670,6 +1670,29 @@ def _forecast_implementations(package=repo_model):
     return found
 
 
+def on_rrp_from_operation_results():
+    """`on_rrp` read from the New York Fed's operation results, for one test (#45).
+
+    `contract.ON_RRP_OPERATION_RESULTS_FIELDS` is declared and off: the
+    published `FEATURE_FIELDS` still maps `on_rrp` to `RRPONTSYD`, so the
+    published panel does not move. The tests of the new source switch it on for
+    their own duration. `FEATURE_SOURCES` is a projection taken at import, so it
+    is patched beside the map it was projected from.
+    """
+
+    fields = contract.ON_RRP_OPERATION_RESULTS_FIELDS
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "on_rrp": fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                "on_rrp": tuple(sorted({source for source, _field in fields})),
+            }
+        ),
+    )
+
+
 def _import_test_modules_naming(mixin):
     """Import every test module whose source names `mixin`, and return their names.
 
@@ -2341,6 +2364,17 @@ class FieldReleaseLagCoverageTests(unittest.TestCase):
         self.assertEqual(
             field_sources_for_features(("tga",)),
             (("fred_macro_latest_vintage", "WTREGEN"),),
+        )
+        # Off in the published map, on under the #45 switch.
+        with on_rrp_from_operation_results():
+            self.assertEqual(
+                field_sources_for_features(("on_rrp",)),
+                (("nyfed_on_rrp", "reverse_repo_total_accepted"),),
+            )
+            self.assertEqual(sources_for_features(("on_rrp",)), ("nyfed_on_rrp",))
+        self.assertEqual(
+            field_sources_for_features(("on_rrp",)),
+            (("fred_macro_latest_vintage", "RRPONTSYD"),),
         )
 
     def test_the_field_resolver_raises_on_the_same_names_the_source_one_does(self):

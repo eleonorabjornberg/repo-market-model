@@ -312,6 +312,39 @@
     "structural_zeros_reviewed": false,
     "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
   },
+  "nyfed_on_rrp": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #45. The Desk's own release time is not established (A45, Route B, item 2, in tests/test_registry.py): the reverse repo operation closes at 13:15 ET, and the Desk's FAQ says only that 'after the completion of a reverse repo operation, the Desk publishes a summary of results', with no clock time. The one timestamp in the data, lastUpdated, is a last-write time, not a publication time. The declaration therefore does not claim a same-day instant. It takes the conservative reading #45 offered: a result is available at the next business day's decision instant, 16:00 ET, the decision time every published record uses. That is at least 26 hours after the close, and later than any lastUpdated A45 measured on a regular operation's own day (latest 16:50:30 on 2024-10-16, an annotated small-value exercise).",
+      "publication": "New York Fed reverse repo operation results: the operation closes at 13:15 ET and the Desk publishes a summary of results after it completes, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
+    },
+    "coverage": [
+      "overnight reverse repo amounts accepted, per operation date"
+    ],
+    "field_frequencies": {
+      "reverse_repo_total_accepted": "business_daily"
+    },
+    "fields": [
+      "reverse_repo_total_accepted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "reverse_repo_total_accepted is totalAmtAccepted summed over every operation of an operationDate whose operationType is 'Reverse Repo', small-value exercises and the four term exercises of 2018-19 included, in USD billions (the API serves US dollars). It is the amount accepted that day, not the balance outstanding: on 2019-11-20 the H.4.1's WLRRAOL Wednesday level is 71 million above the day's sum because the 2019-11-19 term exercise was still outstanding. On the other 431 Wednesdays from 2018-04-04 to 2026-09-30 that WLRRAOL's 2026-09-10 ALFRED vintage carries, the sum equals WLRRAOL to the million but for 2024-10-16, 1 million apart. The facility does not operate on Federal Reserve holidays or SIFMA full closes (Good Friday among them), so a business day can carry no observation; the panel carries the latest operation forward across such a gap, no further than data.CARRY_FORWARD_COLUMNS allows (#45, step 4). propositions (added a month later) and note are never read. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Conservative, under docs/decisions/information-set.md (#45, step 3): a result is declared available at 16:00 ET on the next business day, not at its 13:15 close, because the Desk states no publication time. No value has been amended since publication: A45 compared 35 ALFRED vintages of RRPONTSYD against today's totalAmtAccepted on every single-operation day, and none differed. A record touched later (lastUpdated after the operation date) changed a note or the propositions, which are not read.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
   "nyfed_sofr": {
     "access": "public",
     "availability_provenance": {
