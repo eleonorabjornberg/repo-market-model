@@ -36,6 +36,7 @@ from repo_model.evaluation_splits import (
 )
 
 from test_baseline import EXCEEDANCE_TAUS, ExceedancePredictorConformance, regressor_frame
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())

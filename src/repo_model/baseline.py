@@ -174,6 +174,7 @@ from .contract import (
     field_sources_for_features,
 )
 from .data import DailyObservation, load_stress_thresholds
+from .lockbox import require_unlocked
 from .metrics import (
     CorpDecomposition,
     MetricError,
@@ -2761,11 +2762,17 @@ def _as_of_folds(
     *,
     minimum_history: int,
     refit_every: int,
+    entry: str,
+    end: Optional[date] = None,
 ) -> Iterable[_AsOfFold]:
     """Every scored row of the one grid, with its reads checked both ways.
 
     The grid is `asof.fold_grid`: every row from the first with
-    `minimum_history` observable labels, whatever the declaration. Rows are
+    `minimum_history` observable labels, whatever the declaration, through
+    `end` when one is given. Before the first row is yielded, and so before
+    any fit, the whole grid is checked against the lockbox
+    (`lockbox.require_unlocked`): a scored day in a locked tier raises
+    `LookAheadError`, naming `entry`, the tier and the first such day. Rows are
     taken in blocks of `refit_every`; the first row of each block carries the
     frame its fit is made on. Every row is checked by
     `InformationRule.check` (leakage and staleness) and, per read, by
@@ -2780,6 +2787,11 @@ def _as_of_folds(
         decision_time=rule.decision_time,
         minimum_history=minimum_history,
     )
+    if end is not None:
+        grid = [index for index in grid if dates[index] <= end]
+        if not grid:
+            raise SplitError(f"no row of the fold grid is scored on or before {end}")
+    require_unlocked((dates[index] for index in grid), where=entry)
     for block in refit_blocks(grid, refit_every):
         for index in block:
             info = rule.information_set(dates, index)
@@ -3060,6 +3072,7 @@ def rolling_persistence_backtest(
     interval_probability: Optional[float] = None,
     fit_model: Optional[ModelFitter] = None,
     refit_every: int = 1,
+    end: Optional[date] = None,
 ) -> BacktestReport:
     """Score every row of the one fold grid under the as-of information rule.
 
@@ -3110,8 +3123,12 @@ def rolling_persistence_backtest(
             fitted model`; `None` is persistence's `fit`. A fitter naming an
             `information` parameter is handed the run's `InformationRule`.
         refit_every: scored rows per fit, at least 1.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: if the panel is too short, `refit_every` is not a positive
             int, or `interval_probability` names an interval the declared
             levels do not produce.
@@ -3160,7 +3177,12 @@ def rolling_persistence_backtest(
     train_frame: Sequence[DailyObservation] = ()
 
     for fold in _as_of_folds(
-        rows, rule, minimum_history=minimum_history, refit_every=refit
+        rows,
+        rule,
+        minimum_history=minimum_history,
+        refit_every=refit,
+        entry="rolling_persistence_backtest",
+        end=end,
     ):
         index = fold.index
         if fold.frame is not None:
@@ -5065,6 +5087,7 @@ def paired_model_comparison(
     minimum_history: int = 20,
     loss: str = DEFAULT_COMPARISON_LOSS,
     refit_every: int = 1,
+    end: Optional[date] = None,
 ) -> PairedComparisonReport:
     """Score two continuous models at the same origins and interval the gap.
 
@@ -5163,11 +5186,15 @@ def paired_model_comparison(
             Defaults to `DEFAULT_COMPARISON_LOSS`, the absolute error, so every
             caller written before this argument existed keeps its meaning.
         refit_every: scored rows per fit, for both sides.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
 
     Returns:
         A `PairedComparisonReport`.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: the panel is too short for `minimum_history`, `loss` names
             a loss this module does not implement, or -- under `crps` -- a
             fitted model reports a quantile grid other than the declared one.
@@ -5218,8 +5245,22 @@ def paired_model_comparison(
     # sequences name the same rows in the same order, and the pairing is
     # checked on every row rather than trusted.
     for fold_a, fold_b in zip(
-        _as_of_folds(rows, rule_a, minimum_history=minimum_history, refit_every=refit),
-        _as_of_folds(rows, rule_b, minimum_history=minimum_history, refit_every=refit),
+        _as_of_folds(
+            rows,
+            rule_a,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="paired_model_comparison",
+            end=end,
+        ),
+        _as_of_folds(
+            rows,
+            rule_b,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="paired_model_comparison",
+            end=end,
+        ),
     ):
         if fold_a.index != fold_b.index:  # pragma: no cover - one grid by construction
             raise SplitError(
@@ -6454,6 +6495,7 @@ def rolling_exceedance_backtest(
     taus: Sequence[float],
     minimum_history: int = 20,
     refit_every: int = 1,
+    end: Optional[date] = None,
 ) -> ExceedanceBacktestReport:
     """Score every row of the as-of grid, pool the curves, then score the pool.
 
@@ -6526,8 +6568,12 @@ def rolling_exceedance_backtest(
         minimum_history: the first origin scored and the shortest training
             frame any fit is allowed, for the scored model and the reference
             alike.
+        end: the last day to score; `None` scores to the end of the panel.
+            Rows after it stay in the panel and are never scored.
 
     Raises:
+        LookAheadError: if a scored day falls in a locked tier of
+            `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: if the panel is too short for `minimum_history`, or
             `model_name` is empty.
         SplitError: on a malformed panel, tau family or prediction, or when the
@@ -6589,7 +6635,14 @@ def rolling_exceedance_backtest(
     infos: List[InformationSet] = []
 
     for block in _refit_blocks_of(
-        _as_of_folds(rows, rule, minimum_history=minimum_history, refit_every=refit)
+        _as_of_folds(
+            rows,
+            rule,
+            minimum_history=minimum_history,
+            refit_every=refit,
+            entry="rolling_exceedance_backtest",
+            end=end,
+        )
     ):
         train_rows = tuple(block[0].frame)
         # One fit for the block (#57): the predictor is asked for every row's

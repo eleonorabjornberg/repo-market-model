@@ -22,7 +22,7 @@ import argparse
 import functools
 import json
 from dataclasses import dataclass
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Optional, Tuple, Union
@@ -1033,6 +1033,7 @@ def _backtest(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
         fit_model=fit_model,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     # `--registry` is passed to the record as well as to the run: the record
@@ -1046,6 +1047,7 @@ def _backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         model=model_name,
     )
+    _declare_end(document, args)
     if args.splits is not None:
         add_backtest_splits(document, report, rows, load_split_declaration(args.splits))
     args.report.write_text(
@@ -1223,11 +1225,13 @@ def _compare(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
         loss=args.loss,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     document = paired_comparison_document(
         comparison, panel_path=args.path, registry_path=args.registry
     )
+    _declare_end(document, args)
     if args.splits is not None:
         add_comparison_splits(document, rows, load_split_declaration(args.splits))
     args.report.write_text(
@@ -1582,6 +1586,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         taus=taus,
         minimum_history=args.minimum_history,
         refit_every=args.refit_every,
+        end=args.end,
     )
 
     # Both declaration files the run opened, identified in the record by the
@@ -1592,6 +1597,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         thresholds_path=args.thresholds,
     )
+    _declare_end(document, args)
     split_declaration = (
         None if args.splits is None else load_split_declaration(args.splits)
     )
@@ -1615,6 +1621,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
                 taus=taus,
                 minimum_history=args.minimum_history,
                 refit_every=args.refit_every,
+                end=args.end,
             )
             document["benchmarks"][name] = benchmark_comparison_document(
                 report,
@@ -1721,6 +1728,35 @@ def _add_refit_every(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_end(parser: argparse.ArgumentParser) -> None:
+    """`--end DATE`: score no day after DATE, recorded in the declaration.
+
+    The published panel runs into the locked tiers of
+    `docs/decisions/lockbox.md`, and every scoring entry point refuses a locked
+    scored day (`repo_model.lockbox`). So a run on that panel names the last
+    day it scores, before 2026-01-01. The fold grid stops at DATE; the panel
+    is read whole, so its digest and extent are still the file's, and no fold
+    reads a row after its own decision instant either way.
+    """
+
+    parser.add_argument(
+        "--end",
+        type=date.fromisoformat,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="score no day after this date; recorded in the record's "
+        "declaration. A run on the published "
+        "panel needs one before 2026-01-01, the start of the locked period",
+    )
+
+
+def _declare_end(document: dict, args: argparse.Namespace) -> None:
+    """Record `--end` in the document's declaration, when one was given."""
+
+    if args.end is not None:
+        document["declaration"]["end"] = args.end.isoformat()
+
+
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Add the model and evaluation subcommands to the shared parser."""
 
@@ -1728,6 +1764,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "backtest", help="run the as-of rolling benchmark"
     )
     _add_refit_every(backtest)
+    _add_end(backtest)
     _add_splits(backtest)
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
@@ -1861,6 +1898,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "the paired difference",
     )
     _add_refit_every(compare)
+    _add_end(compare)
     _add_splits(compare)
     compare.add_argument("path", type=Path)
     compare.add_argument("--minimum-history", type=int, default=20)
@@ -2001,6 +2039,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="score an exceedance predictor at every row of the as-of grid",
     )
     _add_refit_every(exceedance)
+    _add_end(exceedance)
     _add_splits(exceedance)
     exceedance.add_argument(
         "--benchmark",

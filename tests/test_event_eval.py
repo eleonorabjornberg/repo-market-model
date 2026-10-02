@@ -212,6 +212,7 @@ from test_baseline import (
     declared_registry,
     mixed_registry,
 )
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 
 # The exceedance family declared in AGENT_CONTRACT.md, "Decided: stress target
