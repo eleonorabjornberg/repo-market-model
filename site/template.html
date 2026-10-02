@@ -12,16 +12,19 @@
 :root{
   --paper:#F5F7F6; --ink:#16212A; --ink-2:#4B5863; --ink-3:#5B6771; --rule:#D6DCDB; --panel:#E9EEEC;
   --sofr:#1D57A5; --pressure:#B3261E; --band:#E3E9ED; --on-hot:#FFFFFF;
+  --th1:#B86E00; --th2:#C2410C; --th3:#B3261E; --th4:#6B1A7A;
   --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#8794A0; --rule:#28333B; --panel:#18232B;
-  --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419; } }
+  --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419;
+  --th1:#E0A040; --th2:#F28C4B; --th3:#F2675B; --th4:#C98AE0; } }
 :root[data-theme="dark"]{
   --paper:#0E1419; --ink:#E4EAEE; --ink-2:#A9B5BD; --ink-3:#8794A0; --rule:#28333B; --panel:#18232B;
-  --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419; }
+  --sofr:#74A9F2; --pressure:#F2675B; --band:#162029; --on-hot:#0E1419;
+  --th1:#E0A040; --th2:#F28C4B; --th3:#F2675B; --th4:#C98AE0; }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 1.0625rem/1.68 var(--serif);-webkit-font-smoothing:antialiased}
@@ -125,6 +128,18 @@ dfn .term:focus-visible{outline:2px solid var(--sofr);outline-offset:2px;border-
 .def{display:block;margin:6px 0 8px;padding:8px 12px;border-left:3px solid var(--sofr);background:var(--panel);font-family:var(--sans);font-size:.88rem;line-height:1.5;color:var(--ink)}
 .def[hidden]{display:none}
 .def a{color:var(--ink-2)}
+ul.key{list-style:none;display:flex;flex-wrap:wrap;gap:4px 16px;padding:0;margin:12px 0 0;font-family:var(--sans);font-size:.8rem;color:var(--ink-2)}
+ul.key li{display:inline-flex;gap:6px;align-items:center}
+ul.key i{display:inline-block;width:10px;height:10px;background:currentColor}
+ul.key .b0 i{width:6px;height:6px;border-radius:50%;color:var(--ink-3);opacity:.6}
+ul.key .b1 i{border-radius:50%;color:var(--th1)}
+ul.key .b2 i{color:var(--th2)}
+ul.key .b3 i{color:var(--th3);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+ul.key .b4 i{color:var(--th4);clip-path:polygon(50% 0,100% 100%,0 100%)}
+ul.key .held i{border-radius:50%;background:none;border:1.5px solid var(--ink-3)}
+ol.tail{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:10px 0 0;padding-left:2.2em;columns:4 150px;column-gap:28px}
+ol.tail li{break-inside:avoid;margin:0 0 3px;font-variant-numeric:tabular-nums}
+ol.tail time{font-weight:600;color:var(--ink)}
 .held-note{font-family:var(--sans);font-size:.82rem;color:var(--ink-2);margin:10px 0 0;max-width:74ch}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
@@ -182,6 +197,39 @@ dfn .term:focus-visible{outline:2px solid var(--sofr);outline-offset:2px;border-
       <li>With the scale clipped at +{{clip_bp}} bp, {{n1_off_scale}} counted here rise above it and are drawn as triangles on the top edge; the largest was {{n1_spike}}.</li>
     </ul>
     <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">chapter 2</a>.</p>
+  </details>
+</section>
+
+<section id="n2" aria-labelledby="n2-title">
+  <h2 id="n2-title"><span class="n">N2</span>Why is this hard?</h2>
+  <p class="prose lede">{{n2_lede}}</p>
+  <figure>
+    <figcaption><div class="t">Pressure days are few, and they come in bunches</div>
+      <div class="s">One mark per scored business day, one row per year, from {{n2_first}} to {{n2_last}}. Each day is drawn once, by the highest threshold its spread is above</div></figcaption>
+    <ul class="key" aria-label="Key">
+      <li class="b0"><i aria-hidden="true"></i>At or below +{{n2_tau1}} bp</li>
+      <li class="b1"><i aria-hidden="true"></i>Above +{{n2_tau1}} bp (circle)</li>
+      <li class="b2"><i aria-hidden="true"></i>Above +{{n2_tau2}} bp (square)</li>
+      <li class="b3"><i aria-hidden="true"></i>Above +{{n2_tau3}} bp (diamond)</li>
+      <li class="b4"><i aria-hidden="true"></i>Above +{{n2_tau4}} bp (triangle)</li>
+      <li class="held"><i aria-hidden="true"></i>Held out, not counted</li>
+    </ul>
+    <div class="chart" id="n2chart"><div class="tip"></div></div>
+    <p class="held-note">{{n2_held_note}}</p>
+  </figure>
+  <div class="prose">
+    <p>That is what makes forecasting pressure hard. A forecast that always said &ldquo;no pressure tomorrow&rdquo; would have been right on {{n2_quiet}} days counted here, and would have missed every pressure day. So the project never grades a forecast by how often it is right: it compares it with simple benchmarks on the same days.</p>
+    <p>Pressure days also bunch together. {{n2_runs}} A day of pressure says a lot about the next one, which is why one of those benchmarks simply carries today forward.</p>
+  </div>
+  <p class="note" style="margin-top:18px">Every day above +{{n2_tau3}} bp, with its spread. They are too few for a rate, so they are listed one by one.</p>
+  <ol class="tail" id="n2tail">{{n2_tail_list}}</ol>
+  <details>
+    <summary>Go deeper: which days are scored</summary>
+    <ul>
+      <li>The marks start on {{n2_first}}, not on {{n2_panel_first}} as in N1. A forecast needs {{n2_min_history}} days of history before it is first scored, so the first scored day is the first with that much behind it. Every day after it, to the panel's end, is scored.</li>
+      <li>A day counts above a threshold only when its spread, in whole basis points, is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). The thresholds are the project's declared ones; +{{n2_tau1}} and +{{n2_tau2}} bp are the headline.</li>
+      <li>How the spread is drawn over time, with the events behind the bunches, is <a href="#history">chapter 2</a>; when in the calendar the pressure days fall is <a href="#why">chapter 3</a>.</li>
+    </ul>
   </details>
 </section>
 </div>
@@ -709,6 +757,61 @@ d3.selectAll("#n1scale button").on("click", function () {
   renderN1();
 });
 
+// ---- N2 "Why is this hard?": every scored day once, by the highest threshold crossed; held-out days hollow.
+const N2 = D.newcomer_n2;
+const n2Days = N2.days.map(([iso, s, b]) => ({iso, date: parse(iso), s, b, year: +iso.slice(0, 4)}));
+const n2Years = [...new Set(n2Days.map(d => d.year))];
+const N2_MARK = [
+  {sym: d3.symbolCircle, size: 7, fill: "var(--ink-3)", op: .45},
+  {sym: d3.symbolCircle, size: 30, fill: "var(--th1)", op: 1},
+  {sym: d3.symbolSquare, size: 30, fill: "var(--th2)", op: 1},
+  {sym: d3.symbolDiamond, size: 44, fill: "var(--th3)", op: 1},
+  {sym: d3.symbolTriangle, size: 60, fill: "var(--th4)", op: 1},
+];
+const n2Label = b => b === 0 ? `at or below +${N2.taus[0]} bp` : `above +${N2.taus[b - 1]} bp`;
+
+function renderN2() {
+  const host = d3.select("#n2chart"); host.select("svg").remove();
+  const W = host.node().clientWidth, narrow = W < 560, rowH = narrow ? 30 : 36;
+  const m = {t: 8, r: narrow ? 8 : 16, b: 26, l: narrow ? 64 : 76};
+  const H = m.t + n2Years.length * rowH + m.b;
+  const x = d3.scaleUtc([Date.UTC(2001, 0, 1), Date.UTC(2002, 0, 1)], [m.l, W - m.r]);
+  const inYear = d => Date.UTC(2001, d.date.getUTCMonth(), d.date.getUTCDate());
+  const y = d3.scaleBand(n2Years, [m.t, H - m.b]).paddingInner(.12);
+  const heldYear = yr => n2Days.every(d => d.year !== yr || d.b === null);
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("role", "img").attr("aria-label", `Strip chart, one row per year from ${n2Years[0]} to ${n2Years.at(-1)}, one mark per scored business day placed by its date in the year. Days above +${N2.taus[0]} bp are coloured and shaped by the highest threshold crossed: ` + N2.counted.above.map((k, i) => `${k} above +${N2.taus[i]} bp`).join(", ") + ` of ${N2.counted.n} days counted.` + (N2.held_out.length ? ` Days from ${fmt(parse(N2.held_out[0].start))} are held out and drawn hollow and grey.` : ""));
+  n2Years.forEach(yr => {
+    svg.append("rect").attr("x", m.l).attr("y", y(yr)).attr("width", W - m.l - m.r).attr("height", y.bandwidth()).style("fill", heldYear(yr) ? "none" : "var(--panel)").style("stroke", heldYear(yr) ? "var(--rule)" : "none").style("stroke-dasharray", "3 3");
+    const t = svg.append("text").attr("x", m.l - 8).attr("y", y(yr) + y.bandwidth() / 2 + (heldYear(yr) ? -2 : 4)).attr("text-anchor", "end").style("font-size", "12px").style("font-weight", 600).style("fill", heldYear(yr) ? "var(--ink-3)" : "var(--ink)").text(yr);
+    if (heldYear(yr)) svg.append("text").attr("class", "lab").attr("x", m.l - 8).attr("y", y(yr) + y.bandwidth() / 2 + 10).attr("text-anchor", "end").text("held out");
+  });
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).tickValues(x.ticks(d3.utcMonth.every(narrow ? 3 : 1)).filter(t => t < x.domain()[1])).tickFormat(d3.utcFormat("%b")).tickSizeOuter(0));
+  // A fixed jitter from the day's position in its row, so the page draws the same marks every time.
+  const jit = (d, i) => ((i * 0.618034) % 1 - 0.5) * (y.bandwidth() - 10);
+  const pts = n2Days.map((d, i) => ({d, px: x(inYear(d)), py: y(d.year) + y.bandwidth() / 2 + jit(d, i)}));
+  const g = svg.append("g");
+  g.selectAll("path.held").data(pts.filter(p => p.d.b === null)).join("path").attr("class", "held")
+    .attr("transform", p => `translate(${p.px},${p.py})`).attr("d", d3.symbol(d3.symbolCircle, 14)())
+    .style("fill", "none").style("stroke", "var(--ink-3)").style("stroke-width", 1).style("opacity", .7);
+  [0, 1, 2, 3, 4].forEach(b => {
+    const k = N2_MARK[b];
+    g.selectAll(`path.b${b}`).data(pts.filter(p => p.d.b === b)).join("path").attr("class", `b${b}`)
+      .attr("transform", p => `translate(${p.px},${p.py})`).attr("d", d3.symbol(k.sym, k.size)())
+      .style("fill", k.fill).style("opacity", k.op).style("stroke", b ? "var(--paper)" : "none").style("stroke-width", .8);
+  });
+  const live = pts, del = d3.Delaunay.from(live, p => p.px, p => p.py);
+  const ring = svg.append("circle").attr("r", 6).style("fill", "none").style("stroke", "var(--ink)").style("stroke-width", 1.5).style("display", "none");
+  svg.append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", H - m.t - m.b).style("fill", "transparent")
+    .on("pointermove", ev => {
+      const [px, py] = d3.pointer(ev), p = live[del.find(px, py)]; if (!p) return;
+      ring.style("display", null).attr("cx", p.px).attr("cy", p.py);
+      tipAt(host, p.d.b === null ? `<b>${fmt(p.d.date)}</b><br>Held out: not shown or counted` : `<b>${fmt(p.d.date)}</b><br>Spread <span class="${p.d.b ? "hot" : ""}">${sgn(p.d.s)} bp</span><br>${n2Label(p.d.b)}`, p.px, p.py);
+    })
+    .on("pointerleave", () => { ring.style("display", "none"); hideTip(host); });
+}
+
 // ---- Glossary terms: Enter, Space or a tap opens the definition in place; Esc closes it and returns focus.
 document.querySelectorAll("dfn .term").forEach(b => {
   const def = document.getElementById(b.getAttribute("aria-controls"));
@@ -722,7 +825,7 @@ document.querySelectorAll("dfn .term").forEach(b => {
   def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
 });
 
-const renderAll = () => { renderN1(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
+const renderAll = () => { renderN1(); renderN2(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);

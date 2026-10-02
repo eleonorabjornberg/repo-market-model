@@ -584,5 +584,171 @@ class NewcomerHeldOutDayTests(unittest.TestCase):
         self.assertEqual(data["counted"]["n"], len(self.rows))
         self.assertEqual(fills["n1_held_note"], "No day on this chart is held out.")
 
+
+def panel_rows():
+    manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+    return list(csv.DictReader(raw.decode().splitlines()))
+
+
+class NewcomerN2Tests(unittest.TestCase):
+    """N2 "Why is this hard?" (#143): one mark per scored day, binned by the highest threshold crossed.
+
+    The day set is the scored grid (`asof.fold_grid` at the published
+    declarations' minimum history), cross-checked here, and only here, against
+    the fold dates of `docs/runs/persistence_funding.json` (#141 §2.1): the
+    generator reads no run record. Locked days (`metadata/lockbox.json`) are
+    drawn as hollow grey marks labelled "held out" and carry no spread, no bin,
+    and no weight in any count or sentence (#141 ruling 3).
+
+    Recorded mutation: in `newcomer_n2`, `kept = counted(scored, locked)`
+    -> `kept = list(scored)`. test_locked_perturbation_changes_nothing then
+    failed with AssertionError (the counts and fills moved), and so did
+    test_no_held_day_is_binned_or_counted.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = panel_rows()
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
+        cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def run_n2(self, rows, locked=None):
+        locked = self.locked if locked is None else locked
+        return emit_visual.newcomer_n2(copy.deepcopy(rows), self.registry, self.decision, locked, self.thresholds)
+
+    def is_locked(self, iso):
+        return lockbox.locked_tier(emit_visual.date.fromisoformat(iso), self.locked) is not None
+
+    def spread(self, row):
+        return int((emit_visual.Decimal(row["sofr"]) - emit_visual.Decimal(row["iorb"])) * 100)
+
+    def test_the_day_set_is_the_published_scored_grid(self):
+        """#141 §2.1: the fold dates of the published persistence record prove the day set."""
+        record = json.loads(AS_OF.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration"]["minimum_history"], emit_visual.N2_MINIMUM_HISTORY)
+        data, _ = self.run_n2(self.rows)
+        folds = record["folds"]
+        self.assertEqual(data["days"][0][0], folds["first"]["scored_date"])
+        self.assertEqual(data["days"][-1][0], folds["last"]["scored_date"])
+        self.assertEqual(len(data["days"]), folds["count"])
+        self.assertEqual(data["scored"]["first"], folds["first"]["scored_date"])
+        self.assertEqual(data["scored"]["n"], folds["count"])
+        self.assertGreater(data["scored"]["first"], self.rows[0]["date"])  # the start differs from N1's
+
+    def test_bins_are_strict_and_exclusive(self):
+        taus = [int(t) for t in self.thresholds["taus_bp"]]
+        self.assertEqual(emit_visual.n2_bin(taus[0], taus), 0)  # on the line is not above it
+        self.assertEqual(emit_visual.n2_bin(taus[0] + 1, taus), 1)
+        self.assertEqual(emit_visual.n2_bin(taus[1], taus), 1)
+        self.assertEqual(emit_visual.n2_bin(taus[-1] + 1, taus), len(taus))  # only in the top bin
+        self.assertEqual(emit_visual.n2_bin(-30, taus), 0)
+        data, _ = self.run_n2(self.rows)
+        by_date = {r["date"]: r for r in self.rows}
+        for iso, s, b in data["days"]:
+            if b is None:
+                continue
+            self.assertEqual(s, self.spread(by_date[iso]))
+            self.assertEqual(b, sum(1 for t in taus if s > t))
+
+    def test_no_held_day_is_binned_or_counted(self):
+        data, _ = self.run_n2(self.rows)
+        held = [d for d in data["days"] if self.is_locked(d[0])]
+        self.assertTrue(held, "the grid reaches no locked tier, so this test would hold vacuously")
+        self.assertTrue(all(s is None and b is None for _, s, b in held))
+        open_days = [d for d in data["days"] if not self.is_locked(d[0])]
+        self.assertTrue(all(b is not None for _, _, b in open_days))
+        self.assertEqual(data["counted"]["n"], len(open_days))
+        self.assertEqual(sum(data["counted"]["bins"]), len(open_days))
+        self.assertTrue(all(not self.is_locked(e["date"]) for e in data["tail"]))
+
+    def test_locked_perturbation_changes_nothing(self):
+        base = self.run_n2(self.rows)
+        locked = [i for i, r in enumerate(self.rows) if self.is_locked(r["date"])]
+        for index in (locked[0], locked[len(locked) // 2], locked[-1]):
+            for sofr in ("9.99", "0.01"):
+                rows = copy.deepcopy(self.rows)
+                rows[index]["sofr"] = sofr
+                with self.subTest(date=rows[index]["date"], sofr=sofr):
+                    self.assertEqual(self.run_n2(rows), base)
+
+    def test_unlocked_perturbation_is_seen(self):
+        base = self.run_n2(self.rows)
+        index = next(i for i, r in enumerate(self.rows)
+                     if r["date"] >= base[0]["scored"]["first"] and not self.is_locked(r["date"])
+                     and self.spread(r) < 0)
+        rows = copy.deepcopy(self.rows)
+        rows[index]["sofr"] = "9.99"
+        moved = self.run_n2(rows)
+        self.assertNotEqual(moved[1], base[1])
+        self.assertNotEqual(moved[0]["counted"], base[0]["counted"])
+
+    def test_an_opened_tier_is_counted(self):
+        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        for tier in document["tiers"]:
+            tier["opened"] = {"date": "2026-10-02", "ruling": "a test fixture standing in for her ruling"}
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "lockbox.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            opened = lockbox.locked_tiers(path)
+        data, fills = self.run_n2(self.rows, opened)
+        self.assertEqual(data["held_out"], [])
+        self.assertEqual(data["counted"]["n"], data["scored"]["n"])
+        self.assertTrue(all(b is not None for _, _, b in data["days"]))
+        self.assertEqual(fills["n2_held_note"], "No scored day is held out.")
+
+    def test_the_upper_thresholds_are_listed_day_by_day_without_a_rate(self):
+        """#141 §4 N2: +20 and +50 bp days are drawn and listed, with no rate and no pooled statement."""
+        taus = [int(t) for t in self.thresholds["taus_bp"]]
+        data, fills = self.run_n2(self.rows)
+        expected = [r["date"] for r in self.rows
+                    if data["scored"]["first"] <= r["date"] and not self.is_locked(r["date"])
+                    and self.spread(r) > taus[2]]
+        self.assertTrue(expected)
+        self.assertEqual([e["date"] for e in data["tail"]], expected)
+        self.assertNotIn("%", fills["n2_tail_list"])
+        for key in ("n2_lede", "n2_runs"):
+            self.assertNotRegex(fills[key], rf"\+{taus[2]}\b|\+{taus[3]}\b")
+        for e in data["tail"]:
+            self.assertIn(emit_visual.short_day(e["date"]), fills["n2_tail_list"])
+
+    def test_cluster_years_are_read_from_the_counts(self):
+        data, fills = self.run_n2(self.rows)
+        by_year = {int(y): k for y, k in data["counted"]["by_year"].items()}
+        self.assertEqual(data["counted"]["cluster_years"], emit_visual.cluster_years(by_year))
+        for year in data["counted"]["cluster_years"]:
+            self.assertIn(str(year), fills["n2_lede"])
+
+    def test_the_page_carries_n2_after_n1(self):
+        block = newcomer_block(self.page)
+        self.assertIn('<section id="n2"', block)
+        self.assertLess(block.index('<section id="n1"'), block.index('<section id="n2"'))
+        self.assertIn('href="#n2"', block)
+        self.assertIn("held out", block[block.index('<section id="n2"'):])
+
+
+#: Mark colours: graphical objects, WCAG 2.1 non-text contrast (3:1) against the page.
+MARKS_ON = {"th1": ("paper",), "th2": ("paper",), "th3": ("paper",), "th4": ("paper",)}
+
+
+class MarkContrastTests(unittest.TestCase):
+    template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+
+    def test_threshold_marks_meet_non_text_contrast_in_both_themes(self):
+        for theme in ("light", "dark"):
+            tokens = theme_tokens(self.template)[theme]
+            for fg, surfaces in MARKS_ON.items():
+                for bg in surfaces:
+                    with self.subTest(theme=theme, fg=fg, bg=bg):
+                        self.assertGreaterEqual(contrast(tokens[fg], tokens[bg]), 3.0)
+
+
 if __name__ == "__main__":
     unittest.main()
