@@ -56,10 +56,12 @@ __all__ = [
     "FEATURE_SOURCES",
     "COMPOSED_FEATURES",
     "ON_RRP_DEPLETION_BREAK_BN",
+    "SETTLEMENT_DAY_MONTH_END_DAYS",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
+    "OVERLAY_FEATURES",
     "sources_for_features",
     "TREASURY_BILL_SECURITY_TYPES",
     "TREASURY_COUPON_SECURITY_TYPES",
@@ -318,6 +320,16 @@ FEATURE_FIELDS = MappingProxyType(
         # documented, not converted.
         "tbill_4w": (("treasury_bill_rates", "tbill_4w_coupon_equivalent"),),
         "tbill_13w": (("treasury_bill_rates", "tbill_13w_coupon_equivalent"),),
+        # Announced IORB (directive #38): computed per scored row from the dated
+        # implementation-note table by `announced_iorb`, which adds them to a
+        # panel in memory. Not built into the published panel; scheduled under
+        # the source's `scheduled_availability` declaration.
+        "iorb_announced_change_bps": (
+            ("fed_iorb_announcements", "iorb_announced_change_bps"),
+        ),
+        "iorb_days_to_announced_change": (
+            ("fed_iorb_announcements", "iorb_days_to_announced_change"),
+        ),
     }
 )
 
@@ -407,6 +419,14 @@ DERIVED_FEATURES = MappingProxyType(
 #: $50bn and $200bn are reported beside it and select nothing.
 ON_RRP_DEPLETION_BREAK_BN = 100.0
 
+#: The month-end clause of `settlement_day` (#97): a scored day within this
+#: many calendar days of the month's last day is a settlement day. Fixed in
+#: advance by the directive from finding #96 (points 4-5: about half of the
+#: days above +5 bp in both pressure eras fall on settlement-calendar dates),
+#: with the flag's other clauses, from existing panel columns only. It is never
+#: tuned on this repository's data.
+SETTLEMENT_DAY_MONTH_END_DAYS = 2
+
 # Features composed at the decision instant from inputs each read per field
 # (#88). Unlike `DERIVED_FEATURES`, which are read at one row where every
 # constituent is observable, each input here is read on its own declaration
@@ -420,6 +440,21 @@ COMPOSED_FEATURES = MappingProxyType(
         "on_rrp_depleted": ("on_rrp",),
         # reserve_balances * on_rrp_depleted.
         "reserves_when_depleted": ("reserve_balances", "on_rrp"),
+        # The settlement calendar of the scored day (#97, from finding #96):
+        # quarter_end OR tax_date OR days_to_month_end <=
+        # SETTLEMENT_DAY_MONTH_END_DAYS OR treasury_settlement_coupons > 0.
+        # Three calendar columns and one scheduled input, all known before
+        # the decision instant (`docs/decisions/calendar-columns.md`,
+        # `information-set.md`, rule 2).
+        "settlement_day": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+        ),
+        # settlement_day * on_rrp_depleted: a settlement day with the
+        # buffer depleted (#97).
+        "settlement_day_when_depleted": (
+            "quarter_end", "tax_date", "days_to_month_end", "treasury_settlement_coupons",
+            "on_rrp",
+        ),
     }
 )
 
@@ -454,6 +489,22 @@ CALENDAR_FEATURES = frozenset(
         # month ends, and the evidence that motivated this column was measured
         # in calendar days.
         "days_to_month_end",
+    }
+)
+
+# Columns a model may read that the published panel does not carry: a named
+# module adds them to a panel in memory, from a tracked snapshot, after the
+# build. Each maps to that module. They are in `FEATURE_FIELDS`, so the as-of
+# rule prices and guards them like any other read; this set is only what
+# exempts them from `tests/test_contract.py`'s rule that every classified
+# column is a panel column. `tests/test_announced_iorb.py` checks the module
+# adds exactly these. Adding one does not move the published panel's bytes.
+# Per-use exception (Eleonora, 2 October 2026, #38/PR #154): adding a column
+# here is her decision.
+OVERLAY_FEATURES = MappingProxyType(
+    {
+        "iorb_announced_change_bps": "repo_model.announced_iorb",
+        "iorb_days_to_announced_change": "repo_model.announced_iorb",
     }
 )
 
