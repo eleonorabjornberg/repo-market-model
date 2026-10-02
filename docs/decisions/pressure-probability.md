@@ -48,8 +48,8 @@ Beroud's argument, `docs/advisor/evidence-pack/MEMO.md`, Q1(a)). Per-regime dist
 diagnostic, never the label.
 
 This governs the headline labels. `metadata/stress_thresholds.json` still declares a `trailing_percentile`
-`secondary_rule`. It is validated when the panel loads, but nothing computes a label from it, and this record does
-not retire it.
+`secondary_rule`, a leftover of the pre-pivot contract. Nothing computes a label from it. Directive
+[#91](https://github.com/eleonorabjornberg/repo-market-model/issues/91) retires it.
 
 ## Why
 
