@@ -175,6 +175,7 @@ from .contract import (
 )
 from .data import DailyObservation, load_stress_thresholds
 from .lockbox import require_unlocked
+from .onset import whole_bp
 from .metrics import (
     CorpDecomposition,
     MetricError,
@@ -4871,6 +4872,26 @@ def _crps_at(
     return crps_from_quantiles(levels, fitted.predict(feature_row), actual)
 
 
+def _twcrps_above_at(
+    fitted: FittedForecastModel, feature_row: DailyObservation, actual: float
+) -> float:
+    """One origin's twCRPS with weight 1{z > +5 bp}, from the quantile vector (#139).
+
+    `_crps_at`'s read and check of the grid, then
+    `onset.twcrps_above_from_quantiles`.
+    """
+
+    from .onset import twcrps_above_from_quantiles
+
+    levels = tuple(fitted.levels)
+    if levels != tuple(QUANTILE_LEVELS):
+        raise ValueError(
+            f"the fitted model reports quantile levels {levels}, but the "
+            f"contract fixes them at {tuple(QUANTILE_LEVELS)}"
+        )
+    return twcrps_above_from_quantiles(levels, fitted.predict(feature_row), actual)
+
+
 class _ComparisonLoss(NamedTuple):
     """What one selectable paired loss is: a name, a heading, and a scorer.
 
@@ -5070,6 +5091,12 @@ class PairedComparisonReport:
     #: Required like every field here; an empty mapping is a computed answer.
     settings_a: Mapping[str, Any]
     settings_b: Mapping[str, Any]
+    #: Each side's per-origin threshold-weighted CRPS, weight 1{z > +5 bp}
+    #: (`onset.twcrps_above_from_quantiles`, #139), aligned with `folds`.
+    #: Scored only on the CRPS path, the one that reads the quantile vector;
+    #: `None` on the absolute-error path.
+    twcrps_a: Optional[Tuple[float, ...]] = None
+    twcrps_b: Optional[Tuple[float, ...]] = None
 
     @property
     def loss_name(self) -> str:
@@ -5250,6 +5277,8 @@ def paired_model_comparison(
     losses_a: List[float] = []
     losses_b: List[float] = []
     differences: List[float] = []
+    twcrps_a: List[float] = []
+    twcrps_b: List[float] = []
     infos_a: List[InformationSet] = []
     infos_b: List[InformationSet] = []
     ml_libraries: Optional[Mapping[str, str]] = None
@@ -5330,6 +5359,17 @@ def paired_model_comparison(
         losses_a.append(loss_a)
         losses_b.append(loss_b)
         differences.append(loss_a - loss_b)
+        if loss == "crps":
+            twcrps_a.append(
+                _twcrps_above_at(
+                    _at_decision(fitted_a, rows, rule_a, fold_a), fold_a.feature_row, actual
+                )
+            )
+            twcrps_b.append(
+                _twcrps_above_at(
+                    _at_decision(fitted_b, rows, rule_b, fold_b), fold_b.feature_row, actual
+                )
+            )
         folds.append(
             ScoredFold(
                 train_start=frame_a[0].date,
@@ -5399,6 +5439,8 @@ def paired_model_comparison(
         ml_libraries=ml_libraries,
         settings_a=settings_a,
         settings_b=settings_b,
+        twcrps_a=tuple(twcrps_a) if loss == "crps" else None,
+        twcrps_b=tuple(twcrps_b) if loss == "crps" else None,
     )
 
 
@@ -6425,6 +6467,13 @@ class ExceedanceBacktestReport:
     #: How many panel days ahead each forecast was made (#114); 1 is the
     #: rule every published record was scored under.
     horizon: int = 1
+    #: The scored model's probability of a leap and of a pressure leap on
+    #: each scored day (`onset.LeapTargets`, #139), read off its curve at that
+    #: day's own event threshold; `None` when the run was not given a leap
+    #: threshold. `leap_threshold_bp` is that threshold, `J_h`.
+    leap_forecast: Optional[Tuple[float, ...]] = None
+    pressure_leap_forecast: Optional[Tuple[float, ...]] = None
+    leap_threshold_bp: Optional[float] = None
 
     def at_tau(self, position: int):
         """The three aligned columns at one tau position, projected together."""
@@ -6522,6 +6571,7 @@ def rolling_exceedance_backtest(
     refit_every: int = 1,
     end: Optional[date] = None,
     horizon: int = 1,
+    leap_jump_bp: Optional[float] = None,
 ) -> ExceedanceBacktestReport:
     """Score every row of the as-of grid, pool the curves, then score the pool.
 
@@ -6599,6 +6649,12 @@ def rolling_exceedance_backtest(
         horizon: how many panel days before each scored day its forecast is
             made (`asof.InformationRule`, #114). 1, the default, is the rule
             every published record was scored under.
+        leap_jump_bp: the leap threshold `J_h` (`onset.LEAP_JUMP_BP`, #139).
+            When given, the predictor is asked once more per refit block, at
+            each row's own leap and pressure-leap thresholds
+            (`onset.LeapTargets.event_threshold`), and the report carries those
+            probabilities. The declared curves are untouched: the second call
+            is separate, so no published figure moves.
 
     Raises:
         LookAheadError: if a scored day falls in a locked tier of
@@ -6664,6 +6720,8 @@ def rolling_exceedance_backtest(
     # fold's as-of history, which its positional reads come from.
     reads_histories = _reads_histories(predictor)
     infos: List[InformationSet] = []
+    leap_forecast: List[float] = []
+    pressure_leap_forecast: List[float] = []
 
     for block in _refit_blocks_of(
         _as_of_folds(
@@ -6689,6 +6747,19 @@ def rolling_exceedance_backtest(
             reads_histories=reads_histories,
         )
         curves = _validate_prediction(predicted, len(block), tau_family)
+        if leap_jump_bp is not None:
+            leaps, pressure_leaps = _leap_at_folds(
+                predictor,
+                train_rows,
+                rows,
+                rule,
+                block,
+                float(leap_jump_bp),
+                reads_information=reads_information,
+                reads_histories=reads_histories,
+            )
+            leap_forecast.extend(leaps)
+            pressure_leap_forecast.extend(pressure_leaps)
 
         for fold, curve in zip(block, curves):
             index = fold.index
@@ -6794,7 +6865,57 @@ def rolling_exceedance_backtest(
             else tuple(tail_accounts)
         ),
         horizon=rule.horizon,
+        leap_forecast=None if leap_jump_bp is None else tuple(leap_forecast),
+        pressure_leap_forecast=(
+            None if leap_jump_bp is None else tuple(pressure_leap_forecast)
+        ),
+        leap_threshold_bp=None if leap_jump_bp is None else float(leap_jump_bp),
     )
+
+
+def _leap_at_folds(
+    predictor: ExceedancePredictor,
+    train_rows: Sequence[DailyObservation],
+    rows: Sequence[DailyObservation],
+    rule: InformationRule,
+    block: Sequence[_AsOfFold],
+    leap_jump_bp: float,
+    *,
+    reads_information: bool,
+    reads_histories: bool,
+) -> Tuple[List[float], List[float]]:
+    """The block's leap and pressure-leap probabilities, from one more call (#139).
+
+    Each row's event is a spread above a level set by its own as-of anchor
+    (`onset.LeapTargets.event_threshold`), so the block's levels are gathered
+    into one ascending family, the predictor is fitted once on the block's
+    frame and asked for that family, and each row reads its own two levels.
+    The anchor is the fold's, which `InformationRule.check` has already held
+    to the decision instant.
+    """
+
+    levels = []
+    for fold in block:
+        anchor = fold.info.anchor
+        level = whole_bp(rows[anchor].spread_bps) + leap_jump_bp
+        levels.append(
+            (math.floor(level) + 0.5, math.floor(max(level, 0.0)) + 0.5)
+        )
+    family = tuple(sorted({value for pair in levels for value in pair}))
+    predicted = _exceedance_at_folds(
+        predictor,
+        train_rows,
+        rows,
+        rule,
+        block,
+        family,
+        reads_information=reads_information,
+        reads_histories=reads_histories,
+    )
+    curves = _validate_prediction(predicted, len(block), family)
+    leaps = [curve[family.index(leap)] for curve, (leap, _) in zip(curves, levels)]
+    pressure = [curve[family.index(level)] for curve, (_, level) in zip(curves, levels)]
+    return leaps, pressure
 
 
 def _exceedance_seed(

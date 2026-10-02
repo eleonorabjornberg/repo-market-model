@@ -72,6 +72,57 @@ PR [#152](https://github.com/eleonorabjornberg/repo-market-model/pull/152)).**
 `exceedance-backtest --event-list 20 --event-list 50` writes such a record (`--event-lead-days` sets the five). The
 records published before this rule are not edited in place: their +20 and +50 bp rows change at the next publish.
 
+## Onset view and small-leap targets
+
+**Draft for Eleonora's decision (#139). Not in force until she merges it.** The draft records her request of
+2 October 2026, as widened and amended that day; the wording below is proposed for her to accept or change.
+
+**Why.** The +5 and +10 bp stress targets hold too few events in calm periods to settle a model comparison: 2026 has
+no day above +10 bp. The model's value is at onset and in the tail, and an average over every scored day hides both.
+
+**The targets, in order:**
+
+1. **The +5 and +10 bp stress targets** stay the project's headline.
+2. **Small leaps and leap onsets**, an additional target with more events.
+3. **The CRPS of the full distribution**, with the threshold-weighted CRPS (weight 1{y > +5 bp}, Gneiting & Ranjan
+   2011) reported beside the plain CRPS.
+
+**Every report shows the +5 and +10 bp results**, ties included, next to any leap result.
+
+**The day groups.** Every pressure-probability and distribution comparison reports three groups: all scored days;
+scheduled-pressure days (month end, quarter end, tax date, Treasury coupon settlement); and onset days, the first day
+with SOFR − IORB above +5 bp after at least five consecutive business days at or below it. For onset days each model's
+probabilities on the five scored days before the onset are listed. Onset figures rest on few events, the record states
+the count, and they are descriptive, not tests.
+
+**The leap, defined as-of.** For a forecast of day *t* at horizon *h*, the jump is *x_t = s_t − s_a(t)*, where *s* is
+SOFR − IORB in whole basis points and *a(t)* is that forecast's as-of anchor: the latest spread public at its decision
+instant under `information-set.md`. It is never the day before *t*. A leap is *x_t > J_h*, strictly. *J_h* is the 90th
+percentile (linear interpolation) of the signed jumps at horizon *h* over every scored day of the published fold grid
+from 2018-06-29 to 2025-12-31, excluding days with no admissible anchor, stored to 2 decimal places and never
+recomputed from later data. A leap onset is a leap with no leap on any of the five previous business days. A pressure
+leap is a leap that also ends above IORB, and is reported next to the leap.
+
+**A leap is a different question from a stress warning.** "Will the spread jump" is not "will there be a stress day".
+No page or record presents a leap result as a stress-warning result. The claim wording for a leap result is: "the model
+forecasts as-of jumps in SOFR − IORB better than [the named baselines]". It never says "warns of stress".
+
+**The leap baselines**, both fitted walk-forward: the calendar climatology (the leap frequency before *t* by day type)
+and the persistence-logistic (a logistic of the leap on the latest as-of jump and the latest as-of spread). A leap claim
+must beat both, paired, with the 90% interval excluding 0. Beating only one is reported as exactly that.
+
+**The interval.** Paired differences use 90% stationary-bootstrap intervals, the project's standard for every
+published comparison, fixed in advance and not chosen for this target. A Diebold–Mariano test with a HAC variance is
+reported for the all-days group only.
+
+**Too few events means inconclusive.** Below a target's pre-declared minimum event count, the result is reported as
+inconclusive, and is read as neither a pass nor a fail. *Proposed for her decision: a minimum of 20 events in the
+all-days group (`onset.MINIMUM_EVENTS`).*
+
+**The target was not chosen blind to 2026.** `lockbox.md` already publishes how few 2026 days exceed +5 and +10 bp,
+and public Fed commentary describes 2026 as calm. The leap target was therefore added with knowledge of the locked
+period's character, though no model was scored on it.
+
 ## Why
 
 In scouting, the persistence-logistic benchmark beat every gradient-boosted classifier, and the gradient-boosted model
