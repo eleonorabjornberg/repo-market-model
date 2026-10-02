@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Emit the visual layer: docs/visual/data/*.json and site/index.html (directive 06).
+"""Emit the visual layer: docs/visual/data/*.json and site/index.html (directive 06, #118).
 
-The descriptive half of the results page: the plumbing, eight years of the
-spread, why pressure happens, and what is known at the decision time, plus how
-the project was built. Nothing on the page is typed:
+The results page: the plumbing, eight years of the spread, why pressure
+happens, and what is known at the decision time (directive 06's descriptive
+half); the forecast against its benchmarks and how it is graded (#118's model
+half); and how the project was built. Nothing on the page is typed:
 
 * The panel is rebuilt from the tracked fixtures with the repository's own
   `build` command and refused unless its SHA-256 is the published manifest's.
@@ -14,6 +15,11 @@ the project was built. Nothing on the page is typed:
   current FOMC implementation note, never transcribed.
 * A placeholder left unfilled is an error, and so is a run record that does
   not declare the as-of information rule (`require_as_of`).
+* Every model figure is read from a published run record in `docs/runs/`
+  through `from_record`, which refuses a figure no record carries. A model
+  figure that no published record carries yet (lead time, the scarcity state)
+  is a generated placeholder, and the generator refuses that placeholder once a
+  record carries the figure (`pending_figures`).
 
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
 the SHA-256 of each input file read. The commit is the latest one that changed
@@ -30,6 +36,7 @@ Standard library only, plus this repository's own `src/`.
 """
 import argparse
 import csv
+import fnmatch
 import hashlib
 import html
 import json
@@ -60,6 +67,7 @@ ANNOTATIONS = "docs/visual/annotations.json"
 TEMPLATE = "site/template.html"
 PAGE = "site/index.html"
 DATA_DIR = "docs/visual/data"
+RUNS = "docs/runs"
 
 #: What the commit stamp is the latest change to. Every file the script reads
 #: directly, the fixtures the panel is built from, and the script itself.
@@ -74,11 +82,36 @@ INPUTS = (
     THRESHOLDS,
     SPLITS,
     FIXTURES,
+    f":(glob){RUNS}/*.json",
 )
 
-#: Run records the model chapters render. Empty until chapters 5 to 7 are built
-#: (plan step 6); each one passes `load_run_record`, which fails closed.
-MODEL_RECORDS = ()
+#: Run records the model chapters render: one exceedance record per scored
+#: model and benchmark. Each passes `require_as_of`, which fails closed.
+MODEL_RECORDS = f"{RUNS}/exceedance_*.json"
+
+#: The pressure probability's benchmarks (`docs/decisions/pressure-probability.md`),
+#: by the `model` their records declare, in the order the page draws them.
+BENCHMARKS = (
+    ("calendar_climatology", "Calendar-type climatology"),
+    ("persistence_logistic", "Persistence-logistic"),
+)
+
+#: A declared `model` as the page names it. A model not listed is refused
+#: rather than shown under a guessed name.
+MODEL_NAMES = dict(BENCHMARKS, climatology="Climatology", gbm="Gradient-boosted distribution")
+
+#: The pressure-day types a record splits by, as the page names them.
+DAY_TYPES = {"month_end": "Month-end", "ordinary": "Ordinary", "quarter_end": "Quarter-end",
+             "tax_date": "Tax date"}
+
+#: Model figures that no published record carries yet: (key, the field a record
+#: would carry, what the figure shows). While no record in docs/runs/ carries
+#: the field, its chapter renders a generated placeholder; once one does, the
+#: generator refuses until the figure is drawn from it.
+PENDING = (
+    ("lead_time", "lead_time", "lead time to the onset of pressure"),
+    ("scarcity", "reserve_scarcity_state", "the reserve-scarcity state against how often pressure came"),
+)
 
 #: An order-of-magnitude bound on reserve balances in USD billions, the unit the
 #: panel carries since #41. Millions land above it, trillions below it.
@@ -179,6 +212,58 @@ def require_as_of(record, name="record"):
 
 def load_run_record(path):
     return require_as_of(json.loads(Path(path).read_text(encoding="utf-8")), str(path))
+
+
+def is_published_record(rel):
+    """A top-level JSON file in docs/runs/: published, and not archived."""
+    rel = str(rel)
+    return rel.startswith(RUNS + "/") and "/" not in rel[len(RUNS) + 1:] and rel.endswith(".json")
+
+
+def from_record(records, rel, *keys):
+    """A model figure's value, read from the published record `rel`.
+
+    The only way a model chapter reads a number. It refuses a path outside
+    docs/runs/, a record that is not there, and a field the record lacks, so no
+    figure is drawn without a published record behind it.
+    """
+    if not is_published_record(rel):
+        raise VisualError(f"{rel}: a model figure reads only a published record in {RUNS}/")
+    if rel not in records:
+        raise VisualError(f"no published record {rel}: refusing a figure without one")
+    node = records[rel]
+    for i, key in enumerate(keys):
+        if not isinstance(node, dict) or key not in node:
+            raise VisualError(f"{rel} carries no {'.'.join(map(str, keys[:i + 1]))}: refusing a figure "
+                              f"without a record")
+        node = node[key]
+    return node
+
+
+def pending_figures(records):
+    """The generated placeholder for each `PENDING` figure no published record carries.
+
+    A record that carries one is refused: the chapter must draw it, not keep a
+    placeholder that says no record exists.
+    """
+
+    def carries(node, marker):
+        if isinstance(node, dict):
+            return any(key == marker or carries(value, marker) for key, value in node.items())
+        if isinstance(node, list):
+            return any(carries(value, marker) for value in node)
+        return node == marker
+
+    out = {}
+    for key, marker, what in PENDING:
+        carriers = sorted(rel for rel, record in records.items() if carries(record, marker))
+        if carriers:
+            raise VisualError(f"{carriers[0]} carries {marker}, but the page draws no figure of {what} "
+                              f"yet: draw it from the record rather than publish a placeholder")
+        out[key] = (f"No published record in <code>{RUNS}/</code> carries {what}, so this page draws "
+                    f"no figure of it. The generator draws model figures only from such a record, and "
+                    f"refuses one that no record carries.")
+    return out
 
 
 def check_reserve_units(rows):
@@ -543,6 +628,153 @@ def history(rows, notes, thresholds, regimes, windows):
     return data, fills
 
 
+# ---------------------------------------------------------------- chapters 5 to 7
+
+
+def run_records(repo):
+    """{relative path: content} for every published record: each top-level JSON file in docs/runs/."""
+    return {f"{RUNS}/{p.name}": json.loads(p.read_text(encoding="utf-8"))
+            for p in sorted((Path(repo) / RUNS).glob("*.json"))}
+
+
+def model_label(declaration, rel):
+    model = declaration.get("model")
+    if model not in MODEL_NAMES:
+        raise VisualError(f"{rel}: no page name for the model {model!r}; refusing to guess one")
+    parts = [MODEL_NAMES[model]]
+    if declaration.get("calibration"):
+        parts.append(declaration["calibration"].replace("_", "-"))
+    if model == "gbm":
+        parts.append(f"{len(declaration['features'])} inputs")
+    return ", ".join(parts)
+
+
+def thin_curve(points):
+    """A CORP curve's points without those inside a flat run, so the drawn line is unchanged."""
+    keyed = [tuple(p[k] for k in ("forecast", "recalibrated", "lower", "upper")) for p in points]
+    keep = [k for i, k in enumerate(keyed)
+            if i in (0, len(keyed) - 1) or k[1:] != keyed[i - 1][1:] or k[1:] != keyed[i + 1][1:]]
+    return [[None if v is None else round(v, 5) for v in k] for k in keep]
+
+
+def model_chapters(records, taus):
+    """Chapters 5 and 6, from the published exceedance records alone.
+
+    Every number is read through `from_record`. The scored models are the
+    records whose model is not a benchmark; each is drawn against both
+    benchmarks, paired, with its interval, by regime and by pressure-day type.
+    """
+    found = sorted(rel for rel in records if fnmatch.fnmatchcase(rel, MODEL_RECORDS))
+    if not found:
+        raise VisualError(f"no {MODEL_RECORDS} record: the model chapters have nothing to draw from")
+    keys = {}
+    for rel in found:
+        require_as_of(from_record(records, rel), rel)
+        keys[rel] = (from_record(records, rel, "panel", "sha256"), from_record(records, rel, "folds", "count"),
+                     from_record(records, rel, "folds", "first", "scored_date"),
+                     from_record(records, rel, "folds", "last", "scored_date"))
+    if len(set(keys.values())) != 1:
+        raise VisualError(f"the exceedance records are not scored on one panel and one set of days: {keys}")
+    panel, n_days, first, last = keys[found[0]]
+    names = dict(BENCHMARKS)
+    tau_keys = [f"{float(t):g}" for t in taus]
+    models = []
+    for rel in found:
+        declaration = from_record(records, rel, "declaration")
+        model = declaration.get("model")
+        entry = {"record": rel, "label": model_label(declaration, rel), "benchmark": model in names,
+                 "inputs": [COLUMN_LABELS.get(f, f) for f in from_record(records, rel, "declaration", "features")],
+                 "by_tau": {}}
+        for k in tau_keys:
+            row = ("metrics", "by_tau", k)
+            decomposition = row + ("decomposition",)
+            t = {
+                "brier": from_record(records, rel, *row, "brier"),
+                "base_rate": from_record(records, rel, *row, "base_rate"),
+                "positives": from_record(records, rel, *row, "positives"),
+                "reliability": from_record(records, rel, *decomposition, "reliability"),
+                "resolution": from_record(records, rel, *decomposition, "resolution"),
+                "uncertainty": from_record(records, rel, *decomposition, "uncertainty"),
+                "curve": thin_curve(from_record(records, rel, *row, "reliability_curve", "points")),
+                "vs": {},
+            }
+            if from_record(records, rel, *row, "reliability_curve", "method") != "corp_isotonic":
+                raise VisualError(f"{rel}: the reliability curve at {k} bp is not CORP")
+            if not entry["benchmark"]:
+                for name, _ in BENCHMARKS:
+                    paired = ("benchmarks", name, "by_tau", k, "paired_brier_difference")
+                    vs = {"mean": from_record(records, rel, *paired, "mean"),
+                          "lower": from_record(records, rel, *paired, "interval", "lower"),
+                          "upper": from_record(records, rel, *paired, "interval", "upper"),
+                          "level": from_record(records, rel, *paired, "interval", "level"),
+                          "benchmark_brier": from_record(records, rel, "benchmarks", name, "by_tau", k,
+                                                         "benchmark_brier")}
+                    for split, label in (("by_regime", dash), ("by_day_type", None)):
+                        groups = from_record(records, rel, *paired, "splits", split)
+                        out = []
+                        for group in groups:
+                            if label is None and group not in DAY_TYPES:
+                                raise VisualError(f"{rel}: no page name for the day type {group!r}")
+                            g = paired + ("splits", split, group)
+                            out.append([label(group) if label else DAY_TYPES[group],
+                                        from_record(records, rel, *g, "count"), from_record(records, rel, *g, "mean"),
+                                        from_record(records, rel, *g, "interval", "lower"),
+                                        from_record(records, rel, *g, "interval", "upper")])
+                        vs[split] = out
+                    t["vs"][name] = vs
+            entry["by_tau"][k] = t
+        models.append(entry)
+    labels = [m["label"] for m in models]
+    if len(set(labels)) != len(labels):
+        raise VisualError(f"two exceedance records share a page name: {labels}")
+    scored = [m for m in models if not m["benchmark"]]
+    if not scored:
+        raise VisualError("every exceedance record is a benchmark: no scored model to draw")
+    levels = {vs["level"] for m in scored for t in m["by_tau"].values() for vs in t["vs"].values()}
+    if len(levels) != 1:
+        raise VisualError(f"the paired intervals are not at one level: {sorted(levels)}")
+    level = round(100 * levels.pop())
+
+    def beats(k, n, first_clause):
+        if k == 0:
+            return f"none of the {word(n)} scored models beats" if first_clause else "none beats"
+        if k == n:
+            return f"all {word(n)} scored models beat" if first_clause else f"all {word(n)} beat"
+        verb = "beats" if k == 1 else "beat"
+        return f"{word(k)} of the {word(n)} scored models {verb}" if first_clause else f"{word(k)} {verb}"
+
+    def tally(k):
+        return [sum(1 for m in scored if m["by_tau"][k]["vs"][name]["lower"] > 0) for name, _ in BENCHMARKS]
+
+    (_, cal_label), (_, per_label) = BENCHMARKS
+    sentences = []
+    for i, k in enumerate(tau_keys):
+        a, b = tally(k)
+        sentences.append(f"At +{k} bp, {beats(a, len(scored), i == 0)} {lower_first(cal_label)}"
+                         f"{f' with a {level}% interval above zero' if i == 0 else ''}, and "
+                         f"{beats(b, len(scored), False)} the {lower_first(per_label)}.")
+    k0 = tau_keys[0]
+    share = sorted((m["by_tau"][k0]["reliability"] / m["by_tau"][k0]["brier"], m["label"]) for m in models)
+    data = {
+        "taus": tau_keys, "level": level,
+        "benchmarks": [{"key": name, "label": label} for name, label in BENCHMARKS],
+        "scored": {"days": n_days, "first": first, "last": last, "panel": panel},
+        "models": models,
+    }
+    fills = {
+        "forecast_lede": " ".join(sentences),
+        "n_scored_models": word(len(scored)), "n_models": word(len(models)),
+        "model_days": f"{n_days:,}", "model_first": day(first), "model_last": day(last),
+        "interval_level": level, "tau_first": k0, "tau_second": tau_keys[-1],
+        "base_first": f"{100 * models[0]['by_tau'][k0]['base_rate']:.1f}%",
+        "miscal_low": f"{100 * share[0][0]:.0f}%", "miscal_low_model": lower_first(share[0][1]),
+        "miscal_high": f"{100 * share[-1][0]:.0f}%", "miscal_high_model": lower_first(share[-1][1]),
+    }
+    if len({m["by_tau"][k0]["base_rate"] for m in models}) != 1:
+        raise VisualError("the exceedance records disagree on how often pressure came")
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -556,12 +788,16 @@ def generate(repo, commit=None):
     regimes = read_json(SPLITS, repo)["regimes"]
     windows = read_json(EVENTS, repo)["windows"]
     check_annotations(notes)
-    for path in MODEL_RECORDS:
-        load_run_record(repo / path)
+    records = run_records(repo)
+    model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
+    pending = pending_figures(records)
     commit = commit or input_commit(repo)
 
     with tempfile.TemporaryDirectory() as tmp:
         raw, digest = build_panel(repo, manifest, tmp)
+    if model["scored"]["panel"] != digest:
+        raise VisualError(f"the exceedance records are scored on panel {model['scored']['panel'][:12]}, not the "
+                          f"published {digest[:12]}; refusing")
     rows = list(csv.DictReader(raw.decode().splitlines()))
     check_reserve_units(rows)
     decision = time.fromisoformat(manifest["decision_time"])
@@ -609,7 +845,10 @@ def generate(repo, commit=None):
         "guard_list": "".join(f"<li><b>{g['name']}.</b> {g['text']}. <a href='{g['src']}'>Source</a></li>"
                               for g in notes["guards"]),
         "validation": link(notes["validation"]),
+        "lead_time_placeholder": pending["lead_time"],
+        "scarcity_placeholder": pending["scarcity"],
     })
+    fills.update(model_fills)
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, ANNOTATIONS, TEMPLATE, notes["implementation_note"]["path"])}
@@ -622,13 +861,14 @@ def generate(repo, commit=None):
     }
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
-    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build}
+    model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
+    payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model}
     out = {}
     for name, payload in payloads.items():
-        doc = {"provenance": provenance, "data": payload}
+        doc = {"provenance": model_provenance if name == "model" else provenance, "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
-    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock")}
+    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model")}
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     if "/*__DATA__*/null" not in template:
         raise VisualError("the template has no /*__DATA__*/null slot")
