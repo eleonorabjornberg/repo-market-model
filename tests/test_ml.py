@@ -10102,5 +10102,90 @@ class ConformalPidPublishTests(unittest.TestCase):
                 self.assertFalse((self.tmp / "refused.json").exists())
 
 
+class PressureModelPublishTests(unittest.TestCase):
+    """`scripts/pressure_model_v1.py publish`: pressure model v1's record (#124, ruling #134).
+
+    The published candidate is `distributional_gbm+recalibrated`: the
+    probability read from the funding declaration's distribution, calibrated
+    by nested-selection conformal PID, recalibrated out of fold, at one
+    horizon, paired with both benchmarks. Its record must state the
+    recalibrated forecasts' own metrics (`pressure.recalibrated` keeps the
+    metrics of the forecasts it replaces), declare the horizon, the
+    calibration and the recalibration, and score no locked day.
+
+    At horizons of 2 or more the scorecaster's coupon-settlement indicator is
+    not public at the decision instant under its declaration (one business day
+    ahead), so the run is refused there (`scorecaster_calendar`), as it should
+    be: how the band is calibrated at those horizons is Eleonora's question
+    (#124, #134), not something the script settles.
+    """
+
+    TRACKED = Path(__file__).resolve().parents[1]
+    SCRIPT = TRACKED / "scripts" / "pressure_model_v1.py"
+    LOCKBOX = TRACKED / "metadata" / "lockbox.json"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        spec = importlib.util.spec_from_file_location("pressure_model_v1", self.SCRIPT)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+        for name, value in (
+            ("GBM_FEATURES", ("spread_bps", "sofr_volume")),
+            ("MINIMUM_HISTORY", 40),
+            ("REFIT_EVERY", 20),
+        ):
+            patcher = mock.patch.object(self.module, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        lockbox = mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.LOCKBOX)
+        lockbox.start()
+        self.addCleanup(lockbox.stop)
+
+    def test_the_record_states_the_recalibrated_forecasts_metrics(self):
+        from repo_model import pressure as pressure_module
+
+        report = self.tmp / "pressure.json"
+        self.assertEqual(
+            self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1",
+                "--report", str(report), "--limitation", "Narrow claim.",
+            ]),
+            0,
+        )
+        record = json.loads(report.read_text(encoding="utf-8"))
+        declaration = record["declaration"]
+        self.assertEqual(declaration["model"], "distributional_gbm+recalibrated")
+        self.assertEqual(declaration["horizon"], 1)
+        self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+        self.assertEqual(declaration["recalibration"], pressure_module.RECALIBRATION)
+        self.assertEqual(declaration["end"], "2025-12-31")
+        self.assertEqual(record["limitations"], ["Narrow claim."])
+        self.assertLessEqual(record["folds"]["last"]["scored_date"], "2025-12-31")
+        self.assertEqual(set(record["benchmarks"]), {"calendar_climatology", "persistence_logistic"})
+        self.assertTrue(record["calibration_account"]["blocks"])
+        # The metrics are the recalibrated forecasts', computed again: the
+        # paired comparison reads the same forecasts, so its model Brier and
+        # the record's agree.
+        for tau in ("5", "10"):
+            paired = record["benchmarks"]["persistence_logistic"]["by_tau"][tau]
+            self.assertAlmostEqual(
+                record["metrics"]["by_tau"][tau]["brier"], paired["model_brier"], places=12
+            )
+
+    def test_a_horizon_whose_settlement_is_not_public_is_refused(self):
+        with self.assertRaises(LookAheadError) as caught:
+            self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "2",
+                "--report", str(self.tmp / "refused.json"),
+            ])
+        self.assertIn("coupon settlement", str(caught.exception))
+        self.assertFalse((self.tmp / "refused.json").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

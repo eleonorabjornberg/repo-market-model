@@ -623,10 +623,11 @@ class _Scored(object):
 #: Declaration keys that are not model settings: shared by every row of a
 #: table (and checked to be), so showing them would repeat them per row.
 #: `end` is the window, stated in the heading of its own table, and
-#: `calibration_constants` is what a calibration's name stands for, carried
-#: whole in the record (#124).
+#: `calibration_constants` and `calibration_selection` are what a
+#: calibration's name stands for, carried whole in the record (#124).
 _NOT_SETTINGS = ("model", "features", "decision_time", "minimum_history", "refit_every",
-                 "taus_bp", "twcrps_weights", "end", "calibration_constants")
+                 "taus_bp", "twcrps_weights", "end", "calibration_constants",
+                 "calibration_selection")
 
 
 def _settings(side):
