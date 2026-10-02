@@ -327,6 +327,15 @@ FEATURE_FIELDS = MappingProxyType(
 #: with this one and rebuilding the panel, in a later pull request.
 ON_RRP_OPERATION_RESULTS_FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
 
+#: `srf_take_up` (#127): the Standing Repo Facility's overnight take-up per
+#: operation date, in USD billions, from the Desk's operation results
+#: (`ingest._nyfed_srf_rows`). Declared, scored and tested, and **off**: no
+#: `FEATURE_FIELDS` entry names it, so the published panel and every published
+#: record are unchanged. Whether it joins a published declaration is
+#: Eleonora's to rule (`docs/decisions/workflow.md`, "A question about
+#: publishing does not hold back the measurement").
+SRF_OPERATION_RESULTS_FIELDS = (("nyfed_srf", "srf_total_accepted"),)
+
 #: The source IDs alone, projected from `FEATURE_FIELDS`. Derived rather than
 #: declared: a second literal would be a second thing to keep current, and a
 #: list that is not asserted against the thing it describes stops describing
@@ -406,6 +415,13 @@ UNMODELLED_SOURCES = MappingProxyType(
             "#45: on_rrp from the Desk's operation results is declared in "
             "ON_RRP_OPERATION_RESULTS_FIELDS and off in the published "
             "declaration until Eleonora rules whether it joins it "
+            "(docs/decisions/workflow.md, 'A question about publishing does "
+            "not hold back the measurement'). Turning it on removes this entry."
+        ),
+        "nyfed_srf": (
+            "#127: srf_take_up from the Desk's operation results is declared in "
+            "SRF_OPERATION_RESULTS_FIELDS and off in every published "
+            "declaration until Eleonora rules whether it joins one "
             "(docs/decisions/workflow.md, 'A question about publishing does "
             "not hold back the measurement'). Turning it on removes this entry."
         ),

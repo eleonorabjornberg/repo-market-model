@@ -391,6 +391,39 @@
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json"
   },
+  "nyfed_srf": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #127. The facility runs an overnight repo operation at 13:45 ET (with a second at 08:30 ET from 26 June 2025); the close times are each record's closeTime. The Desk states no clock time at which results are published. The one timestamp in the data, lastUpdated, is a last-write time: on the 1,619 non-test facility operations from 2021-07-29 to 2026-09-30 it is a median 0.7 minutes and a 99th percentile 3.3 minutes after the close, so a same-day 16:00 reading is plausible, but five records were written later: 2021-12-28 at 16:10 and 2023-03-22 at 17:22 the same day, 2023-05-11 at 09:29 the next day, and 2021-09-03 and 2021-09-10 on 2021-09-16. Those two are rewrites of records already published, so lastUpdated cannot establish a first publication. The declaration therefore takes #45's conservative reading for the same endpoint (nyfed_on_rrp): a day's take-up is available at 16:00 ET on the next business day, at least 26 hours after the 13:45 close. Every snapshot fetched for this source on 2026-10-02 06:49 UTC is byte-identical to the nyfed_on_rrp snapshot of the same year fetched at 01:24 UTC the same day.",
+      "publication": "New York Fed repo operation results (the Standing Repo Facility): operations close at 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
+    },
+    "coverage": [
+      "Standing Repo Facility overnight repo amounts accepted, per operation date, from 2021-07-29"
+    ],
+    "field_frequencies": {
+      "srf_total_accepted": "business_daily"
+    },
+    "fields": [
+      "srf_total_accepted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "srf_total_accepted is totalAmtAccepted summed over every operation of an operationDate whose operationType is 'Repo' and term 'Overnight', from 2021-07-29 (the facility's first operation; the FOMC established it on 28 July 2021), in USD billions (the API serves US dollars). A day the facility operated and nothing was taken is 0.0. Small-value exercises (operational tests the Desk names in the note) and term repos (two tests since the inception) are left out. Repo operations before 2021-07-29 were temporary open market operations, not the facility, and yield no row. Most positive days are a few million dollars: from 2021-07-29 to 2025-12-31 the take-up is above zero on 397 operation days and at least 0.1 billion on 58. The same search serves nyfed_on_rrp; this source saves it under its own snapshots. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Conservative, under docs/decisions/information-set.md (#127): a day's take-up is declared available at 16:00 ET on the next business day, not at its 13:45 close, because the Desk states no publication time and lastUpdated is a write time that was rewritten days later on 2021-09-03 and 2021-09-10 (both on 2021-09-16). nyfed_on_rrp declares the same lag for the same endpoint.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not yet been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding. A 0.0 on an operation day is the Desk's own accepted amount, not a filled hole.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
   "nyfed_tgcr": {
     "access": "public",
     "availability_provenance": {
