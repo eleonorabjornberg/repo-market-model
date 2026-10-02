@@ -9653,6 +9653,80 @@ class DirectPressureModelTests(unittest.TestCase):
             self.assertTrue(choice.needs_ml_extra)
 
 
+def _history_rows(start, end):
+    """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
+
+    from repo_model import effr_history
+
+    effr, ioer, weekly = {}, {}, {"reserve_balances": {}, "tga": {}}
+    when, index = start, 0
+    printed_through = date(end.year + 1, 1, 2) if end.month == 12 else end + timedelta(days=100)
+    while when <= printed_through:
+        if when.weekday() < 5:
+            effr[when] = 0.25 + ((index % 13) - 6) / 100.0 + (0.08 if index % 13 == 12 else 0.0)
+            index += 1
+        ioer[when] = 0.25
+        if when.weekday() == 2:
+            weekly["reserve_balances"][when] = 1000.0 + 10.0 * (index % 7)
+            weekly["tga"][when] = 100.0 + 5.0 * (index % 3)
+        when += timedelta(days=1)
+    return effr_history.history_rows(effr, ioer, weekly, start=start, end=end)
+
+
+class PooledHistoryTests(unittest.TestCase):
+    """The direct logistic pooled with pre-SOFR history (#129)."""
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def backtest(self, history, horizon=1):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=ml._direct_pressure_predictor(
+                "logistic", _PRESSURE_FULL, _pressure_splits(), 60, history=history
+            ),
+            model_name="pooled_logistic",
+            features=_PRESSURE_FULL,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def test_the_pool_joins_every_fit_behind_a_market_column(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        report = self.backtest((history, rule))
+        plain = self.backtest(None)
+        self.assertEqual(report.model_settings["design"][-1], ml.HISTORY_MARKET_COLUMN)
+        self.assertEqual(report.model_settings["design"][:-1], plain.model_settings["design"])
+        pairs = report.model_settings["pooled_history"]["pairs"]
+        self.assertGreater(pairs, 100)
+        self.assertEqual(report.scored_dates, plain.scored_dates)
+        self.assertNotEqual(report.forecast, plain.forecast)
+
+    def test_a_pooled_label_not_yet_public_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=1)
+        history = _history_rows(date(2025, 6, 2), date(2026, 6, 30))
+        with self.assertRaises(LookAheadError):
+            self.backtest((history, rule))
+
+    def test_a_history_read_at_another_horizon_is_refused(self):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=2)
+        history = _history_rows(date(2025, 6, 2), date(2025, 12, 31))
+        with self.assertRaisesRegex(ValueError, "horizon"):
+            self.backtest((history, rule))
+
+
 class RecalibrationPartsTests(unittest.TestCase):
     """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
 

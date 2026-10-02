@@ -1,4 +1,61 @@
 {
+  "frb_ddp": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #129, from the H.15 release page fetched that day (https://www.federalreserve.gov/releases/h15/): 'The release is posted daily Monday through Friday at 4:15pm. The release is not posted on holidays or in the event that the Board is closed.' The release dated 1 October 2026 carried the effective federal funds rate through 30 September 2026, one business day earlier. The New York Fed publishes the same rate at about 09:00 ET (#98); this source is the Board's release, so its own posting time is the one declared.",
+      "publication": "H.15 Selected Interest Rates: posted each business day at 16:15 ET, carrying the effective federal funds rate for the previous business day. Policy Rates (IOER, IORB): administered rates announced with their effective dates before those dates, priced as the FRED IOER and IORB fields are under docs/decisions/iorb-availability.md."
+    },
+    "coverage": [
+      "effective federal funds rate (H.15, RIFSPFF_N.B)",
+      "interest rate on excess reserves (Policy Rates, RESBME_N.D)",
+      "interest rate on reserve balances (Policy Rates, RESBM_N.D)"
+    ],
+    "field_frequencies": {
+      "EFFR": "business_daily",
+      "IOER": "calendar_daily",
+      "IORB": "calendar_daily"
+    },
+    "field_release_lags": {
+      "IOER": {
+        "available_time": "16:15",
+        "basis": "record_date",
+        "days": 0,
+        "note": "The same administered rate as fred_macro_latest_vintage.IOER, priced the same way: IOER for a date is announced, with its effective date, before that date (docs/decisions/iorb-availability.md). REVISION STATEMENT: never revised. RESBME_N.D in the Policy Rates package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 eea3628f…) is identical to the three tracked ALFRED vintages of IOER (tests/fixtures/snapshots/alfred-ioer/: 2019-01-02, 2021-07-27, 2024-09-24) on every shared observation: 3739, 4676 and 4676 values from 2008-10-09. test_effr_history.FrbDdpRevisionTests re-runs the comparison.",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      },
+      "IORB": {
+        "available_time": "16:15",
+        "basis": "record_date",
+        "days": 0,
+        "note": "The same administered rate as fred_macro_latest_vintage.IORB, priced the same way (docs/decisions/iorb-availability.md). Carried for completeness of the Policy Rates package; the #129 study reads IOER only, because its history ends before IORB begins. REVISION STATEMENT: never revised. Administered, announced in advance; not compared against ALFRED here because the #129 study does not read it.",
+        "timezone": "America/New_York",
+        "unit": "calendar_days"
+      }
+    },
+    "fields": [
+      "EFFR",
+      "IOER",
+      "IORB"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Not a panel source. Read only by repo_model.effr_history for the pre-SOFR history study (#129): EFFR - IOER from 2008-12-16 to 2018-04-02. EFFR is unsecured overnight lending between depository institutions and GSEs (dominated after 2008 by Federal Home Loan Bank lending to banks that do not earn IOER at the full rate), a different market and a different target from SOFR - IORB. Before 1 March 2016 EFFR was a volume-weighted mean of brokered trades; from that date a volume-weighted median of FR 2420 transactions. The package is the whole release (filetype=zip), read one series at a time by ingest.frb_ddp_series; a date the Board marks ND (holidays) is not a value. The Board's DDP carried a notice on 1 October 2026 that its 'Build Your Package' feature is removed during the week of 9 November 2026 ahead of the DDP's retirement; the full-release package used here may follow.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:15",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "EFFR: the H.15 posts at 16:15 ET each business day, carrying the previous business day's rate, so a value is declared available at 16:15 ET one business day after its date. Later than the New York Fed's own 09:00 ET print of the same number; this source is the Board's release. REVISION STATEMENT: never revised. RIFSPFF_N.B in the H.15 package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 d5a661bd…) is identical to all eight tracked ALFRED vintages of DFF (tests/fixtures/snapshots/alfred-dff/ and alfred-dff-first-print/) on every shared business-day observation, back to 1954-07-01. test_effr_history.FrbDdpRevisionTests re-runs the comparison. The rate is computed by the New York Fed and published once.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the DDP schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://www.federalreserve.gov/datadownload/Output.aspx"
+  },
   "fred_macro_latest_vintage": {
     "access": "public",
     "coverage": [

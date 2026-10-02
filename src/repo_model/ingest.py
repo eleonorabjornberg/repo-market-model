@@ -100,6 +100,17 @@ NYFED_ON_RRP_SOURCE_ID = "nyfed_on_rrp"
 #: Its one field: the day's accepted reverse-repo amount, summed over every
 #: reverse-repo operation of the operation date, in USD billions.
 NYFED_ON_RRP_FIELD = "reverse_repo_total_accepted"
+#: The Board's Data Download Program, full-release packages (#129): the H.15
+#: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
+#: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
+#: release, saved unmodified; `frb_ddp_series` reads one series out of it. Not a
+#: panel source: `effr_history` reads it for the pre-SOFR history study.
+FRB_DDP_SOURCE_ID = "frb_ddp"
+FRB_DDP_OUTPUT_URL = "https://www.federalreserve.gov/datadownload/Output.aspx"
+FRB_DDP_RELEASES = ("H15", "PRATES")
+#: A DDP observation the Board marks not available (`OBS_STATUS="ND"`, value
+#: -9999): a holiday or a day the series did not print.
+FRB_DDP_NOT_AVAILABLE = "ND"
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
 #: The declared set of Form N-MFP archives that constitutes the `sec_nmfp`
 #: source. Committed, because `data/raw/` is not: without it a checkout with an
@@ -378,6 +389,95 @@ def fetch_fred_macro(
             suffix=suffix,
         )
     ]
+
+
+def fetch_frb_ddp(
+    output_root: Path,
+    release: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch one Data Download Program release package, the whole release.
+
+    One request, one zip of SDMX XML, saved unmodified under `frb_ddp`. A
+    payload that is not a zip carrying the release's `<release>_data.xml` is
+    refused before anything is written: the DDP answers an unknown query with an
+    empty 200, which would otherwise be saved as a snapshot.
+    """
+
+    if release not in FRB_DDP_RELEASES:
+        raise ValueError(f"{release!r} is not one of {list(FRB_DDP_RELEASES)}")
+    url = f"{FRB_DDP_OUTPUT_URL}?{urlencode({'rel': release, 'filetype': 'zip'})}"
+    payload = downloader(url)
+    _frb_ddp_data_member(payload, release)
+    return [
+        _save_snapshot(
+            source_id=FRB_DDP_SOURCE_ID,
+            url=url,
+            payload=payload,
+            output_root=output_root,
+            suffix="zip",
+        )
+    ]
+
+
+def _frb_ddp_data_member(payload: bytes, release: str) -> str:
+    if not payload.startswith(b"PK"):
+        raise ValueError(f"the DDP {release} response is not a zip package")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        member = f"{release}_data.xml"
+        if member not in archive.namelist():
+            raise ValueError(f"the DDP {release} package carries no {member}")
+    return member
+
+
+def frb_ddp_series(payload: bytes, release: str, series_name: str) -> Dict[date, Optional[float]]:
+    """One series of a DDP release package: date -> value, `None` where not available.
+
+    Streams the SDMX XML, so the H.15's 70 MB document is never held whole.
+    A date the Board marks `ND` maps to `None` rather than being dropped, so a
+    caller can tell a holiday from a date the package does not carry.
+
+    Raises:
+        ValueError: if the package does not carry the series, carries it twice,
+            or carries an observation that is neither a number nor `ND`.
+    """
+
+    import xml.etree.ElementTree as ElementTree
+
+    member = _frb_ddp_data_member(payload, release)
+    found = 0
+    inside = False
+    values: Dict[date, Optional[float]] = {}
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive, archive.open(member) as stream:
+        for event, element in ElementTree.iterparse(stream, events=("start", "end")):
+            tag = element.tag.rsplit("}", 1)[-1]
+            if event == "start" and tag == "Series":
+                inside = element.get("SERIES_NAME") == series_name
+                found += inside
+            elif event == "end" and tag == "Obs":
+                if inside:
+                    when = date.fromisoformat(str(element.get("TIME_PERIOD")))
+                    status = element.get("OBS_STATUS")
+                    raw = element.get("OBS_VALUE")
+                    if status == FRB_DDP_NOT_AVAILABLE:
+                        values[when] = None
+                    else:
+                        try:
+                            values[when] = float(str(raw))
+                        except ValueError as error:
+                            raise ValueError(
+                                f"{series_name} {when}: {raw!r} with status "
+                                f"{status!r} is neither a value nor not-available"
+                            ) from error
+                element.clear()
+            elif event == "end" and tag == "Series":
+                inside = False
+                element.clear()
+    if found != 1:
+        raise ValueError(
+            f"the DDP {release} package carries {series_name} {found} times, not once"
+        )
+    return values
 
 
 def fetch_treasury_auctions(
