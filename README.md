@@ -106,22 +106,37 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 | Challenger | CRPS | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.71 bp | +0.35 bp | +0.13 to +0.65 bp | beats persistence |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.74 bp | +0.33 bp | +0.11 to +0.63 bp | beats persistence |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.80 bp | +0.27 bp | +0.04 to +0.57 bp | beats persistence |
+
+*Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
+
+**Challengers against persistence.** Each challenger is scored on the same 1873 origins (minimum history 61, refitted every 21 scored days); persistence's CRPS is 2.09 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
+
+| Challenger | CRPS | Difference | 90% interval | Verdict |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.68 bp | +0.41 bp | +0.17 to +0.72 bp | beats persistence |
 
 **The paired difference by regime and by pressure-day type** (persistence's CRPS minus the challenger's, bp, with its 90% interval):
 
 | | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +1.57 (+0.45 to +3.17) | +0.18 (-0.05 to +0.48) | -0.13 (-0.24 to -0.04) | +0.24 (+0.15 to +0.35) | +0.30 (+0.13 to +0.48) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +1.63 (+0.48 to +3.24) | +0.06 (-0.19 to +0.40) | -0.26 (-0.34 to -0.18) | +0.24 (+0.12 to +0.38) | +0.42 (+0.26 to +0.62) |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +1.64 (+0.51 to +3.24) | +0.11 (-0.12 to +0.43) | -0.41 (-0.51 to -0.33) | +0.22 (+0.11 to +0.33) | +0.37 (+0.21 to +0.55) |
 
 | | month end | ordinary | quarter end | tax date |
 |---|---|---|---|---|
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.11 (-0.07 to +0.30) | +0.43 (+0.17 to +0.79) | -0.42 (-0.80 to -0.06) | -0.35 (-0.88 to +0.10) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.11 (-0.06 to +0.30) | +0.39 (+0.12 to +0.75) | -0.14 (-0.52 to +0.22) | -0.21 (-0.71 to +0.25) |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.08 (-0.10 to +0.28) | +0.32 (+0.06 to +0.68) | -0.03 (-0.54 to +0.55) | -0.29 (-0.75 to +0.11) |
+
+*Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
+
+| | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
+|---|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +1.63 (+0.50 to +3.12) | -0.04 (-0.31 to +0.31) | -0.08 (-0.15 to -0.01) | +0.26 (+0.14 to +0.41) | +0.61 (+0.34 to +0.91) |
+
+| | month end | ordinary | quarter end | tax date |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.19 (-0.02 to +0.40) | +0.48 (+0.19 to +0.85) | +0.08 (-0.62 to +0.81) | -0.36 (-0.86 to +0.07) |
 
 **Interval coverage on the same origins.**
 
@@ -129,12 +144,19 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 |---|---|---|---|---|
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 90% | 72.0% | 70.0% to 74.0% | 0.804 bp |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 90% | 93.7% | 92.6% to 94.8% | 1.054 bp |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 90% | 92.4% | 91.1% to 93.5% | 0.900 bp |
 | persistence | 90% | 85.7% | 84.0% to 87.3% | 0.744 bp |
 
-A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement`, persistence.
+A realised-coverage interval that excludes the nominal probability is a calibration finding. It is one for: gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, persistence.
 
-**The pressure probability against its two benchmarks.** Every exceedance record is scored on the same 2042 days; the event is the spread strictly above the threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks are those of `docs/decisions/pressure-probability.md`: a calendar-type climatology and a persistence-logistic model, each scored in the same run under its own declaration and paired with the model day by day. The difference is the benchmark's Brier score minus the model's, so a positive value favours the model; its interval is a stationary bootstrap on the per-day differences. Average precision is the area under the precision-recall curve, against a no-skill value equal to the base rate.
+*Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
+
+| Model | Nominal | Realised coverage | 90% interval | Pinball loss, quantile 0.95 |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 90% | 89.6% | 88.2% to 91.0% | 0.749 bp |
+
+A realised-coverage interval that excludes the nominal probability is a calibration finding. None of these models has one.
+
+**The pressure probability against its two benchmarks.** Every exceedance record on this window is scored on the same 2042 days; the event is the spread strictly above the threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks are those of `docs/decisions/pressure-probability.md`: a calendar-type climatology and a persistence-logistic model, each scored in the same run under its own declaration and paired with the model day by day. The difference is the benchmark's Brier score minus the model's, so a positive value favours the model; its interval is a stationary bootstrap on the per-day differences. Average precision is the area under the precision-recall curve, against a no-skill value equal to the base rate.
 
 *Threshold 5 bp, exceeded on 8.1% of days.*
 
@@ -144,7 +166,6 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 | climatology | 0.0765 | 0.139 | +0.0007 (-0.0012 to +0.0026), not distinguishable | -0.0224 (-0.0280 to -0.0172), loses to it |
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0534 | 0.531 | +0.0238 (+0.0172 to +0.0311), beats it | +0.0008 (-0.0024 to +0.0042), not distinguishable |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0562 | 0.547 | +0.0210 (+0.0146 to +0.0283), beats it | -0.0021 (-0.0053 to +0.0013), not distinguishable |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0524 | 0.545 | +0.0248 (+0.0187 to +0.0314), beats it | +0.0017 (-0.0009 to +0.0044), not distinguishable |
 | persistence-logistic | 0.0542 | 0.511 | +0.0231 (+0.0175 to +0.0290), beats it | — |
 
 *Threshold 10 bp, exceeded on 3.5% of days.*
@@ -155,7 +176,6 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 | climatology | 0.0340 | 0.049 | +0.0008 (-0.0012 to +0.0026), not distinguishable | -0.0033 (-0.0053 to -0.0015), loses to it |
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0310 | 0.239 | +0.0038 (+0.0006 to +0.0073), beats it | -0.0002 (-0.0022 to +0.0019), not distinguishable |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 0.0332 | 0.252 | +0.0016 (-0.0018 to +0.0053), not distinguishable | -0.0024 (-0.0048 to +0.0001), not distinguishable |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0307 | 0.269 | +0.0041 (+0.0008 to +0.0076), beats it | +0.0000 (-0.0021 to +0.0021), not distinguishable |
 | persistence-logistic | 0.0307 | 0.259 | +0.0040 (+0.0015 to +0.0068), beats it | — |
 
 **The paired Brier difference against the persistence-logistic, 5 bp, by regime and by pressure-day type** (benchmark minus model, with its 90% interval):
@@ -165,14 +185,42 @@ A realised-coverage interval that excludes the nominal probability is a calibrat
 | climatology | -0.0438 (-0.0637 to -0.0258) | -0.0287 (-0.0376 to -0.0179) | -0.0156 (-0.0163 to -0.0149) | -0.0006 (-0.0063 to +0.0065) | -0.0246 (-0.0443 to -0.0081) |
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0044 (-0.0104 to +0.0207) | +0.0106 (+0.0048 to +0.0182) | -0.0019 (-0.0021 to -0.0018) | -0.0002 (-0.0026 to +0.0028) | -0.0028 (-0.0090 to +0.0032) |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | +0.0108 (-0.0031 to +0.0262) | +0.0051 (-0.0005 to +0.0127) | -0.0112 (-0.0126 to -0.0099) | -0.0002 (-0.0032 to +0.0035) | -0.0027 (-0.0091 to +0.0039) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0168 (+0.0054 to +0.0285) | +0.0102 (+0.0045 to +0.0174) | -0.0068 (-0.0077 to -0.0060) | +0.0022 (-0.0013 to +0.0064) | -0.0018 (-0.0077 to +0.0047) |
 
 | | month end | ordinary | quarter end | tax date |
 |---|---|---|---|---|
 | climatology | -0.0291 (-0.0523 to -0.0115) | -0.0212 (-0.0268 to -0.0160) | -0.0571 (-0.1061 to -0.0197) | -0.0188 (-0.0414 to +0.0003) |
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | -0.0029 (-0.0172 to +0.0087) | +0.0014 (-0.0018 to +0.0049) | +0.0057 (-0.0241 to +0.0321) | -0.0063 (-0.0226 to +0.0129) |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | -0.0040 (-0.0147 to +0.0058) | -0.0024 (-0.0056 to +0.0011) | +0.0234 (-0.0006 to +0.0485) | -0.0016 (-0.0179 to +0.0181) |
-| gbm (calibration `cross_conformal`, calibration folds `5`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | -0.0006 (-0.0114 to +0.0089) | +0.0013 (-0.0015 to +0.0043) | +0.0165 (+0.0010 to +0.0324) | +0.0091 (-0.0016 to +0.0215) |
+
+*Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
+
+*Threshold 5 bp, exceeded on 8.4% of days.*
+
+| Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0513 | 0.575 | +0.0286 (+0.0224 to +0.0352), beats it | +0.0038 (+0.0009 to +0.0069), beats it |
+
+*Threshold 10 bp, exceeded on 3.7% of days.*
+
+| Model | Brier | Average precision | vs calendar-type climatology | vs persistence-logistic |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 0.0316 | 0.306 | +0.0057 (+0.0025 to +0.0094), beats it | +0.0013 (-0.0009 to +0.0035), not distinguishable |
+
+**The paired Brier difference against the persistence-logistic, 5 bp, by regime and by pressure-day type** (benchmark minus model, with its 90% interval):
+
+| | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
+|---|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0172 (+0.0050 to +0.0292) | +0.0071 (+0.0010 to +0.0144) | -0.0020 (-0.0021 to -0.0018) | +0.0022 (-0.0013 to +0.0067) | -0.0006 (-0.0098 to +0.0098) |
+
+| | month end | ordinary | quarter end | tax date |
+|---|---|---|---|---|
+| gbm (calibration `conformal_pid`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | +0.0022 (-0.0094 to +0.0127) | +0.0031 (-0.0000 to +0.0063) | +0.0182 (+0.0006 to +0.0374) | +0.0152 (+0.0021 to +0.0300) |
+
+**Limitations the records state.** Each is quoted from the records named after it, which carry it beside their figures.
+
+- Scored only on days before 2026-01-01 (--end 2025-12-31), under docs/decisions/lockbox.md. The records it replaces, archived in docs/runs/archive/cross-conformal-funding/, were scored through 2026-09-03, so no figure here is comparable with theirs, or with any record scored on that longer window. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
+- Conformal PID scores worse than CV+ in the 2020 regime, as #122 measured on this window, paired day by day (CV+ minus PID, with a 90% stationary-bootstrap interval): CRPS -0.107 bp [-0.150, -0.065], Brier at +5 bp -0.00312 [-0.00490, -0.00141], Brier at +10 bp -0.00259 [-0.00413, -0.00100]. Its band widens late after the March 2020 break. Eleonora's ruling on #123 adopts it with this regression stated. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
+- Its constants were declared in src/repo_model/recalibration.py by the session that implemented #122, before any fold was scored, and were neither searched nor re-tuned (#123, #124). Its first scored days, before any label is observable, carry the uncalibrated band. (`backtest_gbm_conformal_pid_funding.json`, `compare_persistence_vs_gbm_conformal_pid_funding_crps.json`, `exceedance_gbm_conformal_pid_funding.json`)
 
 **The control that licenses every skill number.** A climatology scored against climatology must show no skill. Over the same 2042 origins its Brier skill score is 0.000 at every declared threshold (5, 10, 20, 50 bp), and its reference Brier score equals its own at each one.
 
@@ -233,7 +281,8 @@ needs no package installation. Phase 2's machine-learning candidates live
 in `src/repo_model/ml.py` behind an optional extra, `pip install '.[ml]'` (numpy 2.4.6 and
 scikit-learn 1.9.1, the versions CI pins); today that is one, gradient-boosted conditional quantiles (`--model gbm`), with these opt-in
 settings: a conformal interval (`--calibration conformal`, or `cross_conformal` with
-`--calibration-folds K`), lagged spread changes (`--spread-change-lags K`), a GARCH(1,1)
+`--calibration-folds K`, or `conformal_pid` with `--splits`, run alongside the fold loop on
+`backtest`, `compare` and `exceedance-backtest`), lagged spread changes (`--spread-change-lags K`), a GARCH(1,1)
 variance fitted per fold (`--volatility-feature garch11`), an ARX one-step forecast fitted
 per fold (`--arx-feature declared`), and a generalised Pareto tail continuing the law above
 its top declared quantile, fitted per fold on the calibration rows (`--tail gpd`, with

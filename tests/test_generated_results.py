@@ -413,7 +413,11 @@ class ChallengerTableRefusalTests(unittest.TestCase):
     Mutations (11 Sep 2026, each run against this class, then restored):
 
     1. `if len(keys) != 1:` -> `if False:` in `challenger_records`: the first
-       test fails (no `RecordError` raised; the mixed set is ranked).
+       test fails (no `RecordError` raised; the mixed set is ranked). Since
+       #124 the guard is in `_by_window`, which groups records by their
+       declared `end` and refuses a group scored on more than one origin set;
+       the same mutation there, re-run for #124 in a disposable copy, fails the
+       first test the same way.
     2. `if not own:` -> `if False:`: the second test fails (no `RecordError`;
        both rows carry the same label).
     """
@@ -425,7 +429,13 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         generator = load_generator()
         workdir = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, workdir)
-        source = sorted(generator.RUNS.glob(generator.CHALLENGERS))[:2]
+        # Two records on one window: records declaring different windows are
+        # tabled apart, not refused (#124).
+        source = [
+            path for path in sorted(generator.RUNS.glob(generator.CHALLENGERS))
+            if "end" not in json.loads(path.read_text(encoding="utf-8"))["declaration"]
+        ][:2]
+        self.assertEqual(len(source), 2)
         for index, path in enumerate(source):
             record = json.loads(path.read_text(encoding="utf-8"))
             mutate(index, record)
@@ -441,6 +451,18 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         generator = self.records_dir(mutate)
         with self.assertRaises(generator.RecordError):
             generator.challenger_records()
+
+    def test_records_on_different_declared_windows_are_tabled_apart(self):
+        def mutate(index, record):
+            if index == 1:
+                record["folds"]["count"] -= 1
+                record["declaration"]["end"] = "2025-12-31"
+
+        generator = self.records_dir(mutate)
+        groups = generator.challenger_records()
+        self.assertEqual([len(group) for group in groups], [1, 1])
+        self.assertNotIn("end", groups[0][0][1]["declaration"])
+        self.assertEqual(groups[1][0][1]["declaration"]["end"], "2025-12-31")
 
     def test_two_records_that_cannot_be_told_apart_are_refused(self):
         def mutate(index, record):
