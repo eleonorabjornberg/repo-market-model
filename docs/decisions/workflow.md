@@ -71,7 +71,8 @@ Decided by Eleonora, 30 September 2026. Until the directive 06 pull request merg
 issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), not by her. The review session is a separate Claude Code session from the one that implemented the change, and does not change code. It merges only when CI is green and the directive's acceptance criteria are met. It
 escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
 
-- asks her a question, or its session opened a `needs-eleonora` issue;
+- asks her a question, or its session opened a `needs-eleonora` issue (other than a publishing question under the rule
+  below);
 - changes `docs/decisions/` beyond recording a decision its directive says she has made;
 - states a verdict on an exit criterion, or a public claim not generated from a record;
 - lacks a required recorded mutation, or one that was not killed, or has any `expectedFailure`;
@@ -83,6 +84,15 @@ on her, and the queue is not put on `hold` for it. The loop moves on to the next
 it. A queue line `- #N (after #A, #B)` marks a dependency: #N waits until #A and #B are closed. An item whose pull
 request waits on her is skipped, never re-worked. `hold` is kept for states that block every item: a permission
 denial, red CI on `main`, or a run that stalled.
+
+**A question about publishing does not hold back the measurement.** Decided by Eleonora, 2 October 2026. Some
+directives score a new input or setting and end by asking her whether it joins the published declaration, or for a
+verdict. Such a pull request merges under delegated review with the input present but off in the published
+declaration, so no published figure moves. The question is not asked in the pull request: its session opens a
+separate `needs-eleonora` issue with the evidence table and a link to the merged pull request, and that issue is the
+only thing that waits on her. Neither the question nor its issue is an escalation of the pull request, and the issue
+does not block queued directives that build on the merged code. Turning the input on in the published declaration is
+a later pull request, made after her ruling.
 
 **Mechanical escalations are ruled under her delegation.** Decided by Eleonora, 1 October 2026. The orchestrating
 Claude session that starts the queue's routine rules on these, in a comment starting `**Ruling` and saying "decided

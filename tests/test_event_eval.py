@@ -14,12 +14,13 @@ the training set stops where it is supposed to, that the scored rows are exactly
 the declared window, and that the window scored is the one that was declared.
 
 The label at the event edge is *not* tested here. It was, against a
-`trailing_percentile` in `repo_model.event_eval`, until that turned out to be a
-second implementation of a Track A rule -- `AGENT_CONTRACT.md`, "Ownership",
-gives the data layer "the label column and its point-in-time rule". The
-implementation is deleted and the property it demonstrated now lives in
-`tests/test_contract.py::TargetSchemaTests`, as an `expectedFailure` Track A
-codes against.
+trailing-percentile threshold in `repo_model.event_eval`, until that turned out
+to be a second implementation of a Track A rule -- `AGENT_CONTRACT.md`,
+"Ownership", gives the data layer "the label column and its point-in-time
+rule". That implementation is deleted, and the trailing rule itself was retired
+by #91: the label is fixed bp only, and
+`tests/test_contract.py::StressLabelContractTests` checks that a row's label
+reads that row's spread and nothing else.
 
 Mutation record. The strict comparison in `splits.clears_purge` was flipped
 from `<` to `<=` -- a one-day loosening, the smallest change the boundary

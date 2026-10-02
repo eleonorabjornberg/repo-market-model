@@ -33,7 +33,7 @@ from repo_model.data import (
     fixed_bp_stress_label_columns,
     load_daily_panel,
     load_point_in_time_panel,
-    stress_label_threshold,
+    load_stress_thresholds,
     validate_publication_gaps,
     validate_accounting_identities,
     verify_daily_panel,
@@ -645,15 +645,35 @@ class StressLabelTests(unittest.TestCase):
         self.assertEqual(rows[1]["stress_gt_20bp"], 0)
         self.assertEqual(rows[2]["stress_gt_50bp"], 1)
 
-    def test_trailing_threshold_excludes_the_current_row(self):
-        values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+    def test_a_declared_secondary_rule_is_refused(self):
+        """Fixed bp is the only threshold rule; a second one fails loudly.
 
-        self.assertEqual(stress_label_threshold(values, 4, 4, 1.0), 4.0)
+        The trailing-percentile secondary rule was retired by directive #91,
+        under Eleonora's 1 October 2026 ruling on #87: the pressure thresholds
+        are fixed relative to IORB and no rolling anchor is used. A declaration
+        that still carries a `secondary_rule` is refused rather than loaded and
+        ignored, so a dormant rule cannot return unnoticed.
 
-    def test_trailing_threshold_requires_declared_history(self):
-        with self.assertRaisesRegex(DataContractError, "insufficient"):
-            stress_label_threshold([1.0, 2.0], 1, 2, 0.9)
+        Mutation record: the refusal in `load_stress_thresholds` disabled
+        (`if undeclared:` mutated to `if False:`). This test then failed with
+        `AssertionError` ("DataContractError not raised").
+        """
 
+        declared = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "stress_thresholds.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        declared["secondary_rule"] = {
+            "full_sample_allowed": False,
+            "history": "rows_strictly_before_label_row",
+            "type": "trailing_percentile",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "stress_thresholds.json"
+            path.write_text(json.dumps(declared), encoding="utf-8")
+            with self.assertRaisesRegex(DataContractError, "1 October 2026 ruling"):
+                load_stress_thresholds(path)
 
 
 class RealSnapshotPublicationGapTests(unittest.TestCase):

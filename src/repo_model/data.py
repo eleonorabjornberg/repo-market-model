@@ -2170,6 +2170,13 @@ def validate_accounting_identities(
     return evaluations
 
 
+# Every key a stress-threshold declaration may carry. Anything else is a rule
+# this module does not implement, and is refused rather than ignored.
+_STRESS_THRESHOLD_KEYS = frozenset(
+    {"label_columns", "primary_rule", "target", "taus_bp", "version"}
+)
+
+
 def load_stress_thresholds(
     path: Path = DEFAULT_STRESS_THRESHOLDS,
 ) -> Mapping[str, object]:
@@ -2199,15 +2206,14 @@ def load_stress_thresholds(
     expected_columns = [f"stress_gt_{tau:g}bp" for tau in taus]
     if declaration.get("label_columns") != expected_columns:
         raise DataContractError("stress label_columns must match the declared taus_bp")
-    secondary = declaration.get("secondary_rule")
-    if not isinstance(secondary, dict):
-        raise DataContractError("stress threshold metadata needs a secondary_rule")
-    if secondary.get("type") != "trailing_percentile":
-        raise DataContractError("secondary stress rule must be 'trailing_percentile'")
-    if secondary.get("history") != "rows_strictly_before_label_row":
-        raise DataContractError("trailing stress rule must use only pre-label rows")
-    if secondary.get("full_sample_allowed") is not False:
-        raise DataContractError("full-sample stress percentiles are prohibited")
+    undeclared = sorted(set(declaration) - _STRESS_THRESHOLD_KEYS)
+    if undeclared:
+        raise DataContractError(
+            f"stress threshold metadata declares {undeclared}: fixed bp is the only "
+            "threshold rule, fixed relative to IORB with no rolling anchor "
+            "(Eleonora's 1 October 2026 ruling on #87; the secondary rule was "
+            "retired by #91)"
+        )
     return declaration
 
 
@@ -2221,36 +2227,6 @@ def _finite_values(values: Sequence[float]) -> List[float]:
             raise DataContractError(f"stress value {position} is not finite")
         checked.append(number)
     return checked
-
-
-def stress_label_threshold(
-    values: Sequence[float],
-    index: int,
-    window: int,
-    probability: float,
-) -> float:
-    """Return a trailing percentile based strictly on rows before ``index``."""
-
-    if isinstance(index, bool) or not isinstance(index, int):
-        raise DataContractError("stress label index must be an integer")
-    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:
-        raise DataContractError("stress label window must be a positive integer")
-    if index < window or index > len(values):
-        raise DataContractError("stress label threshold has insufficient trailing history")
-    if isinstance(probability, bool) or not isinstance(probability, (int, float)):
-        raise DataContractError("stress label probability must be numeric")
-    quantile = float(probability)
-    if not 0.0 <= quantile <= 1.0:
-        raise DataContractError("stress label probability must be in [0, 1]")
-
-    history = sorted(_finite_values(values[index - window : index]))
-    position = (len(history) - 1) * quantile
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return history[lower]
-    weight = position - lower
-    return history[lower] * (1.0 - weight) + history[upper] * weight
 
 
 def fixed_bp_stress_label_columns(
