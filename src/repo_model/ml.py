@@ -3934,9 +3934,18 @@ class _PressureDesign:
     * With `tga` and `reserve_balances` declared, the TGA's change over
       `TGA_CHANGE_ROWS` panel rows ending at its as-of read, and that change
       times the scarcity state.
+    * Each declared product (#127), last: the product of two terms, each a
+      declared column other than a calendar one, or `tga_change`, as read, in
+      their own units. Empty by default, so pressure model v1's design is
+      unchanged.
     """
 
-    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+    def __init__(
+        self,
+        features: Sequence[str],
+        declaration: Any,
+        products: Sequence[Tuple[str, str]] = (),
+    ) -> None:
         declared = tuple(dict.fromkeys(str(name) for name in features))
         if "spread_bps" not in declared:
             raise ValueError(
@@ -3984,6 +3993,19 @@ class _PressureDesign:
             names += [f"{name}_x_scarcity" for name in scheduled]
         if self.tga:
             names += ["tga_change", "tga_change_x_scarcity"]
+        self.products = tuple((str(a), str(b)) for a, b in products)
+        for pair in self.products:
+            for term in pair:
+                known = (term == "tga_change" and self.tga) or (
+                    term in declared and term not in _CALENDAR_INPUTS
+                )
+                if not known:
+                    raise ValueError(
+                        f"a product term reads {term!r}, which this design does not "
+                        f"declare (a declared non-calendar column, or tga_change "
+                        f"with tga and reserve_balances declared)"
+                    )
+            names.append(f"{pair[0]}_x_{pair[1]}")
         self.names = tuple(names)
 
     def needs_history(self) -> bool:
@@ -4019,7 +4041,22 @@ class _PressureDesign:
                 if tga_change is None:  # pragma: no cover - callers supply it
                     raise ValueError("the TGA change is required when tga is declared")
                 values += [tga_change, tga_change * state]
+        for a, b in self.products:
+            values.append(self._term(observation, a, tga_change) * self._term(observation, b, tga_change))
         return values
+
+    def _term(
+        self, observation: DailyObservation, name: str, tga_change: Optional[float]
+    ) -> float:
+        """One product factor: `tga_change`, or a declared column as read."""
+
+        if name == "tga_change":
+            if tga_change is None:  # pragma: no cover - callers supply it
+                raise ValueError("the TGA change is required for a product with it")
+            return tga_change
+        if name == "spread_bps":
+            return float(observation.spread_bps)
+        return self._value(observation, name)
 
 
 def _tga_change_at(rows: Sequence[DailyObservation], position: int) -> Optional[float]:
@@ -4124,13 +4161,17 @@ def _pressure_pairs(
 
 
 def _direct_pressure_predictor(
-    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int,
+    products: Sequence[Tuple[str, str]] = (),
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator."""
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
-    design = _PressureDesign(features, declaration)
+    design = _PressureDesign(features, declaration, products)
     cache: dict = {}
 
     def fit_predict(
@@ -4196,6 +4237,8 @@ def _direct_pressure_predictor(
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:
             settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        if design.products:
+            settings["products"] = [list(pair) for pair in design.products]
         return ExceedanceCurves(
             tuple(curves),
             design.features,
@@ -4253,7 +4296,10 @@ def _fit_classifier(
 
 
 def pressure_logistic_exceedance(
-    features: Sequence[str], declaration: Any, minimum_history: int = 20
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    products: Sequence[Tuple[str, str]] = (),
 ) -> ExceedancePredictor:
     """A direct logistic model of the pressure label (#114).
 
@@ -4270,6 +4316,8 @@ def pressure_logistic_exceedance(
         declaration: the split declaration that defines the pressure-day types
             (`evaluation_splits.load_split_declaration`).
         minimum_history: the shortest training frame that may produce a fit.
+        products: product terms added to the design (`_PressureDesign`, #127);
+            empty for pressure model v1.
 
     Raises:
         ValueError: on a design the features cannot support, a short frame, or
@@ -4278,7 +4326,9 @@ def pressure_logistic_exceedance(
             read (`_served_tga_change`).
     """
 
-    return _direct_pressure_predictor("logistic", features, declaration, minimum_history)
+    return _direct_pressure_predictor(
+        "logistic", features, declaration, minimum_history, products
+    )
 
 
 def pressure_classifier_exceedance(
