@@ -431,6 +431,7 @@ from repo_model.splits import LookAheadError, SplitError
 # importing another is how
 # `tests/test_event_eval.py` already reaches this one's fixtures.
 from test_contract import _import_test_modules_naming, _package_modules
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 SAMPLE_PANEL = Path(__file__).parents[1] / "data" / "sample" / "daily_market.csv"
 
