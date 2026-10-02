@@ -148,9 +148,11 @@ Each of these is stated because it is easy to mistake for something stronger. Se
 checked by `tests/test_docs_freshness.py`, which fails if a limitation that still holds
 stops being published here, or if one that has been repaired is still published.
 
-- **The information set is stale in every published record.** Above, and in
-  `docs/pivot/lag-assessment.md`. The records stay valid as measurements of the conservative
-  design and do not measure a forecast made from what was public the afternoon before.
+- **The archived records use a week-old information set.** Above, and in
+  `docs/pivot/lag-assessment.md`. The records in `docs/runs/archive/pre-asof/` stay valid as
+  measurements of that conservative design and do not measure a forecast made from what was
+  public the afternoon before. The records at the top level of `docs/runs/` are scored under
+  the as-of rule.
 - **Rates volatility and the cash-futures basis are not in the panel.** The MOVE
   index is licensed, and the Treasury cash-futures basis needs licensed futures prices;
   this repository takes public sources only. A public proxy for each is open.
@@ -191,7 +193,7 @@ generated blocks, and the verdict on them is in `PLAN.md`.
 than out of yesterday's turbulence. That is why the pivot's plan puts scheduled inputs and a
 reserve-scarcity state ahead of further transforms of past volatility. The scouting run
 behind the lag finding also suggests part of the tail failure was the week-old information
-set itself; the re-score decides.
+set itself; the as-of records in `docs/runs/` are where that is measured.
 
 ## Related quantitative work
 
@@ -274,9 +276,9 @@ redesign borrows.
 `docs/runs/` holds the published records and the frozen panel's original build manifest.
 The panel itself is not tracked; it rebuilds from the tracked inputs, and the manifest that
 carries its digest is `metadata/funding_panel_manifest.json`, against which
-`verify-panel` checks a rebuilt panel. Under the pivot's plan the records scored under the
-old information set move to `docs/runs/archive/pre-asof/` in the re-scoring pull request;
-records are never edited in place.
+`verify-panel` checks a rebuilt panel. The records scored under the old information set
+were moved to `docs/runs/archive/pre-asof/` by the re-scoring pull request (#74); records are
+never edited in place.
 
 ## Literature access
 

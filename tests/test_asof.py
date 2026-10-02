@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
 import unittest
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
@@ -24,6 +25,9 @@ from repo_model.asof import (
 from repo_model.data import DailyObservation
 from repo_model.registry import RegistryContractError
 from repo_model.splits import LookAheadError, SplitError
+
+sys.path.insert(0, str(Path(__file__).parent))
+from test_contract import on_rrp_from_operation_results
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
@@ -522,3 +526,231 @@ class SettlementScheduleGuardTests(unittest.TestCase):
 
         source = Path(cli_data.__file__).read_text(encoding="utf-8")
         self.assertIn("check_scheduled_settlements(", source)
+
+
+class OnRrpAvailabilityTests(unittest.TestCase):
+    """`on_rrp` is read at the next business day's decision instant (#45, step 3).
+
+    The Desk's operation closes at 13:15 ET and its results are published at no
+    stated clock time (A45, Route B, item 2). `nyfed_on_rrp.release_lag` takes
+    the conservative reading #45 offered instead of establishing one: a result
+    is available at 16:00 ET on the next panel business day. So at the 16:00
+    decision on Wednesday 21 January the Wednesday result, closed at 13:15 that
+    day, is invisible, and the latest read is Tuesday's.
+
+    Recorded mutation (CLAUDE.md), 2 October 2026, in a disposable copy:
+    `metadata/sources.json`, `nyfed_on_rrp.release_lag`, `"days": 1` mutated to
+    `"days": 0` (a result public at 16:00 on its own operation date).
+    `test_a_result_after_the_decision_instant_is_invisible` then fails with
+    `AssertionError` (`datetime.date(2026, 1, 21) != datetime.date(2026, 1,
+    20)`): the forecast reads the operation that closed the afternoon of its
+    own decision.
+    """
+
+    FEATURES = ("spread_bps", "on_rrp")
+    FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
+
+    def setUp(self):
+        # Off in the published map (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`);
+        # switched on for these tests.
+        switch = on_rrp_from_operation_results()
+        switch.start()
+        self.addCleanup(switch.stop)
+
+    def rows(self):
+        # `on_rrp` encodes its own row, 500 + i, so a read is legible.
+        return [
+            DailyObservation(row.date, {**row.values, "on_rrp": 500.0 + index})
+            for index, row in enumerate(ROWS)
+        ]
+
+    def test_a_result_after_the_decision_instant_is_invisible(self):
+        """The leakage test: Wednesday's result is not read at Wednesday's decision."""
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 22))  # Thursday; decision Wed 21st 16:00
+        info = information.information_set(DATES, scored)
+        read = read_of(info, "on_rrp")
+
+        self.assertEqual(read.fields, self.FIELDS)
+        self.assertEqual(DATES[read.row], date(2026, 1, 20))
+        self.assertEqual(read.available_at, datetime(2026, 1, 21, 16, 0))
+        # The result placed after the decision instant: Wednesday's, available
+        # Thursday at 16:00.
+        wednesday = scored - 1
+        self.assertEqual(DATES[wednesday], date(2026, 1, 21))
+        self.assertGreater(
+            information.availability(DATES, self.FIELDS, wednesday),
+            info.decision_instant,
+        )
+        observed = information.observation(self.rows(), info)
+        self.assertEqual(observed.values["on_rrp"], 500.0 + read.row)
+        self.assertNotEqual(observed.values["on_rrp"], 500.0 + wednesday)
+        # And a read forced onto it is leakage.
+        forced = info._replace(
+            reads=tuple(
+                entry._replace(row=wednesday) if entry.feature == "on_rrp" else entry
+                for entry in info.reads
+            )
+        )
+        with self.assertRaises(LookAheadError):
+            information.check(DATES, forced)
+
+    def test_across_a_holiday_the_prior_operation_is_read(self):
+        """#45, step 4: the holiday carry, through the as-of rule.
+
+        MLK Monday, 19 January, is not a panel date and the facility does not
+        operate. At the 16:00 decision on Tuesday the 20th, the latest
+        published result is Friday the 16th's, available at Tuesday 16:00, and
+        that is the row the rule reads: no hole, and no special case.
+        """
+
+        information = rule(self.FEATURES)
+        scored = index_of(date(2026, 1, 21))  # decision Tue 20th 16:00
+        info = information.information_set(DATES, scored)
+        read = read_of(info, "on_rrp")
+        self.assertEqual(DATES[read.row], date(2026, 1, 16))
+        self.assertEqual(read.available_at, datetime(2026, 1, 20, 16, 0))
+        information.check(DATES, info)
+        self.assertEqual(
+            information.observation(self.rows(), info).values["on_rrp"],
+            500.0 + index_of(date(2026, 1, 16)),
+        )
+
+    def test_every_on_rrp_read_passes_both_guards(self):
+        information = rule(self.FEATURES)
+        for scored in range(3, len(DATES)):
+            information.check(DATES, information.information_set(DATES, scored))
+
+
+class HorizonTests(unittest.TestCase):
+    """A forecast `horizon` panel days ahead (#114).
+
+    The decision instant is the declared time on the panel day `horizon` rows
+    before the scored day; `horizon=1` is the rule every published record was
+    scored under. Every read follows from that instant by the same per-field
+    rule, so a longer horizon reads older rows and nothing else changes.
+    """
+
+    FEATURES = ("spread_bps", "sofr_volume", "reserve_balances", "days_to_month_end")
+
+    def rule(self, horizon, features=FEATURES, registry=REGISTRY):
+        return InformationRule(
+            registry, tuple(features), decision_time=DECISION, horizon=horizon
+        )
+
+    def test_the_decision_is_horizon_panel_days_before_the_scored_day(self):
+        scored = index_of(date(2026, 1, 22))
+        for horizon in (1, 2, 3, 5):
+            info = self.rule(horizon).information_set(DATES, scored)
+            self.assertEqual(
+                info.decision_instant, datetime.combine(DATES[scored - horizon], DECISION)
+            )
+
+    def test_horizon_one_is_the_published_rule(self):
+        scored = index_of(date(2026, 1, 22))
+        self.assertEqual(
+            self.rule(1).information_set(DATES, scored),
+            rule(self.FEATURES).information_set(DATES, scored),
+        )
+
+    def test_the_target_is_read_horizon_plus_one_rows_back(self):
+        current = self.rule(3)
+        for scored in range(5, len(DATES)):
+            self.assertEqual(current.anchor(DATES, scored), scored - 4, DATES[scored])
+
+    def test_a_calendar_field_is_still_read_at_the_scored_day(self):
+        scored = index_of(date(2026, 1, 22))
+        info = self.rule(4).information_set(DATES, scored)
+        self.assertEqual(read_of(info, "days_to_month_end").row, scored)
+
+    def test_a_row_without_horizon_rows_before_it_has_no_decision(self):
+        with self.assertRaises(SplitError):
+            self.rule(3).information_set(DATES, 2)
+
+    def test_a_horizon_below_one_is_refused(self):
+        for bad in (0, -1, True, 1.5, None):
+            with self.assertRaises(ValueError, msg=repr(bad)):
+                self.rule(bad)
+
+    def test_every_read_at_a_long_horizon_passes_the_independent_guard(self):
+        """The rule's reads at horizon 3 clear `_check_decision_relative_availability` at 3.
+
+        That guard predates the rule and computes its own deadline, so it
+        checks the rule's horizon rather than trusting it.
+
+        Recorded mutation (CLAUDE.md), the horizon dropped from the decision:
+        in `asof.InformationRule.decision_instant`,
+        `dates[scored_index - self.horizon]` mutated to
+        `dates[scored_index - 1]`, so a horizon-3 forecast reads what was public
+        the day before the scored day. This test then fails, raising
+        `LookAheadError` from `baseline._check_decision_relative_availability`
+        (the first on the target's `fred_macro_latest_vintage.IOER`).
+        """
+
+        from repo_model.baseline import _check_decision_relative_availability
+
+        current = self.rule(3)
+        for scored in range(10, len(DATES)):
+            info = current.information_set(DATES, scored)
+            current.check(DATES, info)
+            for read in info.reads:
+                _check_decision_relative_availability(
+                    REGISTRY, read.fields, DATES, read.row, scored,
+                    decision_time=DECISION, horizon=3,
+                )
+
+    def test_the_independent_guard_refuses_a_read_too_new_for_the_horizon(self):
+        """A read public by the day before, but not by `horizon` days before.
+
+        Recorded mutation (CLAUDE.md), the guard's own deadline: in
+        `baseline._check_decision_relative_availability`,
+        `dates[scored_index - horizon]` mutated to `dates[scored_index - 1]`.
+        This test then fails, raising `AssertionError` ("LookAheadError not
+        raised"): the guard accepts a horizon-1 read at horizon 3.
+        """
+
+        from repo_model.baseline import _check_decision_relative_availability
+
+        scored = index_of(date(2026, 1, 22))
+        one_day = rule(self.FEATURES).information_set(DATES, scored)
+        read = read_of(one_day, "sofr_volume")
+        _check_decision_relative_availability(
+            REGISTRY, read.fields, DATES, read.row, scored, decision_time=DECISION
+        )
+        with self.assertRaises(LookAheadError):
+            _check_decision_relative_availability(
+                REGISTRY, read.fields, DATES, read.row, scored,
+                decision_time=DECISION, horizon=3,
+            )
+
+    def test_the_rule_check_refuses_a_horizon_one_read_at_horizon_three(self):
+        scored = index_of(date(2026, 1, 22))
+        current = self.rule(3)
+        info = current.information_set(DATES, scored)
+        newer = rule(self.FEATURES).information_set(DATES, scored)
+        reads = tuple(
+            mine._replace(row=theirs.row) if mine.feature == "sofr_volume" else mine
+            for mine, theirs in zip(info.reads, newer.reads)
+        )
+        with self.assertRaises(LookAheadError):
+            current.check(DATES, info._replace(reads=reads))
+
+    def test_a_settlement_announced_one_day_ahead_is_not_public_two_days_ahead(self):
+        # `treasury_auctions` declares a settlement public one panel day before
+        # it, at 15:00. At horizon 2 the decision is a day earlier than that.
+        scored = index_of(date(2026, 1, 22))
+        current = self.rule(2, ("spread_bps", "treasury_settlement"))
+        with self.assertRaises(LookAheadError):
+            current.check(DATES, current.information_set(DATES, scored))
+        one = self.rule(1, ("spread_bps", "treasury_settlement"))
+        one.check(DATES, one.information_set(DATES, scored))
+
+    def test_the_grid_starts_where_the_horizon_leaves_enough_labels(self):
+        one = fold_grid(DATES, REGISTRY, decision_time=DECISION, minimum_history=5)
+        three = fold_grid(
+            DATES, REGISTRY, decision_time=DECISION, minimum_history=5, horizon=3
+        )
+        self.assertEqual(three[0], one[0] + 2)
+        self.assertEqual(three[-1], len(DATES) - 1)
+        self.assertEqual(self.rule(3).anchor(DATES, three[0]) + 1, 5)

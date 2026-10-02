@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from repo_model.data import (
     CARRY_FORWARD_COLUMNS,
+    ON_RRP_MAX_GAP_DAYS,
     IDENTITY_HELD,
     IDENTITY_HELD_WHERE_EVALUABLE,
     build_daily_panel,
@@ -32,7 +33,7 @@ from repo_model.data import (
     fixed_bp_stress_label_columns,
     load_daily_panel,
     load_point_in_time_panel,
-    stress_label_threshold,
+    load_stress_thresholds,
     validate_publication_gaps,
     validate_accounting_identities,
     verify_daily_panel,
@@ -48,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).parents[0]))
 
 from repo_model.ingest import build_point_in_time_snapshot, fetch_sec_nmfp
 from test_ingest import nmfp_archive, registry_with_nmfp_coverage_floor
+from test_contract import on_rrp_from_operation_results
 
 
 def manifest_digest(manifest_path: Path) -> str:
@@ -644,15 +646,35 @@ class StressLabelTests(unittest.TestCase):
         self.assertEqual(rows[1]["stress_gt_20bp"], 0)
         self.assertEqual(rows[2]["stress_gt_50bp"], 1)
 
-    def test_trailing_threshold_excludes_the_current_row(self):
-        values = [1.0, 2.0, 3.0, 4.0, 1000.0]
+    def test_a_declared_secondary_rule_is_refused(self):
+        """Fixed bp is the only threshold rule; a second one fails loudly.
 
-        self.assertEqual(stress_label_threshold(values, 4, 4, 1.0), 4.0)
+        The trailing-percentile secondary rule was retired by directive #91,
+        under Eleonora's 1 October 2026 ruling on #87: the pressure thresholds
+        are fixed relative to IORB and no rolling anchor is used. A declaration
+        that still carries a `secondary_rule` is refused rather than loaded and
+        ignored, so a dormant rule cannot return unnoticed.
 
-    def test_trailing_threshold_requires_declared_history(self):
-        with self.assertRaisesRegex(DataContractError, "insufficient"):
-            stress_label_threshold([1.0, 2.0], 1, 2, 0.9)
+        Mutation record: the refusal in `load_stress_thresholds` disabled
+        (`if undeclared:` mutated to `if False:`). This test then failed with
+        `AssertionError` ("DataContractError not raised").
+        """
 
+        declared = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "stress_thresholds.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        declared["secondary_rule"] = {
+            "full_sample_allowed": False,
+            "history": "rows_strictly_before_label_row",
+            "type": "trailing_percentile",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "stress_thresholds.json"
+            path.write_text(json.dumps(declared), encoding="utf-8")
+            with self.assertRaisesRegex(DataContractError, "1 October 2026 ruling"):
+                load_stress_thresholds(path)
 
 
 class RealSnapshotPublicationGapTests(unittest.TestCase):
@@ -6718,6 +6740,136 @@ class WeeklyCarryForwardTests(unittest.TestCase):
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["holes"], dict(build.holes))
             self.assertNotIn("carried_forward", manifest)
+
+
+class OnRrpHolidayCarryTests(unittest.TestCase):
+    """`on_rrp` carries the latest operation across a day with none (#45, step 4).
+
+    Decided under Eleonora's delegation, 1 October 2026: carry, through the
+    as-of rule. On a day with no operation the latest published result is the
+    balance still outstanding, as the H.4.1 shows, so the panel gives the day
+    that result rather than a hole, and the as-of rule reads it like any other
+    row. The bound is `data.ON_RRP_MAX_GAP_DAYS`, the longest gap between
+    operations A45 measured (4 calendar days). A longer gap is a feed fault and
+    the build raises.
+
+    On the published panel no row needs the carry: every SOFR date from
+    2018-04-03 to 2026-09-03 has an operation. A Federal Reserve holiday is a
+    SIFMA close too, and the facility is closed on Good Friday when SOFR is.
+    The carry matters to a build whose grid holds a business day the Desk did
+    not operate on; the fixture below makes MLK Monday such a day.
+
+    **The fixture.** Weekdays 12 to 30 January 2026. `sofr` prints on every
+    one. `on_rrp` prints on every one except Monday 19 January, the holiday.
+
+    Mutation record, 2 October 2026, in a disposable copy built from
+    `git ls-files`, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, this class
+    alone; unmutated control green before and after. Test written first: the
+    gap test failed with `AssertionError: DataContractError not raised` before
+    the refusal existed.
+
+    * The refusal (`src/repo_model/data.py`, `_carry_forward_values`): `if
+      column in CARRY_FORWARD_REFUSED_BEYOND and ref_date not in own:` mutated
+      to `if False and ...`. Kills `test_a_gap_longer_than_the_bound_raises`
+      alone: `AssertionError: DataContractError not raised`.
+    * The carry: `"on_rrp": ON_RRP_MAX_GAP_DAYS,` deleted from
+      `CARRY_FORWARD_COLUMNS`. Kills all four: the holiday test with
+      `AssertionError: None != 104.0`, the bound test with `KeyError:
+      'on_rrp'`.
+    """
+
+    SOFR_SHA = "e" * 64
+    RRP_SHA = "d" * 64
+    COLUMNS = ("sofr", "on_rrp")
+    HOLIDAY = date(2026, 1, 19)
+
+    @property
+    def grid(self):
+        start = date(2026, 1, 12)
+        days = (start + timedelta(days=offset) for offset in range(19))
+        return tuple(day for day in days if day.weekday() < 5)
+
+    def registry(self):
+        real = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {
+            "nyfed_sofr": {"release_lag": dict(real["nyfed_sofr"]["release_lag"])},
+            "nyfed_on_rrp": {"release_lag": dict(real["nyfed_on_rrp"]["release_lag"])},
+        }
+
+    def rows(self, missing):
+        rows = []
+        for index, ref_date in enumerate(self.grid):
+            available = datetime.combine(
+                ref_date + timedelta(days=1), time(21, 0), tzinfo=timezone.utc
+            )
+            rows.append(
+                PointInTimeObservation(
+                    series_id="SOFR",
+                    ref_date=ref_date,
+                    available_at=available,
+                    value=4.30 + index / 100,
+                    vintage_id=f"SOFR-{ref_date.isoformat()}",
+                    source_sha=self.SOFR_SHA,
+                )
+            )
+            if ref_date in missing:
+                continue
+            rows.append(
+                PointInTimeObservation(
+                    series_id="reverse_repo_total_accepted",
+                    ref_date=ref_date,
+                    available_at=available,
+                    value=100.0 + index,
+                    vintage_id=f"RRP-{ref_date.isoformat()}",
+                    source_sha=self.RRP_SHA,
+                )
+            )
+        return rows
+
+    def build(self, missing):
+        # `on_rrp` from the operation results, switched on for the test: it is
+        # off in the published map (`contract.ON_RRP_OPERATION_RESULTS_FIELDS`).
+        with on_rrp_from_operation_results():
+            return build_daily_panel(
+                self.rows(missing),
+                self.registry(),
+                build_cutoff=datetime(2026, 3, 1, tzinfo=timezone.utc),
+                decision_time=time.fromisoformat("16:00"),
+                columns=self.COLUMNS,
+            )
+
+    def test_a_day_with_no_operation_reads_the_prior_operations_total(self):
+        build = self.build({self.HOLIDAY})
+        panel = {row.date: row.values["on_rrp"] for row in build.observations}
+        friday = date(2026, 1, 16)
+        self.assertEqual(tuple(panel), self.grid)
+        self.assertEqual(panel[friday], 100.0 + self.grid.index(friday))
+        self.assertEqual(panel[self.HOLIDAY], panel[friday])
+        # The carry stops at the next operation.
+        self.assertEqual(panel[date(2026, 1, 20)], 100.0 + self.grid.index(date(2026, 1, 20)))
+        self.assertEqual(build.holes["on_rrp"], 0)
+        self.assertEqual(build.carried_forward["on_rrp"], 1)
+
+    def test_the_bound_is_the_longest_measured_gap(self):
+        self.assertEqual(ON_RRP_MAX_GAP_DAYS, 4)
+        self.assertEqual(CARRY_FORWARD_COLUMNS["on_rrp"], ON_RRP_MAX_GAP_DAYS)
+
+    def test_a_gap_at_the_bound_carries(self):
+        # Friday 23rd to Tuesday 27th: four days, the Friday-to-Tuesday gap.
+        missing = {date(2026, 1, 26)}
+        build = self.build(missing)
+        panel = {row.date: row.values["on_rrp"] for row in build.observations}
+        self.assertEqual(panel[date(2026, 1, 26)], panel[date(2026, 1, 23)])
+
+    def test_a_gap_longer_than_the_bound_raises(self):
+        # Friday 23rd's result standing for Wednesday 28th: five days.
+        missing = {date(2026, 1, 26), date(2026, 1, 27), date(2026, 1, 28)}
+        with self.assertRaisesRegex(DataContractError, "on_rrp.*2026-01-28"):
+            self.build(missing)
 
 
 class PanelYear2025DiagnosticTests(unittest.TestCase):

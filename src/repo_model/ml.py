@@ -122,6 +122,36 @@ regression, done causally inside the one training frame a fold hands over:
 Runtime is the full fit plus one fit per block, and every forecast reads each
 excluding model once more.
 
+**Per-held-out-row masking, opt-in (#78).** `docs/decisions/information-set.md`
+(Method notes) accepts one bias in the cross-conformal calibrations: the frame
+a fold hands over is masked at the **fold's** decision instant, so a declared
+column slower than the target (the H.4.1 weeklies) can reach an excluding
+model's training rows before its block with a value that was public at the
+fold's decision but not yet at a held-out row's. `calibration_masking=
+"held_out_row"` removes it for measurement:
+
+* each held-out row's mask is the set of declared values on the training rows
+  before its block that `InformationRule.frame` would hole at that row's own
+  decision instant. Rows after the block are not masked: CV+ trains on them,
+  labels included, by construction, and the Method note is about the declared
+  columns before the block;
+* the held-out rows of a block are grouped by their mask, and each group is
+  scored by its own excluding model, fitted on the block's training pairs with
+  that mask applied (a masked value is a hole, so it takes the model's fitted
+  imputation, as any hole does). The group with the empty mask is the block's
+  model as `None` fits it, bit for bit; a declaration with no column slower
+  than the target therefore fits exactly what `None` fits;
+* the band is CV+'s as before: each score is paired with the excluding model
+  that produced it, so `calibration_blocks` may hold more than one model per
+  block, each carrying its own rows' scores;
+* the full fit, and so the reported interior, is untouched.
+
+Refused under `none`, `conformal` and `conformal_asymmetric`, which train no
+excluding model, and with `training_pairs="direct"` (#37): a direct pair reads
+only what was public at its own target's decision, which comes before any
+held-out row's after it, so there is nothing to mask. Runtime grows by one fit
+per extra mask group.
+
 **Asymmetric split-conformal, opt-in (B51).** B51 introduced this as the half of
 `cross_conformal`'s change that is not the fit, on the reading that CV+ takes its
 two edges from separate order statistics. **That reading was an equivocation;
@@ -430,6 +460,32 @@ declaration, and the purge is already sized over every column the ARX reads.
 
 Absent is the default and is today's gbm, bit for bit.
 
+**Direct (horizon-matched) training pairs, opt-in (#37).** The default design
+is one-step pairs: row `p`'s own values train on row `p + 1`'s spread, and the
+fitted model is then served the as-of observation, which sits two or more rows
+before the scored day. `training_pairs="direct"` trains on the gap it is served
+at instead. Each target row `t` is paired with the observation a forecast of
+`t` reads -- `asof.InformationRule.observation` at `t`'s own decision instant,
+every declared field at its latest row observable there -- and its lags and
+GARCH variance end at `t`'s anchor, as a forecast's do. It is the read a
+calibration row is already scored from, so under a calibration the fit and the
+held-out scores are made at one horizon.
+
+* **Guarded as a forecast is.** Every pair's read goes through
+  `InformationRule.check`, the leakage and staleness guards a scored day's
+  read goes through, and is refused with their exceptions. A target with no
+  read at its decision -- the frame's first rows -- trains no pair.
+* **Needs the run's rule.** `information` is required, under every
+  calibration, `none` included, and its absence is `SplitError`.
+* **Under the cross-conformal calibrations**, an excluding model trains a
+  pair only if its target and every row its read touches are rows it may
+  train on, by the rule its one-step pairs follow; `training_dates` lists
+  all of them.
+* **The ARX feature is unchanged**: `fit_arx` is a one-step model, fitted on
+  its own pairs, and its forecast is a column read off the feature row.
+
+Absent is the default and is today's gbm, bit for bit.
+
 **A generalised Pareto tail, opt-in (B36).** `tail="gpd"` continues the law
 `predict_stress` inverts above its top declared quantile with `_fit_gpd_pwm`'s
 fitted tail, where the knot law has only one straight segment to the largest
@@ -516,7 +572,7 @@ from dataclasses import dataclass
 from datetime import date
 from fractions import Fraction
 from types import MappingProxyType
-from typing import Any, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .baseline import (
     SPREAD_COMPONENTS,
@@ -549,12 +605,19 @@ __all__ = [
     "SCALE_FLOOR_BPS",
     "SCALE_WINDOW",
     "TAIL_FAMILIES",
+    "TRAINING_PAIRS",
     "VOLATILITY_FEATURES",
     "FittedTail",
     "MissingMLExtraError",
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
     "gbm_exceedance",
+    "PRESSURE_CLASSIFIER_SETTINGS",
+    "PRESSURE_LOGISTIC_SETTINGS",
+    "SCARCITY_STATE",
+    "TGA_CHANGE_ROWS",
+    "pressure_classifier_exceedance",
+    "pressure_logistic_exceedance",
 ]
 
 #: The level the point forecast is read at. The contract grid carries it, and a
@@ -607,6 +670,14 @@ _CROSS_CALIBRATIONS = (
     "cross_conformal_scaled",
     "cross_conformal_partial",
 )
+
+#: How a cross-conformal excluding model's training rows are masked. `None`,
+#: the default, is the model every published record was produced with: the
+#: frame as the fold masked it. `"held_out_row"` masks, for each held-out row,
+#: the declared values on the training rows before its block that were not yet
+#: public at that row's own decision instant (directive #78; see the module
+#: docstring).
+CALIBRATION_MASKINGS = ("held_out_row",)
 
 #: The calibration whose scores are divided by `_trailing_scale`.
 _SCALED_CALIBRATION = "cross_conformal_scaled"
@@ -665,6 +736,10 @@ ARX_FEATURES = ("declared",)
 
 #: The design name of the ARX forecast column.
 _ARX_COLUMN = "arx_forecast"
+
+#: The training pairings gbm can be built with besides the default one-step
+#: pairs. See the module docstring (#37).
+TRAINING_PAIRS = ("direct",)
 
 #: The tail families gbm's law can be continued with above its top declared
 #: quantile. See the module docstring.
@@ -1573,6 +1648,8 @@ class FittedGradientBoostedQuantiles:
     * `arx_feature`, `arx` --- the ARX feature the design carries (`None` when
       it carries none) and the `baseline.FittedArx` fitted on the fit rows,
       whose point forecast from a feature row is that row's column.
+    * `training_pairs` --- `"direct"` when the design was trained on direct
+      pairs, `None` for one-step pairs. See the module docstring.
     * `tail`, `tail_fit` --- the tail family the law is continued with above
       its top declared quantile (`None` when it is not) and the `FittedTail`
       fitted to the calibration rows' excesses above that quantile. Four
@@ -1620,6 +1697,7 @@ class FittedGradientBoostedQuantiles:
         "calibration_blocks",
         "calibration_end",
         "calibration_folds",
+        "calibration_masking",
         "calibration_share",
         "calibration_start",
         "cutoff",
@@ -1635,6 +1713,7 @@ class FittedGradientBoostedQuantiles:
         "spread_change_lags",
         "tail",
         "tail_fit",
+        "training_pairs",
         "volatility_feature",
         "widening",
     )
@@ -1668,7 +1747,11 @@ class FittedGradientBoostedQuantiles:
         tail: Optional[str] = None,
         tail_fit: Optional[FittedTail] = None,
         edge_widenings: Tuple[float, float] = (0.0, 0.0),
+        calibration_masking: Optional[str] = None,
+        training_pairs: Optional[str] = None,
     ) -> None:
+        self.calibration_masking: Optional[str] = calibration_masking
+        self.training_pairs: Optional[str] = training_pairs
         self.edge_widenings: Tuple[float, float] = (
             float(edge_widenings[0]),
             float(edge_widenings[1]),
@@ -1782,8 +1865,8 @@ class FittedGradientBoostedQuantiles:
         so cannot ask `isinstance`. Empty under `calibration="none"` -- absent,
         not `"none"` -- so a record of the uncalibrated model declares exactly
         what every gbm record published before calibration existed declares.
-        `spread_change_lags`, `volatility_feature`, `arx_feature` and `tail` by
-        the same rule: named when set, absent when not. Each calibration names its own setting and
+        `spread_change_lags`, `volatility_feature`, `arx_feature`, `tail` and
+        `training_pairs` and `calibration_masking` by the same rule: named when set, absent when not. Each calibration names its own setting and
         only its own: `calibration_share` for `conformal` and
         `conformal_asymmetric`, `calibration_folds` for `cross_conformal`,
         `cross_conformal_asymmetric`, `cross_conformal_scaled` and
@@ -1810,6 +1893,10 @@ class FittedGradientBoostedQuantiles:
             settings["arx_feature"] = self.arx_feature
         if self.tail is not None:
             settings["tail"] = self.tail
+        if self.training_pairs is not None:
+            settings["training_pairs"] = self.training_pairs
+        if self.calibration_masking is not None:
+            settings["calibration_masking"] = self.calibration_masking
         return MappingProxyType(settings)
 
     @property
@@ -2222,16 +2309,64 @@ class FittedGradientBoostedQuantiles:
         """
 
         interior, down, up = self._reported(feature_row)
-        anchor = interior[self.levels.index(_MEDIAN_LEVEL)]
-        pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
-        bottom = anchor + self._residuals[0]
-        top = anchor + self._residuals[-1]
-        if down or up:
-            bottom -= down
-            top += up
-        low = bottom if bottom < interior[0] else interior[0] - pad
-        high = top if top > interior[-1] else interior[-1] + pad
-        return (low,) + interior + (high,), (0.0,) + self.levels + (1.0,)
+        return _law_knots(
+            interior, down, up, self._residuals[0], self._residuals[-1], self.levels
+        )
+
+    def cross_conformal_parts(self, feature_row: DailyObservation) -> "CrossConformalParts":
+        """What CV+'s band at `feature_row` is built from, for a recalibration (#116).
+
+        The full fit's rearranged vector before its edges move, every
+        held-out row's terms `Q_lo_-k(i)(x) - s_i` and `Q_hi_-k(i)(x) + s_i`
+        read at this feature row, in block and date order, with each row's
+        date, and the residual range the law's tails are laid from.
+        `_banded(vector, *_cross_conformal_edges(lows, highs, levels))` is
+        `predict`'s vector, and `law_from_band` at those edges is
+        `law_knots`', bit for bit: the terms are computed exactly as
+        `_reported` computes them.
+
+        Raises:
+            ValueError: unless this model is calibrated by `cross_conformal`
+                and carries no tail; under any other calibration the terms are
+                not CV+'s, and a tail's law is not `law_from_band`'s.
+        """
+
+        if self.calibration != "cross_conformal" or self.tail_fit is not None:
+            raise ValueError(
+                f"cross_conformal_parts reads a cross_conformal fit with no tail; "
+                f"this one is calibrated by {self.calibration!r}"
+                f"{' and carries a tail' if self.tail_fit is not None else ''}"
+            )
+        vector = self._quantile_vector(self.design_row(feature_row))
+        dates: List[date] = []
+        lows: List[float] = []
+        highs: List[float] = []
+        for block in self.calibration_blocks:
+            if not block.scores:
+                continue
+            excluded = _rearranged(
+                block.estimators,
+                [
+                    self._design_row(
+                        feature_row,
+                        block.imputations,
+                        block.garch_parameters,
+                        block.garch_initial_variance,
+                        block.arx,
+                    )
+                ],
+            )[0]
+            dates.extend(block.scored_dates)
+            lows.extend(excluded[0] - score for score in block.scores)
+            highs.extend(excluded[-1] + score for score in block.scores)
+        return CrossConformalParts(
+            vector,
+            tuple(dates),
+            tuple(lows),
+            tuple(highs),
+            self._residuals[0],
+            self._residuals[-1],
+        )
 
     def _shared_law(
         self, feature_row: DailyObservation
@@ -2347,6 +2482,67 @@ class FittedGradientBoostedQuantiles:
         )
 
 
+class CrossConformalParts(NamedTuple):
+    """`FittedGradientBoostedQuantiles.cross_conformal_parts` for one feature row."""
+
+    vector: Tuple[float, ...]
+    held_out_dates: Tuple[date, ...]
+    lows: Tuple[float, ...]
+    highs: Tuple[float, ...]
+    residual_low: float
+    residual_high: float
+
+
+def _law_knots(
+    interior: Sequence[float],
+    down: float,
+    up: float,
+    residual_low: float,
+    residual_high: float,
+    levels: Sequence[float],
+) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    """`FittedGradientBoostedQuantiles._law`'s knots from its parts; see there."""
+
+    interior = tuple(interior)
+    anchor = interior[tuple(levels).index(_MEDIAN_LEVEL)]
+    pad = max(_TAIL_SHARE * (interior[-1] - interior[0]), _MINIMUM_TAIL)
+    bottom = anchor + residual_low
+    top = anchor + residual_high
+    if down or up:
+        bottom -= down
+        top += up
+    low = bottom if bottom < interior[0] else interior[0] - pad
+    high = top if top > interior[-1] else interior[-1] + pad
+    return (low,) + interior + (high,), (0.0,) + tuple(levels) + (1.0,)
+
+
+def law_from_band(
+    vector: Sequence[float],
+    lower: float,
+    upper: float,
+    residual_low: float,
+    residual_high: float,
+    levels: Sequence[float],
+) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    """The law of an uncalibrated `vector` whose band edges move to `lower`, `upper`.
+
+    `_law`'s rule for a calibrated fit, given the pieces
+    `cross_conformal_parts` hands out: the outer levels move by `_banded`'s
+    neighbour rule, and each tail by as much as its own edge did. At CV+'s
+    edges it is `law_knots`; at another calibration's edges it is the law that
+    calibration would report (#116).
+    """
+
+    return _law_knots(
+        _banded(vector, lower, upper),
+        vector[0] - lower,
+        upper - vector[-1],
+        residual_low,
+        residual_high,
+        levels,
+    )
+
+
 def _rearranged(
     estimators: Sequence[Any], design_rows: Sequence[Sequence[float]]
 ) -> Tuple[Tuple[float, ...], ...]:
@@ -2411,6 +2607,7 @@ def _training_design(
     arx_feature: Optional[str] = None,
     arx_frame: Sequence[DailyObservation] = (),
     arx_origins: Optional[Sequence[int]] = None,
+    pairs: Optional[Sequence[Tuple[int, DailyObservation, int]]] = None,
 ) -> Tuple[
     Mapping[str, float],
     Optional[Tuple[float, float, float]],
@@ -2423,7 +2620,10 @@ def _training_design(
     """One fit's imputations, GARCH, ARX, design and targets, over the pairs at `origins`.
 
     `origins` are frame positions `p` whose one-step pair `(p, p + 1)` trains;
-    every one is at least `lags`. `spreads` is what the training lags and
+    every one is at least `lags`. `pairs`, when given, replaces them with
+    direct pairs `(anchor, observation, target)` from `_direct_pairs`: the
+    lags and variance are read at `anchor`, the regressors off `observation`,
+    and the target is row `target`'s spread. `spreads` is what the training lags and
     variances are read off -- the frame's own, or, for an excluding model, the
     frame's with every row it may not train on made a hole -- and
     `garch_spreads` what the GARCH is fitted on. The ARX is `fit_arx` on
@@ -2438,6 +2638,9 @@ def _training_design(
     """
 
     change_names = _spread_change_names(lags)
+    if pairs is None:
+        pairs = [(position, rows[position], position + 1) for position in origins]
+    origins = [anchor for anchor, _, _ in pairs]
 
     # The GARCH(1,1), fitted on `garch_spreads` and nothing after them, then
     # filtered over `spreads` with those parameters: rows it did not fit on are
@@ -2468,9 +2671,9 @@ def _training_design(
         for name, change in zip(change_names, row_changes):
             if change is not None:
                 observed[name].append(change)
-    for position in origins:
+    for _, feature, _ in pairs:
         for name in names:
-            value = _raw_regressor(rows[position], name, "training row")
+            value = _raw_regressor(feature, name, "training row")
             if value is not None:
                 observed[name].append(value)
 
@@ -2499,12 +2702,12 @@ def _training_design(
 
     design = []
     targets = []
-    for position, row_changes in zip(origins, changes):
+    for (position, feature, target), row_changes in zip(pairs, changes):
         # The origin's variance and ARX forecast, `position`: the target row's
         # would read the target.
         design.append(
             _design(
-                rows[position],
+                feature,
                 names,
                 imputations,
                 "training row",
@@ -2513,8 +2716,50 @@ def _training_design(
                 arx,
             )
         )
-        targets.append(float(rows[position + 1].spread_bps))
+        targets.append(float(rows[target].spread_bps))
     return imputations, garch, initial, design, targets, variances, arx
+
+
+def _direct_pairs(
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    targets: Sequence[int],
+    lags: int,
+    kept: Optional[Sequence[bool]] = None,
+) -> Tuple[List[Tuple[int, DailyObservation, int]], List[int]]:
+    """The direct pairs at `targets`, and every row they read (#37).
+
+    Each target `t` is paired with its as-of read at its own decision instant,
+    checked by both guards, as `_held_out_read` reads a held-out row. A target
+    with no read, or whose anchor has fewer than `lags` rows before it, trains
+    no pair. With `kept`, a pair trains only if its target and every row its
+    read touches are kept: an excluding model reads nothing of its block
+    through a feature.
+
+    Returns `(pairs, read)`: the `(anchor, observation, target)` triples in
+    target order, and the ascending positions of every row they read,
+    targets included.
+    """
+
+    pairs: List[Tuple[int, DailyObservation, int]] = []
+    read: set = set()
+    for target in targets:
+        if target < 1:
+            continue
+        try:
+            info = information.information_set(dates, target)
+        except SplitError:
+            continue
+        information.check(dates, info)
+        if info.anchor < lags:
+            continue
+        touched = {target, info.anchor, *(field.row for field in info.reads)}
+        if kept is not None and not all(kept[position] for position in touched):
+            continue
+        pairs.append((info.anchor, information.observation(rows, info), target))
+        read.update(touched)
+    return pairs, sorted(read)
 
 
 def _fitted_levels(
@@ -2580,6 +2825,58 @@ def _held_out_read(
     return info.anchor, information.observation(rows, info)
 
 
+def _held_out_mask(
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    dates: Sequence[date],
+    before: int,
+    index: int,
+) -> Tuple[Tuple[int, Tuple[str, ...]], ...]:
+    """The declared values before a block that held-out row `index` could not yet see.
+
+    `(position, columns)` for every row at or before `before` -- the last row
+    the block's excluding model may train on before the block -- whose
+    declared `columns` carry a value in the frame that `InformationRule.frame`
+    holes at `index`'s own decision instant, ascending by position. Empty when
+    every such value was public by then. The frame masks only its tail, so the
+    scan stops at the first row the held-out row's frame leaves as it is.
+    """
+
+    if before < 0:
+        return ()
+    seen = information.frame(rows, information.information_set(dates, index))
+    mask = []
+    for position in range(before, -1, -1):
+        if seen[position] is rows[position]:
+            break
+        columns = tuple(
+            sorted(
+                column
+                for column, value in seen[position].values.items()
+                if value is None and rows[position].values.get(column) is not None
+            )
+        )
+        if columns:
+            mask.append((position, columns))
+    return tuple(reversed(mask))
+
+
+def _masked_rows(
+    rows: Sequence[DailyObservation], mask: Sequence[Tuple[int, Tuple[str, ...]]]
+) -> Sequence[DailyObservation]:
+    """`rows` with every value `mask` names made a hole; `rows` itself when it names none."""
+
+    if not mask:
+        return rows
+    out = list(rows)
+    for position, columns in mask:
+        values = dict(out[position].values)
+        for column in columns:
+            values[column] = None
+        out[position] = DailyObservation(out[position].date, values)
+    return out
+
+
 def fit_gradient_boosted_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
@@ -2596,6 +2893,8 @@ def fit_gradient_boosted_quantiles(
     calibration_folds: Optional[int] = None,
     arx_feature: Optional[str] = None,
     tail: Optional[str] = None,
+    calibration_masking: Optional[str] = None,
+    training_pairs: Optional[str] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -2671,6 +2970,18 @@ def fit_gradient_boosted_quantiles(
             rows' residual excesses above their reported top quantile and
             continues the law above that quantile with it; `conformal` only.
             See the module docstring.
+        calibration_masking: one of `CALIBRATION_MASKINGS`, or `None`, the
+            default, which trains each excluding model on the frame as the
+            fold masked it and is the model every published record was
+            produced with. `"held_out_row"` scores each held-out row with an
+            excluding model whose training rows before its block carry only
+            the declared values public at that row's own decision instant.
+            Cross-conformal calibrations only. See the module docstring.
+        training_pairs: one of `TRAINING_PAIRS`, or `None`, the default,
+            which trains on one-step pairs and is the model every published
+            gbm record was produced with. `"direct"` pairs each target row
+            with its own as-of read, the gap a forecast is served at, and
+            needs `information`. See the module docstring.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -2718,7 +3029,10 @@ def fit_gradient_boosted_quantiles(
             `conformal_asymmetric`, `cross_conformal_asymmetric`,
             `cross_conformal_scaled` or `cross_conformal_partial` (not wired). Under `conformal_asymmetric` and
             `cross_conformal_asymmetric` the score floor is the per-side one,
-            not `conformal`'s or `cross_conformal`'s.
+            not `conformal`'s or `cross_conformal`'s; and, for the masking, if
+            `calibration_masking` is not one of `CALIBRATION_MASKINGS`, or is
+            given to a calibration that trains no excluding model, or with
+            `training_pairs="direct"`.
     """
 
     grid = _validate_levels(levels)
@@ -2748,6 +3062,30 @@ def fit_gradient_boosted_quantiles(
             f"that is accepted and ignored is read by the next person as a "
             f"setting that took effect"
         )
+    if calibration_masking is not None:
+        if calibration_masking not in CALIBRATION_MASKINGS:
+            raise ValueError(
+                f"unknown calibration_masking {calibration_masking!r}; this model "
+                f"can be built with {', '.join(CALIBRATION_MASKINGS)}, or None for "
+                f"the frame as the fold masked it"
+            )
+        if calibration not in _CROSS_CALIBRATIONS:
+            raise ValueError(
+                f"calibration_masking {calibration_masking!r} was given, but "
+                f"calibration {calibration!r} trains no excluding model to mask; "
+                f"only {', '.join(_CROSS_CALIBRATIONS)} do. A setting that is "
+                f"accepted and ignored is read by the next person as a setting "
+                f"that took effect"
+            )
+        if training_pairs == "direct":
+            raise ValueError(
+                f"calibration_masking {calibration_masking!r} was given with "
+                f"training_pairs 'direct', whose every pair reads only what was "
+                f"public at its own target's decision, before any held-out row's "
+                f"after it: there is nothing to mask. A setting that is accepted "
+                f"and ignored is read by the next person as a setting that took "
+                f"effect"
+            )
     folds: Optional[int] = None
     if calibration == "none":
         if calibration_share is not None:
@@ -2880,6 +3218,21 @@ def fit_gradient_boosted_quantiles(
             f"excluding model, cross_conformal's missing sample, and its "
             f"correction scaled per row besides. Use calibration 'conformal'"
         )
+    if training_pairs is not None and training_pairs not in TRAINING_PAIRS:
+        raise ValueError(
+            f"unknown training_pairs {training_pairs!r}; this model can be "
+            f"trained on {', '.join(TRAINING_PAIRS)} pairs, or on one-step "
+            f"pairs by leaving the setting out. A misspelt pairing fitted on "
+            f"one-step pairs would publish today's gbm under a declaration "
+            f"naming another"
+        )
+    direct = training_pairs == "direct"
+    if direct and not isinstance(information, InformationRule):
+        raise SplitError(
+            f"training_pairs 'direct' pairs each target with its as-of read and "
+            f"needs the run's as-of rule to read it (information=), got "
+            f"{information!r}"
+        )
     scaled = calibration == _SCALED_CALIBRATION
     partial = calibration == _PARTIAL_CALIBRATION
     trailing = calibration in _TRAILING_SCALE_CALIBRATIONS
@@ -2967,6 +3320,19 @@ def fit_gradient_boosted_quantiles(
     # calibration rows are run through the recursion, never fitted on.
     # The ARX is fitted on the fit rows as one frame, which is what
     # `--model arx` fits on the same rows.
+    # Direct pairs: every fit row as a target, read as a forecast of it is.
+    # Every read is before its target, so inside the fit rows.
+    fit_pairs = (
+        _direct_pairs(information, rows, dates, range(len(fit_rows)), lags)[0]
+        if direct
+        else None
+    )
+    if direct and not fit_pairs:
+        raise ValueError(
+            f"training_pairs 'direct' leaves no training pair in the "
+            f"{len(fit_rows)} fit rows: no target has an as-of read with "
+            f"{lags} rows before its anchor"
+        )
     imputations, garch, initial, design, targets, variances, arx = _training_design(
         rows,
         dates,
@@ -2979,6 +3345,7 @@ def fit_gradient_boosted_quantiles(
         "fit rows",
         arx_feature,
         fit_rows,
+        pairs=fit_pairs,
     )
 
     # The cross-conformal blocks, planned and designed before anything is
@@ -3011,6 +3378,17 @@ def fit_gradient_boosted_quantiles(
                     for position in range(lags, len(rows) - 1)
                     if kept[position] and kept[position + 1]
                 ]
+            block_pairs = None
+            training_positions = sorted(
+                {p for origin in origins for p in (origin, origin + 1)}
+            )
+            if direct and start < stop:
+                # Direct: a pair trains only if its target and every row its
+                # read touches do.
+                block_pairs, training_positions = _direct_pairs(
+                    information, rows, dates, range(len(rows)), lags, kept
+                )
+                origins = [anchor for anchor, _, _ in block_pairs]
             if not origins:
                 raise ValueError(
                     f"cross-conformal block {number + 1} of {folds} holds out "
@@ -3035,36 +3413,7 @@ def fit_gradient_boosted_quantiles(
                 for position in range(len(rows) - 1)
                 if kept[position] and kept[position + 1]
             ]
-            (
-                block_imputations,
-                block_garch,
-                block_initial,
-                block_design,
-                block_targets,
-                _,
-                block_arx,
-            ) = _training_design(
-                rows,
-                dates,
-                masked,
-                masked,
-                origins,
-                names,
-                lags,
-                volatility_feature,
-                label,
-                arx_feature,
-                rows,
-                arx_origins,
-            )
-            # Its scored rows' inputs are every row at or before their feature
-            # row, as a forecast's are; only what the model learned is its own.
-            filtered = (
-                _garch_variances(_squared_changes(spreads), block_garch, block_initial)
-                if volatility_feature is not None
-                else []
-            )
-            held_out = []
+            reads = []
             for index in range(start, stop):
                 # No row of the frame is observable at this row's decision, or
                 # a declared field has none yet, or its feature row has too few
@@ -3082,7 +3431,57 @@ def fit_gradient_boosted_quantiles(
                 scale = _trailing_scale(spreads, position) if trailing else None
                 if trailing and scale is None:
                     continue
-                held_out.append(
+                reads.append((index, position, feature, scale))
+            # One excluding model per mask: under `calibration_masking` each
+            # held-out row is scored by a model whose training rows before the
+            # block carry only what was public at its own decision; otherwise,
+            # and for the rows whose mask is empty, the block's one model.
+            groups: dict = {}
+            for entry in reads:
+                mask = (
+                    _held_out_mask(information, rows, dates, before, entry[0])
+                    if calibration_masking is not None
+                    else ()
+                )
+                groups.setdefault(mask, []).append(entry)
+            if not groups:
+                groups[()] = []
+            for mask, entries in groups.items():
+                training = _masked_rows(rows, mask)
+                (
+                    block_imputations,
+                    block_garch,
+                    block_initial,
+                    block_design,
+                    block_targets,
+                    _,
+                    block_arx,
+                ) = _training_design(
+                    training,
+                    dates,
+                    masked,
+                    masked,
+                    origins,
+                    names,
+                    lags,
+                    volatility_feature,
+                    label,
+                    arx_feature,
+                    training,
+                    arx_origins,
+                    pairs=block_pairs,
+                )
+                # Its scored rows' inputs are every row at or before their
+                # feature row, as a forecast's are; only what the model learned
+                # is its own.
+                filtered = (
+                    _garch_variances(
+                        _squared_changes(spreads), block_garch, block_initial
+                    )
+                    if volatility_feature is not None
+                    else []
+                )
+                held_out = [
                     (
                         _design(
                             feature,
@@ -3102,21 +3501,22 @@ def fit_gradient_boosted_quantiles(
                         dates[index],
                         scale,
                     )
+                    for index, position, feature, scale in entries
+                ]
+                plans.append(
+                    (
+                        start,
+                        stop,
+                        training_positions,
+                        block_imputations,
+                        block_garch,
+                        block_initial,
+                        block_arx,
+                        block_design,
+                        block_targets,
+                        held_out,
+                    )
                 )
-            plans.append(
-                (
-                    start,
-                    stop,
-                    origins,
-                    block_imputations,
-                    block_garch,
-                    block_initial,
-                    block_arx,
-                    block_design,
-                    block_targets,
-                    held_out,
-                )
-            )
         count = sum(len(plan[-1]) for plan in plans)
         needed = (
             _minimum_asymmetric_calibration_rows(grid)
@@ -3229,7 +3629,7 @@ def fit_gradient_boosted_quantiles(
     for (
         start,
         stop,
-        origins,
+        training_positions,
         block_imputations,
         block_garch,
         block_initial,
@@ -3260,9 +3660,7 @@ def fit_gradient_boosted_quantiles(
                 arx=block_arx,
                 held_out_start=dates[start],
                 held_out_end=dates[stop - 1],
-                training_dates=sorted(
-                    {dates[p] for origin in origins for p in (origin, origin + 1)}
-                ),
+                training_dates=[dates[p] for p in training_positions],
                 scored_dates=[when for _, _, when, _ in held_out],
                 scores=[
                     max(vector[0] - target, target - vector[-1])
@@ -3325,6 +3723,8 @@ def fit_gradient_boosted_quantiles(
         tail=tail,
         tail_fit=tail_fit,
         edge_widenings=edge_widenings,
+        calibration_masking=calibration_masking,
+        training_pairs=training_pairs,
     )
 
 
@@ -3340,6 +3740,7 @@ def gbm_exceedance(
     spread_change_lags: Optional[int] = None,
     volatility_feature: Optional[str] = None,
     arx_feature: Optional[str] = None,
+    calibration_masking: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -3384,6 +3785,9 @@ def gbm_exceedance(
             settings that change the design the law is fitted on, by the same
             rule: passed straight to `fit_gradient_boosted_quantiles`, neither
             checked nor re-derived here, defaulting to its own (B42).
+        calibration_masking: passed straight to
+            `fit_gradient_boosted_quantiles` by the same rule, defaulting to
+            its own `None` (#78).
 
     **The as-of rule reaches the fit from the fold loop.** `fit_predict` names
     `information`, so `rolling_exceedance_backtest` and
@@ -3437,6 +3841,7 @@ def gbm_exceedance(
             spread_change_lags=spread_change_lags,
             volatility_feature=volatility_feature,
             arx_feature=arx_feature,
+            calibration_masking=calibration_masking,
         )
         # One model per feature row: the fit, reading history by position
         # from that row's own as-of history where the evaluator handed one.
@@ -3469,3 +3874,421 @@ def gbm_exceedance(
         )
 
     return fit_predict
+
+
+# --------------------------------------------------------------------------
+# Direct pressure-probability models (#114)
+# --------------------------------------------------------------------------
+#
+# `docs/decisions/pressure-probability.md` lets the pressure probability come
+# from a model fitted to the exceedance label directly, beside the exceedance
+# read off a predictive distribution. These are the two direct candidates of
+# pressure model v1 (plan §1): a logistic and a gradient-boosted classifier,
+# fitted per threshold to the label `spread > tau` and served under the as-of
+# rule. Both read one design, built by `_PressureDesign` from the declared
+# features, so the two differ only in the estimator.
+
+
+#: The settings the two direct models are fitted with, declared once and named
+#: in every curve's `model_settings`. Not tuned: chosen before scoring, as the
+#: scikit-learn defaults where they exist, and stated so a record can say so.
+PRESSURE_LOGISTIC_SETTINGS = MappingProxyType(
+    {"C": 1.0, "penalty": "l2", "standardized": True, "max_iter": 5000}
+)
+PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
+    {
+        "estimator": "HistGradientBoostingClassifier",
+        "learning_rate": 0.05,
+        "max_iter": 200,
+        "max_leaf_nodes": 15,
+        "min_samples_leaf": 20,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+
+#: The panel days over which the TGA change is measured: one week of panel
+#: rows, the H.4.1 print's cadence.
+TGA_CHANGE_ROWS = 5
+
+#: The scarcity state the scheduled-pressure terms are interacted with:
+#: reserve balances in USD trillions, read as-of. Provisional until the
+#: declared scarcity state (#115) exists; a record names it.
+SCARCITY_STATE = "reserve_balances_usd_tn"
+
+_CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
+_PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
+
+
+class _PressureDesign:
+    """The direct models' design, from the declared features.
+
+    * `spread_bps`, required: the latest spread public at the decision.
+    * Each other observed declared column, linearly, as read as-of. With
+      `reserve_balances` declared it is the scarcity state, in USD trillions.
+    * The three calendar columns, all declared or none: the scored day's
+      pressure-day type, as the split declaration defines it, one indicator
+      per type other than `ordinary`.
+    * `treasury_settlement`, a scheduled input, linearly, in USD billions.
+    * With `reserve_balances` declared, each scheduled-pressure term (the type
+      indicators and the settlement) times the scarcity state.
+    * With `tga` and `reserve_balances` declared, the TGA's change over
+      `TGA_CHANGE_ROWS` panel rows ending at its as-of read, and that change
+      times the scarcity state.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        if "spread_bps" not in declared:
+            raise ValueError(
+                "a direct pressure model reads the latest public spread; declare "
+                "spread_bps"
+            )
+        calendar = [name for name in _CALENDAR_INPUTS if name in declared]
+        if calendar and len(calendar) != len(_CALENDAR_INPUTS):
+            raise ValueError(
+                f"the pressure-day type is read from {list(_CALENDAR_INPUTS)} "
+                f"together; {calendar} were declared"
+            )
+        self.calendar = bool(calendar)
+        if self.calendar and not hasattr(declaration, "day_type"):
+            raise ValueError(
+                "the pressure-day type needs the split declaration that defines it"
+            )
+        self.declaration = declaration
+        self.features = declared
+        self.scarcity = "reserve_balances" in declared
+        self.tga = "tga" in declared and self.scarcity
+        self.settlement = "treasury_settlement" in declared
+        self.linear = tuple(
+            name
+            for name in declared
+            if name not in _CALENDAR_INPUTS
+            and name not in ("spread_bps", "tga", "treasury_settlement")
+            and name not in SPREAD_COMPONENTS
+        )
+        if "tga" in declared and not self.scarcity:
+            # Read only through the change × reserves term.
+            raise ValueError(
+                "tga enters the direct pressure models only as its change times "
+                "reserves; declare reserve_balances with it"
+            )
+        names: List[str] = ["spread_bps"]
+        names += list(self.linear)
+        scheduled: List[str] = []
+        if self.calendar:
+            scheduled += list(_PRESSURE_DAY_TYPES)
+        if self.settlement:
+            scheduled.append("treasury_settlement")
+        names += scheduled
+        if self.scarcity:
+            names += [f"{name}_x_scarcity" for name in scheduled]
+        if self.tga:
+            names += ["tga_change", "tga_change_x_scarcity"]
+        self.names = tuple(names)
+
+    def needs_history(self) -> bool:
+        return self.tga
+
+    def _value(self, row: DailyObservation, column: str) -> float:
+        value = row.values.get(column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{row.date}: the as-of read of {column!r} is missing; a direct "
+                f"pressure model is not fitted on an unobserved input"
+            )
+        return float(value)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        """One design row from an as-of observation and its TGA change."""
+
+        values = [float(observation.spread_bps)]
+        for name in self.linear:
+            value = self._value(observation, name)
+            values.append(value / 1000.0 if name == "reserve_balances" else value)
+        scheduled: List[float] = []
+        if self.calendar:
+            kind = self.declaration.day_type(observation.values)
+            scheduled += [1.0 if kind == name else 0.0 for name in _PRESSURE_DAY_TYPES]
+        if self.settlement:
+            scheduled.append(self._value(observation, "treasury_settlement"))
+        values += scheduled
+        if self.scarcity:
+            state = self._value(observation, "reserve_balances") / 1000.0
+            values += [term * state for term in scheduled]
+            if self.tga:
+                if tga_change is None:  # pragma: no cover - callers supply it
+                    raise ValueError("the TGA change is required when tga is declared")
+                values += [tga_change, tga_change * state]
+        return values
+
+
+def _tga_change_at(rows: Sequence[DailyObservation], position: int) -> Optional[float]:
+    """The TGA's change over `TGA_CHANGE_ROWS` rows ending at row `position`.
+
+    `None` when the earlier row is off the frame or either value is a hole.
+    Every row before an as-of read is older than it, and every declared lag is
+    monotone in the row, so both values were public whenever the read was.
+    """
+
+    earlier = position - TGA_CHANGE_ROWS
+    if earlier < 0:
+        return None
+    now = rows[position].values.get("tga")
+    before = rows[earlier].values.get("tga")
+    if now is None or before is None:
+        return None
+    return float(now) - float(before)
+
+
+def _served_tga_change(
+    history: Sequence[DailyObservation], observation: DailyObservation
+) -> float:
+    """The TGA change a forecast reads, off its own as-of history.
+
+    The history is the as-of frame at the forecast's decision instant: each
+    declared column a hole where it was not yet public. Its latest row with a
+    TGA value is the TGA's as-of read, and that value must be the one the
+    observation carries.
+
+    Raises:
+        LookAheadError: if the history's latest public TGA is not the value the
+            observation read, so the change would be measured from a row other
+            than the as-of read.
+        ValueError: if the history is too short to measure a change.
+    """
+
+    position = len(history) - 1
+    while position >= 0 and history[position].values.get("tga") is None:
+        position -= 1
+    read = observation.values.get("tga")
+    if position < 0 or read is None or float(history[position].values["tga"]) != float(read):
+        raise LookAheadError(
+            f"the forecast read tga {read!r} at {observation.date}, but its as-of "
+            f"history's latest public tga is "
+            f"{None if position < 0 else history[position].values['tga']!r}; the "
+            f"change would be measured from a row other than the as-of read"
+        )
+    change = _tga_change_at(history, position)
+    if change is None:
+        raise ValueError(
+            f"{observation.date}: fewer than {TGA_CHANGE_ROWS} rows of TGA history "
+            f"before its as-of read"
+        )
+    return change
+
+
+def _pressure_pairs(
+    design: _PressureDesign,
+    information: InformationRule,
+    train_rows: Sequence[DailyObservation],
+    cache: dict,
+) -> Tuple[List[List[float]], List[float]]:
+    """Direct (horizon-matched) training pairs under the as-of rule.
+
+    Each label `t` is paired with the design row a forecast of `t` would have
+    read at its own decision instant (`information.information_set`), checked
+    by both guards. A label with no read, a missing input or no TGA history
+    trains no pair. Cached by date: a pair reads only rows public by its own
+    decision, which every later frame carries unmasked.
+    """
+
+    dates = [row.date for row in train_rows]
+    xs: List[List[float]] = []
+    ys: List[float] = []
+    key_base = (information.horizon, information.features)
+    for target in range(1, len(train_rows)):
+        key = (key_base, dates[target])
+        if key not in cache:
+            cache[key] = None
+            try:
+                info = information.information_set(dates, target)
+            except SplitError:
+                continue
+            information.check(dates, info)
+            tga_change: Optional[float] = None
+            if design.tga:
+                (read,) = [r for r in info.reads if r.feature == "tga"]
+                tga_change = _tga_change_at(train_rows, read.row)
+                if tga_change is None:
+                    continue
+            try:
+                features = design.row(information.observation(train_rows, info), tga_change)
+            except ValueError:
+                continue
+            cache[key] = (features, float(train_rows[target].spread_bps))
+        pair = cache[key]
+        if pair is not None:
+            xs.append(pair[0])
+            ys.append(pair[1])
+    return xs, ys
+
+
+def _direct_pressure_predictor(
+    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+) -> Any:
+    """The fit-and-predict behind both direct models; `kind` picks the estimator."""
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _PressureDesign(features, declaration)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a direct pressure model pairs each training label with what was "
+                "public at that label's own decision instant, which only the as-of "
+                "rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a direct pressure model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (
+            histories is None or len(histories) != len(feature_rows)
+        ):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; "
+                "one history per feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        columns: List[List[float]] = []
+        # Two thresholds with no training spread between them have one label
+        # vector, so one fit: the estimator is deterministic in its labels.
+        fitted: dict = {}
+        for tau in taus:
+            labels = [1 if value > float(tau) else 0 for value in spreads]
+            if len(set(labels)) < 2:
+                columns.append([float(labels[0])] * len(served))
+                continue
+            key = tuple(labels)
+            if key not in fitted:
+                fitted[key] = _fit_classifier(kind, xs, labels, served)
+            columns.append(fitted[key])
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(
+            PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
+        )
+        settings["design"] = list(design.names)
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
+def _fit_classifier(
+    kind: str,
+    xs: Sequence[Sequence[float]],
+    labels: Sequence[int],
+    served: Sequence[Sequence[float]],
+) -> List[float]:
+    """Fit one estimator to one threshold's labels; P(label = 1) at `served`."""
+
+    _estimator_class()  # the extra's refusal, in this repository's vocabulary
+    import numpy
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(labels, dtype=int)
+    z = numpy.asarray(served, dtype=float)
+    if kind == "logistic":
+        from sklearn.linear_model import LogisticRegression
+
+        centre = x.mean(axis=0)
+        scale = x.std(axis=0)
+        scale[scale == 0.0] = 1.0
+        model = LogisticRegression(
+            C=PRESSURE_LOGISTIC_SETTINGS["C"],
+            max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
+        )
+        model.fit((x - centre) / scale, y)
+        return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    settings = PRESSURE_CLASSIFIER_SETTINGS
+    model = HistGradientBoostingClassifier(
+        learning_rate=settings["learning_rate"],
+        max_iter=settings["max_iter"],
+        max_leaf_nodes=settings["max_leaf_nodes"],
+        min_samples_leaf=settings["min_samples_leaf"],
+        random_state=settings["random_state"],
+        early_stopping=False,
+    )
+    model.fit(x, y)
+    return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def pressure_logistic_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A direct logistic model of the pressure label (#114).
+
+    At each threshold, a logistic regression of `spread > tau` on
+    `_PressureDesign`'s design, standardized on the training pairs, with the
+    settings in `PRESSURE_LOGISTIC_SETTINGS`. The pairs are direct: each label
+    is paired with what a forecast of it would have read under the run's
+    as-of rule, at the run's horizon (`_pressure_pairs`). A threshold whose
+    training labels are all one value gets that value. The curve is made
+    non-increasing in tau by a running minimum.
+
+    Args:
+        features: the declared feature set; the design follows from it.
+        declaration: the split declaration that defines the pressure-day types
+            (`evaluation_splits.load_split_declaration`).
+        minimum_history: the shortest training frame that may produce a fit.
+
+    Raises:
+        ValueError: on a design the features cannot support, a short frame, or
+            a call without the as-of rule.
+        LookAheadError: if a served TGA change would not start at its as-of
+            read (`_served_tga_change`).
+    """
+
+    return _direct_pressure_predictor("logistic", features, declaration, minimum_history)
+
+
+def pressure_classifier_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A gradient-boosted classifier of the pressure label (#114).
+
+    `pressure_logistic_exceedance` with a histogram gradient-boosted classifier
+    in place of the logistic, fitted with `PRESSURE_CLASSIFIER_SETTINGS`, on the
+    same design and the same direct pairs.
+    """
+
+    return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)

@@ -90,6 +90,19 @@ TREASURY_BILL_RATES_BASE = (
 #: `_fr2004_rows` reads. Not `list/timeseries.json`, which is the catalogue of
 #: series names and carries no values.
 NYFED_FR2004_EXPORT_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+#: The Desk's repo and reverse-repo operation results, one JSON document per
+#: `startDate`/`endDate` search, operations under `repo.operations`. The source
+#: of `on_rrp` (#45): `fetch_nyfed_on_rrp` saves it a calendar year at a time and
+#: `_nyfed_on_rrp_rows` sums the reverse-repo operations of each date. Not
+#: `rp/reverserepo/all/results/search.json`, which answers 400 to a date search
+#: (A45, Route B).
+NYFED_RP_RESULTS_URL = "https://markets.newyorkfed.org/api/rp/results/search.json"
+#: The ON RRP source, named once for the fetcher, the parser and the dispatch in
+#: `parse_snapshots`.
+NYFED_ON_RRP_SOURCE_ID = "nyfed_on_rrp"
+#: Its one field: the day's accepted reverse-repo amount, summed over every
+#: reverse-repo operation of the operation date, in USD billions.
+NYFED_ON_RRP_FIELD = "reverse_repo_total_accepted"
 DEFAULT_SOURCE_REGISTRY = Path(__file__).parents[2] / "metadata" / "sources.json"
 #: The declared set of Form N-MFP archives that constitutes the `sec_nmfp`
 #: source. Committed, because `data/raw/` is not: without it a checkout with an
@@ -280,6 +293,50 @@ def fetch_nyfed_reference_rate(
         artifacts.append(
             _save_snapshot(
                 source_id=f"nyfed_{rate_name}",
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="json",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
+def fetch_nyfed_on_rrp(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the Desk's operation results, one snapshot per calendar year in range.
+
+    `fetch_nyfed_reference_rate`'s shape: a `startDate`/`endDate` JSON search on
+    the same host, saved unmodified. A year is at most 0.6 MB (A45), and each
+    window is its own snapshot, so a re-fetch of the year in progress leaves the
+    closed years' bytes alone. Repo and reverse-repo operations come together;
+    the parser keeps the reverse repos.
+    """
+
+    # Validate before interpolating caller-provided dates into a URL.
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("New York Fed operation-results start date must not follow end date")
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        window_start = max(start_date, date(year, 1, 1))
+        window_end = min(end_date, date(year, 12, 31))
+        query = urlencode(
+            {"startDate": window_start.isoformat(), "endDate": window_end.isoformat()}
+        )
+        url = f"{NYFED_RP_RESULTS_URL}?{query}"
+        payload = downloader(url)
+        _nyfed_operations(json.loads(payload))
+        artifacts.append(
+            _save_snapshot(
+                source_id=NYFED_ON_RRP_SOURCE_ID,
                 url=url,
                 payload=payload,
                 output_root=output_root,
@@ -1197,6 +1254,86 @@ def _nyfed_rows(
                     source_sha=artifact.sha256,
                 )
             )
+    return rows
+
+
+def _nyfed_operations(parsed: object) -> list:
+    """The `repo.operations` list of an operation-results response, or raise."""
+
+    repo = parsed.get("repo") if isinstance(parsed, dict) else None
+    operations = repo.get("operations") if isinstance(repo, dict) else None
+    if not isinstance(operations, list):
+        raise ValueError(
+            "New York Fed operation-results response does not contain a "
+            "repo.operations list"
+        )
+    return operations
+
+
+#: The `operationType` the ON RRP facility's operations carry. Repo operations
+#: share the endpoint and are left out.
+NYFED_REVERSE_REPO = "Reverse Repo"
+
+
+def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per operation date: the reverse repos accepted that day.
+
+    `totalAmtAccepted` (US dollars) is summed over every operation whose
+    `operationType` is `Reverse Repo`, small-value exercises included, because
+    that sum is what the H.4.1's `WLRRAOL` agrees with to the million and what
+    FRED's `RRPONTSYD` alternates away from on a two-operation day (A45, Route
+    B). The sum is converted to USD billions, the panel's money unit. Neither
+    `propositions` (added a month later) nor `note` is read.
+
+    `available_at` is the next weekday at 16:00 New York time, the registry's
+    conservative declaration (`nyfed_on_rrp.release_lag`): the Desk publishes
+    results after the 13:15 close but states no clock time.
+
+    Raises `ValueError` on a reverse-repo operation with no `operationDate` or
+    no numeric `totalAmtAccepted`, rather than summing the day without it.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    operations = _nyfed_operations(json.loads(payload))
+    totals: Dict[date, int] = {}
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != NYFED_REVERSE_REPO:
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed reverse-repo operation {number} has no valid "
+                f"operationDate"
+            ) from exc
+        accepted = operation.get("totalAmtAccepted")
+        if isinstance(accepted, bool) or not isinstance(accepted, (int, float)):
+            raise ValueError(
+                f"New York Fed reverse-repo operation {operation.get('operationId', number)!r} "
+                f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
+                f"day summed without one of its operations is not that day's total"
+            )
+        totals[ref_date] = totals.get(ref_date, 0) + accepted
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for ref_date in sorted(totals):
+        declared_available_at = datetime.combine(
+            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+        )
+        rows.append(
+            PointInTimeObservation(
+                series_id=NYFED_ON_RRP_FIELD,
+                ref_date=ref_date,
+                available_at=min(declared_available_at, retrieved),
+                value=totals[ref_date] / 1e9,
+                vintage_id=f"{artifact.retrieved_at}:operations",
+                source_sha=artifact.sha256,
+            )
+        )
     return rows
 
 
@@ -3507,6 +3644,9 @@ def parse_snapshots(
             parsed_rows = _fr2004_rows(
                 artifact, payload, registry, absent_cells=absent_cells
             )
+        elif artifact.source_id == NYFED_ON_RRP_SOURCE_ID:
+            # Also before the prefix test: operation results, not a refRates list.
+            parsed_rows = _nyfed_on_rrp_rows(artifact, payload)
         elif artifact.source_id.startswith("nyfed_"):
             parsed_rows = _nyfed_rows(artifact, payload, absent_cells=absent_cells)
         elif artifact.source_id == "fred_macro_latest_vintage":
