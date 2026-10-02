@@ -35,6 +35,8 @@ __all__ = [
     "DEFAULT_LOCKBOX",
     "LockboxTier",
     "load_lockbox",
+    "locked_tier",
+    "locked_tiers",
     "require_unlocked",
 ]
 
@@ -133,6 +135,26 @@ def load_lockbox(path: Path = DEFAULT_LOCKBOX) -> Tuple[LockboxTier, ...]:
             )
         tiers.append(LockboxTier(name, start, end, _opened(raw["opened"], where)))
     return tuple(tiers)
+
+
+def locked_tiers(path: Path = DEFAULT_LOCKBOX) -> Tuple[LockboxTier, ...]:
+    """The tiers of the declaration at `path` that have not been opened, in date order.
+
+    An opened tier is ordinary history and is not returned. For a descriptive
+    page that shows locked days greyed and counts none of them (#141, ruling
+    3); a scoring entry point calls `require_unlocked` instead.
+
+    Raises:
+        DataContractError: if the declaration is missing or malformed.
+    """
+
+    return tuple(tier for tier in load_lockbox(path) if tier.opened is None)
+
+
+def locked_tier(day: date, tiers: Iterable[LockboxTier]) -> Optional[LockboxTier]:
+    """The tier among `tiers` that holds `day`, or `None` if `day` is not locked."""
+
+    return next((tier for tier in tiers if tier.contains(day)), None)
 
 
 def require_unlocked(scored_days: Iterable[date], *, where: str) -> None:
