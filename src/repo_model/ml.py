@@ -612,6 +612,12 @@ __all__ = [
     "FittedGradientBoostedQuantiles",
     "fit_gradient_boosted_quantiles",
     "gbm_exceedance",
+    "DYNAMIC_LOGIT_SETTINGS",
+    "DYNAMIC_ORDINAL_SETTINGS",
+    "STACKED_COMBINER",
+    "dynamic_logit_exceedance",
+    "dynamic_ordinal_exceedance",
+    "stacked_combiner",
     "PRESSURE_CLASSIFIER_SETTINGS",
     "PRESSURE_LOGISTIC_SETTINGS",
     "SCARCITY_STATE",
@@ -3917,6 +3923,9 @@ SCARCITY_STATE = "reserve_balances_usd_tn"
 
 _CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
 _PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
+#: The scheduled settlement columns the design reads as scheduled-pressure
+#: terms: the total (#114) and the coupon part alone (#137).
+_SETTLEMENT_INPUTS = ("treasury_settlement", "treasury_settlement_coupons")
 
 
 class _PressureDesign:
@@ -3928,15 +3937,25 @@ class _PressureDesign:
     * The three calendar columns, all declared or none: the scored day's
       pressure-day type, as the split declaration defines it, one indicator
       per type other than `ordinary`.
-    * `treasury_settlement`, a scheduled input, linearly, in USD billions.
+    * `treasury_settlement`, and `treasury_settlement_coupons` (#137), each a
+      scheduled input, linearly, in USD billions.
     * With `reserve_balances` declared, each scheduled-pressure term (the type
-      indicators and the settlement) times the scarcity state.
+      indicators and the settlements) times the scarcity state.
     * With `tga` and `reserve_balances` declared, the TGA's change over
       `TGA_CHANGE_ROWS` panel rows ending at its as-of read, and that change
       times the scarcity state.
+    * Each declared product (#127), last: the product of two terms, each a
+      declared column other than a calendar one, or `tga_change`, as read, in
+      their own units. Empty by default, so pressure model v1's design is
+      unchanged.
     """
 
-    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+    def __init__(
+        self,
+        features: Sequence[str],
+        declaration: Any,
+        products: Sequence[Tuple[str, str]] = (),
+    ) -> None:
         declared = tuple(dict.fromkeys(str(name) for name in features))
         if "spread_bps" not in declared:
             raise ValueError(
@@ -3958,12 +3977,13 @@ class _PressureDesign:
         self.features = declared
         self.scarcity = "reserve_balances" in declared
         self.tga = "tga" in declared and self.scarcity
-        self.settlement = "treasury_settlement" in declared
+        self.settlements = tuple(name for name in declared if name in _SETTLEMENT_INPUTS)
         self.linear = tuple(
             name
             for name in declared
             if name not in _CALENDAR_INPUTS
-            and name not in ("spread_bps", "tga", "treasury_settlement")
+            and name not in ("spread_bps", "tga")
+            and name not in _SETTLEMENT_INPUTS
             and name not in SPREAD_COMPONENTS
         )
         if "tga" in declared and not self.scarcity:
@@ -3977,13 +3997,25 @@ class _PressureDesign:
         scheduled: List[str] = []
         if self.calendar:
             scheduled += list(_PRESSURE_DAY_TYPES)
-        if self.settlement:
-            scheduled.append("treasury_settlement")
+        scheduled += list(self.settlements)
         names += scheduled
         if self.scarcity:
             names += [f"{name}_x_scarcity" for name in scheduled]
         if self.tga:
             names += ["tga_change", "tga_change_x_scarcity"]
+        self.products = tuple((str(a), str(b)) for a, b in products)
+        for pair in self.products:
+            for term in pair:
+                known = (term == "tga_change" and self.tga) or (
+                    term in declared and term not in _CALENDAR_INPUTS
+                )
+                if not known:
+                    raise ValueError(
+                        f"a product term reads {term!r}, which this design does not "
+                        f"declare (a declared non-calendar column, or tga_change "
+                        f"with tga and reserve_balances declared)"
+                    )
+            names.append(f"{pair[0]}_x_{pair[1]}")
         self.names = tuple(names)
 
     def needs_history(self) -> bool:
@@ -4009,8 +4041,8 @@ class _PressureDesign:
         if self.calendar:
             kind = self.declaration.day_type(observation.values)
             scheduled += [1.0 if kind == name else 0.0 for name in _PRESSURE_DAY_TYPES]
-        if self.settlement:
-            scheduled.append(self._value(observation, "treasury_settlement"))
+        for name in self.settlements:
+            scheduled.append(self._value(observation, name))
         values += scheduled
         if self.scarcity:
             state = self._value(observation, "reserve_balances") / 1000.0
@@ -4019,7 +4051,22 @@ class _PressureDesign:
                 if tga_change is None:  # pragma: no cover - callers supply it
                     raise ValueError("the TGA change is required when tga is declared")
                 values += [tga_change, tga_change * state]
+        for a, b in self.products:
+            values.append(self._term(observation, a, tga_change) * self._term(observation, b, tga_change))
         return values
+
+    def _term(
+        self, observation: DailyObservation, name: str, tga_change: Optional[float]
+    ) -> float:
+        """One product factor: `tga_change`, or a declared column as read."""
+
+        if name == "tga_change":
+            if tga_change is None:  # pragma: no cover - callers supply it
+                raise ValueError("the TGA change is required for a product with it")
+            return tga_change
+        if name == "spread_bps":
+            return float(observation.spread_bps)
+        return self._value(observation, name)
 
 
 def _tga_change_at(rows: Sequence[DailyObservation], position: int) -> Optional[float]:
@@ -4123,15 +4170,36 @@ def _pressure_pairs(
     return xs, ys
 
 
+#: The pooled design's last column (#129): 1 on a pre-SOFR history pair, 0 on
+#: every SOFR pair and every served row.
+HISTORY_MARKET_COLUMN = "effr_market"
+
+
 def _direct_pressure_predictor(
-    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int,
+    products: Sequence[Tuple[str, str]] = (),
+    history: Optional[Tuple[Sequence[Any], Any]] = None,
 ) -> Any:
-    """The fit-and-predict behind both direct models; `kind` picks the estimator."""
+    """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `history`, for the pre-SOFR history study (#129) only: `(rows, rule)`, the
+    `effr_history` rows and their as-of rule. Their direct pairs are built with
+    this design (`effr_history.history_pairs`), pooled with every fit's SOFR
+    pairs, and told apart by `HISTORY_MARKET_COLUMN`; a forecast is served as
+    the SOFR market. Every fit refuses a pooled label not public before its
+    last training day (`effr_history.require_pool_public`), and a rule whose
+    horizon is not the run's. No public factory takes it: it is a study
+    candidate, not a declared model.
+    """
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
-    design = _PressureDesign(features, declaration)
+    design = _PressureDesign(features, declaration, products)
     cache: dict = {}
+    pooled: dict = {}
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -4168,6 +4236,22 @@ def _direct_pressure_predictor(
             )
             for day, row in enumerate(feature_rows)
         ]
+        if history is not None:
+            from . import effr_history
+
+            history_rows, history_rule = history
+            if history_rule.horizon != information.horizon:
+                raise ValueError(
+                    f"the history is read at horizon {history_rule.horizon}, the run "
+                    f"at {information.horizon}"
+                )
+            if "pool" not in pooled:
+                pooled["pool"] = effr_history.history_pairs(design, history_rule, history_rows)
+            pool = pooled["pool"]
+            effr_history.require_pool_public(pool.available_at, train_rows[-1].date)
+            xs = [list(x) + [0.0] for x in xs] + [list(x) + [1.0] for x in pool.xs]
+            spreads = list(spreads) + list(pool.spreads)
+            served = [list(x) + [0.0] for x in served]
         columns: List[List[float]] = []
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
@@ -4192,10 +4276,21 @@ def _direct_pressure_predictor(
             PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
         )
         settings["design"] = list(design.names)
+        if history is not None:
+            pool = pooled["pool"]
+            settings["design"].append(HISTORY_MARKET_COLUMN)
+            settings["pooled_history"] = {
+                "pairs": len(pool.xs),
+                "first": pool.dates[0].isoformat() if pool.dates else None,
+                "last": pool.dates[-1].isoformat() if pool.dates else None,
+                "horizon": pool.horizon,
+            }
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:
             settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        if design.products:
+            settings["products"] = [list(pair) for pair in design.products]
         return ExceedanceCurves(
             tuple(curves),
             design.features,
@@ -4253,7 +4348,10 @@ def _fit_classifier(
 
 
 def pressure_logistic_exceedance(
-    features: Sequence[str], declaration: Any, minimum_history: int = 20
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    products: Sequence[Tuple[str, str]] = (),
 ) -> ExceedancePredictor:
     """A direct logistic model of the pressure label (#114).
 
@@ -4270,6 +4368,8 @@ def pressure_logistic_exceedance(
         declaration: the split declaration that defines the pressure-day types
             (`evaluation_splits.load_split_declaration`).
         minimum_history: the shortest training frame that may produce a fit.
+        products: product terms added to the design (`_PressureDesign`, #127);
+            empty for pressure model v1.
 
     Raises:
         ValueError: on a design the features cannot support, a short frame, or
@@ -4278,7 +4378,9 @@ def pressure_logistic_exceedance(
             read (`_served_tga_change`).
     """
 
-    return _direct_pressure_predictor("logistic", features, declaration, minimum_history)
+    return _direct_pressure_predictor(
+        "logistic", features, declaration, minimum_history, products
+    )
 
 
 def pressure_classifier_exceedance(
@@ -4292,3 +4394,689 @@ def pressure_classifier_exceedance(
     """
 
     return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
+
+
+# --------------------------------------------------------------------------
+# Dynamic pressure logit, its ordinal version, and the stacked combiner (#137)
+# --------------------------------------------------------------------------
+#
+# The persistence-logistic built out into a dynamic model rather than given
+# more capacity (Kauppi & Saikkonen 2008; Beutel, List & von Schweinitz 2019).
+# Every term is declared here, before any scoring:
+#
+# * `_PressureDesign`'s design on the declared features: the latest public
+#   spread, the scarcity state, the scored day's pressure-day type, the
+#   scheduled settlement, and each scheduled-pressure term times the scarcity
+#   state;
+# * the lagged event indicator, `1(spread > tau)` at the last as-of read of the
+#   spread (in the ordinal model, one per cut);
+# * the model's own lagged linear index (`_index_chain`).
+#
+# Each model is direct: fitted per horizon on labels paired with what their own
+# decision instant read, with the scored day's calendar terms, which are known
+# in advance. Nothing is iterated.
+
+
+#: The dynamic logit, declared before scoring. `persistence_grid` is the set of
+#: values the lagged index's coefficient is profiled over at each fit; 0 is the
+#: static logit. The penalty and standardization are the direct logistic's
+#: (#114), on every column but the intercept.
+DYNAMIC_LOGIT_SETTINGS = MappingProxyType(
+    {
+        "estimator": "dynamic_logit",
+        "lagged_index": (
+            "Kauppi-Saikkonen: index_t = x_t'b + alpha * index_a(t), a(t) the label's "
+            "last as-of read (the anchor of t's decision); a chain with no index at "
+            "its anchor starts at its stationary value x_t'b / (1 - alpha)"
+        ),
+        "persistence_grid": (0.0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95),
+        "persistence_choice": "the grid value with the highest penalized likelihood on the training pairs",
+        "C": 1.0,
+        "penalty": "l2",
+        "standardized": True,
+    }
+)
+
+#: The ordinal version: a cumulative (proportional-odds) logit of the category
+#: the spread falls in between the requested thresholds, so the exceedance
+#: probabilities share one index and are ordered by construction.
+DYNAMIC_ORDINAL_SETTINGS = MappingProxyType(
+    {
+        **DYNAMIC_LOGIT_SETTINGS,
+        "estimator": "dynamic_ordinal_logit",
+        "link": "cumulative logit, proportional odds; P(spread > tau_k) = sigmoid(index - theta_k)",
+        "thresholds": "theta_1 free, theta_k = theta_(k-1) + exp(delta_k), so ordered by construction",
+    }
+)
+
+#: The stacked combiner, declared before scoring.
+STACKED_COMBINER = MappingProxyType(
+    {
+        "method": "stacked_logistic_out_of_fold",
+        "description": (
+            "a logistic of the outcome on logit(p) of each base forecast, fitted per "
+            "threshold at each refit block on the bases' out-of-fold forecasts of earlier "
+            "scored days at or before the block's last training label, then applied to "
+            "the block's forecasts; before minimum_pairs pairs with minimum_events "
+            "events, sigmoid of the bases' mean logit"
+        ),
+        "minimum_pairs": 250,
+        "minimum_events": 5,
+        "probability_floor": 1e-6,
+        "C": 1.0,
+        "penalty": "l2",
+        "standardized": True,
+    }
+)
+
+_NEWTON_ITERATIONS = 100
+_BFGS_ITERATIONS = 2000
+
+
+class _Logit(NamedTuple):
+    """A fitted penalized logit on standardized columns."""
+
+    centre: Any
+    scale: Any
+    coefficients: Any
+    objective: float
+
+    def probability(self, x: Any) -> Any:
+        import numpy
+
+        z = (numpy.asarray(x, dtype=float) - self.centre) / self.scale
+        return _expit(self.coefficients[0] + z @ self.coefficients[1:])
+
+
+def _expit(value: Any) -> Any:
+    import numpy
+
+    value = numpy.asarray(value, dtype=float)
+    out = numpy.empty_like(value)
+    positive = value >= 0
+    out[positive] = 1.0 / (1.0 + numpy.exp(-value[positive]))
+    e = numpy.exp(value[~positive])
+    out[~positive] = e / (1.0 + e)
+    return out
+
+
+def _standardizer(x: Any) -> Tuple[Any, Any]:
+    centre = x.mean(axis=0)
+    scale = x.std(axis=0)
+    scale[scale == 0.0] = 1.0
+    return centre, scale
+
+
+def _fit_logit(x: Any, y: Any, c: float = 1.0) -> _Logit:
+    """Penalized logistic regression by Newton's method, numpy only.
+
+    Columns standardized on `x`; the loss is the summed negative
+    log-likelihood plus `|b|^2 / (2c)` on every coefficient but the intercept
+    (scikit-learn's `C`). Deterministic.
+    """
+
+    import numpy
+
+    x = numpy.asarray(x, dtype=float)
+    y = numpy.asarray(y, dtype=float)
+    centre, scale = _standardizer(x)
+    z = numpy.hstack([numpy.ones((len(x), 1)), (x - centre) / scale])
+    penalty = numpy.full(z.shape[1], 1.0 / c)
+    penalty[0] = 0.0
+    rate = min(max(y.mean(), 1e-6), 1 - 1e-6)
+    w = numpy.zeros(z.shape[1])
+    w[0] = math.log(rate / (1 - rate))
+
+    def objective(weights: Any) -> float:
+        eta = z @ weights
+        return float(numpy.sum(numpy.logaddexp(0.0, eta) - y * eta) + 0.5 * numpy.sum(penalty * weights**2))
+
+    current = objective(w)
+    for _ in range(_NEWTON_ITERATIONS):
+        p = _expit(z @ w)
+        gradient = z.T @ (p - y) + penalty * w
+        hessian = (z * (p * (1 - p))[:, None]).T @ z + numpy.diag(penalty) + 1e-10 * numpy.eye(len(w))
+        step = numpy.linalg.solve(hessian, gradient)
+        size = 1.0
+        while True:
+            candidate = w - size * step
+            value = objective(candidate)
+            if value <= current or size < 1e-8:
+                break
+            size /= 2.0
+        if current - value < 1e-12 * max(1.0, abs(current)):
+            w, current = (candidate, value) if value <= current else (w, current)
+            break
+        w, current = candidate, value
+    return _Logit(centre, scale, w, current)
+
+
+class _Ordinal(NamedTuple):
+    """A fitted penalized cumulative logit on standardized columns."""
+
+    centre: Any
+    scale: Any
+    thresholds: Any
+    coefficients: Any
+    objective: float
+
+    def exceedance(self, x: Any) -> Any:
+        """`P(category > k)` for each cut `k`, one row per row of `x`."""
+
+        import numpy
+
+        eta = ((numpy.asarray(x, dtype=float) - self.centre) / self.scale) @ self.coefficients
+        return _expit(eta[:, None] - self.thresholds[None, :])
+
+
+def _thresholds(parameters: Any, cuts: int) -> Any:
+    import numpy
+
+    return parameters[0] + numpy.concatenate([[0.0], numpy.cumsum(numpy.exp(parameters[1:cuts]))])
+
+
+def _fit_ordinal(x: Any, categories: Any, cuts: int, c: float = 1.0) -> _Ordinal:
+    """Penalized proportional-odds logit by BFGS, numpy only.
+
+    `categories[i]` is how many of the `cuts` ordered thresholds row `i`
+    exceeds, 0 to `cuts`. `P(category > k) = sigmoid(x'b - theta_k)`, with
+    `theta_k = theta_1 + sum exp(delta)`: ordered whatever the data, so the
+    exceedance probabilities are coherent by construction. The penalty is
+    `|b|^2 / (2c)` on standardized columns; the thresholds are unpenalized.
+    """
+
+    import numpy
+
+    x = numpy.asarray(x, dtype=float)
+    k = numpy.asarray(categories, dtype=int)
+    centre, scale = _standardizer(x)
+    z = (x - centre) / scale
+    count = len(k)
+    rows = numpy.arange(count)
+    rates = numpy.array([(k > j).mean() for j in range(cuts)])
+    rates = numpy.clip(rates, 1e-6, 1 - 1e-6)
+    start = -numpy.log(rates / (1 - rates))
+    start = numpy.maximum.accumulate(start + 1e-3 * numpy.arange(cuts))
+    gaps = numpy.diff(start)
+    initial = numpy.concatenate(
+        [[start[0]], numpy.log(numpy.maximum(gaps, 1e-3)), numpy.zeros(z.shape[1])]
+    )
+
+    def objective_and_gradient(parameters: Any) -> Tuple[float, Any]:
+        theta = _thresholds(parameters, cuts)
+        beta = parameters[cuts:]
+        eta = z @ beta
+        u = _expit(eta[:, None] - theta[None, :])
+        padded = numpy.hstack([numpy.ones((count, 1)), u, numpy.zeros((count, 1))])
+        upper = padded[rows, k]
+        lower = padded[rows, k + 1]
+        # The edge categories directly, so a small probability keeps its digits.
+        probability = numpy.where(
+            k == 0,
+            _expit(theta[0] - eta),
+            numpy.where(k == cuts, upper, upper - lower),
+        )
+        probability = numpy.maximum(probability, 1e-300)
+        v = padded * (1 - padded)
+        v_upper = v[rows, k]
+        v_lower = v[rows, k + 1]
+        value = float(-numpy.sum(numpy.log(probability)) + 0.5 * numpy.sum(beta**2) / c)
+        d_eta = (v_upper - v_lower) / probability
+        d_theta = numpy.zeros((count, cuts + 2))
+        d_theta[rows, k] -= v_upper / probability
+        d_theta[rows, k + 1] += v_lower / probability
+        d_theta = d_theta[:, 1 : cuts + 1].sum(axis=0)
+        gradient = numpy.empty_like(parameters)
+        # theta_j = p_0 + sum_{i <= j} exp(p_i): d/dp_0 sums all, d/dp_i sums j >= i.
+        tail = numpy.cumsum(d_theta[::-1])[::-1]
+        gradient[0] = -tail[0]
+        gradient[1:cuts] = -tail[1:] * numpy.exp(parameters[1:cuts])
+        gradient[cuts:] = -(z.T @ d_eta) + beta / c
+        return value, gradient
+
+    parameters, value = _bfgs(objective_and_gradient, initial)
+    return _Ordinal(centre, scale, _thresholds(parameters, cuts), parameters[cuts:], value)
+
+
+def _bfgs(objective_and_gradient: Any, initial: Any) -> Tuple[Any, float]:
+    """Minimize by BFGS with a backtracking (Armijo) line search. Deterministic."""
+
+    import numpy
+
+    x = numpy.asarray(initial, dtype=float)
+    value, gradient = objective_and_gradient(x)
+    inverse = numpy.eye(len(x))
+    for _ in range(_BFGS_ITERATIONS):
+        if numpy.max(numpy.abs(gradient)) < 1e-7 * max(1.0, abs(value)):
+            break
+        direction = -inverse @ gradient
+        slope = float(gradient @ direction)
+        if slope >= 0:
+            inverse = numpy.eye(len(x))
+            direction = -gradient
+            slope = float(gradient @ direction)
+        size = 1.0
+        while True:
+            candidate = x + size * direction
+            new_value, new_gradient = objective_and_gradient(candidate)
+            if numpy.isfinite(new_value) and new_value <= value + 1e-4 * size * slope:
+                break
+            size /= 2.0
+            if size < 1e-12:
+                return x, value
+        s = candidate - x
+        y = new_gradient - gradient
+        sy = float(s @ y)
+        if sy > 1e-12:
+            rho = 1.0 / sy
+            identity = numpy.eye(len(x))
+            inverse = (identity - rho * numpy.outer(s, y)) @ inverse @ (
+                identity - rho * numpy.outer(y, s)
+            ) + rho * numpy.outer(s, s)
+        improvement = value - new_value
+        x, value, gradient = candidate, new_value, new_gradient
+        if improvement < 1e-12 * max(1.0, abs(value)):
+            break
+    return x, value
+
+
+def _index_chain(xs: Sequence[Optional[Sequence[float]]], anchors: Sequence[int], alpha: float) -> List[Any]:
+    """The lagged-index regressors: `chain_t = x_t + alpha * chain_anchor(t)`.
+
+    The dynamic index is `b'chain_t`, and with it `index_t = b'x_t + alpha *
+    index_anchor(t)`, Kauppi and Saikkonen's recursion with the lag at the
+    label's last as-of read. A row with no complete design has no index; a row
+    whose anchor has none starts the chain at its stationary value,
+    `x_t / (1 - alpha)`. Every anchor is an earlier row, so one forward pass.
+    """
+
+    import numpy
+
+    out: List[Any] = []
+    for position, x in enumerate(xs):
+        if x is None:
+            out.append(None)
+            continue
+        row = numpy.asarray(x, dtype=float)
+        anchor = anchors[position]
+        if anchor >= position:  # pragma: no cover - an anchor is always earlier
+            raise LookAheadError(f"row {position}'s anchor {anchor} is not before it")
+        previous = out[anchor] if anchor >= 0 else None
+        out.append(row / (1.0 - alpha) if previous is None else row + alpha * previous)
+    return out
+
+
+def _dynamic_rows(
+    design: _PressureDesign,
+    information: InformationRule,
+    rows: Sequence[DailyObservation],
+    cache: dict,
+) -> Tuple[List[Optional[List[float]]], List[int]]:
+    """Each row's design under the as-of rule, and the row of its anchor.
+
+    Row `t`'s design is what a forecast of `t` read at its own decision instant
+    (`information.information_set`), checked by both guards; its anchor is the
+    latest row whose label was public then. `None` and -1 where there is no
+    read or an input is missing. Cached by date: a row's reads are public by
+    its own decision, so every later as-of frame carries them unmasked.
+    """
+
+    dates = [row.date for row in rows]
+    where = {when: position for position, when in enumerate(dates)}
+    key_base = ("dynamic", information.horizon, information.features)
+    xs: List[Optional[List[float]]] = []
+    anchors: List[int] = []
+    for target in range(len(rows)):
+        key = (key_base, dates[target])
+        if key not in cache:
+            cache[key] = None
+            try:
+                info = information.information_set(dates, target)
+            except SplitError:
+                pass
+            else:
+                information.check(dates, info)
+                try:
+                    features = design.row(information.observation(rows, info), None)
+                except ValueError:
+                    features = None
+                cache[key] = (features, dates[info.anchor])
+        entry = cache[key]
+        if entry is None:
+            xs.append(None)
+            anchors.append(-1)
+        else:
+            xs.append(entry[0])
+            anchors.append(where[entry[1]])
+    return xs, anchors
+
+
+def _with_indicators(
+    xs: Sequence[Optional[Sequence[float]]], cuts: Sequence[float]
+) -> List[Optional[List[float]]]:
+    """Each design row with `1(lagged spread > cut)` appended per cut."""
+
+    return [
+        None if x is None else [*x, *(1.0 if x[0] > cut else 0.0 for cut in cuts)]
+        for x in xs
+    ]
+
+
+def _dynamic_predictor(
+    kind: str, features: Sequence[str], declaration: Any, minimum_history: int
+) -> Any:
+    """The fit-and-predict behind both dynamic models; `kind` picks the link."""
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _PressureDesign(features, declaration)
+    if design.tga:
+        raise ValueError(
+            "the dynamic pressure models do not read the TGA change; declare the "
+            "terms #137 names"
+        )
+    cache: dict = {}
+    settings_base = DYNAMIC_LOGIT_SETTINGS if kind == "logit" else DYNAMIC_ORDINAL_SETTINGS
+    grid = settings_base["persistence_grid"]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        import numpy
+
+        if information is None:
+            raise ValueError(
+                "a dynamic pressure model pairs each training label with what was "
+                "public at that label's own decision instant, which only the as-of "
+                "rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a dynamic pressure model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        if histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "the lagged index is read off each forecast's own as-of history; one "
+                "history per feature row is required"
+            )
+        taus = tuple(float(tau) for tau in taus)
+        if kind == "ordinal" and any(b <= a for a, b in zip(taus, taus[1:])):
+            raise ValueError(
+                f"the ordinal model's categories are cut at strictly ascending taus, got {taus}"
+            )
+        # Every history and the training frame are prefixes of one panel: the
+        # chain is computed once, on the longest, and read at each history's end.
+        longest = max([train_rows, *histories], key=len)
+        for frame in (train_rows, *histories):
+            if frame and (len(frame) > len(longest) or frame[-1].date != longest[len(frame) - 1].date):
+                raise ValueError("the as-of histories are not prefixes of one panel")
+        base, anchors = _dynamic_rows(design, information, longest, cache)
+        served_base = [design.row(row, None) for row in feature_rows]
+        served_lag = [len(history) - 1 for history in histories]
+        spreads = [float(row.spread_bps) for row in train_rows]
+        trainable = [t for t in range(len(train_rows)) if base[t] is not None]
+        if not trainable:
+            raise ValueError("no training label has a complete as-of read")
+        labels_at = {tau: [1 if spreads[t] > tau else 0 for t in trainable] for tau in taus}
+
+        def chained(cuts: Sequence[float], alpha: float) -> Tuple[Any, Any]:
+            chain = _index_chain(_with_indicators(base, cuts), anchors, alpha)
+            train_x = numpy.asarray([chain[t] for t in trainable], dtype=float)
+            served = []
+            for x, lag in zip(_with_indicators(served_base, cuts), served_lag):
+                previous = chain[lag] if lag >= 0 else None
+                row = numpy.asarray(x, dtype=float)
+                served.append(row / (1.0 - alpha) if previous is None else row + alpha * previous)
+            return train_x, numpy.asarray(served, dtype=float)
+
+        chosen: dict = {}
+        columns: List[Any] = []
+        if kind == "logit":
+            fitted: dict = {}
+            for tau in taus:
+                labels = labels_at[tau]
+                if len(set(labels)) < 2:
+                    columns.append(numpy.full(len(feature_rows), float(labels[0])))
+                    continue
+                key = (tuple(labels), tau)
+                if key not in fitted:
+                    best = None
+                    for alpha in grid:
+                        train_x, served_x = chained((tau,), alpha)
+                        fit = _fit_logit(train_x, labels, settings_base["C"])
+                        if best is None or fit.objective < best[0].objective - 1e-9:
+                            best = (fit, served_x, alpha)
+                    fitted[key] = (best[0].probability(best[1]), best[2])
+                columns.append(fitted[key][0])
+                chosen[f"{tau:g}"] = fitted[key][1]
+        else:
+            # Cuts whose training labels are all one value get that value; the
+            # rest, grouped by identical label vectors, are the ordinal's cuts.
+            groups: List[List[float]] = []
+            for tau in taus:
+                labels = labels_at[tau]
+                if len(set(labels)) < 2:
+                    continue
+                if groups and labels_at[groups[-1][0]] == labels:
+                    groups[-1].append(tau)
+                else:
+                    groups.append([tau])
+            exceed: dict = {}
+            if groups:
+                cuts = [group[0] for group in groups]
+                categories = numpy.zeros(len(trainable), dtype=int)
+                for cut in cuts:
+                    categories += numpy.asarray(labels_at[cut])
+                best = None
+                for alpha in grid:
+                    train_x, served_x = chained(cuts, alpha)
+                    fit = _fit_ordinal(train_x, categories, len(cuts), settings_base["C"])
+                    if best is None or fit.objective < best[0].objective - 1e-9:
+                        best = (fit, served_x, alpha)
+                probabilities = best[0].exceedance(best[1])
+                for position, group in enumerate(groups):
+                    for tau in group:
+                        exceed[tau] = probabilities[:, position]
+                chosen["ordinal"] = best[2]
+                chosen["cuts"] = tuple(cuts)
+            for tau in taus:
+                if tau in exceed:
+                    columns.append(exceed[tau])
+                else:
+                    columns.append(numpy.full(len(feature_rows), float(labels_at[tau][0])))
+        curves = []
+        for day in range(len(feature_rows)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, float(column[day])))
+                # The binary fits are per tau, so made non-increasing; the
+                # ordinal's curve is ordered by construction and left as fitted.
+                curve.append(value if not curve or kind == "ordinal" else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(settings_base)
+        settings["persistence_grid"] = list(grid)
+        indicator_names = ["lagged_event"] if kind == "logit" else [
+            f"lagged_event_{cut:g}" for cut in chosen.get("cuts", ())
+        ]
+        settings["design"] = list(design.names) + indicator_names
+        if kind == "logit":
+            settings["persistence"] = next(iter(chosen.values()), 0.0)
+            settings["persistence_by_tau"] = chosen
+        else:
+            settings["persistence"] = chosen.get("ordinal", 0.0)
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date if history else None for history in histories),
+        )
+
+    return fit_predict
+
+
+def dynamic_logit_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A dynamic logit of the pressure label (#137).
+
+    At each threshold, a penalized logit of `spread > tau` on
+    `_PressureDesign`'s design, the lagged event indicator `1(latest public
+    spread > tau)` and the model's own lagged linear index (`_index_chain`,
+    Kauppi-Saikkonen), with the index's persistence profiled over
+    `DYNAMIC_LOGIT_SETTINGS["persistence_grid"]`. Direct: fitted on labels
+    paired with what their own decision instant read, at the run's horizon.
+    The served index is chained through each forecast's own as-of history,
+    whose end the fold loop checks is the forecast's anchor (`history_ends`).
+    The curve is made non-increasing in tau by a running minimum.
+
+    Raises:
+        ValueError: on a design the features cannot support, a short frame, a
+            call without the as-of rule or without the histories.
+    """
+
+    return _dynamic_predictor("logit", features, declaration, minimum_history)
+
+
+def dynamic_ordinal_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """The dynamic logit as one ordinal model across the thresholds (#137).
+
+    A proportional-odds logit of the category the spread falls in between the
+    requested (strictly ascending) thresholds, on the same design, one lagged
+    event indicator per cut, and the lagged index. `P(spread > tau_k) =
+    sigmoid(index - theta_k)` with ordered `theta`, so `P(> +10) <= P(> +5)` on
+    every day by construction (`DYNAMIC_ORDINAL_SETTINGS`).
+    """
+
+    return _dynamic_predictor("ordinal", features, declaration, minimum_history)
+
+
+def _check_out_of_fold(bases: Mapping[str, Any], pairs: Sequence[int], fit_end: date) -> None:
+    """Raise unless every pair is an out-of-fold base forecast with an observable outcome.
+
+    `pairs` index the scored days a combiner fitted at `fit_end` (its block's
+    last training label) learns from. Each day's outcome must be observable
+    then (scored on or before `fit_end`), and each base's forecast of it must
+    have been made by a fit trained only on labels before that day -- not a
+    fitted value from a window that included it.
+
+    Raises:
+        LookAheadError: naming the base and the day.
+    """
+
+    for name, report in bases.items():
+        for day in pairs:
+            fold = report.folds[day]
+            if fold.scored_date > fit_end:
+                raise LookAheadError(
+                    f"the combiner fitted at {fit_end} would learn from the outcome of "
+                    f"{fold.scored_date}, not yet observable"
+                )
+            if fold.train_end >= fold.scored_date:
+                raise LookAheadError(
+                    f"base {name!r}'s forecast of {fold.scored_date} was made by a fit "
+                    f"trained through {fold.train_end}, which includes the day it "
+                    f"forecast; the combiner learns only from out-of-fold forecasts"
+                )
+
+
+def stacked_combiner(
+    bases: Mapping[str, Any],
+    *,
+    minimum_pairs: int = STACKED_COMBINER["minimum_pairs"],
+    minimum_events: int = STACKED_COMBINER["minimum_events"],
+    model_name: str = "stacked_combiner",
+) -> Any:
+    """A logistic of the outcome on each base's logit(p), fitted out of fold (#137).
+
+    `bases` are `ExceedanceBacktestReport`s on one grid: the same scored days,
+    taus and outcomes. The combiner refits on the first base's refit blocks: a
+    block is the run of its folds sharing a training frame, whose last label is
+    `train_end`. At each block and
+    threshold the combiner is fitted on the pairs of every earlier scored day
+    at or before that date -- outcomes observable when the block was fitted --
+    and every base forecast in those pairs must itself be out of fold
+    (`_check_out_of_fold`). The block's forecasts are then mapped through it.
+    The curve is made non-increasing in tau by a running minimum.
+
+    Raises:
+        ValueError: if the bases are not on one grid.
+        LookAheadError: if a pair would use an in-sample base forecast or an
+            outcome not observable at the combiner's fit.
+    """
+
+    import dataclasses
+    import numpy
+
+    names = list(bases)
+    if len(names) < 2:
+        raise ValueError("a stacked combiner needs at least two bases")
+    first = bases[names[0]]
+    for name in names[1:]:
+        other = bases[name]
+        if (
+            other.scored_dates != first.scored_dates
+            or tuple(other.taus) != tuple(first.taus)
+            or other.outcomes != first.outcomes
+        ):
+            raise ValueError(f"base {name!r} is not on {names[0]!r}'s grid")
+    floor = STACKED_COMBINER["probability_floor"]
+
+    def logit(probability: float) -> float:
+        p = min(1.0 - floor, max(floor, probability))
+        return math.log(p / (1.0 - p))
+
+    count = len(first.folds)
+    x = numpy.asarray(
+        [[[logit(bases[name].forecast[day][position]) for name in names]
+          for position in range(len(first.taus))] for day in range(count)],
+        dtype=float,
+    ).reshape(count, len(first.taus), len(names))
+    columns = [[0.0] * count for _ in first.taus]
+    for position in range(len(first.taus)):
+        outcomes = [first.outcomes[day][position] for day in range(count)]
+        start = 0
+        while start < count:
+            end_label = first.folds[start].train_end
+            stop = start
+            while stop < count and first.folds[stop].train_end == end_label:
+                stop += 1
+            past = [day for day in range(start) if first.folds[day].scored_date <= end_label]
+            events = sum(outcomes[day] for day in past)
+            if len(past) >= minimum_pairs and minimum_events <= events < len(past):
+                _check_out_of_fold(bases, past, end_label)
+                fit = _fit_logit(
+                    x[past, position, :], [outcomes[day] for day in past], STACKED_COMBINER["C"]
+                )
+                values = fit.probability(x[start:stop, position, :])
+            else:
+                values = _expit(x[start:stop, position, :].mean(axis=1))
+            for offset, value in enumerate(values):
+                columns[position][start + offset] = float(value)
+            start = stop
+    curves = []
+    for day in range(count):
+        curve: List[float] = []
+        for position in range(len(first.taus)):
+            value = columns[position][day]
+            curve.append(value if not curve else min(curve[-1], value))
+        curves.append(tuple(curve))
+    settings = dict(STACKED_COMBINER)
+    settings["minimum_pairs"] = minimum_pairs
+    settings["minimum_events"] = minimum_events
+    settings["bases"] = names
+    return dataclasses.replace(
+        first,
+        forecast=tuple(curves),
+        model_name=model_name,
+        model_settings=MappingProxyType(settings),
+    )

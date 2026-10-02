@@ -206,6 +206,7 @@ from repo_model.contract import (
 )
 from repo_model.data import (
     OPTIONAL_NUMERIC_FIELDS,
+    OPT_IN_COLUMNS,
     REQUIRED_FIELDS,
     DailyObservation,
     DataContractError,
@@ -1693,6 +1694,28 @@ def on_rrp_from_operation_results():
     )
 
 
+def srf_from_operation_results():
+    """`srf_take_up` read from the Desk's operation results, for one test (#127).
+
+    `contract.SRF_OPERATION_RESULTS_FIELDS` is declared and off: no published
+    `FEATURE_FIELDS` entry names it, so the published panel does not move. The
+    tests of the new source switch it on for their own duration, as
+    `on_rrp_from_operation_results` does for #45's.
+    """
+
+    fields = contract.SRF_OPERATION_RESULTS_FIELDS
+    return mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, "srf_take_up": fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {
+                **contract.FEATURE_SOURCES,
+                "srf_take_up": tuple(sorted({source for source, _field in fields})),
+            }
+        ),
+    )
+
+
 def _import_test_modules_naming(mixin):
     """Import every test module whose source names `mixin`, and return their names.
 
@@ -2658,9 +2681,11 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
     def _panel_columns(self):
         """Every column a modelling panel may carry, in model vocabulary."""
 
-        return tuple(
-            name for name in REQUIRED_FIELDS if name != "date"
-        ) + tuple(OPTIONAL_NUMERIC_FIELDS)
+        return (
+            tuple(name for name in REQUIRED_FIELDS if name != "date")
+            + tuple(OPTIONAL_NUMERIC_FIELDS)
+            + tuple(OPT_IN_COLUMNS)
+        )
 
     def test_every_mapped_source_exists_in_the_registry(self):
         """Catches a source renamed or removed on Track A's side.
@@ -2758,6 +2783,7 @@ class FeatureSourceMapCoverageTests(unittest.TestCase):
         readers = {
             "spread_bps": DailyObservation.spread_bps.fget,
             "sofr_iqr_bps": DailyObservation.sofr_iqr_bps.fget,
+            "effr_minus_iorb_bp": DailyObservation.effr_minus_iorb_bp.fget,
         }
         self.assertEqual(
             set(DERIVED_FEATURES),

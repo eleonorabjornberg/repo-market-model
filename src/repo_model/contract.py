@@ -289,6 +289,10 @@ FEATURE_FIELDS = MappingProxyType(
             ("fred_macro_latest_vintage", "IOER"),
         ),
         "tgcr": (("nyfed_tgcr", "TGCR"),),
+        # The effective federal funds rate, from the New York Fed as published,
+        # not FRED's `DFF` copy (directive #98). Read by no published
+        # declaration; it enters a model only as `effr_minus_iorb_bp`.
+        "effr": (("nyfed_effr", "EFFR"),),
         "bgcr": (("nyfed_bgcr", "BGCR"),),
         "reserve_balances": (("fred_macro_latest_vintage", "WRESBAL"),),
         "tga": (("fred_macro_latest_vintage", "WTREGEN"),),
@@ -330,6 +334,38 @@ FEATURE_FIELDS = MappingProxyType(
 #: with this one and rebuilding the panel, in a later pull request.
 ON_RRP_OPERATION_RESULTS_FIELDS = (("nyfed_on_rrp", "reverse_repo_total_accepted"),)
 
+#: `srf_take_up` (#127): the Standing Repo Facility's overnight take-up per
+#: operation date, in USD billions, from the Desk's operation results
+#: (`ingest._nyfed_srf_rows`). Declared, scored and tested, and **off**: no
+#: `FEATURE_FIELDS` entry names it, so the published panel and every published
+#: record are unchanged. Whether it joins a published declaration is
+#: Eleonora's to rule (`docs/decisions/workflow.md`, "A question about
+#: publishing does not hold back the measurement").
+SRF_OPERATION_RESULTS_FIELDS = (("nyfed_srf", "srf_total_accepted"),)
+#: `bank_total_assets` (#115): total assets of all commercial banks in the
+#: United States, not seasonally adjusted, USD billions, week ending Wednesday,
+#: the first print of each week from the Board's H.8 archive. The denominator
+#: of the reserve-scarcity state's reserves ratio. **Off**: no published
+#: declaration reads it, so the published panel and every published record are
+#: unchanged; `repo_model.scarcity.measurement_feature_fields` switches it on for
+#: a measurement run.
+BANK_TOTAL_ASSETS_FIELDS = (("frb_h8", "total_assets"),)
+
+#: `reserve_scarcity_state` (#115; `repo_model.scarcity`): the declared regime
+#: state, computed on each panel row from that row's `reserve_balances`,
+#: `bank_total_assets` and `on_rrp`, so it draws on every field those three
+#: draw on and is observable only once all three are -- the as-of rule reads it
+#: at the latest row where they are, never assembled from two rows. `on_rrp` is
+#: the Desk's operation results (`ON_RRP_OPERATION_RESULTS_FIELDS`). **Off**, as
+#: `BANK_TOTAL_ASSETS_FIELDS` is: whether it joins a published declaration is
+#: Eleonora's to rule (`docs/decisions/workflow.md`, "A question about
+#: publishing does not hold back the measurement").
+RESERVE_SCARCITY_STATE_FIELDS = (
+    ("fred_macro_latest_vintage", "WRESBAL"),
+    ("frb_h8", "total_assets"),
+    ("nyfed_on_rrp", "reverse_repo_total_accepted"),
+)
+
 #: The source IDs alone, projected from `FEATURE_FIELDS`. Derived rather than
 #: declared: a second literal would be a second thing to keep current, and a
 #: list that is not asserted against the thing it describes stops describing
@@ -356,6 +392,11 @@ DERIVED_FEATURES = MappingProxyType(
         # percentile columns are rates in percent and every threshold in this
         # project is stated in basis points.
         "sofr_iqr_bps": ("sofr_p25", "sofr_p75"),
+        # EFFR less the as-of IORB the panel already carries, in whole basis
+        # points: a slow gauge of how ample reserves are (directive #98). EFFR
+        # and SOFR share a publication instant, so the as-of rule reads this
+        # at the target's own row.
+        "effr_minus_iorb_bp": ("effr", "iorb"),
     }
 )
 
@@ -452,12 +493,31 @@ UNSOURCED_FEATURES = MappingProxyType({})
 # reason. Adding a column for a source means deleting its entry here.
 UNMODELLED_SOURCES = MappingProxyType(
     {
+        "frb_ddp": (
+            "#129: the Board's H.15 effective federal funds rate and IOER, read "
+            "only by repo_model.effr_history for the separate pre-SOFR history "
+            "study (EFFR - IOER from December 2008). No panel column draws on "
+            "it, and no published declaration reads it."
+        ),
         "nyfed_on_rrp": (
             "#45: on_rrp from the Desk's operation results is declared in "
             "ON_RRP_OPERATION_RESULTS_FIELDS and off in the published "
             "declaration until Eleonora rules whether it joins it "
             "(docs/decisions/workflow.md, 'A question about publishing does "
             "not hold back the measurement'). Turning it on removes this entry."
+        ),
+        "nyfed_srf": (
+            "#127: srf_take_up from the Desk's operation results is declared in "
+            "SRF_OPERATION_RESULTS_FIELDS and off in every published "
+            "declaration until Eleonora rules whether it joins one "
+            "(docs/decisions/workflow.md, 'A question about publishing does "
+            "not hold back the measurement'). Turning it on removes this entry."
+        ),
+        "frb_h8": (
+            "#115: bank_total_assets and reserve_scarcity_state are declared in "
+            "BANK_TOTAL_ASSETS_FIELDS and RESERVE_SCARCITY_STATE_FIELDS and off "
+            "in the published declaration until Eleonora rules whether the "
+            "indicator is published. Turning either on removes this entry."
         ),
     }
 )
