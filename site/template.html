@@ -478,7 +478,7 @@ d3.select("#views").selectAll("button").data(VIEWS).join("button").attr("type", 
 d3.select("#bandToggle").on("change", ev => { showBand = ev.target.checked; renderSpread(); });
 const yb = d3.select("#years").selectAll("button").data([null, ...years]).join("button").attr("type", "button")
   .attr("aria-pressed", d => d === focusYear).on("click", (ev, d) => { focusYear = d; yb.attr("aria-pressed", e => e === focusYear); renderScatter(); });
-yb.each(function (d) { const b = d3.select(this); if (d !== null) b.append("i").style("background", yearColor(d)); b.append("span").text(d === null ? "All years" : d); });
+yb.each(function (d) { const b = d3.select(this); if (d !== null) b.append("i").style("background", rows.every(r => r.year !== d || r.held) ? "var(--ink-3)" : yearColor(d)); b.append("span").text(d === null ? "All years" : d); });
 
 const P = D.plumbing, C = D.clock;
 P.segments.forEach(s => d3.select(`#seg-${s.key} .tag span`).text(`${s.rate.toFixed(2)}%, ${sgn(s.vs_iorb_bp)} bp vs IORB`));
