@@ -426,6 +426,12 @@ UNSOURCED_FEATURES = MappingProxyType({})
 # reason. Adding a column for a source means deleting its entry here.
 UNMODELLED_SOURCES = MappingProxyType(
     {
+        "frb_ddp": (
+            "#129: the Board's H.15 effective federal funds rate and IOER, read "
+            "only by repo_model.effr_history for the separate pre-SOFR history "
+            "study (EFFR - IOER from December 2008). No panel column draws on "
+            "it, and no published declaration reads it."
+        ),
         "nyfed_on_rrp": (
             "#45: on_rrp from the Desk's operation results is declared in "
             "ON_RRP_OPERATION_RESULTS_FIELDS and off in the published "

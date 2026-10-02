@@ -101,6 +101,17 @@ NYFED_ON_RRP_SOURCE_ID = "nyfed_on_rrp"
 #: Its one field: the day's accepted reverse-repo amount, summed over every
 #: reverse-repo operation of the operation date, in USD billions.
 NYFED_ON_RRP_FIELD = "reverse_repo_total_accepted"
+#: The Board's Data Download Program, full-release packages (#129): the H.15
+#: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
+#: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
+#: release, saved unmodified; `frb_ddp_series` reads one series out of it. Not a
+#: panel source: `effr_history` reads it for the pre-SOFR history study.
+FRB_DDP_SOURCE_ID = "frb_ddp"
+FRB_DDP_OUTPUT_URL = "https://www.federalreserve.gov/datadownload/Output.aspx"
+FRB_DDP_RELEASES = ("H15", "PRATES")
+#: A DDP observation the Board marks not available (`OBS_STATUS="ND"`, value
+#: -9999): a holiday or a day the series did not print.
+FRB_DDP_NOT_AVAILABLE = "ND"
 #: The Board's H.8 archive (#115, Eleonora's ruling of 2 October 2026, option 3):
 #: one page per release at `<archive>/<YYYYMMDD>/`, and the list of release dates
 #: as `releaseDates.json`, which the archive's own index page loads. ALFRED, the
@@ -534,6 +545,153 @@ def fetch_fred_macro(
             suffix=suffix,
         )
     ]
+
+
+def fetch_frb_ddp(
+    output_root: Path,
+    release: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch one Data Download Program release package, the whole release.
+
+    One request, one zip of SDMX XML, saved unmodified under `frb_ddp`. A
+    payload that is not a zip carrying the release's `<release>_data.xml` is
+    refused before anything is written: the DDP answers an unknown query with an
+    empty 200, which would otherwise be saved as a snapshot.
+    """
+
+    if release not in FRB_DDP_RELEASES:
+        raise ValueError(f"{release!r} is not one of {list(FRB_DDP_RELEASES)}")
+    url = f"{FRB_DDP_OUTPUT_URL}?{urlencode({'rel': release, 'filetype': 'zip'})}"
+    payload = downloader(url)
+    _frb_ddp_data_member(payload, release)
+    return [
+        _save_snapshot(
+            source_id=FRB_DDP_SOURCE_ID,
+            url=url,
+            payload=payload,
+            output_root=output_root,
+            suffix="zip",
+        )
+    ]
+
+
+def _frb_ddp_data_member(payload: bytes, release: str) -> str:
+    if not payload.startswith(b"PK"):
+        raise ValueError(f"the DDP {release} response is not a zip package")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        member = f"{release}_data.xml"
+        if member not in archive.namelist():
+            raise ValueError(f"the DDP {release} package carries no {member}")
+    return member
+
+
+def frb_ddp_series(payload: bytes, release: str, series_name: str) -> Dict[date, Optional[float]]:
+    """One series of a DDP release package: date -> value, `None` where not available.
+
+    Streams the SDMX XML, so the H.15's 70 MB document is never held whole.
+    A date the Board marks `ND` maps to `None` rather than being dropped, so a
+    caller can tell a holiday from a date the package does not carry.
+
+    Raises:
+        ValueError: if the package does not carry the series, carries it twice,
+            or carries an observation that is neither a number nor `ND`.
+    """
+
+    import xml.etree.ElementTree as ElementTree
+
+    member = _frb_ddp_data_member(payload, release)
+    found = 0
+    inside = False
+    values: Dict[date, Optional[float]] = {}
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive, archive.open(member) as stream:
+        for event, element in ElementTree.iterparse(stream, events=("start", "end")):
+            tag = element.tag.rsplit("}", 1)[-1]
+            if event == "start" and tag == "Series":
+                inside = element.get("SERIES_NAME") == series_name
+                found += inside
+            elif event == "end" and tag == "Obs":
+                if inside:
+                    when = date.fromisoformat(str(element.get("TIME_PERIOD")))
+                    status = element.get("OBS_STATUS")
+                    raw = element.get("OBS_VALUE")
+                    if status == FRB_DDP_NOT_AVAILABLE:
+                        values[when] = None
+                    else:
+                        try:
+                            values[when] = float(str(raw))
+                        except ValueError as error:
+                            raise ValueError(
+                                f"{series_name} {when}: {raw!r} with status "
+                                f"{status!r} is neither a value nor not-available"
+                            ) from error
+                element.clear()
+            elif event == "end" and tag == "Series":
+                inside = False
+                element.clear()
+    if found != 1:
+        raise ValueError(
+            f"the DDP {release} package carries {series_name} {found} times, not once"
+        )
+    return values
+
+
+#: The DDP series each `frb_ddp` field is read from: (release, series name).
+FRB_DDP_FIELD_SERIES = {
+    "EFFR": ("H15", "RIFSPFF_N.B"),
+    "IOER": ("PRATES", "RESBME_N.D"),
+    "IORB": ("PRATES", "RESBM_N.D"),
+}
+
+
+def _frb_ddp_rows(artifact: SnapshotArtifact, payload: bytes, registry):
+    """Point-in-time observations from one DDP package: its release's fields.
+
+    `available_at` is read off the registry on every call, as `_fr2004_rows`
+    reads its own: a `ref_date` field is public `days` business days (weekdays)
+    after its date, a `record_date` field `days` calendar days after it, each at
+    its `available_time` in its `timezone`, and never later than retrieval.
+    A date the Board marks not available yields no observation.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .contract import validate_release_lag
+    from .data import PointInTimeObservation
+
+    source = registry[FRB_DDP_SOURCE_ID]
+    query = parse_qs(urlparse(artifact.url).query)
+    release = (query.get("rel") or [""])[0]
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    rows = []
+    for field, (field_release, series_name) in FRB_DDP_FIELD_SERIES.items():
+        if field_release != release:
+            continue
+        lag = (source.get("field_release_lags") or {}).get(field) or source["release_lag"]
+        problems = validate_release_lag(f"{FRB_DDP_SOURCE_ID}.{field}", lag)
+        if problems:
+            raise ValueError("; ".join(problems))
+        moment = time.fromisoformat(lag["available_time"])
+        zone = ZoneInfo(lag["timezone"])
+        for ref_date, value in sorted(frb_ddp_series(payload, release, series_name).items()):
+            if value is None:
+                continue
+            if lag["basis"] == "ref_date":
+                day = _next_weekday(ref_date, int(lag["days"]))
+            else:
+                day = ref_date + timedelta(days=int(lag["days"]))
+            rows.append(
+                PointInTimeObservation(
+                    series_id=field,
+                    ref_date=ref_date,
+                    available_at=min(datetime.combine(day, moment, tzinfo=zone), retrieved),
+                    value=value,
+                    vintage_id=f"{artifact.retrieved_at}:{release}",
+                    source_sha=artifact.sha256,
+                )
+            )
+    if not rows:
+        raise ValueError(f"the DDP package {artifact.url} carries no frb_ddp field")
+    return rows
 
 
 def fetch_treasury_auctions(
@@ -4030,6 +4188,8 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_ON_RRP_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_on_rrp_rows(artifact, payload)
+        elif artifact.source_id == FRB_DDP_SOURCE_ID:
+            parsed_rows = _frb_ddp_rows(artifact, payload, registry)
         elif artifact.source_id == FRB_H8_SOURCE_ID:
             parsed_rows = _frb_h8_first_print_rows(artifact, payload)
         elif artifact.source_id.startswith("nyfed_"):
