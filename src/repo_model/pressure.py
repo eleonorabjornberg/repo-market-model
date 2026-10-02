@@ -34,7 +34,7 @@ from .baseline import (
     _sigmoid,
     benchmark_comparison_document,
 )
-from .data import DailyObservation
+from .data import DailyObservation, exceeds_bp
 from .metrics import (
     MetricError,
     average_precision,
@@ -205,9 +205,11 @@ def onsets(
     spreads = [(row.date, float(row.spread_bps)) for row in rows]
     found = []
     for index, (when, spread) in enumerate(spreads):
-        if when not in wanted or not spread > tau or index < ONSET_QUIET_DAYS:
+        if when not in wanted or not exceeds_bp(spread, tau) or index < ONSET_QUIET_DAYS:
             continue
-        if all(not value > tau for _, value in spreads[index - ONSET_QUIET_DAYS : index]):
+        if all(
+            not exceeds_bp(value, tau) for _, value in spreads[index - ONSET_QUIET_DAYS : index]
+        ):
             found.append(when)
     return tuple(found)
 

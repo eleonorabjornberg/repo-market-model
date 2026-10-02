@@ -37,6 +37,11 @@ It trades test strength against what comparisons can learn from. On the publishe
 | **2026-01-01** | **169** | **5** | **0** | **29** |
 | 2026-03-01 | 130 | 2 | 0 | 32 |
 
+A day counts as above a threshold when its spread, read on whole basis points, is strictly above it: a day exactly
+on +5 bp is not a day above +5 bp (`docs/decisions/pressure-probability.md`, ruling of 2 October 2026 on #155). The
+table was re-counted on that reading and no cell moved. Compared on the raw floating-point spread instead, a day on
+the threshold is counted above it, and the counts above +5 and +10 bp come out higher.
+
 A start of 2025-09-04 would lock every 2025–26 pressure day. Comparisons would then see no pressure in the 2025–26
 regime, and the regime split would say nothing about it. It would not make that period blind either: the
 October 2025 episode is already in published records and in `docs/advisor/evidence-pack/MEMO.md`. A start of

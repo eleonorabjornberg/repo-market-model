@@ -57,7 +57,7 @@ from repo_model.baseline import (  # noqa: E402
     panel_sha256,
     rolling_persistence_backtest,
 )
-from repo_model.data import load_daily_panel  # noqa: E402
+from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import (  # noqa: E402
     DAY_TYPES,
     load_split_declaration,
@@ -272,7 +272,9 @@ def rediagnose(
         briers = {}
         for tau in taus:
             probabilities = [ml._exceedance_from_law(values, knots, tau) for values, knots in laws[method]]
-            briers[tau] = [(p - (1.0 if y > tau else 0.0)) ** 2 for p, y in zip(probabilities, actuals)]
+            briers[tau] = [
+                (p - (1.0 if exceeds_bp(y, tau) else 0.0)) ** 2 for p, y in zip(probabilities, actuals)
+            ]
         per_day[method] = {"crps": crps, "brier": briers}
         methods[method] = {
             "misses_below": sum(1 for v, y in zip(vs, actuals) if y < v[0]),

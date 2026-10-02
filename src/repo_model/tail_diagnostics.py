@@ -43,6 +43,7 @@ from .baseline import (
     _reads_histories,
     _reads_information,
 )
+from .data import exceeds_bp
 
 __all__ = [
     "absolute_ceilings",
@@ -194,7 +195,7 @@ def zero_forecasts_on_events(
     for entry in _tail_entries(record):
         knot = by_date[entry["scored_date"]]
         for tau, probability in zip(taus, knot["probabilities"]):
-            if probability == 0.0 and knot["realized_bps"] > tau:
+            if probability == 0.0 and exceeds_bp(knot["realized_bps"], tau):
                 cells[entry["state"]].append(
                     {
                         "scored_date": entry["scored_date"],
@@ -260,7 +261,7 @@ def brier_by_tau(
     ordered = [by_date[entry["scored_date"]] for entry in _tail_entries(record)]
     return {
         tau: sum(
-            (knot["probabilities"][position] - (1 if knot["realized_bps"] > tau else 0))
+            (knot["probabilities"][position] - (1 if exceeds_bp(knot["realized_bps"], tau) else 0))
             ** 2
             for knot in ordered
         )
