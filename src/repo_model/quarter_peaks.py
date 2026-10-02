@@ -17,9 +17,9 @@ a locked tier raises `LookAheadError` rather than print a locked day's spread or
 forecast (`docs/decisions/lockbox.md`). 2025 Q4's window ends on 2026-01-05,
 so read to 2025-12-31 it stops two days short, and its row says so.
 
-**Above a threshold is read on whole basis points**: a peak is above tau when
-its spread rounded to whole bp is strictly above tau, so a peak exactly on
-+5 bp is not above it (Eleonora's ruling of 2 October 2026 on #155).
+**Above a threshold is read on whole basis points** (`data.exceeds_bp`): a
+peak exactly on +5 bp is not above it (Eleonora's ruling of 2 October 2026 on
+#155).
 
 Standard library only.
 """
@@ -29,7 +29,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from .data import QUARTER_END_WINDOW_BUSINESS_DAYS, quarter_end_window_days
+from .data import QUARTER_END_WINDOW_BUSINESS_DAYS, exceeds_bp, quarter_end_window_days
 from .lockbox import require_unlocked
 
 __all__ = ["quarter_peak_table"]
@@ -119,7 +119,7 @@ def quarter_peak_table(
                 and centre in observed
                 and round(float(spreads[centre])) == round(peak),
                 "above": {
-                    _tau_key(tau): (peak is not None and round(peak) > tau) for tau in taus
+                    _tau_key(tau): (peak is not None and exceeds_bp(peak, tau)) for tau in taus
                 },
                 "forecast_peaks": model_peaks,
             }
