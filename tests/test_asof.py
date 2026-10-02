@@ -626,8 +626,8 @@ class OnRrpAvailabilityTests(unittest.TestCase):
 class SrfAvailabilityTests(unittest.TestCase):
     """`srf_take_up` is read at the next business day's decision instant (#127).
 
-    The Standing Repo Facility runs an 08:30 and a 13:45 ET operation (one, at
-    13:45, before 26 June 2025). Its results carry a `lastUpdated` write time a
+    The Standing Repo Facility runs a 13:45 ET operation, and an 08:30 ET one
+    daily from 26 June 2025. Its results carry a `lastUpdated` write time a
     minute or so after each close, but the Desk states no publication time, and
     a few records were rewritten days later (2021-09-03 and 2021-09-10, on
     2021-09-16). `nyfed_srf.release_lag` therefore takes #45's conservative
