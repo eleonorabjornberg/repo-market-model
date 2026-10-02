@@ -203,12 +203,11 @@ class PendingFigureTests(unittest.TestCase):
     """A chapter whose record is not published shows a generated placeholder, and only then.
 
     Recorded mutation: in `pending_figures`, `if carriers:` -> `if False:`.
-    test_record_carrying_lead_time_refused and
-    test_record_carrying_scarcity_state_refused then failed with
+    test_record_carrying_lead_time_refused then failed with
     AssertionError: VisualError not raised.
     """
 
-    def test_published_records_leave_both_placeholders(self):
+    def test_published_records_leave_the_placeholder(self):
         found = emit_visual.pending_figures(published_records())
         self.assertEqual(set(found), {key for key, _, _ in emit_visual.PENDING})
 
@@ -218,11 +217,19 @@ class PendingFigureTests(unittest.TestCase):
         with self.assertRaises(emit_visual.VisualError):
             emit_visual.pending_figures(records)
 
-    def test_record_carrying_scarcity_state_refused(self):
+    def test_record_carrying_scarcity_state_still_generates(self):
+        """The page draws no scarcity chapter, so a record naming the state does not stop it.
+
+        Ruling of 2 October 2026 on #181: "Drop chapter 7 and treat #118's
+        scarcity item as superseded by #157." The state is shown only as the
+        explorer band (#148), so a record from #117 or #128 that names
+        `reserve_scarcity_state`, even as an off input, must not stop the page.
+        """
         records = published_records()
         records["docs/runs/pressure_model.json"] = {"declaration": {"features": ["reserve_scarcity_state"]}}
-        with self.assertRaises(emit_visual.VisualError):
-            emit_visual.pending_figures(records)
+        self.assertNotIn("scarcity", emit_visual.pending_figures(records))
+        page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+        self.assertNotIn('id="scarcity"', page)
 
 
 class PageTests(unittest.TestCase):

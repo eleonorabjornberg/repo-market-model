@@ -17,8 +17,8 @@ half); and how the project was built. Nothing on the page is typed:
   not declare the as-of information rule (`require_as_of`).
 * Every model figure is read from a published run record in `docs/runs/`
   through `from_record`, which refuses a figure no record carries. A model
-  figure that no published record carries yet (lead time, the scarcity state)
-  is a generated placeholder, and the generator refuses that placeholder once a
+  figure that no published record carries yet (lead time) is a generated
+  placeholder, and the generator refuses that placeholder once a
   record carries the figure (`pending_figures`).
 
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
@@ -110,7 +110,6 @@ DAY_TYPES = {"month_end": "Month-end", "ordinary": "Ordinary", "quarter_end": "Q
 #: generator refuses until the figure is drawn from it.
 PENDING = (
     ("lead_time", "lead_time", "lead time to the onset of pressure"),
-    ("scarcity", "reserve_scarcity_state", "the reserve-scarcity state against how often pressure came"),
 )
 
 #: An order-of-magnitude bound on reserve balances in USD billions, the unit the
@@ -846,7 +845,6 @@ def generate(repo, commit=None):
                               for g in notes["guards"]),
         "validation": link(notes["validation"]),
         "lead_time_placeholder": pending["lead_time"],
-        "scarcity_placeholder": pending["scarcity"],
     })
     fills.update(model_fills)
 
