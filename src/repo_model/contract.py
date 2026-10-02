@@ -58,6 +58,7 @@ __all__ = [
     "CALENDAR_FEATURES",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
+    "OVERLAY_FEATURES",
     "sources_for_features",
     "TREASURY_BILL_SECURITY_TYPES",
     "TREASURY_COUPON_SECURITY_TYPES",
@@ -380,6 +381,20 @@ CALENDAR_FEATURES = frozenset(
         # month ends, and the evidence that motivated this column was measured
         # in calendar days.
         "days_to_month_end",
+    }
+)
+
+# Columns a model may read that the published panel does not carry: a named
+# module adds them to a panel in memory, from a tracked snapshot, after the
+# build. Each maps to that module. They are in `FEATURE_FIELDS`, so the as-of
+# rule prices and guards them like any other read; this set is only what
+# exempts them from `tests/test_contract.py`'s rule that every classified
+# column is a panel column. `tests/test_announced_iorb.py` checks the module
+# adds exactly these. Adding one does not move the published panel's bytes.
+OVERLAY_FEATURES = MappingProxyType(
+    {
+        "iorb_announced_change_bps": "repo_model.announced_iorb",
+        "iorb_days_to_announced_change": "repo_model.announced_iorb",
     }
 )
 

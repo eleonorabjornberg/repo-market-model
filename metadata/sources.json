@@ -655,13 +655,13 @@
     "limitation": "Not a panel column. src/repo_model/announced_iorb.py computes both fields per scored row from tests/fixtures/snapshots/fed-iorb-announcements/iorb_changes.csv, reading only the notes announced at or before that row's decision instant, and adds them to a panel in memory; the published panel does not carry them. The table holds every IOER/IORB implementation note that changed the rate from 2018-04 to its retrieval, plus the 2018-03-21 anchor and the 2021-07-28 note that replaced IOER by IORB at an unchanged rate. Announcement time is the FOMC statement's release time. Added by directive #38.",
     "provider": "Board of Governors of the Federal Reserve System",
     "release_lag": {
-      "available_time": "16:00",
+      "available_time": "23:59",
       "basis": "ref_date",
       "days": 0,
-      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape; a value for date d is never later than 16:00 on d.",
+      "note": "Not read: both fields are scheduled (scheduled_availability), and the as-of rule dates them by that block. Stated for the registry's shape, at the end-of-day convention, the conservative direction.",
       "timezone": "America/New_York",
       "unit": "business_days",
-      "worst_case_calendar_days": 0
+      "worst_case_calendar_days": 5
     },
     "reviewed_note": "No structural zeros: a 0.0 change is a computed value, not a missing one.",
     "scheduled_availability": {

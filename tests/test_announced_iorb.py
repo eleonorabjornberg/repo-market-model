@@ -25,6 +25,7 @@ from repo_model.announced_iorb import (
     load_announcements,
     with_announced_iorb,
 )
+from repo_model.contract import OVERLAY_FEATURES
 from repo_model.asof import KIND_SCHEDULED, InformationRule
 from repo_model.data import DailyObservation
 from repo_model.splits import LookAheadError
@@ -267,6 +268,12 @@ class InformationRuleTests(unittest.TestCase):
         info = rule.information_set(self.dates, scored)
         with self.assertRaises(LookAheadError):
             rule.check(self.dates, info)
+
+    def test_the_contract_declares_exactly_these_columns_as_overlay(self):
+        self.assertEqual(
+            {name for name, module in OVERLAY_FEATURES.items() if module == "repo_model.announced_iorb"},
+            set(FEATURES),
+        )
 
     def test_the_declaration_is_the_registrys_and_names_both_fields(self):
         block = REGISTRY["fed_iorb_announcements"]["scheduled_availability"]
