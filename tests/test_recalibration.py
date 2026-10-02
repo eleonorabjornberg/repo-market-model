@@ -11,6 +11,8 @@ in `tests/test_ml.py::RecalibrationPartsTests`.
 * `ConformalPidTests`: what conformal PID does with what it may read.
 * `GroupConditionalEdgesTests`: Mondrian CV+ over calendar type x regime, and
   its declared fallback.
+* `PidGridTests`: the conformal PID constants' search grid, declared before
+  any scoring (#125), and #122's constants as one of its points.
 """
 
 from __future__ import annotations
@@ -206,6 +208,70 @@ class ConformalPidTests(unittest.TestCase):
         for day, band in zip(days, bands):
             self.assertEqual(band.vector[1:-1], day.vector[1:-1])
             self.assertEqual(list(band.vector), sorted(band.vector))
+
+
+class PidGridTests(unittest.TestCase):
+    """The search grid for conformal PID's constants, declared in advance (#125).
+
+    The grid is pinned here value by value: widening it after scoring would
+    show up as a change to this test.
+    """
+
+    def test_the_declared_constants_are_122s(self):
+        declared = recalibration.DECLARED_PID
+        self.assertEqual(declared.step, recalibration.PID_STEP)
+        self.assertEqual(declared.integrator_gain, recalibration.PID_INTEGRATOR_GAIN)
+        self.assertEqual(declared.saturation, recalibration.PID_SATURATION)
+        self.assertEqual(declared.scorecaster_minimum, recalibration.SCORECASTER_MINIMUM)
+        self.assertEqual(declared, recalibration.PidConstants(0.05, 0.1, 1.0, 20))
+
+    def test_the_grid_is_the_declared_one_and_holds_122s_point(self):
+        self.assertEqual(recalibration.PID_GRID_STEPS, (0.01, 0.05, 0.2))
+        self.assertEqual(recalibration.PID_GRID_INTEGRATOR_GAINS, (0.0, 0.1, 0.5))
+        self.assertEqual(recalibration.PID_GRID_SATURATIONS, (1.0, 5.0))
+        self.assertEqual(recalibration.PID_GRID_SCORECASTER_MINIMUMS, (None, 20, 60))
+        grid = recalibration.PID_GRID
+        self.assertIn(recalibration.DECLARED_PID, grid)
+        self.assertEqual(len(set(grid)), len(grid))
+        # A zero integrator gain makes the saturation moot: one point, not two.
+        for point in grid:
+            if point.integrator_gain == 0.0:
+                self.assertEqual(point.saturation, recalibration.PID_GRID_SATURATIONS[0])
+        self.assertEqual(len(grid), 3 * (1 + 2 * 2) * 3)
+
+    def test_the_default_run_is_the_declared_point(self):
+        days = online_days(400, calendar=lambda position: (int(position % 21 == 0), 0, 0, 0))
+        actuals = gaussian_actuals(400, 2.0)
+        self.assertEqual(
+            recalibration.conformal_pid(days, actuals, LEVELS),
+            recalibration.conformal_pid(
+                days, actuals, LEVELS, constants=recalibration.DECLARED_PID
+            ),
+        )
+
+    def test_each_part_can_be_switched_off(self):
+        days = online_days(300, calendar=lambda position: (int(position % 7 == 0), 0, 0, 0))
+        actuals = gaussian_actuals(300, 2.0)
+        bare = recalibration.PidConstants(0.05, 0.0, 1.0, None)
+        bands = recalibration.conformal_pid(days, actuals, LEVELS, constants=bare)
+        state = recalibration.PidState(LEVELS, bare)
+        self.assertEqual(state.constants, bare)
+        for band in bands:
+            self.assertEqual(band.scorecast, 0.0)
+            self.assertFalse(band.saturated)
+        # P alone: each observed label moves q by the step times the range.
+        self.assertNotEqual(bands[-1].quantile, 0.0)
+
+    def test_the_constants_change_the_bands(self):
+        days = online_days(300)
+        actuals = gaussian_actuals(300, 3.0)
+        slow, fast = (
+            recalibration.conformal_pid(
+                days, actuals, LEVELS, constants=recalibration.PidConstants(step, 0.1, 1.0, 20)
+            )
+            for step in (0.01, 0.2)
+        )
+        self.assertNotEqual(slow[50].quantile, fast[50].quantile)
 
 
 class ScorecasterCalendarTests(unittest.TestCase):
