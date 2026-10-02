@@ -719,6 +719,20 @@ class NewcomerN2Tests(unittest.TestCase):
         for e in data["tail"]:
             self.assertIn(emit_visual.short_day(e["date"]), fills["n2_tail_list"])
 
+    def test_the_chart_label_counts_only_the_headline_thresholds(self):
+        """#141 §4 N2: the chart's aria-label carries no pooled count above +20 or +50 bp."""
+        template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+        body = template[template.index("function renderN2()"):]
+        body = body[:body.index("\n}\n")]
+        labels = [line for line in body.splitlines() if '"aria-label"' in line]
+        self.assertEqual(len(labels), 1)
+        label = labels[0]
+        self.assertNotIn("counted.above.map", label)
+        self.assertNotRegex(label, r"counted\.above\[[23]\]")
+        self.assertIn("N2.counted.above[0]", label)
+        self.assertIn("N2.counted.above[1]", label)
+        self.assertIn("listed one by one", label)
+
     def test_cluster_years_are_read_from_the_counts(self):
         data, fills = self.run_n2(self.rows)
         by_year = {int(y): k for y, k in data["counted"]["by_year"].items()}

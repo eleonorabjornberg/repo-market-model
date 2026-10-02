@@ -218,8 +218,8 @@ ol.tail time{font-weight:600;color:var(--ink)}
     <p class="held-note">{{n2_held_note}}</p>
   </figure>
   <div class="prose">
-    <p>That is what makes forecasting pressure hard. A forecast that always said &ldquo;no pressure tomorrow&rdquo; would have been right on {{n2_quiet}} days counted here, and would have missed every pressure day. So the project never grades a forecast by how often it is right: it compares it with simple benchmarks on the same days.</p>
-    <p>Pressure days also bunch together. {{n2_runs}} A day of pressure says a lot about the next one, which is why one of those benchmarks simply carries today forward.</p>
+    <p>That is what makes forecasting pressure hard. A forecast that always said &ldquo;no pressure tomorrow&rdquo; would have been right on {{n2_quiet}} days counted here, and would have missed every pressure day. So the project never grades a forecast by how often it is right: it compares it with <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">simple benchmarks</a> on the same days.</p>
+    <p>Pressure days also bunch together. {{n2_runs}} One of those benchmarks simply carries today forward.</p>
   </div>
   <p class="note" style="margin-top:18px">Every day above +{{n2_tau3}} bp, with its spread. They are too few for a rate, so they are listed one by one.</p>
   <ol class="tail" id="n2tail">{{n2_tail_list}}</ol>
@@ -780,7 +780,7 @@ function renderN2() {
   const y = d3.scaleBand(n2Years, [m.t, H - m.b]).paddingInner(.12);
   const heldYear = yr => n2Days.every(d => d.year !== yr || d.b === null);
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`)
-    .attr("role", "img").attr("aria-label", `Strip chart, one row per year from ${n2Years[0]} to ${n2Years.at(-1)}, one mark per scored business day placed by its date in the year. Days above +${N2.taus[0]} bp are coloured and shaped by the highest threshold crossed: ` + N2.counted.above.map((k, i) => `${k} above +${N2.taus[i]} bp`).join(", ") + ` of ${N2.counted.n} days counted.` + (N2.held_out.length ? ` Days from ${fmt(parse(N2.held_out[0].start))} are held out and drawn hollow and grey.` : ""));
+    .attr("role", "img").attr("aria-label", `Strip chart, one row per year from ${n2Years[0]} to ${n2Years.at(-1)}, one mark per scored business day placed by its date in the year. Days above +${N2.taus[0]} bp are coloured and shaped by the highest threshold crossed. Of ${N2.counted.n} days counted, ${N2.counted.above[0]} were above +${N2.taus[0]} bp and ${N2.counted.above[1]} above +${N2.taus[1]} bp. Days above +${N2.taus[2]} bp are listed one by one below the chart.` + (N2.held_out.length ? ` Days from ${fmt(parse(N2.held_out[0].start))} are held out and drawn hollow and grey.` : ""));
   n2Years.forEach(yr => {
     svg.append("rect").attr("x", m.l).attr("y", y(yr)).attr("width", W - m.l - m.r).attr("height", y.bandwidth()).style("fill", heldYear(yr) ? "none" : "var(--panel)").style("stroke", heldYear(yr) ? "var(--rule)" : "none").style("stroke-dasharray", "3 3");
     const t = svg.append("text").attr("x", m.l - 8).attr("y", y(yr) + y.bandwidth() / 2 + (heldYear(yr) ? -2 : 4)).attr("text-anchor", "end").style("font-size", "12px").style("font-weight", 600).style("fill", heldYear(yr) ? "var(--ink-3)" : "var(--ink)").text(yr);
