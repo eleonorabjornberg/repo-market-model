@@ -16,17 +16,34 @@ horizons, adds lead time and the October 2025 onset, and writes the tables.
 
 The candidates:
 
-* `distributional_gbm`: the published `exceedance_gbm_cross_conformal_funding`
-  declaration (gbm, cross-conformal, its nine features), read at +5 and +10 bp.
+* `distributional_gbm`: the `exceedance_gbm_cross_conformal_funding`
+  declaration published when #114 measured it (gbm, cross-conformal, its nine features), read at +5 and +10 bp.
 * `direct_logistic` and `direct_gbm_classifier`: `ml.pressure_logistic_exceedance`
   and `ml.pressure_classifier_exceedance` on the latest spread, the pressure-day
   type, the settlement size, reserves as the scarcity state, the type and
   settlement terms times reserves, and the TGA's weekly change times reserves.
 
+`publish` writes the published record of pressure model v1 at one horizon
+(#124, Eleonora's ruling on #134): `distributional_gbm+recalibrated`, the
+probability read from the published funding declaration's distribution (gbm,
+calibrated by conformal PID with nested selection of its constants,
+`--calibration conformal_pid_nested`), recalibrated out of fold, paired with
+both benchmarks. Its record is `docs/runs/pressure_model_v1_hH.json`, in the
+shape of an `exceedance-backtest` record, and is scored from a clean tree:
+
+    PYTHONPATH=src python3 scripts/pressure_model_v1.py publish --panel PANEL --horizon H \
+        --report docs/runs/pressure_model_v1_hH.json [--event-list TAU ...] [--limitation TEXT ...]
+
+`--event-list` reports a threshold event by event instead of pooled, as
+`exceedance-backtest --event-list` does (#130, `docs/decisions/pressure-probability.md`).
+
 At horizons of 2 or more `treasury_settlement` is not public at the decision
 instant under its declaration (`metadata/sources.json`, `treasury_auctions`:
-one business day ahead), so every declaration drops it there. Each candidate is
-also reported recalibrated out of fold (`pressure.RECALIBRATION`).
+one business day ahead), so every declaration drops it there, and the
+published record's conformal PID scorecaster drops its coupon-settlement
+indicator (Eleonora's ruling on #170, option A; the record's declaration
+carries `scorecaster_variant`). Each candidate is also reported recalibrated
+out of fold (`pressure.RECALIBRATION`).
 """
 
 from __future__ import annotations
@@ -45,6 +62,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
+    EVENT_LEAD_DAYS,
     calendar_climatology_exceedance,
     panel_sha256,
     persistence_logistic_exceedance,
@@ -63,7 +81,7 @@ DECISION = time(16, 0)
 #: The last day any comparison may score (`docs/decisions/lockbox.md`).
 END = date(2025, 12, 31)
 
-#: The published distributional declaration, `docs/runs/exceedance_gbm_cross_conformal_funding.json`.
+#: The distributional declaration's features, those of the published funding declaration.
 GBM_FEATURES = (
     "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
     "tbill_13w", "tbill_4w", "tga", "treasury_settlement",
@@ -220,6 +238,139 @@ def horizon_command(args) -> int:
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "output": str(args.output), **document["scored_window"]}))
+    return 0
+
+
+# -- the published record (#124, ruling #134) ---------------------------------
+
+THRESHOLDS = REPO / "metadata" / "stress_thresholds.json"
+#: The published candidate, as Eleonora's ruling on #134 names it.
+PUBLISHED = "distributional_gbm"
+
+
+def _rescored(report):
+    """`report` with its metrics and twCRPS computed from its own forecasts.
+
+    `pressure.recalibrated` replaces the forecasts and keeps the metrics of
+    the forecasts it replaced; a record shaped from it must state the
+    recalibrated forecasts' metrics, so they are computed again here, by the
+    functions `rolling_exceedance_backtest` computes them with.
+    """
+
+    import dataclasses
+
+    from repo_model.baseline import _at_tau, _tau_metrics
+    from repo_model.metrics import MetricError, threshold_weighted_crps
+
+    metrics = tuple(
+        _tau_metrics(tau, _at_tau(report.forecast, report.reference, report.outcomes, position))
+        for position, tau in enumerate(report.taus)
+    )
+    try:
+        twcrps = sum(
+            threshold_weighted_crps(report.taus, curve, value, report.twcrps_weights)
+            for curve, value in zip(report.forecast, report.realized_bps)
+        ) / len(report.forecast)
+        unavailable = None
+    except MetricError as exc:
+        twcrps, unavailable = None, str(exc)
+    return dataclasses.replace(
+        report, metrics=metrics, twcrps=twcrps, twcrps_unavailable=unavailable
+    )
+
+
+def publish_command(args) -> int:
+    import functools
+
+    from repo_model import ml
+    from repo_model.baseline import (
+        add_exceedance_event_lists,
+        add_exceedance_splits,
+        benchmark_comparison_document,
+        exceedance_backtest_document,
+    )
+    from repo_model.data import load_stress_thresholds
+    from repo_model.recalibration import NestedFoldPid
+
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    taus = tuple(float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"])
+    h = args.horizon
+    features = _at_horizon(GBM_FEATURES, h)
+    registry = json.loads(REGISTRY.read_text())
+
+    built = []
+
+    def online(rows_, rule):
+        built.append(NestedFoldPid(rows_, rule, splits=splits, refit_every=REFIT_EVERY))
+        return built[-1]
+
+    def run(name, predictor, declared, calibration=None):
+        return rolling_exceedance_backtest(
+            rows,
+            predictor=predictor,
+            model_name=name,
+            features=declared,
+            registry=registry,
+            decision_time=DECISION,
+            taus=taus,
+            minimum_history=MINIMUM_HISTORY,
+            refit_every=REFIT_EVERY,
+            end=END,
+            horizon=h,
+            online_calibration=calibration,
+        )
+
+    raw = run(
+        PUBLISHED,
+        ml.gbm_exceedance(
+            tuple(name for name in features if name != "spread_bps"),
+            minimum_history=MINIMUM_HISTORY,
+        ),
+        features,
+        online,
+    )
+    report = _rescored(pressure.recalibrated(raw))
+    document = exceedance_backtest_document(
+        report, panel_path=args.panel, registry_path=REGISTRY, thresholds_path=THRESHOLDS
+    )
+    document["declaration"]["end"] = END.isoformat()
+    document["declaration"]["horizon"] = h
+    document["declaration"]["recalibration"] = dict(pressure.RECALIBRATION)
+    document["calibration_account"] = built[0].account()
+    if args.limitation:
+        document["limitations"] = list(args.limitation)
+    digest = panel_sha256(args.panel)
+    add_exceedance_splits(document, report, rows, splits, panel_sha256=digest)
+    document["benchmarks"] = {}
+    bench_reports = []
+    for name, declared, predictor in (
+        (
+            "calendar_climatology",
+            CALENDAR_FEATURES,
+            calendar_climatology_exceedance(splits, minimum_history=MINIMUM_HISTORY),
+        ),
+        (
+            "persistence_logistic",
+            ("spread_bps",),
+            persistence_logistic_exceedance(minimum_history=MINIMUM_HISTORY),
+        ),
+    ):
+        bench_reports.append(run(name, predictor, declared))
+        document["benchmarks"][name] = benchmark_comparison_document(
+            report,
+            bench_reports[-1],
+            panel_sha256=digest,
+            rows=rows,
+            declaration=splits,
+        )
+    if args.event_list:
+        add_exceedance_event_lists(
+            document, report, bench_reports, args.event_list, lead_days=args.event_lead_days
+        )
+    args.report.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"horizon": h, "report": str(args.report), "scored_days": len(report.scored_dates)}))
     return 0
 
 
@@ -411,6 +562,17 @@ def main(argv=None) -> int:
         help="run (and cache) the distributional candidate only, then stop",
     )
     one.set_defaults(func=horizon_command)
+    record = sub.add_parser("publish", help="the published record at one horizon (#124)")
+    record.add_argument("--panel", type=Path, required=True)
+    record.add_argument("--horizon", type=int, choices=HORIZONS, required=True)
+    record.add_argument("--report", type=Path, required=True)
+    record.add_argument("--limitation", action="append", default=None, metavar="TEXT")
+    record.add_argument(
+        "--event-list", action="append", type=float, default=None, metavar="TAU",
+        help="report this declared threshold (bp) event by event instead of pooled, repeatable",
+    )
+    record.add_argument("--event-lead-days", type=int, default=EVENT_LEAD_DAYS, metavar="N")
+    record.set_defaults(func=publish_command)
     merge = sub.add_parser("assemble", help="merge the horizons; lead time; tables")
     merge.add_argument("--panel", type=Path, required=True)
     merge.add_argument("--output", type=Path, required=True)
