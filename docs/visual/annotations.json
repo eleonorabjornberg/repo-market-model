@@ -32,6 +32,10 @@
     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm"
   },
   "claims": {
+    "h8_release": {
+      "text": "The Federal Reserve Board publishes commercial banks' weekly balance sheets, total assets among them, in its H.8 release, generally on Fridays at 4:15 p.m. Eastern Time",
+      "src": "https://www.federalreserve.gov/releases/h8/"
+    },
     "segments_tgcr": {
       "text": "TGCR measures overnight tri-party general collateral repo backed by Treasuries, leaving out trades in which the Fed is a counterparty",
       "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},

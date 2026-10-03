@@ -32,6 +32,13 @@ half); and how the project was built. Nothing on the page is typed:
   adapter, which checks each file against its manifest's SHA-256 (#141 answer
   6). The panel and its digest do not change; the data file lists each
   snapshot's SHA-256.
+* The reserve-scarcity state (#115) is shaded behind N1's line and drawn as a
+  band lane in N3 (#148), under Eleonora's ruling of 2 October 2026 on #148:
+  display only, no model reads it. It is read as-of on the published scored
+  grid by `scarcity.pressure_days_by_state`, the function #115's validation
+  used, from the measurement panel `scripts/scarcity_validation.py` builds
+  from tracked fixtures (with the published-digest check). The caption says
+  from the data whether pressure-day frequency rises with the state.
 * The status of each tag on view N4's market map (`docs/visual/map.json`) is
   derived, never typed: from the sources registry, the panel manifest, the
   declarations of the published run records, the tracked fixtures and the
@@ -60,6 +67,7 @@ import csv
 import fnmatch
 import hashlib
 import html
+import importlib.util
 import json
 import math
 import re
@@ -78,7 +86,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from repo_model.asof import declared_availability, fold_grid  # noqa: E402
 from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_DEPLETION_BREAK_BN  # noqa: E402
 from repo_model.data import (  # noqa: E402
-    QUARTER_END_WINDOW_BUSINESS_DAYS, TAX_DEADLINE_MONTHS, corporate_tax_deadline, quarter_end_window)
+    QUARTER_END_WINDOW_BUSINESS_DAYS, TAX_DEADLINE_MONTHS, corporate_tax_deadline, exceeds_bp, quarter_end_window)
 from repo_model.ingest import (  # noqa: E402
     NYFED_ON_RRP_FIELD,
     NYFED_ON_RRP_SOURCE_ID,
@@ -92,8 +100,20 @@ from repo_model.scarcity import (  # noqa: E402
     BOOTSTRAP_LEVEL,
     BOOTSTRAP_REPLICATIONS,
     BOOTSTRAP_SEED,
+    ON_RRP_BUFFER_BN,
+    SATIATION_BAND,
+    STATE_LABELS,
+    measurement_declaration,
+    pressure_days_by_state,
+    with_reserve_scarcity_state,
 )
 from repo_model.splits import LookAheadError  # noqa: E402
+
+# #115's measurement panel, loaded from its script by path: scripts/ is not a package.
+_spec = importlib.util.spec_from_file_location("scarcity_validation", ROOT / "scripts" / "scarcity_validation.py")
+_scarcity_validation = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_scarcity_validation)
+build_measurement_panel = _scarcity_validation.build_measurement_panel
 
 FIXTURES = "tests/fixtures/snapshots/funding_inputs"
 MANIFEST = "metadata/funding_panel_manifest.json"
@@ -104,6 +124,7 @@ SPLITS = "metadata/evaluation_splits.json"
 LOCKBOX = "metadata/lockbox.json"
 HOLIDAYS = "metadata/market_holidays.json"
 ON_RRP = "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
+H8 = "tests/fixtures/snapshots/h8_inputs/frb_h8"
 ANNOTATIONS = "docs/visual/annotations.json"
 GLOSSARY = "docs/visual/glossary.json"
 MAP = "docs/visual/map.json"
@@ -119,6 +140,7 @@ DATA_DIR = "docs/visual/data"
 #: directly, the fixtures the panel is built from, and the script itself.
 INPUTS = (
     "scripts/emit_visual.py",
+    "scripts/scarcity_validation.py",
     TEMPLATE,
     "docs/visual/annotations.json",
     GLOSSARY,
@@ -132,6 +154,7 @@ INPUTS = (
     HOLIDAYS,
     FIXTURES,
     ON_RRP,
+    H8,
     MAP,
     ISSUES,
     f":(glob){RUNS}/*.json",
@@ -1733,7 +1756,8 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
     decision instant below `contract.ON_RRP_DEPLETION_BREAK_BN` (scarce) or not
     (abundant). Each cell reports the share of its days with SOFR - IORB, on
     whole basis points, strictly above each headline threshold: k of n, with an
-    interval. The #115 scarcity state is not read (#141 answer 8). Days in a
+    interval. The #115 scarcity state is not read here: it is the band
+    (`newcomer_band`), and the 2x2 keeps the ON RRP break alone. Days in a
     locked tier are left out of every cell, count and sentence
     (`counted`), and the view says so.
     """
@@ -1826,6 +1850,162 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
                         f"pressure days come in runs."),
         "c_n3_quarter_end": link(notes["claims"]["quarter_end"]),
         "c_n3_fed_cash": link(notes["claims"]["fed_cash"]),
+    }
+    return data, fills
+
+
+# ---------------------------------------------------------------- the reserve-scarcity band behind N1 and N3 (#148)
+
+#: The map tag whose derived status the band's legend shows (#141 §4, N3's status logic).
+BAND_TAG = "scarcity"
+
+
+def snapshot_digests(repo, *roots):
+    """{path: sha256} for every tracked payload under `roots`, manifests aside."""
+    return {str(p.relative_to(repo)): sha256(p) for root in roots for p in sorted((repo / root).rglob("*"))
+            if p.is_file() and not p.name.endswith(".manifest.json")}
+
+
+def scarcity_days(repo, locked):
+    """Every scored day before the first locked one, with the #115 state read as-of at its decision instant.
+
+    The measurement panel is `scripts/scarcity_validation.py`'s, built from the
+    tracked fixtures (funding inputs, the Desk's ON RRP results, the H.8 first
+    prints) and refused unless its published columns reproduce the published
+    digest. The state is `scarcity.with_reserve_scarcity_state`'s, read on the
+    published scored grid by `scarcity.pressure_days_by_state` -- the reads
+    #115 validated, through both read guards. `end` is the panel's last day in
+    no locked tier, so the lockbox's own guard is never asked to score one.
+    Returns `(scored days, {snapshot path: sha256})`.
+    """
+    with measurement_declaration(), tempfile.TemporaryDirectory() as tmp:
+        build, _, registry, decision = build_measurement_panel(repo / SOURCES, Path(tmp))
+        rows = with_reserve_scarcity_state(build.observations)
+        open_days = [r.date for r in rows if locked_tier(r.date, locked) is None]
+        if not open_days:
+            raise VisualError("every panel day is held out; the band has nothing to read")
+        scored = pressure_days_by_state(rows, registry=registry, decision_time=decision,
+                                        minimum_history=N2_MINIMUM_HISTORY, end=open_days[-1])
+    return scored, snapshot_digests(repo, ON_RRP, H8)
+
+
+def runs(days, key):
+    """`[[first, last, value]]`: maximal runs of consecutive days with the same `key(day)`."""
+    out = []
+    for d in days:
+        value = key(d)
+        if out and out[-1][2] == value:
+            out[-1][1] = d.day.isoformat()
+        else:
+            out.append([d.day.isoformat(), d.day.isoformat(), value])
+    return out
+
+
+def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status, notes):
+    """The #115 reserve-scarcity state as a band lane, with the ON RRP buffer as its sub-lane (#148).
+
+    `scored` is `scarcity_days(...)[0]`: each scored day's as-of state and its
+    own SOFR - IORB. A day in a locked tier is dropped here, whatever it holds,
+    and is in no span, count or sentence. The sub-lane marks the days N3's 2x2
+    calls scarce: the ON RRP result public at the decision instant below
+    `contract.ON_RRP_DEPLETION_BREAK_BN`. Per state, the share of days strictly
+    above each headline threshold on whole basis points, k of n with an
+    interval, exactly as `scarcity.tabulate` reports it for #115. The caption
+    says from those shares whether pressure-day frequency rises with the state;
+    when it does not, it says so plainly and that the band is not a working
+    indicator (Eleonora's ruling of 2 October 2026 on #148). `status` is the
+    N4 engine's derived status for the map tag `BAND_TAG`.
+    """
+    taus = [int(t) for t in thresholds["taus_bp"][:2]]
+    kept = [d for d in scored if locked_tier(d.day, locked) is None]
+    if not kept:
+        raise VisualError("every scored day is held out; the band has nothing to draw")
+    spans = runs(kept, lambda d: None if d.state is None else int(d.state))
+
+    def scarce(d):
+        return on_rrp_as_of(on_rrp, d.day, decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+
+    buffer_spans = [[a, b] for a, b, below in runs(kept, scarce) if below]
+    states = sorted({int(d.state) for d in kept if d.state is not None})
+    by_state = {}
+    for state in states:
+        spreads = [d.spread_bps for d in kept if d.state is not None and int(d.state) == state]
+        by_state[str(state)] = {"label": STATE_LABELS[state], "n": len(spreads),
+                                "above": {str(t): rate_cell([int(exceeds_bp(s, t)) for s in spreads]) for t in taus}}
+    rises = {}
+    for t in taus:
+        rates = [by_state[str(k)]["above"][str(t)]["rate"] for k in states]
+        rises[str(t)] = all(b >= a for a, b in zip(rates, rates[1:]))
+    last = kept[-1].day
+    spans_held = [{"name": tier.name, "start": tier.start.isoformat(), "end": tier.end.isoformat() if tier.end else None}
+                  for tier in locked if tier.end is None or tier.end > last]
+    data = {
+        "spans": spans, "buffer_spans": buffer_spans, "labels": {str(k): v for k, v in STATE_LABELS.items()},
+        "band": list(SATIATION_BAND), "buffer_bn": ON_RRP_BUFFER_BN, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
+        "by_state": by_state, "rises": rises, "taus": taus, "held_out": spans_held,
+        "status": {k: status[k] for k in ("key", "icon", "word")},
+        "counted": {"first": kept[0].day.isoformat(), "last": last.isoformat(), "n": len(kept),
+                    "unknown": sum(1 for d in kept if d.state is None)},
+        "bootstrap": {"method": "stationary", "block_length": BOOTSTRAP_BLOCK_LENGTH, "level": BOOTSTRAP_LEVEL,
+                      "replications": BOOTSTRAP_REPLICATIONS, "seed": BOOTSTRAP_SEED},
+    }
+
+    def share(state, t):
+        c = by_state[str(state)]
+        a = c["above"][str(t)]
+        return f"{pct(a['rate'])} of {c['label']} days ({a['k']} of {c['n']})"
+
+    t = taus[0]
+    if rises[str(t)]:
+        caption = (f"Here the share of days more than +{t} bp above IORB rises with the state, from "
+                   f"{share(states[0], t)} to {share(states[-1], t)}. The band describes the period; no forecast "
+                   f"on this page reads it.")
+    else:
+        drops = []
+        for a, b in zip(states, states[1:]):
+            ca, cb = by_state[str(a)]["above"][str(t)], by_state[str(b)]["above"][str(t)]
+            if cb["rate"] < ca["rate"]:
+                overlap = cb["interval"][1] >= ca["interval"][0]
+                drops.append(f"on {share(a, t)} but {share(b, t)}" + (", and the intervals overlap" if overlap else ""))
+        caption = (f"Pressure-day frequency does not rise step by step with the state. SOFR closed more than +{t} bp "
+                   f"above IORB {'; and '.join(drops)}. The band describes the period. It is not a working indicator, "
+                   f"and no forecast on this page reads it.")
+    level = round(100 * BOOTSTRAP_LEVEL)
+    head = "".join(f"<th scope='col'>Above +{t} bp</th>" for t in taus)
+    body = "".join(
+        f"<tr><th scope='row'>{k} {by_state[str(k)]['label']}</th><td>{days(by_state[str(k)]['n'])}</td>"
+        + "".join(f"<td>{pct(by_state[str(k)]['above'][str(t)]['rate'])} ({by_state[str(k)]['above'][str(t)]['k']} "
+                  f"of {by_state[str(k)]['n']}); {level}% interval "
+                  f"{pct(by_state[str(k)]['above'][str(t)]['interval'][0])} to "
+                  f"{pct(by_state[str(k)]['above'][str(t)]['interval'][1])}</td>" for t in taus)
+        + "</tr>" for k in states)
+    low, high = SATIATION_BAND
+    brk = f"${ON_RRP_BUFFER_BN:,.0f}bn"
+    held = (f" Days from {day(spans_held[0]['start'])} on are held out for the project's final test "
+            f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>): the band is not drawn on them and they are in no "
+            f"share here." if spans_held else "")
+    fills = {
+        "band_status": (f"<span class='bandchip'><span aria-hidden='true'>{status['icon']}</span> {status['word']}</span> "
+                        f"on the <a href='#n4'>market map</a>: {status['reason']}"),
+        "band_caption": caption,
+        "band_first": day(kept[0].day.isoformat()), "band_last": day(last.isoformat()),
+        "band_held_note": held.strip() or "No day in the band is held out.",
+        "band_break": brk,
+        "band_key": "".join(f"<li class='s{k}'><i aria-hidden='true'></i>{k} {v}</li>" for k, v in STATE_LABELS.items()),
+        "band_table": (f"<table><caption>Share of days above each headline line, by state, {day(kept[0].day.isoformat())}"
+                       f" to {day(last.isoformat())}</caption><thead><tr><th scope='col'>State</th>"
+                       f"<th scope='col'>Days</th>{head}</tr></thead><tbody>{body}</tbody></table>"),
+        "band_read": (
+            f"The state adds two readings. Reserves over the total assets of all commercial banks: 0 at or above "
+            f"{round(100 * high)}%, 1 from {round(100 * low)}% up to it, 2 below {round(100 * low)}%. "
+            f"{link(notes['claims']['reserve_ratio'])} And the overnight reverse repo balance: 0 at or above "
+            f"{brk}, 1 below it. The sum runs from 0 to {len(STATE_LABELS) - 1}: {'; '.join(f'{k} {v}' for k, v in STATE_LABELS.items())}."),
+        "band_asof": (
+            f"Each day shows the state as it could be read at {clock(decision)} New York time that day, from the "
+            f"latest week all its inputs were public. {link(notes['claims']['h8_release'])} Bank assets are each "
+            f"week's first print. Reserves are the latest revised figures, so that leg is shown with hindsight."),
+        "band_interval": (f"Each interval is a {level}% stationary-bootstrap interval that resamples a state's days in "
+                          f"blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, the one #115's validation used."),
     }
     return data, fills
 
@@ -1952,6 +2132,7 @@ def generate(repo, commit=None):
     n2, n2_fills = newcomer_n2([dict(r) for r in rows], registry, decision, locked, thresholds)
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
+    scored, band_snapshots = scarcity_days(repo, locked)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
     fills.update(n1_fills)
     fills.update(n2_fills)
@@ -1963,6 +2144,13 @@ def generate(repo, commit=None):
     n4, n4_fills = newcomer_n4(tag_map, registry, manifest, declarations, snapshot, tracked_snapshots(repo), notes,
                                glossary, rows, seg_days, decision, locked)
     fills.update(n4_fills)
+    tag = next((t for t in n4["tags"] if t["key"] == BAND_TAG), None)
+    if tag is None:
+        raise VisualError(f"the band's legend reads the map tag {BAND_TAG!r}, which map.json does not carry")
+    icon, label = next((i, w) for k, i, w in STATUSES if k == tag["status"])
+    band, band_fills = newcomer_band(scored, locked, thresholds, registry, decision, on_rrp,
+                                     {"key": tag["status"], "icon": icon, "word": label, "reason": tag["reason"]}, notes)
+    fills.update(band_fills)
     fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]
@@ -2028,20 +2216,26 @@ def generate(repo, commit=None):
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
-                "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4}
+                "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
         {rel: sha256(repo / rel) for rel in (MAP, ISSUES, SOURCES, MANIFEST, ANNOTATIONS, GLOSSARY)},
         **{rel: sha256(repo / rel) for rel in declarations}, **on_rrp_snapshots))
-    own = {"model": model_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance}
+    # The band reads the measurement panel's extra snapshots; its legend's status is N4's, derived from N4's inputs.
+    band_provenance = {**provenance, "status_from": f"{DATA_DIR}/newcomer_n4.json",
+                       "inputs": {**inputs, "scripts/scarcity_validation.py":
+                                  sha256(repo / "scripts/scarcity_validation.py"),
+                                  MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES), **band_snapshots}}
+    own = {"model": model_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
+           "newcomer_band": band_provenance}
     out = {}
     for name, payload in payloads.items():
         doc = {"provenance": own.get(name, provenance), "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model", "newcomer_n1", "newcomer_n2",
-                                          "newcomer_n3")}
+                                          "newcomer_n3", "newcomer_band")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)

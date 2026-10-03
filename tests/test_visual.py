@@ -1141,6 +1141,231 @@ class NewcomerN3PageTests(unittest.TestCase):
                 self.assertEqual(inputs[rel], emit_visual.sha256(path))
 
 
+# ---------------------------------------------------------------- the reserve-scarcity band behind N1 and N3 (#148)
+
+
+class NewcomerBandBase(unittest.TestCase):
+    """The #115 state as read on the scored grid, shared by the band's tests (built once: a few seconds)."""
+
+    @classmethod
+    def setUpClass(cls):
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+        cls.rows = list(csv.DictReader(raw.decode().splitlines()))
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
+        cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+        cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
+        cls.on_rrp, _ = emit_visual.on_rrp_results(ROOT)
+        cls.scored, cls.snapshots = emit_visual.scarcity_days(ROOT, cls.locked)
+        cls.status = {"key": "registered_unused", "icon": "○", "word": "Registered but unused",
+                      "reason": "registered, and no published declaration reads it"}
+        cls.base = cls.run_band(cls.scored)
+
+    @classmethod
+    def run_band(cls, scored, locked=None, status=None):
+        return emit_visual.newcomer_band(list(scored), cls.locked if locked is None else locked, cls.thresholds,
+                                         cls.registry, cls.decision, cls.on_rrp, cls.status if status is None
+                                         else status, cls.notes)
+
+    def locked_days(self):
+        return [emit_visual.date.fromisoformat(r["date"]) for r in self.rows
+                if lockbox.locked_tier(emit_visual.date.fromisoformat(r["date"]), self.locked) is not None]
+
+
+class NewcomerBandTests(NewcomerBandBase):
+    """The band shades #115's state, read as-of, with the ON RRP buffer as a sub-lane."""
+
+    def test_the_state_is_the_one_115_declared_and_validated(self):
+        """Each day's state is `scarcity.pressure_days_by_state`'s, and no cut-point is re-declared here."""
+        from repo_model import scarcity
+        data, _ = self.base
+        days = {d.day.isoformat(): d.state for d in self.scored}
+        for start, end, state in data["spans"]:
+            for iso in (start, end):
+                with self.subTest(day=iso):
+                    self.assertEqual(state, None if days[iso] is None else int(days[iso]))
+        self.assertEqual(data["labels"], {str(k): v for k, v in scarcity.STATE_LABELS.items()})
+        self.assertEqual(data["band"], list(scarcity.SATIATION_BAND))
+        self.assertEqual(data["buffer_bn"], scarcity.ON_RRP_BUFFER_BN)
+        source = (ROOT / "scripts" / "emit_visual.py").read_text(encoding="utf-8")
+        self.assertNotRegex(source, r"0\.1[23]\b")
+
+    def test_spans_cover_the_scored_days_in_order_without_gaps(self):
+        data, _ = self.base
+        spans = data["spans"]
+        days = [d.day.isoformat() for d in self.scored]
+        self.assertEqual(spans[0][0], days[0])
+        self.assertEqual(spans[-1][1], days[-1])
+        position = {iso: i for i, iso in enumerate(days)}
+        for (_, end, a), (start, _, b) in zip(spans, spans[1:]):
+            self.assertEqual(position[start], position[end] + 1)
+            self.assertNotEqual(a, b)
+
+    def test_the_band_stops_before_the_first_locked_day(self):
+        first_locked = min(t.start for t in self.locked)
+        self.assertLess(max(d.day for d in self.scored), first_locked)
+        data, _ = self.base
+        self.assertLess(data["counted"]["last"], first_locked.isoformat())
+
+    def test_the_grid_is_the_published_scored_grid(self):
+        """The band starts where N2 does: the first day with the published minimum history."""
+        n2 = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n2.json").read_text(encoding="utf-8"))["data"]
+        data, _ = self.base
+        self.assertEqual(data["counted"]["first"], n2["days"][0][0])
+
+    def test_frequencies_are_115s_tabulation(self):
+        """k of n per state, at both headline thresholds, as `scarcity.tabulate` reports them for #115."""
+        from repo_model import scarcity
+        table = scarcity.tabulate(self.scored)
+        data, _ = self.base
+        self.assertEqual(sorted(data["by_state"]), sorted(table["by_state"]))
+        for state, cell in table["by_state"].items():
+            for tau in (5, 10):
+                with self.subTest(state=state, tau=tau):
+                    mine = data["by_state"][state]
+                    self.assertEqual(mine["n"], cell["days"])
+                    self.assertEqual(mine["above"][str(tau)]["k"], cell[f"gt_{tau}bp"]["pressure_days"])
+                    self.assertEqual(mine["above"][str(tau)]["interval"], cell[f"gt_{tau}bp"]["interval"])
+        self.assertEqual(data["rises"], {str(t): table["rises"][f"gt_{t}bp"] for t in (5, 10)})
+
+    def test_the_sub_lane_is_n3s_scarce_cash(self):
+        """The sub-lane marks the days N3's 2x2 calls scarce: ON RRP read at 16:00 below the break."""
+        from repo_model import contract
+        data, _ = self.base
+        below = set()
+        for start, end in data["buffer_spans"]:
+            below |= {d.day for d in self.scored if start <= d.day.isoformat() <= end}
+        for d in self.scored:
+            _, value = emit_visual.on_rrp_as_of(self.on_rrp, d.day, self.decision, self.registry)
+            with self.subTest(day=d.day.isoformat()):
+                self.assertEqual(d.day in below, value < contract.ON_RRP_DEPLETION_BREAK_BN)
+
+    def test_the_caption_says_plainly_when_frequency_does_not_rise(self):
+        """Eleonora's ruling on #148: if frequency does not rise with the state, the caption says so."""
+        data, fills = self.base
+        self.assertFalse(data["rises"]["5"])
+        self.assertIn("does not rise step by step", fills["band_caption"])
+        self.assertIn("not a working indicator", fills["band_caption"])
+
+    def test_a_monotone_state_is_described_as_rising(self):
+        from repo_model.scarcity import ScoredDay
+        start = emit_visual.date(2019, 1, 1)
+        synthetic = []
+        for i in range(400):
+            state = i // 100
+            spread = 9.0 if (i % 100) < 10 * state else -3.0
+            synthetic.append(ScoredDay(start + emit_visual.timedelta(days=i), float(state), start, spread))
+        data, fills = self.run_band(synthetic)
+        self.assertTrue(data["rises"]["5"])
+        self.assertNotIn("does not rise", fills["band_caption"])
+
+    def test_the_legend_carries_the_derived_status(self):
+        _, fills = self.base
+        self.assertIn("Registered but unused", fills["band_status"])
+        other = {"key": "used", "icon": "●", "word": "Used", "reason": "in the published declaration x"}
+        _, moved = self.run_band(self.scored, status=other)
+        self.assertIn("Used", moved["band_status"])
+        self.assertNotIn("Registered but unused", moved["band_status"])
+
+    def test_the_status_is_n4s_for_the_scarcity_tag(self):
+        n4 = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n4.json").read_text(encoding="utf-8"))["data"]
+        tag = next(t for t in n4["tags"] if t["key"] == emit_visual.BAND_TAG)
+        band = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_band.json").read_text(encoding="utf-8"))["data"]
+        self.assertEqual(band["status"]["key"], tag["status"])
+        self.assertIn("#115", tag["label"])
+
+
+class NewcomerBandHeldOutDayTests(NewcomerBandBase):
+    """Locked days change no span, count or sentence of the band (#141 ruling 3).
+
+    The scored days are read with `end` at the last day before the first
+    locked tier, so the lockbox's own guard in `baseline._as_of_folds` is never
+    asked to score one. `newcomer_band` also drops any day in a locked tier
+    itself; these tests hand it locked days, with every state and a spread far
+    above every threshold, and check nothing moves.
+
+    Recorded mutation: in `newcomer_band`,
+    `kept = [d for d in scored if locked_tier(d.day, locked) is None]`
+    -> `kept = list(scored)`. test_locked_days_change_nothing then failed with
+    AssertionError (the spans, the counts and the caption moved).
+    """
+
+    def with_locked(self, state, spread):
+        from repo_model.scarcity import ScoredDay
+        return list(self.scored) + [ScoredDay(d, state, d, spread) for d in self.locked_days()]
+
+    def test_the_panel_reaches_into_a_locked_tier(self):
+        self.assertTrue(self.locked_days())
+
+    def test_locked_days_change_nothing(self):
+        for state in (0.0, 3.0):
+            for spread in (99.0, -20.0):
+                with self.subTest(state=state, spread=spread):
+                    self.assertEqual(self.run_band(self.with_locked(state, spread)), self.base)
+
+    def test_unlocked_perturbation_is_seen(self):
+        from repo_model.scarcity import ScoredDay
+        scored = list(self.scored)
+        first = scored[0]
+        scored[0] = ScoredDay(first.day, 3.0 if first.state != 3.0 else 0.0, first.read_date, 99.0)
+        self.assertNotEqual(self.run_band(scored), self.base)
+
+    def test_an_opened_tier_is_counted(self):
+        data, _ = self.run_band(self.with_locked(3.0, 99.0), locked=())
+        self.assertEqual(data["held_out"], [])
+        self.assertEqual(data["counted"]["n"], len(self.scored) + len(self.locked_days()))
+
+    def test_the_held_out_days_are_named(self):
+        data, fills = self.base
+        self.assertTrue(data["held_out"])
+        self.assertIn("held out", fills["band_held_note"])
+
+
+class NewcomerBandPageTests(unittest.TestCase):
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def section(self, view):
+        block = newcomer_block(self.page)
+        return block[block.index(f'<section id="{view}"'):].split("</section>")[0]
+
+    def test_n1_shades_the_state_behind_a_keyboard_toggle(self):
+        n1 = self.section("n1")
+        button = re.search(r'<button[^>]*id="n1bandbtn"[^>]*>', n1)
+        self.assertIsNotNone(button)
+        self.assertIn('aria-pressed="false"', button.group(0))
+        self.assertIn('aria-controls="n1bandkey"', button.group(0))
+        self.assertIn('id="n1bandkey"', n1)
+
+    def test_n3_draws_the_band_with_its_caption(self):
+        n3 = self.section("n3")
+        self.assertIn('id="n3band"', n3)
+        self.assertIn("does not rise step by step", n3)
+        self.assertIn("Reserve-scarcity state (#115)", n3)
+        self.assertNotIn("is not shown until its publication is ruled", n3)
+
+    def test_every_band_link_is_a_primary_source(self):
+        for view in ("n1", "n3"):
+            section = re.sub(r"<span class=\"def\"[^>]*>.*?</span><!--/def-->", " ", self.section(view), flags=re.S)
+            for url in re.findall(r"href=['\"](https?://[^'\"]+)['\"]", section):
+                with self.subTest(view=view, url=url):
+                    self.assertTrue(url.startswith(emit_visual.ALLOWED_SOURCES))
+
+    def test_the_data_file_names_every_snapshot_it_read(self):
+        doc = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_band.json").read_text(encoding="utf-8"))
+        inputs = doc["provenance"]["inputs"]
+        for root in ("tests/fixtures/snapshots/h8_inputs", emit_visual.ON_RRP):
+            files = sorted(p for p in (ROOT / root).rglob("*") if p.is_file() and not p.name.endswith(".manifest.json"))
+            self.assertTrue(files)
+            for path in files:
+                rel = str(path.relative_to(ROOT))
+                with self.subTest(path=rel):
+                    self.assertEqual(inputs[rel], emit_visual.sha256(path))
+
+
 # ---------------------------------------------------------------- N4's tag-status engine (#141 §3, #144)
 
 
