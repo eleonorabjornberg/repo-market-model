@@ -881,7 +881,7 @@ function shade(g, x, y0, y1) {
 function renderBand() {
   const host = d3.select("#n3band"); host.select("svg").remove();
   const W = host.node().clientWidth, narrow = W < 560;
-  const m = {t: 24, r: narrow ? 10 : 20, b: 26, l: narrow ? 70 : 88};
+  const m = {t: 24, r: narrow ? 10 : 20, b: 26, l: narrow ? 80 : 88};
   const plotH = narrow ? 160 : 200, laneH = 62, bufH = 14, gap = 16;
   const laneTop = m.t + plotH + gap, bufTop = laneTop + laneH + gap, H = bufTop + bufH + m.b;
   const first = bandSpans[0].a, end = rows.at(-1).date;

@@ -60,6 +60,7 @@ import bisect
 import csv
 import hashlib
 import html
+import importlib.util
 import json
 import math
 import re
@@ -100,8 +101,11 @@ from repo_model.scarcity import (  # noqa: E402
 )
 from repo_model.splits import LookAheadError  # noqa: E402
 
-sys.path.insert(0, str(ROOT / "scripts"))
-from scarcity_validation import build_measurement_panel  # noqa: E402
+# #115's measurement panel, loaded from its script by path: scripts/ is not a package.
+_spec = importlib.util.spec_from_file_location("scarcity_validation", ROOT / "scripts" / "scarcity_validation.py")
+_scarcity_validation = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_scarcity_validation)
+build_measurement_panel = _scarcity_validation.build_measurement_panel
 
 FIXTURES = "tests/fixtures/snapshots/funding_inputs"
 MANIFEST = "metadata/funding_panel_manifest.json"
