@@ -32,6 +32,7 @@ from .data import (
 from .ingest import (
     DEFAULT_SOURCE_REGISTRY,
     SEC_NMFP_ARCHIVE_MANIFEST,
+    OFR_STFM_MNEMONICS,
     build_point_in_time_snapshot,
     check_scheduled_settlements,
     fetch_fred_macro,
@@ -40,6 +41,7 @@ from .ingest import (
     fetch_nyfed_fr2004,
     fetch_nyfed_on_rrp,
     fetch_nyfed_srf,
+    fetch_ofr_stfm_repo,
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
     fetch_treasury_bill_rates,
@@ -104,6 +106,11 @@ def _fetch(args: argparse.Namespace) -> int:
     elif args.source == "srf":
         artifacts = fetch_nyfed_srf(
             output_root=args.output_root, start=args.start, end=args.end
+        )
+    elif args.source == "ofr-stfm":
+        artifacts = fetch_ofr_stfm_repo(
+            output_root=args.output_root,
+            mnemonics=tuple(args.mnemonic) if args.mnemonic else OFR_STFM_MNEMONICS,
         )
     elif args.source == "h8":
         artifacts = fetch_frb_h8_archive(
@@ -371,7 +378,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch.add_argument(
         "source",
         choices=NYFED_RATE_SOURCES
-        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8"),
+        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm"),
     )
     fetch.add_argument(
         "--start",
@@ -382,6 +389,13 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     fetch.add_argument(
         "--end", default=date.today().isoformat(), help="effective end date"
+    )
+    fetch.add_argument(
+        "--mnemonic",
+        action="append",
+        default=None,
+        help="ofr-stfm only: one OFR series mnemonic, repeatable (default: every "
+        "series #187 reads); each is one request, and the full series is served",
     )
     fetch.add_argument("--output-root", type=Path, default=Path("data/raw"))
     fetch.set_defaults(handler=_fetch)

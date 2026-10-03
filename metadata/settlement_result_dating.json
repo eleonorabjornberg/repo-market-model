@@ -1,0 +1,18 @@
+{
+  "directive": "#175",
+  "status": "measured and off: no published declaration reads this file. metadata/sources.json (treasury_auctions, scheduled_availability) stays the declaration every published record is scored under; whether this one replaces it at horizons of 2 or more is Eleonora's decision (#170, option B).",
+  "source": "treasury_auctions",
+  "basis": "auction_result",
+  "columns": {
+    "treasury_settlement": "every auction settling on the day",
+    "treasury_settlement_bills": "the auctions whose security_type is a declared bill type (contract.TREASURY_BILL_SECURITY_TYPES)",
+    "treasury_settlement_coupons": "the auctions whose security_type is a declared coupon type (contract.TREASURY_COUPON_SECURITY_TYPES)"
+  },
+  "result_date_field": "auction_date",
+  "result_held_field": "total_accepted",
+  "available_time": "15:00",
+  "timezone": "America/New_York",
+  "rule": "An auction's settlement date (issue_date) and offering amount (offering_amt) are public from its result: 15:00 New York time on its auction_date. For the forecast made h panel days before a settlement day d, at the declared decision time on that panel day, a settlement column for d is the sum, in USD billions, of the offering amounts of the auctions settling on d whose results were public by 15:00 on that day. An auction whose result was not yet public is not in the sum. At h = 1 this is the published panel's column on every panel day, because every auction settling inside the panel was held at least one panel day before it settled (sources.json, treasury_auctions, scheduled_availability evidence).",
+  "missing": "An auction whose result is not on file (Fiscal Data writes total_accepted as the string 'null' for an auction not yet held at retrieval) has no result instant. It is in no sum until a snapshot carries its result, and a column that counts it is refused with LookAheadError. A settlement day with no auction on file reads 0.0 inside the snapshot's coverage, as the published panel does (data.build_daily_panel rule 8), and a hole outside it. treasury_settlement_soma, an auction result outside the aggregate, is not dated by this declaration and is a hole under it.",
+  "evidence": "Treasury's auction rules state no clock time for publishing results, only that Treasury announces them after the auction closes: 31 CFR 356.23(a), https://www.ecfr.gov/current/title-31/subtitle-B/chapter-II/subchapter-A/part-356/subpart-C/section-356.23. The 15:00 instant therefore rests on the auction data, as the published declaration's does. The tracked snapshot tests/fixtures/snapshots/funding_inputs/treasury_auctions/20260914T051023Z_722359ea9bc7.json (Fiscal Data auctions_query, retrieved 2026-09-14T05:10:23Z) records closing_time_comp for every auction, and none closed for competitive bids later than 14:30 New York time. repo_model.settlement_dating.auction_results refuses a snapshot in which one did. The offering amount is fixed earlier still, at the auction announcement (announcemt_date). This declaration dates it from the result, as directive #175 asks."
+}

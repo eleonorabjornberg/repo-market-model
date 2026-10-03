@@ -229,7 +229,7 @@ from fractions import Fraction
 from pathlib import Path
 from unittest import mock
 
-from repo_model import baseline, cli, cli_eval, ml
+from repo_model import baseline, cli, cli_eval, ml, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.contract import event_window_digest
@@ -9995,6 +9995,351 @@ class PidConstantSelectionScriptTests(unittest.TestCase):
         self.assertEqual(result["split_sample"]["evaluation_window"]["days"], days)
 
 
+class ConformalPidPublishTests(unittest.TestCase):
+    """`--calibration conformal_pid` on `backtest`, `compare` and `exceedance-backtest` (#124).
+
+    Eleonora's ruling on #123 publishes the funding declaration's gbm with
+    conformal PID and the calendar scorecaster, exactly as #122 scored it, with
+    the same constants. So the records the three commands write must carry
+    #122's PID figures: on one panel and window, the backtest's CRPS and
+    coverage, the comparison's CRPS for the PID side, and the exceedance
+    record's Brier at +5 and +10 bp each equal what
+    `scripts/calibration_rediagnosis.py` reports for `online_pid`.
+
+    Red first: written before the commands took the name (each run was refused
+    by `ml.fit_gradient_boosted_quantiles` as an unknown calibration, exit 2).
+    """
+
+    TRACKED = Path(__file__).resolve().parents[1]
+    SCRIPT = TRACKED / "scripts" / "calibration_rediagnosis.py"
+    SELECTION = TRACKED / "scripts" / "pid_constant_selection.py"
+    SPLITS = TRACKED / "metadata" / "evaluation_splits.json"
+    REGISTRY = TRACKED / "metadata" / "sources.json"
+    THRESHOLDS = TRACKED / "metadata" / "stress_thresholds.json"
+    LOCKBOX = TRACKED / "metadata" / "lockbox.json"
+    COMMON = ("--decision-time", "16:00", "--minimum-history", "40", "--refit-every", "20",
+              "--end", "2025-12-31")
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        lockbox = mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.LOCKBOX)
+        lockbox.start()
+        self.addCleanup(lockbox.stop)
+
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(list(argv))
+        return code, " ".join(err.getvalue().split())
+
+    def record(self, name, *argv):
+        report = self.tmp / name
+        code, err = self.run_cli(*argv, "--report", str(report))
+        self.assertEqual(code, 0, err)
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def rediagnosis(self):
+        spec = importlib.util.spec_from_file_location("calibration_rediagnosis", self.SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = self.tmp / "rediagnosis.json"
+        self.assertEqual(
+            module.main([
+                "--panel", str(self.panel), "--calibration-folds", "3",
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--replications", "20", "--report", str(report), *self.COMMON,
+            ]),
+            0,
+        )
+        return json.loads(report.read_text(encoding="utf-8"))["methods"]["online_pid"]
+
+    def backtest(self, *extra):
+        return self.record(
+            "backtest.json", "backtest", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            *self.COMMON, *extra,
+        )
+
+    def test_the_three_records_carry_the_rediagnosis_pid_figures(self):
+        pid = self.rediagnosis()
+        backtest = self.backtest("--calibration", "conformal_pid", "--splits", str(self.SPLITS))
+        self.assertAlmostEqual(backtest["metrics"]["crps_bps"], pid["crps_bps"], places=12)
+        self.assertAlmostEqual(
+            backtest["metrics"]["interval_coverage"], pid["coverage"]["all"]["all"]["mean"],
+            places=12,
+        )
+        compare = self.record(
+            "compare.json", "compare", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model-a", "persistence", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "spread_bps", "--feature-b", "sofr_volume",
+            "--calibration-b", "conformal_pid", "--loss", "crps",
+            "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        self.assertAlmostEqual(
+            compare["comparison"]["model_b"]["crps_bps"], pid["crps_bps"], places=12
+        )
+        exceedance = self.record(
+            "exceedance.json", "exceedance-backtest", "--panel", str(self.panel),
+            "--thresholds", str(self.THRESHOLDS), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        for tau in ("5", "10"):
+            self.assertAlmostEqual(
+                exceedance["metrics"]["by_tau"][tau]["brier"], pid["brier"][tau + ".0"],
+                places=12,
+            )
+        for declaration in (
+            backtest["declaration"], compare["declaration"]["model_b"], exceedance["declaration"]
+        ):
+            self.assertEqual(declaration["calibration"], "conformal_pid")
+            self.assertNotIn("calibration_folds", declaration)
+            constants = declaration["calibration_constants"]
+            self.assertEqual(constants["PID_STEP"], recalibration.PID_STEP)
+            self.assertEqual(
+                constants["SCORECASTER_INDICATORS"], list(recalibration.SCORECASTER_INDICATORS)
+            )
+        self.assertNotIn("calibration", compare["declaration"]["model_a"])
+        # And it is not the uncalibrated model's record.
+        plain = self.backtest()
+        self.assertNotEqual(plain["metrics"]["crps_bps"], backtest["metrics"]["crps_bps"])
+
+    def selection(self):
+        spec = importlib.util.spec_from_file_location("pid_constant_selection", self.SELECTION)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = self.tmp / "selection.json"
+        self.assertEqual(
+            module.main([
+                "--panel", str(self.panel), "--calibration-folds", "3",
+                "--feature", "spread_bps", "--feature", "sofr_volume",
+                "--replications", "20", "--report", str(report), *self.COMMON,
+            ]),
+            0,
+        )
+        return json.loads(report.read_text(encoding="utf-8"))
+
+    def test_the_three_records_carry_the_nested_selection_figures(self):
+        """`--calibration conformal_pid_nested` is #125's `nested_pid` (rulings #136, #134).
+
+        The published funding declaration is republished with conformal PID
+        whose constants are chosen by nested walk-forward selection. On one
+        panel and window, the backtest's CRPS and coverage, the comparison's
+        CRPS for its PID side, and the exceedance record's Brier at +5 and
+        +10 bp each equal what `scripts/pid_constant_selection.py` reports for
+        `nested_pid`, and every record names the point chosen at each refit
+        block, as the script does.
+
+        Red first: written before the commands took the name (each run was
+        refused by `ml.fit_gradient_boosted_quantiles` as an unknown
+        calibration, exit 2).
+        """
+
+        selection = self.selection()
+        nested = selection["methods"]["nested_pid"]
+        chosen = [block["chosen"] for block in selection["nested_selection"]]
+        flags = ("--calibration", "conformal_pid_nested", "--splits", str(self.SPLITS))
+        backtest = self.backtest(*flags)
+        self.assertAlmostEqual(
+            backtest["metrics"]["crps_bps"], nested["crps_bps"]["all"]["all"]["mean"], places=12
+        )
+        self.assertAlmostEqual(
+            backtest["metrics"]["interval_coverage"], nested["coverage"]["all"]["all"]["mean"],
+            places=12,
+        )
+        compare = self.record(
+            "compare.json", "compare", str(self.panel), "--registry", str(self.REGISTRY),
+            "--model-a", "persistence", "--feature-a", "spread_bps",
+            "--model-b", "gbm", "--feature-b", "spread_bps", "--feature-b", "sofr_volume",
+            "--calibration-b", "conformal_pid_nested", "--loss", "crps",
+            "--splits", str(self.SPLITS), *self.COMMON,
+        )
+        self.assertAlmostEqual(
+            compare["comparison"]["model_b"]["crps_bps"],
+            nested["crps_bps"]["all"]["all"]["mean"],
+            places=12,
+        )
+        exceedance = self.record(
+            "exceedance.json", "exceedance-backtest", "--panel", str(self.panel),
+            "--thresholds", str(self.THRESHOLDS), "--registry", str(self.REGISTRY),
+            "--model", "gbm", "--feature", "spread_bps", "--feature", "sofr_volume",
+            *flags, *self.COMMON,
+        )
+        for tau in ("5", "10"):
+            self.assertAlmostEqual(
+                exceedance["metrics"]["by_tau"][tau]["brier"],
+                nested["brier"][tau + "bp"]["all"]["all"]["mean"],
+                places=12,
+            )
+        for declaration, account in (
+            (backtest["declaration"], backtest["calibration_account"]),
+            (compare["declaration"]["model_b"], compare["calibration_account_b"]),
+            (exceedance["declaration"], exceedance["calibration_account"]),
+        ):
+            self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+            self.assertNotIn("calibration_folds", declaration)
+            self.assertEqual(declaration["calibration_selection"]["refit_every"], 20)
+            self.assertEqual([block["chosen"] for block in account["blocks"]], chosen)
+        self.assertNotIn("calibration_account_a", compare)
+
+    def test_a_limitation_is_recorded_as_given(self):
+        text = "Scored only before 2026-01-01; the 2020 regression is stated in #122."
+        backtest = self.backtest(
+            "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+            "--limitation", text, "--limitation", "A second one.",
+        )
+        self.assertEqual(backtest["limitations"], [text, "A second one."])
+        self.assertNotIn("limitations", self.backtest())
+
+    def test_what_conformal_pid_cannot_take_is_refused(self):
+        base = ("backtest", str(self.panel), "--registry", str(self.REGISTRY),
+                "--feature", "spread_bps", "--feature", "sofr_volume", *self.COMMON,
+                "--report", str(self.tmp / "refused.json"))
+        for extra, phrase in (
+            (("--model", "gbm", "--calibration", "conformal_pid"), "--splits"),
+            (("--model", "gbm", "--calibration", "conformal_pid", "--splits", str(self.SPLITS),
+              "--calibration-folds", "5"), "calibration-folds"),
+            (("--model", "persistence", "--calibration", "conformal_pid",
+              "--splits", str(self.SPLITS)), "takes no band calibration"),
+        ):
+            with self.subTest(extra=extra):
+                code, err = self.run_cli(*base, *extra)
+                self.assertEqual(code, 2)
+                self.assertIn(phrase, err)
+                self.assertFalse((self.tmp / "refused.json").exists())
+
+
+class PressureModelPublishTests(unittest.TestCase):
+    """`scripts/pressure_model_v1.py publish`: pressure model v1's record (#124, ruling #134).
+
+    The published candidate is `distributional_gbm+recalibrated`: the
+    probability read from the funding declaration's distribution, calibrated
+    by nested-selection conformal PID, recalibrated out of fold, at one
+    horizon, paired with both benchmarks. Its record must state the
+    recalibrated forecasts' own metrics (`pressure.recalibrated` keeps the
+    metrics of the forecasts it replaces), declare the horizon, the
+    calibration and the recalibration, and score no locked day.
+
+    At horizons of 2 or more the scorecaster's coupon-settlement indicator is
+    not public at the decision instant under its declaration (one business day
+    ahead). Eleonora's ruling on #170 (option A) drops it from the scorecaster
+    there, a declared variant the record states; until then the run was
+    refused with `LookAheadError`, which this class pinned.
+    """
+
+    TRACKED = Path(__file__).resolve().parents[1]
+    SCRIPT = TRACKED / "scripts" / "pressure_model_v1.py"
+    LOCKBOX = TRACKED / "metadata" / "lockbox.json"
+
+    def setUp(self):
+        require_extra(self)
+        fewer_boosting_iterations(self)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.tmp, ignore_errors=True))
+        self.panel = self.tmp / "panel.csv"
+        write_recalibration_panel(self.panel)
+        spec = importlib.util.spec_from_file_location("pressure_model_v1", self.SCRIPT)
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+        for name, value in (
+            ("GBM_FEATURES", ("spread_bps", "sofr_volume")),
+            ("MINIMUM_HISTORY", 40),
+            ("REFIT_EVERY", 20),
+        ):
+            patcher = mock.patch.object(self.module, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        lockbox = mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", self.LOCKBOX)
+        lockbox.start()
+        self.addCleanup(lockbox.stop)
+
+    def test_the_record_states_the_recalibrated_forecasts_metrics(self):
+        from repo_model import pressure as pressure_module
+
+        report = self.tmp / "pressure.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1",
+                "--report", str(report), "--limitation", "Narrow claim.",
+            ])
+        self.assertEqual(code, 0)
+        record = json.loads(report.read_text(encoding="utf-8"))
+        declaration = record["declaration"]
+        self.assertEqual(declaration["model"], "distributional_gbm+recalibrated")
+        self.assertEqual(declaration["horizon"], 1)
+        self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+        self.assertEqual(declaration["recalibration"], pressure_module.RECALIBRATION)
+        self.assertEqual(declaration["end"], "2025-12-31")
+        self.assertEqual(record["limitations"], ["Narrow claim."])
+        self.assertLessEqual(record["folds"]["last"]["scored_date"], "2025-12-31")
+        self.assertEqual(set(record["benchmarks"]), {"calendar_climatology", "persistence_logistic"})
+        self.assertTrue(record["calibration_account"]["blocks"])
+        # The metrics are the recalibrated forecasts', computed again: the
+        # paired comparison reads the same forecasts, so its model Brier and
+        # the record's agree.
+        for tau in ("5", "10"):
+            paired = record["benchmarks"]["persistence_logistic"]["by_tau"][tau]
+            self.assertAlmostEqual(
+                record["metrics"]["by_tau"][tau]["brier"], paired["model_brier"], places=12
+            )
+
+    def test_a_longer_horizon_runs_the_declared_variant(self):
+        from repo_model import recalibration
+
+        report = self.tmp / "pressure_h2.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "2",
+                "--report", str(report),
+            ])
+        self.assertEqual(code, 0)
+        declaration = json.loads(report.read_text(encoding="utf-8"))["declaration"]
+        self.assertEqual(declaration["horizon"], 2)
+        self.assertEqual(declaration["calibration"], "conformal_pid_nested")
+        self.assertEqual(
+            declaration["calibration_constants"]["SCORECASTER_INDICATORS"],
+            list(recalibration.SCORECASTER_INDICATORS_LONG_HORIZON),
+        )
+        self.assertEqual(declaration["scorecaster_variant"], recalibration.SCORECASTER_VARIANT)
+
+    def test_the_event_listed_thresholds_carry_no_pooled_figure(self):
+        report = self.tmp / "pressure_events.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1", "--report", str(report),
+                "--event-list", "20", "--event-list", "50",
+            ])
+        self.assertEqual(code, 0)
+        record = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration"]["event_list"]["taus_bp"], [20.0, 50.0])
+        for tau in ("20", "50"):
+            entry = record["metrics"]["by_tau"][tau]
+            self.assertEqual(entry["reporting"], "event_list")
+            self.assertNotIn("brier", entry)
+            for bench in record["benchmarks"].values():
+                self.assertNotIn(tau, bench["by_tau"])
+        self.assertIn("brier", record["metrics"]["by_tau"]["5"])
+
+    def test_horizon_one_declares_no_variant(self):
+        from repo_model import recalibration
+
+        report = self.tmp / "pressure_h1.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.module.main([
+                "publish", "--panel", str(self.panel), "--horizon", "1", "--report", str(report),
+            ])
+        declaration = json.loads(report.read_text(encoding="utf-8"))["declaration"]
+        self.assertEqual(
+            declaration["calibration_constants"]["SCORECASTER_INDICATORS"],
+            list(recalibration.SCORECASTER_INDICATORS),
+        )
+        self.assertNotIn("scorecaster_variant", declaration)
+
 
 # --------------------------------------------------------------------------
 # Dynamic pressure logit, its ordinal version and the stacked combiner (#137)
@@ -10389,6 +10734,64 @@ class StackedCombinerTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             ml.stacked_combiner({**self.bases, "calendar_climatology": short}, **self.options)
+
+
+class PairedBootstrapPValueTests(unittest.TestCase):
+    """`ml.paired_bootstrap_p_values`: one-sided p-values on shared resamples (#187).
+
+    The cleared-DVP segment test (`repo_model.dvp_segment`) Holm-corrects a
+    family of paired comparisons, so each needs a p-value for improvement and
+    one for deterioration. Each is the share of null-centred stationary
+    bootstrap means at least as extreme as the observed mean, with the usual
+    +1 so no p-value is zero.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_a_clear_improvement_and_a_clear_deterioration(self):
+        rng = random.Random(7)
+        better = [0.5 + rng.gauss(0.0, 0.2) for _ in range(300)]
+        worse = [-value for value in better]
+        noise = [rng.gauss(0.0, 1.0) for _ in range(300)]
+        (b_up, b_down), (w_up, w_down), (n_up, n_down) = ml.paired_bootstrap_p_values(
+            [better, worse, noise], block_length=2, seed=11, replications=999
+        )
+        self.assertEqual(b_up, 1 / 1000)
+        self.assertGreater(b_down, 0.99)
+        self.assertEqual(w_down, 1 / 1000)
+        self.assertGreater(w_up, 0.99)
+        self.assertTrue(0.05 < n_up < 0.95 and 0.05 < n_down < 0.95)
+
+    def test_the_resamples_are_shared_and_reproducible(self):
+        series = [[0.1, -0.2, 0.3, 0.05, -0.1, 0.2] * 10, [0.0, 0.1, -0.1, 0.2, 0.0, 0.1] * 10]
+        first = ml.paired_bootstrap_p_values(series, block_length=3, seed=5, replications=200)
+        again = ml.paired_bootstrap_p_values(series, block_length=3, seed=5, replications=200)
+        self.assertEqual(first, again)
+        alone = ml.paired_bootstrap_p_values(series[1:], block_length=3, seed=5, replications=200)
+        self.assertEqual(alone[0], first[1])
+
+    def test_it_matches_a_direct_computation(self):
+        """The count matrix is the resample: checked against summing each resample's draws."""
+
+        from repo_model.metrics import stationary_bootstrap_indices
+
+        series = [0.3, -0.1, 0.2, 0.0, -0.4, 0.5, 0.1, -0.2]
+        mean = sum(series) / len(series)
+        rng = random.Random(3)
+        up = down = 0
+        for _ in range(50):
+            indices = stationary_bootstrap_indices(len(series), 2, rng)
+            centred = sum(series[i] for i in indices) / len(series) - mean
+            up += centred >= mean - 1e-12
+            down += centred <= mean + 1e-12
+        ((p_up, p_down),) = ml.paired_bootstrap_p_values([series], block_length=2, seed=3, replications=50)
+        self.assertAlmostEqual(p_up, (1 + up) / 51)
+        self.assertAlmostEqual(p_down, (1 + down) / 51)
+
+    def test_series_of_different_lengths_are_refused(self):
+        with self.assertRaises(ValueError):
+            ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
 
 
 if __name__ == "__main__":

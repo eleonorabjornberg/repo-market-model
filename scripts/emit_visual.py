@@ -20,7 +20,12 @@ the project was built. Nothing on the page is typed:
   through `repo_model.lockbox`; a tier marked opened is ordinary history.
 * The "Start here" block above the chapters is the newcomer layer (#141). Its
   terms come from `docs/visual/glossary.json`, each with a primary source; its
-  view N1 holds out the same locked days, through the same reader.
+  views hold out the same locked days, through the same reader.
+* View N3 reads the New York Fed's ON RRP results from the tracked snapshots in
+  `tests/fixtures/snapshots/on_rrp_inputs/` through the repository's own
+  adapter, which checks each file against its manifest's SHA-256 (#141 answer
+  6). The panel and its digest do not change; the data file lists each
+  snapshot's SHA-256.
 * The status of each tag on view N4's market map (`docs/visual/map.json`) is
   derived, never typed: from the sources registry, the panel manifest, the
   declarations of the published run records, the tracked fixtures and the
@@ -63,9 +68,10 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from repo_model.asof import declared_availability  # noqa: E402
+from repo_model.asof import declared_availability, fold_grid  # noqa: E402
 from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_DEPLETION_BREAK_BN  # noqa: E402
-from repo_model.data import TAX_DEADLINE_MONTHS, corporate_tax_deadline  # noqa: E402
+from repo_model.data import (  # noqa: E402
+    QUARTER_END_WINDOW_BUSINESS_DAYS, TAX_DEADLINE_MONTHS, corporate_tax_deadline, quarter_end_window)
 from repo_model.ingest import (  # noqa: E402
     NYFED_ON_RRP_FIELD,
     NYFED_ON_RRP_SOURCE_ID,
@@ -73,6 +79,13 @@ from repo_model.ingest import (  # noqa: E402
     parse_snapshots,
 )
 from repo_model.lockbox import locked_tier, locked_tiers  # noqa: E402
+from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
+from repo_model.scarcity import (  # noqa: E402
+    BOOTSTRAP_BLOCK_LENGTH,
+    BOOTSTRAP_LEVEL,
+    BOOTSTRAP_REPLICATIONS,
+    BOOTSTRAP_SEED,
+)
 from repo_model.splits import LookAheadError  # noqa: E402
 
 FIXTURES = "tests/fixtures/snapshots/funding_inputs"
@@ -82,6 +95,8 @@ EVENTS = "metadata/events.json"
 THRESHOLDS = "metadata/stress_thresholds.json"
 SPLITS = "metadata/evaluation_splits.json"
 LOCKBOX = "metadata/lockbox.json"
+HOLIDAYS = "metadata/market_holidays.json"
+ON_RRP = "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
 ANNOTATIONS = "docs/visual/annotations.json"
 GLOSSARY = "docs/visual/glossary.json"
 MAP = "docs/visual/map.json"
@@ -108,7 +123,9 @@ INPUTS = (
     THRESHOLDS,
     SPLITS,
     LOCKBOX,
+    HOLIDAYS,
     FIXTURES,
+    ON_RRP,
     MAP,
     ISSUES,
     f":(glob){RUNS}/*.json",
@@ -136,6 +153,12 @@ NEWCOMER_VIEWS = (
     ("n4", "Who lends to whom", "The market map"),
     ("n5", "A quarter-end squeeze", "Step by step"),
 )
+
+#: The minimum history of the published declarations: the scored grid starts at
+#: the first row with this many observable labels (`asof.fold_grid`). N2 draws
+#: that grid; `tests/test_visual.py` cross-checks it against the fold dates of
+#: `docs/runs/persistence_funding.json`, so the generator reads no run record.
+N2_MINIMUM_HISTORY = 61
 
 #: A map tag's statuses (#141 §3), in the order the derivation tries them, the
 #: first match winning: (key, icon, word). The page shows the icon and the word,
@@ -1454,6 +1477,265 @@ def refresh_issues(tag_map, fetch, now):
     return (json.dumps(doc, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
+# ---------------------------------------------------------------- N3 "When does it happen?" (#147)
+
+
+def on_rrp_results(repo):
+    """The Desk's ON RRP results, from the tracked snapshots through `ingest`'s own adapter.
+
+    `parse_snapshots` refuses a file whose bytes do not match its manifest's
+    SHA-256. A day's result is the latest vintage of it. Returns
+    `([(ref_date, available_at, value in USD billions)], {snapshot path: sha256})`,
+    the results ordered by when they became public.
+    """
+    manifests = sorted((repo / ON_RRP).glob("*.json.manifest.json"))
+    if not manifests:
+        raise VisualError(f"no ON RRP snapshot under {ON_RRP}")
+    artifacts = [load_snapshot_manifest(path) for path in manifests]
+    latest = {}
+    for row in parse_snapshots(artifacts).rows:
+        if row.series_id != NYFED_ON_RRP_FIELD:
+            continue
+        if row.ref_date not in latest or row.available_at > latest[row.ref_date][0]:
+            latest[row.ref_date] = (row.available_at, row.value)
+    results = sorted(((ref, at, value) for ref, (at, value) in latest.items()), key=lambda o: (o[1], o[0]))
+    snapshots = {}
+    for path in manifests:
+        payload = path.with_name(path.name[:-len(".manifest.json")])
+        snapshots[str(payload.relative_to(repo))] = sha256(payload)
+    return results, snapshots
+
+
+def on_rrp_as_of(results, day, decision, registry):
+    """`(ref_date, value)`: the latest ON RRP result public at the decision instant of `day`.
+
+    `results` is `on_rrp_results(...)[0]`, ordered by availability. The
+    availability is the adapter's, from the registry's declaration (16:00 ET on
+    the next business day), so a 16:00 reading on `day` sees the previous
+    business day's operation. A reading older than the declaration's
+    `worst_case_calendar_days` is refused (`ValueError`), never carried.
+    """
+    lag = registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]
+    instant = datetime.combine(day, decision, ZoneInfo(lag["timezone"]))
+    times = [at for _, at, _ in results]
+    position = bisect.bisect_right(times, instant) - 1
+    if position < 0:
+        raise ValueError(f"no ON RRP result was public at {instant.isoformat()}")
+    ref, _, value = results[position]
+    limit = int(lag["worst_case_calendar_days"])
+    if (day - ref).days > limit:
+        raise ValueError(f"the ON RRP reading on {day.isoformat()} is from {ref.isoformat()}, more than "
+                         f"{limit} calendar days old; refusing rather than carrying it")
+    return ref, value
+
+
+def rate_cell(outcomes):
+    """k, n, the share, and its stationary-bootstrap interval, as `scarcity.tabulate` reports a frequency."""
+    n, k = len(outcomes), sum(outcomes)
+    if not n:
+        return {"k": 0, "rate": None, "interval": None}
+    lo, hi = stationary_bootstrap_interval(
+        lambda indices: sum(outcomes[i] for i in indices) / len(indices), n,
+        block_length=min(BOOTSTRAP_BLOCK_LENGTH, n), seed=BOOTSTRAP_SEED,
+        replications=BOOTSTRAP_REPLICATIONS, level=BOOTSTRAP_LEVEL)
+    return {"k": k, "rate": k / n, "interval": [lo, hi]}
+
+
+def pct(x):
+    """A share in percent: one decimal below 10%, so a small cell does not read as zero."""
+    return f"{100 * x:.1f}%" if 0 < x < 0.1 else f"{round(100 * x)}%"
+
+
+def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
+    """N3 "When does it happen?": the 2x2 of quarter-end against scarce or abundant cash (#147).
+
+    Each counted day falls in one cell: inside a quarter-end window or not
+    (`data.quarter_end_window`, #140), and with the ON RRP reading public at the
+    decision instant below `contract.ON_RRP_DEPLETION_BREAK_BN` (scarce) or not
+    (abundant). Each cell reports the share of its days with SOFR - IORB, on
+    whole basis points, strictly above each headline threshold: k of n, with an
+    interval. The #115 scarcity state is not read (#141 answer 8). Days in a
+    locked tier are left out of every cell, count and sentence
+    (`counted`), and the view says so.
+    """
+    taus = [int(t) for t in thresholds["taus_bp"]]
+    pressure_bp, second_bp = taus[0], taus[1]
+    kept = counted(rows, locked)
+    if not kept:
+        raise VisualError("every panel day is held out; N3 has nothing to count")
+    groups = {(scarce, qe): [] for scarce in (True, False) for qe in (True, False)}
+    for r in kept:
+        today = date.fromisoformat(r["date"])
+        _, value = on_rrp_as_of(on_rrp, today, decision, registry)
+        spread = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
+        groups[(value < ON_RRP_DEPLETION_BREAK_BN, quarter_end_window(today) == 1.0)].append(spread)
+    cells = [{"scarce": scarce, "quarter_end": qe, "n": len(spreads),
+              "above": {str(tau): rate_cell([int(s > tau) for s in spreads]) for tau in (pressure_bp, second_bp)}}
+             for (scarce, qe), spreads in groups.items()]
+    cell = {(c["scarce"], c["quarter_end"]): c for c in cells}
+    spans = held_out_spans(rows, locked)
+    lag = registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]
+    brk = f"${ON_RRP_DEPLETION_BREAK_BN:,.0f}bn"
+
+    def kn(c, tau):
+        return f"{c['above'][str(tau)]['k']} of {c['n']}"
+
+    def table(tau):
+        head = "<tr><th></th><th scope='col'>Quarter-end window</th><th scope='col'>Other days</th></tr>"
+        body = []
+        for scarce, name in ((True, f"Scarce cash: ON RRP below {brk}"), (False, f"Abundant cash: ON RRP at or above {brk}")):
+            tds = []
+            for qe in (True, False):
+                c = cell[(scarce, qe)]
+                a = c["above"][str(tau)]
+                if not c["n"]:
+                    tds.append("<td>no days</td>")
+                    continue
+                lo, hi = a["interval"]
+                tds.append(f"<td style='--share:{round(100 * a['rate'])}%'><b>{pct(a['rate'])}</b>"
+                           f"<span>{a['k']} of {c['n']} days</span><small>{round(100 * BOOTSTRAP_LEVEL)}% interval "
+                           f"{pct(lo)} to {pct(hi)}</small></td>")
+            body.append(f"<tr><th scope='row'>{name}</th>{''.join(tds)}</tr>")
+        if spans:
+            held = " and ".join(f"{day(h['start'])} to {day(h['end'])}" for h in spans)
+            body.append(f"<tr><td colspan='3' class='held'>Held out, not in any cell: {held}</td></tr>")
+        return (f"<table><caption>Share of days with SOFR more than +{tau} bp above IORB</caption>"
+                f"<thead>{head}</thead><tbody>{''.join(body)}</tbody></table>")
+
+    sq, so = cell[(True, True)], cell[(True, False)]
+    aq, ao = cell[(False, True)], cell[(False, False)]
+    window_days = 2 * QUARTER_END_WINDOW_BUSINESS_DAYS + 1
+    data = {
+        "column": "quarter_end_window", "window_business_days": QUARTER_END_WINDOW_BUSINESS_DAYS,
+        "pressure_bp": pressure_bp, "second_bp": second_bp, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
+        "cells": cells, "held_out": spans,
+        "counted": {"first": kept[0]["date"], "last": kept[-1]["date"], "n": len(kept)},
+        "on_rrp": {"source": NYFED_ON_RRP_SOURCE_ID, "field": NYFED_ON_RRP_FIELD,
+                   "release_lag": {k: lag[k] for k in ("days", "unit", "available_time", "timezone")}},
+        "bootstrap": {"method": "stationary", "block_length": BOOTSTRAP_BLOCK_LENGTH, "level": BOOTSTRAP_LEVEL,
+                      "replications": BOOTSTRAP_REPLICATIONS, "seed": BOOTSTRAP_SEED},
+    }
+    fills = {
+        "n3_lede": (f"With cash scarce, SOFR closed more than +{pressure_bp} bp above IORB on {kn(sq, pressure_bp)} "
+                    f"days in a quarter-end window and {kn(so, pressure_bp)} other days counted here; with cash "
+                    f"abundant, on {kn(aq, pressure_bp)} quarter-end window days and {kn(ao, pressure_bp)} other days."),
+        "n3_table": table(pressure_bp), "n3_table_second": table(second_bp),
+        "n3_first": day(kept[0]["date"]), "n3_last": day(kept[-1]["date"]),
+        "n3_break": brk,
+        "n3_window_caption": (
+            f"Quarter-end here is the column <code>quarter_end_window</code>: the quarter's last business day and "
+            f"the {word(QUARTER_END_WINDOW_BUSINESS_DAYS)} business days either side, {word(window_days)} days in "
+            f"all (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/"
+            f"quarter-end-window.md'>the decision</a>). A one-day flag on the last business day alone would put "
+            f"pressure on the days around it in &ldquo;other days&rdquo;."),
+        "n3_read": (f"Each day is classed by the ON RRP result public at {clock(decision)} New York time that day. "
+                    f"The project dates a result to {lag['available_time']} on the next business day, because the "
+                    f"New York Fed states no publication time, so the reading is the previous business day's "
+                    f"operation."),
+        "n3_small": (f"The quarter-end cells are small, {days(sq['n'])} with scarce cash and {days(aq['n'])} with "
+                     f"abundant cash, so their intervals are wide."),
+        "n3_reading": (
+            ("With cash scarce, pressure also came on days outside the quarter-end window. " if so["above"][str(pressure_bp)]["k"]
+             else "With cash scarce, no day outside the quarter-end window saw pressure. ")
+            + ("With cash abundant, quarter-ends did not always pass quietly." if aq["above"][str(pressure_bp)]["k"]
+               else "With cash abundant, every quarter-end window counted here passed quietly.")),
+        "n3_held_note": (f"Days from {day(spans[0]['start'])} on are held out for the project's final test "
+                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>). They are in no cell and no sentence "
+                         f"in this view." if spans else "No day in this view is held out."),
+        "n3_interval": (f"Each interval is a {round(100 * BOOTSTRAP_LEVEL)}% stationary-bootstrap interval that "
+                        f"resamples a cell's days in blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, because "
+                        f"pressure days come in runs."),
+        "c_n3_quarter_end": link(notes["claims"]["quarter_end"]),
+        "c_n3_fed_cash": link(notes["claims"]["fed_cash"]),
+    }
+    return data, fills
+
+
+def n2_bin(spread, taus):
+    """How many thresholds a spread is strictly above: 0 at or below the first, len(taus) above the last.
+
+    The bins are exclusive, so a day above the top threshold is drawn once, in
+    the top bin, not also as a day above each lower one.
+    """
+    return sum(1 for tau in taus if spread > tau)
+
+
+def newcomer_n2(rows, registry, decision, locked, thresholds):
+    """N2 "Why is this hard?": every scored day, binned by the highest threshold it crossed.
+
+    The day set is the scored grid, `asof.fold_grid` at `N2_MINIMUM_HISTORY`.
+    Days in a lockbox tier not yet opened are listed by date only, with no
+    spread and no bin, so the chart draws them hollow and grey, labelled "held
+    out", and nothing this view writes can depend on their values. Every count,
+    share and sentence is computed from `counted(scored, locked)`. The headline
+    thresholds (the first two) get a count and a share; days above the upper two
+    are drawn and listed one by one, with no rate and no pooled statement (#141
+    §4).
+    """
+    taus = [int(t) for t in thresholds["taus_bp"]]
+    pressure_bp, second_bp = taus[0], taus[1]
+    dates = [date.fromisoformat(r["date"]) for r in rows]
+    grid = fold_grid(dates, registry, decision_time=decision, minimum_history=N2_MINIMUM_HISTORY)
+    scored = [rows[i] for i in grid]
+    kept = counted(scored, locked)
+    if not kept:
+        raise VisualError("every scored day is held out; N2 has nothing to count")
+    open_days = {r["date"] for r in kept}
+    for r in kept:
+        r["n2_s"] = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
+        r["n2_b"] = n2_bin(r["n2_s"], taus)
+    days_out = [[r["date"], r["n2_s"], r["n2_b"]] if r["date"] in open_days else [r["date"], None, None]
+                for r in scored]
+    bins = [sum(1 for r in kept if r["n2_b"] == b) for b in range(len(taus) + 1)]
+    above = [sum(bins[b:]) for b in range(1, len(taus) + 1)]  # days strictly above each threshold
+    by_year = {}
+    for r in kept:
+        if r["n2_b"] >= 1:
+            by_year[int(r["date"][:4])] = by_year.get(int(r["date"][:4]), 0) + 1
+    clusters = cluster_years(by_year)
+    rest = sorted(set(by_year) - set(clusters))
+    # A run: a pressure day whose previous scored day was counted and also a pressure day.
+    runs = sum(1 for prev, r in zip(scored, scored[1:])
+               if prev["date"] in open_days and r["date"] in open_days and prev["n2_b"] >= 1 and r["n2_b"] >= 1)
+    tail = [{"date": r["date"], "s": r["n2_s"], "bin": r["n2_b"]} for r in kept if r["n2_b"] >= 3]
+    spans = held_out_spans(scored, locked)
+    n = len(kept)
+    share = lambda k: f"{k:,} ({round(100 * k / n)}%)"
+    data = {
+        "taus": taus, "held_out": spans, "minimum_history": N2_MINIMUM_HISTORY,
+        "scored": {"first": scored[0]["date"], "last": scored[-1]["date"], "n": len(scored)},
+        "counted": {"first": kept[0]["date"], "last": kept[-1]["date"], "n": n, "bins": bins,
+                    "above": above, "by_year": {str(y): k for y, k in sorted(by_year.items())},
+                    "cluster_years": clusters, "runs": runs},
+        "days": days_out, "tail": tail,
+    }
+    fills = {
+        "n2_lede": (f"Of the {n:,} business days scored from {day(kept[0]['date'])} to {day(kept[-1]['date'])}, "
+                    f"SOFR closed more than +{pressure_bp} bp above IORB on {share(above[0])} and more than "
+                    f"+{second_bp} bp above on {share(above[1])}. "
+                    + (f"Most of the days above +{pressure_bp} bp came in {year_list(clusters)}" if clusters
+                       else f"No day was above +{pressure_bp} bp")
+                    + (f"; the rest in {year_list(rest)}." if rest else ".")),
+        "n2_first": day(scored[0]["date"]), "n2_last": day(scored[-1]["date"]),
+        "n2_panel_first": day(rows[0]["date"]),
+        "n2_min_history": f"{N2_MINIMUM_HISTORY:,}",
+        "n2_quiet": f"{n - above[0]:,} of the {n:,}",
+        "n2_runs": (f"Of the {above[0]:,} days above +{pressure_bp} bp, {runs:,} came on the business day after "
+                    f"another one." if above[0] else ""),
+        "n2_tail_list": "".join(
+            f"<li><time>{short_day(e['date'])}</time> {bp(e['s'])} bp</li>" for e in tail),
+        "n2_held_note": (
+            "Hollow grey marks: the scored days " + " and ".join(
+                f"from {day(h['start'])} to {day(h['end'])}" for h in spans)
+            + ", held out for the project's final test (<a href='" + LOCKBOX_RULE + "'>the lockbox rule</a>). "
+            "They are drawn without their spread and left out of every count and sentence in this view."
+            if spans else "No scored day is held out."),
+    }
+    for b in range(1, len(taus) + 1):
+        fills[f"n2_tau{b}"] = taus[b - 1]
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -1484,9 +1766,13 @@ def generate(repo, commit=None):
 
     decision = time.fromisoformat(manifest["decision_time"])
     n1, n1_fills = newcomer_n1([dict(r) for r in rows], locked, thresholds, notes)
+    n2, n2_fills = newcomer_n2([dict(r) for r in rows], registry, decision, locked, thresholds)
+    on_rrp, on_rrp_snapshots = on_rrp_results(repo)
+    n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
     fills.update(n1_fills)
-    on_rrp, on_rrp_snapshots = on_rrp_results(repo)
+    fills.update(n2_fills)
+    fills.update(n3_fills)
     try:
         seg_days = segment_days(rows, locked, on_rrp, registry, decision)
     except ValueError as exc:
@@ -1556,16 +1842,19 @@ def generate(repo, commit=None):
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1,
-                "newcomer_n4": n4}
+                "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4}
+    # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
+    n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
         {rel: sha256(repo / rel) for rel in (MAP, ISSUES, SOURCES, MANIFEST, ANNOTATIONS, GLOSSARY)},
         **{rel: sha256(repo / rel) for rel in records}, **on_rrp_snapshots))
+    own = {"newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance}
     out = {}
     for name, payload in payloads.items():
-        doc = {"provenance": n4_provenance if name == "newcomer_n4" else provenance, "data": payload}
+        doc = {"provenance": own.get(name, provenance), "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
-    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1")}
+    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1", "newcomer_n2", "newcomer_n3")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
