@@ -119,10 +119,11 @@ figures below therefore differ by window as well as by labels.
 
 **What else the same publication changed** ([#124](https://github.com/eleonorabjornberg/repo-market-model/issues/124)):
 the published funding declaration is calibrated by conformal PID with nested selection of its constants
-([#136](https://github.com/eleonorabjornberg/repo-market-model/issues/136)) instead of CV+; pressure model v1 is
-published at horizons 1 to 5 ([#134](https://github.com/eleonorabjornberg/repo-market-model/issues/134)); and at
+(#136; record: [`runs/exceedance_gbm_conformal_pid_nested_funding.json`](runs/exceedance_gbm_conformal_pid_nested_funding.json)) instead of CV+; pressure model v1 is
+published at horizons 1 to 5 (#134; records: [`runs/pressure_model_v1_h1.json`](runs/pressure_model_v1_h1.json) to
+[`runs/pressure_model_v1_h5.json`](runs/pressure_model_v1_h5.json)); and at
 +20 and +50 bp each record lists every day above the threshold instead of a pooled figure
-([#130](https://github.com/eleonorabjornberg/repo-market-model/issues/130)).
+(#130; rule: [`decisions/pressure-probability.md`](decisions/pressure-probability.md)).
 
 **The superseded records** are archived, unedited: the five pre-correction exceedance records in
 [`runs/archive/pre-whole-bp/`](runs/archive/pre-whole-bp) ("#155: pre-correction labels"), and the CV+ funding
