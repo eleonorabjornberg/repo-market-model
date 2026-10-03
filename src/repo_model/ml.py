@@ -567,6 +567,7 @@ from __future__ import annotations
 
 import copy
 import math
+import random
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from datetime import date
@@ -594,6 +595,7 @@ from .splits import (
 )
 
 __all__ = [
+    "paired_bootstrap_p_values",
     "ARX_FEATURES",
     "CALIBRATIONS",
     "DEFAULT_CALIBRATION_FOLDS",
@@ -5094,3 +5096,70 @@ def stacked_combiner(
         model_name=model_name,
         model_settings=MappingProxyType(settings),
     )
+
+
+def paired_bootstrap_p_values(
+    series: Sequence[Sequence[float]],
+    *,
+    block_length: float,
+    seed: int,
+    replications: int,
+    chunk: int = 1000,
+) -> List[Tuple[float, float]]:
+    """One-sided stationary-bootstrap p-values for the mean of each paired series (#187).
+
+    `series` are paired differences on one grid of scored days, each oriented
+    so that a positive mean favours the candidate. All of them are resampled
+    with the same draws, from `metrics.stationary_bootstrap_indices` driven by
+    one `random.Random(seed)`, so the comparisons of one grid share their
+    resamples as the days they score are shared. For a series with observed
+    mean `m` and bootstrap means `m*`, centred under the null as `m* - m`:
+
+    * improvement: `(1 + #{m* - m >= m}) / (replications + 1)`;
+    * deterioration: `(1 + #{m* - m <= m}) / (replications + 1)`.
+
+    The +1 keeps every p-value above zero; the smallest attainable is
+    `1 / (replications + 1)`, so a Holm correction over a family of size K at
+    level a needs `replications` above K / a. A resample is a count vector
+    over the days, so its mean is a matrix product, computed `chunk`
+    resamples at a time.
+
+    Returns `[(p_improve, p_worse), ...]`, one per series.
+    """
+
+    import numpy
+
+    from .metrics import stationary_bootstrap_indices
+
+    if not series:
+        return []
+    lengths = {len(values) for values in series}
+    if len(lengths) != 1:
+        raise ValueError(f"the series are not on one grid: lengths {sorted(lengths)}")
+    (n,) = lengths
+    if n < 2:
+        raise ValueError("a p-value needs at least two paired days")
+    if isinstance(replications, bool) or not isinstance(replications, int) or replications < 1:
+        raise ValueError(f"replications must be a positive int, got {replications!r}")
+    data = numpy.asarray(series, dtype=float).T  # days x series
+    if not numpy.all(numpy.isfinite(data)):
+        raise ValueError("a paired difference is not finite")
+    mean = data.mean(axis=0)
+    rng = random.Random(seed)
+    up = numpy.zeros(data.shape[1], dtype=numpy.int64)
+    down = numpy.zeros(data.shape[1], dtype=numpy.int64)
+    tolerance = 1e-12
+    done = 0
+    while done < replications:
+        size = min(chunk, replications - done)
+        counts = numpy.zeros((size, n))
+        for row in range(size):
+            counts[row] = numpy.bincount(
+                stationary_bootstrap_indices(n, block_length, rng), minlength=n
+            )
+        centred = counts @ data / n - mean
+        up += (centred >= mean - tolerance).sum(axis=0)
+        down += (centred <= mean + tolerance).sum(axis=0)
+        done += size
+    total = replications + 1
+    return [(float((1 + u) / total), float((1 + d) / total)) for u, d in zip(up, down)]
