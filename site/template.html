@@ -1402,7 +1402,7 @@ function renderN5() {
     svg.append("text").attr("class", "lab").attr("x", ox + m.l).attr("y", oy + 28).text(yName);
     q.days.filter(d => d.held).forEach(d => svg.append("rect").attr("x", x(d.offset - .5)).attr("y", oy + m.t).attr("width", x(d.offset + .5) - x(d.offset - .5)).attr("height", ph).style("fill", "url(#n5-hatch)"));
     const firstHeld = q.days.find(d => d.held);
-    if (firstHeld) svg.append("text").attr("class", "lab").attr("x", x(firstHeld.offset - .5) + 3).attr("y", oy + m.t + 12).style("font-weight", 600).text("held out");
+    if (firstHeld) svg.append("text").attr("class", "lab").attr("x", x(firstHeld.offset - .5) + 4).attr("y", oy + m.t + ph - 6).style("font-weight", 600).text("held out");
     svg.append("g").attr("class", "axis").attr("transform", `translate(${ox + m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(unit === "bp" || change ? sgn : d3.format(",")).tickSizeOuter(0));
     if (unit === "bp" || change) svg.append("line").attr("x1", ox + m.l).attr("x2", ox + pw - m.r).attr("y1", y(0)).attr("y2", y(0)).style("stroke", "var(--ink-2)");
     svg.append("line").attr("x1", x(0)).attr("x2", x(0)).attr("y1", oy + m.t).attr("y2", oy + m.t + ph).style("stroke", "var(--ink-3)").style("stroke-dasharray", "3 3");

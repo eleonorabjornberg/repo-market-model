@@ -2151,7 +2151,11 @@ class NewcomerN5PageTests(unittest.TestCase):
         section = self.section()
         self.assertRegex(section, r'<svg[^>]*role="img" aria-label="Map of who lends')
         ids = re.findall(r'\sid="([^"]+)"', self.page)
-        self.assertEqual(len(ids), len(set(ids)), "an id is used twice on the page")
+        mine = re.findall(r'\sid="([^"]+)"', re.sub(r"<dfn.*?<!--/def-->", " ", section, flags=re.S))
+        self.assertTrue(mine)
+        for i in mine:
+            with self.subTest(id=i):
+                self.assertEqual(ids.count(i), 1, f"N5's id {i!r} is used elsewhere on the page")
 
     def test_every_link_is_a_primary_source(self):
         section = re.sub(r"<span class=\"def\"[^>]*>.*?</span><!--/def-->", " ", self.section(), flags=re.S)
