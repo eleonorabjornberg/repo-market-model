@@ -54,6 +54,9 @@ STATUS_BEGIN = "<!-- generated: status -->"
 STATUS_END = "<!-- end generated: status -->"
 TAIL_BEGIN = "<!-- generated: tail -->"
 TAIL_END = "<!-- end generated: tail -->"
+CASE_STUDY = ROOT / "docs/PORTFOLIO_CASE_STUDY.md"
+CORRECTION_BEGIN = "<!-- generated: correction -->"
+CORRECTION_END = "<!-- end generated: correction -->"
 HEADLINE_BEGIN = "<!-- generated: headline -->"
 HEADLINE_END = "<!-- end generated: headline -->"
 
@@ -216,7 +219,7 @@ def key_findings(persistence, exceedance, conditional):
     refit = require(persistence, "declaration", "refit_every")
 
     levels = sorted(pinball, key=float)
-    skills = sorted(taus, key=float)
+    skills = pooled(taus)
     worst_skill = max(abs(taus[key]["brier_skill_score"]) for key in skills)
 
     lines = []
@@ -280,32 +283,51 @@ def key_findings(persistence, exceedance, conditional):
     add("")
     lines.extend(split_table(splits, "by_day_type", "Pressure-day type", "Mean absolute error"))
     add("")
-    table, challengers = challenger_section()
+    table, groups = challenger_section()
     lines.extend(table)
     add("")
     add("**The paired difference by regime and by pressure-day type** (persistence's CRPS "
         "minus the challenger's, bp, with its 90% interval):")
     add("")
-    split_rows = [(label, require(record, "comparison", "splits"))
-                  for label, record in challengers]
-    lines.extend(split_matrix(split_rows, "by_regime"))
-    add("")
-    lines.extend(split_matrix(split_rows, "by_day_type"))
-    add("")
+    for position, challengers in enumerate(groups):
+        if position:
+            add(window_heading(challengers[0][1]))
+            add("")
+        split_rows = [(label, require(record, "comparison", "splits"))
+                      for label, record in challengers]
+        lines.extend(split_matrix(split_rows, "by_regime"))
+        add("")
+        lines.extend(split_matrix(split_rows, "by_day_type"))
+        add("")
     add("**Interval coverage on the same origins.**")
     add("")
-    lines.extend(coverage_section(challengers, persistence))
-    add("")
+    for position, challengers in enumerate(groups):
+        if position:
+            add(window_heading(challengers[0][1]))
+            add("")
+        lines.extend(coverage_section(challengers, persistence))
+        add("")
     lines.extend(pressure_section())
     add("")
+    v1 = pressure_v1_section()
+    if v1:
+        lines.extend(v1)
+        add("")
+    limitations = limitations_section()
+    if limitations:
+        lines.extend(limitations)
+        add("")
     add("**The control that licenses every skill number.** A climatology scored "
-        "against climatology must show no skill. Over the same %d origins its Brier "
-        "skill score is %s at every declared threshold (%s bp), and its reference Brier "
-        "score equals its own at each one."
+        "against climatology must show no skill. Over its %d scored days its Brier "
+        "skill score is %s at every threshold it reports pooled (%s bp), and its reference "
+        "Brier score equals its own at each one."
         % (require(exceedance, "metrics", "scored_days"),
            bp(worst_skill, 3),
            ", ".join(str(int(float(key))) for key in skills)))
     add("")
+    if listed_sentence(taus):
+        add(listed_sentence(taus))
+        add("")
     add("<picture>")
     add('  <source media="(prefers-color-scheme: dark)" '
         'srcset="docs/figures/reliability-dark.svg">')
@@ -314,7 +336,7 @@ def key_findings(persistence, exceedance, conditional):
     add("</picture>")
     add("")
     add("CORP reliability curves with %s%% stationary-bootstrap bands, one panel per "
-        "declared stress threshold. The diagonal is perfect calibration; the base rate "
+        "threshold reported pooled. The diagonal is perfect calibration; the base rate "
         "under each panel is how often the threshold was actually exceeded."
         % bp(require(taus[skills[0]], "reliability_curve", "band", "level") * 100, 0))
     add("")
@@ -351,30 +373,41 @@ def pressure_records():
         found.append((label, record))
     if not found:
         raise RecordError("no %s record in docs/runs/" % PRESSURE)
-    keys = set(_Scored.key(record) for _, record in found)
-    if len(keys) != 1:
-        raise RecordError("exceedance records are not scored on one panel, history, "
-                          "refit and origin count: %s" % sorted(keys))
-    return found
+    return _by_window(found, "exceedance")
 
 
 def pressure_section():
-    records = pressure_records()
+    groups = pressure_records()
+    lines = []
+    if "end" in require(groups[0][0][1], "declaration"):
+        # No full-panel table precedes these: say which window they score (#124).
+        lines.extend([window_heading(groups[0][0][1]), ""])
+    lines.extend(_pressure_tables(groups[0]))
+    for group in groups[1:]:
+        lines.append("")
+        lines.append(window_heading(group[0][1]))
+        lines.append("")
+        lines.extend(_pressure_tables(group, opening=False))
+    return lines
+
+
+def _pressure_tables(records, opening=True):
     lines = []
     add = lines.append
     first = records[0][1]
-    add("**The pressure probability against its two benchmarks.** Every exceedance record "
-        "is scored on the same %d days; the event is the spread strictly above the "
-        "threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks "
-        "are those of `docs/decisions/pressure-probability.md`: a calendar-type "
-        "climatology and a persistence-logistic model, each scored in the same run under "
-        "its own declaration and paired with the model day by day. The difference is the "
-        "benchmark's Brier score minus the model's, so a positive value favours the "
-        "model; its interval is a stationary bootstrap on the per-day differences. "
-        "Average precision is the area under the precision-recall curve, against a "
-        "no-skill value equal to the base rate."
-        % require(first, "metrics", "scored_days"))
-    add("")
+    if opening:
+        add("**The pressure probability against its two benchmarks.** Every exceedance record "
+            "on this window is scored on the same %d days; the event is the spread strictly above the "
+            "threshold on the scored day (`metadata/stress_thresholds.json`). The benchmarks "
+            "are those of `docs/decisions/pressure-probability.md`: a calendar-type "
+            "climatology and a persistence-logistic model, each scored in the same run under "
+            "its own declaration and paired with the model day by day. The difference is the "
+            "benchmark's Brier score minus the model's, so a positive value favours the "
+            "model; its interval is a stationary bootstrap on the per-day differences. "
+            "Average precision is the area under the precision-recall curve, against a "
+            "no-skill value equal to the base rate."
+            % require(first, "metrics", "scored_days"))
+        add("")
     for key in HEADLINE_TAUS:
         row = require(first, "metrics", "by_tau", key)
         add("*Threshold %g bp, exceeded on %s of days.*" % (row["tau_bp"], pct(row["base_rate"])))
@@ -420,6 +453,144 @@ def pressure_section():
     return lines
 
 
+PRESSURE_V1 = "pressure_model_v1_h*.json"
+
+
+def pressure_v1_section():
+    """Pressure model v1 (#133, #134), one row per horizon, from its records.
+
+    Each `pressure_model_v1_hH.json` is an exceedance record at one horizon,
+    paired day by day with both benchmarks. The table quotes each paired Brier
+    difference with its interval and the verdict it supports, at the headline
+    thresholds; nothing here is typed. No record, no section.
+    """
+
+    records = []
+    for path in sorted(RUNS.glob(PRESSURE_V1)):
+        with path.open(encoding="utf-8") as handle:
+            records.append(json.load(handle))
+    if not records:
+        return []
+    records.sort(key=lambda record: require(record, "declaration", "horizon"))
+    lines = []
+    add = lines.append
+    add("**Pressure model v1 by horizon.** The probability read from the published funding "
+        "declaration's distribution and recalibrated out of fold "
+        "(`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days "
+        "and paired day by day with both benchmarks. Each cell is the benchmark's Brier "
+        "score minus the model's, with its 90% stationary-bootstrap interval; a positive "
+        "value favours the model.")
+    add("")
+    header = "| Horizon | Scored days |"
+    rule = "|---|---|"
+    for key in HEADLINE_TAUS:
+        for _, label in BENCHMARK_LABELS:
+            header += " vs %s, %s bp |" % (label, key)
+            rule += "---|"
+    add(header)
+    add(rule)
+    for record in records:
+        cells = []
+        for key in HEADLINE_TAUS:
+            for name, _ in BENCHMARK_LABELS:
+                paired = require(record, "benchmarks", name, "by_tau", key,
+                                 "paired_brier_difference")
+                cells.append("%s (%s to %s), %s" % (
+                    signed(paired["mean"], 4), signed(paired["interval"]["lower"], 4),
+                    signed(paired["interval"]["upper"], 4),
+                    verdict(paired["interval"]["lower"], paired["interval"]["upper"],
+                            "beats it", "loses to it")))
+        add("| %d | %d | %s |" % (require(record, "declaration", "horizon"),
+                                  require(record, "metrics", "scored_days"), " | ".join(cells)))
+    return lines
+
+
+#: The correction note (#169, rulings parts 2-4): the wording Eleonora ruled is quoted
+#: from the records that carry it, and each superseded record is set beside the record
+#: that replaced it (old, archived unedited -> new).
+RULED_WORDING = "Eleonora's wording (ruling of 2 October 2026 on #169): "
+CORRECTION_WORDING = ("exceedance_gbm_conformal_pid_nested_funding.json", "pressure_model_v1_h1.json")
+CORRECTION_PAIRS = (
+    ("archive/cross-conformal-funding/exceedance_gbm_cross_conformal_funding.json",
+     "exceedance_gbm_conformal_pid_nested_funding.json"),
+    ("archive/pre-whole-bp/exceedance_gbm.json", "exceedance_gbm.json"),
+    ("archive/pre-whole-bp/exceedance_gbm_cross_conformal.json", "exceedance_gbm_cross_conformal.json"),
+    ("archive/pre-whole-bp/exceedance_climatology.json", "exceedance_climatology.json"),
+    ("archive/pre-whole-bp/exceedance_persistence_logistic.json", "exceedance_persistence_logistic.json"),
+    ("archive/pre-whole-bp/exceedance_calendar_climatology.json", "exceedance_calendar_climatology.json"),
+)
+
+
+def _paired_cell(record, name, key):
+    bench = record.get("benchmarks", {}).get(name)
+    if bench is None:
+        return "—"
+    paired = require(bench, "by_tau", key, "paired_brier_difference")
+    return "%s (%s to %s), %s" % (
+        signed(paired["mean"], 4), signed(paired["interval"]["lower"], 4),
+        signed(paired["interval"]["upper"], 4),
+        verdict(paired["interval"]["lower"], paired["interval"]["upper"], "beats it", "loses to it"))
+
+
+def correction_section():
+    """The case study's correction note: the ruled wording and the figures that moved.
+
+    Every sentence is quoted from a record's limitations and every figure is read
+    off a record, the superseded one archived unedited and the one that replaced
+    it, so the page never states a result its records do not (#169).
+    """
+
+    lines = [CORRECTION_BEGIN,
+             "<!-- Generated by scripts/emit_results.py from docs/runs/. Do not edit by hand. -->", ""]
+    add = lines.append
+    add("**What the results now say**, in Eleonora's wording (her ruling of 2 October 2026 on #169), "
+        "quoted from the records that carry it:")
+    add("")
+    seen = []
+    for name in CORRECTION_WORDING:
+        for text in load(name).get("limitations", ()):
+            if text.startswith(RULED_WORDING) and text not in seen:
+                seen.append(text)
+                add("- %s (`%s` and the records beside it)" % (text[len(RULED_WORDING):], name))
+    if not seen:
+        raise RecordError("no record carries the ruled wording the correction note quotes")
+    add("")
+    add("**Which figures moved.** Each paired cell is the benchmark's Brier score minus the model's, "
+        "with its 90% stationary-bootstrap interval; a positive value favours the model. Old is the "
+        "superseded record, archived unedited; new is the record that replaced it.")
+    add("")
+    add("| Old record → new record | Threshold | Brier, old → new | vs calendar-type climatology, "
+        "old → new | vs persistence-logistic, old → new |")
+    add("|---|---|---|---|---|")
+    for old_name, new_name in CORRECTION_PAIRS:
+        old, new = load(old_name), load(new_name)
+        for key in HEADLINE_TAUS:
+            cells = ["%s → %s" % (bp(require(old, "metrics", "by_tau", key, "brier"), 4),
+                                  bp(require(new, "metrics", "by_tau", key, "brier"), 4))]
+            for name, _ in BENCHMARK_LABELS:
+                cells.append("%s → %s" % (_paired_cell(old, name, key), _paired_cell(new, name, key)))
+            add("| `%s` → `%s` | %s bp | %s |" % (old_name, new_name, key, " | ".join(cells)))
+    add("")
+    old, new = load(CORRECTION_PAIRS[1][0]), load(CORRECTION_PAIRS[1][1])
+    add("**The tail clause** (`exceedance_gbm`, Brier skill against climatology, with its 90% interval):")
+    add("")
+    add("| Threshold | Old | New |")
+    add("|---|---|---|")
+    for key in HEADLINE_TAUS:
+        cells = []
+        for record in (old, new):
+            entry = require(record, "metrics", "by_tau", key)
+            interval = require(entry, "brier_skill_score_interval")
+            cells.append("%s (%s to %s)" % (signed(entry["brier_skill_score"]),
+                                            signed(interval["lower"]), signed(interval["upper"])))
+        add("| %s bp | %s | %s |" % (key, cells[0], cells[1]))
+    add("")
+    lines.extend(pressure_v1_section())
+    add("")
+    add(CORRECTION_END)
+    return "\n".join(lines)
+
+
 def tail_section(conditional):
     """Phase 2's tail clause, as the run record measured it.
 
@@ -431,7 +602,7 @@ def tail_section(conditional):
     """
 
     taus = require(conditional, "metrics", "by_tau")
-    order = sorted(taus, key=float)
+    order = pooled(taus)
     scored = require(conditional, "metrics", "scored_days")
     refit = require(conditional, "declaration", "refit_every")
     commit = require(conditional, "provenance", "code", "commit")[:7]
@@ -464,20 +635,24 @@ def tail_section(conditional):
              if require(taus[key], "brier_skill_score_interval")["lower"] > 0]
     loses = [taus[key] for key in order
              if require(taus[key], "brier_skill_score_interval")["upper"] < 0]
+    below = ", and below it at %s" % thresholds(loses) if loses else ""
     add("**Where the skill is.** The skill interval excludes zero "
-        "above climatology at %s, and below it at %s. The last column is resolution as a "
+        "above climatology at %s%s. The last column is resolution as a "
         "share of uncertainty -- how much of the discrimination a sample had available "
         "the forecasts actually realised. It is the honest form of the comparison, "
         "because resolution and uncertainty both collapse as the event gets rarer and "
         "a resolution quoted alone cannot tell a model that stopped discriminating "
         "from a sample with nothing left to discriminate. It falls from %s at %g bp to "
         "%s at %g bp."
-        % (thresholds(beats), thresholds(loses),
+        % (thresholds(beats), below,
            pct(realized_discrimination(require(taus[order[0]], "decomposition")), 2),
            taus[order[0]]["tau_bp"],
            pct(realized_discrimination(require(taus[order[-1]], "decomposition")), 2),
            taus[order[-1]]["tau_bp"]))
     add("")
+    if listed_sentence(taus):
+        add(listed_sentence(taus))
+        add("")
     for key in order:
         entry = taus[key]
         for metric, reason in sorted(entry.get("unavailable", {}).items()):
@@ -532,11 +707,78 @@ def thresholds(entries):
     return "%s and %s bp" % (", ".join(labels[:-1]), labels[-1])
 
 
+def pooled(taus):
+    """The thresholds a record reports pooled, in order: not those it lists event by event.
+
+    At a threshold `--event-list` names (#130, `docs/decisions/pressure-probability.md`),
+    a record carries an event list in place of every pooled figure, so the page
+    prints no skill, interval, decomposition or reliability panel there.
+    """
+
+    return [key for key in sorted(taus, key=float) if taus[key].get("reporting") != "event_list"]
+
+
+def listed_sentence(taus):
+    """A sentence naming the thresholds a record reports event by event, or None."""
+
+    entries = [taus[key] for key in sorted(taus, key=float)
+               if taus[key].get("reporting") == "event_list"]
+    if not entries:
+        return None
+    return ("At %s the record makes no pooled claim: it lists each day above the threshold "
+            "event by event, with every model's forecasts over the days before it "
+            "(`docs/decisions/pressure-probability.md`, #130)." % thresholds(entries))
+
+
 # --------------------------------------------------------------------------
 # challengers and interval coverage
 
 CHALLENGERS = "compare_persistence_vs_*_crps.json"
 COVERAGE = "backtest_*.json"
+
+
+def _window(record):
+    """The last day a record declares it scores, or `None` for the whole panel.
+
+    A re-score confined by `docs/decisions/lockbox.md` declares `--end`; the
+    records scored before the lockbox scored the panel to its end and declare
+    none. Records on one window are ranked in one table, and records on
+    another window are never ranked beside them (#124).
+    """
+
+    return require(record, "declaration").get("end")
+
+
+def _by_window(records, what):
+    """`records` (each a `(label, record)` pair) grouped by declared window.
+
+    The whole-panel window first, then each later-declared end in date order.
+    Within a window every record must be scored on one panel, history, refit
+    and origin count, or the group is refused: two records that declare one
+    window and were scored on different origins are a defect, not a second
+    table.
+    """
+
+    groups = {}
+    for label, record in records:
+        groups.setdefault(_window(record), []).append((label, record))
+    for window, members in groups.items():
+        keys = set(_Scored.key(record) for _, record in members)
+        if len(keys) != 1:
+            raise RecordError("%s records are not scored on one panel, history, "
+                              "refit and origin count: %s" % (what, sorted(keys)))
+    return [groups[window] for window in sorted(groups, key=lambda end: (end is not None, end or ""))]
+
+
+def window_heading(record):
+    """The sentence that opens a table of records scored on a declared window."""
+
+    folds = require(record, "folds")
+    return ("*Scored on a shorter window: %d origins, %s to %s (`--end %s`), the days "
+            "before the locked periods of `docs/decisions/lockbox.md`. These figures are "
+            "not comparable with the tables above, which score the panel to its end.*"
+            % (folds["count"], folds["first"]["scored_date"], folds["last"]["scored_date"],
+               _window(record)))
 
 
 class _Scored(object):
@@ -559,8 +801,12 @@ class _Scored(object):
 
 #: Declaration keys that are not model settings: shared by every row of a
 #: table (and checked to be), so showing them would repeat them per row.
+#: `end` is the window, stated in the heading of its own table, and
+#: `calibration_constants` and `calibration_selection` are what a
+#: calibration's name stands for, carried whole in the record (#124).
 _NOT_SETTINGS = ("model", "features", "decision_time", "minimum_history", "refit_every",
-                 "taus_bp", "twcrps_weights")
+                 "taus_bp", "twcrps_weights", "end", "calibration_constants",
+                 "calibration_selection", "event_list")
 
 
 def _settings(side):
@@ -587,10 +833,12 @@ def challenger_records():
         found.append(record)
     if not found:
         raise RecordError("no %s record in docs/runs/; nothing to rank" % CHALLENGERS)
-    keys = set(_Scored.key(record) for record in found)
-    if len(keys) != 1:
-        raise RecordError("challenger records are not scored on one panel, history, "
-                          "refit and origin count: %s" % sorted(keys))
+    return [_challenger_group([record for _, record in group])
+            for group in _by_window([(None, record) for record in found], "challenger")]
+
+
+def _challenger_group(found):
+    """One window's comparisons against persistence, labelled and ranked."""
 
     labels = [_settings(require(r, "declaration", "model_b")) for r in found]
     # A gbm is named with its features: the published set scores one model on two
@@ -619,7 +867,17 @@ def challenger_records():
 
 
 def challenger_section():
-    rows = challenger_records()
+    groups = challenger_records()
+    lines, rows = _challenger_table(groups[0])
+    for group in groups[1:]:
+        lines.append("")
+        lines.append(window_heading(group[0][1]))
+        lines.append("")
+        lines.extend(_challenger_table(group)[0])
+    return lines, groups
+
+
+def _challenger_table(rows):
     first = rows[0][1]
     comparison = first["comparison"]
     lines = []
@@ -701,6 +959,35 @@ def coverage_section(challengers, persistence):
     return lines
 
 
+def limitations_section():
+    """Each limitation a record states (`--limitation`), once, with its records.
+
+    A record carries the limitations whoever scored it stated beside its
+    figures (#124). They are rendered verbatim, from the record, so a page
+    never states a limitation the record does not, and each is listed once
+    with every record that states it.
+    """
+
+    stated = []
+    for path in sorted(RUNS.glob("*.json")):
+        with path.open(encoding="utf-8") as handle:
+            record = json.load(handle)
+        for text in record.get("limitations", ()) if isinstance(record, dict) else ():
+            for entry in stated:
+                if entry[0] == text:
+                    entry[1].append(path.name)
+                    break
+            else:
+                stated.append((text, [path.name]))
+    if not stated:
+        return []
+    lines = ["**Limitations the records state.** Each is quoted from the records named "
+             "after it, which carry it beside their figures.", ""]
+    for text, names in stated:
+        lines.append("- %s (%s)" % (text, ", ".join("`%s`" % name for name in names)))
+    return lines
+
+
 def status_line():
     """The current phase, read from PLAN.md through `emit_status.py`'s parser.
 
@@ -764,7 +1051,7 @@ def headline(persistence, exceedance):
     folds = require(persistence, "folds")
     panel = require(persistence, "panel")
     taus = require(exceedance, "metrics", "by_tau")
-    worst = max(abs(taus[key]["brier_skill_score"]) for key in taus)
+    worst = max(abs(taus[key]["brier_skill_score"]) for key in pooled(taus))
 
     if coverage["upper"] < nominal:
         bands = ("Its uncertainty bands are **too narrow**: a band meant to contain the "
@@ -919,7 +1206,7 @@ def panel_svg(entry, theme, x0, y0, label, index):
 def figure_svg(exceedance, theme, title="Reliability of the exceedance forecasts"):
     colors = THEMES[theme]
     taus = require(exceedance, "metrics", "by_tau")
-    order = sorted(taus, key=float)
+    order = pooled(taus)
     cols = 2
     rows = (len(order) + cols - 1) // cols
     width = cols * CELL_W + 16
@@ -1038,6 +1325,9 @@ def rendered(persistence, exceedance, conditional):
             (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
             (STATUS_BEGIN, STATUS_END, status_line()),
             (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
+        ),
+        CASE_STUDY: (
+            (CORRECTION_BEGIN, CORRECTION_END, correction_section()),
         ),
     }
     for page, blocks in pages.items():

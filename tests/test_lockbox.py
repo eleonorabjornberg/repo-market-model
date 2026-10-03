@@ -314,6 +314,11 @@ NOT_ENTRY_POINTS = {
     "scripts/calibration_masking_exposure.exposure": (
         "counts masked training pairs per refit block; scores nothing"
     ),
+    "scripts/emit_visual.newcomer_n2": (
+        "draws the scored grid on the explorer's N2 (#143); scores and compares "
+        "nothing, and leaves locked days out of every count through `counted` "
+        "(tests/test_visual.py, NewcomerN2Tests)"
+    ),
 }
 
 

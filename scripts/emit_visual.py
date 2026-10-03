@@ -68,7 +68,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from repo_model.asof import declared_availability  # noqa: E402
+from repo_model.asof import declared_availability, fold_grid  # noqa: E402
 from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_DEPLETION_BREAK_BN  # noqa: E402
 from repo_model.data import QUARTER_END_WINDOW_BUSINESS_DAYS, quarter_end_window  # noqa: E402
 from repo_model.ingest import (  # noqa: E402
@@ -151,6 +151,12 @@ NEWCOMER_VIEWS = (
     ("n4", "Who lends to whom", "The market map"),
     ("n5", "A quarter-end squeeze", "Step by step"),
 )
+
+#: The minimum history of the published declarations: the scored grid starts at
+#: the first row with this many observable labels (`asof.fold_grid`). N2 draws
+#: that grid; `tests/test_visual.py` cross-checks it against the fold dates of
+#: `docs/runs/persistence_funding.json`, so the generator reads no run record.
+N2_MINIMUM_HISTORY = 61
 
 #: A map tag's statuses (#141 §3), in the order the derivation tries them, the
 #: first match winning: (key, icon, word). The page shows the icon and the word,
@@ -1270,6 +1276,91 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
     return data, fills
 
 
+def n2_bin(spread, taus):
+    """How many thresholds a spread is strictly above: 0 at or below the first, len(taus) above the last.
+
+    The bins are exclusive, so a day above the top threshold is drawn once, in
+    the top bin, not also as a day above each lower one.
+    """
+    return sum(1 for tau in taus if spread > tau)
+
+
+def newcomer_n2(rows, registry, decision, locked, thresholds):
+    """N2 "Why is this hard?": every scored day, binned by the highest threshold it crossed.
+
+    The day set is the scored grid, `asof.fold_grid` at `N2_MINIMUM_HISTORY`.
+    Days in a lockbox tier not yet opened are listed by date only, with no
+    spread and no bin, so the chart draws them hollow and grey, labelled "held
+    out", and nothing this view writes can depend on their values. Every count,
+    share and sentence is computed from `counted(scored, locked)`. The headline
+    thresholds (the first two) get a count and a share; days above the upper two
+    are drawn and listed one by one, with no rate and no pooled statement (#141
+    §4).
+    """
+    taus = [int(t) for t in thresholds["taus_bp"]]
+    pressure_bp, second_bp = taus[0], taus[1]
+    dates = [date.fromisoformat(r["date"]) for r in rows]
+    grid = fold_grid(dates, registry, decision_time=decision, minimum_history=N2_MINIMUM_HISTORY)
+    scored = [rows[i] for i in grid]
+    kept = counted(scored, locked)
+    if not kept:
+        raise VisualError("every scored day is held out; N2 has nothing to count")
+    open_days = {r["date"] for r in kept}
+    for r in kept:
+        r["n2_s"] = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
+        r["n2_b"] = n2_bin(r["n2_s"], taus)
+    days_out = [[r["date"], r["n2_s"], r["n2_b"]] if r["date"] in open_days else [r["date"], None, None]
+                for r in scored]
+    bins = [sum(1 for r in kept if r["n2_b"] == b) for b in range(len(taus) + 1)]
+    above = [sum(bins[b:]) for b in range(1, len(taus) + 1)]  # days strictly above each threshold
+    by_year = {}
+    for r in kept:
+        if r["n2_b"] >= 1:
+            by_year[int(r["date"][:4])] = by_year.get(int(r["date"][:4]), 0) + 1
+    clusters = cluster_years(by_year)
+    rest = sorted(set(by_year) - set(clusters))
+    # A run: a pressure day whose previous scored day was counted and also a pressure day.
+    runs = sum(1 for prev, r in zip(scored, scored[1:])
+               if prev["date"] in open_days and r["date"] in open_days and prev["n2_b"] >= 1 and r["n2_b"] >= 1)
+    tail = [{"date": r["date"], "s": r["n2_s"], "bin": r["n2_b"]} for r in kept if r["n2_b"] >= 3]
+    spans = held_out_spans(scored, locked)
+    n = len(kept)
+    share = lambda k: f"{k:,} ({round(100 * k / n)}%)"
+    data = {
+        "taus": taus, "held_out": spans, "minimum_history": N2_MINIMUM_HISTORY,
+        "scored": {"first": scored[0]["date"], "last": scored[-1]["date"], "n": len(scored)},
+        "counted": {"first": kept[0]["date"], "last": kept[-1]["date"], "n": n, "bins": bins,
+                    "above": above, "by_year": {str(y): k for y, k in sorted(by_year.items())},
+                    "cluster_years": clusters, "runs": runs},
+        "days": days_out, "tail": tail,
+    }
+    fills = {
+        "n2_lede": (f"Of the {n:,} business days scored from {day(kept[0]['date'])} to {day(kept[-1]['date'])}, "
+                    f"SOFR closed more than +{pressure_bp} bp above IORB on {share(above[0])} and more than "
+                    f"+{second_bp} bp above on {share(above[1])}. "
+                    + (f"Most of the days above +{pressure_bp} bp came in {year_list(clusters)}" if clusters
+                       else f"No day was above +{pressure_bp} bp")
+                    + (f"; the rest in {year_list(rest)}." if rest else ".")),
+        "n2_first": day(scored[0]["date"]), "n2_last": day(scored[-1]["date"]),
+        "n2_panel_first": day(rows[0]["date"]),
+        "n2_min_history": f"{N2_MINIMUM_HISTORY:,}",
+        "n2_quiet": f"{n - above[0]:,} of the {n:,}",
+        "n2_runs": (f"Of the {above[0]:,} days above +{pressure_bp} bp, {runs:,} came on the business day after "
+                    f"another one." if above[0] else ""),
+        "n2_tail_list": "".join(
+            f"<li><time>{short_day(e['date'])}</time> {bp(e['s'])} bp</li>" for e in tail),
+        "n2_held_note": (
+            "Hollow grey marks: the scored days " + " and ".join(
+                f"from {day(h['start'])} to {day(h['end'])}" for h in spans)
+            + ", held out for the project's final test (<a href='" + LOCKBOX_RULE + "'>the lockbox rule</a>). "
+            "They are drawn without their spread and left out of every count and sentence in this view."
+            if spans else "No scored day is held out."),
+    }
+    for b in range(1, len(taus) + 1):
+        fills[f"n2_tau{b}"] = taus[b - 1]
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -1297,13 +1388,15 @@ def generate(repo, commit=None):
         raw, digest = build_panel(repo, manifest, tmp)
     rows = list(csv.DictReader(raw.decode().splitlines()))
     check_reserve_units(rows)
-    decision = time.fromisoformat(manifest["decision_time"])
 
     n1, n1_fills = newcomer_n1([dict(r) for r in rows], locked, thresholds, notes)
+    decision = time.fromisoformat(manifest["decision_time"])
+    n2, n2_fills = newcomer_n2([dict(r) for r in rows], registry, decision, locked, thresholds)
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
     fills.update(n1_fills)
+    fills.update(n2_fills)
     fills.update(n3_fills)
     n4, n4_fills = newcomer_n4(tag_map, registry, manifest, records, snapshot, tracked_snapshots(repo), notes)
     fills.update(n4_fills)
@@ -1369,7 +1462,7 @@ def generate(repo, commit=None):
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1,
-                "newcomer_n3": n3, "newcomer_n4": n4}
+                "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -1381,7 +1474,7 @@ def generate(repo, commit=None):
         doc = {"provenance": own.get(name, provenance), "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
-    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1", "newcomer_n3")}
+    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1", "newcomer_n2", "newcomer_n3")}
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
     if "/*__DATA__*/null" not in template:
