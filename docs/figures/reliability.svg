@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 456 504" width="456" height="504" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="Reliability of the exceedance forecasts at each declared threshold">
-<rect width="456" height="504" fill="#fcfcfb"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 456 278" width="456" height="278" font-family='system-ui, -apple-system, "Segoe UI", sans-serif' role="img" aria-label="Reliability of the exceedance forecasts at each declared threshold">
+<rect width="456" height="278" fill="#fcfcfb"/>
 <text x="8" y="20" font-size="13" font-weight="600" fill="#0b0b0b">Reliability of the exceedance forecasts</text>
 <text x="8" y="37" font-size="11" fill="#52514e">Forecast probability across, observed frequency up; dashed is perfect calibration</text>
 <clipPath id="clipl0"><rect x="54.0" y="76.0" width="160" height="160"/></clipPath>
@@ -9,15 +9,15 @@
 <line x1="54.0" y1="76.0" x2="214.0" y2="76.0" stroke="#e1e0d9" stroke-width="1"/>
 <line x1="214.0" y1="236.0" x2="214.0" y2="76.0" stroke="#e1e0d9" stroke-width="1"/>
 <line x1="54.0" y1="236.0" x2="214.0" y2="76.0" stroke="#898781" stroke-width="1.5" stroke-dasharray="4 3"/>
-<polygon clip-path="url(#clipl0)" points="71.7,214.5 74.6,213.9 75.0,213.9 75.7,213.9 86.1,213.9 91.1,213.9 94.3,210.7 111.4,206.6 119.4,189.2 121.7,161.0 129.9,156.2 141.5,150.5 145.1,112.5 148.3,111.9 148.3,180.5 145.1,180.8 141.5,191.2 129.9,200.1 121.7,210.7 119.4,219.0 111.4,221.2 94.3,222.1 91.1,222.8 86.1,222.8 75.7,222.9 75.0,222.9 74.6,222.9 71.7,236.0" fill="#2a78d6" fill-opacity="0.18"/>
-<polyline clip-path="url(#clipl0)" points="71.7,217.7 74.6,217.7 75.0,217.7 75.7,217.7 86.1,217.7 91.1,217.7 94.3,217.7 111.4,217.7 119.4,208.6 121.7,175.0 129.9,175.0 141.5,175.0 145.1,154.7 148.3,154.7" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+<polygon clip-path="url(#clipl0)" points="66.9,216.7 69.5,215.1 73.5,215.1 74.2,215.0 81.3,215.0 84.3,215.0 88.0,214.4 103.0,212.3 109.5,192.7 113.5,176.2 123.5,167.1 124.5,161.6 130.5,150.7 133.6,137.2 136.2,135.6 136.2,187.9 133.6,188.7 130.5,193.0 124.5,204.0 123.5,208.0 113.5,216.6 109.5,220.7 103.0,223.4 88.0,223.8 84.3,224.0 81.3,224.1 74.2,224.1 73.5,224.3 69.5,224.4 66.9,236.0" fill="#2a78d6" fill-opacity="0.18"/>
+<polyline clip-path="url(#clipl0)" points="66.9,220.8 69.5,219.4 73.5,219.4 74.2,219.4 81.3,219.4 84.3,219.4 88.0,219.4 103.0,219.4 109.5,208.6 113.5,195.4 123.5,187.7 124.5,187.7 130.5,170.7 133.6,170.7 136.2,170.7" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
 <line x1="54.0" y1="236.0" x2="214.0" y2="236.0" stroke="#c3c2b7" stroke-width="1"/>
 <line x1="54.0" y1="236.0" x2="54.0" y2="76.0" stroke="#c3c2b7" stroke-width="1"/>
 <text x="54.0" y="249.0" font-size="10" text-anchor="middle" fill="#898781">0%</text>
 <text x="49.0" y="239.5" font-size="10" text-anchor="end" fill="#898781">0%</text>
 <text x="214.0" y="249.0" font-size="10" text-anchor="middle" fill="#898781">50%</text>
 <text x="49.0" y="79.5" font-size="10" text-anchor="end" fill="#898781">50%</text>
-<text x="54.0" y="264.0" font-size="10" fill="#52514e">exceeded on 8.1% of days</text>
+<text x="54.0" y="264.0" font-size="10" fill="#52514e">exceeded on 7.5% of days</text>
 <clipPath id="clipl1"><rect x="274.0" y="76.0" width="160" height="160"/></clipPath>
 <text x="274.0" y="62.0" font-size="12" font-weight="600" fill="#0b0b0b">τ = 10 bp</text>
 <line x1="274.0" y1="156.0" x2="434.0" y2="156.0" stroke="#e1e0d9" stroke-width="1"/>
@@ -25,45 +25,13 @@
 <line x1="274.0" y1="76.0" x2="434.0" y2="76.0" stroke="#e1e0d9" stroke-width="1"/>
 <line x1="434.0" y1="236.0" x2="434.0" y2="76.0" stroke="#e1e0d9" stroke-width="1"/>
 <line x1="274.0" y1="236.0" x2="434.0" y2="76.0" stroke="#898781" stroke-width="1.5" stroke-dasharray="4 3"/>
-<polygon clip-path="url(#clipl1)" points="274.0,209.0 283.8,207.9 295.2,207.8 295.4,207.7 296.0,207.7 299.3,207.6 301.6,207.5 304.4,207.5 304.9,207.5 305.5,207.5 317.8,207.3 320.0,196.0 322.5,182.1 338.2,176.6 345.9,151.6 348.9,151.6 358.2,151.6 362.7,76.0 362.7,196.5 358.2,205.3 348.9,205.5 345.9,206.5 338.2,215.7 322.5,217.8 320.0,219.3 317.8,221.1 305.5,221.1 304.9,221.2 304.4,221.3 301.6,221.4 299.3,221.5 296.0,221.8 295.4,222.0 295.2,222.9 283.8,224.8 274.0,236.0" fill="#2a78d6" fill-opacity="0.18"/>
-<polyline clip-path="url(#clipl1)" points="274.0,214.5 283.8,214.5 295.2,214.5 295.4,214.5 296.0,214.5 299.3,214.5 301.6,214.5 304.4,214.5 304.9,214.5 305.5,214.5 317.8,214.5 320.0,210.6 322.5,200.8 338.2,200.8 345.9,182.7 348.9,182.7 358.2,182.7 362.7,159.8" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+<polygon clip-path="url(#clipl1)" points="274.0,183.7 293.5,182.6 312.1,182.4 313.5,182.3 315.5,181.9 316.7,181.9 317.9,181.8 321.8,181.6 334.5,181.6 336.9,180.4 336.9,178.7 350.4,177.8 354.2,159.3 360.7,142.2 388.7,129.3 402.5,88.1 407.9,86.2 416.1,86.0 431.2,19.0 431.2,168.9 416.1,180.1 407.9,180.6 402.5,182.2 388.7,198.4 360.7,203.0 354.2,205.7 350.4,208.9 336.9,209.1 336.9,209.8 334.5,210.5 321.8,210.6 317.9,210.6 316.7,210.9 315.5,210.9 313.5,212.7 312.1,213.9 293.5,215.9 274.0,236.0" fill="#2a78d6" fill-opacity="0.18"/>
+<polyline clip-path="url(#clipl1)" points="274.0,195.5 293.5,195.5 312.1,195.5 313.5,195.5 315.5,195.5 316.7,195.5 317.9,195.5 321.8,195.5 334.5,195.5 336.9,195.5 336.9,195.5 350.4,195.5 354.2,185.2 360.7,178.9 388.7,175.0 402.5,134.4 407.9,134.4 416.1,134.4 431.2,134.4" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
 <line x1="274.0" y1="236.0" x2="434.0" y2="236.0" stroke="#c3c2b7" stroke-width="1"/>
 <line x1="274.0" y1="236.0" x2="274.0" y2="76.0" stroke="#c3c2b7" stroke-width="1"/>
 <text x="274.0" y="249.0" font-size="10" text-anchor="middle" fill="#898781">0%</text>
 <text x="269.0" y="239.5" font-size="10" text-anchor="end" fill="#898781">0%</text>
-<text x="434.0" y="249.0" font-size="10" text-anchor="middle" fill="#898781">20%</text>
-<text x="269.0" y="79.5" font-size="10" text-anchor="end" fill="#898781">20%</text>
-<text x="274.0" y="264.0" font-size="10" fill="#52514e">exceeded on 3.5% of days</text>
-<clipPath id="clipl2"><rect x="54.0" y="302.0" width="160" height="160"/></clipPath>
-<text x="54.0" y="288.0" font-size="12" font-weight="600" fill="#0b0b0b">τ = 20 bp</text>
-<line x1="54.0" y1="382.0" x2="214.0" y2="382.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="134.0" y1="462.0" x2="134.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="54.0" y1="302.0" x2="214.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="214.0" y1="462.0" x2="214.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="54.0" y1="462.0" x2="214.0" y2="302.0" stroke="#898781" stroke-width="1.5" stroke-dasharray="4 3"/>
-<polygon clip-path="url(#clipl2)" points="54.0,427.9 71.1,427.3 82.3,426.9 85.4,426.9 95.6,426.9 104.9,424.8 105.1,395.6 108.5,395.1 115.9,394.2 145.8,369.2 156.1,355.3 166.8,245.1 166.8,422.4 156.1,436.7 145.8,439.7 115.9,446.9 108.5,447.8 105.1,449.4 104.9,452.2 95.6,453.6 85.4,454.1 82.3,456.0 71.1,462.0 54.0,462.0" fill="#2a78d6" fill-opacity="0.18"/>
-<polyline clip-path="url(#clipl2)" points="54.0,440.7 71.1,440.7 82.3,440.7 85.4,440.7 95.6,440.7 104.9,440.7 105.1,423.9 108.5,423.9 115.9,423.9 145.8,411.2 156.1,411.2 166.8,360.4" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
-<line x1="54.0" y1="462.0" x2="214.0" y2="462.0" stroke="#c3c2b7" stroke-width="1"/>
-<line x1="54.0" y1="462.0" x2="54.0" y2="302.0" stroke="#c3c2b7" stroke-width="1"/>
-<text x="54.0" y="475.0" font-size="10" text-anchor="middle" fill="#898781">0%</text>
-<text x="49.0" y="465.5" font-size="10" text-anchor="end" fill="#898781">0%</text>
-<text x="214.0" y="475.0" font-size="10" text-anchor="middle" fill="#898781">5%</text>
-<text x="49.0" y="305.5" font-size="10" text-anchor="end" fill="#898781">5%</text>
-<text x="54.0" y="490.0" font-size="10" fill="#52514e">exceeded on 1.0% of days</text>
-<clipPath id="clipl3"><rect x="274.0" y="302.0" width="160" height="160"/></clipPath>
-<text x="274.0" y="288.0" font-size="12" font-weight="600" fill="#0b0b0b">τ = 50 bp</text>
-<line x1="274.0" y1="382.0" x2="434.0" y2="382.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="354.0" y1="462.0" x2="354.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="274.0" y1="302.0" x2="434.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="434.0" y1="462.0" x2="434.0" y2="302.0" stroke="#e1e0d9" stroke-width="1"/>
-<line x1="274.0" y1="462.0" x2="434.0" y2="302.0" stroke="#898781" stroke-width="1.5" stroke-dasharray="4 3"/>
-<polygon clip-path="url(#clipl3)" points="318.9,434.9 359.1,387.4 359.1,458.1 318.9,462.0" fill="#2a78d6" fill-opacity="0.18"/>
-<polyline clip-path="url(#clipl3)" points="318.9,451.6 359.1,430.3" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
-<line x1="274.0" y1="462.0" x2="434.0" y2="462.0" stroke="#c3c2b7" stroke-width="1"/>
-<line x1="274.0" y1="462.0" x2="274.0" y2="302.0" stroke="#c3c2b7" stroke-width="1"/>
-<text x="274.0" y="475.0" font-size="10" text-anchor="middle" fill="#898781">0%</text>
-<text x="269.0" y="465.5" font-size="10" text-anchor="end" fill="#898781">0%</text>
-<text x="434.0" y="475.0" font-size="10" text-anchor="middle" fill="#898781">2%</text>
-<text x="269.0" y="305.5" font-size="10" text-anchor="end" fill="#898781">2%</text>
-<text x="274.0" y="490.0" font-size="10" fill="#52514e">exceeded on 0.2% of days</text>
+<text x="434.0" y="249.0" font-size="10" text-anchor="middle" fill="#898781">10%</text>
+<text x="269.0" y="79.5" font-size="10" text-anchor="end" fill="#898781">10%</text>
+<text x="274.0" y="264.0" font-size="10" fill="#52514e">exceeded on 3.3% of days</text>
 </svg>

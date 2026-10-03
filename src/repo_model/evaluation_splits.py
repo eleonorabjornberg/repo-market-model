@@ -15,6 +15,11 @@ whether it is provisional, and a record that used it carries its digest.
   rule reads at the scored day itself (they are always known). One type per
   day, by the declared precedence, so the types partition the scored days.
 * **Regime** is a set of contiguous, non-overlapping date ranges, labelled.
+* **The quarter-end window** (#140, decided in
+  `docs/decisions/quarter-end-window.md`) is reported
+  alongside the pressure-day types, not among them: a day is in it or outside
+  it, read from its date by `data.quarter_end_window`. The declared types, their
+  precedence and the file are unchanged, so no published split moves.
 
 **The interval on a split is a domain estimate on whole-series resamples.**
 The scored days of one type are not contiguous, and a block bootstrap run on
@@ -43,8 +48,10 @@ from .metrics import MetricError, stationary_bootstrap_interval
 
 __all__ = [
     "DAY_TYPE_COLUMNS",
+    "QUARTER_END_WINDOW_GROUPS",
     "SplitDeclaration",
     "load_split_declaration",
+    "quarter_end_window_label",
     "split_summary",
 ]
 
@@ -54,6 +61,23 @@ DAY_TYPE_COLUMNS = ("days_to_month_end", "quarter_end", "tax_date")
 #: The types, in precedence order. `ordinary` is every day that is none of the
 #: others, so the types partition the scored days.
 DAY_TYPES = ("quarter_end", "month_end", "tax_date", "ordinary")
+
+#: The quarter-end window split, reported beside `DAY_TYPES`: every scored day
+#: is in exactly one of the two groups.
+QUARTER_END_WINDOW_GROUPS = ("quarter_end_window", "outside_quarter_end_window")
+
+
+def quarter_end_window_label(when: date) -> str:
+    """The day's group in the quarter-end window split, from its date alone.
+
+    Raises:
+        ValueError: if the market holiday table does not cover the windows
+            around `when` (`data.quarter_end_window`).
+    """
+
+    from .data import quarter_end_window
+
+    return QUARTER_END_WINDOW_GROUPS[0 if quarter_end_window(when) == 1.0 else 1]
 
 
 @dataclass(frozen=True)

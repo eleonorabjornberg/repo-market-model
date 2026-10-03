@@ -65,7 +65,12 @@ class RegenerationTests(unittest.TestCase):
                 self.assertTrue(prov["inputs"])
 
     def test_only_the_model_data_reads_run_records(self):
-        """The descriptive chapters read no run record; the model chapters read nothing else."""
+        """The descriptive chapters read no run record; the model chapters read nothing else.
+
+        N4's status engine also reads docs/runs/, but only declarations:
+        `run_record_declarations` keeps a record's declaration, its derived
+        fields and a comparison's verdict, and nothing else (#141 §3).
+        """
         for rel, data in self.outputs.items():
             if not rel.endswith(".json"):
                 continue
@@ -75,9 +80,13 @@ class RegenerationTests(unittest.TestCase):
                     self.assertTrue(inputs)
                     for path in inputs:
                         self.assertTrue(emit_visual.is_published_record(path), path)
-                else:
+                elif not rel.endswith("/newcomer_n4.json"):
                     for path in inputs:
                         self.assertFalse(path.startswith("docs/runs"), path)
+        for rel, kept in emit_visual.run_record_declarations(ROOT).items():
+            with self.subTest(record=rel):
+                self.assertLessEqual(set(kept), {"declaration", "derived", "comparison"})
+                self.assertLessEqual(set(kept.get("comparison", {})), {"loss", "mean_difference_interval"})
 
     def test_commit_stamp_is_the_latest_input_commit(self):
         shallow = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
@@ -734,6 +743,460 @@ class NewcomerHeldOutDayTests(unittest.TestCase):
         self.assertEqual(data["held_out"], [])
         self.assertEqual(data["counted"]["n"], len(self.rows))
         self.assertEqual(fills["n1_held_note"], "No day on this chart is held out.")
+
+
+def panel_rows():
+    manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+    return list(csv.DictReader(raw.decode().splitlines()))
+
+
+class NewcomerN2Tests(unittest.TestCase):
+    """N2 "Why is this hard?" (#143): one mark per scored day, binned by the highest threshold crossed.
+
+    The day set is the scored grid (`asof.fold_grid` at the published
+    declarations' minimum history), cross-checked here, and only here, against
+    the fold dates of `docs/runs/persistence_funding.json` (#141 §2.1): the
+    generator reads no run record. Locked days (`metadata/lockbox.json`) are
+    drawn as hollow grey marks labelled "held out" and carry no spread, no bin,
+    and no weight in any count or sentence (#141 ruling 3).
+
+    Recorded mutation: in `newcomer_n2`, `kept = counted(scored, locked)`
+    -> `kept = list(scored)`. test_locked_perturbation_changes_nothing then
+    failed with AssertionError (the counts and fills moved), and so did
+    test_no_held_day_is_binned_or_counted.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = panel_rows()
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
+        cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def run_n2(self, rows, locked=None):
+        locked = self.locked if locked is None else locked
+        return emit_visual.newcomer_n2(copy.deepcopy(rows), self.registry, self.decision, locked, self.thresholds)
+
+    def is_locked(self, iso):
+        return lockbox.locked_tier(emit_visual.date.fromisoformat(iso), self.locked) is not None
+
+    def spread(self, row):
+        return int((emit_visual.Decimal(row["sofr"]) - emit_visual.Decimal(row["iorb"])) * 100)
+
+    def test_the_day_set_is_the_published_scored_grid(self):
+        """#141 §2.1: the fold dates of the published persistence record prove the day set."""
+        record = json.loads(AS_OF.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration"]["minimum_history"], emit_visual.N2_MINIMUM_HISTORY)
+        data, _ = self.run_n2(self.rows)
+        folds = record["folds"]
+        self.assertEqual(data["days"][0][0], folds["first"]["scored_date"])
+        self.assertEqual(data["days"][-1][0], folds["last"]["scored_date"])
+        self.assertEqual(len(data["days"]), folds["count"])
+        self.assertEqual(data["scored"]["first"], folds["first"]["scored_date"])
+        self.assertEqual(data["scored"]["n"], folds["count"])
+        self.assertGreater(data["scored"]["first"], self.rows[0]["date"])  # the start differs from N1's
+
+    def test_bins_are_strict_and_exclusive(self):
+        taus = [int(t) for t in self.thresholds["taus_bp"]]
+        self.assertEqual(emit_visual.n2_bin(taus[0], taus), 0)  # on the line is not above it
+        self.assertEqual(emit_visual.n2_bin(taus[0] + 1, taus), 1)
+        self.assertEqual(emit_visual.n2_bin(taus[1], taus), 1)
+        self.assertEqual(emit_visual.n2_bin(taus[-1] + 1, taus), len(taus))  # only in the top bin
+        self.assertEqual(emit_visual.n2_bin(-30, taus), 0)
+        data, _ = self.run_n2(self.rows)
+        by_date = {r["date"]: r for r in self.rows}
+        for iso, s, b in data["days"]:
+            if b is None:
+                continue
+            self.assertEqual(s, self.spread(by_date[iso]))
+            self.assertEqual(b, sum(1 for t in taus if s > t))
+
+    def test_no_held_day_is_binned_or_counted(self):
+        data, _ = self.run_n2(self.rows)
+        held = [d for d in data["days"] if self.is_locked(d[0])]
+        self.assertTrue(held, "the grid reaches no locked tier, so this test would hold vacuously")
+        self.assertTrue(all(s is None and b is None for _, s, b in held))
+        open_days = [d for d in data["days"] if not self.is_locked(d[0])]
+        self.assertTrue(all(b is not None for _, _, b in open_days))
+        self.assertEqual(data["counted"]["n"], len(open_days))
+        self.assertEqual(sum(data["counted"]["bins"]), len(open_days))
+        self.assertTrue(all(not self.is_locked(e["date"]) for e in data["tail"]))
+
+    def test_locked_perturbation_changes_nothing(self):
+        base = self.run_n2(self.rows)
+        locked = [i for i, r in enumerate(self.rows) if self.is_locked(r["date"])]
+        for index in (locked[0], locked[len(locked) // 2], locked[-1]):
+            for sofr in ("9.99", "0.01"):
+                rows = copy.deepcopy(self.rows)
+                rows[index]["sofr"] = sofr
+                with self.subTest(date=rows[index]["date"], sofr=sofr):
+                    self.assertEqual(self.run_n2(rows), base)
+
+    def test_unlocked_perturbation_is_seen(self):
+        base = self.run_n2(self.rows)
+        index = next(i for i, r in enumerate(self.rows)
+                     if r["date"] >= base[0]["scored"]["first"] and not self.is_locked(r["date"])
+                     and self.spread(r) < 0)
+        rows = copy.deepcopy(self.rows)
+        rows[index]["sofr"] = "9.99"
+        moved = self.run_n2(rows)
+        self.assertNotEqual(moved[1], base[1])
+        self.assertNotEqual(moved[0]["counted"], base[0]["counted"])
+
+    def test_an_opened_tier_is_counted(self):
+        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        for tier in document["tiers"]:
+            tier["opened"] = {"date": "2026-10-02", "ruling": "a test fixture standing in for her ruling"}
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "lockbox.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            opened = lockbox.locked_tiers(path)
+        data, fills = self.run_n2(self.rows, opened)
+        self.assertEqual(data["held_out"], [])
+        self.assertEqual(data["counted"]["n"], data["scored"]["n"])
+        self.assertTrue(all(b is not None for _, _, b in data["days"]))
+        self.assertEqual(fills["n2_held_note"], "No scored day is held out.")
+
+    def test_the_upper_thresholds_are_listed_day_by_day_without_a_rate(self):
+        """#141 §4 N2: +20 and +50 bp days are drawn and listed, with no rate and no pooled statement."""
+        taus = [int(t) for t in self.thresholds["taus_bp"]]
+        data, fills = self.run_n2(self.rows)
+        expected = [r["date"] for r in self.rows
+                    if data["scored"]["first"] <= r["date"] and not self.is_locked(r["date"])
+                    and self.spread(r) > taus[2]]
+        self.assertTrue(expected)
+        self.assertEqual([e["date"] for e in data["tail"]], expected)
+        self.assertNotIn("%", fills["n2_tail_list"])
+        for key in ("n2_lede", "n2_runs"):
+            self.assertNotRegex(fills[key], rf"\+{taus[2]}\b|\+{taus[3]}\b")
+        for e in data["tail"]:
+            self.assertIn(emit_visual.short_day(e["date"]), fills["n2_tail_list"])
+
+    def test_the_chart_label_counts_only_the_headline_thresholds(self):
+        """#141 §4 N2: the chart's aria-label carries no pooled count above +20 or +50 bp."""
+        template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+        body = template[template.index("function renderN2()"):]
+        body = body[:body.index("\n}\n")]
+        labels = [line for line in body.splitlines() if '"aria-label"' in line]
+        self.assertEqual(len(labels), 1)
+        label = labels[0]
+        self.assertNotIn("counted.above.map", label)
+        self.assertNotRegex(label, r"counted\.above\[[23]\]")
+        self.assertIn("N2.counted.above[0]", label)
+        self.assertIn("N2.counted.above[1]", label)
+        self.assertIn("listed one by one", label)
+
+    def test_cluster_years_are_read_from_the_counts(self):
+        data, fills = self.run_n2(self.rows)
+        by_year = {int(y): k for y, k in data["counted"]["by_year"].items()}
+        self.assertEqual(data["counted"]["cluster_years"], emit_visual.cluster_years(by_year))
+        for year in data["counted"]["cluster_years"]:
+            self.assertIn(str(year), fills["n2_lede"])
+
+    def test_the_page_carries_n2_after_n1(self):
+        block = newcomer_block(self.page)
+        self.assertIn('<section id="n2"', block)
+        self.assertLess(block.index('<section id="n1"'), block.index('<section id="n2"'))
+        self.assertIn('href="#n2"', block)
+        self.assertIn("held out", block[block.index('<section id="n2"'):])
+
+
+#: Mark colours: graphical objects, WCAG 2.1 non-text contrast (3:1) against the page.
+MARKS_ON = {"th1": ("paper",), "th2": ("paper",), "th3": ("paper",), "th4": ("paper",)}
+
+
+class MarkContrastTests(unittest.TestCase):
+    template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+
+    def test_threshold_marks_meet_non_text_contrast_in_both_themes(self):
+        for theme in ("light", "dark"):
+            tokens = theme_tokens(self.template)[theme]
+            for fg, surfaces in MARKS_ON.items():
+                for bg in surfaces:
+                    with self.subTest(theme=theme, fg=fg, bg=bg):
+                        self.assertGreaterEqual(contrast(tokens[fg], tokens[bg]), 3.0)
+
+
+# ---------------------------------------------------------------- N4's tag-status engine (#141 §3, #144)
+
+
+def synthetic(fields=("X",), expect=None, issues=(1,)):
+    """A one-tag map, a registry, no published use and a closed directive: the base the tests vary."""
+    pairs = [dict({"source": "src_a", "field": f}, **({"expect": expect} if expect else {})) for f in fields]
+    tag_map = {"flows": {"f": {"from": "money_funds", "to": "dealers", "kind": "repo", "claim": "triparty_actors"}},
+               "tags": [{"key": "t", "label": "Tag", "flow": "f", "fields": pairs, "issues": list(issues),
+                         "fixtures": None}]}
+    registry = {"src_a": {"fields": ["X", "Y"]}}
+    records = {"docs/runs/base.json": {"declaration": {"model": "m", "features": []},
+                                       "derived": {"fields": []}}}
+    snapshot = {"retrieved_at": "2026-10-02T00:00:00Z",
+                "issues": [{"number": n, "title": f"Directive {n}", "state": "closed", "labels": ["directive"],
+                            "open_prs": []} for n in issues]}
+    return tag_map, registry, records, snapshot
+
+
+def comparison(extra_b, lower, upper, model_b="m"):
+    """A published comparison record: model_b is model_a plus `extra_b` registry fields."""
+    return {"comparison": {"loss": "crps_bps", "mean_difference_interval": {"lower": lower, "upper": upper,
+                                                                              "level": 0.9}},
+            "declaration": {"model_a": {"model": "m", "features": []},
+                            "model_b": {"model": model_b, "features": []}},
+            "derived": {"model_a": {"fields": []}, "model_b": {"fields": [f"src_a.{f}" for f in extra_b]}}}
+
+
+class TagStatusTests(unittest.TestCase):
+    """The status engine on a synthetic registry: every status, a flip, and "unregistered stays unregistered".
+
+    No status is typed anywhere: each comes from the registry, the published
+    declarations, the published comparison records and the issue snapshot.
+    """
+
+    def status(self, tag_map, registry, records, snapshot):
+        notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+        emit_visual.check_map(tag_map, registry, notes)
+        manifest = {"built_columns": [], "refused_columns": {}}
+        return emit_visual.tag_statuses(tag_map, registry, manifest, records, snapshot, tracked=())[0]
+
+    def test_registered_but_unused(self):
+        row = self.status(*synthetic())
+        self.assertEqual(row["status"], "registered_unused")
+        self.assertIsNone(row["sub"])
+
+    def test_used_when_a_published_declaration_carries_the_field(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.X"]
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "used")
+        self.assertIn("docs/runs/base.json", row["reason"])
+
+    def test_used_needs_every_field_in_one_record(self):
+        tag_map, registry, records, snapshot = synthetic(fields=("X", "Y"))
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.X"]
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_an_archived_record_does_not_make_a_tag_used(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/archive/old.json"] = {"declaration": {"features": []}, "derived": {"fields": ["src_a.X"]}}
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_tried_and_hurt_from_a_published_comparison(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/compare.json"] = comparison(["X"], -0.3, -0.1)
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "tried_and_hurt")
+        self.assertIn("docs/runs/compare.json", row["reason"])
+
+    def test_no_verdict_when_the_interval_spans_zero_or_the_field_helped(self):
+        for lower, upper in ((-0.3, 0.1), (0.1, 0.3)):
+            with self.subTest(interval=(lower, upper)):
+                tag_map, registry, records, snapshot = synthetic()
+                records["docs/runs/compare.json"] = comparison(["X"], lower, upper)
+                self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_no_verdict_when_the_models_differ_by_more_than_the_field(self):
+        tag_map, registry, records, snapshot = synthetic()
+        records["docs/runs/compare.json"] = comparison(["X"], -0.3, -0.1, model_b="other")
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+
+    def test_in_progress_from_the_label_or_an_open_pr(self):
+        for labels, prs in ((["directive", "in-progress"], []), (["directive"], [7])):
+            with self.subTest(labels=labels, prs=prs):
+                tag_map, registry, records, snapshot = synthetic()
+                snapshot["issues"][0].update(state="open", labels=labels, open_prs=prs)
+                row = self.status(tag_map, registry, records, snapshot)
+                self.assertEqual(row["status"], "in_progress")
+                self.assertIn("#1", row["reason"])
+
+    def test_in_progress_while_its_publish_question_is_open(self):
+        tag_map, registry, records, snapshot = synthetic()
+        snapshot["issues"].append({"number": 9, "title": "Publish? Directive 1 (#1)", "state": "open",
+                                   "labels": ["needs-eleonora"], "open_prs": []})
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "in_progress")
+        self.assertIn("#9", row["reason"])
+
+    def test_queued_directive_keeps_registered_but_unused_with_a_sub_line(self):
+        tag_map, registry, records, snapshot = synthetic()
+        snapshot["issues"][0].update(state="open")
+        row = self.status(tag_map, registry, records, snapshot)
+        self.assertEqual(row["status"], "registered_unused")
+        self.assertEqual(row["sub"], "queued: #1")
+
+    def test_not_registered(self):
+        row = self.status(*synthetic(fields=("Z",), expect="unregistered"))
+        self.assertEqual(row["status"], "not_registered")
+
+    def test_registering_the_field_flips_the_status(self):
+        tag_map, registry, records, snapshot = synthetic(fields=("Z",))
+        registry["src_a"]["fields"].append("Z")
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "registered_unused")
+        records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.Z"]
+        self.assertEqual(self.status(tag_map, registry, records, snapshot)["status"], "used")
+
+    def test_a_pair_the_registry_lacks_is_refused_unless_marked_unregistered(self):
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(*synthetic(fields=("Z",)))
+        with self.assertRaises(emit_visual.VisualError):
+            tag_map, registry, records, snapshot = synthetic()
+            tag_map["tags"][0]["fields"][0]["source"] = "no_such_source"
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_unregistered_stays_unregistered(self):
+        """A pair marked `expect: "unregistered"` that the registry now carries is refused.
+
+        A directive that registers the field forces the map to be revisited.
+
+        Recorded mutation: in `check_map`, `if pair.get("expect") == "unregistered" and registered:`
+        -> `if False:`. This test then failed with AssertionError (VisualError not raised).
+        """
+        tag_map, registry, records, snapshot = synthetic(fields=("Z",), expect="unregistered")
+        self.status(tag_map, registry, records, snapshot)
+        registry["src_a"]["fields"].append("Z")
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_an_issue_missing_from_the_snapshot_is_refused(self):
+        tag_map, registry, records, snapshot = synthetic(issues=(1, 2))
+        snapshot["issues"] = snapshot["issues"][:1]
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_a_flow_without_a_sourced_claim_is_refused(self):
+        tag_map, registry, records, snapshot = synthetic()
+        tag_map["flows"]["f"]["claim"] = "no_such_claim"
+        with self.assertRaises(emit_visual.VisualError):
+            self.status(tag_map, registry, records, snapshot)
+
+    def test_tracked_data_needs_a_snapshot_manifest(self):
+        tag_map, registry, records, snapshot = synthetic()
+        tag_map["tags"][0]["fixtures"] = "tests/fixtures/snapshots/a"
+        manifest = {"built_columns": [], "refused_columns": {}}
+        for tracked, expected in ((("tests/fixtures/snapshots/a/x.json.manifest.json",), True),
+                                  (("tests/fixtures/snapshots/a/x.json",), False),
+                                  (("tests/fixtures/snapshots/ab/x.json.manifest.json",), False)):
+            with self.subTest(tracked=tracked):
+                row = emit_visual.tag_statuses(tag_map, registry, manifest, records, snapshot, tracked)[0]
+                self.assertIs(row["data_in_repo"], expected)
+
+
+class PublishedMapTests(unittest.TestCase):
+    """The committed map and issue snapshot, read the way the page reads them."""
+
+    tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def test_no_status_is_written_in_the_map(self):
+        self.assertNotRegex(json.dumps(self.tag_map), r'"status"')
+        for tag in self.tag_map["tags"]:
+            self.assertNotIn("status", tag)
+
+    def test_every_tag_is_in_the_generated_table_with_a_derived_status(self):
+        data = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n4.json").read_text(encoding="utf-8"))["data"]
+        self.assertEqual([t["key"] for t in data["tags"]], [t["key"] for t in self.tag_map["tags"]])
+        names = {key for key, _, _ in emit_visual.STATUSES}
+        block = newcomer_block(self.page)
+        for row in data["tags"]:
+            with self.subTest(tag=row["key"]):
+                self.assertIn(row["status"], names)
+                self.assertIn(f'id="tag-{row["key"]}"', block)
+
+    def test_status_is_shown_by_more_than_colour(self):
+        block = newcomer_block(self.page)
+        for key, icon, word_ in emit_visual.STATUSES:
+            for mark, text in re.findall(rf'<span class="status s-{key}"><span aria-hidden="true">(.*?)</span>'
+                                         rf'(.*?)</span>', block):
+                with self.subTest(status=key):
+                    self.assertEqual(mark, icon)
+                    self.assertEqual(text.strip(), word_)
+
+    def test_changing_the_snapshot_changes_the_status(self):
+        registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        snapshot = json.loads((ROOT / emit_visual.ISSUES).read_text(encoding="utf-8"))
+        records = emit_visual.run_record_declarations(ROOT)
+        tag = next(t for t in self.tag_map["tags"] if t["issues"])
+        base = emit_visual.tag_statuses({**self.tag_map, "tags": [tag]}, registry, manifest, records, snapshot, ())[0]
+        moved = copy.deepcopy(snapshot)
+        for entry in moved["issues"]:
+            if entry["number"] == tag["issues"][0]:
+                entry.update(state="open", labels=["directive", "in-progress"])
+        row = emit_visual.tag_statuses({**self.tag_map, "tags": [tag]}, registry, manifest, records, moved, ())[0]
+        if base["status"] in ("used", "tried_and_hurt"):
+            self.assertEqual(row["status"], base["status"])
+        else:
+            self.assertEqual(row["status"], "in_progress")
+
+    def test_generation_reads_the_snapshot_and_never_fetches(self):
+        def refuse(*args, **kwargs):
+            raise AssertionError("generation fetched")
+
+        original = emit_visual.gh_fetch
+        emit_visual.gh_fetch = refuse
+        try:
+            emit_visual.generate(ROOT, committed_commit())
+        finally:
+            emit_visual.gh_fetch = original
+
+
+class RefreshIssuesTests(unittest.TestCase):
+    """`--refresh-issues` writes the snapshot the page reads; regeneration stays byte-reproducible."""
+
+    PAGES = [
+        [{"number": 1, "title": "Directive 1", "state": "open", "labels": [{"name": "in-progress"},
+                                                                          {"name": "directive"}], "body": "x"},
+         {"number": 2, "title": "Not on the map", "state": "open", "labels": [], "body": ""},
+         {"number": 3, "title": "Publish? Directive 1 (#1)", "state": "open", "labels": [{"name": "needs-eleonora"}],
+          "body": ""},
+         {"number": 4, "title": "A pull request", "state": "open", "labels": [], "pull_request": {},
+          "body": "Some text.\n\nCloses #1"},
+         {"number": 5, "title": "A closed pull request", "state": "closed", "labels": [], "pull_request": {},
+          "body": "Closes #1"}],
+        [],
+    ]
+
+    def fetch(self, path):
+        page = int(re.search(r"[?&]page=(\d+)", path).group(1))
+        self.calls.append(path)
+        return self.PAGES[page - 1] if page <= len(self.PAGES) else []
+
+    def test_snapshot_keeps_the_map_issues_their_publish_questions_and_open_prs(self):
+        self.calls = []
+        tag_map = synthetic()[0]
+        out = emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z")
+        doc = json.loads(out)
+        self.assertEqual(doc["retrieved_at"], "2026-10-02T12:00:00Z")
+        self.assertEqual([e["number"] for e in doc["issues"]], [1, 3])
+        self.assertEqual(doc["issues"][0], {"number": 1, "title": "Directive 1", "state": "open",
+                                            "labels": ["directive", "in-progress"], "open_prs": [4]})
+        self.assertTrue(all(c.startswith(f"repos/{emit_visual.REPOSITORY}/issues?") for c in self.calls))
+
+    def test_the_same_answers_give_the_same_bytes(self):
+        self.calls = []
+        tag_map = synthetic()[0]
+        self.assertEqual(emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z"),
+                         emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z"))
+
+    def test_a_map_issue_the_repository_does_not_have_is_refused(self):
+        self.calls = []
+        tag_map = synthetic(issues=(1, 99))[0]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.refresh_issues(tag_map, self.fetch, "2026-10-02T12:00:00Z")
+
+    def test_the_committed_snapshot_covers_every_map_issue(self):
+        tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
+        snapshot = json.loads((ROOT / emit_visual.ISSUES).read_text(encoding="utf-8"))
+        have = {e["number"] for e in snapshot["issues"]}
+        for tag in tag_map["tags"]:
+            for n in tag["issues"]:
+                self.assertIn(n, have)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,96 @@
+{
+  "repository": "eleonorabjornberg/repo-market-model",
+  "retrieved_at": "2026-10-02T20:56:58Z",
+  "issues": [
+    {
+      "number": 38,
+      "title": "Announced-but-not-yet-effective IORB as a feature (after directive 03)",
+      "state": "closed",
+      "labels": [
+        "directive"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 88,
+      "title": "Conditional scarcity input: reserves once the ON RRP buffer is below $100bn (after #45)",
+      "state": "closed",
+      "labels": [
+        "directive"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 98,
+      "title": "EFFR − IORB as a reserve-scarcity input, from the New York Fed's EFFR",
+      "state": "closed",
+      "labels": [
+        "directive"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 115,
+      "title": "Reserve-scarcity indicator: a declared regime state, validated on pressure-day frequency",
+      "state": "closed",
+      "labels": [
+        "directive"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 127,
+      "title": "Early-warning inputs from registered but unused sources, plus Standing Repo Facility take-up",
+      "state": "closed",
+      "labels": [
+        "directive"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 132,
+      "title": "Publish? Conditional scarcity input: reserves once the ON RRP buffer is below $100bn (#88)",
+      "state": "open",
+      "labels": [
+        "needs-eleonora"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 157,
+      "title": "Publish? Reserve-scarcity indicator: a declared regime state, validated on pressure-day frequency (#115)",
+      "state": "closed",
+      "labels": [
+        "needs-eleonora"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 166,
+      "title": "Publish? EFFR − IORB as a reserve-scarcity input, from the New York Fed's EFFR (#98)",
+      "state": "open",
+      "labels": [
+        "needs-eleonora"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 172,
+      "title": "Publish? Early-warning inputs from registered but unused sources, plus Standing Repo Facility take-up (#127)",
+      "state": "open",
+      "labels": [
+        "needs-eleonora"
+      ],
+      "open_prs": []
+    },
+    {
+      "number": 177,
+      "title": "Publish? Announced-but-not-yet-effective IORB as a feature (after directive 03) (#38)",
+      "state": "open",
+      "labels": [
+        "needs-eleonora"
+      ],
+      "open_prs": []
+    }
+  ]
+}

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import MappingProxyType
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from repo_model.contract import (
     resolve_identity_tolerance,
@@ -2342,8 +2342,9 @@ PANEL_COLUMNS = tuple(
 #: declaration reads it; until then it stays here, because the published
 #: panel's documented build names no columns and a new default column would be
 #: new bytes under its digest (REPRODUCIBILITY.md). `effr` is directive #98's
-#: candidate input, read by no published declaration.
-OPT_IN_COLUMNS = ("effr",)
+#: candidate input, read by no published declaration. `quarter_end_window` is
+#: #140's calendar column, decided by Eleonora on 2 October 2026.
+OPT_IN_COLUMNS = ("effr", "quarter_end_window")
 
 # A business day with no Treasury settlement reads 0.0 (human decision, 11 Sep
 # 2026; docs/DATA_QUALITY_DECISIONS.md, "Panel columns"). See
@@ -2555,18 +2556,105 @@ def quarter_end(day: date) -> float:
     a quarter that ended on a weekend.
     """
 
+    return float(day == last_business_day_of_quarter(day.year, (day.month - 1) // 3 + 1))
+
+
+def last_business_day_of_quarter(year: int, quarter: int) -> date:
+    """The last weekday of the quarter not in the market holiday table: `quarter_end`'s day.
+
+    Raises:
+        ValueError: if the table does not wholly cover the quarter.
+    """
+
     holidays = market_holidays()
-    month = 3 * ((day.month - 1) // 3) + 3
-    end = date(day.year, month, _last_day_of_month(date(day.year, month, 1)))
-    start = date(day.year, month - 2, 1)
+    month = 3 * quarter
+    end = date(year, month, _last_day_of_month(date(year, month, 1)))
+    start = date(year, month - 2, 1)
     if start < holidays.first or end > holidays.last:
         raise ValueError(
             f"the market holiday table covers {holidays.first.isoformat()} to "
-            f"{holidays.last.isoformat()}, not the quarter of {day.isoformat()}"
+            f"{holidays.last.isoformat()}, not {year} Q{quarter}"
         )
     while end.weekday() >= 5 or end in holidays.closed:
         end -= timedelta(days=1)
-    return float(day == end)
+    return end
+
+
+#: The quarter-end window: the quarter's last business day and this many
+#: business days either side (#140, decided in
+#: `docs/decisions/quarter-end-window.md`).
+QUARTER_END_WINDOW_BUSINESS_DAYS = 2
+
+
+def quarter_end_window_days(year: int, quarter: int) -> Tuple[date, ...]:
+    """The quarter-end window of `year` Q`quarter`, earliest first.
+
+    The last business day of the quarter (`last_business_day_of_quarter`) and
+    `QUARTER_END_WINDOW_BUSINESS_DAYS` business days before and after it, a
+    business day being a weekday not in the market holiday table, as for
+    `quarter_end`. The days after it fall in the next quarter.
+
+    Raises:
+        ValueError: if the table does not cover every day the window steps
+            through.
+    """
+
+    holidays = market_holidays()
+    centre = last_business_day_of_quarter(year, quarter)
+
+    def step(day: date, direction: int) -> date:
+        day += timedelta(days=direction)
+        while day.weekday() >= 5 or day in holidays.closed:
+            day += timedelta(days=direction)
+        if not holidays.first <= day <= holidays.last:
+            raise ValueError(
+                f"the market holiday table covers {holidays.first.isoformat()} to "
+                f"{holidays.last.isoformat()}, not the whole window of {year} Q{quarter}"
+            )
+        return day
+
+    before, after = [], []
+    day = centre
+    for _ in range(QUARTER_END_WINDOW_BUSINESS_DAYS):
+        day = step(day, -1)
+        before.append(day)
+    day = centre
+    for _ in range(QUARTER_END_WINDOW_BUSINESS_DAYS):
+        day = step(day, 1)
+        after.append(day)
+    return tuple(reversed(before)) + (centre,) + tuple(after)
+
+
+def quarter_end_window_quarter(day: date) -> Optional[Tuple[int, int]]:
+    """The quarter whose quarter-end window holds `day`, or None.
+
+    A window reaches into the next quarter, so a day is checked against its own
+    quarter's window and the previous quarter's.
+
+    Raises:
+        ValueError: if either window is not covered by the market holiday table.
+    """
+
+    quarter = (day.month - 1) // 3 + 1
+    previous = (day.year, quarter - 1) if quarter > 1 else (day.year - 1, 4)
+    for year, number in (previous, (day.year, quarter)):
+        if day in quarter_end_window_days(year, number):
+            return (year, number)
+    return None
+
+
+def quarter_end_window(day: date) -> float:
+    """1.0 on a day of a quarter-end window (`quarter_end_window_days`); 0.0 otherwise.
+
+    Decided by Eleonora (#140): the New York Fed reads month-end
+    pressure as the maximum spread over the 5 business days centred on the
+    month's last business day, and this column marks that window at quarter
+    ends. Like `quarter_end` it is computed from the date and the market
+    holiday table alone, never from the panel's grid or any observation.
+    `quarter_end` is unchanged: it still marks the centre day only.
+    """
+
+    return float(quarter_end_window_quarter(day) is not None)
 
 
 #: The months holding a corporate estimated-tax deadline for a calendar-year
@@ -2671,6 +2759,7 @@ CALENDAR_COLUMN_RULES = MappingProxyType(
     {
         "days_to_month_end": days_to_month_end,
         "quarter_end": quarter_end,
+        "quarter_end_window": quarter_end_window,
         "tax_date": tax_date,
     }
 )
