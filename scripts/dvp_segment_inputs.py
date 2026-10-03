@@ -11,8 +11,9 @@ any scoring.
     PYTHONPATH=src python3 scripts/dvp_segment_inputs.py check --panel AUG.csv --output OUT/check.json
     PYTHONPATH=src python3 scripts/dvp_segment_inputs.py run --panel AUG.csv --run NAME --horizon H --output OUT/NAME_hH.pickle
     PYTHONPATH=src python3 scripts/dvp_segment_inputs.py crps --panel AUG.csv --run NAME --output OUT/crps_NAME.json
+    PYTHONPATH=src python3 scripts/dvp_segment_inputs.py pair --panel AUG.csv --runs OUT --run NAME --horizon H
     PYTHONPATH=src python3 scripts/dvp_segment_inputs.py assemble --panel AUG.csv --runs OUT --output OUT/dvp.json \\
-        --markdown OUT/dvp.md
+        --markdown OUT/dvp.md [--splits-markdown OUT/splits.md]
 
 * `panel` adds to the published panel BGCR's volume (tracked `funding_inputs/`
   snapshot) and the OFR's preliminary DVP rate (`ofr_inputs/`), then #127's
@@ -29,7 +30,10 @@ any scoring.
 * `crps` is the distribution side at horizon 1: `compare --loss crps`, the
   published funding declaration against it plus the run's columns, both
   calibrated by `conformal_pid_nested`, on one fold grid.
-* `assemble` pairs every run with its benchmarks, computes the p-values, runs
+* `pair` pairs one run at one horizon with its two benchmarks (the slow
+  part: each comparison document bootstraps every split), so the pairs can
+  run in parallel.
+* `assemble` reads every pair, computes the p-values, runs
   the Holm correction over the family, classifies each group by the win rule,
   and writes the tables, lead time and the October 2025 onset.
 
@@ -468,12 +472,80 @@ def _interval(values, block, seed):
             "replications": INTERVAL_REPLICATIONS, "level": INTERVAL_LEVEL}
 
 
+def pair_entries(runs, name, h, rows, splits, digest):
+    """Every comparison of run `name` at horizon `h`: pooled and onset Brier, paired with both benchmarks.
+
+    Returns `(entries, grid_members, per_h)`; `grid_members` carries each
+    comparison's daily differences with its grid, for the p-values.
+    """
+
+    previous = {rows[i].date: rows[i - 1] for i in range(1, len(rows))}
+    _columns, window, _lag = spec(name)
+    entries, members, per_h = {}, [], {}
+    candidate = _load(runs, name, h)["report"]
+    onset = [
+        i for i, when in enumerate(candidate.scored_dates)
+        if when in previous and not exceeds_bp(previous[when].spread_bps, ONSET_BP)
+    ]
+    for bench_name, run in _benches(window).items():
+        bench = _load(runs, run, h)["report"]
+        document = benchmark_comparison_document(
+            candidate, bench, panel_sha256=digest, rows=rows, declaration=splits
+        )
+        per_h[bench_name] = {}
+        for tau in THRESHOLDS:
+            paired = document["by_tau"][f"{tau:g}"]["paired_brier_difference"]
+            differences = [b - c for b, c in zip(_brier(bench, tau), _brier(candidate, tau))]
+            if abs(sum(differences) / len(differences) - paired["mean"]) > 1e-12:
+                raise SystemExit(f"{name} h{h} {bench_name} {tau}: daily differences disagree")
+            block = paired["interval"]["block_length"]
+            pooled_key = comparison_key(name, "brier", POOLED, tau, h, bench_name)
+            entries[pooled_key] = {
+                "mean": paired["mean"],
+                "interval": paired["interval"],
+                "days": len(differences),
+                "regimes": {
+                    label: paired["splits"]["by_regime"].get(label, {}).get("mean")
+                    for label in STRESS_REGIMES
+                },
+                "splits": paired["splits"],
+            }
+            members.append([window, h, POOLED, block, pooled_key, differences])
+            onset_differences = [differences[i] for i in onset]
+            onset_key = comparison_key(name, "brier", ONSET, tau, h, bench_name)
+            entries[onset_key] = {
+                "mean": sum(onset_differences) / len(onset_differences),
+                "interval": _interval(
+                    onset_differences, block, dvp_segment.p_value_seed(window, h, ONSET, "interval")
+                ),
+                "days": len(onset_differences),
+                "events": sum(1 for i in onset if exceeds_bp(candidate.realized_bps[i], tau)),
+            }
+            members.append([window, h, ONSET, block, onset_key, onset_differences])
+            per_h[bench_name][f"{tau:g}"] = {
+                "candidate_brier": sum(_brier(candidate, tau)) / len(differences),
+                "benchmark_brier": sum(_brier(bench, tau)) / len(differences),
+                "first": candidate.scored_dates[0].isoformat(),
+                "last": candidate.scored_dates[-1].isoformat(),
+            }
+    return entries, members, per_h
+
+
+def pair_command(args) -> int:
+    rows = load_daily_panel(args.panel)
+    entries, members, per_h = pair_entries(
+        args.runs, args.run, args.horizon, rows, load_split_declaration(SPLITS), panel_sha256(args.panel)
+    )
+    path = args.runs / f"pair_{args.run}_h{args.horizon}.json"
+    path.write_text(json.dumps({"entries": entries, "grid_members": members, "per_h": per_h}), encoding="utf-8")
+    print(json.dumps({"pair": str(path)}))
+    return 0
+
+
 def assemble_command(args) -> int:
     from repo_model import ml
 
     rows = load_daily_panel(args.panel)
-    previous = {rows[i].date: rows[i - 1] for i in range(1, len(rows))}
-    splits = load_split_declaration(SPLITS)
     digest = panel_sha256(args.panel)
     names = [group.name for group in GROUPS] + [s.name for s in SENSITIVITIES]
 
@@ -484,57 +556,14 @@ def assemble_command(args) -> int:
         _columns, window, _lag = spec(name)
         detail[name] = {"window": window, "by_horizon": {}}
         for h in HORIZONS:
-            candidate = _load(args.runs, name, h)["report"]
-            onset = [
-                i for i, when in enumerate(candidate.scored_dates)
-                if when in previous and not exceeds_bp(previous[when].spread_bps, ONSET_BP)
-            ]
-            per_h = detail[name]["by_horizon"][str(h)] = {}
-            for bench_name, run in _benches(window).items():
-                bench = _load(args.runs, run, h)["report"]
-                document = benchmark_comparison_document(
-                    candidate, bench, panel_sha256=digest, rows=rows, declaration=splits
-                )
-                per_h[bench_name] = {}
-                for tau in THRESHOLDS:
-                    paired = document["by_tau"][f"{tau:g}"]["paired_brier_difference"]
-                    differences = [
-                        b - c for b, c in zip(_brier(bench, tau), _brier(candidate, tau))
-                    ]
-                    if abs(sum(differences) / len(differences) - paired["mean"]) > 1e-12:
-                        raise SystemExit(f"{name} h{h} {bench_name} {tau}: daily differences disagree")
-                    block = paired["interval"]["block_length"]
-                    pooled_key = comparison_key(name, "brier", POOLED, tau, h, bench_name)
-                    entries[pooled_key] = {
-                        "mean": paired["mean"],
-                        "interval": paired["interval"],
-                        "days": len(differences),
-                        "regimes": {
-                            label: paired["splits"]["by_regime"].get(label, {}).get("mean")
-                            for label in STRESS_REGIMES
-                        },
-                        "splits": paired["splits"],
-                    }
-                    grids.setdefault((window, h, POOLED, block), []).append((pooled_key, differences))
-                    onset_differences = [differences[i] for i in onset]
-                    onset_key = comparison_key(name, "brier", ONSET, tau, h, bench_name)
-                    entries[onset_key] = {
-                        "mean": sum(onset_differences) / len(onset_differences),
-                        "interval": _interval(
-                            onset_differences, block, dvp_segment.p_value_seed(window, h, ONSET, "interval")
-                        ),
-                        "days": len(onset_differences),
-                        "events": sum(
-                            1 for i in onset if exceeds_bp(candidate.realized_bps[i], tau)
-                        ),
-                    }
-                    grids.setdefault((window, h, ONSET, block), []).append((onset_key, onset_differences))
-                    per_h[bench_name][f"{tau:g}"] = {
-                        "candidate_brier": sum(_brier(candidate, tau)) / len(differences),
-                        "benchmark_brier": sum(_brier(bench, tau)) / len(differences),
-                        "first": candidate.scored_dates[0].isoformat(),
-                        "last": candidate.scored_dates[-1].isoformat(),
-                    }
+            path = args.runs / f"pair_{name}_h{h}.json"
+            if not path.exists():
+                raise SystemExit(f"{path} is missing: run `pair --run {name} --horizon {h}` first")
+            paired = json.loads(path.read_text())
+            entries.update(paired["entries"])
+            for window_, h_, day_set, block, key, differences in paired["grid_members"]:
+                grids.setdefault((window_, h_, day_set, block), []).append((key, differences))
+            detail[name]["by_horizon"][str(h)] = paired["per_h"]
         crps = json.loads((args.runs / f"crps_{name}.json").read_text())["comparison"]
         crps_key = comparison_key(name, "crps")
         per_origin = [origin["difference_bps"] for origin in crps["per_origin"]]
@@ -775,6 +804,12 @@ def main(argv=None) -> int:
     four.add_argument("--run", choices=[n for n in run_names() if "@" not in n or n.split("@")[1] in ("lag1", "backfill")], required=True)
     four.add_argument("--output", type=Path, required=True)
     four.set_defaults(handler=crps_command)
+    pair = sub.add_parser("pair", help="one run's paired comparisons at one horizon, into RUNS")
+    pair.add_argument("--panel", type=Path, required=True)
+    pair.add_argument("--runs", type=Path, required=True)
+    pair.add_argument("--run", choices=[g.name for g in GROUPS] + [s.name for s in SENSITIVITIES], required=True)
+    pair.add_argument("--horizon", type=int, choices=HORIZONS, required=True)
+    pair.set_defaults(handler=pair_command)
     five = sub.add_parser("assemble")
     five.add_argument("--panel", type=Path, required=True)
     five.add_argument("--runs", type=Path, required=True)
