@@ -2012,6 +2012,20 @@ class NewcomerN5ClockTests(NewcomerN5Base):
                     self.assertLess(known, 1, "a value after the quarter-end cannot be public the day before it")
                     self.assertTrue(all(not d["held"] for d in q["days"] if d["offset"] <= known))
 
+    def test_a_snapshot_clock_honours_the_declared_business_day(self):
+        """A snapshot read is public no earlier than its registry declaration on the panel's dates (#200 review).
+
+        The NY Fed snapshots declare one business day, as the panel's SOFR does,
+        so on 31 December 2025 every one of them is public on the same panel day
+        as SOFR, never on the 1 January holiday.
+        """
+        data, _ = self.base
+        gap = re.compile(r"(\d+) calendar days? (?:later|before)|the same day")
+        sofr = gap.search(data["series"]["spread"]["clock"]["scarce"]).group(0)
+        for key in ("on_rrp", "sofr_p99", "effr", "srf"):
+            with self.subTest(series=key):
+                self.assertEqual(gap.search(data["series"][key]["clock"]["scarce"]).group(0), sofr)
+
     def test_a_weekly_release_is_older_than_the_window(self):
         """FR 2004 positions are public six business days later, so none in the window was public yet."""
         data, _ = self.base

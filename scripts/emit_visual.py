@@ -2155,11 +2155,12 @@ def newcomer_n2(rows, registry, decision, locked, thresholds):
 
 
 def n5_snapshots(repo):
-    """N5's snapshot series: `({key: {"source", "by_ref": {ref_date: (available_at, value)}}}, {path: sha256})`."""
+    """N5's snapshot series: `({key: {"source", "field", "by_ref": {ref_date: (available_at, value)}}}, {path: sha256})`."""
     out, digests = {}, {}
     for key, (root, source, series_id) in N5_SNAPSHOTS.items():
         results, snaps = snapshot_series(repo, root, series_id)
-        out[key] = {"source": source, "by_ref": {ref: (at, value) for ref, at, value in results}}
+        out[key] = {"source": source, "field": series_id,
+                    "by_ref": {ref: (at, value) for ref, at, value in results}}
         digests.update(snaps)
     return out, digests
 
@@ -2231,12 +2232,21 @@ def n5_read(read, row, snaps):
 
 
 def n5_available(read, rows, position, registry, snaps, zone):
-    """When a read's value for `rows[position]` became public, as New York wall time (naive), or `None`."""
+    """When a read's value for `rows[position]` became public, as New York wall time (naive), or `None`.
+
+    A snapshot read is public no earlier than its source's registry declaration
+    counted on the panel's dates: the adapter's `available_at` counts weekdays
+    and does not know market holidays (#201).
+    """
     kind, key = read
-    if kind == "snapshot":
-        entry = snaps[key]["by_ref"].get(date.fromisoformat(rows[position]["date"]))
-        return None if entry is None else entry[0].astimezone(zone).replace(tzinfo=None)
     dates = [date.fromisoformat(r["date"]) for r in rows]
+    if kind == "snapshot":
+        entry = snaps[key]["by_ref"].get(dates[position])
+        if entry is None:
+            return None
+        adapter = entry[0].astimezone(zone).replace(tzinfo=None)
+        declared = declared_availability(registry, snaps[key]["source"], snaps[key]["field"], dates, position)
+        return adapter if declared is None else max(adapter, declared)
     ats = [declared_availability(registry, source, field, dates, position) for source, field in FEATURE_FIELDS[key]]
     ats = [at for at in ats if at is not None]
     return max(ats) if ats else None
