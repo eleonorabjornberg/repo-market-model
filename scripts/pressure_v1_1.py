@@ -655,7 +655,7 @@ def _markdown(document) -> str:
                 out.append(f"| {name} | {h} | " + " | ".join(cells) + " |")
         out.append("")
     out.append("### Exploratory: Brier, CORP decomposition and average precision, recalibrated forecasts\n")
-    out.append("| Run | h | τ | Brier | MCB | DSC | UNC | AP | events/days |")
+    out.append("| Run | h | τ | Brier | reliability (MCB) | resolution (DSC) | uncertainty | AP | events/days |")
     out.append("|---|---|---|---|---|---|---|---|---|")
     rows_ = [(n, document["benchmark_metrics"][n]) for n in ("control", "persistence_logistic")]
     rows_ += [(n, document["metrics"][n]) for n in candidates()]
@@ -665,8 +665,8 @@ def _markdown(document) -> str:
                 m = by_h[str(h)][tau]
                 d = m.get("decomposition") or {}
                 out.append(
-                    f"| {name} | {h} | +{tau} | {_fmt(m['brier'])} | {_fmt(d.get('miscalibration'))} | "
-                    f"{_fmt(d.get('discrimination'))} | {_fmt(d.get('uncertainty'))} | "
+                    f"| {name} | {h} | +{tau} | {_fmt(m['brier'])} | {_fmt(d.get('reliability'))} | "
+                    f"{_fmt(d.get('resolution'))} | {_fmt(d.get('uncertainty'))} | "
                     f"{_fmt(m.get('average_precision'), 3)} | {m['events']}/{m['days']} |"
                 )
     out.append("")
