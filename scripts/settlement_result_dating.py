@@ -3,7 +3,7 @@
 A scratch measurement, not a record: it writes pickles, JSON and a Markdown
 summary to the paths it is given, and nothing into `docs/runs/`.
 
-Two arms of the published pressure model v1 (`scripts/pressure_model_v1.py
+Arms of the published pressure model v1 (`scripts/pressure_model_v1.py
 publish`, the probability read from the published funding declaration's
 distribution, gbm calibrated by conformal PID with nested selection, then
 recalibrated out of fold), on one fold grid, scoring only days before
@@ -17,12 +17,23 @@ recalibrated out of fold), on one fold grid, scoring only days before
   (`settlement_dating.known_columns`, checked by `check_known_columns`), and
   the registry declares them public then (`result_dated_registry`). The
   feature and the indicator are both restored.
+* `feature_only` and `indicator_only`: the same columns and registry, with
+  only `treasury_settlement` restored to the features, or only the coupon
+  indicator to the scorecaster, to say which of the two moves the result.
 
 At h = 1 the two declarations are the same, so `published` alone is run there,
-for lead time. Steps, each one process:
+for lead time. ARM is `published` at h = 1..5; `result_dated`,
+`feature_only`, `indicator_only`, `calendar_climatology` and
+`persistence_logistic` at h = 2..5 (`persistence_logistic` and
+`calendar_climatology` are the benchmarks).
+
+Steps, each one process. Set `OMP_NUM_THREADS=1` when arms run side by side:
+several processes each spinning a full OpenMP team on one machine slow each
+other by orders of magnitude. With it, the published arm reproduces the
+published records' Brier scores and twCRPS at h = 1..5.
 
     PYTHONPATH=src python3 scripts/settlement_result_dating.py arm --panel PANEL --horizon H \
-        --arm published|result_dated|calendar_climatology|persistence_logistic --output OUT/ARM_hH.pickle
+        --arm ARM --output OUT/ARM_hH.pickle
     PYTHONPATH=src python3 scripts/settlement_result_dating.py compare --panel PANEL --runs OUT \
         --output OUT/settlement_result_dating.json --markdown OUT/settlement_result_dating.md
 """
@@ -61,6 +72,8 @@ SNAPSHOT = (
     / "20260914T051023Z_722359ea9bc7.json"
 )
 ARMS = ("published", "result_dated")
+#: The result-dated declaration with one of its two inputs restored.
+PARTS = ("feature_only", "indicator_only")
 BENCHMARKS = ("calendar_climatology", "persistence_logistic")
 HEADLINE = (5.0, 10.0)
 LONG = (2, 3, 4, 5)
@@ -76,20 +89,21 @@ def _inputs(panel, arm, h):
     rows = load_daily_panel(panel)
     audit_panel(rows)
     registry = json.loads(v1.REGISTRY.read_text())
-    if arm != "result_dated":
+    if arm not in ("result_dated",) + PARTS:
         return rows, registry, v1._at_horizon(v1.GBM_FEATURES, h)
     declaration = settlement_dating.load_result_dating(DECLARATION)
     results = settlement_dating.load_snapshot_results(SNAPSHOT, declaration)
     known = settlement_dating.known_columns(rows, results, h, declaration)
     settlement_dating.check_known_columns(known, results, h, declaration)
-    return known, settlement_dating.result_dated_registry(registry, declaration, h), v1.GBM_FEATURES
+    features = v1._at_horizon(v1.GBM_FEATURES, h) if arm == "indicator_only" else v1.GBM_FEATURES
+    return known, settlement_dating.result_dated_registry(registry, declaration, h), features
 
 
 def arm_command(args) -> int:
     from repo_model import ml, recalibration
 
     h, arm = args.horizon, args.arm
-    if arm == "result_dated" and h == 1:
+    if arm in ("result_dated",) + PARTS and h == 1:
         raise SystemExit("at h = 1 the result-dated declaration is the published one; run `published`")
     rows, registry, features = _inputs(args.panel, arm, h)
     splits = load_split_declaration(v1.SPLITS)
@@ -108,7 +122,7 @@ def arm_command(args) -> int:
     built = []
 
     def online(rows_, rule):
-        factory = _AllIndicators if arm == "result_dated" else recalibration.NestedFoldPid
+        factory = _AllIndicators if arm in ("result_dated", "indicator_only") else recalibration.NestedFoldPid
         built.append(factory(rows_, rule, splits=splits, refit_every=v1.REFIT_EVERY))
         return built[-1]
 
@@ -185,6 +199,7 @@ def compare_command(args) -> int:
         published = _load(args.runs, "published", h)
         dated = _load(args.runs, "result_dated", h)
         benches = {name: _load(args.runs, name, h)["report"] for name in BENCHMARKS}
+        parts = {name: _load(args.runs, name, h)["report"] for name in PARTS}
         loaded[h] = (published["report"], dated["report"])
         card = pressure.scorecard(
             {"result_dated": dated["report"]},
@@ -207,6 +222,9 @@ def compare_command(args) -> int:
             "twcrps": {"published": published["report"].twcrps, "result_dated": dated["report"].twcrps},
             "scorecard": card,
             "published_vs_benchmarks": card_published,
+            "parts_vs_published": pressure.scorecard(
+                parts, {"published": published["report"]}, rows=rows, declaration=splits, panel_sha256=digest,
+            ),
             "onset_days": {
                 f"{tau:g}": _onset_view(rows, published["report"], dated["report"], tau) for tau in HEADLINE
             },
@@ -290,6 +308,13 @@ def _markdown(doc) -> str:
                 + " |"
             )
         out.append("")
+        out.append(f"**+{key} bp, each input alone**: Brier(published) − Brier(arm)\n")
+        out.append("| Horizon | " + " | ".join(PARTS) + " |\n|---|" + "---|" * len(PARTS))
+        for h, part in doc["horizons"].items():
+            c = part["parts_vs_published"]["candidates"]
+            out.append(f"| {h} | " + " | ".join(
+                _cell(c[name]["paired"]["published"]["by_tau"][key]["paired_brier_difference"]) for name in PARTS) + " |")
+        out.append("")
         out.append(f"**+{key} bp, result-dated vs published, split by regime and pressure-day type**\n")
         first = next(iter(doc["horizons"].values()))
         s0 = first["scorecard"]["candidates"]["result_dated"]["paired"]["published"]["by_tau"][key]["paired_brier_difference"]["splits"]
@@ -335,7 +360,7 @@ def main(argv=None) -> int:
     one = sub.add_parser("arm", help="score one arm at one horizon")
     one.add_argument("--panel", type=Path, required=True)
     one.add_argument("--horizon", type=int, choices=(1,) + LONG, required=True)
-    one.add_argument("--arm", choices=ARMS + BENCHMARKS, required=True)
+    one.add_argument("--arm", choices=ARMS + PARTS + BENCHMARKS, required=True)
     one.add_argument("--output", type=Path, required=True)
     one.set_defaults(func=arm_command)
     both = sub.add_parser("compare", help="pair the arms; splits, onset days, lead time, tables")
