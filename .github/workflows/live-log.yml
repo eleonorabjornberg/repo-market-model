@@ -76,6 +76,7 @@ jobs:
           fi
           missed=$(cd pinned && PYTHONPATH=src "$PY" -B scripts/live_record.py missed --live-dir ../live-log --date "$DAY")
           echo "MISSED=$missed" >> "$GITHUB_ENV"
+          if [ "$missed" != '{"missed": []}' ]; then echo "MISSED_ANY=1" >> "$GITHUB_ENV"; fi
 
       - name: Write the day's record
         id: record
@@ -121,7 +122,7 @@ jobs:
           gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
 
       - name: Report missed days
-        if: always() && env.MISSED != '' && !contains(env.MISSED, '"missed": []')
+        if: always() && env.MISSED_ANY == '1'
         run: |
           n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
             -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
