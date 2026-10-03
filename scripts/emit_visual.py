@@ -20,7 +20,12 @@ the project was built. Nothing on the page is typed:
   through `repo_model.lockbox`; a tier marked opened is ordinary history.
 * The "Start here" block above the chapters is the newcomer layer (#141). Its
   terms come from `docs/visual/glossary.json`, each with a primary source; its
-  views N1 and N2 hold out the same locked days, through the same reader.
+  views hold out the same locked days, through the same reader.
+* View N3 reads the New York Fed's ON RRP results from the tracked snapshots in
+  `tests/fixtures/snapshots/on_rrp_inputs/` through the repository's own
+  adapter, which checks each file against its manifest's SHA-256 (#141 answer
+  6). The panel and its digest do not change; the data file lists each
+  snapshot's SHA-256.
 * The status of each tag on view N4's market map (`docs/visual/map.json`) is
   derived, never typed: from the sources registry, the panel manifest, the
   declarations of the published run records, the tracked fixtures and the
@@ -44,6 +49,7 @@ Standard library only, plus this repository's own `src/`.
     python3 scripts/emit_visual.py --refresh-issues   # rewrites docs/visual/issues.json from GitHub
 """
 import argparse
+import bisect
 import csv
 import hashlib
 import html
@@ -57,13 +63,28 @@ import tempfile
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model.asof import declared_availability, fold_grid  # noqa: E402
-from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS  # noqa: E402
+from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_DEPLETION_BREAK_BN  # noqa: E402
+from repo_model.data import QUARTER_END_WINDOW_BUSINESS_DAYS, quarter_end_window  # noqa: E402
+from repo_model.ingest import (  # noqa: E402
+    NYFED_ON_RRP_FIELD,
+    NYFED_ON_RRP_SOURCE_ID,
+    load_snapshot_manifest,
+    parse_snapshots,
+)
 from repo_model.lockbox import locked_tier, locked_tiers  # noqa: E402
+from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
+from repo_model.scarcity import (  # noqa: E402
+    BOOTSTRAP_BLOCK_LENGTH,
+    BOOTSTRAP_LEVEL,
+    BOOTSTRAP_REPLICATIONS,
+    BOOTSTRAP_SEED,
+)
 from repo_model.splits import LookAheadError  # noqa: E402
 
 FIXTURES = "tests/fixtures/snapshots/funding_inputs"
@@ -73,6 +94,8 @@ EVENTS = "metadata/events.json"
 THRESHOLDS = "metadata/stress_thresholds.json"
 SPLITS = "metadata/evaluation_splits.json"
 LOCKBOX = "metadata/lockbox.json"
+HOLIDAYS = "metadata/market_holidays.json"
+ON_RRP = "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
 ANNOTATIONS = "docs/visual/annotations.json"
 GLOSSARY = "docs/visual/glossary.json"
 MAP = "docs/visual/map.json"
@@ -98,7 +121,9 @@ INPUTS = (
     THRESHOLDS,
     SPLITS,
     LOCKBOX,
+    HOLIDAYS,
     FIXTURES,
+    ON_RRP,
     MAP,
     ISSUES,
     f":(glob){RUNS}/*.json",
@@ -1077,6 +1102,180 @@ def refresh_issues(tag_map, fetch, now):
     return (json.dumps(doc, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
+# ---------------------------------------------------------------- N3 "When does it happen?" (#147)
+
+
+def on_rrp_results(repo):
+    """The Desk's ON RRP results, from the tracked snapshots through `ingest`'s own adapter.
+
+    `parse_snapshots` refuses a file whose bytes do not match its manifest's
+    SHA-256. A day's result is the latest vintage of it. Returns
+    `([(ref_date, available_at, value in USD billions)], {snapshot path: sha256})`,
+    the results ordered by when they became public.
+    """
+    manifests = sorted((repo / ON_RRP).glob("*.json.manifest.json"))
+    if not manifests:
+        raise VisualError(f"no ON RRP snapshot under {ON_RRP}")
+    artifacts = [load_snapshot_manifest(path) for path in manifests]
+    latest = {}
+    for row in parse_snapshots(artifacts).rows:
+        if row.series_id != NYFED_ON_RRP_FIELD:
+            continue
+        if row.ref_date not in latest or row.available_at > latest[row.ref_date][0]:
+            latest[row.ref_date] = (row.available_at, row.value)
+    results = sorted(((ref, at, value) for ref, (at, value) in latest.items()), key=lambda o: (o[1], o[0]))
+    snapshots = {}
+    for path in manifests:
+        payload = path.with_name(path.name[:-len(".manifest.json")])
+        snapshots[str(payload.relative_to(repo))] = sha256(payload)
+    return results, snapshots
+
+
+def on_rrp_as_of(results, day, decision, registry):
+    """`(ref_date, value)`: the latest ON RRP result public at the decision instant of `day`.
+
+    `results` is `on_rrp_results(...)[0]`, ordered by availability. The
+    availability is the adapter's, from the registry's declaration (16:00 ET on
+    the next business day), so a 16:00 reading on `day` sees the previous
+    business day's operation. A reading older than the declaration's
+    `worst_case_calendar_days` is refused (`ValueError`), never carried.
+    """
+    lag = registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]
+    instant = datetime.combine(day, decision, ZoneInfo(lag["timezone"]))
+    times = [at for _, at, _ in results]
+    position = bisect.bisect_right(times, instant) - 1
+    if position < 0:
+        raise ValueError(f"no ON RRP result was public at {instant.isoformat()}")
+    ref, _, value = results[position]
+    limit = int(lag["worst_case_calendar_days"])
+    if (day - ref).days > limit:
+        raise ValueError(f"the ON RRP reading on {day.isoformat()} is from {ref.isoformat()}, more than "
+                         f"{limit} calendar days old; refusing rather than carrying it")
+    return ref, value
+
+
+def rate_cell(outcomes):
+    """k, n, the share, and its stationary-bootstrap interval, as `scarcity.tabulate` reports a frequency."""
+    n, k = len(outcomes), sum(outcomes)
+    if not n:
+        return {"k": 0, "rate": None, "interval": None}
+    lo, hi = stationary_bootstrap_interval(
+        lambda indices: sum(outcomes[i] for i in indices) / len(indices), n,
+        block_length=min(BOOTSTRAP_BLOCK_LENGTH, n), seed=BOOTSTRAP_SEED,
+        replications=BOOTSTRAP_REPLICATIONS, level=BOOTSTRAP_LEVEL)
+    return {"k": k, "rate": k / n, "interval": [lo, hi]}
+
+
+def pct(x):
+    """A share in percent: one decimal below 10%, so a small cell does not read as zero."""
+    return f"{100 * x:.1f}%" if 0 < x < 0.1 else f"{round(100 * x)}%"
+
+
+def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
+    """N3 "When does it happen?": the 2x2 of quarter-end against scarce or abundant cash (#147).
+
+    Each counted day falls in one cell: inside a quarter-end window or not
+    (`data.quarter_end_window`, #140), and with the ON RRP reading public at the
+    decision instant below `contract.ON_RRP_DEPLETION_BREAK_BN` (scarce) or not
+    (abundant). Each cell reports the share of its days with SOFR - IORB, on
+    whole basis points, strictly above each headline threshold: k of n, with an
+    interval. The #115 scarcity state is not read (#141 answer 8). Days in a
+    locked tier are left out of every cell, count and sentence
+    (`counted`), and the view says so.
+    """
+    taus = [int(t) for t in thresholds["taus_bp"]]
+    pressure_bp, second_bp = taus[0], taus[1]
+    kept = counted(rows, locked)
+    if not kept:
+        raise VisualError("every panel day is held out; N3 has nothing to count")
+    groups = {(scarce, qe): [] for scarce in (True, False) for qe in (True, False)}
+    for r in kept:
+        today = date.fromisoformat(r["date"])
+        _, value = on_rrp_as_of(on_rrp, today, decision, registry)
+        spread = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
+        groups[(value < ON_RRP_DEPLETION_BREAK_BN, quarter_end_window(today) == 1.0)].append(spread)
+    cells = [{"scarce": scarce, "quarter_end": qe, "n": len(spreads),
+              "above": {str(tau): rate_cell([int(s > tau) for s in spreads]) for tau in (pressure_bp, second_bp)}}
+             for (scarce, qe), spreads in groups.items()]
+    cell = {(c["scarce"], c["quarter_end"]): c for c in cells}
+    spans = held_out_spans(rows, locked)
+    lag = registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]
+    brk = f"${ON_RRP_DEPLETION_BREAK_BN:,.0f}bn"
+
+    def kn(c, tau):
+        return f"{c['above'][str(tau)]['k']} of {c['n']}"
+
+    def table(tau):
+        head = "<tr><th></th><th scope='col'>Quarter-end window</th><th scope='col'>Other days</th></tr>"
+        body = []
+        for scarce, name in ((True, f"Scarce cash: ON RRP below {brk}"), (False, f"Abundant cash: ON RRP at or above {brk}")):
+            tds = []
+            for qe in (True, False):
+                c = cell[(scarce, qe)]
+                a = c["above"][str(tau)]
+                if not c["n"]:
+                    tds.append("<td>no days</td>")
+                    continue
+                lo, hi = a["interval"]
+                tds.append(f"<td style='--share:{round(100 * a['rate'])}%'><b>{pct(a['rate'])}</b>"
+                           f"<span>{a['k']} of {c['n']} days</span><small>{round(100 * BOOTSTRAP_LEVEL)}% interval "
+                           f"{pct(lo)} to {pct(hi)}</small></td>")
+            body.append(f"<tr><th scope='row'>{name}</th>{''.join(tds)}</tr>")
+        if spans:
+            held = " and ".join(f"{day(h['start'])} to {day(h['end'])}" for h in spans)
+            body.append(f"<tr><td colspan='3' class='held'>Held out, not in any cell: {held}</td></tr>")
+        return (f"<table><caption>Share of days with SOFR more than +{tau} bp above IORB</caption>"
+                f"<thead>{head}</thead><tbody>{''.join(body)}</tbody></table>")
+
+    sq, so = cell[(True, True)], cell[(True, False)]
+    aq, ao = cell[(False, True)], cell[(False, False)]
+    window_days = 2 * QUARTER_END_WINDOW_BUSINESS_DAYS + 1
+    data = {
+        "column": "quarter_end_window", "window_business_days": QUARTER_END_WINDOW_BUSINESS_DAYS,
+        "pressure_bp": pressure_bp, "second_bp": second_bp, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
+        "cells": cells, "held_out": spans,
+        "counted": {"first": kept[0]["date"], "last": kept[-1]["date"], "n": len(kept)},
+        "on_rrp": {"source": NYFED_ON_RRP_SOURCE_ID, "field": NYFED_ON_RRP_FIELD,
+                   "release_lag": {k: lag[k] for k in ("days", "unit", "available_time", "timezone")}},
+        "bootstrap": {"method": "stationary", "block_length": BOOTSTRAP_BLOCK_LENGTH, "level": BOOTSTRAP_LEVEL,
+                      "replications": BOOTSTRAP_REPLICATIONS, "seed": BOOTSTRAP_SEED},
+    }
+    fills = {
+        "n3_lede": (f"With cash scarce, SOFR closed more than +{pressure_bp} bp above IORB on {kn(sq, pressure_bp)} "
+                    f"days in a quarter-end window and {kn(so, pressure_bp)} other days counted here; with cash "
+                    f"abundant, on {kn(aq, pressure_bp)} quarter-end window days and {kn(ao, pressure_bp)} other days."),
+        "n3_table": table(pressure_bp), "n3_table_second": table(second_bp),
+        "n3_first": day(kept[0]["date"]), "n3_last": day(kept[-1]["date"]),
+        "n3_break": brk,
+        "n3_window_caption": (
+            f"Quarter-end here is the column <code>quarter_end_window</code>: the quarter's last business day and "
+            f"the {word(QUARTER_END_WINDOW_BUSINESS_DAYS)} business days either side, {word(window_days)} days in "
+            f"all (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/"
+            f"quarter-end-window.md'>the decision</a>). A one-day flag on the last business day alone would put "
+            f"pressure on the days around it in &ldquo;other days&rdquo;."),
+        "n3_read": (f"Each day is classed by the ON RRP result public at {clock(decision)} New York time that day. "
+                    f"The project dates a result to {lag['available_time']} on the next business day, because the "
+                    f"New York Fed states no publication time, so the reading is the previous business day's "
+                    f"operation."),
+        "n3_small": (f"The quarter-end cells are small, {days(sq['n'])} with scarce cash and {days(aq['n'])} with "
+                     f"abundant cash, so their intervals are wide."),
+        "n3_reading": (
+            ("With cash scarce, pressure also came on days outside the quarter-end window. " if so["above"][str(pressure_bp)]["k"]
+             else "With cash scarce, no day outside the quarter-end window saw pressure. ")
+            + ("With cash abundant, quarter-ends did not always pass quietly." if aq["above"][str(pressure_bp)]["k"]
+               else "With cash abundant, every quarter-end window counted here passed quietly.")),
+        "n3_held_note": (f"Days from {day(spans[0]['start'])} on are held out for the project's final test "
+                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>). They are in no cell and no sentence "
+                         f"in this view." if spans else "No day in this view is held out."),
+        "n3_interval": (f"Each interval is a {round(100 * BOOTSTRAP_LEVEL)}% stationary-bootstrap interval that "
+                        f"resamples a cell's days in blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, because "
+                        f"pressure days come in runs."),
+        "c_n3_quarter_end": link(notes["claims"]["quarter_end"]),
+        "c_n3_fed_cash": link(notes["claims"]["fed_cash"]),
+    }
+    return data, fills
+
+
 def n2_bin(spread, taus):
     """How many thresholds a spread is strictly above: 0 at or below the first, len(taus) above the last.
 
@@ -1193,9 +1392,12 @@ def generate(repo, commit=None):
     n1, n1_fills = newcomer_n1([dict(r) for r in rows], locked, thresholds, notes)
     decision = time.fromisoformat(manifest["decision_time"])
     n2, n2_fills = newcomer_n2([dict(r) for r in rows], registry, decision, locked, thresholds)
+    on_rrp, on_rrp_snapshots = on_rrp_results(repo)
+    n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
     fills.update(n1_fills)
     fills.update(n2_fills)
+    fills.update(n3_fills)
     n4, n4_fills = newcomer_n4(tag_map, registry, manifest, records, snapshot, tracked_snapshots(repo), notes)
     fills.update(n4_fills)
     fills.update(dfn_fills(glossary))
@@ -1260,16 +1462,19 @@ def generate(repo, commit=None):
     build = {"process": notes["process"], "guards": notes["guards"], "validation": notes["validation"]}
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "newcomer_n1": n1,
-                "newcomer_n2": n2, "newcomer_n4": n4}
+                "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4}
+    # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
+    n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
         {rel: sha256(repo / rel) for rel in (MAP, ISSUES, SOURCES, MANIFEST, ANNOTATIONS)},
         **{rel: sha256(repo / rel) for rel in records}))
+    own = {"newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance}
     out = {}
     for name, payload in payloads.items():
-        doc = {"provenance": n4_provenance if name == "newcomer_n4" else provenance, "data": payload}
+        doc = {"provenance": own.get(name, provenance), "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
-    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1", "newcomer_n2")}
+    page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "newcomer_n1", "newcomer_n2", "newcomer_n3")}
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
     if "/*__DATA__*/null" not in template:
