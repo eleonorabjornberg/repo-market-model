@@ -74,8 +74,8 @@ records published before this rule are not edited in place: their +20 and +50 bp
 
 ## Onset view and small-leap targets
 
-**Draft for Eleonora's decision (#139). Not in force until she merges it.** The draft records her request of
-2 October 2026, as widened and amended that day; the wording below is proposed for her to accept or change.
+**Decided by Eleonora on 2 October 2026 (#139), in force once the pull request that adds it merges.** It records her
+request of 2 October 2026, as widened and amended that day, and she approved the wording below as drafted.
 
 **Why.** The +5 and +10 bp stress targets hold too few events in calm periods to settle a model comparison: 2026 has
 no day above +10 bp. The model's value is at onset and in the tail, and an average over every scored day hides both.
@@ -116,8 +116,8 @@ published comparison, fixed in advance and not chosen for this target. A Diebold
 reported for the all-days group only.
 
 **Too few events means inconclusive.** Below a target's pre-declared minimum event count, the result is reported as
-inconclusive, and is read as neither a pass nor a fail. *Proposed for her decision: a minimum of 20 events in the
-all-days group (`onset.MINIMUM_EVENTS`).*
+inconclusive, and is read as neither a pass nor a fail. Decided by Eleonora on 2 October 2026: the minimum is 20 events in the
+all-days group (`onset.MINIMUM_EVENTS`).
 
 **The target was not chosen blind to 2026.** `lockbox.md` already publishes how few 2026 days exceed +5 and +10 bp,
 and public Fed commentary describes 2026 as calm. The leap target was therefore added with knowledge of the locked
