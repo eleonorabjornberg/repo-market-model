@@ -598,6 +598,16 @@ class NewcomerPageTests(unittest.TestCase):
         self.assertIn("the Fed's rate on bank reserves", template)
         self.assertNotRegex(newcomer_block(self.page).lower(), r"usual range")
 
+    def test_readme_links_to_start_here_under_the_overview_figure(self):
+        """#149: the front door. One link, between the overview figure and the first generated block."""
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        link = "https://eleonorabjornberg.github.io/repo-market-model/#start"
+        self.assertEqual(readme.count(link), 1)
+        figure = readme.index('srcset="docs/figures/overview-dark.svg"')
+        self.assertLess(readme.index("</picture>", figure), readme.index(link))
+        self.assertLess(readme.index(link), readme.index("<!-- generated:"))
+        self.assertIn('<div id="start">', newcomer_block(self.page))
+
     def test_every_static_button_has_an_accessible_name(self):
         for attrs, body in re.findall(r"<button([^>]*)>(.*?)</button>", self.page, re.S):
             with self.subTest(button=attrs):
