@@ -2018,6 +2018,10 @@ class NewcomerN5ClockTests(NewcomerN5Base):
         The NY Fed snapshots declare one business day, as the panel's SOFR does,
         so on 31 December 2025 every one of them is public on the same panel day
         as SOFR, never on the 1 January holiday.
+
+        Recorded mutation: in `n5_available`,
+        `return adapter if declared is None else max(adapter, declared)` -> `return adapter`.
+        This test then failed with AssertionError ('1 calendar day later' != '2 calendar days later').
         """
         data, _ = self.base
         gap = re.compile(r"(\d+) calendar days? (?:later|before)|the same day")
