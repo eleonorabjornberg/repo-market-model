@@ -101,6 +101,16 @@ with SOFR − IORB above +5 bp after at least five consecutive business days at 
 probabilities on the five scored days before the onset are listed. Onset figures rest on few events, the record states
 the count, and they are descriptive, not tests.
 
+**Amendment of 3 October 2026: the onset group scores every day at risk.** Decided by Eleonora on 3 October 2026
+(this directive, #209). A group of onsets alone has every outcome 1, so its Brier score rewards whichever model
+forecasts higher, sharper or not. The onset group is therefore every scored day whose previous five panel days were
+all at or below +5 bp, whatever happened that day. The onsets defined above are its events: they still drive the
+lead-time listing, and the record states both the day count and the event count. The leap-onset group is likewise
+every scored day with no leap on the five previous panel days, with the leap onsets as its events. Beside the onset
+group, a one-day variant is reported, descriptive only and deciding nothing: every scored day whose previous panel day
+was at or below +5 bp (#160's definition). Both groups stay descriptive, not tests. They are mostly calm days, so
+their scores mostly measure false alarms.
+
 **The leap, defined as-of.** For a forecast of day *t* at horizon *h*, the jump is *x_t = s_t − s_a(t)*, where *s* is
 SOFR − IORB in whole basis points and *a(t)* is that forecast's as-of anchor: the latest spread public at its decision
 instant under `information-set.md`. It is never the day before *t*. A leap is *x_t > J_h*, strictly. *J_h* is the 90th

@@ -36,8 +36,9 @@ narrowing the first), fixed before scoring:
    would be published as v1.1. *Four primary cells* (`PRIMARY_CELLS`): +5 bp,
    horizon 1, on all scored days and on onset days, each paired against
    pressure model v1 (the control) and against the persistence-logistic.
-   Onset days are #139's (`onset.onset_flags`): the first day above +5 bp after
-   at least five panel days at or below it.
+   Onset days are #139's onset group, as #209 amended it (`onset.day_groups`):
+   every day after at least five panel days at or below +5 bp, whatever its
+   outcome, with the onsets (`onset.onset_flags`) as its events.
 2. *Test*: one-sided paired stationary-bootstrap p-values
    (`ml.paired_bootstrap_p_values`, `P_VALUE_REPLICATIONS`, as #187), Holm at a
    `FAMILY_LEVEL` family-wise level over the four primary cells only, for
