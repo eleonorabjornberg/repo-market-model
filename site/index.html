@@ -506,7 +506,7 @@ details .grid2{margin-top:6px}
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>666d0fc445e996b9e6ffd07c741dd95b73947775</code>. Every number on this page is computed from that file, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand. The days from 1 January 2026 to 3 September 2026 are held out under the <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/lockbox.md'>lockbox rule</a>: they are drawn greyed and left out of every count, median and sentence.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>8829123dc715da817d731df6bca1417dad37d269</code>. Every number on this page is computed from that file, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand. The days from 1 January 2026 to 3 September 2026 are held out under the <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/lockbox.md'>lockbox rule</a>: they are drawn greyed and left out of every count, median and sentence.</p>
   <p>No model results are shown. Chapters 5 to 7 will be built only from records scored under the project's as-of information rule, and the generator refuses any other record.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -881,7 +881,7 @@ function shade(g, x, y0, y1) {
 function renderBand() {
   const host = d3.select("#n3band"); host.select("svg").remove();
   const W = host.node().clientWidth, narrow = W < 560;
-  const m = {t: 24, r: narrow ? 10 : 20, b: 26, l: narrow ? 70 : 88};
+  const m = {t: 24, r: narrow ? 10 : 20, b: 26, l: narrow ? 80 : 88};
   const plotH = narrow ? 160 : 200, laneH = 62, bufH = 14, gap = 16;
   const laneTop = m.t + plotH + gap, bufTop = laneTop + laneH + gap, H = bufTop + bufH + m.b;
   const first = bandSpans[0].a, end = rows.at(-1).date;
