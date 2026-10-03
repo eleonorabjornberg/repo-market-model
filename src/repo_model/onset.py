@@ -6,16 +6,21 @@ distribution comparison, a view of the days that matter:
 
 - **Three day groups.** All scored days; scheduled-pressure days (a quarter
   end, a month end or a tax date, as `metadata/evaluation_splits.json`
-  declares the types, or a Treasury coupon settlement); and onset days, the
-  first day above +5 bp after at least five business days at or below it
-  (`ONSET_THRESHOLD_BP`, `ONSET_CALM_DAYS`). For the onset group, each
-  model's probabilities on the scored days before the onset are listed too.
+  declares the types, or a Treasury coupon settlement); and the onset group:
+  every day after at least five business days at or below +5 bp, whatever
+  happened that day (`ONSET_THRESHOLD_BP`, `ONSET_CALM_DAYS`). Its events are
+  the onsets, the days in it above +5 bp (Eleonora's ruling of 3 October
+  2026, #209: a group of onsets alone has every outcome 1). For each onset,
+  each model's probabilities on the scored days before it are listed too.
+  Beside it, descriptive only, #160's one-day variant: every day whose
+  previous panel day was at or below +5 bp.
 - **Small-leap targets, defined as-of.** The jump of a forecast of day `t` is
   `s_t - s_a(t)`, where `a(t)` is that forecast's as-of anchor
   (`asof.InformationRule.anchor`) -- never the day before `t`, which is not
   yet public when the forecast is made. A leap is a jump strictly above
   `LEAP_JUMP_BP[h]`. A leap onset is a leap with no leap on the five panel
-  days before it. A pressure leap is a leap that also ends above IORB.
+  days before it; the leap-onset group is every day with no leap on the five
+  panel days before it, and the leap onsets are its events. A pressure leap is a leap that also ends above IORB.
 - **The leap baselines**: a calendar climatology of the leap and a
   persistence-logistic of the leap on the latest as-of jump and spread, both
   refitted walk-forward on the scored model's own refit blocks.
@@ -76,8 +81,22 @@ MINIMUM_EVENTS = 20
 
 GROUP_ALL = "all_days"
 GROUP_SCHEDULED = "scheduled_pressure_days"
+#: Every scored day after `ONSET_CALM_DAYS` calm panel days; the onsets are its events (#209).
 GROUP_ONSET = "onset_days"
+#: Descriptive only: every scored day whose previous panel day was calm (#160).
+GROUP_ONSET_ONE_DAY = "onset_days_one_day"
+#: Every scored day with no leap on `LEAP_ONSET_CALM_DAYS` panel days before it.
 GROUP_LEAP_ONSET = "leap_onset_days"
+
+ONSET_GROUP_NOTE = (
+    "descriptive, not a test: every day after a calm stretch, whatever its outcome, "
+    "with the onsets as its events (counted in 'events', the days in 'days'); the "
+    "group is mostly calm days, so its score mostly measures false alarms"
+)
+ONSET_ONE_DAY_NOTE = (
+    "descriptive only, decides nothing: #160's definition, every day whose previous "
+    "panel day was at or below +5 bp"
+)
 
 #: The two named leap baselines, as a record names them. Not the pressure
 #: benchmarks' names: these are fitted to the leap, not to a threshold.
@@ -102,22 +121,64 @@ def whole_bp(value: float) -> int:
 # --------------------------------------------------------------------------
 
 
+def _calm_before(flags: Sequence[bool], days: int) -> List[bool]:
+    """Per row: are there `days` rows before it, none of them flagged?"""
+
+    return [
+        index >= days and not any(flags[index - back] for back in range(1, days + 1))
+        for index in range(len(flags))
+    ]
+
+
+def _above(rows: Sequence[DailyObservation]) -> List[bool]:
+    return [exceeds_bp(row.spread_bps, ONSET_THRESHOLD_BP) for row in rows]
+
+
+def at_risk_flags(rows: Sequence[DailyObservation]) -> List[bool]:
+    """Per panel row: is it in the onset group, whatever its own outcome (#209)?
+
+    `ONSET_CALM_DAYS` panel days before it, all at or below
+    `ONSET_THRESHOLD_BP`. A row with fewer panel days before it is not.
+    """
+
+    return _calm_before(_above(rows), ONSET_CALM_DAYS)
+
+
+def one_day_at_risk_flags(rows: Sequence[DailyObservation]) -> List[bool]:
+    """Per panel row: was the previous panel day at or below `ONSET_THRESHOLD_BP` (#160)?"""
+
+    return _calm_before(_above(rows), 1)
+
+
 def onset_flags(rows: Sequence[DailyObservation]) -> List[bool]:
-    """Per panel row: is it an onset day?
+    """Per panel row: is it an onset day, an event of the onset group?
 
     Above `ONSET_THRESHOLD_BP`, after `ONSET_CALM_DAYS` panel days at or below
     it. A row with fewer panel days before it than that is never an onset.
     """
 
-    above = [exceeds_bp(row.spread_bps, ONSET_THRESHOLD_BP) for row in rows]
-    flags: List[bool] = []
-    for index, today in enumerate(above):
-        flags.append(
-            index >= ONSET_CALM_DAYS
-            and today
-            and not any(above[index - back] for back in range(1, ONSET_CALM_DAYS + 1))
-        )
-    return flags
+    return [risk and today for risk, today in zip(at_risk_flags(rows), _above(rows))]
+
+
+def _scored_indices(
+    rows: Sequence[DailyObservation], scored_dates: Sequence[date]
+) -> List[int]:
+    position_of = {row.date: index for index, row in enumerate(rows)}
+    indices: List[int] = []
+    for when in scored_dates:
+        if when not in position_of:
+            raise ValueError(f"scored day {when} is not a row of the panel")
+        indices.append(position_of[when])
+    return indices
+
+
+def onset_positions(
+    rows: Sequence[DailyObservation], scored_dates: Sequence[date]
+) -> List[int]:
+    """Positions into `scored_dates` of the onsets: the lead-time listing's days."""
+
+    onsets = onset_flags(rows)
+    return [k for k, index in enumerate(_scored_indices(rows, scored_dates)) if onsets[index]]
 
 
 def scheduled_pressure(row: DailyObservation, declaration: Any) -> bool:
@@ -136,16 +197,13 @@ def day_groups(
 ) -> Dict[str, Any]:
     """Positions into `scored_dates` for each group, or the reason one is absent."""
 
-    position_of = {row.date: index for index, row in enumerate(rows)}
-    onsets = onset_flags(rows)
-    indices: List[int] = []
-    for when in scored_dates:
-        if when not in position_of:
-            raise ValueError(f"scored day {when} is not a row of the panel")
-        indices.append(position_of[when])
+    indices = _scored_indices(rows, scored_dates)
+    at_risk = at_risk_flags(rows)
+    one_day = one_day_at_risk_flags(rows)
     groups: Dict[str, Any] = {
         GROUP_ALL: list(range(len(indices))),
-        GROUP_ONSET: [k for k, index in enumerate(indices) if onsets[index]],
+        GROUP_ONSET: [k for k, index in enumerate(indices) if at_risk[index]],
+        GROUP_ONSET_ONE_DAY: [k for k, index in enumerate(indices) if one_day[index]],
     }
     if declaration is None:
         groups[GROUP_SCHEDULED] = (
@@ -254,9 +312,11 @@ def leap_threshold(
 class LeapTargets:
     """The leap targets over a whole panel at one horizon, read once.
 
-    `jump[i]`, `anchor[i]`, `leap[i]`, `leap_onset[i]` and `pressure_leap[i]`
-    per panel row; `jump[i]` is `None` for a row with no admissible anchor,
-    and such a row is never a leap.
+    `jump[i]`, `anchor[i]`, `leap[i]`, `leap_onset[i]`, `leap_at_risk[i]` and
+    `pressure_leap[i]` per panel row; `jump[i]` is `None` for a row with no
+    admissible anchor, and such a row is never a leap. `leap_at_risk[i]`: no
+    leap on the `LEAP_ONSET_CALM_DAYS` panel days before row `i`, whatever row
+    `i` was; the leap onsets are the leaps among those rows (#209).
     """
 
     def __init__(
@@ -277,11 +337,9 @@ class LeapTargets:
             self.jump.append(None if read is None else read[0])
             self.anchor.append(-1 if read is None else read[1])
         self.leap = [jump is not None and jump > self.threshold_bp for jump in self.jump]
+        self.leap_at_risk = _calm_before(self.leap, LEAP_ONSET_CALM_DAYS)
         self.leap_onset = [
-            self.leap[index]
-            and index >= LEAP_ONSET_CALM_DAYS
-            and not any(self.leap[index - back] for back in range(1, LEAP_ONSET_CALM_DAYS + 1))
-            for index in range(len(rows))
+            leap and risk for leap, risk in zip(self.leap, self.leap_at_risk)
         ]
         self.pressure_leap = [
             self.leap[index] and exceeds_bp(rows[index].spread_bps, 0.0)
@@ -306,6 +364,13 @@ class LeapTargets:
 
     def labels(self, target: str) -> List[bool]:
         return {"leap": self.leap, "pressure_leap": self.pressure_leap}[target]
+
+
+def leap_onset_group(targets: LeapTargets, scored_dates: Sequence[date]) -> List[int]:
+    """Positions into `scored_dates` of the leap-onset group (`LeapTargets.leap_at_risk`)."""
+
+    position_of = {when: index for index, when in enumerate(targets.dates)}
+    return [k for k, when in enumerate(scored_dates) if targets.leap_at_risk[position_of[when]]]
 
 
 # --------------------------------------------------------------------------
@@ -637,10 +702,9 @@ def _group_block(
                 )
             entry["paired"][name] = paired
         if group in (GROUP_ONSET, GROUP_LEAP_ONSET):
-            entry["note"] = (
-                "descriptive, not a test: onset days are few, and the count is in "
-                "'days'"
-            )
+            entry["note"] = ONSET_GROUP_NOTE
+        elif group == GROUP_ONSET_ONE_DAY:
+            entry["note"] = ONSET_ONE_DAY_NOTE
         out[group] = entry
     return out
 
@@ -714,6 +778,7 @@ def exceedance_onset_document(
                 f"the benchmark {bench.model_name!r} was not scored on the model's grid"
             )
     groups = day_groups(rows, report.scored_dates, declaration)
+    onsets = onset_positions(rows, report.scored_dates)
     block = _maximum_horizon_overlap(report.folds)
     base_seed = _exceedance_seed(report, panel_sha256)
     document: dict = {
@@ -722,6 +787,15 @@ def exceedance_onset_document(
             "onset_day": (
                 f"the first day with SOFR - IORB > +{ONSET_THRESHOLD_BP} bp after at "
                 f"least {ONSET_CALM_DAYS} consecutive panel days at or below it"
+            ),
+            "onset_group": (
+                f"every scored day after at least {ONSET_CALM_DAYS} consecutive panel days "
+                f"at or below +{ONSET_THRESHOLD_BP} bp, whatever its outcome; its events "
+                f"are the onset days (#209)"
+            ),
+            "onset_group_one_day": (
+                f"descriptive only: every scored day whose previous panel day was at or "
+                f"below +{ONSET_THRESHOLD_BP} bp (#160)"
             ),
             "scheduled_pressure_day": (
                 "a quarter end, month end or tax date as the split declaration types "
@@ -753,9 +827,8 @@ def exceedance_onset_document(
             block_length=block,
             seed_parts=(base_seed, "onset", f"{tau:g}"),
         )
-        onset_positions = groups[GROUP_ONSET]
         entry["lead_time"] = _lead_paths(
-            columns, report.scored_dates, report.realized_bps, onset_positions
+            columns, report.scored_dates, report.realized_bps, onsets
         )
         document["by_tau"][f"{tau:g}"] = entry
 
@@ -817,7 +890,7 @@ def leap_document(
     scored = [position_of[when] for when in report.scored_dates]
     train_ends = [fold.train_end for fold in report.folds]
     groups = day_groups(rows, report.scored_dates, declaration)
-    onset_positions = [k for k, index in enumerate(scored) if targets.leap_onset[index]]
+    at_risk = leap_onset_group(targets, report.scored_dates)
     document: dict = {
         "definitions": {
             "jump": (
@@ -828,6 +901,10 @@ def leap_document(
             "leap_onset": (
                 f"a leap with no leap on any of the {LEAP_ONSET_CALM_DAYS} panel days "
                 f"before it"
+            ),
+            "leap_onset_group": (
+                f"every scored day with no leap on any of the {LEAP_ONSET_CALM_DAYS} panel "
+                f"days before it, whatever its outcome; its events are the leap onsets (#209)"
             ),
             "pressure_leap": "a leap that also ends above IORB (s_t > 0 bp)",
             "claim_wording": (
@@ -863,7 +940,7 @@ def leap_document(
         target_groups = {
             GROUP_ALL: groups[GROUP_ALL],
             GROUP_SCHEDULED: groups[GROUP_SCHEDULED],
-            GROUP_LEAP_ONSET: onset_positions,
+            GROUP_LEAP_ONSET: at_risk,
         }
         entry = _group_block(
             report.model_name,
@@ -978,7 +1055,9 @@ def comparison_onset_document(
                     [losses_a[k] - losses_b[k] for k in positions]
                 )
             if group == GROUP_ONSET:
-                paired["note"] = "descriptive, not a test: onset days are few"
+                paired["note"] = ONSET_GROUP_NOTE
+            elif group == GROUP_ONSET_ONE_DAY:
+                paired["note"] = ONSET_ONE_DAY_NOTE
             entry[group] = paired
         document["by_series"][name] = entry
     return document

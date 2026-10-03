@@ -345,10 +345,12 @@ def _interval(values, block, seed):
 
 
 def onset_positions(rows, scored_dates):
-    """Positions into `scored_dates` of #139's onset days (`onset.onset_flags`)."""
+    """Positions into `scored_dates` of #139's onset group, as #209 amended it.
 
-    flags = dict(zip((row.date for row in rows), onset.onset_flags(rows)))
-    return [k for k, when in enumerate(scored_dates) if flags[when]]
+    Every day after five calm panel days, whatever its outcome (`onset.day_groups`).
+    """
+
+    return onset.day_groups(rows, scored_dates, None)[onset.GROUP_ONSET]
 
 
 def pair_entries(runs, name, h, rows, splits, digest):

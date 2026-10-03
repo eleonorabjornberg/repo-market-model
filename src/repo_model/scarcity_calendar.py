@@ -67,8 +67,9 @@ scoring:
    onset days, each paired against the control and against the
    persistence-logistic. Two forms x four cells = eight cells. "The state
    alone" is the state as #115 built it, form (a): (b) is not blind, and the
-   ruling names one primary candidate per form. Onset days are #139's
-   (`onset.onset_flags`).
+   ruling names one primary candidate per form. Onset days are #139's onset
+   group, as #209 amended it (`onset.day_groups`): every day after five calm
+   panel days, whatever its outcome, with the onsets as its events.
 2. *Test*: one-sided paired stationary-bootstrap p-values
    (`ml.paired_bootstrap_p_values`, `P_VALUE_REPLICATIONS`, as #187), Holm at a
    `FAMILY_LEVEL` family-wise level over the eight primary cells together, for

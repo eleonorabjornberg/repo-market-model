@@ -17,7 +17,7 @@ from unittest import mock
 
 from repo_model import cli, onset
 from repo_model.asof import TARGET, InformationRule, fold_grid
-from repo_model.data import DailyObservation, load_daily_panel
+from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
 
@@ -190,6 +190,120 @@ class LeapThresholdTests(unittest.TestCase):
 
     def test_the_window_ends_before_the_lockbox(self):
         self.assertEqual(onset.LEAP_WINDOW[1], date(2025, 12, 31))
+
+
+class AtRiskGroupTests(unittest.TestCase):
+    """The onset groups hold every day after a calm stretch, whatever its outcome (#209).
+
+    Eleonora's ruling of 3 October 2026: a group of onsets alone has every
+    outcome 1, so its Brier score rewards whichever model forecasts higher.
+    The onsets are now the events inside the at-risk group.
+    """
+
+    def setUp(self):
+        # 0..4 calm; 5 calm after five calm days; 6 above +5 after five calm
+        # days (an onset); 7 inside the episode; 8 calm again after it.
+        self.days = weekdays(date(2024, 1, 2), 10)
+        self.spreads = [0, 1, 2, 0, 1, 2, 7, 8, 3, 1]
+        self.rows = [row(d, s) for d, s in zip(self.days, self.spreads)]
+        self.scored = self.days[5:]
+
+    def outcome(self, index):
+        return 1 if self.spreads[index] > onset.ONSET_THRESHOLD_BP else 0
+
+    def test_a_calm_day_after_a_calm_stretch_is_in_the_group_with_outcome_0(self):
+        groups = onset.day_groups(self.rows, self.scored, None)
+        self.assertIn(0, groups[onset.GROUP_ONSET])  # scored position 0 = panel day 5
+        self.assertEqual(self.outcome(5), 0)
+
+    def test_an_onset_after_a_calm_stretch_is_in_the_group_with_outcome_1(self):
+        groups = onset.day_groups(self.rows, self.scored, None)
+        self.assertIn(1, groups[onset.GROUP_ONSET])  # panel day 6
+        self.assertEqual(self.outcome(6), 1)
+        self.assertEqual(onset.onset_positions(self.rows, self.scored), [1])
+
+    def test_a_day_inside_an_episode_is_not_in_the_group(self):
+        groups = onset.day_groups(self.rows, self.scored, None)
+        self.assertNotIn(2, groups[onset.GROUP_ONSET])  # panel day 7
+        self.assertNotIn(3, groups[onset.GROUP_ONSET])  # panel day 8: day 6 is in its stretch
+        self.assertEqual(groups[onset.GROUP_ONSET], [0, 1])
+
+    def test_the_one_day_variant_reads_only_the_previous_day(self):
+        """#160's definition: the previous panel day at or below +5 bp."""
+
+        groups = onset.day_groups(self.rows, self.scored, None)
+        variant = groups[onset.GROUP_ONSET_ONE_DAY]
+        self.assertIn(0, variant)  # panel day 5, outcome 0
+        self.assertIn(1, variant)  # panel day 6, outcome 1
+        self.assertNotIn(2, variant)  # panel day 7: day 6 was above
+        self.assertNotIn(3, variant)  # panel day 8: day 7 was above
+        self.assertIn(4, variant)  # panel day 9: day 8 was calm, though day 6 was not
+        self.assertEqual(variant, [0, 1, 4])
+
+    def test_the_leap_onset_group(self):
+        """Every day with no leap on the five panel days before it; the leap onsets are its events."""
+
+        days = weekdays(date(2024, 1, 2), 12)
+        spreads = [0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 0, 0]
+        rows = [row(d, s) for d, s in zip(days, spreads)]
+        rule = InformationRule(REGISTRY, (TARGET,), decision_time=DECISION)
+        targets = onset.LeapTargets(rows, rule, 3.0)
+        # The jump is read against the as-of anchor two panel days back: days 7
+        # and 8 are leaps, 9 is not.
+        self.assertEqual([i for i, leap in enumerate(targets.leap) if leap], [7, 8])
+        self.assertTrue(targets.leap_at_risk[6])  # calm stretch, no leap: outcome 0
+        self.assertFalse(targets.leap[6])
+        self.assertTrue(targets.leap_at_risk[7])  # calm stretch, a leap: outcome 1
+        self.assertTrue(targets.leap[7])
+        self.assertFalse(targets.leap_at_risk[8])  # inside the episode
+        self.assertFalse(targets.leap_at_risk[4])  # fewer than five panel days before it
+        # Scored from panel day 5: days 5, 6 and 7 are in; 8 to 11 have a leap
+        # among their five panel days before.
+        self.assertEqual(onset.leap_onset_group(targets, days[5:]), [0, 1, 2])
+
+
+class AtRiskEventCountTests(unittest.TestCase):
+    """On the tracked panel the onset events are the ones counted before #209.
+
+    The at-risk group adds the calm days around them as non-events; the events
+    it holds, which the lead-time listing and `MINIMUM_EVENTS` read, do not move.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = published_panel()
+        first, last = onset.LEAP_WINDOW
+        cls.scored = [r.date for r in cls.rows if first <= r.date <= last]
+
+    def test_the_onset_events_are_unchanged(self):
+        flags = dict(zip((r.date for r in self.rows), onset.onset_flags(self.rows)))
+        before = [k for k, when in enumerate(self.scored) if flags[when]]
+        groups = onset.day_groups(self.rows, self.scored, None)
+        spread = {r.date: r.spread_bps for r in self.rows}
+        events = [k for k in groups[onset.GROUP_ONSET]
+                  if exceeds_bp(spread[self.scored[k]], onset.ONSET_THRESHOLD_BP)]
+        self.assertEqual(events, before)
+        self.assertEqual(onset.onset_positions(self.rows, self.scored), before)
+        self.assertGreater(len(before), 0)
+        # The group is mostly calm days, so its score mostly measures false alarms.
+        self.assertGreater(len(groups[onset.GROUP_ONSET]), 10 * len(before))
+
+    def test_the_leap_onset_events_are_unchanged(self):
+        rule = InformationRule(REGISTRY, (TARGET,), decision_time=DECISION)
+        targets = onset.LeapTargets(self.rows, rule, onset.LEAP_JUMP_BP[1])
+        position = {when: i for i, when in enumerate(targets.dates)}
+        before = [k for k, when in enumerate(self.scored) if targets.leap_onset[position[when]]]
+        group = onset.leap_onset_group(targets, self.scored)
+        events = [k for k in group if targets.leap[position[self.scored[k]]]]
+        self.assertEqual(events, before)
+        self.assertGreater(len(group), len(before))
+
+    def test_minimum_events_reads_the_all_days_group(self):
+        """`leap_verdict` counts the all-days events, which the at-risk group leaves alone."""
+
+        self.assertEqual(onset.MINIMUM_EVENTS, 20)
+        below = {"events": onset.MINIMUM_EVENTS - 1, "paired": {}}
+        self.assertEqual(onset.leap_verdict(below)["result"], "inconclusive")
 
 
 class LeapTargetTests(unittest.TestCase):
@@ -372,7 +486,16 @@ class OnsetReportTests(unittest.TestCase):
                 "diebold_mariano",
                 entry[onset.GROUP_SCHEDULED]["paired"]["persistence_logistic"],
             )
-            self.assertEqual(len(entry["lead_time"]), entry[onset.GROUP_ONSET]["days"])
+            # The lead-time listing is the onsets', the events of the at-risk group (#209).
+            group = entry[onset.GROUP_ONSET]
+            self.assertGreaterEqual(group["days"], group["events"])
+            self.assertIn("mostly calm days", group["note"])
+            self.assertIn(onset.GROUP_ONSET_ONE_DAY, entry)
+            self.assertIn("descriptive", entry[onset.GROUP_ONSET_ONE_DAY]["note"])
+        self.assertEqual(
+            len(view["by_tau"]["5"]["lead_time"]),
+            view["by_tau"]["5"][onset.GROUP_ONSET]["events"],
+        )
         self.assertIn("twcrps_above_5bp", view["crps"])
         self.assertIn("crps_on_grid", view["crps"])
         leap = view["leap"]

@@ -264,7 +264,7 @@ def bakeoff(part, *, rows, splits, registry, digest) -> dict:
         target_groups = {
             onset.GROUP_ALL: groups[onset.GROUP_ALL],
             onset.GROUP_SCHEDULED: groups[onset.GROUP_SCHEDULED],
-            onset.GROUP_LEAP_ONSET: [k for k, i in enumerate(indices) if targets.leap_onset[i]],
+            onset.GROUP_LEAP_ONSET: onset.leap_onset_group(targets, scored),
         }
         entry["leap_threshold_bp"] = report.leap_threshold_bp
         entry["against_leap_baselines"] = {}
