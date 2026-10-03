@@ -213,6 +213,23 @@ ul.key .buf i{background:var(--ink-2);height:6px}
 .bandtable th{font-weight:500;color:var(--ink-2)}
 #n1bandkey[hidden]{display:none}
 details .grid2{margin-top:6px}
+ol.n5list{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-wrap:wrap;gap:6px;font-family:var(--sans);counter-reset:n5}
+ol.n5list li{counter-increment:n5}
+.n5step{all:unset;cursor:pointer;font-size:.8rem;line-height:1.3;padding:4px 9px;border:1px solid var(--rule);border-radius:14px;color:var(--ink)}
+.n5step::before{content:counter(n5) ". ";color:var(--ink-2)}
+.n5step[aria-current="step"]{border-color:var(--ink);background:var(--panel);font-weight:600}
+.n5step:focus-visible{outline:2px solid var(--sofr);outline-offset:2px}
+.n5p{margin:12px 0 0;padding:12px 14px;border-left:3px solid var(--sofr);background:var(--panel);font-family:var(--sans);font-size:.88rem;line-height:1.5;max-width:74ch}
+.n5p[hidden]{display:none}
+.n5p h3{margin:0 0 6px;font-size:1rem}
+.n5p p{margin:4px 0}
+.n5p a{color:var(--ink-2)}
+.n5p .hyp{border-left:3px dashed var(--pressure);padding-left:10px}
+.n5p ul.clocks{margin:8px 0 0;padding-left:1.2em;font-size:.8rem;color:var(--ink-2)}
+.n5p ul.clocks b{color:var(--ink);font-weight:600}
+.tagchip{font-size:.8rem;line-height:1.3;padding:3px 9px;border:1px solid var(--rule);border-radius:14px;color:var(--ink);background:var(--paper)}
+.tagchip small{color:var(--ink-2);font-size:.72rem;margin-left:2px}
+#n5 .controls{margin-top:12px}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 </head>
@@ -389,6 +406,35 @@ details .grid2{margin-top:6px}
     </ul>
     {{n4_seg_table}}
     <p>The segments nested inside each other, with their rates on one day, and the Fed's administered rates are in <a href="#plumbing">chapter 1</a>.</p>
+  </details>
+</section>
+
+<section id="n5" aria-labelledby="n5-title">
+  <h2 id="n5-title"><span class="n">N5</span>A quarter-end squeeze, step by step</h2>
+  <p class="prose lede">{{n5_lede}}</p>
+  <div class="prose">
+    <p>Each step is one link in the chain the Fed's staff describe, with its sources. It lights the flows it concerns on the map from N4 and charts the public series that measure them, {{n5_window}} business days either side of each quarter-end. A filled point was public at {{n5_decision}} New York time on the business day before the quarter-end, when the forecast for that day is made; a hollow point was not public yet.</p>
+    <p>This shows what happened on two quarter-ends, not what could have been predicted, and not a rule for every quarter-end.</p>
+  </div>
+  <figure>
+    <figcaption><div class="t">A quarter-end, step by step</div>
+      <div class="s">{{n5_rule}}</div></figcaption>
+    <div class="controls"><div class="seg" role="group" aria-label="Walk through the steps"><button type="button" id="n5prev" aria-controls="n5panels">Previous step</button><button type="button" id="n5next" aria-controls="n5panels">Next step</button></div></div>
+    {{n5_step_list}}
+    <div id="n5panels" aria-live="polite">{{n5_panels}}</div>
+    <div class="n4map n5map">{{n5_map}}</div>
+    <div class="chart" id="n5chart"><div class="tip"></div></div>
+    <p class="held-note">{{n5_held_note}}</p>
+  </figure>
+  <details class="wide">
+    <summary>Go deeper: the values, and how the two quarter-ends were chosen</summary>
+    <ul>
+      <li>The two quarter-ends come from one rule, declared in the generator before any chart was drawn. It reads only the panel's <code>quarter_end</code> flag (the quarter's last business day) and the New York Fed's ON RRP results, read as they stood at each decision, as N3 and N4 read them (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
+      <li>The Treasury's account and reserve balances are drawn as the change since the window's first day, because their levels differ by thousands of billions. Rates are drawn less IORB, in whole basis points.</li>
+      <li>Each step's publication times come from the project's source declarations, the same ones the forecasts are read under.</li>
+    </ul>
+    {{n5_table}}
+    <p>When each input is public relative to the decision is <a href="#clock">chapter 4</a>; pressure by day type and year is <a href="#why">chapter 3</a>.</p>
   </details>
 </section>
 </div>
@@ -1306,6 +1352,74 @@ function renderN3() {
 }
 document.getElementById("plumbing-deeper").addEventListener("toggle", renderCorridor);
 
+// ---- N5 "A quarter-end squeeze": Previous / Next, or a step's own button, shows its text, lights its flows on
+// the map's copy and draws its chart. Filled points were public at the decision before the quarter-end.
+const N5 = D.newcomer_n5;
+const n5Buttons = [...document.querySelectorAll("#n5 .n5step")];
+let n5At = 0;
+function n5Show(i) {
+  n5At = Math.max(0, Math.min(N5.steps.length - 1, i));
+  const st = N5.steps[n5At];
+  n5Buttons.forEach((b, j) => {
+    if (j === n5At) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+    document.getElementById(b.getAttribute("aria-controls")).hidden = j !== n5At;
+  });
+  document.querySelectorAll("#n5 .fl").forEach(g => g.classList.toggle("on", st.flows.includes(g.id.slice(4))));
+  document.querySelectorAll("#n5 .board").forEach(g => g.classList.toggle("on", st.boards.includes(g.id.slice(4))));
+  document.getElementById("n5prev").setAttribute("aria-disabled", String(n5At === 0));
+  document.getElementById("n5next").setAttribute("aria-disabled", String(n5At === N5.steps.length - 1));
+}
+n5Buttons.forEach((b, j) => b.addEventListener("click", () => { n5Show(j); renderN5(); }));
+document.getElementById("n5prev").addEventListener("click", () => { n5Show(n5At - 1); renderN5(); });
+document.getElementById("n5next").addEventListener("click", () => { n5Show(n5At + 1); renderN5(); });
+n5Show(0);
+const N5_KINDS = [["scarce", "Cash scarce"], ["abundant", "Cash abundant"]];
+const N5_MARK = [[d3.symbolCircle, "var(--sofr)"], [d3.symbolSquare, "var(--ink-2)"]];
+function renderN5() {
+  const host = d3.select("#n5chart"); host.select("svg").remove();
+  const st = N5.steps[n5At], series = st.series.map(k => ({k, ...N5.series[k]}));
+  if (!series.length) return;
+  const W = host.node().clientWidth, narrow = W < 620, gap = 28, ph = 150;
+  const m = {t: 40, r: narrow ? 64 : 76, b: 34, l: 52};
+  const pw = narrow ? W : (W - gap) / 2, blockH = m.t + ph + m.b;
+  const H = narrow ? 2 * blockH + 12 : blockH;
+  const unit = series[0].unit, change = series.some(s => s.mode === "change");
+  const vals = series.flatMap(s => N5_KINDS.flatMap(([kind]) => s.values[kind].filter(v => v !== null)));
+  const lo = Math.min(...vals, unit === "bp" || change ? 0 : Infinity), hi = Math.max(...vals, unit === "bp" || change ? 0 : -Infinity);
+  const yName = unit === "bp" ? "bp over IORB" : change ? "change, $bn" : "$bn";
+  const names = series.map(s => s.label + (s.unit === "bp" ? " less IORB" : "")).join(" and ");
+  const held = N5_KINDS.flatMap(([kind]) => N5.quarter_ends[kind].days.filter(d => d.held));
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+    .attr("aria-label", `Step ${n5At + 1}: line charts of ${names}, in ${yName}, from ${N5.window_business_days} business days before to ${N5.window_business_days} after each quarter-end: ` + N5_KINDS.map(([kind, t]) => `${t.toLowerCase()}, ${fmt(parse(N5.quarter_ends[kind].date))}`).join("; ") + `. Filled points were public at the decision the business day before the quarter-end; hollow points were not yet.` + (held.length ? ` Days from ${fmt(parse(held[0].date))} are held out and drawn greyed, without values.` : "") + ` The values are in the table under Go deeper.`);
+  const hatch = svg.append("defs").append("pattern").attr("id", "n5-hatch").attr("width", 6).attr("height", 6).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
+  hatch.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 6).style("stroke", "var(--ink-3)").style("stroke-width", 1.2).style("opacity", .45);
+  N5_KINDS.forEach(([kind, title], pi) => {
+    const q = N5.quarter_ends[kind], ox = narrow ? 0 : pi * (pw + gap), oy = narrow ? pi * (blockH + 12) : 0;
+    const offs = q.days.map(d => d.offset);
+    const x = d3.scaleLinear([d3.min(offs) - .5, d3.max(offs) + .5], [ox + m.l, ox + pw - m.r]);
+    const y = d3.scaleLinear([lo, hi], [oy + m.t + ph, oy + m.t]).nice();
+    svg.append("text").attr("x", ox + m.l).attr("y", oy + 14).style("font-size", "12px").style("font-weight", 600).style("fill", "var(--ink)").text(`${title}: ${fmt(parse(q.date))}`);
+    svg.append("text").attr("class", "lab").attr("x", ox + m.l).attr("y", oy + 28).text(yName);
+    q.days.filter(d => d.held).forEach(d => svg.append("rect").attr("x", x(d.offset - .5)).attr("y", oy + m.t).attr("width", x(d.offset + .5) - x(d.offset - .5)).attr("height", ph).style("fill", "url(#n5-hatch)"));
+    const firstHeld = q.days.find(d => d.held);
+    if (firstHeld) svg.append("text").attr("class", "lab").attr("x", x(firstHeld.offset - .5) + 4).attr("y", oy + m.t + ph - 6).style("font-weight", 600).text("held out");
+    svg.append("g").attr("class", "axis").attr("transform", `translate(${ox + m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(unit === "bp" || change ? sgn : d3.format(",")).tickSizeOuter(0));
+    if (unit === "bp" || change) svg.append("line").attr("x1", ox + m.l).attr("x2", ox + pw - m.r).attr("y1", y(0)).attr("y2", y(0)).style("stroke", "var(--ink-2)");
+    svg.append("line").attr("x1", x(0)).attr("x2", x(0)).attr("y1", oy + m.t).attr("y2", oy + m.t + ph).style("stroke", "var(--ink-3)").style("stroke-dasharray", "3 3");
+    svg.append("g").attr("class", "axis").attr("transform", `translate(0,${oy + m.t + ph})`).call(d3.axisBottom(x).tickValues(offs.filter(o => narrow ? o % 2 === 0 || o === 0 : true)).tickFormat(o => o === 0 ? "QE" : sgn(o)).tickSizeOuter(0));
+    svg.append("text").attr("class", "lab").attr("x", ox + pw - m.r).attr("y", oy + m.t + ph + 30).attr("text-anchor", "end").text("business days from the quarter-end");
+    series.forEach((s, si) => {
+      const [sym, c] = N5_MARK[si % N5_MARK.length];
+      const pts = q.days.map((d, j) => ({o: d.offset, v: s.values[kind][j], known: s.known[kind] !== null && d.offset <= s.known[kind]}));
+      svg.append("path").datum(pts).attr("d", d3.line().defined(p => p.v !== null).x(p => x(p.o)).y(p => y(p.v))).style("fill", "none").style("stroke", c).style("stroke-width", 1.6);
+      pts.filter(p => p.v !== null).forEach(p => svg.append("path").attr("transform", `translate(${x(p.o)},${y(p.v)})`).attr("d", d3.symbol(sym, 34)())
+        .style("fill", p.known ? c : "var(--paper)").style("stroke", c).style("stroke-width", 1.4));
+      const last = pts.filter(p => p.v !== null).at(-1);
+      if (last) svg.append("text").attr("class", "lab").attr("x", x(last.o) + 7).attr("y", y(last.v) + 4).style("fill", "var(--ink)").style("font-weight", 600).text(s.label.replace("SOFR's 99th percentile", "SOFR p99").replace("Treasury General Account", "TGA").replace("Reserve balances", "Reserves"));
+    });
+  });
+}
+
 // ---- Glossary terms: Enter, Space or a tap opens the definition in place; Esc closes it and returns focus.
 document.querySelectorAll("dfn .term").forEach(b => {
   const def = document.getElementById(b.getAttribute("aria-controls"));
@@ -1319,7 +1433,7 @@ document.querySelectorAll("dfn .term").forEach(b => {
   def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
 });
 
-const renderAll = () => { renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
+const renderAll = () => { renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);

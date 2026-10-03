@@ -36,6 +36,30 @@
       "text": "The Federal Reserve Board publishes commercial banks' weekly balance sheets, total assets among them, in its H.8 release, generally on Fridays at 4:15 p.m. Eastern Time",
       "src": "https://www.federalreserve.gov/releases/h8/"
     },
+    "tga_reserves": {
+      "text": "Reserves vary from day to day, most notably with swings in the Treasury General Account, the Treasury's own account at the Fed",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"
+    },
+    "dealer_balance_sheet": {
+      "text": "Around quarter-ends some dealers cut back parts of their repo activity, consistent with efforts to reduce the size of the balance sheets they report",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"
+    },
+    "mmf_on_rrp": {
+      "text": "Around quarter-ends, money market funds and other lenders in tri-party repo shift some of their lending into the Fed's overnight reverse repo facility",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"
+    },
+    "qe_sofr_rise": {
+      "text": "Fed staff wrote in June 2025 that SOFR had risen temporarily over each quarter-end since March 2023, and that the previous September and year-end it rose above the rate the Fed pays on reserves",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"
+    },
+    "qe_high_trades": {
+      "text": "Fed staff wrote in June 2025 that when SOFR rose above the rate paid on reserves, the previous September and year-end, a significant volume of repo trades took place at rates higher still",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"
+    },
+    "effr_spillover": {
+      "text": "In September 2019, pressure in the repo market spilled over into the federal funds market, and the effective federal funds rate moved above the top of the FOMC's target range",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"
+    },
     "segments_tgcr": {
       "text": "TGCR measures overnight tri-party general collateral repo backed by Treasuries, leaving out trades in which the Fed is a counterparty",
       "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
