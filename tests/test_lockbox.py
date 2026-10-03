@@ -314,6 +314,16 @@ NOT_ENTRY_POINTS = {
     "scripts/calibration_masking_exposure.exposure": (
         "counts masked training pairs per refit block; scores nothing"
     ),
+    "scripts/live_record.forecast_run": (
+        "the live record's forecast loop (#215): trains and forecasts as the as-of "
+        "information set allows, computes no metric and scores no day "
+        "(docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
+        "only once the lockbox amendment is merged"
+    ),
+    "scripts/live_record.require_reads_on_real_rows": (
+        "checks one live forecast's reads against the placeholder rows (#215); "
+        "selects and scores nothing"
+    ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
         "nothing, and leaves locked days out of every count through `counted` "

@@ -170,8 +170,9 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertEqual(declared, ["permissions:"])
 
     def test_every_action_is_pinned_to_a_full_commit_sha(self):
+        # The workflow uses none today (Python from the runner's tool cache,
+        # git and gh from the runner); one added later is pinned or refused.
         uses = [line.strip() for line in self.lines if re.match(r"^\s*-?\s*uses:", line)]
-        self.assertTrue(uses, "the workflow uses no action at all")
         for line in uses:
             with self.subTest(line=line):
                 self.assertRegex(line, r"uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d")
@@ -182,6 +183,11 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertIn('"scikit-learn==1.9.1"', text)
         ci = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
         self.assertIn('"numpy==2.4.6" "scikit-learn==1.9.1"', ci)
+
+    def test_the_record_is_never_a_dry_run(self):
+        text = "\n".join(self.lines)
+        self.assertIn("scripts/live_record.py run", text)
+        self.assertNotIn("--dry-run", text)
 
     def test_it_runs_after_the_decision_instant_on_weekdays(self):
         schedule = [line for line in self.lines if "cron:" in line]
@@ -414,15 +420,17 @@ class PlaceholderGuardTests(unittest.TestCase):
         index = len(self.rows) - 1
         for h in live.HORIZONS:
             with self.subTest(h=h):
-                live.require_reads_on_real_rows(self.rows, self._rule(h), index, index - h)
+                # The live panel: real rows to the day before the decision
+                # day, then placeholders from the decision day on.
+                live.require_reads_on_real_rows(self.rows, self._rule(h), index, index - h - 1)
 
     def test_an_observed_read_on_a_placeholder_is_refused(self):
-        # Pretend the panel's real rows stopped one row earlier than they do:
-        # the spread the forecast reads (published the day before the
-        # decision) then sits on a "placeholder".
+        # Pretend the real rows stopped one row earlier than they do: the
+        # spread the forecast reads (the day before the decision day's) then
+        # sits on a "placeholder".
         index = len(self.rows) - 1
         with self.assertRaises(LookAheadError):
-            live.require_reads_on_real_rows(self.rows, self._rule(1), index, index - 2)
+            live.require_reads_on_real_rows(self.rows, self._rule(1), index, index - 3)
 
 
 class BaselineAgreementTests(unittest.TestCase):
@@ -436,7 +444,8 @@ class BaselineAgreementTests(unittest.TestCase):
     own functions run over the uncut panel, scoring the same target day.
     """
 
-    DECISION_DAY = date(2025, 12, 29)
+    #: Its targets at h = 1 and h = 3 (2025-12-23, 2025-12-26) fall before the lockbox.
+    DECISION_DAY = date(2025, 12, 22)
 
     @classmethod
     def setUpClass(cls):
