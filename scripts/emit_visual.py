@@ -103,7 +103,6 @@ MAP = "docs/visual/map.json"
 ISSUES = "docs/visual/issues.json"
 RUNS = "docs/runs"
 SNAPSHOTS = "tests/fixtures/snapshots"
-ON_RRP = "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
 PAGE = "site/index.html"
@@ -1106,55 +1105,6 @@ def check_map_text(tag_map, notes, glossary):
                               f"which {ANNOTATIONS} does not carry")
         if set(about) not in ({"term"}, {"claim"}):
             raise VisualError(f"map tag {tag['key']!r}: about names one glossary term or one claim")
-
-
-def on_rrp_results(repo):
-    """The Desk's ON RRP results, from the tracked snapshots through `ingest`'s own adapter.
-
-    `parse_snapshots` refuses a file whose bytes do not match its manifest's
-    SHA-256. A day's result is the latest vintage of it. Returns
-    `([(ref_date, available_at, value in USD billions)], {snapshot path: sha256})`,
-    the results ordered by when they became public.
-    """
-    manifests = sorted((repo / ON_RRP).glob("*.json.manifest.json"))
-    if not manifests:
-        raise VisualError(f"no ON RRP snapshot under {ON_RRP}")
-    artifacts = [load_snapshot_manifest(path) for path in manifests]
-    latest = {}
-    for row in parse_snapshots(artifacts).rows:
-        if row.series_id != NYFED_ON_RRP_FIELD:
-            continue
-        if row.ref_date not in latest or row.available_at > latest[row.ref_date][0]:
-            latest[row.ref_date] = (row.available_at, row.value)
-    results = sorted(((ref, at, value) for ref, (at, value) in latest.items()), key=lambda o: (o[1], o[0]))
-    snapshots = {}
-    for path in manifests:
-        payload = path.with_name(path.name[:-len(".manifest.json")])
-        snapshots[str(payload.relative_to(repo))] = sha256(payload)
-    return results, snapshots
-
-
-def on_rrp_as_of(results, day, decision, registry):
-    """`(ref_date, value)`: the latest ON RRP result public at the decision instant of `day`.
-
-    `results` is `on_rrp_results(...)[0]`, ordered by availability. The
-    availability is the adapter's, from the registry's declaration (16:00 ET on
-    the next business day), so a 16:00 reading on `day` sees the previous
-    business day's operation. A reading older than the declaration's
-    `worst_case_calendar_days` is refused (`ValueError`), never carried.
-    """
-    lag = registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]
-    instant = datetime.combine(day, decision, ZoneInfo(lag["timezone"]))
-    times = [at for _, at, _ in results]
-    position = bisect.bisect_right(times, instant) - 1
-    if position < 0:
-        raise ValueError(f"no ON RRP result was public at {instant.isoformat()}")
-    ref, _, value = results[position]
-    limit = int(lag["worst_case_calendar_days"])
-    if (day - ref).days > limit:
-        raise ValueError(f"the ON RRP reading on {day.isoformat()} is from {ref.isoformat()}, more than "
-                         f"{limit} calendar days old; refusing rather than carrying it")
-    return ref, value
 
 
 def segment_days(rows, locked, on_rrp, registry, decision):
