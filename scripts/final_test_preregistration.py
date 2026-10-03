@@ -100,9 +100,9 @@ CALIBRATOR_CHOOSER = "published_v1"
 DEFAULT_CALIBRATOR = "platt"
 
 #: The model the selection rule chose (`select`), frozen by the record.
-CHOSEN = "published_v1"
+CHOSEN = "dynamic_logit"
 #: The calibrator the calibrator rule chose (`calibrator`), frozen by the record.
-CHOSEN_CALIBRATOR = "platt"
+CHOSEN_CALIBRATOR = "platt_recency"
 
 
 def _proxy(mapping):
@@ -119,14 +119,17 @@ def _script(name):
     return module
 
 
-def leap_jump_bp() -> float:
-    return float(onset.LEAP_JUMP_BP[HORIZON])
+def leap_jump_bp(horizon: int = HORIZON) -> float:
+    return float(onset.LEAP_JUMP_BP[horizon])
 
 
 # -- the candidates ------------------------------------------------------------------
 
 
-def _backtest(rows, name, predictor, features, taus, calibration=None):
+def _backtest(rows, name, predictor, features, taus, window, calibration=None):
+    """One walk-forward run on the shared fold grid; `window` is `(horizon, end)`."""
+
+    horizon, end = window
     return rolling_exceedance_backtest(
         rows,
         predictor=predictor,
@@ -137,9 +140,9 @@ def _backtest(rows, name, predictor, features, taus, calibration=None):
         taus=taus,
         minimum_history=MINIMUM_HISTORY,
         refit_every=REFIT_EVERY,
-        end=END,
-        horizon=HORIZON,
-        leap_jump_bp=leap_jump_bp(),
+        end=end,
+        horizon=horizon,
+        leap_jump_bp=leap_jump_bp(horizon),
         online_calibration=calibration,
     )
 
@@ -150,14 +153,14 @@ def _stress_taus():
     return tuple(float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"])
 
 
-def _published_v1(rows, splits):
+def _published_v1(rows, splits, window):
     """#169's published v1 before its recalibration: the gbm with nested PID (#124)."""
 
     from repo_model import ml
     from repo_model.recalibration import NestedFoldPid
 
     v1 = _script("pressure_model_v1")
-    features = v1._at_horizon(v1.GBM_FEATURES, HORIZON)
+    features = v1._at_horizon(v1.GBM_FEATURES, window[0])
 
     def online(rows_, rule):
         return NestedFoldPid(rows_, rule, splits=splits, refit_every=REFIT_EVERY)
@@ -166,11 +169,11 @@ def _published_v1(rows, splits):
         rows, "distributional_gbm",
         ml.gbm_exceedance(tuple(n for n in features if n != "spread_bps"),
                           minimum_history=MINIMUM_HISTORY),
-        features, _stress_taus(), online,
+        features, _stress_taus(), window, online,
     )
 
 
-def _v1_1(rows, splits):
+def _v1_1(rows, splits, window):
     """#117's `joint` run: v1 with all five #117 inputs (`scripts/pressure_v1_1.py`)."""
 
     from repo_model import ml
@@ -178,8 +181,8 @@ def _v1_1(rows, splits):
 
     v11s = _script("pressure_v1_1")
     v1 = v11s.v1
-    columns = v11s.columns_at_horizon(v11s.candidate_columns(v11s.JOINT), HORIZON)
-    features = v1._at_horizon(v1.GBM_FEATURES, HORIZON) + columns
+    columns = v11s.columns_at_horizon(v11s.candidate_columns(v11s.JOINT), window[0])
+    features = v1._at_horizon(v1.GBM_FEATURES, window[0]) + columns
 
     def online(rows_, rule):
         return NestedFoldPid(rows_, rule, splits=splits, refit_every=REFIT_EVERY)
@@ -189,11 +192,11 @@ def _v1_1(rows, splits):
             rows, v11s.JOINT,
             ml.gbm_exceedance(tuple(n for n in features if n != "spread_bps"),
                               minimum_history=MINIMUM_HISTORY),
-            features, _stress_taus(), online,
+            features, _stress_taus(), window, online,
         )
 
 
-def _scarcity_calendar(rows, splits):
+def _scarcity_calendar(rows, splits, window):
     """#128's blind primary form: the logistic with the state alone, four levels."""
 
     from repo_model import ml, scarcity_calendar as sc
@@ -201,7 +204,7 @@ def _scarcity_calendar(rows, splits):
     v11s = _script("pressure_v1_1")
     (name,) = [n for n in sc.PRIMARY_CANDIDATES if sc.candidate(n).form == "logistic"]
     entry = sc.candidate(name)
-    features = sc.features_at_horizon(name, HORIZON)
+    features = sc.features_at_horizon(name, window[0])
     with v11s.switched_on():
         return _backtest(
             rows, name,
@@ -209,31 +212,31 @@ def _scarcity_calendar(rows, splits):
                 entry.form, features, splits, sc.STATE_FORMS[entry.state],
                 minimum_history=MINIMUM_HISTORY,
             ),
-            features, _stress_taus(),
+            features, _stress_taus(), window,
         )
 
 
-def _dynamic_logit(rows, splits):
+def _dynamic_logit(rows, splits, window):
     """#137's `dynamic_logit` (`ml.DYNAMIC_LOGIT_SETTINGS`), as `scripts/pressure_dynamic_logit.py`."""
 
     from repo_model import ml
 
     dl = _script("pressure_dynamic_logit")
-    features = dl._at_horizon(dl.DYNAMIC_FEATURES, HORIZON)
+    features = dl._at_horizon(dl.DYNAMIC_FEATURES, window[0])
     return _backtest(
         rows, "dynamic_logit",
         ml.dynamic_logit_exceedance(features, splits, minimum_history=MINIMUM_HISTORY),
-        features, dl.TAUS,
+        features, dl.TAUS, window,
     )
 
 
-def _direct_logistic_sofr_p1(rows, splits):
+def _direct_logistic_sofr_p1(rows, splits, window):
     """#114's direct logistic plus #127's `sofr_p1`, as #172 measured it."""
 
     from repo_model import ml
 
     ew = _script("early_warning_inputs")
-    control = ew._at_horizon(ew.DIRECT_FEATURES, HORIZON)
+    control = ew._at_horizon(ew.DIRECT_FEATURES, window[0])
     columns, products = ew.runs()["sofr_p1"]
     features = control + tuple(c for c in columns if c not in control and c not in ew.DESIGN_HAS)
     with ew.switched_on():
@@ -242,7 +245,7 @@ def _direct_logistic_sofr_p1(rows, splits):
             ml.pressure_logistic_exceedance(
                 features, splits, minimum_history=MINIMUM_HISTORY, products=products
             ),
-            features, ew.TAUS,
+            features, ew.TAUS, window,
         )
 
 
@@ -261,7 +264,7 @@ def _leap_view(report, labels, jump_bp):
     )
 
 
-def _stacked_combiner(rows, splits):
+def _stacked_combiner(rows, splits, window):
     """#137's stacked combiner over the persistence-logistic, the gbm and the dynamic logit.
 
     As measured for #168 (`scripts/pressure_dynamic_logit.py`): the bases enter
@@ -274,12 +277,12 @@ def _stacked_combiner(rows, splits):
     from repo_model.baseline import persistence_logistic_exceedance
 
     dl = _script("pressure_dynamic_logit")
-    gbm_features = dl._at_horizon(dl.GBM_FEATURES, HORIZON)
+    gbm_features = dl._at_horizon(dl.GBM_FEATURES, window[0])
     bases = {
         "persistence_logistic": _backtest(
             rows, "persistence_logistic",
             persistence_logistic_exceedance(minimum_history=MINIMUM_HISTORY),
-            ("spread_bps",), dl.TAUS,
+            ("spread_bps",), dl.TAUS, window,
         ),
         "distributional_gbm": _backtest(
             rows, "distributional_gbm",
@@ -289,20 +292,20 @@ def _stacked_combiner(rows, splits):
                 calibration="cross_conformal",
                 calibration_folds=5,
             ),
-            gbm_features, dl.TAUS,
+            gbm_features, dl.TAUS, window,
         ),
-        "dynamic_logit": _dynamic_logit(rows, splits),
+        "dynamic_logit": _dynamic_logit(rows, splits, window),
     }
     combined = ml.stacked_combiner(bases)
-    labels = leap_labels(rows, bases["dynamic_logit"].scored_dates)
+    labels = leap_labels(rows, bases["dynamic_logit"].scored_dates, window[0])
     leap = ml.stacked_combiner(
-        {name: _leap_view(report, labels, leap_jump_bp()) for name, report in bases.items()}
+        {name: _leap_view(report, labels, leap_jump_bp(window[0])) for name, report in bases.items()}
     )
     return dataclasses.replace(
         combined,
         leap_forecast=tuple(curve[0] for curve in leap.forecast),
         pressure_leap_forecast=None,
-        leap_threshold_bp=leap_jump_bp(),
+        leap_threshold_bp=leap_jump_bp(window[0]),
     )
 
 
@@ -316,13 +319,13 @@ RUNNERS = {
 }
 
 
-def leap_labels(rows, scored_dates):
-    """The plain-leap outcome of each scored day at `J_1`, read as-of (#139)."""
+def leap_labels(rows, scored_dates, horizon=HORIZON):
+    """The plain-leap outcome of each scored day at `J_h`, read as-of (#139)."""
 
     rule = InformationRule(
-        json.loads(REGISTRY.read_text()), ("spread_bps",), decision_time=DECISION, horizon=HORIZON
+        json.loads(REGISTRY.read_text()), ("spread_bps",), decision_time=DECISION, horizon=horizon
     )
-    targets = onset.LeapTargets(rows, rule, leap_jump_bp())
+    targets = onset.LeapTargets(rows, rule, leap_jump_bp(horizon))
     position = {when: index for index, when in enumerate(targets.dates)}
     return [1 if targets.leap[position[when]] else 0 for when in scored_dates]
 
@@ -336,7 +339,7 @@ def candidate_command(args) -> int:
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
-    report = RUNNERS[args.name](rows, splits)
+    report = RUNNERS[args.name](rows, splits, (HORIZON, END))
     _refuse_locked(report.scored_dates)
     position = report.taus.index(ONSET_TAU)
     document = {
@@ -494,6 +497,12 @@ def select_command(args) -> int:
     )
     targets = onset.LeapTargets(rows, rule, leap_jump_bp())
     leap_at_risk = onset.leap_onset_group(targets, scored)
+    baselines = {
+        onset.LEAP_CALENDAR_CLIMATOLOGY: onset.leap_calendar_climatology(
+            targets, "leap", scored, ends, splits),
+        onset.LEAP_PERSISTENCE_LOGISTIC: onset.leap_persistence_logistic(
+            targets, "leap", scored, ends),
+    }
     tau = f"{ONSET_TAU:g}"
     tau_outcomes = first["tau_outcomes"][tau]
 
@@ -526,6 +535,11 @@ def select_command(args) -> int:
             )
             entry["within"] = entry["vs_best"]["interval"]["upper"] >= 0
         entry["within_unpaired_reading"] = brier[name] <= best_level[1]
+        entry["vs_leap_baselines"] = {
+            bench: pc._paired(values, columns[name], outcomes,
+                              block_length=block, seed=_seed("vs_baseline", name, bench))
+            for bench, values in baselines.items()
+        }
         onset_column = list(pc.walk_forward(method, part["tau_raw"][tau], tau_outcomes, scored, ends))
         entry["descriptive"] = {
             "onset_at_risk_brier_+5bp": _brier(onset_column, tau_outcomes, groups[onset.GROUP_ONSET]),
@@ -554,7 +568,11 @@ def select_command(args) -> int:
             "leap_onset_at_risk": {"days": len(leap_at_risk),
                                    "events": sum(outcomes[k] for k in leap_at_risk)},
         },
-        "sign_convention": "vs_best = Brier(best) - Brier(candidate); within when its 90% interval reaches 0",
+        "sign_convention": (
+            "vs_best = Brier(best) - Brier(candidate); within when its 90% interval reaches 0. "
+            "vs_leap_baselines = Brier(baseline) - Brier(candidate), descriptive only"
+        ),
+        "leap_baselines_brier": {bench: _brier(values, outcomes) for bench, values in baselines.items()},
         "best": best,
         "best_brier_interval": {"lower": best_level[0], "upper": best_level[1]},
         "scores": scores,
@@ -569,16 +587,14 @@ def select_command(args) -> int:
 
 # -- the frozen declaration ----------------------------------------------------------
 
-#: The source a frozen model's code is, per candidate: (file, top-level names).
-#: A change to any of them changes the checksum.
+#: The code a frozen model is, per candidate: (file, root definitions). Each
+#: root is hashed with every top-level definition of the same file it reaches,
+#: so an edit to a helper moves the checksum too (`_top_level_source`).
 _SHARED_SOURCE = (
-    ("src/repo_model/onset.py", ("LeapTargets", "_calm_before", "leap_calendar_climatology",
-                                 "leap_persistence_logistic", "leap_onset_group")),
+    ("src/repo_model/onset.py", ("LeapTargets", "leap_calendar_climatology",
+                                 "leap_persistence_logistic", "leap_onset_group", "day_groups")),
     ("src/repo_model/baseline.py", ("rolling_exceedance_backtest", "_leap_at_folds")),
-    ("src/repo_model/probability_calibration.py", ("_platt", "_isotonic", "_beta", "_weighted_platt",
-                                                   "_weighted_logistic", "beta_parameters", "fit",
-                                                   "blocks", "past_positions", "_ready",
-                                                   "walk_forward")),
+    ("src/repo_model/probability_calibration.py", ("walk_forward", "CALIBRATORS")),
 )
 _MODEL_SOURCE = {
     "published_v1": (
@@ -593,10 +609,12 @@ _MODEL_SOURCE = {
     ),
     "scarcity_calendar": (
         ("src/repo_model/ml.py", ("_scarcity_calendar_predictor",)),
+        ("src/repo_model/scarcity_calendar.py", ("STATE_FORMS", "features_at_horizon")),
         ("scripts/final_test_preregistration.py", ("_scarcity_calendar",)),
     ),
     "dynamic_logit": (
-        ("src/repo_model/ml.py", ("dynamic_logit_exceedance", "DYNAMIC_LOGIT_SETTINGS")),
+        ("src/repo_model/ml.py", ("dynamic_logit_exceedance",)),
+        ("scripts/pressure_dynamic_logit.py", ("DYNAMIC_FEATURES", "_at_horizon")),
         ("scripts/final_test_preregistration.py", ("_dynamic_logit",)),
     ),
     "direct_logistic_sofr_p1": (
@@ -604,44 +622,71 @@ _MODEL_SOURCE = {
         ("scripts/final_test_preregistration.py", ("_direct_logistic_sofr_p1",)),
     ),
     "stacked_combiner": (
-        ("src/repo_model/ml.py", ("stacked_combiner", "STACKED_COMBINER", "gbm_exceedance",
-                                  "dynamic_logit_exceedance", "DYNAMIC_LOGIT_SETTINGS")),
-        ("scripts/final_test_preregistration.py", ("_stacked_combiner", "_leap_view",
-                                                   "_dynamic_logit")),
+        ("src/repo_model/ml.py", ("stacked_combiner", "gbm_exceedance", "dynamic_logit_exceedance")),
+        ("scripts/pressure_dynamic_logit.py", ("DYNAMIC_FEATURES", "GBM_FEATURES", "_at_horizon")),
+        ("scripts/final_test_preregistration.py", ("_stacked_combiner", "_dynamic_logit")),
     ),
 }
 #: Each candidate's declared inputs at horizon 1, as `candidate` scored them.
 _FEATURES = {
-    "published_v1": (
-        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement",
-    ),
+    "scarcity_calendar": ("spread_bps", "reserve_scarcity_state", "days_to_month_end",
+                          "quarter_end", "tax_date", "treasury_settlement"),
+    "dynamic_logit": ("spread_bps", "days_to_month_end", "quarter_end", "tax_date",
+                      "treasury_settlement_coupons", "reserve_balances"),
+    "direct_logistic_sofr_p1": ("spread_bps", "days_to_month_end", "quarter_end", "tax_date",
+                                "treasury_settlement", "reserve_balances", "tga", "sofr_p1"),
+    "published_v1": ("reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
+                     "tbill_13w", "tbill_4w", "tga", "treasury_settlement"),
+    "v1_1": ("reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
+             "tbill_13w", "tbill_4w", "tga", "treasury_settlement", "iorb_announced_change_bps",
+             "iorb_days_to_announced_change", "on_rrp_depleted", "reserves_when_depleted",
+             "settlement_day", "settlement_day_when_depleted", "effr_minus_iorb_bp",
+             "reserve_scarcity_state"),
+    "stacked_combiner": ("persistence_logistic", "distributional_gbm", "dynamic_logit"),
 }
 
 
-def _top_level_source(path: str, names) -> dict:
-    """The exact source text of each top-level definition or assignment named."""
-
-    text = (REPO / path).read_text(encoding="utf-8")
-    tree = ast.parse(text)
+def _definitions(tree) -> dict:
     found = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
-            label = node.name
+            found[node.name] = node
         elif isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(
             node.targets[0], ast.Name
         ):
-            label = node.targets[0].id
-        else:
-            continue
-        if label in names:
-            found[label] = hashlib.sha256(
-                ast.get_source_segment(text, node).encode("utf-8")
-            ).hexdigest()
-    missing = sorted(set(names) - set(found))
+            found[node.targets[0].id] = node
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            found[node.target.id] = node
+    return found
+
+
+def _top_level_source(path: str, roots) -> dict:
+    """The sha256 of each top-level definition `roots` reach within `path`.
+
+    A root reaches every top-level name of the same file that its source
+    mentions, and so on: the definition's helpers and constants.
+    """
+
+    text = (REPO / path).read_text(encoding="utf-8")
+    definitions = _definitions(ast.parse(text))
+    missing = sorted(set(roots) - set(definitions))
     if missing:
         raise ValueError(f"{path} defines none of {missing}")
-    return found
+    reached, stack = set(), list(roots)
+    while stack:
+        name = stack.pop()
+        if name in reached:
+            continue
+        reached.add(name)
+        for node in ast.walk(definitions[name]):
+            if isinstance(node, ast.Name) and node.id in definitions:
+                stack.append(node.id)
+    return {
+        name: hashlib.sha256(
+            ast.get_source_segment(text, definitions[name]).encode("utf-8")
+        ).hexdigest()
+        for name in sorted(reached)
+    }
 
 
 def declaration(name: str = CHOSEN, calibrator: str = CHOSEN_CALIBRATOR) -> dict:
