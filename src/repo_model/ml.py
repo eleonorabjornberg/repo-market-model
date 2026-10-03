@@ -584,7 +584,7 @@ from .baseline import (
     _validate_taus_bp,
     fit_arx,
 )
-from .contract import QUANTILE_LEVELS
+from .contract import DERIVED_FEATURES, QUANTILE_LEVELS
 from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
 from .asof import InformationRule
@@ -4535,7 +4535,12 @@ class _ScarcityCalendarDesign:
         }
 
     def _value(self, row: DailyObservation, column: str) -> float:
-        value = row.values.get(column)
+        # A derived feature (`contract.DERIVED_FEATURES`, such as #98's EFFR -
+        # IORB) is a property of the row over its constituents, not a value.
+        if column in DERIVED_FEATURES:
+            value = getattr(row, column)
+        else:
+            value = row.values.get(column)
         if value is None or not math.isfinite(float(value)):
             raise ValueError(
                 f"{row.date}: the as-of read of {column!r} is missing; a direct "

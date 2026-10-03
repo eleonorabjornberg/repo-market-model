@@ -9783,6 +9783,20 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
         calm = self.design().row(self._observation(0.0, quarter_end=1.0, treasury_settlement=80.0), None)
         self.assertEqual(calm[1:], [0.0, 0.0, 0.0, 0.0, 0.0])
 
+    def test_a_derived_measure_is_read_off_its_constituents(self):
+        """#98's EFFR - IORB is a derived feature: a property of the row, not a value.
+
+        Written red first: the design read `row.values` only, so this raised
+        `ValueError` ("the as-of read of 'effr_minus_iorb_bp' is missing") and
+        every run with the measures trained no pair.
+        """
+
+        design = self.design(_SCARCITY_CALENDAR + ("effr_minus_iorb_bp",))
+        got = design.row(self._observation(2.0, effr=3.93), None)
+        self.assertEqual(got[2], -7.0)
+        with self.assertRaises(ValueError):
+            design.row(self._observation(2.0, effr=None), None)
+
     def test_a_state_off_the_mapping_or_missing_is_refused(self):
         for state in (1.5, 4.0, None):
             with self.subTest(state=state):
