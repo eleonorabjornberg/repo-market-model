@@ -924,6 +924,223 @@ class MarkContrastTests(unittest.TestCase):
                         self.assertGreaterEqual(contrast(tokens[fg], tokens[bg]), 3.0)
 
 
+# ---------------------------------------------------------------- N3 "When does it happen?" (#141, #147)
+
+
+class NewcomerN3Base(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+        cls.rows = list(csv.DictReader(raw.decode().splitlines()))
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
+        cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+        cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
+        cls.on_rrp, cls.snapshots = emit_visual.on_rrp_results(ROOT)
+        cls.base = cls.run_n3(cls.rows)
+
+    @classmethod
+    def run_n3(cls, rows, locked=None, on_rrp=None):
+        return emit_visual.newcomer_n3(copy.deepcopy(rows), cls.locked if locked is None else locked,
+                                       cls.thresholds, cls.registry, cls.decision,
+                                       cls.on_rrp if on_rrp is None else on_rrp, cls.notes)
+
+    def is_locked(self, row):
+        return lockbox.locked_tier(emit_visual.date.fromisoformat(row["date"]), self.locked) is not None
+
+
+class NewcomerN3Tests(NewcomerN3Base):
+    """N3's 2x2: quarter-end window against scarce or abundant cash, a rate per cell."""
+
+    def test_the_cells_partition_the_counted_days(self):
+        data, _ = self.base
+        kept = emit_visual.counted(self.rows, self.locked)
+        self.assertEqual(len(data["cells"]), 4)
+        self.assertEqual({(c["scarce"], c["quarter_end"]) for c in data["cells"]},
+                         {(True, True), (True, False), (False, True), (False, False)})
+        self.assertEqual(sum(c["n"] for c in data["cells"]), len(kept))
+        self.assertEqual(data["counted"]["n"], len(kept))
+
+    def test_quarter_end_is_the_window_in_force(self):
+        """#140 has merged, so the 2x2 reads `quarter_end_window`, and the caption names it."""
+        from repo_model import data as panel_data
+        data, fills = self.base
+        self.assertEqual(data["column"], "quarter_end_window")
+        self.assertEqual(data["window_business_days"], panel_data.QUARTER_END_WINDOW_BUSINESS_DAYS)
+        kept = emit_visual.counted(self.rows, self.locked)
+        in_window = sum(1 for r in kept
+                        if panel_data.quarter_end_window(emit_visual.date.fromisoformat(r["date"])) == 1.0)
+        self.assertEqual(sum(c["n"] for c in data["cells"] if c["quarter_end"]), in_window)
+        self.assertIn("quarter_end_window", fills["n3_window_caption"])
+
+    def test_scarce_is_the_declared_on_rrp_break_alone(self):
+        from repo_model import contract
+        data, _ = self.base
+        self.assertEqual(data["break_bn"], contract.ON_RRP_DEPLETION_BREAK_BN)
+        source = (ROOT / "scripts" / "emit_visual.py").read_text(encoding="utf-8")
+        self.assertNotRegex(source, r"(?m)=\s*100(\.0)?\s*(#.*)?$")
+        self.assertNotIn("scarcity", data)
+
+    def test_each_cell_is_a_rate_with_an_interval(self):
+        data, _ = self.base
+        for cell in data["cells"]:
+            for tau in (data["pressure_bp"], data["second_bp"]):
+                with self.subTest(cell=(cell["scarce"], cell["quarter_end"]), tau=tau):
+                    entry = cell["above"][str(tau)]
+                    self.assertLessEqual(entry["k"], cell["n"])
+                    self.assertAlmostEqual(entry["rate"], entry["k"] / cell["n"])
+                    lo, hi = entry["interval"]
+                    self.assertLessEqual(lo, entry["rate"])
+                    self.assertGreaterEqual(hi, entry["rate"])
+
+    def test_the_lede_is_a_rate_per_cell_not_a_claim_that_one_cell_spikes(self):
+        _, fills = self.base
+        for cell in self.base[0]["cells"]:
+            self.assertIn(f"{cell['above'][str(self.base[0]['pressure_bp'])]['k']} of {cell['n']}", fills["n3_lede"])
+        self.assertNotRegex(fills["n3_lede"].lower(), r"\bonly\b")
+
+
+class NewcomerN3AsOfReadTests(NewcomerN3Base):
+    """The ON RRP reading is the one public at the decision instant, and not stale.
+
+    A result is declared public at 16:00 ET on the next business day
+    (`metadata/sources.json`, `nyfed_on_rrp.release_lag`), so a 16:00 reading
+    on day d sees the previous business day's operation, never d's own.
+
+    Recorded mutation: in `on_rrp_as_of`, `bisect.bisect_right(times, instant)`
+    -> `bisect.bisect_right(times, instant + timedelta(days=1))`.
+    test_a_monday_reads_the_friday_result and
+    test_no_read_is_public_after_the_decision_instant then failed with
+    AssertionError (the day's own operation was read).
+    """
+
+    def read(self, iso, on_rrp=None):
+        return emit_visual.on_rrp_as_of(self.on_rrp if on_rrp is None else on_rrp,
+                                        emit_visual.date.fromisoformat(iso), self.decision, self.registry)
+
+    def test_a_monday_reads_the_friday_result(self):
+        ref, _ = self.read("2025-03-03")
+        self.assertEqual(ref.isoformat(), "2025-02-28")
+
+    def test_no_read_is_public_after_the_decision_instant(self):
+        from zoneinfo import ZoneInfo
+        zone = ZoneInfo(self.registry["nyfed_on_rrp"]["release_lag"]["timezone"])
+        published = {ref: at for ref, at, _ in self.on_rrp}
+        for r in emit_visual.counted(self.rows, self.locked):
+            today = emit_visual.date.fromisoformat(r["date"])
+            ref, _ = self.read(r["date"])
+            with self.subTest(day=r["date"]):
+                self.assertLess(ref, today)
+                self.assertLessEqual(published[ref], emit_visual.datetime.combine(today, self.decision, zone))
+
+
+class NewcomerN3StaleReadTests(NewcomerN3Base):
+    """A reading older than the registry's worst case is refused, not carried.
+
+    Recorded mutation: in `on_rrp_as_of`, `if (day - ref).days > limit:`
+    -> `if False:`. test_a_stale_read_is_refused then failed with
+    AssertionError: ValueError not raised.
+    """
+
+    def test_a_stale_read_is_refused(self):
+        day = emit_visual.date(2025, 3, 14)
+        gap = [o for o in self.on_rrp if not (emit_visual.date(2025, 3, 1) <= o[0] < day)]
+        with self.assertRaises(ValueError):
+            emit_visual.on_rrp_as_of(gap, day, self.decision, self.registry)
+
+    def test_every_counted_day_has_a_fresh_read(self):
+        limit = self.registry["nyfed_on_rrp"]["release_lag"]["worst_case_calendar_days"]
+        for r in emit_visual.counted(self.rows, self.locked):
+            today = emit_visual.date.fromisoformat(r["date"])
+            ref, _ = emit_visual.on_rrp_as_of(self.on_rrp, today, self.decision, self.registry)
+            self.assertLessEqual((today - ref).days, limit)
+
+
+class NewcomerN3HeldOutDayTests(NewcomerN3Base):
+    """Locked days change no cell, count or sentence in N3 (#141 ruling 3).
+
+    Perturbing a locked day's SOFR, or the ON RRP result its reading would see,
+    leaves N3's data and fills unchanged; perturbing an unlocked day moves them.
+
+    Recorded mutation: in `newcomer_n3`, `kept = counted(rows, locked)`
+    -> `kept = list(rows)`. test_locked_perturbation_changes_nothing then
+    failed with AssertionError (the cell counts and the lede moved).
+    """
+
+    def perturbed(self, index, sofr):
+        rows = copy.deepcopy(self.rows)
+        rows[index]["sofr"] = sofr
+        return rows
+
+    def test_the_panel_reaches_into_a_locked_tier(self):
+        self.assertTrue(any(self.is_locked(r) for r in self.rows))
+
+    def test_locked_perturbation_changes_nothing(self):
+        locked = [i for i, r in enumerate(self.rows) if self.is_locked(r)]
+        for index in (locked[0], locked[-1]):
+            for sofr in ("9.99", "0.01"):
+                with self.subTest(date=self.rows[index]["date"], sofr=sofr):
+                    self.assertEqual(self.run_n3(self.perturbed(index, sofr)), self.base)
+        first = emit_visual.date.fromisoformat(self.rows[locked[0]]["date"])
+        moved = [(ref, at, 0.0 if ref >= first else value) for ref, at, value in self.on_rrp]
+        self.assertEqual(self.run_n3(self.rows, on_rrp=moved), self.base)
+
+    def test_unlocked_perturbation_is_seen(self):
+        index = next(i for i, r in enumerate(self.rows)
+                     if not self.is_locked(r) and float(r["sofr"]) - float(r["iorb"]) < 0)
+        self.assertNotEqual(self.run_n3(self.perturbed(index, "9.99")), self.base)
+
+    def test_held_out_days_are_greyed_and_labelled(self):
+        data, fills = self.base
+        self.assertTrue(data["held_out"])
+        self.assertIn("held out", fills["n3_held_note"])
+        self.assertIn("class='held'", fills["n3_table"])
+
+    def test_an_opened_tier_is_counted(self):
+        data, fills = self.run_n3(self.rows, locked=())
+        self.assertEqual(data["held_out"], [])
+        self.assertEqual(sum(c["n"] for c in data["cells"]), len(self.rows))
+        self.assertNotIn("class='held'", fills["n3_table"])
+
+
+class NewcomerN3PageTests(unittest.TestCase):
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    def section(self):
+        block = newcomer_block(self.page)
+        return block[block.index('<section id="n3"'):]
+
+    def test_n3_is_on_the_page_and_in_the_nav(self):
+        self.assertIn('<section id="n3"', newcomer_block(self.page))
+        self.assertRegex(newcomer_block(self.page), r'<nav aria-label="Start here">.*href="#n3"')
+
+    def test_the_caption_states_the_quarter_end_definition(self):
+        self.assertIn("quarter_end_window", self.section())
+
+    def test_every_claim_link_is_a_primary_source(self):
+        section = self.section().split("</section>")[0]
+        section = re.sub(r"<span class=\"def\"[^>]*>.*?</span><!--/def-->", " ", section, flags=re.S)
+        links = re.findall(r"href=['\"](https?://[^'\"]+)['\"]", section)
+        self.assertTrue(links)
+        for url in links:
+            with self.subTest(url=url):
+                self.assertTrue(url.startswith(emit_visual.ALLOWED_SOURCES))
+
+    def test_the_data_file_names_every_on_rrp_snapshot_it_read(self):
+        doc = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n3.json").read_text(encoding="utf-8"))
+        inputs = doc["provenance"]["inputs"]
+        snaps = sorted(p for p in (ROOT / emit_visual.ON_RRP).glob("*.json") if not p.name.endswith(".manifest.json"))
+        self.assertTrue(snaps)
+        for path in snaps:
+            rel = str(path.relative_to(ROOT))
+            with self.subTest(path=rel):
+                self.assertEqual(inputs[rel], emit_visual.sha256(path))
+
+
 # ---------------------------------------------------------------- N4's tag-status engine (#141 §3, #144)
 
 
@@ -1196,6 +1413,231 @@ class RefreshIssuesTests(unittest.TestCase):
         for tag in tag_map["tags"]:
             for n in tag["issues"]:
                 self.assertIn(n, have)
+
+
+# ---------------------------------------------------------------- N4's map and segment chart (#141 §4, #145)
+
+
+class N4MapTests(unittest.TestCase):
+    """The map, its tags as buttons with detail panels, its list form, and chapter 1's remaining half."""
+
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+    tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
+    notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+    glossary = json.loads((ROOT / emit_visual.GLOSSARY).read_text(encoding="utf-8"))
+
+    def section(self):
+        start = self.page.index('<section id="n4"')
+        return self.page[start:self.page.index("</section>", start)]
+
+    def rows(self, tag_map=None):
+        tag_map = tag_map or self.tag_map
+        registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        snapshot = json.loads((ROOT / emit_visual.ISSUES).read_text(encoding="utf-8"))
+        records = emit_visual.run_record_declarations(ROOT)
+        return emit_visual.tag_statuses(tag_map, registry, manifest, records, snapshot, ())
+
+    def test_the_map_is_an_svg_with_an_accessible_name_naming_every_flow(self):
+        svg = re.search(r'<div class="n4map">(<svg.*?</svg>)</div>', self.section(), re.S).group(1)
+        self.assertRegex(svg, r'^<svg [^>]*role="img" aria-label="[^"]+"')
+        label = html_unescape(re.search(r'aria-label="([^"]+)"', svg).group(1))
+        for n, (key, flow) in enumerate(self.tag_map["flows"].items(), 1):
+            with self.subTest(flow=key):
+                self.assertIn(f'id="n4f-{key}"', svg)
+                self.assertIn(f"{n}, {self.tag_map['parties'][flow['from']]} to {self.tag_map['parties'][flow['to']]}", label)
+        for name in self.tag_map["parties"].values():
+            self.assertIn(name.split()[0], svg)
+
+    def test_the_seventh_party_lends_in_both_markets_with_a_cited_source(self):
+        self.assertIn("fhlbs", self.tag_map["parties"])
+        kinds = {f["kind"] for f in self.tag_map["flows"].values() if f["from"] == "fhlbs"}
+        self.assertEqual(kinds, {"repo", "fed_funds"})
+        for flow in self.tag_map["flows"].values():
+            if flow["from"] == "fhlbs":
+                self.assertTrue(self.notes["claims"][flow["claim"]]["src"].startswith("https://www.federalreserve.gov/"))
+
+    def test_every_tag_is_a_button_in_flow_order_with_its_own_hidden_panel(self):
+        block = self.section()
+        chips = re.findall(r'<button type="button" class="chip"[^>]*aria-controls="n4d-(\w+)"', block)
+        order = [r["key"] for f in self.tag_map["flows"] for r in self.rows() if r["flow"] == f]
+        order += [r["key"] for b in self.tag_map["boards"] for r in self.rows() if r["board"] == b]
+        self.assertEqual(chips, order)
+        self.assertEqual(sorted(chips), sorted(t["key"] for t in self.tag_map["tags"]))
+        for key in chips:
+            with self.subTest(tag=key):
+                panel = re.search(rf'<div class="n4d" id="n4d-{key}"[^>]*>(.*?)</div>', block, re.S)
+                self.assertIsNotNone(panel)
+                self.assertIn(" hidden>", panel.group(0)[:200])
+                self.assertIn('<button type="button" class="n4close">Close</button>', panel.group(1))
+        for attrs in re.findall(r'<button type="button" class="chip"([^>]*)>', block):
+            self.assertIn('aria-pressed="false"', attrs)
+            self.assertIn('aria-expanded="false"', attrs)
+
+    def test_status_is_icon_and_word_on_each_tag(self):
+        marks = {w: i for _, i, w in emit_visual.STATUSES}
+        for icon, word_ in re.findall(r'class="chip"[^>]*><span aria-hidden="true">(.*?)</span> .*? <small>(.*?)</small>',
+                                      self.section()):
+            self.assertEqual(marks[word_], icon)
+
+    def test_a_flow_no_registered_series_measures_is_drawn_faint_and_this_is_derived(self):
+        parties = self.tag_map["parties"]
+        svg = emit_visual.map_svg(self.tag_map, self.rows(), parties)
+        self.assertIn('class="fl faint" id="n4f-dealers_hf"', svg)
+        registered = copy.deepcopy(self.rows())
+        for r in registered:
+            if r["flow"] == "dealers_hf":
+                r["status"] = "registered_unused"
+        self.assertIn('class="fl" id="n4f-dealers_hf"', emit_visual.map_svg(self.tag_map, registered, parties))
+
+    def test_map_text_is_checked(self):
+        emit_visual.check_map_text(self.tag_map, self.notes, self.glossary)
+        for breaking in (lambda m: m["layout"].pop("fhlbs"),
+                         lambda m: m["flows"]["mmf_dealers"].update(kind="teleport"),
+                         lambda m: m["tags"][0].update(about={"term": "no_such_term"}),
+                         lambda m: m["tags"][0].update(about={"claim": "no_such_claim"}),
+                         lambda m: m["boards"].update(nowhere={"label": "x", "claim": "sofr_broad"})):
+            broken = copy.deepcopy(self.tag_map)
+            breaking(broken)
+            with self.assertRaises(emit_visual.VisualError):
+                emit_visual.check_map_text(broken, self.notes, self.glossary)
+
+    def test_a_board_tag_must_rest_on_a_known_board(self):
+        registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        broken = copy.deepcopy(self.tag_map)
+        next(t for t in broken["tags"] if t.get("board")).update(board="nowhere")
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.check_map(broken, registry, self.notes)
+
+    def test_the_segments_are_defined_and_bilateral_repo_is_in_none(self):
+        block = self.section()
+        self.assertIn("Non-centrally cleared bilateral repo", block)
+        claim = self.notes["claims"]["segments_none"]
+        self.assertTrue(claim["src"].startswith("https://www.newyorkfed.org/markets/reference-rates/"))
+        self.assertIn(claim["text"], block)
+
+    def test_chapter_one_keeps_the_nesting_and_the_ladder_under_go_deeper(self):
+        start = self.page.index('<section id="plumbing">')
+        chapter = self.page[start:self.page.index("</section>", start)]
+        fold = chapter[chapter.index('<details class="wide" id="plumbing-deeper">'):]
+        for part in ('id="seg-sofr"', 'id="seg-bgcr"', 'id="seg-tgcr"', 'id="corridor"'):
+            self.assertIn(part, fold)
+        self.assertNotIn("Cash comes from", self.page)
+        self.assertIn('href="#n4"', chapter)
+
+
+def html_unescape(text):
+    import html
+    return html.unescape(text)
+
+
+class SegmentDayTests(unittest.TestCase):
+    """N4's segment chart: its days come from inputs known in advance, never from a rate or a locked day.
+
+    Recorded mutations, each applied once to `scripts/emit_visual.py`:
+    * in `segment_days`, `if r["quarter_end"] == "1" and i > 0:` ->
+      `if r["quarter_end"] == "1" and i > 0 and r["sofr"]:`.
+      test_the_rule_reads_no_outcome_column then failed with KeyError ('sofr').
+    * in `segment_days`, `if r["date"] >= before or locked_tier(today, locked) is not None:` ->
+      `if r["date"] >= before:`. test_a_locked_day_is_never_chosen then failed with
+      AssertionError (the 2025 days under the synthetic tier were chosen).
+    * in `on_rrp_as_of`, `position = bisect.bisect_right(times, instant) - 1` ->
+      `position = len(times) - 1`. test_the_on_rrp_reading_was_public_at_the_decision then
+      failed with AssertionError (a reading published after the decision was used).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+        cls.rows = list(csv.DictReader(raw.decode().splitlines()))
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
+        cls.on_rrp, _ = emit_visual.on_rrp_results(ROOT)
+        cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
+        cls.days = cls.choose(cls.rows)
+
+    @classmethod
+    def choose(cls, rows, locked=None):
+        return emit_visual.segment_days(rows, cls.locked if locked is None else locked, cls.on_rrp, cls.registry,
+                                        cls.decision)
+
+    def test_the_rule_chooses_days_of_both_kinds(self):
+        """Otherwise the tests below would hold vacuously."""
+        kinds = {w for d in self.days for w in d["why"]}
+        self.assertEqual(kinds, {"quarter_end", "tax_coupon"})
+
+    def test_the_rule_reads_no_outcome_column(self):
+        stripped = [{k: r[k] for k in emit_visual.SEGMENT_RULE_COLUMNS} for r in self.rows]
+        self.assertEqual(self.choose(stripped), self.days)
+
+    def test_perturbing_every_rate_changes_no_day(self):
+        moved = copy.deepcopy(self.rows)
+        for r in moved:
+            for column in ("sofr", "tgcr", "bgcr", "iorb", "sofr_p25", "sofr_p75", "sofr_volume"):
+                if r.get(column):
+                    r[column] = str(float(r[column]) + 3.0)
+        self.assertEqual(self.choose(moved), self.days)
+
+    def test_every_day_meets_a_clause_of_the_rule(self):
+        by_date = {r["date"]: r for r in self.rows}
+        deadlines = {emit_visual.corporate_tax_deadline(y, m).isoformat()
+                     for y in range(2018, 2027) for m in emit_visual.TAX_DEADLINE_MONTHS}
+        for d in self.days:
+            with self.subTest(day=d["date"]):
+                self.assertLess(d["date"], emit_visual.SEGMENT_DAY_RULE["before"])
+                r = by_date[d["date"]]
+                if "quarter_end" in d["why"]:
+                    self.assertEqual(r["quarter_end"], "1")
+                    self.assertLess(d["on_rrp"]["bn"], emit_visual.SEGMENT_DAY_RULE["on_rrp_below_bn"])
+                if "tax_coupon" in d["why"]:
+                    self.assertIn(d["date"], deadlines)
+                    self.assertGreater(float(r["treasury_settlement_coupons"]), 0)
+
+    def test_a_locked_day_is_never_chosen(self):
+        """Under a tier that starts inside 2025, its days drop out, and perturbing them changes nothing."""
+        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        document["tiers"][0]["start"] = "2025-07-01"
+        import tempfile
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "lockbox.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        locked = lockbox.locked_tiers(path)
+        chosen = self.choose(self.rows, locked)
+        self.assertTrue(any(d["date"] >= "2025-07-01" for d in self.days))
+        self.assertFalse([d["date"] for d in chosen if d["date"] >= "2025-07-01"])
+        moved = copy.deepcopy(self.rows)
+        for r in moved:
+            if "2025-07-01" <= r["date"] < "2026-01-01":
+                r["quarter_end"] = "1"
+                r["treasury_settlement_coupons"] = "100"
+        self.assertEqual(self.choose(moved, locked), chosen)
+        self.assertIn("are held out", emit_visual.segment_held_note(locked))
+
+    def test_the_on_rrp_reading_was_public_at_the_decision(self):
+        """Each quarter-end reads the result public at 16:00 on the panel day before it, and no later one."""
+        dates = [r["date"] for r in self.rows]
+        public = {ref.isoformat(): at for ref, at, _ in self.on_rrp}
+        zone = emit_visual.ZoneInfo(self.registry[emit_visual.NYFED_ON_RRP_SOURCE_ID]["release_lag"]["timezone"])
+        for d in self.days:
+            if d["on_rrp"] is None:
+                continue
+            with self.subTest(day=d["date"]):
+                before = emit_visual.date.fromisoformat(dates[dates.index(d["date"]) - 1])
+                instant = emit_visual.datetime.combine(before, self.decision, zone)
+                self.assertLessEqual(public[d["on_rrp"]["ref"]], instant)
+                later = [ref for ref, at, _ in self.on_rrp if at <= instant and ref.isoformat() > d["on_rrp"]["ref"]]
+                self.assertEqual(later, [])
+
+    def test_the_caption_states_the_rule(self):
+        page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+        self.assertIn("every quarter-end before 1 January 2026", page)
+        self.assertIn(f"below ${emit_visual.SEGMENT_DAY_RULE['on_rrp_below_bn']:,.0f}bn", page)
+        self.assertIn("The rule never reads a rate or a spread", page)
+
 
 
 if __name__ == "__main__":

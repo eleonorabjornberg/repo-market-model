@@ -33,13 +33,19 @@
   },
   "claims": {
     "segments_tgcr": {
-      "text": "TGCR measures overnight tri-party general collateral repo backed by Treasuries",
+      "text": "TGCR measures overnight tri-party general collateral repo backed by Treasuries, leaving out trades in which the Fed is a counterparty",
       "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
     "segments_bgcr": {
       "text": "BGCR adds the trades cleared through FICC's GCF Repo service",
       "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
     "segments_sofr": {
       "text": "SOFR adds the bilateral trades cleared through FICC's delivery-versus-payment (DVP) service, where each trade names the security it settles",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "segments_none": {
+      "text": "The three rates are built only from tri-party, GCF Repo and FICC-cleared DVP trades, so non-centrally cleared bilateral repo is in none of them",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    "sofr_broad": {
+      "text": "SOFR is a broad measure of the general cost of financing Treasury securities overnight",
       "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
     "sofr_trim": {
       "text": "To keep trades for one scarce security from pulling the rate down, the New York Fed removes the lowest-rate 20 percent of DVP volume each day before taking the volume-weighted median",
@@ -61,6 +67,12 @@
       "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
     "standing_repo": {
       "text": "In standing repo operations, dealers and banks can borrow from the Fed in a repo; their use helps limit upward pressure on repo rates",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "fhlb_fed_funds": {
+      "text": "Commercial banks and Federal Home Loan Banks are the main participants in the federal funds market, and the Home Loan Banks make up the vast majority of its lending",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    "fhlb_both_markets": {
+      "text": "Federal Home Loan Banks lend in both the federal funds and the repo markets, and so link the two",
       "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
     "reserve_ratio": {
       "text": "New York Fed research measures reserves against total bank assets, and puts the point where reserves stop being plentiful at about 12–13% of bank assets",
