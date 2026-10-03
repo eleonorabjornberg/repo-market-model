@@ -266,6 +266,13 @@ class ExceedanceCurves:
     #: (`_check_history_end`), on the predictor's own account of itself, the
     #: trust `features_read` already carries.
     history_ends: Optional[Tuple[Optional[date], ...]] = None
+    #: Per curve, the uncalibrated fit's parts an online calibration reads
+    #: (#124): the quantile vector at the declared levels, and the residual
+    #: range the law's tails are laid from, `(vector, residual_low,
+    #: residual_high)`. `None` unless the fold loop asked for them, from a
+    #: predictor whose fit is calibrated or carries a tail, and from every
+    #: predictor in this module.
+    uncalibrated: Optional[Tuple[Tuple[Tuple[float, ...], float, float], ...]] = None
 
 
 def _model_settings(fitted: Any) -> Mapping[str, Any]:
@@ -310,6 +317,32 @@ def _model_settings(fitted: Any) -> Mapping[str, Any]:
         settings["residual_window"] = fitted.window
     settings.update(getattr(fitted, "model_settings", None) or {})
     return MappingProxyType(settings)
+
+
+#: A calibration a fold loop runs alongside an uncalibrated fit (#124), built
+#: once per run as `factory(rows, rule)` on the panel and the run's as-of rule.
+#: What it builds offers `settings` (keys for the declaration), `view(model,
+#: index, feature_row)` (the fit as scored day `rows[index]` reads it),
+#: `curve(index, anchor, vector, residual_low, residual_high, taus)` (the
+#: day's `P(spread > tau)`, off its law) and `label(index, actual)` (the day's realised spread, given once the day
+#: is scored). `recalibration.FoldPid` is the one there is.
+OnlineCalibrationFactory = Callable[[Sequence[DailyObservation], InformationRule], Any]
+
+
+def _with_online_settings(
+    settings: Mapping[str, Any], online: Any
+) -> Mapping[str, Any]:
+    """A fit's settings, with an online calibration's declaration added.
+
+    The fit an online calibration moves is uncalibrated, so it names no
+    calibration of its own, and one that did is refused by the calibration.
+    """
+
+    if online is None:
+        return settings
+    merged = dict(settings)
+    merged.update(online.settings)
+    return MappingProxyType(merged)
 
 
 def _tail_account(fitted: Any) -> Optional[Mapping[str, Any]]:
@@ -2912,6 +2945,7 @@ def _exceedance_at_folds(
     *,
     reads_information: bool,
     reads_histories: bool,
+    uncalibrated: bool = False,
 ) -> ExceedanceCurves:
     """One exceedance predictor call for the folds of one refit block, checked.
 
@@ -2931,6 +2965,10 @@ def _exceedance_at_folds(
         keywords["histories"] = tuple(
             _as_of_history(rows, rule, fold) for fold in folds
         )
+    if uncalibrated and _names_parameter(predictor, "uncalibrated"):
+        # Asked only under an online calibration (#124): handing over the
+        # parts costs each row a second read of the fit.
+        keywords["uncalibrated"] = True
     predicted = predictor(
         train_rows, tuple(fold.feature_row for fold in folds), taus, **keywords
     )
@@ -3095,6 +3133,7 @@ def rolling_persistence_backtest(
     fit_model: Optional[ModelFitter] = None,
     refit_every: int = 1,
     end: Optional[date] = None,
+    online_calibration: Optional[OnlineCalibrationFactory] = None,
 ) -> BacktestReport:
     """Score every row of the one fold grid under the as-of information rule.
 
@@ -3147,6 +3186,11 @@ def rolling_persistence_backtest(
         refit_every: scored rows per fit, at least 1.
         end: the last day to score; `None` scores to the end of the panel.
             Rows after it stay in the panel and are never scored.
+        online_calibration: `None`, or a calibration run alongside the loop
+            (`OnlineCalibrationFactory`, #124): built once on the panel and
+            the run's rule, it issues each scored day's band from the block's
+            uncalibrated fit and learns the day's label after it is scored.
+            Its settings join the declaration.
 
     Raises:
         LookAheadError: if a scored day falls in a locked tier of
@@ -3188,6 +3232,7 @@ def rolling_persistence_backtest(
 
     fitter: ModelFitter = fit if fit_model is None else fit_model
     reads_information = _reads_information(fitter)
+    online = None if online_calibration is None else online_calibration(rows, rule)
 
     forecasts: List[Forecast] = []
     folds: List[ScoredFold] = []
@@ -3222,7 +3267,7 @@ def rolling_persistence_backtest(
                 # the declaration here stays inside it at every later one.
                 _check_fitter_stayed_inside(fitted.features_read, declared, sources)
                 ml_libraries = _ml_libraries(fitted)
-                model_settings = _model_settings(fitted)
+                model_settings = _with_online_settings(_model_settings(fitted), online)
             model = fitted
         if model is None:  # pragma: no cover - the grid's first row opens a block
             raise SplitError("a scored row was reached before any fit")
@@ -3231,6 +3276,8 @@ def rolling_persistence_backtest(
         # The block's fit, reading any positional history as of this row's
         # own decision instant.
         reader = _at_decision(model, rows, rule, fold)
+        if online is not None:
+            reader = online.view(reader, index, feature_row)
         quantiles = reader.predict(feature_row)
         # Off the model this fold scored, in this iteration; see `_tail_account`.
         tail_accounts.append(_tail_account(model))
@@ -3254,6 +3301,8 @@ def rolling_persistence_backtest(
                 quantiles_bps=tuple(quantiles),
             )
         )
+        if online is not None:
+            online.label(index, rows[index].spread_bps)
 
     mae = sum(abs(item.actual_bps - item.predicted_bps) for item in forecasts) / len(forecasts)
     coverage = sum(
@@ -5136,6 +5185,8 @@ def paired_model_comparison(
     loss: str = DEFAULT_COMPARISON_LOSS,
     refit_every: int = 1,
     end: Optional[date] = None,
+    online_calibration_a: Optional[OnlineCalibrationFactory] = None,
+    online_calibration_b: Optional[OnlineCalibrationFactory] = None,
 ) -> PairedComparisonReport:
     """Score two continuous models at the same origins and interval the gap.
 
@@ -5236,6 +5287,10 @@ def paired_model_comparison(
         refit_every: scored rows per fit, for both sides.
         end: the last day to score; `None` scores to the end of the panel.
             Rows after it stay in the panel and are never scored.
+        online_calibration_a, online_calibration_b: each side's calibration
+            run alongside the loop, or `None`; see
+            `rolling_persistence_backtest`'s `online_calibration`. Built on the
+            side's own rule, and its settings join that side's declaration.
 
     Returns:
         A `PairedComparisonReport`.
@@ -5290,6 +5345,8 @@ def paired_model_comparison(
     checked = False
     reads_information_a = _reads_information(fit_a)
     reads_information_b = _reads_information(fit_b)
+    online_a = None if online_calibration_a is None else online_calibration_a(rows, rule_a)
+    online_b = None if online_calibration_b is None else online_calibration_b(rows, rule_b)
 
     # One loop over both sides' folds: the grid is the target's, so the two
     # sequences name the same rows in the same order, and the pairing is
@@ -5340,8 +5397,8 @@ def paired_model_comparison(
                 _check_fitter_stayed_inside(fitted_a.features_read, declared_a, sources_a)
                 _check_fitter_stayed_inside(fitted_b.features_read, declared_b, sources_b)
                 ml_libraries = _ml_libraries(fitted_a, fitted_b)
-                settings_a = _model_settings(fitted_a)
-                settings_b = _model_settings(fitted_b)
+                settings_a = _with_online_settings(_model_settings(fitted_a), online_a)
+                settings_b = _with_online_settings(_model_settings(fitted_b), online_b)
                 checked = True
         if fitted_a is None or fitted_b is None:  # pragma: no cover - see above
             raise SplitError("a scored row was reached before any fit")
@@ -5350,12 +5407,17 @@ def paired_model_comparison(
         actual = rows[index].spread_bps
         # The selected loss, applied to each side's own fitted model at its
         # own as-of observation.
-        loss_a = selected.at_origin(
-            _at_decision(fitted_a, rows, rule_a, fold_a), fold_a.feature_row, actual
-        )
-        loss_b = selected.at_origin(
-            _at_decision(fitted_b, rows, rule_b, fold_b), fold_b.feature_row, actual
-        )
+        view_a = _at_decision(fitted_a, rows, rule_a, fold_a)
+        view_b = _at_decision(fitted_b, rows, rule_b, fold_b)
+        if online_a is not None:
+            view_a = online_a.view(view_a, index, fold_a.feature_row)
+        if online_b is not None:
+            view_b = online_b.view(view_b, index, fold_b.feature_row)
+        loss_a = selected.at_origin(view_a, fold_a.feature_row, actual)
+        loss_b = selected.at_origin(view_b, fold_b.feature_row, actual)
+        for online in (online_a, online_b):
+            if online is not None:
+                online.label(index, actual)
         losses_a.append(loss_a)
         losses_b.append(loss_b)
         differences.append(loss_a - loss_b)
@@ -6575,6 +6637,7 @@ def rolling_exceedance_backtest(
     end: Optional[date] = None,
     horizon: int = 1,
     leap_jump_bp: Optional[float] = None,
+    online_calibration: Optional[OnlineCalibrationFactory] = None,
 ) -> ExceedanceBacktestReport:
     """Score every row of the as-of grid, pool the curves, then score the pool.
 
@@ -6658,12 +6721,26 @@ def rolling_exceedance_backtest(
             (`onset.LeapTargets.event_threshold`), and the report carries those
             probabilities. The declared curves are untouched: the second call
             is separate, so no published figure moves.
+            With an `online_calibration` too, the leap call still reads the
+            predictor's own curves, not the calibrated law: the calibration
+            issues one law per row and is fed each label once, in the loop,
+            and a second read of it at the leap levels would either feed it
+            labels twice or leave it unfed. The leap probabilities of such a
+            run are therefore the uncalibrated model's, and the record says so
+            (`onset.leap.model_curves`).
+        online_calibration: `None`, or a calibration run alongside the loop;
+            see `rolling_persistence_backtest`. Each row's curve is then read
+            off the law the calibration issues from the predictor's
+            uncalibrated parts (`ExceedanceCurves.uncalibrated`), one scored
+            day at a time, rather than off the predictor's own curves, which
+            were computed for the whole block before any of its labels.
 
     Raises:
         LookAheadError: if a scored day falls in a locked tier of
             `metadata/lockbox.json` (`lockbox.require_unlocked`), before any fit.
         ValueError: if the panel is too short for `minimum_history`, or
-            `model_name` is empty.
+            `model_name` is empty; under an online calibration, if the
+            predictor hands over no uncalibrated parts.
         SplitError: on a malformed panel, tau family or prediction, or when the
             gap leaves no origin with `minimum_history` training rows behind
             it.
@@ -6725,6 +6802,7 @@ def rolling_exceedance_backtest(
     infos: List[InformationSet] = []
     leap_forecast: List[float] = []
     pressure_leap_forecast: List[float] = []
+    online = None if online_calibration is None else online_calibration(rows, rule)
 
     for block in _refit_blocks_of(
         _as_of_folds(
@@ -6748,6 +6826,7 @@ def rolling_exceedance_backtest(
             tau_family,
             reads_information=reads_information,
             reads_histories=reads_histories,
+            uncalibrated=online is not None,
         )
         curves = _validate_prediction(predicted, len(block), tau_family)
         if leap_jump_bp is not None:
@@ -6763,8 +6842,16 @@ def rolling_exceedance_backtest(
             )
             leap_forecast.extend(leaps)
             pressure_leap_forecast.extend(pressure_leaps)
+        if online is not None:
+            parts = predicted.uncalibrated
+            if parts is None or len(parts) != len(block):
+                raise ValueError(
+                    f"{model_name} handed over no uncalibrated parts for its "
+                    f"{len(block)} rows; an online calibration reads each row's "
+                    f"law from them"
+                )
 
-        for fold, curve in zip(block, curves):
+        for position, (fold, curve) in enumerate(zip(block, curves)):
             index = fold.index
             infos.append(fold.info)
             conditioning = (fold.feature_row,)
@@ -6785,13 +6872,20 @@ def rolling_exceedance_backtest(
                 # The scored predictor's only: the reference is the
                 # climatology, which takes no setting, and is not what
                 # `declaration.model` names.
-                model_settings = _model_settings(predicted)
+                model_settings = _with_online_settings(_model_settings(predicted), online)
                 checked = True
 
             # Off the fit that scored this row -- the block's -- and never off
             # `referenced`: the climatology has no tail. See `_tail_account`
             # (B40).
             tail_accounts.append(_tail_account(predicted))
+            if online is not None:
+                vector, residual_low, residual_high = parts[position]
+                curve = online.curve(
+                    index, fold.feature_row.date, vector, residual_low, residual_high,
+                    tau_family,
+                )
+                online.label(index, rows[index].spread_bps)
             forecast.append(curve)
             reference.append(_validate_prediction(referenced, 1, tau_family)[0])
             folds.append(

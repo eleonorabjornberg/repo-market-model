@@ -63,6 +63,7 @@ from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .evaluation_splits import load_split_declaration
 from .event_eval import evaluate_event_window, load_events_file
 from .onset import LEAP_JUMP_BP, comparison_onset_document, exceedance_onset_document
+from .recalibration import ONLINE_CALIBRATIONS, FoldPid, NestedFoldPid
 from .splits import SplitError
 
 #: The autoregressive term every conditional model here carries, and the one
@@ -841,6 +842,118 @@ def _calibration(
     return given
 
 
+def _online_calibration(
+    args: argparse.Namespace,
+    choice: Any,
+    *,
+    splits: Optional[Path],
+    refit_every: int,
+    side: str = "",
+) -> Tuple[argparse.Namespace, Optional[Callable[..., Any]]]:
+    """Take an online calibration out of `args`, or leave `args` as it is.
+
+    `--calibration conformal_pid` (#124) is not a fit's calibration: the fold
+    loop runs it alongside the uncalibrated fit (`recalibration.FoldPid`),
+    issuing each scored day's band from the labels its decision could see.
+    So the fitter is built from a copy of `args` with no calibration, and the
+    loop is handed the calibration's factory.
+
+    Refused, before anything runs, for a model that takes no calibration (by
+    `_calibration`'s rule), with `--calibration-share` or
+    `--calibration-folds` (the method splits nothing, and a setting accepted
+    and ignored is read as one that took effect), and without `--splits`,
+    whose month-end window the scorecaster's calendar is read with.
+
+    `--calibration conformal_pid_nested` (#124, rulings #136 and #134) is the
+    same method with its constants chosen by nested walk-forward selection at
+    the loop's own refits, every `refit_every` scored days
+    (`recalibration.NestedFoldPid`).
+
+    Returns:
+        `(args, factory)`: `args` unchanged and `None` for any other
+        calibration, or for a model name no mapping knows, which the selector
+        refuses itself.
+    """
+
+    calibration = getattr(args, "calibration", None)
+    if calibration not in ONLINE_CALIBRATIONS or choice is None:
+        return args, None
+    if not choice.takes_calibration:
+        raise SplitError(
+            f"--calibration{side} {calibration} was given, but --model{side} "
+            f"{args.model} takes no band calibration; only gbm does. A flag that "
+            "is accepted and ignored is read by the next person as a setting "
+            "that took effect -- here, as an interval somebody calibrated"
+        )
+    for key in ("calibration_share", "calibration_folds"):
+        if getattr(args, key, None) is not None:
+            raise SplitError(
+                f"--{key.replace('_', '-')}{side} was given with --calibration{side} "
+                f"{calibration}, which moves the uncalibrated fit's band one scored "
+                f"day at a time and splits nothing. A setting that is accepted and "
+                f"ignored is read by the next person as a setting that took effect"
+            )
+    if splits is None:
+        raise SplitError(
+            f"--calibration{side} {calibration} reads its scorecaster's month-end "
+            f"window from the split declaration; pass --splits "
+            f"metadata/evaluation_splits.json"
+        )
+    stripped = argparse.Namespace(**vars(args))
+    stripped.calibration = None
+    declaration = load_split_declaration(splits)
+    if calibration == "conformal_pid_nested":
+        # Nested selection chooses at the loop's own refits (#124, ruling #136).
+        build = functools.partial(
+            NestedFoldPid, splits=declaration, refit_every=refit_every
+        )
+    else:
+        build = functools.partial(FoldPid, splits=declaration)
+    return stripped, _OnlineFactory(build)
+
+
+class _OnlineFactory:
+    """An online calibration's factory that keeps what it built.
+
+    The fold loop builds the calibration itself, on its own rule; the record
+    is written after the loop, and reads the run's account off `built`.
+    """
+
+    def __init__(self, build: Callable[..., Any]) -> None:
+        self._build = build
+        self.built: Optional[Any] = None
+
+    def __call__(self, rows: Any, rule: Any) -> Any:
+        self.built = self._build(rows, rule)
+        return self.built
+
+
+def _declare_online_account(
+    document: dict, online: Optional[_OnlineFactory], key: str = "calibration_account"
+) -> None:
+    """Record what an online calibration did (`FoldPid.account`), when one ran.
+
+    Under nested selection (#124) this carries the point chosen at each refit
+    block, so the record shows which constants scored which days.
+    """
+
+    if online is not None and online.built is not None:
+        document[key] = online.built.account()
+
+
+def _declare_limitations(document: dict, args: argparse.Namespace) -> None:
+    """Record each `--limitation`, verbatim and in order, when any was given.
+
+    A limitation is what the record's reader must know before reading its
+    figures, stated by whoever ran it (#124: the window a re-score is
+    confined to, and a regression a ruling asked to be stated openly). The
+    pages generated from the record render it beside the figures.
+    """
+
+    if getattr(args, "limitation", None):
+        document["limitations"] = list(args.limitation)
+
+
 def _spread_change_lags(
     args: argparse.Namespace,
     name: str,
@@ -1104,7 +1217,11 @@ def _backtest(args: argparse.Namespace) -> int:
     # Before the panel is read, so a refused `--model` leaves no report behind
     # for the same reason a starved gap does not: a file on disk is a claim
     # that a benchmark ran.
-    model_name, fit_model = _select_fitter(args)
+    fitter_args, online = _online_calibration(
+        args, FITTER_FACTORIES.get(args.model), splits=args.splits,
+        refit_every=args.refit_every,
+    )
+    model_name, fit_model = _select_fitter(fitter_args)
 
     rows = load_daily_panel(args.path)
     audit_panel(rows)
@@ -1117,6 +1234,7 @@ def _backtest(args: argparse.Namespace) -> int:
         fit_model=fit_model,
         refit_every=args.refit_every,
         end=args.end,
+        online_calibration=online,
     )
 
     # `--registry` is passed to the record as well as to the run: the record
@@ -1131,6 +1249,8 @@ def _backtest(args: argparse.Namespace) -> int:
         model=model_name,
     )
     _declare_end(document, args)
+    _declare_limitations(document, args)
+    _declare_online_account(document, online)
     if args.splits is not None:
         add_backtest_splits(document, report, rows, load_split_declaration(args.splits))
     args.report.write_text(
@@ -1275,8 +1395,22 @@ def _compare(args: argparse.Namespace) -> int:
 
     # Before the panel is read, so a refused model name or a refused
     # regime variable leaves no report behind.
-    model_a, fit_a = _select_fitter(_side(args, "a"), side="-a")
-    model_b, fit_b = _select_fitter(_side(args, "b"), side="-b")
+    side_a, online_a = _online_calibration(
+        _side(args, "a"),
+        FITTER_FACTORIES.get(args.model_a),
+        splits=args.splits,
+        refit_every=args.refit_every,
+        side="-a",
+    )
+    side_b, online_b = _online_calibration(
+        _side(args, "b"),
+        FITTER_FACTORIES.get(args.model_b),
+        splits=args.splits,
+        refit_every=args.refit_every,
+        side="-b",
+    )
+    model_a, fit_a = _select_fitter(side_a, side="-a")
+    model_b, fit_b = _select_fitter(side_b, side="-b")
 
     rows = load_daily_panel(args.path)
     audit_panel(rows)
@@ -1310,12 +1444,17 @@ def _compare(args: argparse.Namespace) -> int:
         loss=args.loss,
         refit_every=args.refit_every,
         end=args.end,
+        online_calibration_a=online_a,
+        online_calibration_b=online_b,
     )
 
     document = paired_comparison_document(
         comparison, panel_path=args.path, registry_path=args.registry
     )
     _declare_end(document, args)
+    _declare_limitations(document, args)
+    _declare_online_account(document, online_a, "calibration_account_a")
+    _declare_online_account(document, online_b, "calibration_account_b")
     split_declaration = (
         None if args.splits is None else load_split_declaration(args.splits)
     )
@@ -1657,7 +1796,11 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
     scoring happened.
     """
 
-    model_name, predictor = _select_model(args, settings_flags=True)
+    model_args, online = _online_calibration(
+        args, MODEL_FACTORIES.get(args.model), splits=args.splits,
+        refit_every=args.refit_every,
+    )
+    model_name, predictor = _select_model(model_args, settings_flags=True)
     benchmark_runs = _benchmarks(args)
 
     rows = load_daily_panel(args.panel)
@@ -1692,6 +1835,7 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         # The model's leap probabilities (#139), from a separate call per
         # block: the declared curves, and every figure from them, are as before.
         leap_jump_bp=LEAP_JUMP_BP[1],
+        online_calibration=online,
     )
 
     # Both declaration files the run opened, identified in the record by the
@@ -1703,6 +1847,8 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         thresholds_path=args.thresholds,
     )
     _declare_end(document, args)
+    _declare_limitations(document, args)
+    _declare_online_account(document, online)
     split_declaration = (
         None if args.splits is None else load_split_declaration(args.splits)
     )
@@ -1764,6 +1910,14 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
             horizon=report.horizon,
         ),
     )
+    if online is not None and "unavailable" not in document["onset"]["leap"]:
+        # The leap call reads the predictor's own curves; the online
+        # calibration issues one law per row and is fed each label once, in
+        # the loop (`rolling_exceedance_backtest`'s `leap_jump_bp`).
+        document["onset"]["leap"]["model_curves"] = (
+            "the predictor's own curves, before the online calibration: the "
+            "leap probabilities are the uncalibrated model's"
+        )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1885,6 +2039,19 @@ def _add_end(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_limitation(parser: argparse.ArgumentParser) -> None:
+    """`--limitation TEXT`: a limitation the record states, repeatable (#124)."""
+
+    parser.add_argument(
+        "--limitation",
+        action="append",
+        default=None,
+        metavar="TEXT",
+        help="a limitation the record states beside its figures, verbatim, "
+        "repeatable; the generated pages render it with the record",
+    )
+
+
 def _declare_end(document: dict, args: argparse.Namespace) -> None:
     """Record `--end` in the document's declaration, when one was given."""
 
@@ -1900,6 +2067,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     _add_refit_every(backtest)
     _add_end(backtest)
+    _add_limitation(backtest)
     _add_splits(backtest)
     backtest.add_argument("path", type=Path)
     backtest.add_argument("--minimum-history", type=int, default=20)
@@ -2043,6 +2211,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     _add_refit_every(compare)
     _add_end(compare)
+    _add_limitation(compare)
     _add_splits(compare)
     compare.add_argument("path", type=Path)
     compare.add_argument("--minimum-history", type=int, default=20)
@@ -2192,6 +2361,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     _add_refit_every(exceedance)
     _add_end(exceedance)
+    _add_limitation(exceedance)
     _add_splits(exceedance)
     exceedance.add_argument(
         "--benchmark",

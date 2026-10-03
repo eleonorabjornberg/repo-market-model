@@ -600,6 +600,44 @@
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rates/secured/tgcr/search.json"
   },
+  "ofr_stfm_repo": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 2 October 2026 for #187, from the API's metadata endpoint (https://data.financialresearch.gov/v1/metadata/query?mnemonic=REPO-DVP_AR_OO-P) fetched at about 22:50 UTC that day: schedule.last_update '2026-10-02 13:49:37' (no time zone given) with 2026-10-01 the latest observation, schedule.start_date 2018-05-07, description.vintage 'Preliminary'. The API keeps no vintages and states no publication time; last_update is a last-write time for the series, one observation of a next-business-day release, not a history of first publications. The OFR began publishing the repo collection in real time on 2020-09-09 (#187, the orchestrating session's check of 2 October 2026); every value dated before that was filled in later, so no value dated before 2020-09-09 was public on its own date, and the column built from it is None before then (repo_model.dvp_segment.build_columns).",
+      "publication": "OFR U.S. Repo Markets Data Release (Short-term Funding Monitor), daily, at no stated clock time. Two business days after the reference date at 16:00 ET is the conservative availability instant declared here, as #187 directs when the publication time cannot be established; a one-business-day reading is reported as a sensitivity only."
+    },
+    "coverage": [
+      "DVP Service overnight/open average rate, preliminary and final, from 2018-05-08; published in real time from 2020-09-09",
+      "DVP Service overnight/open transaction volume, final"
+    ],
+    "field_frequencies": {
+      "REPO-DVP_AR_OO-F": "business_daily",
+      "REPO-DVP_AR_OO-P": "business_daily",
+      "REPO-DVP_TV_OO-F": "business_daily"
+    },
+    "fields": [
+      "REPO-DVP_AR_OO-F",
+      "REPO-DVP_AR_OO-P",
+      "REPO-DVP_TV_OO-F"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#187). REPO-DVP_AR_OO-P (percent) is the one field a scored column reads: ofr_dvp_minus_bgcr_bp, the rate minus BGCR in whole basis points, None before 2020-09-09. REPO-DVP_AR_OO-F (percent) and REPO-DVP_TV_OO-F (USD) are read by no column; they serve only scripts/dvp_segment_inputs.py's descriptive check (preliminary against final, and the volume rebuilt from SOFR and BGCR). A missing value is a day with no trading or with disclosure edits applied (the series' own note). Each snapshot is one unmodified timeseries response per series; a re-fetch can differ.",
+    "provider": "Office of Financial Research",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 2,
+      "note": "Conservative, under docs/decisions/information-set.md (#187): the API states no publication time and keeps no vintages, and its one timestamp is a last-write time, so a day's value is declared available at 16:00 ET two business days after it. Values dated before 2020-09-09 were filled in after the OFR began publishing in real time, and are not read by the scored column.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 7
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the OFR API's schema; the empty declaration is not a finding. A null value is the OFR's own missing day.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://data.financialresearch.gov/v1/series/timeseries"
+  },
   "sec_nmfp": {
     "access": "public",
     "coverage": [

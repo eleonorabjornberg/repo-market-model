@@ -367,8 +367,15 @@ class UnavailableMetricTests(unittest.TestCase):
         taus = record["metrics"]["by_tau"]
         # A threshold that does carry a log score. The lowest did on the purge-rule
         # record; on the as-of record (#27) only 20 bp does.
-        carrying = [key for key in sorted(taus, key=float) if "log_score" in taus[key]]
-        self.assertTrue(carrying, "this guard needs a threshold whose log score exists")
+        carrying = [key for key in generator.pooled(taus) if "log_score" in taus[key]]
+        if not carrying:
+            # The whole-bp record (#124) withholds the log score at every pooled
+            # threshold, so give the first one a value: the guard is about the
+            # generator dropping a number the record withholds.
+            key = generator.pooled(taus)[0]
+            taus[key].pop("unavailable", None)
+            taus[key]["log_score"] = 0.123456
+            carrying = [key]
         key = carrying[0]
         entry = taus[key]
         self.assertIn("log_score", entry,
@@ -393,7 +400,9 @@ class UnavailableMetricTests(unittest.TestCase):
 
         generator, record = self._record()
         taus = record["metrics"]["by_tau"]
-        highest = taus[max(taus, key=float)]
+        # The highest threshold the record reports pooled: at +20 and +50 bp it lists
+        # events instead (#130), and carries no log score to withhold.
+        highest = taus[generator.pooled(taus)[-1]]
         self.assertIn("log_score", highest.get("unavailable", {}),
                       "the published conditional record no longer withholds its "
                       "tail log score; if that is deliberate, this guard and the "
@@ -413,7 +422,11 @@ class ChallengerTableRefusalTests(unittest.TestCase):
     Mutations (11 Sep 2026, each run against this class, then restored):
 
     1. `if len(keys) != 1:` -> `if False:` in `challenger_records`: the first
-       test fails (no `RecordError` raised; the mixed set is ranked).
+       test fails (no `RecordError` raised; the mixed set is ranked). Since
+       #124 the guard is in `_by_window`, which groups records by their
+       declared `end` and refuses a group scored on more than one origin set;
+       the same mutation there, re-run for #124 in a disposable copy, fails the
+       first test the same way.
     2. `if not own:` -> `if False:`: the second test fails (no `RecordError`;
        both rows carry the same label).
     """
@@ -425,7 +438,13 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         generator = load_generator()
         workdir = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, workdir)
-        source = sorted(generator.RUNS.glob(generator.CHALLENGERS))[:2]
+        # Two records on one window: records declaring different windows are
+        # tabled apart, not refused (#124).
+        source = [
+            path for path in sorted(generator.RUNS.glob(generator.CHALLENGERS))
+            if "end" not in json.loads(path.read_text(encoding="utf-8"))["declaration"]
+        ][:2]
+        self.assertEqual(len(source), 2)
         for index, path in enumerate(source):
             record = json.loads(path.read_text(encoding="utf-8"))
             mutate(index, record)
@@ -442,6 +461,18 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         with self.assertRaises(generator.RecordError):
             generator.challenger_records()
 
+    def test_records_on_different_declared_windows_are_tabled_apart(self):
+        def mutate(index, record):
+            if index == 1:
+                record["folds"]["count"] -= 1
+                record["declaration"]["end"] = "2025-12-31"
+
+        generator = self.records_dir(mutate)
+        groups = generator.challenger_records()
+        self.assertEqual([len(group) for group in groups], [1, 1])
+        self.assertNotIn("end", groups[0][0][1]["declaration"])
+        self.assertEqual(groups[1][0][1]["declaration"]["end"], "2025-12-31")
+
     def test_two_records_that_cannot_be_told_apart_are_refused(self):
         def mutate(index, record):
             record["declaration"]["model_b"] = {"model": "arx", "features": ["spread_bps"]}
@@ -449,3 +480,139 @@ class ChallengerTableRefusalTests(unittest.TestCase):
         generator = self.records_dir(mutate)
         with self.assertRaises(generator.RecordError):
             generator.challenger_records()
+
+
+def event_listed(record, keys=("20", "50")):
+    """`record` with `keys` reported event by event, as `--event-list` writes them (#130)."""
+
+    record = copy.deepcopy(record)
+    taus = record["metrics"]["by_tau"]
+    for key in keys:
+        pooled = taus[key]
+        taus[key] = {"tau_bp": pooled["tau_bp"], "scored_days": record["metrics"]["scored_days"],
+                     "positives": 1, "reporting": "event_list", "events": []}
+        for entry in record.get("benchmarks", {}).values():
+            entry["by_tau"].pop(key, None)
+    record["declaration"]["event_list"] = {"taus_bp": [float(key) for key in keys], "lead_days": 5}
+    return record
+
+
+class EventListedThresholdTests(unittest.TestCase):
+    """A threshold a record lists event by event gets no pooled figure on the page (#130, #124).
+
+    Under `docs/decisions/pressure-probability.md` a record published from the
+    corrected publication on carries, at +20 and +50 bp, an event list in place
+    of every pooled figure. The generator must render such a record, print no
+    skill, interval, decomposition or reliability panel at a listed threshold,
+    and say that the threshold is reported event by event.
+    """
+
+    def test_the_tail_block_tables_only_pooled_thresholds_and_names_the_listed_ones(self):
+        generator = load_generator()
+        record = event_listed(generator.load(generator.EXCEEDANCE_GBM))
+        block = generator.tail_section(record)
+        self.assertIn("τ = 5 bp", block)
+        self.assertNotIn("τ = 20 bp", block)
+        self.assertNotIn("τ = 50 bp", block)
+        self.assertIn("event by event", block)
+        self.assertIn("20 and 50 bp", block)
+        # No threshold falls below climatology here, so the clause names none (#169, part 3).
+        self.assertNotIn("below it at", block)
+
+    def test_the_reliability_figure_draws_only_pooled_thresholds(self):
+        generator = load_generator()
+        record = event_listed(generator.load(generator.EXCEEDANCE))
+        svg = generator.figure_svg(record, "light")
+        self.assertIn("τ = 10 bp", svg)
+        self.assertNotIn("τ = 20 bp", svg)
+
+    def test_the_control_sentences_read_only_pooled_thresholds(self):
+        generator = load_generator()
+        persistence = generator.load(generator.PERSISTENCE)
+        record = event_listed(generator.load(generator.EXCEEDANCE))
+        conditional = event_listed(generator.load(generator.EXCEEDANCE_GBM))
+        block = generator.key_findings(persistence, record, conditional)
+        self.assertIn("(5, 10 bp)", block)
+        generator.headline(persistence, record)
+
+
+class PressureModelV1TableTests(unittest.TestCase):
+    """Pressure model v1's records (`pressure_model_v1_hH.json`) are tabled by horizon, from the records."""
+
+    def test_one_row_per_horizon_with_the_records_paired_figures(self):
+        import shutil
+        import tempfile
+
+        generator = load_generator()
+        workdir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, workdir)
+        base = event_listed(generator.load(generator.EXCEEDANCE_GBM))
+        expected = []
+        for h in (1, 2):
+            record = copy.deepcopy(base)
+            record["declaration"]["horizon"] = h
+            paired = record["benchmarks"]["persistence_logistic"]["by_tau"]["5"]["paired_brier_difference"]
+            paired["mean"] += h / 1000
+            expected.append(generator.signed(paired["mean"], 4))
+            (workdir / ("pressure_model_v1_h%d.json" % h)).write_text(json.dumps(record), encoding="utf-8")
+        generator.RUNS = workdir
+        lines = generator.pressure_v1_section()
+        rows = [line for line in lines if line.startswith("| ")]
+        self.assertEqual([row.split(" | ")[0] for row in rows[1:]], ["| 1", "| 2"])
+        for row, value in zip(rows[1:], expected):
+            self.assertIn(value, row)
+
+
+class PressureWindowHeadingTests(unittest.TestCase):
+    """Pressure tables on a declared window say so, even when no full-panel table precedes them (#124)."""
+
+    def test_a_lone_group_on_a_declared_window_carries_its_heading(self):
+        generator = load_generator()
+        lines = generator.pressure_section()
+        records = generator.pressure_records()
+        self.assertEqual(len(records), 1, "the published exceedance records share one window")
+        self.assertIn("end", records[0][0][1]["declaration"])
+        self.assertIn(generator.window_heading(records[0][0][1]), lines)
+
+    def test_the_event_list_is_not_a_model_setting(self):
+        generator = load_generator()
+        for label, record in generator.pressure_records()[0]:
+            self.assertIn("event_list", record["declaration"])
+            self.assertNotIn("event list", label)
+
+
+class CorrectionNoteTests(unittest.TestCase):
+    """The case study's correction note (#169, rulings parts 2-4) is generated from the records.
+
+    A hand-written page may not state a model result (`test_hand_written_results`),
+    so the note's sentences and its old-vs-new figures are rendered from the
+    archived records and the records that replaced them, never typed.
+    """
+
+    def test_the_note_quotes_the_ruled_wording_from_the_records(self):
+        generator = load_generator()
+        block = generator.correction_section()
+        quoted = [text for name in generator.CORRECTION_WORDING
+                  for text in generator.load(name).get("limitations", ())
+                  if text.startswith(generator.RULED_WORDING)]
+        self.assertTrue(quoted)
+        for text in quoted:
+            self.assertIn(text[len(generator.RULED_WORDING):], block)
+
+    def test_each_old_and_new_figure_comes_from_its_record_pair(self):
+        generator = load_generator()
+        block = generator.correction_section()
+        for old, new in generator.CORRECTION_PAIRS:
+            for name in (old, new):
+                record = generator.load(name)
+                paired = record["benchmarks"]["persistence_logistic"]["by_tau"]["5"]["paired_brier_difference"] \
+                    if "persistence_logistic" in record.get("benchmarks", {}) else None
+                if paired:
+                    self.assertIn(generator.signed(paired["mean"], 4), block, name)
+
+    def test_the_case_study_carries_the_block(self):
+        generator = load_generator()
+        artifacts = generator.rendered(generator.load(generator.PERSISTENCE),
+                                       generator.load(generator.EXCEEDANCE),
+                                       generator.load(generator.EXCEEDANCE_GBM))
+        self.assertIn(generator.correction_section(), artifacts[generator.CASE_STUDY])
