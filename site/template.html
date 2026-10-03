@@ -164,6 +164,16 @@ ol.tail time{font-weight:600;color:var(--ink)}
 .grid2 td b{display:block;font-size:1.25rem;font-weight:600}
 .grid2 td span,.grid2 td small{display:block;color:var(--ink-2);font-size:.78rem;line-height:1.35}
 .grid2 td.held{background:none;border:1px dashed var(--rule);color:var(--ink-3);font-size:.78rem;text-align:left}
+ul.key .s0 i{background:none;border:1px solid var(--rule)}
+ul.key .s1 i,ul.key .s2 i,ul.key .s3 i{background:var(--pressure)}
+ul.key .s1 i{opacity:.12} ul.key .s2 i{opacity:.24} ul.key .s3 i{opacity:.4}
+ul.key .buf i{background:var(--ink-2);height:6px}
+.chip{display:inline-block;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:0 7px;border:1px solid var(--rule);border-radius:999px;background:var(--panel);color:var(--ink)}
+.bandtable table{border-collapse:collapse;font-family:var(--sans);font-size:.84rem;font-variant-numeric:tabular-nums;margin:6px 0}
+.bandtable caption{text-align:left;font-size:.8rem;color:var(--ink-2);padding:0 0 4px}
+.bandtable th,.bandtable td{text-align:left;padding:4px 10px 4px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.bandtable th{font-weight:500;color:var(--ink-2)}
+#n1bandkey[hidden]{display:none}
 details .grid2{margin-top:6px}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
@@ -203,6 +213,11 @@ details .grid2{margin-top:6px}
       <div class="s">Basis points, each business day from {{first_day}} to {{last_day}}. Red dots: days more than +{{pressure_bp}} bp above</div></figcaption>
     <div class="controls">
       <div class="seg" role="group" aria-label="Scale" id="n1scale"><button type="button" data-full="0" aria-pressed="true">Clip at +{{clip_bp}} bp</button><button type="button" data-full="1" aria-pressed="false">Show full range</button></div>
+      <div class="seg"><button type="button" id="n1bandbtn" aria-pressed="false" aria-controls="n1bandkey">Shade the reserve-scarcity state</button></div>
+    </div>
+    <div id="n1bandkey" hidden>
+      <ul class="key" aria-label="Key: reserve-scarcity state">{{band_key}}</ul>
+      <p class="held-note">Shaded from {{band_first}}, by the reserve-scarcity state (#115) as it could be read that day. {{band_caption}} How it is built: <a href="#n3">N3</a>.</p>
     </div>
     <div class="chart" id="n1chart"><div class="tip"></div></div>
     <p class="held-note">{{n1_held_note}}</p>
@@ -275,14 +290,30 @@ details .grid2{margin-top:6px}
     <p>{{n3_small}} Read each cell as a rate, not as a rule. {{n3_reading}}</p>
     <p>This shows what happened, not what could have been predicted.</p>
   </div>
+  <figure>
+    <figcaption><div class="t">The reserve-scarcity state behind the spread</div>
+      <div class="s">Business days from {{band_first}} to {{band_last}}. Top: SOFR minus IORB in basis points, shaded by the state. Middle: the state, 0 to 3. Bottom: days ON RRP was below {{band_break}}</div></figcaption>
+    <ul class="key" aria-label="Key: reserve-scarcity state">{{band_key}}<li class="buf"><i aria-hidden="true"></i>ON RRP below {{band_break}}</li></ul>
+    <div class="chart" id="n3band"><div class="tip"></div></div>
+    <p class="held-note">Reserve-scarcity state (#115): {{band_status}}.</p>
+    <p class="held-note">{{band_caption}}</p>
+    <p class="held-note">{{band_held_note}}</p>
+  </figure>
   <details>
     <summary>Go deeper: how the cells are drawn</summary>
     <ul>
       <li>{{n3_window_caption}}</li>
       <li>{{n3_read}} The amount is what the facility accepted that day, summed over its operations, from the New York Fed's operation results (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
-      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and never tuned on these days. The reserve-scarcity state, which also reads bank reserves, is not shown until its publication is ruled.</li>
+      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and never tuned on these days. The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
       <li>A day counts when its spread, in whole basis points, is strictly above the line (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{n3_interval}}</li>
     </ul>
+    <p>The band:</p>
+    <ul>
+      <li>{{band_read}}</li>
+      <li>{{band_asof}}</li>
+      <li>The bottom lane marks the days the cells above call scarce cash, from the same {{decision}} reading. {{band_interval}}</li>
+    </ul>
+    <div class="bandtable" role="region" aria-label="Table: share of days above each headline line, by reserve-scarcity state" tabindex="0">{{band_table}}</div>
     <p>The same cells at +{{second_bp}} bp:</p>
     <div class="grid2" role="region" aria-label="Table: share of days more than +{{second_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table_second}}</div>
     <p>Pressure by day type and year, with the reserves behind it, is <a href="#why">chapter 3</a>.</p>
@@ -755,8 +786,9 @@ function renderN1() {
   const x = d3.scaleUtc(d3.extent(n1Rows, r => r.date), [m.l, W - m.r]);
   const y = d3.scaleLinear([low, top], [H - m.b, m.t]);
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`)
-    .attr("role", "img").attr("aria-label", `Line chart of SOFR minus the Fed's rate on bank reserves, in basis points, each business day, ${n1Full ? "full range" : `clipped at +${N1.clip_bp} bp`}. Days more than +${N1.pressure_bp} bp above are marked with red dots. Days from ${N1.held_out.length ? fmt(n1Held[0][0]) : "none"} are held out and drawn in grey.`);
+    .attr("role", "img").attr("aria-label", `Line chart of SOFR minus the Fed's rate on bank reserves, in basis points, each business day, ${n1Full ? "full range" : `clipped at +${N1.clip_bp} bp`}. Days more than +${N1.pressure_bp} bp above are marked with red dots. Days from ${N1.held_out.length ? fmt(n1Held[0][0]) : "none"} are held out and drawn in grey.` + (n1Band ? ` Behind the line, from ${fmt(bandSpans[0].a)}, the reserve-scarcity state is shaded, darker the scarcer.` : ""));
   const defs = svg.append("defs");
+  if (n1Band) shade(svg.append("g"), x, m.t, H - m.b);
   defs.append("clipPath").attr("id", "n1-cp").append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", H - m.t - m.b);
   const hatch = defs.append("pattern").attr("id", "n1-hatch").attr("width", 6).attr("height", 6).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
   hatch.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 6).style("stroke", "var(--ink-3)").style("stroke-width", 1.2).style("opacity", .45);
@@ -828,6 +860,82 @@ function renderN1() {
 d3.selectAll("#n1scale button").on("click", function () {
   n1Full = this.dataset.full === "1";
   d3.selectAll("#n1scale button").attr("aria-pressed", function () { return String((this.dataset.full === "1") === n1Full); });
+  renderN1();
+});
+
+// ---- The reserve-scarcity band (#148): #115's state as read each day, shaded behind the spread in N1 (on request)
+// and drawn as lanes in N3. Held-out days carry no state; they keep the grey hatch.
+const BAND = D.newcomer_band;
+const bandSpans = BAND.spans.map(([a, b, s], i, all) => ({a: parse(a), b: parse(b), s, r: i + 1 < all.length ? parse(all[i + 1][0]) : d3.utcDay.offset(parse(b), 1)}));
+const bufSpans = BAND.buffer_spans.map(([a, b]) => ({a: parse(a), b: parse(b)}));
+const BAND_OP = [0, .12, .24, .4];
+const bandAt = d => bandSpans.find(p => d >= p.a && d < p.r);
+const bufAt = d => bufSpans.some(p => d >= p.a && d <= p.b);
+const stateName = s => s === null ? "no reading" : `${s} ${BAND.labels[s]}`;
+let n1Band = false;
+function shade(g, x, y0, y1) {
+  bandSpans.filter(p => p.s).forEach(p => g.append("rect").attr("x", x(p.a)).attr("width", Math.max(1, x(p.r) - x(p.a)))
+    .attr("y", y0).attr("height", y1 - y0).style("fill", "var(--pressure)").style("opacity", BAND_OP[p.s]));
+}
+
+function renderBand() {
+  const host = d3.select("#n3band"); host.select("svg").remove();
+  const W = host.node().clientWidth, narrow = W < 560;
+  const m = {t: 24, r: narrow ? 10 : 20, b: 26, l: narrow ? 70 : 88};
+  const plotH = narrow ? 160 : 200, laneH = 62, bufH = 14, gap = 16;
+  const laneTop = m.t + plotH + gap, bufTop = laneTop + laneH + gap, H = bufTop + bufH + m.b;
+  const first = bandSpans[0].a, end = rows.at(-1).date;
+  const inView = rows.filter(r => r.date >= first).map(r => ({...r, held: isHeld(r.date)}));
+  const x = d3.scaleUtc([first, end], [m.l, W - m.r]);
+  const y = d3.scaleLinear([5 * Math.floor(d3.min(inView, r => r.s) / 5), N1.clip_bp], [m.t + plotH, m.t]);
+  const ys = d3.scaleLinear([0, 3], [laneTop + laneH - 6, laneTop + 6]);
+  const st = BAND.by_state, t0 = String(BAND.taus[0]);
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("role", "img").attr("aria-label", `Band chart from ${fmt(first)} to ${fmt(bandSpans.at(-1).b)}. Top: SOFR minus the Fed's rate on reserves, in basis points, clipped at +${N1.clip_bp} bp, shaded darker the scarcer the reserve-scarcity state. Middle: the state as a step line, from 0 abundant to 3 scarce. Bottom: days the overnight reverse repo balance was below $${BAND.break_bn}bn. Share of days above +${t0} bp by state: ` + Object.keys(st).map(k => `${stateName(+k)}, ${st[k].above[t0].k} of ${st[k].n}`).join("; ") + "." + (n1Held.length ? ` Days from ${fmt(n1Held[0][0])} are held out: no state is drawn on them.` : ""));
+  const defs = svg.append("defs");
+  defs.append("clipPath").attr("id", "band-cp").append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", plotH);
+  const hatch = defs.append("pattern").attr("id", "band-hatch").attr("width", 6).attr("height", 6).attr("patternUnits", "userSpaceOnUse").attr("patternTransform", "rotate(45)");
+  hatch.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 6).style("stroke", "var(--ink-3)").style("stroke-width", 1.2).style("opacity", .45);
+  shade(svg.append("g"), x, m.t, m.t + plotH);
+  shade(svg.append("g"), x, laneTop, laneTop + laneH);
+  svg.append("rect").attr("x", m.l).attr("y", bufTop).attr("width", W - m.l - m.r).attr("height", bufH).style("fill", "var(--panel)");
+  bufSpans.forEach(p => svg.append("rect").attr("x", x(p.a)).attr("width", Math.max(1, x(d3.utcDay.offset(p.b, 1)) - x(p.a)))
+    .attr("y", bufTop).attr("height", bufH).style("fill", "var(--ink-2)"));
+  n1Held.forEach(([a, b]) => {
+    const xa = Math.max(m.l, x(a)), xb = Math.max(Math.min(x(b), W - m.r), xa + 2);
+    svg.append("rect").attr("x", xa).attr("y", m.t).attr("width", xb - xa).attr("height", bufTop + bufH - m.t).style("fill", "url(#band-hatch)");
+    svg.append("text").attr("class", "lab").attr("x", xb).attr("y", m.t - 8).attr("text-anchor", "end").style("font-weight", 600).text("held out");
+  });
+  svg.append("g").attr("class", "axis").selectAll("text").data(y.ticks(4)).join("text")
+    .attr("x", m.l - 8).attr("y", d => y(d) + 4).attr("text-anchor", "end").text(d => sgn(d));
+  svg.append("text").attr("class", "lab").attr("x", m.l - 8).attr("y", m.t - 8).attr("text-anchor", "end").text("bp");
+  svg.append("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y(0)).attr("y2", y(0)).style("stroke", "var(--ink-2)");
+  svg.append("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y(N1.pressure_bp)).attr("y2", y(N1.pressure_bp)).style("stroke", "var(--pressure)").style("stroke-dasharray", "3 3");
+  const g = svg.append("g").attr("clip-path", "url(#band-cp)");
+  const line = h => d3.line().defined((r, i, a) => h ? r.held || (i + 1 < a.length && a[i + 1].held) : !r.held).x(r => x(r.date)).y(r => y(Math.min(r.s, N1.clip_bp)));
+  g.append("path").datum(inView).attr("d", line(false)).style("fill", "none").style("stroke", "var(--sofr)").style("stroke-width", 1.1).style("stroke-linejoin", "round");
+  g.append("path").datum(inView).attr("d", line(true)).style("fill", "none").style("stroke", "var(--ink-3)").style("stroke-width", 1.1).style("stroke-linejoin", "round");
+  const steps = bandSpans.flatMap(p => [{d: p.a, s: p.s}, {d: p.r, s: p.s}]);
+  svg.append("path").datum(steps).attr("d", d3.line().defined(p => p.s !== null).x(p => x(p.d)).y(p => ys(p.s)))
+    .style("fill", "none").style("stroke", "var(--ink)").style("stroke-width", 1.4);
+  [0, 1, 2, 3].forEach(k => svg.append("text").attr("class", "lab").attr("x", m.l - 8).attr("y", ys(k) + 3.5).attr("text-anchor", "end").text(stateName(k)));
+  svg.append("text").attr("class", "lab").attr("x", m.l - 8).attr("y", bufTop + bufH - 3).attr("text-anchor", "end").text(`< $${BAND.break_bn}bn`);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickSizeOuter(0));
+  const cross = svg.append("line").attr("y1", m.t).attr("y2", bufTop + bufH).style("stroke", "var(--ink-3)").style("display", "none");
+  svg.append("rect").attr("x", m.l).attr("y", m.t).attr("width", W - m.l - m.r).attr("height", bufTop + bufH - m.t).style("fill", "transparent")
+    .on("pointermove", ev => {
+      const [px] = d3.pointer(ev), r = inView[d3.bisector(d => d.date).center(inView, x.invert(px))];
+      if (!r) return;
+      cross.style("display", null).attr("x1", x(r.date)).attr("x2", x(r.date));
+      const p = r.held ? null : bandAt(r.date);
+      tipAt(host, `<b>${fmt(r.date)}</b><br>Spread ${sgn(r.s)} bp<br>` + (r.held ? "Held out: no state shown" : p ? `State ${stateName(p.s)}<br>ON RRP ${bufAt(r.date) ? "below" : "at or above"} $${BAND.break_bn}bn` : "No state"), x(r.date), y(Math.min(r.s, N1.clip_bp)));
+    })
+    .on("pointerleave", () => { cross.style("display", "none"); hideTip(host); });
+}
+d3.select("#n1bandbtn").on("click", function () {
+  n1Band = !n1Band;
+  this.setAttribute("aria-pressed", String(n1Band));
+  document.getElementById("n1bandkey").hidden = !n1Band;
   renderN1();
 });
 
@@ -937,7 +1045,7 @@ document.querySelectorAll("dfn .term").forEach(b => {
   def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
 });
 
-const renderAll = () => { renderN1(); renderN2(); renderN3(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
+const renderAll = () => { renderN1(); renderN2(); renderN3(); renderBand(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
