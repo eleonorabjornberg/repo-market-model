@@ -236,6 +236,14 @@ def classify_primary(results: Mapping[str, Mapping[str, float]]) -> dict:
     `results` maps exactly the eight `primary_key`s to entries carrying
     `p_improve` and `p_worse`. Holm runs over all eight together; each form
     then passes or not on its own four cells.
+
+    Superseded (Eleonora's ruling of 3 October 2026 on #128): this implements
+    the rule as committed before scoring, and it stays as committed. The
+    corrected rule of 3 October 2026 makes the all-days cell against the
+    control decisive: a form wins only if that cell survives Holm, and the
+    control is v1 (#117 failed under the corrected rule). The
+    persistence-logistic and onset-day cells are supporting evidence only.
+    Under the corrected rule both forms fail (PR #207).
     """
 
     keys = {primary_key(*cell): cell[0] for cell in PRIMARY_CELLS}
