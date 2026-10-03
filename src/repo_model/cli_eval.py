@@ -57,10 +57,12 @@ from .baseline import (
     rolling_persistence_backtest,
     threshold_exceedance,
 )
+from .asof import TARGET, InformationRule
 from .contract import sources_for_features
 from .data import audit_panel, load_daily_panel, load_stress_thresholds
 from .evaluation_splits import load_split_declaration
 from .event_eval import evaluate_event_window, load_events_file
+from .onset import LEAP_JUMP_BP, comparison_onset_document, exceedance_onset_document
 from .recalibration import ONLINE_CALIBRATIONS, FoldPid, NestedFoldPid
 from .splits import SplitError
 
@@ -1453,8 +1455,14 @@ def _compare(args: argparse.Namespace) -> int:
     _declare_limitations(document, args)
     _declare_online_account(document, online_a, "calibration_account_a")
     _declare_online_account(document, online_b, "calibration_account_b")
-    if args.splits is not None:
-        add_comparison_splits(document, rows, load_split_declaration(args.splits))
+    split_declaration = (
+        None if args.splits is None else load_split_declaration(args.splits)
+    )
+    if split_declaration is not None:
+        add_comparison_splits(document, rows, split_declaration)
+    # The onset view (#139): the paired loss by day group, the twCRPS above
+    # +5 bp beside the CRPS, and Diebold-Mariano on all days.
+    document["onset"] = comparison_onset_document(comparison, rows, split_declaration)
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1824,6 +1832,9 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
         minimum_history=args.minimum_history,
         refit_every=args.refit_every,
         end=args.end,
+        # The model's leap probabilities (#139), from a separate call per
+        # block: the declared curves, and every figure from them, are as before.
+        leap_jump_bp=LEAP_JUMP_BP[1],
         online_calibration=online,
     )
 
@@ -1882,6 +1893,30 @@ def _exceedance_backtest(args: argparse.Namespace) -> int:
             bench_reports,
             args.event_list,
             lead_days=args.event_lead_days,
+        )
+    # The onset view (#139): Brier by day group at +5 and +10 bp, each
+    # benchmark paired, the lead-time paths, the leap targets against their two
+    # baselines, and the twCRPS above +5 bp.
+    document["onset"] = exceedance_onset_document(
+        report,
+        bench_reports,
+        rows,
+        split_declaration,
+        panel_sha256=digest,
+        leap_rule=InformationRule(
+            _registry(args),
+            (TARGET,),
+            decision_time=time.fromisoformat(args.decision_time),
+            horizon=report.horizon,
+        ),
+    )
+    if online is not None and "unavailable" not in document["onset"]["leap"]:
+        # The leap call reads the predictor's own curves; the online
+        # calibration issues one law per row and is fed each label once, in
+        # the loop (`rolling_exceedance_backtest`'s `leap_jump_bp`).
+        document["onset"]["leap"]["model_curves"] = (
+            "the predictor's own curves, before the online calibration: the "
+            "leap probabilities are the uncalibrated model's"
         )
     args.report.write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
