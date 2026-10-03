@@ -157,7 +157,7 @@ def run_command(args) -> int:
             leap = onset.LEAP_JUMP_BP[h] if args.run in PRIMARY_CANDIDATES else None
             raw = backtest(
                 args.run,
-                ml.scarcity_calendar_exceedance(
+                ml._scarcity_calendar_predictor(
                     entry.form, features, splits, sc.STATE_FORMS[entry.state],
                     minimum_history=v1.MINIMUM_HISTORY,
                 ),

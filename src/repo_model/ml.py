@@ -4572,13 +4572,13 @@ class _ScarcityCalendarDesign:
 SCARCITY_CALENDAR_KINDS = MappingProxyType({"logistic": "logistic", "gbm": "gbm_classifier"})
 
 
-def scarcity_calendar_exceedance(
+def _scarcity_calendar_predictor(
     form: str,
     features: Sequence[str],
     declaration: Any,
     state_levels: Mapping[float, float],
     minimum_history: int = 20,
-) -> ExceedancePredictor:
+) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
     `form` is `"logistic"`, the direct logistic of #114 on
@@ -4586,6 +4586,12 @@ def scarcity_calendar_exceedance(
     classifier of #114 on the same design, constrained non-decreasing in the
     state and in each scheduled term times the state. Pairs, horizons and the
     as-of rule are `pressure_logistic_exceedance`'s.
+
+    A study candidate, not a declared model: no public factory takes it and no
+    `--model` name reaches it, as with the pooled history of #129
+    (`_direct_pressure_predictor(history=...)`). The state it reads is off in
+    every published declaration; adopting it is Eleonora's, and an adoption
+    would give it a public factory, a conformance case and a `--model` name.
     """
 
     if form not in SCARCITY_CALENDAR_KINDS:

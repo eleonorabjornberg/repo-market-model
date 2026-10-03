@@ -9733,7 +9733,7 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
 
     Written first, and watched failing: before the design existed every test
     here failed with `AttributeError: module 'repo_model.ml' has no attribute
-    '_ScarcityCalendarDesign'` (or `'scarcity_calendar_exceedance'`).
+    '_ScarcityCalendarDesign'` (or `'_scarcity_calendar_predictor'`).
     """
 
     def setUp(self):
@@ -9813,7 +9813,7 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.design(levels={0.0: 0.0, 1.0: 1.0})
         with self.assertRaises(ValueError):
-            ml.scarcity_calendar_exceedance("forest", _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL)
+            ml._scarcity_calendar_predictor("forest", _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL)
 
     def test_the_gbm_is_constrained_non_decreasing_in_the_state(self):
         measures = _SCARCITY_CALENDAR + ("effr_minus_iorb_bp",)
@@ -9849,7 +9849,7 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
             with self.subTest(kind=kind), measurement_declaration():
                 report = baseline.rolling_exceedance_backtest(
                     rows,
-                    predictor=ml.scarcity_calendar_exceedance(
+                    predictor=ml._scarcity_calendar_predictor(
                         kind, features, _pressure_splits(), _TWO_LEVEL, minimum_history=60
                     ),
                     model_name=kind,
