@@ -1,5 +1,5 @@
 {
-  "about": "Editorial content of view N4's market map (#141 §3 and §4, #144, #145): the parties and where the map draws them, the flows of cash between them, the market-wide board under the dealers, and the tags that measure each flow. Every flow and the board rest on a sourced claim in docs/visual/annotations.json, and every tag's plain description is a glossary term (docs/visual/glossary.json) or a sourced claim (key about). A tag names the registry (source, field) pairs it reads and the issues that concern it. No status is written here: scripts/emit_visual.py derives each tag's status from the sources registry, the panel manifest, the published run-record declarations, the tracked fixtures and docs/visual/issues.json. A pair the registry does not carry is marked expect: unregistered, and the generator refuses it once the registry does. layout gives each party's centre on the map's 780 x 480 grid, and a flow's bend curves its arrow to that side of the straight line, in the same units, so it clears a party in between; the phone view is a list and does not read it.",
+  "about": "Editorial content of view N4's market map (#141 §3 and §4, #144, #145): the parties and where the map draws them, the flows of cash between them, the market-wide board under the dealers, and the tags that measure each flow. Every flow and the board rest on a sourced claim in docs/visual/annotations.json, and every tag's plain description is a glossary term (docs/visual/glossary.json) or a sourced claim (key about). A tag names the registry (source, field) pairs it reads and the issues that concern it. No status is written here: scripts/emit_visual.py derives each tag's status from the sources registry, the panel manifest, the published run-record declarations, the tracked fixtures and docs/visual/issues.json. A pair the registry does not carry is marked expect: unregistered, and the generator refuses it once the registry does. layout gives each party's centre on the map's 780 x 480 grid, and a flow's bend curves its arrow to that side of the straight line, in the same units, so it clears a party in between; the phone view is a list and does not read it. steps is view N5's walkthrough of a quarter-end (#146), in order: each step names the flows and the board it highlights, the tags it rests on, the sourced claims that state the mechanism, and the series its chart draws (keys of N5_SERIES in scripts/emit_visual.py). A step whose claim is a hypothesis names the issue that tests it (hypothesis), so the page shows it as under test, not as a finding.",
   "parties": {
     "banks": "Banks",
     "fed": "The Fed",
@@ -437,6 +437,160 @@
         127
       ],
       "fixtures": "tests/fixtures/snapshots/funding_inputs/nyfed_fr2004"
+    }
+  ],
+  "steps": [
+    {
+      "key": "settlement",
+      "title": "Treasury settlements take cash",
+      "flows": [
+        "dealers_treasury"
+      ],
+      "boards": [],
+      "tags": [
+        "settlement"
+      ],
+      "claims": [
+        "settlement",
+        "coupon_demand"
+      ],
+      "series": [
+        "treasury_settlement"
+      ]
+    },
+    {
+      "key": "tga",
+      "title": "The Treasury's account rises, reserves fall",
+      "flows": [
+        "treasury_fed",
+        "banks_fed"
+      ],
+      "boards": [],
+      "tags": [
+        "tga",
+        "reserves"
+      ],
+      "claims": [
+        "tga_reserves",
+        "tax_date"
+      ],
+      "series": [
+        "tga",
+        "reserve_balances"
+      ]
+    },
+    {
+      "key": "dealers",
+      "title": "Dealers shrink their balance sheets",
+      "flows": [
+        "mmf_dealers",
+        "dealers_hf"
+      ],
+      "boards": [
+        "dealers"
+      ],
+      "tags": [
+        "fr2004"
+      ],
+      "claims": [
+        "dealer_balance_sheet",
+        "quarter_end"
+      ],
+      "series": [
+        "dealer_treasury_position"
+      ]
+    },
+    {
+      "key": "money_funds",
+      "title": "Money funds step back, and park cash at the Fed",
+      "flows": [
+        "mmf_fed",
+        "mmf_dealers"
+      ],
+      "boards": [],
+      "tags": [
+        "on_rrp"
+      ],
+      "claims": [
+        "mmf_on_rrp",
+        "fed_cash"
+      ],
+      "series": [
+        "on_rrp"
+      ]
+    },
+    {
+      "key": "tail",
+      "title": "The top of SOFR's trades pulls away from the middle",
+      "flows": [],
+      "boards": [
+        "dealers"
+      ],
+      "tags": [
+        "sofr_tails",
+        "sofr"
+      ],
+      "claims": [
+        "qe_high_trades"
+      ],
+      "series": [
+        "sofr_p99",
+        "spread"
+      ],
+      "hypothesis": 127
+    },
+    {
+      "key": "spread",
+      "title": "SOFR rises above IORB",
+      "flows": [],
+      "boards": [
+        "dealers"
+      ],
+      "tags": [
+        "sofr"
+      ],
+      "claims": [
+        "qe_sofr_rise"
+      ],
+      "series": [
+        "spread"
+      ]
+    },
+    {
+      "key": "banks",
+      "title": "Banks hold back, and the federal funds rate follows",
+      "flows": [
+        "fhlbs_banks",
+        "banks_fed"
+      ],
+      "boards": [],
+      "tags": [
+        "effr_iorb"
+      ],
+      "claims": [
+        "effr_spillover",
+        "fhlb_fed_funds"
+      ],
+      "series": [
+        "effr"
+      ]
+    },
+    {
+      "key": "srf",
+      "title": "Dealers and banks borrow from the Fed's standing repo",
+      "flows": [
+        "fed_dealers"
+      ],
+      "boards": [],
+      "tags": [
+        "srf"
+      ],
+      "claims": [
+        "standing_repo"
+      ],
+      "series": [
+        "srf"
+      ]
     }
   ]
 }

@@ -39,6 +39,12 @@ half); and how the project was built. Nothing on the page is typed:
   used, from the measurement panel `scripts/scarcity_validation.py` builds
   from tracked fixtures (with the published-digest check). The caption says
   from the data whether pressure-day frequency rises with the state.
+* View N5 walks through a quarter-end in steps (#146), on two quarter-ends
+  chosen by Eleonora's rule (answer 10 on #141, `N5_QUARTER_END_RULE`) from
+  the ON RRP result public at each one's decision instant, never from a spread.
+  SOFR's 99th percentile, the EFFR and ON RRP are read from the tracked
+  snapshots through the ingest adapter, with its checksum check; the panel
+  does not change. Each chart marks what was public at that decision instant.
 * The status of each tag on view N4's market map (`docs/visual/map.json`) is
   derived, never typed: from the sources registry, the panel manifest, the
   declarations of the published run records, the tracked fixtures and the
@@ -90,6 +96,8 @@ from repo_model.data import (  # noqa: E402
 from repo_model.ingest import (  # noqa: E402
     NYFED_ON_RRP_FIELD,
     NYFED_ON_RRP_SOURCE_ID,
+    NYFED_SRF_FIELD,
+    NYFED_SRF_SOURCE_ID,
     load_snapshot_manifest,
     parse_snapshots,
 )
@@ -125,6 +133,9 @@ LOCKBOX = "metadata/lockbox.json"
 HOLIDAYS = "metadata/market_holidays.json"
 ON_RRP = "tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp"
 H8 = "tests/fixtures/snapshots/h8_inputs/frb_h8"
+SOFR_RATES = "tests/fixtures/snapshots/funding_inputs/nyfed-sofr-rate"
+EFFR = "tests/fixtures/snapshots/nyfed_effr_inputs/nyfed_effr"
+SRF = "tests/fixtures/snapshots/srf_inputs/nyfed_srf"
 ANNOTATIONS = "docs/visual/annotations.json"
 GLOSSARY = "docs/visual/glossary.json"
 MAP = "docs/visual/map.json"
@@ -248,6 +259,45 @@ SEGMENT_DAY_RULE = {"before": "2026-01-01", "on_rrp_below_bn": ON_RRP_DEPLETION_
 SEGMENT_RULE_COLUMNS = ("date", "quarter_end", "treasury_settlement_coupons")
 #: The rates the segment chart draws, each less IORB: (panel column, label).
 SEGMENTS = (("tgcr", "TGCR"), ("bgcr", "BGCR"), ("sofr", "SOFR"))
+
+#: N5's two worked quarter-ends (Eleonora's answer 10 on #141), chosen from inputs only, never from a
+#: spread. Among the quarter-ends before `before` (the panel's `quarter_end` flag) in no locked tier, each
+#: read with the ON RRP result public at its decision instant (the declared decision time on the panel day
+#: before it, as N4's segment rule reads it):
+#: * scarce: the most recent one whose reading is below `scarce_below_bn`;
+#: * abundant: the one with the largest reading.
+N5_QUARTER_END_RULE = {"before": "2026-01-01", "scarce_below_bn": ON_RRP_DEPLETION_BREAK_BN}
+#: The only panel columns the rule reads. tests/test_visual.py runs it on rows cut down to these.
+N5_RULE_COLUMNS = ("date", "quarter_end")
+#: Business days drawn on either side of each worked quarter-end.
+N5_WINDOW_BUSINESS_DAYS = 5
+#: The series N5's step charts draw (`steps[].series` in map.json): label, unit ("bn": USD billions; "bp":
+#: basis points over IORB), whether the chart draws the level or the change since the window's first day,
+#: and the reads, each a panel column or an N5 snapshot series (`N5_SNAPSHOTS`). A "bp" series is its first
+#: read less the panel's IORB. `hindsight` marks a latest-vintage level (#141 §2.4).
+N5_SERIES = {
+    "treasury_settlement": {"label": "Treasury settlements", "unit": "bn", "mode": "level",
+                            "reads": [("panel", "treasury_settlement")]},
+    "tga": {"label": "Treasury General Account", "unit": "bn", "mode": "change", "reads": [("panel", "tga")],
+            "hindsight": True},
+    "reserve_balances": {"label": "Reserve balances", "unit": "bn", "mode": "change",
+                         "reads": [("panel", "reserve_balances")], "hindsight": True},
+    "dealer_treasury_position": {"label": "Dealer Treasury positions", "unit": "bn", "mode": "level",
+                                 "reads": [("panel", "dealer_treasury_position")]},
+    "on_rrp": {"label": "Overnight reverse repo", "unit": "bn", "mode": "level", "reads": [("snapshot", "on_rrp")]},
+    "sofr_p99": {"label": "SOFR's 99th percentile", "unit": "bp", "mode": "level",
+                 "reads": [("snapshot", "sofr_p99"), ("panel", "iorb")]},
+    "spread": {"label": "SOFR", "unit": "bp", "mode": "level", "reads": [("panel", "sofr"), ("panel", "iorb")]},
+    "effr": {"label": "EFFR", "unit": "bp", "mode": "level", "reads": [("snapshot", "effr"), ("panel", "iorb")]},
+    "srf": {"label": "Standing repo take-up", "unit": "bn", "mode": "level", "reads": [("snapshot", "srf")]},
+}
+#: N5's snapshot series: key -> (snapshot directory, source id, adapter series id).
+N5_SNAPSHOTS = {
+    "on_rrp": (ON_RRP, NYFED_ON_RRP_SOURCE_ID, NYFED_ON_RRP_FIELD),
+    "sofr_p99": (SOFR_RATES, "nyfed_sofr", "SOFR_p99"),
+    "effr": (EFFR, "nyfed_effr", "EFFR"),
+    "srf": (SRF, NYFED_SRF_SOURCE_ID, NYFED_SRF_FIELD),
+}
 
 #: An open "Publish?" question about directive N: "Publish? <title> (#N)".
 PUBLISH_TITLE = re.compile(r"^Publish\? .*\(#(\d+)\)$")
@@ -1410,13 +1460,14 @@ def wrap(text, width):
     return lines
 
 
-def map_svg(tag_map, rows, parties):
+def map_svg(tag_map, rows, parties, prefix="n4"):
     """N4's map as a static, accessible <svg>: parties, one arrow per flow, the board under the dealers.
 
     Each arrow points the way the cash goes and is drawn in its kind's line
     style. An arrow no registered series on the map measures is drawn faint;
     that is derived from the tags' statuses, never typed. Each arrow carries
-    its flow's number from the list beside the map.
+    its flow's number from the list beside the map. `prefix` keeps the ids of
+    N5's copy apart from N4's.
     """
     hw, layout = 88, tag_map["layout"]
     dash = {k: d for k, _, d in FLOW_KINDS}
@@ -1453,8 +1504,8 @@ def map_svg(tag_map, rows, parties):
         style = f"stroke:var({'--ink-3' if faint else '--ink-2'})" + (f";stroke-dasharray:{dash[flow['kind']]}"
                                                                       if dash[flow["kind"]] else "")
         parts.append(
-            f'<g class="fl{" faint" if faint else ""}" id="n4f-{key}"><path d="{d}" style="{style}" '
-            f'marker-end="url(#n4-head)"/><circle cx="{mx:.1f}" cy="{my:.1f}" r="11"/>'
+            f'<g class="fl{" faint" if faint else ""}" id="{prefix}f-{key}"><path d="{d}" style="{style}" '
+            f'marker-end="url(#{prefix}-head)"/><circle cx="{mx:.1f}" cy="{my:.1f}" r="11"/>'
             f'<text x="{mx:.1f}" y="{my + 4:.1f}" text-anchor="middle">{n}</text></g>')
         names.append(f"{n}, {html.unescape(parties[flow['from']])} to {html.unescape(parties[flow['to']])}: "
                      f"{label[flow['kind']].split(':')[0].lower()}"
@@ -1467,14 +1518,14 @@ def map_svg(tag_map, rows, parties):
     for key, board in tag_map.get("boards", {}).items():
         x, y, w, h, _ = boxes[key]
         top = y + h + 44
-        parts.append(f'<g class="board" id="n4b-{key}"><line x1="{x}" y1="{y + h}" x2="{x}" y2="{top}"/>'
+        parts.append(f'<g class="board" id="{prefix}b-{key}"><line x1="{x}" y1="{y + h}" x2="{x}" y2="{top}"/>'
                      f'<rect x="{x - w}" y="{top}" width="{2 * w}" height="34" rx="8"/>'
                      f'<text x="{x}" y="{top + 21}" text-anchor="middle">{html.escape(board["label"])}</text></g>')
         names.append(f"a board of market-wide series under {html.unescape(parties[key])}")
     aria = ("Map of who lends cash to whom. Each arrow points the way the cash goes. "
             + "; ".join(names) + ". The list below the map gives the same flows and their tags.")
     return (f'<svg viewBox="-20 0 800 480" role="img" aria-label="{html.escape(aria)}">'
-            '<defs><marker id="n4-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" '
+            f'<defs><marker id="{prefix}-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" '
             'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-2)"/></marker></defs>'
             + "".join(parts) + "</svg>")
 
@@ -1682,21 +1733,21 @@ def refresh_issues(tag_map, fetch, now):
 # ---------------------------------------------------------------- N3 "When does it happen?" (#147)
 
 
-def on_rrp_results(repo):
-    """The Desk's ON RRP results, from the tracked snapshots through `ingest`'s own adapter.
+def snapshot_series(repo, root, series_id):
+    """One series from the tracked snapshots under `root`, through `ingest`'s own adapter.
 
     `parse_snapshots` refuses a file whose bytes do not match its manifest's
-    SHA-256. A day's result is the latest vintage of it. Returns
-    `([(ref_date, available_at, value in USD billions)], {snapshot path: sha256})`,
-    the results ordered by when they became public.
+    SHA-256. A day's value is the latest vintage of it. Returns
+    `([(ref_date, available_at, value)], {snapshot path: sha256})`, the values
+    ordered by when they became public.
     """
-    manifests = sorted((repo / ON_RRP).glob("*.json.manifest.json"))
+    manifests = sorted((repo / root).glob("*.json.manifest.json"))
     if not manifests:
-        raise VisualError(f"no ON RRP snapshot under {ON_RRP}")
+        raise VisualError(f"no snapshot under {root}")
     artifacts = [load_snapshot_manifest(path) for path in manifests]
     latest = {}
     for row in parse_snapshots(artifacts).rows:
-        if row.series_id != NYFED_ON_RRP_FIELD:
+        if row.series_id != series_id:
             continue
         if row.ref_date not in latest or row.available_at > latest[row.ref_date][0]:
             latest[row.ref_date] = (row.available_at, row.value)
@@ -1706,6 +1757,11 @@ def on_rrp_results(repo):
         payload = path.with_name(path.name[:-len(".manifest.json")])
         snapshots[str(payload.relative_to(repo))] = sha256(payload)
     return results, snapshots
+
+
+def on_rrp_results(repo):
+    """The Desk's ON RRP results (USD billions), from the tracked snapshots: `snapshot_series` on `ON_RRP`."""
+    return snapshot_series(repo, ON_RRP, NYFED_ON_RRP_FIELD)
 
 
 def on_rrp_as_of(results, day, decision, registry):
@@ -2095,6 +2151,288 @@ def newcomer_n2(rows, registry, decision, locked, thresholds):
     return data, fills
 
 
+# ---------------------------------------------------------------- N5 "A quarter-end squeeze, step by step" (#146)
+
+
+def n5_snapshots(repo):
+    """N5's snapshot series: `({key: {"source", "by_ref": {ref_date: (available_at, value)}}}, {path: sha256})`."""
+    out, digests = {}, {}
+    for key, (root, source, series_id) in N5_SNAPSHOTS.items():
+        results, snaps = snapshot_series(repo, root, series_id)
+        out[key] = {"source": source, "by_ref": {ref: (at, value) for ref, at, value in results}}
+        digests.update(snaps)
+    return out, digests
+
+
+def check_steps(tag_map, notes):
+    """Refuse a walkthrough step the map cannot back: an unknown flow, board, tag or series, or an unsourced claim."""
+    tags = {t["key"] for t in tag_map["tags"]}
+    keys = set()
+    for step in tag_map.get("steps", ()):
+        key = step.get("key", "")
+        if not re.fullmatch(r"[a-z0-9_]+", key) or key in keys:
+            raise VisualError(f"map step {step} has no unique key")
+        keys.add(key)
+        for flow in step["flows"]:
+            if flow not in tag_map["flows"]:
+                raise VisualError(f"map step {key!r} highlights a flow {flow!r} the map does not draw")
+        for board in step["boards"]:
+            if board not in tag_map.get("boards", {}):
+                raise VisualError(f"map step {key!r} highlights a board {board!r} the map does not draw")
+        for tag in step["tags"]:
+            if tag not in tags:
+                raise VisualError(f"map step {key!r} rests on a tag {tag!r} the map does not carry")
+        for series in step["series"]:
+            if series not in N5_SERIES:
+                raise VisualError(f"map step {key!r} draws a series {series!r} the generator does not know")
+        if not step["claims"]:
+            raise VisualError(f"map step {key!r} states no claim")
+        for claim in step["claims"]:
+            entry = notes["claims"].get(claim)
+            if entry is None or not entry.get("src", "").startswith(ALLOWED_SOURCES):
+                raise VisualError(f"map step {key!r} rests on no sourced claim {claim!r} in {ANNOTATIONS}")
+    if not keys:
+        raise VisualError(f"{MAP} lists no steps; N5 has nothing to walk through")
+
+
+def n5_quarter_ends(rows, locked, on_rrp, registry, decision):
+    """N5's two worked quarter-ends, chosen by `N5_QUARTER_END_RULE` from inputs known in advance.
+
+    Reads only `N5_RULE_COLUMNS` of each row and the ON RRP results, never a
+    rate. A quarter-end's reading is the one public at its decision instant: the
+    declared decision time on the panel day before it. Days in a locked tier are
+    never chosen. Returns `{"scarce": q, "abundant": q}`, each q
+    `{"date", "decision_day", "on_rrp": {"ref", "bn"}}`.
+    """
+    before, below = N5_QUARTER_END_RULE["before"], N5_QUARTER_END_RULE["scarce_below_bn"]
+    found = []
+    for i, r in enumerate(rows):
+        if r["quarter_end"] != "1" or i == 0 or r["date"] >= before:
+            continue
+        if locked_tier(date.fromisoformat(r["date"]), locked) is not None:
+            continue
+        ref, value = on_rrp_as_of(on_rrp, date.fromisoformat(rows[i - 1]["date"]), decision, registry)
+        found.append((value, {"date": r["date"], "decision_day": rows[i - 1]["date"],
+                              "on_rrp": {"ref": ref.isoformat(), "bn": round(float(value), 3)}}))
+    scarce = [q for value, q in found if value < below]
+    if not scarce:
+        raise VisualError(f"no quarter-end before {before} read ON RRP below ${below:,.0f}bn; N5 has no scarce case")
+    abundant = max(found, key=lambda o: o[0])[1]
+    return {"scarce": scarce[-1], "abundant": abundant}
+
+
+def n5_read(read, row, snaps):
+    """One read's value on one panel row, as a `Decimal`, or `None` where the source has none."""
+    kind, key = read
+    if kind == "panel":
+        return Decimal(row[key]) if row.get(key) else None
+    entry = snaps[key]["by_ref"].get(date.fromisoformat(row["date"]))
+    return None if entry is None else Decimal(str(entry[1]))
+
+
+def n5_available(read, rows, position, registry, snaps, zone):
+    """When a read's value for `rows[position]` became public, as New York wall time (naive), or `None`."""
+    kind, key = read
+    if kind == "snapshot":
+        entry = snaps[key]["by_ref"].get(date.fromisoformat(rows[position]["date"]))
+        return None if entry is None else entry[0].astimezone(zone).replace(tzinfo=None)
+    dates = [date.fromisoformat(r["date"]) for r in rows]
+    ats = [declared_availability(registry, source, field, dates, position) for source, field in FEATURE_FIELDS[key]]
+    ats = [at for at in ats if at is not None]
+    return max(ats) if ats else None
+
+
+def n5_when(at, today):
+    """When the value for `today` became public, in words, counted from the day and never naming a later date.
+
+    A later date may fall in a locked tier, so the sentence gives the gap, not the date.
+    """
+    gap = (at.date() - today).days
+    when = f"at {clock(at.time())} New York time"
+    if gap < 0:
+        return f"was announced {-gap} calendar {'day' if gap == -1 else 'days'} before it, {when}"
+    if gap == 0:
+        return f"was public the same day, {when}"
+    return f"was public {gap} calendar {'day' if gap == 1 else 'days'} later, {when}"
+
+
+def n5_series(rows, quarter_ends, registry, decision, snaps):
+    """Each N5 series over each worked window: its values, which of them were public at the decision, its clock.
+
+    `quarter_ends[kind]["days"]` lists the window's panel positions and whether
+    each is held out. A held-out day has no value. A value is "known" when every
+    read behind it was public at the decision instant, the declared decision
+    time on the panel day before the quarter-end; `known` is the last such
+    offset in the window.
+    """
+    zone = ZoneInfo(registry[NYFED_ON_RRP_SOURCE_ID]["release_lag"]["timezone"])
+    out = {}
+    for key, spec in N5_SERIES.items():
+        entry = {"label": spec["label"], "unit": spec["unit"], "mode": spec["mode"],
+                 "hindsight": bool(spec.get("hindsight")), "values": {}, "known": {}, "public_offsets": {},
+                 "clock": {}}
+        for kind, q in quarter_ends.items():
+            instant = datetime.combine(date.fromisoformat(q["decision_day"]), decision)
+            values, public = [], []
+            for d in q["days"]:
+                if d["held"]:
+                    values.append(None)
+                    continue
+                row = rows[d["position"]]
+                reads = [n5_read(read, row, snaps) for read in spec["reads"]]
+                if any(v is None for v in reads):
+                    values.append(None)
+                    continue
+                if spec["unit"] == "bp":
+                    values.append(int((reads[0] - reads[1]) * 100))
+                else:
+                    values.append(float(reads[0]))
+                ats = [n5_available(read, rows, d["position"], registry, snaps, zone) for read in spec["reads"]]
+                if any(at is None for at in ats):
+                    raise VisualError(f"N5's {key} declares no publication time for {row['date']}")
+                if all(at <= instant for at in ats):
+                    public.append(d["offset"])
+                if d["offset"] == 0:
+                    entry["clock"][kind] = n5_when(max(ats), date.fromisoformat(row["date"]))
+            if spec["mode"] == "change":
+                base = next((v for v in values if v is not None), None)
+                values = [None if v is None else v - base for v in values]
+            entry["values"][kind] = [v if v is None or isinstance(v, int) else round(v, 3) for v in values]
+            entry["public_offsets"][kind] = public
+            entry["known"][kind] = max(public) if public else None
+        out[key] = entry
+    return out
+
+
+def n5_value(v, unit, mode):
+    if v is None:
+        return "&ndash;"
+    if unit == "bp":
+        return bp(v)
+    text = f"{abs(v):,.0f}"
+    return (("+" if v > 0 else "−" if v < 0 else "") + text) if mode == "change" else text
+
+
+def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, notes):
+    """N5 "A quarter-end squeeze, step by step" (#146): the map's flows in order, with a chart per step.
+
+    `chosen` is `n5_quarter_ends(...)`. Each quarter-end's window is
+    `N5_WINDOW_BUSINESS_DAYS` panel days either side of it. A day in a locked
+    tier is listed by date only, with no value, and is in no sentence. `tags`
+    are N4's derived tag rows: a step shows each tag's status, and a step with
+    no series says so from the same derivation, and is refused once its tag's
+    data is tracked.
+    """
+    check_steps(tag_map, notes)
+    index = {r["date"]: i for i, r in enumerate(rows)}
+    quarter_ends = {}
+    for kind, q in chosen.items():
+        i = index[q["date"]]
+        days = []
+        for position in range(max(0, i - N5_WINDOW_BUSINESS_DAYS), min(len(rows), i + N5_WINDOW_BUSINESS_DAYS + 1)):
+            today = date.fromisoformat(rows[position]["date"])
+            held = locked_tier(today, locked) is not None
+            days.append({"date": rows[position]["date"], "offset": position - i, "held": held, "position": position})
+        quarter_ends[kind] = dict(q, days=days)
+    series = n5_series(rows, quarter_ends, registry, decision, snaps)
+    for q in quarter_ends.values():
+        for d in q["days"]:
+            del d["position"]
+    by_tag = {t["key"]: t for t in tags}
+    marks = {k: (i, w) for k, i, w in STATUSES}
+    steps, panels, items = [], [], []
+    n = len(tag_map["steps"])
+    for number, step in enumerate(tag_map["steps"], 1):
+        mine = [by_tag[t] for t in step["tags"]]
+        if not step["series"]:
+            tracked = [t["key"] for t in mine if t["data_in_repo"]]
+            if tracked:
+                raise VisualError(f"map step {step['key']!r}: data for {tracked} is tracked in the repository; "
+                                  f"draw it rather than say there is none")
+        chips = "".join(
+            f'<span class="tagchip"><span aria-hidden="true">{marks[t["status"]][0]}</span> {html.escape(t["label"])} '
+            f'<small>{marks[t["status"]][1]}</small></span>' for t in mine)
+        hypothesis = step.get("hypothesis")
+        under_test = (f'<p class="hyp"><b>Hypothesis under test</b> in <a href="https://github.com/{REPOSITORY}/'
+                      f'issues/{hypothesis}">#{hypothesis}</a>, not a finding: that the top of the day&rsquo;s '
+                      f'trades moves before the middle does. Daily data cannot show the order within a day.</p>'
+                      if hypothesis else "")
+        claims = " ".join(link(notes["claims"][c]) for c in step["claims"])
+        if step["series"]:
+            clocks = []
+            for key in step["series"]:
+                s = series[key]
+                name = s["label"] + (" less IORB" if s["unit"] == "bp" else "")
+                said = "; ".join(f"the value for {day(chosen[kind]['date'])} {s['clock'][kind]}"
+                                 for kind in ("scarce", "abundant") if kind in s["clock"])
+                late = " From FRED's latest vintage, so shown with hindsight." if s["hindsight"] else ""
+                clocks.append(f"<li><b>{html.escape(name)}</b>: {said}.{late}</li>")
+            body = f'<ul class="clocks">{"".join(clocks)}</ul>'
+        else:
+            reasons = "; ".join(f"{html.escape(t['label'])}: {t['reason']}" for t in mine)
+            body = f'<p class="nodata">There is no public series in this repository yet for this step ({reasons}).</p>'
+        panels.append(
+            f'<div class="n5p" id="n5p-{step["key"]}" role="group" aria-labelledby="n5p-{step["key"]}-h"'
+            f'{"" if number == 1 else " hidden"}><h3 id="n5p-{step["key"]}-h">Step {number} of {n}: '
+            f'{html.escape(step["title"])}</h3>{under_test}<p>{claims}</p><div class="chips">{chips}</div>{body}</div>')
+        items.append(f'<li><button type="button" class="n5step" data-step="{number - 1}" aria-controls="n5p-{step["key"]}"'
+                     f'{" aria-current=" + chr(34) + "step" + chr(34) if number == 1 else ""}>{html.escape(step["title"])}'
+                     f'</button></li>')
+        steps.append({"key": step["key"], "flows": list(step["flows"]), "boards": list(step["boards"]),
+                      "series": list(step["series"]), "title": step["title"]})
+    s, a = chosen["scarce"], chosen["abundant"]
+    spread = series["spread"]
+
+    def on_day(kind):
+        q = quarter_ends[kind]
+        v = spread["values"][kind][next(j for j, d in enumerate(q["days"]) if d["offset"] == 0)]
+        return f"{bp(v)} bp"
+
+    held = sorted(d["date"] for q in quarter_ends.values() for d in q["days"] if d["held"])
+    below = f"${N5_QUARTER_END_RULE['scarce_below_bn']:,.0f}bn"
+    before = N5_QUARTER_END_RULE["before"]
+
+    def table(kind):
+        q = quarter_ends[kind]
+        head = "".join(f'<th scope="col">{short_day(d["date"])}' + (" (held out)" if d["held"] else "") + "</th>"
+                       for d in q["days"])
+        body = "".join(
+            f'<tr><th scope="row">{html.escape(series[k]["label"])}, '
+            f'{"bp over IORB" if series[k]["unit"] == "bp" else "$bn" + (", change" if series[k]["mode"] == "change" else "")}'
+            f'</th>' + "".join(f"<td>{n5_value(v, series[k]['unit'], series[k]['mode'])}</td>" for v in series[k]["values"][kind])
+            + "</tr>" for k in N5_SERIES)
+        return (f'<div class="heat" role="region" aria-label="Table of the series around {day(q["date"])}" tabindex="0">'
+                f'<table class="segtab"><caption>Around {day(q["date"])}, the quarter-end with cash '
+                f'{kind}</caption><thead><tr><th scope="col">Series</th>{head}</tr></thead><tbody>{body}</tbody>'
+                f'</table></div>')
+
+    data = {"rule": dict(N5_QUARTER_END_RULE), "rule_columns": list(N5_RULE_COLUMNS),
+            "window_business_days": N5_WINDOW_BUSINESS_DAYS, "quarter_ends": quarter_ends, "series": series,
+            "steps": steps, "sources": {k: v[1] for k, v in N5_SNAPSHOTS.items()}}
+    fills = {
+        "n5_lede": (f"Two quarter-ends, chosen in advance by a rule that reads only the Fed's overnight reverse repo "
+                    f"balance: {day(s['date'])}, with cash scarce, and {day(a['date'])}, with cash abundant. SOFR less "
+                    f"IORB closed at {on_day('scarce')} on the first and {on_day('abundant')} on the second. Step "
+                    f"through what the Fed and its staff describe happening around a quarter-end, and what each "
+                    f"public series did then."),
+        "n5_rule": (f"The scarce case is the most recent quarter-end before {day(before)} on which the ON RRP result "
+                    f"public at the {clock(decision)} decision the business day before was below {below}: "
+                    f"{day(s['date'])}, which read ${s['on_rrp']['bn']:,.1f}bn. The abundant case is the quarter-end "
+                    f"before then with the largest such result: {day(a['date'])}, which read "
+                    f"${a['on_rrp']['bn']:,.0f}bn. The rule never reads a rate or a spread"),
+        "n5_window": word(N5_WINDOW_BUSINESS_DAYS),
+        "n5_decision": clock(decision),
+        "n5_map": map_svg(tag_map, tags, {k: html.escape(v) for k, v in tag_map["parties"].items()}, prefix="n5"),
+        "n5_step_list": f'<ol class="n5list" aria-label="Steps">{"".join(items)}</ol>',
+        "n5_panels": "".join(panels),
+        "n5_held_note": (f"Days from {day(held[0])} on are held out for the project's final test "
+                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>): they are drawn greyed, without their "
+                         f"values, and are in no sentence here." if held else "No day in these charts is held out."),
+        "n5_table": table("scarce") + table("abundant"),
+    }
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -2151,6 +2489,16 @@ def generate(repo, commit=None):
     band, band_fills = newcomer_band(scored, locked, thresholds, registry, decision, on_rrp,
                                      {"key": tag["status"], "icon": icon, "word": label, "reason": tag["reason"]}, notes)
     fills.update(band_fills)
+    n5_snaps, n5_digests = n5_snapshots(repo)
+    try:
+        chosen = n5_quarter_ends(rows, locked, on_rrp, registry, decision)
+    except VisualError:
+        raise
+    except ValueError as exc:
+        raise VisualError(f"N5's quarter-end rule: {exc}") from exc
+    n5, n5_fills = newcomer_n5([dict(r) for r in rows], locked, chosen, registry, decision, n5_snaps, tag_map,
+                               n4["tags"], notes)
+    fills.update(n5_fills)
     fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]
@@ -2216,7 +2564,8 @@ def generate(repo, commit=None):
     clock_data = {"decision_time": decision.strftime("%H:%M"), "inputs": clock_rows}
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
-                "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band}
+                "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band,
+                "newcomer_n5": n5}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -2227,15 +2576,19 @@ def generate(repo, commit=None):
                        "inputs": {**inputs, "scripts/scarcity_validation.py":
                                   sha256(repo / "scripts/scarcity_validation.py"),
                                   MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES), **band_snapshots}}
+    # N5 reads the ON RRP, SOFR and EFFR snapshots and the map's steps; its tag statuses are N4's.
+    n5_provenance = {**provenance, "status_from": f"{DATA_DIR}/newcomer_n4.json",
+                     "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
+                                **on_rrp_snapshots, **n5_digests}}
     own = {"model": model_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
-           "newcomer_band": band_provenance}
+           "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}
     out = {}
     for name, payload in payloads.items():
         doc = {"provenance": own.get(name, provenance), "data": payload}
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model", "newcomer_n1", "newcomer_n2",
-                                          "newcomer_n3", "newcomer_band")}
+                                          "newcomer_n3", "newcomer_band", "newcomer_n5")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
