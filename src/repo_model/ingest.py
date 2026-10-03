@@ -31,6 +31,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 from urllib.error import HTTPError
@@ -117,6 +118,20 @@ NYFED_SRF_FIELD = "srf_total_accepted"
 #: the next day was its first. The Desk's repo operations before it were
 #: temporary open market operations, not the facility.
 SRF_INCEPTION = date(2021, 7, 29)
+#: The OFR's Short-term Funding Monitor, repo collection (#187): one
+#: unmodified `timeseries` response per series mnemonic, saved by
+#: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
+#: declaration (`contract.UNMODELLED_SOURCES`).
+OFR_STFM_SOURCE_ID = "ofr_stfm_repo"
+OFR_STFM_TIMESERIES_URL = "https://data.financialresearch.gov/v1/series/timeseries"
+#: The series #187 fetches: the overnight/open DVP average rate, preliminary
+#: (the scored input) and final, and the overnight/open DVP volume, final
+#: (both read only by the descriptive check).
+OFR_STFM_MNEMONICS = ("REPO-DVP_AR_OO-P", "REPO-DVP_AR_OO-F", "REPO-DVP_TV_OO-F")
+#: The OFR began publishing the repo collection in real time on 2020-09-09;
+#: values dated before it were filled in later.
+OFR_STFM_REAL_TIME_START = date(2020, 9, 9)
+_OFR_MNEMONIC_RE = re.compile(r"^[A-Z0-9]+-[A-Z0-9_]+-[A-Z]$")
 #: The Board's Data Download Program, full-release packages (#129): the H.15
 #: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
 #: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
@@ -382,6 +397,100 @@ def fetch_nyfed_srf(
     return _fetch_nyfed_operation_results(
         NYFED_SRF_SOURCE_ID, output_root, start, end, downloader
     )
+
+
+def fetch_ofr_stfm_repo(
+    output_root: Path,
+    mnemonics: Sequence[str] = OFR_STFM_MNEMONICS,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch one OFR `timeseries` response per mnemonic, saved unmodified (#187).
+
+    Each is one plain GET of `OFR_STFM_TIMESERIES_URL?mnemonic=...`, validated
+    as a list of `[date, value]` pairs before it is saved, so a response the
+    parser cannot read is refused here rather than archived.
+    """
+
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for mnemonic in mnemonics:
+        if not _OFR_MNEMONIC_RE.match(mnemonic):
+            raise ValueError(f"not an OFR series mnemonic: {mnemonic!r}")
+        url = f"{OFR_STFM_TIMESERIES_URL}?{urlencode({'mnemonic': mnemonic})}"
+        payload = downloader(url)
+        _ofr_pairs(json.loads(payload), mnemonic)
+        artifacts.append(
+            _save_snapshot(
+                source_id=OFR_STFM_SOURCE_ID,
+                url=url,
+                payload=payload,
+                output_root=output_root,
+                suffix="json",
+                retrieved_at=retrieved_at,
+            )
+        )
+    return artifacts
+
+
+def _ofr_pairs(parsed: object, mnemonic: str) -> List[Tuple[date, Optional[float]]]:
+    """An OFR timeseries response as `(date, value)` pairs; `None` is a missing day."""
+
+    if not isinstance(parsed, list):
+        raise ValueError(f"OFR response for {mnemonic} is not a list of [date, value] pairs")
+    out = []
+    for number, pair in enumerate(parsed, start=1):
+        if not (isinstance(pair, list) and len(pair) == 2):
+            raise ValueError(f"OFR {mnemonic} entry {number} is not a [date, value] pair: {pair!r}")
+        when, value = pair
+        try:
+            ref_date = date.fromisoformat(str(when))
+        except ValueError as exc:
+            raise ValueError(f"OFR {mnemonic} entry {number} has no valid date: {when!r}") from exc
+        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            raise ValueError(f"OFR {mnemonic} on {ref_date} has a non-numeric value {value!r}")
+        out.append((ref_date, None if value is None else float(value)))
+    return out
+
+
+def _ofr_stfm_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per dated value of one OFR series (#187).
+
+    The series is the `mnemonic` of the snapshot's URL. A null value (no
+    trading, or disclosure edits) yields no row. `available_at` is the
+    registry's conservative declaration (`ofr_stfm_repo.release_lag`): 16:00
+    New York time two weekdays after the date. A value dated before
+    `OFR_STFM_REAL_TIME_START` was filled in after the OFR began publishing in
+    real time, so it is declared available no earlier than that start's own
+    declared instant: the latest knowable bound, not a publication time.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    (mnemonic,) = parse_qs(urlparse(artifact.url).query).get("mnemonic", [None])
+    if not mnemonic or not _OFR_MNEMONIC_RE.match(mnemonic):
+        raise ValueError(f"OFR snapshot {artifact.path} names no series mnemonic in its URL")
+    zone = ZoneInfo("America/New_York")
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    earliest = datetime.combine(_next_weekday(OFR_STFM_REAL_TIME_START, 2), time(16, 0), tzinfo=zone)
+    rows = []
+    for ref_date, value in _ofr_pairs(json.loads(payload), mnemonic):
+        if value is None:
+            continue
+        declared = datetime.combine(_next_weekday(ref_date, 2), time(16, 0), tzinfo=zone)
+        if ref_date < OFR_STFM_REAL_TIME_START:
+            declared = max(declared, earliest)
+        rows.append(
+            PointInTimeObservation(
+                series_id=mnemonic,
+                ref_date=ref_date,
+                available_at=min(declared, retrieved),
+                value=value,
+                vintage_id=f"{artifact.retrieved_at}:{mnemonic}",
+                source_sha=artifact.sha256,
+            )
+        )
+    return rows
 
 
 def _fetch_nyfed_operation_results(
@@ -4366,6 +4475,8 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_SRF_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_srf_rows(artifact, payload)
+        elif artifact.source_id == OFR_STFM_SOURCE_ID:
+            parsed_rows = _ofr_stfm_rows(artifact, payload)
         elif artifact.source_id == FRB_DDP_SOURCE_ID:
             parsed_rows = _frb_ddp_rows(artifact, payload, registry)
         elif artifact.source_id == FRB_H8_SOURCE_ID:
