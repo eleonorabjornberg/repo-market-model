@@ -4237,7 +4237,26 @@ class AvailableAtDerivationTests(unittest.TestCase):
             byte_count=len(payload),
         )
 
+    def ofr_snapshot(self, ref_date, retrieved):
+        """One OFR timeseries response: `[[date, value], ...]` for one mnemonic (#187)."""
+
+        payload = json.dumps([[ref_date, 4.32]]).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "timeseries.json"
+        path.write_bytes(payload)
+        return SnapshotArtifact(
+            source_id=ingest.OFR_STFM_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.OFR_STFM_TIMESERIES_URL}?mnemonic=REPO-DVP_AR_OO-P",
+            byte_count=len(payload),
+        )
+
     def source_snapshot(self, source_id, ref_date, retrieved):
+        if source_id == ingest.OFR_STFM_SOURCE_ID:
+            return self.ofr_snapshot(ref_date, retrieved)
         if source_id == ingest.FRB_DDP_SOURCE_ID:
             return self.ddp_snapshot(ref_date, retrieved)
         if source_id == FR2004_SOURCE_ID:
@@ -4304,7 +4323,10 @@ class AvailableAtDerivationTests(unittest.TestCase):
 
         self.assertEqual(
             self.ref_date_sources(),
-            ["frb_ddp", "nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_on_rrp", "nyfed_sofr", "nyfed_srf", "nyfed_tgcr"],
+            [
+                "frb_ddp", "nyfed_bgcr", "nyfed_effr", "nyfed_fr2004", "nyfed_on_rrp",
+                "nyfed_sofr", "nyfed_srf", "nyfed_tgcr", "ofr_stfm_repo",
+            ],
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
