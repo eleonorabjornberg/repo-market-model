@@ -319,6 +319,15 @@ NOT_ENTRY_POINTS = {
         "nothing, and leaves locked days out of every count through `counted` "
         "(tests/test_visual.py, NewcomerN2Tests)"
     ),
+    "scripts/onset_post_mortem.as_of_reads": (
+        "reads each scored day's as-of state and calendar for the descriptive "
+        "onset post-mortem (#214); compares nothing, and walks _as_of_folds, "
+        "which refuses a locked day (tests/test_onset_post_mortem.py)"
+    ),
+    "scripts/onset_post_mortem.gauge_history": (
+        "finds the first fold-grid day whose state is public (#214); reads no "
+        "outcome and scores nothing, as_of_reads walks the guarded grid"
+    ),
 }
 
 
