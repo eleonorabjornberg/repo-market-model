@@ -59,6 +59,7 @@ from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.splits import LookAheadError  # noqa: E402
 
 REGISTRY = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
@@ -332,7 +333,7 @@ def leap_labels(rows, scored_dates, horizon=HORIZON):
 
 def _refuse_locked(scored_dates):
     if any(when >= date(2026, 1, 1) for when in scored_dates):
-        raise ValueError("a scored day is locked (docs/decisions/lockbox.md)")
+        raise LookAheadError("a scored day is locked (docs/decisions/lockbox.md)")
 
 
 def candidate_command(args) -> int:

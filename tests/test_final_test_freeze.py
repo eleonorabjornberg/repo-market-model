@@ -14,7 +14,9 @@ Mutation record (`RefuseLockedTests`, the selection run's own lockbox check):
 `if any(when >= date(2026, 1, 1) ...)` in `_refuse_locked` mutated to
 `date(2026, 1, 2)`, confirmed applied by grep; the test
 `test_the_first_locked_day_is_refused` then failed with `AssertionError`
-("ValueError not raised"). Restored, green.
+("LookAheadError not raised"). Restored, green. (The guard raised `ValueError`
+until the ruling of 3 October 2026 on #216 made it a `LookAheadError`, as
+CLAUDE.md asks of leakage guards; the mutation was re-run then.)
 """
 
 from __future__ import annotations
@@ -26,6 +28,8 @@ import unittest
 from datetime import date
 from pathlib import Path
 from unittest import mock
+
+from repo_model.splits import LookAheadError
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "final_test_preregistration.py"
@@ -136,7 +140,7 @@ class RefuseLockedTests(unittest.TestCase):
     """The selection run refuses a locked day (`docs/decisions/lockbox.md`)."""
 
     def test_the_first_locked_day_is_refused(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LookAheadError):
             fp._refuse_locked([date(2025, 12, 31), date(2026, 1, 1)])
 
     def test_the_last_open_day_is_not(self):

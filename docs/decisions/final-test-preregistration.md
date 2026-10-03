@@ -1,8 +1,9 @@
 # Decision: the final test, pre-registered
 
 **Status: a draft for Eleonora (#150), in force once she merges it.** It fixes the design of the final test before any
-locked day is scored. #151 opens the lockbox once and runs exactly what is frozen here. This draft has one open
-question for her, marked below ("Open question"). Its answer can change which model is frozen.
+locked day is scored. #151 opens the lockbox once and runs exactly what is frozen here. Her two rulings of
+3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
+below ("The reading of the selection rule" and "The test").
 
 Her request, 2 October 2026: "Build the simple pressure model with the scarcity state, fix its design in advance, then
 open the 2026 lockbox once. If it beats the S-curve on days when pressure starts, you have a real forecasting result. If
@@ -105,8 +106,9 @@ each calibrator fitted walk-forward. Gain = Brier(Platt) − Brier(method).
 Only recency-weighted Platt's gain has an interval excluding zero, so the rule chooses it.
 
 **The model.** Each candidate's raw plain-leap probability, recalibrated once by recency-weighted Platt. The best is
-the lowest Brier. "Versus the best" = Brier(best) − Brier(candidate). Under the reading used here (see "Open
-question"), a candidate is within the interval of the best when that paired interval reaches zero.
+the lowest Brier. "Versus the best" = Brier(best) − Brier(candidate). Under the paired reading she ruled on (see
+"The reading of the selection rule"), a candidate is within the interval of the best when that paired interval
+reaches zero.
 
 | Rank | Candidate | Brier, raw | Brier, recalibrated | Versus the best | Within |
 |---|---|---|---|---|---|
@@ -145,24 +147,23 @@ Brier(persistence-logistic) − Brier(v1):
 - At-risk group: +0.0003 [−0.0009, +0.0014] at +5 bp, and −0.0005 [−0.0010, +0.0001] at +10 bp.
 - One-day variant: −0.0014 [−0.0034, +0.0006] at +5 bp, and −0.0010 [−0.0017, −0.0003] at +10 bp.
 
-## Open question
+## The reading of the selection rule
 
-**For Eleonora: which reading of "within the bootstrap interval of the best"?** The two readings choose different
-models on these scores, so the answer decides what is frozen.
+**Eleonora's ruling, 3 October 2026, on #216.** "Within the bootstrap interval of the best" means the paired reading:
+a candidate is within when the 90% interval of its paired Brier difference from the best reaches zero. Under it every
+candidate but the dynamic logit is outside, so **the dynamic logit (#137) is the frozen model.**
 
-- **Paired (used in this draft).** A candidate is within when the 90% interval of its paired Brier difference from the
-  best reaches zero. This is the project's evidence rule: every comparison is paired. Under it every candidate but the
-  dynamic logit is outside, and **the dynamic logit** is chosen.
-- **Unpaired.** A candidate is within when its Brier lies inside the 90% bootstrap interval of the best's own Brier,
-  [0.0643, 0.0849]. Every candidate lies inside it, so the highest-ranked, **#128's scarcity-conditioned calendar**,
-  would be chosen.
+- **The reading was fixed after both outcomes had been shown.** Under the paired reading the rule chooses the dynamic
+  logit. Under the unpaired reading (a candidate is within when its Brier lies inside the 90% bootstrap interval of the
+  best's own Brier, [0.0643, 0.0849]) every candidate is inside, and the highest-ranked, #128's scarcity-conditioned
+  calendar, would have been chosen.
+- **Why the paired reading.** The project's evidence rule is paired comparison: a headline claim "is paired, carries a
+  bootstrap interval" (`CLAUDE.md`, "Benchmarks"). The unpaired interval mostly measures day-to-day variation in the
+  Brier, so it barely separates candidates.
 
-If she chooses the unpaired reading, `CHOSEN` in `scripts/final_test_preregistration.py` becomes `scarcity_calendar`.
-The checksum above is then regenerated with `declaration`, before the record merges.
-
-**Also for Eleonora: the CRPS cell.** Both readings choose a direct model of the event, which has no predictive
-distribution, so it has no CRPS. This draft fills target 2 with the published distribution (#169's gbm with nested PID)
-against as-of persistence, reported only, for continuity. The other option is to leave the absolute-numbers target out of this test.
+**The CRPS target, her ruling of the same day.** Both readings choose a direct model of the event, which has no
+predictive distribution, so it has no CRPS. Target 2 is kept as drafted: the published distribution (#169's gbm with
+nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.**
 
 ## The test (#151)
 
@@ -179,8 +180,8 @@ the 2026 forecasts continue the pre-2026 walk.
    leap-onset group, and #139's pressure leap (a leap that ends above IORB), which is secondary.
 2. **Absolute numbers.** The CRPS of the full forecast distribution of the spread, every day, paired against as-of
    persistence (the distribution benchmark in `CLAUDE.md`). The dynamic logit is a direct model of the event and has no
-   predictive distribution. The CRPS cell is therefore the published distribution (the gbm with nested PID, #169)
-   against as-of persistence, reported for continuity.
+   predictive distribution. The CRPS cell is therefore the published distribution (the gbm with nested PID, #169),
+   **the published model, not the chosen model**, against as-of persistence, reported only, for continuity.
 3. **The original thresholds.** +5 bp, then +10 bp, with the onsets on #209's at-risk group, kept for continuity.
 
 **The comparators.**
@@ -201,7 +202,8 @@ the 90% stationary-bootstrap interval. Horizons 1 to 5.
 **The success criterion: one primary cell only.** It is the plain leap (not the leap onset, not the pressure leap), at
 horizon h = 1, at *J₁* = 3 bp. The frozen model's Brier there must be lower than **each** named baseline's. Each
 paired difference's 90% stationary-bootstrap interval must exclude 0. Every other cell is **reported only** and
-cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, CRPS, and +5 and +10 bp.
+cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, CRPS (the published model, not the
+chosen model), and +5 and +10 bp.
 
 **Too few events.** Each event target has the minimum event count #139 already declared: **20 events** in the scored
 period (`onset.MINIMUM_EVENTS`). Below it, that target is reported as inconclusive, with no claim either way. If the
