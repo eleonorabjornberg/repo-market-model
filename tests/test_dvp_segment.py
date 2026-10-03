@@ -197,6 +197,60 @@ class OfrAvailabilityTests(unittest.TestCase):
         self.assertEqual(self.dates[read.row], date(2026, 1, 20))
 
 
+class OfrBackfillFloorTests(unittest.TestCase):
+    """A value the OFR dated before 2020-09-09 is not available before the start (#187).
+
+    The OFR began publishing the repo collection in real time on 2020-09-09
+    (`ingest.OFR_STFM_REAL_TIME_START`); earlier values were filled in later.
+    `_ofr_stfm_rows` therefore declares such a value available no earlier
+    than the start's own declared instant, 16:00 New York time on Friday
+    2020-09-11, while a value dated on or after the start keeps its own
+    two-business-day instant.
+
+    Recorded mutation (CLAUDE.md), 3 October 2026, in a disposable copy:
+    `src/repo_model/ingest.py`, `_ofr_stfm_rows`, the two lines
+    `if ref_date < OFR_STFM_REAL_TIME_START:` /
+    `declared = max(declared, earliest)` deleted.
+    `test_a_backfilled_value_waits_for_the_real_time_start` then fails with
+    `AssertionError` (the 2020-09-04 value is declared available at
+    2020-09-08 16:00 New York time, not 2020-09-11 16:00).
+    """
+
+    def rows(self, pairs, retrieved="2026-10-02T23:00:21Z"):
+        import hashlib
+        import tempfile
+
+        from repo_model import ingest
+        from repo_model.ingest import SnapshotArtifact
+
+        payload = json.dumps(pairs).encode("utf-8")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "timeseries.json"
+        path.write_bytes(payload)
+        artifact = SnapshotArtifact(
+            source_id=ingest.OFR_STFM_SOURCE_ID,
+            path=path,
+            retrieved_at=retrieved,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            url=f"{ingest.OFR_STFM_TIMESERIES_URL}?mnemonic=REPO-DVP_AR_OO-P",
+            byte_count=len(payload),
+        )
+        return {row.ref_date: row for row in ingest._ofr_stfm_rows(artifact, payload)}
+
+    def test_a_backfilled_value_waits_for_the_real_time_start(self):
+        from zoneinfo import ZoneInfo
+
+        zone = ZoneInfo("America/New_York")
+        rows = self.rows([["2020-09-04", 0.11], ["2020-09-10", 0.09]])
+        start = datetime(2020, 9, 11, 16, 0, tzinfo=zone)
+        self.assertEqual(rows[date(2020, 9, 4)].available_at, start)
+        self.assertEqual(
+            rows[date(2020, 9, 10)].available_at, datetime(2020, 9, 14, 16, 0, tzinfo=zone)
+        )
+
+
+
 class HolmTests(unittest.TestCase):
     def test_step_down(self):
         # m = 4, level 0.1: thresholds 0.025, 0.0333, 0.05, 0.1.
