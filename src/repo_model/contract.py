@@ -544,6 +544,13 @@ UNMODELLED_SOURCES = MappingProxyType(
             "(docs/decisions/workflow.md, 'A question about publishing does "
             "not hold back the measurement'). Turning it on removes this entry."
         ),
+        "ofr_stfm_repo": (
+            "#187: the OFR's DVP rate is read by ofr_dvp_minus_bgcr_bp, declared "
+            "in dvp_segment.COLUMN_FIELDS and off in every published declaration "
+            "until Eleonora rules whether it joins one (docs/decisions/workflow.md, "
+            "'A question about publishing does not hold back the measurement'). "
+            "Turning it on removes this entry."
+        ),
         "frb_h8": (
             "#115: bank_total_assets and reserve_scarcity_state are declared in "
             "BANK_TOTAL_ASSETS_FIELDS and RESERVE_SCARCITY_STATE_FIELDS and off "

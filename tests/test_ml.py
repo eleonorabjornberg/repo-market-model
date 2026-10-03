@@ -10736,5 +10736,63 @@ class StackedCombinerTests(unittest.TestCase):
             ml.stacked_combiner({**self.bases, "calendar_climatology": short}, **self.options)
 
 
+class PairedBootstrapPValueTests(unittest.TestCase):
+    """`ml.paired_bootstrap_p_values`: one-sided p-values on shared resamples (#187).
+
+    The cleared-DVP segment test (`repo_model.dvp_segment`) Holm-corrects a
+    family of paired comparisons, so each needs a p-value for improvement and
+    one for deterioration. Each is the share of null-centred stationary
+    bootstrap means at least as extreme as the observed mean, with the usual
+    +1 so no p-value is zero.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_a_clear_improvement_and_a_clear_deterioration(self):
+        rng = random.Random(7)
+        better = [0.5 + rng.gauss(0.0, 0.2) for _ in range(300)]
+        worse = [-value for value in better]
+        noise = [rng.gauss(0.0, 1.0) for _ in range(300)]
+        (b_up, b_down), (w_up, w_down), (n_up, n_down) = ml.paired_bootstrap_p_values(
+            [better, worse, noise], block_length=2, seed=11, replications=999
+        )
+        self.assertEqual(b_up, 1 / 1000)
+        self.assertGreater(b_down, 0.99)
+        self.assertEqual(w_down, 1 / 1000)
+        self.assertGreater(w_up, 0.99)
+        self.assertTrue(0.05 < n_up < 0.95 and 0.05 < n_down < 0.95)
+
+    def test_the_resamples_are_shared_and_reproducible(self):
+        series = [[0.1, -0.2, 0.3, 0.05, -0.1, 0.2] * 10, [0.0, 0.1, -0.1, 0.2, 0.0, 0.1] * 10]
+        first = ml.paired_bootstrap_p_values(series, block_length=3, seed=5, replications=200)
+        again = ml.paired_bootstrap_p_values(series, block_length=3, seed=5, replications=200)
+        self.assertEqual(first, again)
+        alone = ml.paired_bootstrap_p_values(series[1:], block_length=3, seed=5, replications=200)
+        self.assertEqual(alone[0], first[1])
+
+    def test_it_matches_a_direct_computation(self):
+        """The count matrix is the resample: checked against summing each resample's draws."""
+
+        from repo_model.metrics import stationary_bootstrap_indices
+
+        series = [0.3, -0.1, 0.2, 0.0, -0.4, 0.5, 0.1, -0.2]
+        mean = sum(series) / len(series)
+        rng = random.Random(3)
+        up = down = 0
+        for _ in range(50):
+            indices = stationary_bootstrap_indices(len(series), 2, rng)
+            centred = sum(series[i] for i in indices) / len(series) - mean
+            up += centred >= mean - 1e-12
+            down += centred <= mean + 1e-12
+        ((p_up, p_down),) = ml.paired_bootstrap_p_values([series], block_length=2, seed=3, replications=50)
+        self.assertAlmostEqual(p_up, (1 + up) / 51)
+        self.assertAlmostEqual(p_down, (1 + down) / 51)
+
+    def test_series_of_different_lengths_are_refused(self):
+        with self.assertRaises(ValueError):
+            ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
+
+
 if __name__ == "__main__":
     unittest.main()
