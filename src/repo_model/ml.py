@@ -4196,8 +4196,14 @@ def _direct_pressure_predictor(
     minimum_history: int,
     products: Sequence[Tuple[str, str]] = (),
     history: Optional[Tuple[Sequence[Any], Any]] = None,
+    design: Optional[Any] = None,
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `design`, for the scarcity-conditioned calendar (#128) only: a prebuilt
+    design (`_ScarcityCalendarDesign`) used in place of `_PressureDesign`'s
+    from `features` and `products`. Its `monotone` constraints, when it has
+    them, reach the classifier.
 
     `history`, for the pre-SOFR history study (#129) only: `(rows, rule)`, the
     `effr_history` rows and their as-of rule. Their direct pairs are built with
@@ -4211,7 +4217,9 @@ def _direct_pressure_predictor(
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
-    design = _PressureDesign(features, declaration, products)
+    if design is None:
+        design = _PressureDesign(features, declaration, products)
+    monotone = getattr(design, "monotone", None)
     cache: dict = {}
     pooled: dict = {}
 
@@ -4277,7 +4285,7 @@ def _direct_pressure_predictor(
                 continue
             key = tuple(labels)
             if key not in fitted:
-                fitted[key] = _fit_classifier(kind, xs, labels, served)
+                fitted[key] = _fit_classifier(kind, xs, labels, served, monotone=monotone)
             columns.append(fitted[key])
         curves = []
         for day in range(len(served)):
@@ -4305,6 +4313,10 @@ def _direct_pressure_predictor(
             settings["tga_change_rows"] = TGA_CHANGE_ROWS
         if design.products:
             settings["products"] = [list(pair) for pair in design.products]
+        if isinstance(design, _ScarcityCalendarDesign):
+            settings["scarcity_calendar"] = design.settings()
+        if monotone is not None:
+            settings["monotonic_cst"] = list(monotone)
         return ExceedanceCurves(
             tuple(curves),
             design.features,
@@ -4325,8 +4337,14 @@ def _fit_classifier(
     xs: Sequence[Sequence[float]],
     labels: Sequence[int],
     served: Sequence[Sequence[float]],
+    monotone: Optional[Sequence[int]] = None,
 ) -> List[float]:
-    """Fit one estimator to one threshold's labels; P(label = 1) at `served`."""
+    """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
+
+    `monotone`, the classifier's only: one of -1, 0, +1 per design column,
+    passed to scikit-learn as `monotonic_cst` (#128). `None`, the default,
+    passes nothing, so every existing fit is unchanged.
+    """
 
     _estimator_class()  # the extra's refusal, in this repository's vocabulary
     import numpy
@@ -4335,6 +4353,8 @@ def _fit_classifier(
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
     if kind == "logistic":
+        if monotone is not None:
+            raise ValueError("a monotone constraint is the gradient-boosted classifier's, not the logistic's")
         from sklearn.linear_model import LogisticRegression
 
         centre = x.mean(axis=0)
@@ -4349,6 +4369,14 @@ def _fit_classifier(
     from sklearn.ensemble import HistGradientBoostingClassifier
 
     settings = PRESSURE_CLASSIFIER_SETTINGS
+    constraint = {}
+    if monotone is not None:
+        if len(monotone) != x.shape[1] or any(value not in (-1, 0, 1) for value in monotone):
+            raise ValueError(
+                f"a monotone constraint is one of -1, 0, +1 per design column; got "
+                f"{list(monotone)} for {x.shape[1]} columns"
+            )
+        constraint = {"monotonic_cst": [int(value) for value in monotone]}
     model = HistGradientBoostingClassifier(
         learning_rate=settings["learning_rate"],
         max_iter=settings["max_iter"],
@@ -4356,6 +4384,7 @@ def _fit_classifier(
         min_samples_leaf=settings["min_samples_leaf"],
         random_state=settings["random_state"],
         early_stopping=False,
+        **constraint,
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
@@ -4408,6 +4437,158 @@ def pressure_classifier_exceedance(
     """
 
     return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
+
+
+# --------------------------------------------------------------------------
+# The scarcity-conditioned calendar (#128)
+# --------------------------------------------------------------------------
+#
+# The scheduled-pressure terms enter *through* the reserve-scarcity state
+# (#115), never alongside it, so the calm years teach that a quarter-end with
+# abundant reserves is no pressure. Declared in `repo_model.scarcity_calendar`
+# before scoring; the two forms are the direct logistic and the direct
+# gradient-boosted classifier of #114 on this one design, the classifier
+# constrained non-decreasing in the state.
+
+
+class _ScarcityCalendarDesign:
+    """The scarcity-conditioned calendar's design (#128).
+
+    * `spread_bps`, required: the latest spread public at the decision.
+    * `reserve_scarcity_state`, required: #115's state as read as-of, mapped
+      through `state_levels` (`scarcity_calendar.STATE_FORMS`). A level off
+      the mapping is refused, never guessed.
+    * Each other declared column that is not a calendar or settlement column,
+      linearly, as read (the scarcity measures).
+    * Each scheduled-pressure term times the mapped state, and never alone: the
+      scored day's pressure-day type (quarter-end, month-end, tax date, from
+      the three calendar columns, all required, through the split declaration),
+      and `treasury_settlement` when declared, in USD billions.
+
+    With `monotone`, `monotone` is the classifier's constraint per column:
+    non-decreasing (+1) in the state and in each term times the state, free (0)
+    elsewhere. Every scheduled term and the state are non-negative, so the
+    probability never falls as the state rises with the calendar fixed.
+    """
+
+    tga = False
+    scarcity = False
+    products: Tuple[Tuple[str, str], ...] = ()
+
+    def __init__(
+        self,
+        features: Sequence[str],
+        declaration: Any,
+        state_levels: Mapping[float, float],
+        *,
+        monotone: bool = False,
+    ) -> None:
+        from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
+
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        for required in ("spread_bps", RESERVE_SCARCITY_STATE) + _CALENDAR_INPUTS:
+            if required not in declared:
+                raise ValueError(
+                    f"the scarcity-conditioned calendar reads {required!r}; declare it "
+                    f"(the spread, the state and {list(_CALENDAR_INPUTS)} are all required)"
+                )
+        if not hasattr(declaration, "day_type"):
+            raise ValueError("the pressure-day type needs the split declaration that defines it")
+        levels = {float(key): float(value) for key, value in state_levels.items()}
+        if set(levels) != {float(level) for level in STATE_LABELS}:
+            raise ValueError(
+                f"a state form maps every level of the state, {sorted(STATE_LABELS)}; got "
+                f"{sorted(levels)}"
+            )
+        if any(value < 0.0 for value in levels.values()):
+            raise ValueError(f"a mapped state is non-negative, got {levels}")
+        self.declaration = declaration
+        self.features = declared
+        self.state_column = RESERVE_SCARCITY_STATE
+        self.state_levels = levels
+        self.settlement = "treasury_settlement" in declared
+        self.linear = tuple(
+            name
+            for name in declared
+            if name not in ("spread_bps", RESERVE_SCARCITY_STATE, "treasury_settlement")
+            and name not in _CALENDAR_INPUTS
+            and name not in SPREAD_COMPONENTS
+        )
+        scheduled = list(_PRESSURE_DAY_TYPES) + (["treasury_settlement"] if self.settlement else [])
+        self.names = tuple(
+            ["spread_bps", RESERVE_SCARCITY_STATE, *self.linear]
+            + [f"{name}_x_state" for name in scheduled]
+        )
+        self.monotone: Optional[Tuple[int, ...]] = (
+            tuple([0, 1] + [0] * len(self.linear) + [1] * len(scheduled)) if monotone else None
+        )
+
+    def needs_history(self) -> bool:
+        return False
+
+    def settings(self) -> dict:
+        return {
+            "directive": "#128",
+            "state_column": self.state_column,
+            "state_levels": {f"{key:g}": value for key, value in sorted(self.state_levels.items())},
+            "scheduled_terms": "each times the mapped state only, no main effect",
+        }
+
+    def _value(self, row: DailyObservation, column: str) -> float:
+        value = row.values.get(column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{row.date}: the as-of read of {column!r} is missing; a direct "
+                f"pressure model is not fitted on an unobserved input"
+            )
+        return float(value)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        """One design row from an as-of observation (`tga_change` is unused)."""
+
+        level = self._value(observation, self.state_column)
+        if level not in self.state_levels:
+            raise ValueError(
+                f"{observation.date}: the state read {level!r}, which the state form "
+                f"does not map ({sorted(self.state_levels)})"
+            )
+        state = self.state_levels[level]
+        values = [float(observation.spread_bps), state]
+        values += [self._value(observation, name) for name in self.linear]
+        kind = self.declaration.day_type(observation.values)
+        scheduled = [1.0 if kind == name else 0.0 for name in _PRESSURE_DAY_TYPES]
+        if self.settlement:
+            scheduled.append(self._value(observation, "treasury_settlement"))
+        values += [term * state for term in scheduled]
+        return values
+
+
+#: The two forms of the scarcity-conditioned calendar, by the estimator each names.
+SCARCITY_CALENDAR_KINDS = MappingProxyType({"logistic": "logistic", "gbm": "gbm_classifier"})
+
+
+def scarcity_calendar_exceedance(
+    form: str,
+    features: Sequence[str],
+    declaration: Any,
+    state_levels: Mapping[float, float],
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """The scarcity-conditioned calendar (#128), as a direct pressure model.
+
+    `form` is `"logistic"`, the direct logistic of #114 on
+    `_ScarcityCalendarDesign`, or `"gbm"`, the direct gradient-boosted
+    classifier of #114 on the same design, constrained non-decreasing in the
+    state and in each scheduled term times the state. Pairs, horizons and the
+    as-of rule are `pressure_logistic_exceedance`'s.
+    """
+
+    if form not in SCARCITY_CALENDAR_KINDS:
+        raise ValueError(f"a scarcity-calendar form is one of {sorted(SCARCITY_CALENDAR_KINDS)}, got {form!r}")
+    design = _ScarcityCalendarDesign(features, declaration, state_levels, monotone=form == "gbm")
+    return _direct_pressure_predictor(
+        SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design
+    )
 
 
 # --------------------------------------------------------------------------

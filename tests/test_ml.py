@@ -9701,6 +9701,164 @@ class DirectPressureModelTests(unittest.TestCase):
             self.assertTrue(choice.needs_ml_extra)
 
 
+_SCARCITY_CALENDAR = (
+    "spread_bps", "reserve_scarcity_state", "days_to_month_end", "quarter_end", "tax_date",
+    "treasury_settlement",
+)
+_FOUR_LEVEL = {0.0: 0.0, 1.0: 1.0, 2.0: 2.0, 3.0: 3.0}
+_TWO_LEVEL = {0.0: 0.0, 1.0: 0.0, 2.0: 1.0, 3.0: 1.0}
+
+
+def _scarcity_calendar_panel(count=160):
+    """`_pressure_panel` with the state's inputs and the state, and a settlement column.
+
+    The state rises as reserves fall (`reserve_balances` cycles weekly), and the
+    spread already rises with scarcity there, so the state carries signal.
+    """
+
+    from repo_model import scarcity
+
+    rows = []
+    for index, row in enumerate(_pressure_panel(count)):
+        values = dict(row.values)
+        values["bank_total_assets"] = 24000.0
+        values["on_rrp"] = 50.0 if values["reserve_balances"] < 3000.0 else 400.0
+        values["treasury_settlement"] = 60.0 if index % 10 == 3 else 0.0
+        rows.append(DailyObservation(row.date, values))
+    return scarcity.with_reserve_scarcity_state(rows)
+
+
+class ScarcityCalendarDesignTests(unittest.TestCase):
+    """The scarcity-conditioned calendar's design and its two forms (#128).
+
+    Written first, and watched failing: before the design existed every test
+    here failed with `AttributeError: module 'repo_model.ml' has no attribute
+    '_ScarcityCalendarDesign'` (or `'scarcity_calendar_exceedance'`).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=_SCARCITY_CALENDAR, levels=_FOUR_LEVEL, monotone=False):
+        return ml._ScarcityCalendarDesign(features, _pressure_splits(), levels, monotone=monotone)
+
+    def test_every_scheduled_term_enters_only_times_the_state(self):
+        self.assertEqual(
+            self.design().names,
+            (
+                "spread_bps", "reserve_scarcity_state",
+                "quarter_end_x_state", "month_end_x_state", "tax_date_x_state",
+                "treasury_settlement_x_state",
+            ),
+        )
+        measures = _SCARCITY_CALENDAR + ("effr_minus_iorb_bp",)
+        self.assertEqual(
+            self.design(measures).names,
+            (
+                "spread_bps", "reserve_scarcity_state", "effr_minus_iorb_bp",
+                "quarter_end_x_state", "month_end_x_state", "tax_date_x_state",
+                "treasury_settlement_x_state",
+            ),
+        )
+        without_settlement = self.design(_SCARCITY_CALENDAR[:-1])
+        self.assertNotIn("treasury_settlement_x_state", without_settlement.names)
+
+    def _observation(self, state, **values):
+        base = {
+            "sofr": 4.07, "iorb": 4.0, "reserve_scarcity_state": state,
+            "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
+            "treasury_settlement": 0.0,
+        }
+        base.update(values)
+        return DailyObservation(date(2025, 9, 30), base)
+
+    def test_a_row_is_the_mapped_state_times_each_scheduled_term(self):
+        observation = self._observation(3.0, quarter_end=1.0, days_to_month_end=0.0, treasury_settlement=80.0)
+        got = self.design().row(observation, None)
+        self.assertAlmostEqual(got[0], 7.0, places=9)
+        self.assertEqual(got[1:], [3.0, 3.0, 0.0, 0.0, 240.0])
+        two = self.design(levels=_TWO_LEVEL).row(observation, None)
+        self.assertEqual(two[1:], [1.0, 1.0, 0.0, 0.0, 80.0])
+        # A quarter-end with abundant reserves adds nothing.
+        calm = self.design().row(self._observation(0.0, quarter_end=1.0, treasury_settlement=80.0), None)
+        self.assertEqual(calm[1:], [0.0, 0.0, 0.0, 0.0, 0.0])
+
+    def test_a_state_off_the_mapping_or_missing_is_refused(self):
+        for state in (1.5, 4.0, None):
+            with self.subTest(state=state):
+                with self.assertRaises(ValueError):
+                    self.design().row(self._observation(state), None)
+
+    def test_it_refuses_a_design_without_its_terms(self):
+        with self.assertRaises(ValueError):
+            self.design(("reserve_scarcity_state", "days_to_month_end", "quarter_end", "tax_date"))
+        with self.assertRaises(ValueError):
+            self.design(("spread_bps", "days_to_month_end", "quarter_end", "tax_date"))
+        with self.assertRaises(ValueError):
+            self.design(("spread_bps", "reserve_scarcity_state", "quarter_end", "tax_date"))
+        with self.assertRaises(ValueError):
+            self.design(levels={0.0: 0.0, 1.0: 1.0})
+        with self.assertRaises(ValueError):
+            ml.scarcity_calendar_exceedance("forest", _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL)
+
+    def test_the_gbm_is_constrained_non_decreasing_in_the_state(self):
+        measures = _SCARCITY_CALENDAR + ("effr_minus_iorb_bp",)
+        self.assertEqual(self.design(measures, monotone=True).monotone, (0, 1, 0, 1, 1, 1, 1))
+        self.assertIsNone(self.design(measures).monotone)
+
+    def test_the_constrained_gbm_never_falls_as_the_state_rises(self):
+        """Labels that fall with the state on quarter-ends: the constraint still holds."""
+
+        design = self.design(monotone=True)
+        xs, labels = [], []
+        for index in range(400):
+            state = float(index % 4)
+            quarter = 1.0 if index % 3 == 0 else 0.0
+            observation = self._observation(state, quarter_end=quarter, sofr=4.0 + (index % 9) / 100.0)
+            xs.append(design.row(observation, None))
+            # Pressure falls with the state on these rows: an unconstrained fit would follow it.
+            labels.append(1 if (state <= 1.0 and index % 2 == 0) else 0)
+        served = [design.row(self._observation(float(s), quarter_end=1.0), None) for s in range(4)]
+        got = ml._fit_classifier("gbm_classifier", xs, labels, served, monotone=design.monotone)
+        for earlier, later in zip(got, got[1:]):
+            self.assertLessEqual(earlier, later + 1e-12)
+        free = ml._fit_classifier("gbm_classifier", xs, labels, served)
+        self.assertGreater(free[0], free[-1])
+
+    def test_a_backtest_at_horizon_two_runs_under_every_guard(self):
+        from repo_model.scarcity import measurement_declaration
+
+        rows = _scarcity_calendar_panel()
+        dates = [row.date for row in rows]
+        features = _SCARCITY_CALENDAR[:-1]
+        for kind in ("logistic", "gbm"):
+            with self.subTest(kind=kind), measurement_declaration():
+                report = baseline.rolling_exceedance_backtest(
+                    rows,
+                    predictor=ml.scarcity_calendar_exceedance(
+                        kind, features, _pressure_splits(), _TWO_LEVEL, minimum_history=60
+                    ),
+                    model_name=kind,
+                    features=features,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                    horizon=2,
+                )
+            self.assertEqual(report.horizon, 2)
+            for fold in report.folds:
+                self.assertLessEqual(fold.feature_date, dates[dates.index(fold.scored_date) - 3])
+            settings = report.model_settings
+            self.assertEqual(settings["scarcity_calendar"]["state_levels"], {"0": 0.0, "1": 0.0, "2": 1.0, "3": 1.0})
+            self.assertEqual(settings["design"][-1], "tax_date_x_state")
+            if kind == "gbm":
+                self.assertEqual(settings["monotonic_cst"], [0, 1, 1, 1, 1])
+            else:
+                self.assertNotIn("monotonic_cst", settings)
+
+
 def _history_rows(start, end):
     """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
 
