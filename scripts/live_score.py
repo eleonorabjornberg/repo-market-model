@@ -14,7 +14,10 @@ was logged:
   interval are the final test's CRPS cell's (#220, #221): the mean paired
   difference (persistence - published) above 0 and its 90% lower bound above
   0 (`crps_verdict`, `crps_result`, the final test's own functions). CRPS at
-  h = 2 to 5 is reported only.
+  h = 2 to 5 is reported only, and each of its cells carries, next to its
+  verdict label, Eleonora's label of 4 October 2026 (#229) verbatim
+  (`NOT_EVIDENCE`): "different model from h = 1, and as-of persistence does
+  not widen with horizon, so this comparison favours the model; not evidence."
 * **Reported only:** Brier for each event target (+5 bp, +10 bp, #139's plain
   leap), horizon and model, paired against each baseline (baseline minus
   model, a positive mean favouring the model), with a 90% stationary-bootstrap
@@ -67,6 +70,12 @@ BASELINES = {
     "leap": (onset.LEAP_PERSISTENCE_LOGISTIC, onset.LEAP_CALENDAR_CLIMATOLOGY),
 }
 SIGN = "paired = Brier(baseline) - Brier(model) per day; a positive mean favours the model"
+#: Eleonora's ruling of 4 October 2026 (#229), verbatim: every h = 2 to 5 CRPS
+#: cell carries it, next to its verdict label. At h = 2 to 5 the published
+#: distribution is pressure model v1's declaration, not the CRPS record's, and
+#: as-of persistence's quantiles are the same at every horizon.
+NOT_EVIDENCE = ("different model from h = 1, and as-of persistence does not widen with "
+                "horizon, so this comparison favours the model; not evidence.")
 CRPS_SIGN = ("paired = CRPS(persistence) - CRPS(published) per day; a positive mean favours "
              "the published distribution")
 
@@ -176,6 +185,8 @@ def score_crps(records, rows, splits, day: date) -> dict:
                 "first": days[0].isoformat() if days else None,
                 "last": days[-1].isoformat() if days else None,
                 "sign_convention": CRPS_SIGN}
+        if not primary:
+            cell["verdict_label"] = NOT_EVIDENCE
         if not days:
             cell["result" if primary else "note"] = "inconclusive" if primary else "no scored day"
             out[f"crps/h{h}"] = cell

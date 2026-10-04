@@ -31,5 +31,12 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
   under the final test's pass rule (#220, #221): the mean paired difference (persistence − published) above 0 and
   its 90% lower bound above 0, labelled "not distinguishable" or "worse" otherwise, with the block-length-10
   interval reported. CRPS at h = 2 to 5 and every Brier cell (+5 bp, +10 bp, the plain leap) are reported only.
+- **The CRPS cells at h = 2 to 5 are not evidence** (Eleonora's ruling of 4 October 2026, #229). At h = 1 the
+  published distribution uses the CRPS record's settings; at h = 2 to 5 it uses pressure model v1's published
+  declaration, because the CRPS record's declaration reads the target-day settlement, which the as-of rule
+  refuses at h > 1; and the as-of persistence quantiles are the same at every horizon. Wherever these cells are
+  reported, each carries this label, verbatim, next to its verdict label:
+
+  > different model from h = 1, and as-of persistence does not widen with horizon, so this comparison favours the model; not evidence.
 - **The verdict is fixed once**, at the first scoring date that scores any day of the primary cell (CRPS has no
   minimum event count). Every later scoring date is reported as an update and never replaces it.
