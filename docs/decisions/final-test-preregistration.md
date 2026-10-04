@@ -400,3 +400,62 @@ distinguishable"**. It is not a pass under the rule.
 **What stays from the first amendment of the day:** the near-blind disclosure, the two tests as amended here (the
 CRPS cell primary, the leap test reported only), the labels and the block-10 sensitivity. The leap test was the
 primary cell from #216's merge until this amendment.
+
+## Amendment, 4 October 2026 (second), before any opening
+
+Eleonora's amendment, posted on #151 on 4 October 2026 and relayed by the orchestrating session, with her scope
+comment of the same day on #222. It was made before the lockbox was opened. Directive #222 writes it into this record.
+**It opens nothing, scores no 2026 day and reads no 2026 outcome.** It changes neither checksum: the leap test's and
+the CRPS test's pins ("What is frozen") are as #221 left them. The CRPS cell stays the one primary cell; every leap
+cell is reported only.
+
+**1. Expected leap events, written down now.**
+
+- The window has **169 scored days** (2026-01-02 to 2026-09-03), counted from the published panel's date column only
+  (`window_dates`).
+- The pre-2026 plain-leap rate at h = 1 at *J₁* = 3 bp, on the published fold grid (2018-06-29 to 2025-12-31), is
+  **164 of 1873** scored days (0.0876).
+- So the expected count on the window is 169 × 164 / 1873 **≈ 14.8 leaps, against the minimum of 20 events**
+  (`onset.MINIMUM_EVENTS`). If the pre-2026 rate holds, P(≥ 20) **≈ 0.11** (Poisson).
+- **That 0.11 assumes the average 2018–2025 leap rate.** Calm years had far fewer plain leaps in the same
+  January–August stretch, recounted below. 2026 is known to be calm (the lockbox record's counts: 5 days above
+  +5 bp, none above +10 bp), so the chance of reaching 20 is likely lower than 0.11.
+- "Inconclusive" for the reported leap cells on the 2026 window is therefore **the expected outcome**, not a surprise.
+
+Each pre-2026 year's plain leaps at h = 1, *J₁* = 3 bp, on scored days from 1 January to 31 August, on the published
+fold grid. "At the year's rate" scales that year's January–August rate to the window's 169 days.
+
+| Year | Scored days, Jan–Aug | Plain leaps | Expected on 169 days, at the year's rate | P(≥ 20), Poisson |
+|---|---|---|---|---|
+| 2018 (from 2018-06-29) | 45 | 10 | 37.6 | 0.999 |
+| 2019 | 168 | 30 | 30.2 | 0.98 |
+| 2020 | 168 | 8 | 8.0 | < 0.001 |
+| 2021 | 167 | 2 | 2.0 | < 0.001 |
+| 2022 | 167 | 3 | 3.0 | < 0.001 |
+| 2023 | 167 | 2 | 2.0 | < 0.001 |
+| 2024 | 168 | 2 | 2.0 | < 0.001 |
+| 2025 | 166 | 24 | 24.4 | 0.84 |
+
+2018's scored days start on 2018-06-29, so its row covers July and August only. The counts were recounted by the run
+that drafted this section, on pre-2026 panel data only, with the commands below, and agree with the ones in her scope
+comment (2020: 8; 2021–2024: 2 to 3 each). No 2026 day is read or counted except by date: the script refuses a run
+whose scored days reach the near-blind tier, before any label is read.
+
+```
+PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
+OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py candidate --name dynamic_logit --panel PUB.csv --output OUT/dynamic_logit.pickle
+PYTHONPATH=src python3 scripts/final_test_leap_counts.py --panel PUB.csv --run OUT/dynamic_logit.pickle
+```
+
+**2. Three outcome labels.**
+
+- **"shown better"**: pass under the cell's rule.
+- **"not shown"**: the 90% interval contains 0.
+- **"shown worse"**: the upper bound of the 90% interval is below 0.
+
+For the primary CRPS cell these are the labels already ruled on #221: "shown better" is its pass, "not shown" is
+"not distinguishable", and "shown worse" is "worse", with the edge case as ruled there. The same three labels are
+applied to each reported leap and threshold comparison. "Inconclusive" still applies below the minimum of 20 events.
+
+**3. No substitute event target.** No other event target with more 2026 events (for example a lower threshold)
+replaces the plain leap among the reported jump cells.
