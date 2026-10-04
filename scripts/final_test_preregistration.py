@@ -23,6 +23,22 @@ The amendments of 3 October 2026 on #150 fix what is computed here:
   checksum (`declaration`, `declaration_checksum`), which the record pins and
   `tests/test_final_test_freeze.py` checks.
 
+The CRPS test (#220, Eleonora's amendment of 4 October 2026 on #151) is the
+second primary test, with its own frozen declaration and checksum:
+
+* `crps-declaration` prints it (`crps_declaration`, `crps_declaration_checksum`):
+  the published distribution exactly as #169 published it (the gbm on the nine
+  funding features, conformal PID with nested selection, its grid and
+  constants), as-of persistence, the fold grid, the CRPS path, the paired
+  stationary bootstrap and its settings, the window, and the command the
+  opening run types (`CRPS_COMMAND`).
+* `crps` reads that command's record and scores the cell: the paired CRPS
+  difference on the window's 169 scored days only, with its interval, split
+  by regime and pressure-day type, and the pass rule (`crps_cell`,
+  `crps_verdict`). It refuses while the near-blind tier is locked, and it
+  refuses a record that is not the frozen run. Nothing here runs it before
+  #151 opens the lockbox.
+
     PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs \\
         --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
     PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output V11.csv
@@ -34,6 +50,7 @@ The amendments of 3 October 2026 on #150 fix what is computed here:
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py select \\
         --panel PUB.csv --runs OUT --calibrator METHOD --output OUT/selection.json
     PYTHONPATH=src python3 scripts/final_test_preregistration.py declaration
+    PYTHONPATH=src python3 scripts/final_test_preregistration.py crps-declaration
 """
 
 from __future__ import annotations
@@ -41,7 +58,9 @@ from __future__ import annotations
 import argparse
 import ast
 import copyreg
+import csv
 import dataclasses
+import functools
 import hashlib
 import importlib.util
 import json
@@ -54,6 +73,7 @@ from types import MappingProxyType
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model import baseline, lockbox, metrics, recalibration  # noqa: E402
 from repo_model import onset, probability_calibration as pc  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
@@ -65,6 +85,7 @@ REGISTRY = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 THRESHOLDS = REPO / "metadata" / "stress_thresholds.json"
 RECORD = REPO / "docs" / "decisions" / "final-test-preregistration.md"
+MANIFEST = REPO / "metadata" / "funding_panel_manifest.json"
 #: The selection cell's horizon (#150, amendment of 3 October: the selection score).
 HORIZON = 1
 MINIMUM_HISTORY = 61
@@ -669,6 +690,13 @@ def _top_level_source(path: str, roots) -> dict:
     """
 
     text = (REPO / path).read_text(encoding="utf-8")
+    return dict(_source_hashes(path, text, tuple(roots)))
+
+
+@functools.lru_cache(maxsize=None)
+def _source_hashes(path: str, text: str, roots: tuple) -> tuple:
+    """`_top_level_source` on `text`, kept per text: an edited file is hashed anew."""
+
     definitions = _definitions(ast.parse(text))
     missing = sorted(set(roots) - set(definitions))
     if missing:
@@ -682,12 +710,12 @@ def _top_level_source(path: str, roots) -> dict:
         for node in ast.walk(definitions[name]):
             if isinstance(node, ast.Name) and node.id in definitions:
                 stack.append(node.id)
-    return {
-        name: hashlib.sha256(
+    return tuple(
+        (name, hashlib.sha256(
             ast.get_source_segment(text, definitions[name]).encode("utf-8")
-        ).hexdigest()
+        ).hexdigest())
         for name in sorted(reached)
-    }
+    )
 
 
 def declaration(name: str = CHOSEN, calibrator: str = CHOSEN_CALIBRATOR) -> dict:
@@ -736,6 +764,232 @@ def declaration_command(args) -> int:
     return 0
 
 
+# -- the CRPS test (#220) -------------------------------------------------------------
+
+#: The near-blind tier (`docs/decisions/lockbox.md`): the CRPS test's window.
+CRPS_FIRST = date(2026, 1, 1)
+CRPS_LAST = date(2026, 9, 3)
+#: The window's scored days: the panel's dates in it, counted from the date
+#: column only (`window_dates`), never from a 2026 outcome.
+CRPS_WINDOW_DAYS = 169
+#: The published distribution's inputs (#169), as its record declares them.
+CRPS_FEATURES = ("reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
+                 "tbill_13w", "tbill_4w", "tga", "treasury_settlement")
+CRPS_CALIBRATION = "conformal_pid_nested"
+#: The paired bootstrap's mean block length at h = 1, as `compare` measures it
+#: (`baseline._maximum_horizon_overlap`) and the published record carries it.
+CRPS_BLOCK_LENGTH = 2
+#: The command the opening run types, after Eleonora opens the near-blind tier.
+CRPS_COMMAND = (
+    "compare", "PUB.csv",
+    "--registry", "metadata/sources.json", "--decision-time", "16:00",
+    "--minimum-history", str(MINIMUM_HISTORY), "--refit-every", str(REFIT_EVERY),
+    "--splits", "metadata/evaluation_splits.json", "--end", CRPS_LAST.isoformat(),
+    "--loss", "crps",
+    "--model-a", "persistence", "--feature-a", "spread_bps",
+    "--model-b", "gbm", "--calibration-b", CRPS_CALIBRATION,
+    *(flag for name in CRPS_FEATURES for flag in ("--feature-b", name)),
+    "--report", "OUT/crps.json",
+)
+#: The code the CRPS test is: the published distribution (the gbm, nested PID),
+#: as-of persistence, the paired comparison, the CRPS, the bootstrap, the seed,
+#: the split, and this file's cell and rule. Hashed as `_SHARED_SOURCE` is.
+_CRPS_SOURCE = (
+    ("src/repo_model/ml.py", ("fit_gradient_boosted_quantiles",)),
+    ("src/repo_model/recalibration.py", ("NestedFoldPid", "PID_GRID", "DECLARED_PID",
+                                         "scorecaster_indicators")),
+    ("src/repo_model/baseline.py", ("fit", "paired_model_comparison", "comparison_seed",
+                                    "COMPARISON_LOSSES", "split_document",
+                                    "BOOTSTRAP_LEVEL", "BOOTSTRAP_REPLICATIONS")),
+    ("src/repo_model/metrics.py", ("crps_from_quantiles", "stationary_bootstrap_interval")),
+    ("src/repo_model/cli_eval.py", ("_compare", "FITTER_FACTORIES")),
+    ("scripts/final_test_preregistration.py", ("crps_cell", "crps_verdict", "window_dates",
+                                               "crps_command")),
+)
+
+
+def _frozen_panel_sha256() -> str:
+    return json.loads(MANIFEST.read_text(encoding="utf-8"))["sha256"]
+
+
+def _crps_seed() -> int:
+    """`compare`'s own seed for the frozen run: the published panel and the two sides."""
+
+    return baseline.comparison_seed(
+        _frozen_panel_sha256(),
+        model_a="persistence",
+        features_a=["spread_bps"],
+        model_b="gbm",
+        features_b=list(CRPS_FEATURES),
+        decision_time=DECISION,
+    )
+
+
+def _published_distribution() -> dict:
+    """`model_b` as #169's record declares it, from the code's own constants."""
+
+    constants = {name: getattr(recalibration, name) for name in recalibration._PID_FIXED_NAMES}
+    constants["SCORECASTER_INDICATORS"] = list(recalibration.scorecaster_indicators(HORIZON))
+    return {
+        "model": "gbm",
+        "features": sorted(CRPS_FEATURES),
+        "calibration": CRPS_CALIBRATION,
+        "calibration_constants": constants,
+        "calibration_selection": {
+            "method": "nested walk-forward selection (#125)",
+            "loss": "crps",
+            "refit_every": REFIT_EVERY,
+            "points": len(recalibration.PID_GRID),
+            "grid": {
+                "steps": list(recalibration.PID_GRID_STEPS),
+                "integrator_gains": list(recalibration.PID_GRID_INTEGRATOR_GAINS),
+                "saturations": list(recalibration.PID_GRID_SATURATIONS),
+                "scorecaster_minimums": list(recalibration.PID_GRID_SCORECASTER_MINIMUMS),
+            },
+            "fallback": recalibration.DECLARED_PID._asdict(),
+        },
+    }
+
+
+def crps_declaration() -> dict:
+    """Everything the CRPS test is: both sides, the window, the interval, the code."""
+
+    source = {}
+    for path, names in _CRPS_SOURCE:
+        source[path] = {**source.get(path, {}), **_top_level_source(path, names)}
+    return {
+        "model_a": {"model": "persistence", "features": ["spread_bps"]},
+        "model_b": _published_distribution(),
+        "minimum_history": MINIMUM_HISTORY,
+        "refit_every": REFIT_EVERY,
+        "decision_time": DECISION.isoformat(timespec="minutes"),
+        "end": CRPS_LAST.isoformat(),
+        "loss": baseline.CRPS_COMPARISON_LOSS,
+        "window": {"first": CRPS_FIRST.isoformat(), "last": CRPS_LAST.isoformat(),
+                   "days": CRPS_WINDOW_DAYS},
+        "interval": {"level": baseline.BOOTSTRAP_LEVEL,
+                     "replications": baseline.BOOTSTRAP_REPLICATIONS,
+                     "block_length": CRPS_BLOCK_LENGTH, "seed": _crps_seed(),
+                     "method": "stationary_bootstrap"},
+        "pass_rule": "persistence's mean CRPS minus the published distribution's, on the "
+                     "window's days, is positive and its 90% paired interval excludes zero",
+        "panel_sha256": _frozen_panel_sha256(),
+        "command": list(CRPS_COMMAND),
+        "source_sha256": source,
+    }
+
+
+def crps_declaration_checksum() -> str:
+    text = json.dumps(crps_declaration(), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def window_dates(panel: Path) -> list:
+    """The panel's dates in the CRPS window, read from the date column alone."""
+
+    with Path(panel).open(newline="", encoding="utf-8") as handle:
+        reader = csv.reader(handle)
+        column = next(reader).index("date")
+        dates = [date.fromisoformat(row[column]) for row in reader]
+    return [when for when in dates if CRPS_FIRST <= when <= CRPS_LAST]
+
+
+def crps_cell(record: dict, rows=None) -> dict:
+    """The CRPS cell: the frozen run's paired difference on the window's days only.
+
+    `record` is the report `CRPS_COMMAND` writes. It is refused (`ValueError`)
+    unless it is that run: the same declaration, loss, panel and interval
+    settings, and exactly `CRPS_WINDOW_DAYS` scored days in the window. A
+    locked window is refused (`LookAheadError`) before any difference is read.
+    With the panel's `rows`, the cell is also split by regime and pressure-day
+    type; the split decides nothing.
+    """
+
+    frozen = crps_declaration()
+    declared = record["declaration"]
+    for key in ("model_a", "model_b", "minimum_history", "refit_every", "decision_time", "end"):
+        if declared.get(key) != frozen[key]:
+            raise ValueError(f"the record's {key} is not the frozen CRPS test's")
+    comparison = record["comparison"]
+    if comparison.get("loss") != frozen["loss"]:
+        raise ValueError("the record's loss is not CRPS")
+    if record["panel"]["sha256"] != frozen["panel_sha256"]:
+        raise ValueError("the record was not scored on the published panel")
+    interval = comparison["mean_difference_interval"]
+    for key in ("level", "replications", "block_length", "seed", "method"):
+        if interval.get(key) != frozen["interval"][key]:
+            raise ValueError(f"the record's interval {key} is not the frozen one")
+    window = [date.fromisoformat(entry["scored_date"]) for entry in comparison["per_origin"]]
+    window = [when for when in window if CRPS_FIRST <= when <= CRPS_LAST]
+    if len(window) != CRPS_WINDOW_DAYS:
+        raise ValueError(f"the record scores {len(window)} window days, not {CRPS_WINDOW_DAYS}")
+    lockbox.require_unlocked(window, where="final test CRPS cell")
+    inside = [entry for entry in comparison["per_origin"]
+              if CRPS_FIRST <= date.fromisoformat(entry["scored_date"]) <= CRPS_LAST]
+    differences = [float(entry["difference_bps"]) for entry in inside]
+
+    def mean_difference(indices):
+        return sum(differences[i] for i in indices) / len(indices)
+
+    lower, upper = metrics.stationary_bootstrap_interval(
+        mean_difference,
+        len(differences),
+        block_length=CRPS_BLOCK_LENGTH,
+        seed=frozen["interval"]["seed"],
+        replications=baseline.BOOTSTRAP_REPLICATIONS,
+        level=baseline.BOOTSTRAP_LEVEL,
+    )
+    cell = {
+        "days": len(differences),
+        "first": window[0].isoformat(),
+        "last": window[-1].isoformat(),
+        "crps_persistence_bps": sum(float(e["loss_a_bps"]) for e in inside) / len(inside),
+        "crps_published_bps": sum(float(e["loss_b_bps"]) for e in inside) / len(inside),
+        "mean_difference_bps": mean_difference(range(len(differences))),
+        "interval": {"lower": lower, "upper": upper, **frozen["interval"]},
+        "sign_convention": "persistence minus the published distribution; positive "
+                           "favours the published distribution",
+    }
+    if rows is not None:
+        from repo_model.evaluation_splits import load_split_declaration
+
+        cell["splits"] = baseline.split_document(
+            load_split_declaration(SPLITS), rows, window, differences,
+            block_length=CRPS_BLOCK_LENGTH, seed=frozen["interval"]["seed"],
+        )
+    cell["verdict"] = crps_verdict(cell)
+    return cell
+
+
+def crps_verdict(cell: dict) -> str:
+    """The CRPS test's pass rule: a lower CRPS, its 90% paired interval excluding zero."""
+
+    if cell["mean_difference_bps"] > 0 and cell["interval"]["lower"] > 0:
+        return "pass"
+    return "fail"
+
+
+def crps_command(args) -> int:
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    if panel_sha256(args.panel) != _frozen_panel_sha256():
+        raise ValueError("the panel is not the published panel")
+    record = json.loads(args.report.read_text(encoding="utf-8"))
+    cell = crps_cell(record, rows)
+    document = {"crps_declaration_sha256": crps_declaration_checksum(), "cell": cell}
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n",
+                           encoding="utf-8")
+    print(json.dumps({key: cell[key] for key in ("days", "mean_difference_bps", "interval",
+                                                 "verdict")}, indent=1))
+    return 0
+
+
+def crps_declaration_command(args) -> int:
+    print(json.dumps({"declaration": crps_declaration(), "sha256": crps_declaration_checksum()},
+                     indent=1, sort_keys=True))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -757,6 +1011,14 @@ def main(argv=None) -> int:
     sel.set_defaults(func=select_command)
     dec = sub.add_parser("declaration", help="the frozen declaration and its checksum")
     dec.set_defaults(func=declaration_command)
+    crps_dec = sub.add_parser("crps-declaration",
+                              help="the CRPS test's frozen declaration and its checksum")
+    crps_dec.set_defaults(func=crps_declaration_command)
+    crps = sub.add_parser("crps", help="the CRPS cell from the opening run's compare record")
+    crps.add_argument("--report", type=Path, required=True)
+    crps.add_argument("--panel", type=Path, required=True)
+    crps.add_argument("--output", type=Path, required=True)
+    crps.set_defaults(func=crps_command)
     args = parser.parse_args(argv)
     return args.func(args)
 

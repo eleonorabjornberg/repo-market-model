@@ -221,7 +221,8 @@ class CrpsFreezeTests(unittest.TestCase):
                                       encoding="utf-8")
                     self.assertNotEqual(fp.crps_declaration_checksum(),
                                         _pinned("CRPS declaration checksum"))
-                    if path != "scripts/final_test_preregistration.py":
+                    if path == "src/repo_model/ml.py":
+                        # ml.py holds the leap test's model too; an edit outside it leaves it.
                         self.assertEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
 
 
@@ -244,6 +245,9 @@ class WindowDaysTests(unittest.TestCase):
         self.assertEqual(len(days), fp.CRPS_WINDOW_DAYS)
         self.assertEqual(fp.CRPS_WINDOW_DAYS, 169)
         self.assertEqual((days[0], days[-1]), (date(2026, 1, 2), date(2026, 9, 3)))
+        near_blind = fp.lockbox.load_lockbox()[0]
+        self.assertEqual((near_blind.name, near_blind.start, near_blind.end),
+                         ("near_blind", fp.CRPS_FIRST, fp.CRPS_LAST))
 
     def test_only_the_date_column_is_read(self):
         with tempfile.TemporaryDirectory() as scratch:
@@ -316,6 +320,20 @@ class CrpsCellTests(unittest.TestCase):
         self.assertGreater(cell["mean_difference_bps"], 0.5)
         self.assertGreater(cell["interval"]["lower"], 0.0)
         self.assertEqual(fp.crps_verdict(cell), "pass")
+
+    def test_with_the_panel_rows_the_cell_is_split_by_regime_and_day_type(self):
+        from repo_model.data import DailyObservation
+
+        days = self._days()
+        rows = [DailyObservation(day, {"quarter_end": float(i == 60), "tax_date": 0.0,
+                                       "days_to_month_end": float(10 + i % 3)})
+                for i, day in enumerate(self.PRE + days)]
+        record = _synthetic_record(self.PRE + days, [0.0, 0.0] + [0.1] * len(days))
+        with tempfile.TemporaryDirectory() as scratch, \
+                mock.patch.object(fp.lockbox, "DEFAULT_LOCKBOX", _opened_lockbox(scratch)):
+            cell = fp.crps_cell(record, rows)
+        self.assertEqual(cell["splits"]["by_regime"]["2025-26"]["count"], fp.CRPS_WINDOW_DAYS)
+        self.assertEqual(cell["splits"]["by_day_type"]["quarter_end"]["count"], 1)
 
     def test_an_interval_reaching_zero_does_not_pass(self):
         cell = {"mean_difference_bps": 0.2, "interval": {"lower": -0.01, "upper": 0.4}}

@@ -5,6 +5,14 @@ locked day is scored. #151 opens the lockbox once and runs exactly what is froze
 3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
 below ("The reading of the selection rule" and "The test").
 
+**Two primary tests,** since her amendment of 4 October 2026 (below, "Amendment, 4 October 2026, before any opening"),
+each a separate claim:
+
+1. **The leap test:** the frozen dynamic logit, recalibrated by recency-weighted Platt, on the plain leap at h = 1,
+   against both of #139's baselines. Below 20 events it is inconclusive.
+2. **The CRPS test:** the published distribution (#169's gbm with nested PID) against as-of persistence, by CRPS, on
+   the 169 scored days from 2026-01-02 to 2026-09-03. It is near-blind, not blind.
+
 Her request, 2 October 2026: "Build the simple pressure model with the scarcity state, fix its design in advance, then
 open the 2026 lockbox once. If it beats the S-curve on days when pressure starts, you have a real forecasting result. If
 not, you still have the case study." "The S-curve" means the persistence-logistic baseline (her clarification of
@@ -33,6 +41,11 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
     baselines and the backtest reach in their own files.
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
+
+- **CRPS declaration checksum:** `61c17a3873e99eacc40169c4292fe73dd4deeca6a68ebddc63fbe76a20b37634`
+- **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
+  4 October 2026 (point 4). It is separate from the leap test's, which does not move. It covers the CRPS test as
+  set out under "Amendment, 4 October 2026, before any opening".
 
 The commands, on the published panel rebuilt from the tracked fixtures (digest `4ddc3882…`), and on the two scratch
 panels the candidates were measured on:
@@ -163,7 +176,8 @@ candidate but the dynamic logit is outside, so **the dynamic logit (#137) is the
 
 **The CRPS target, her ruling of the same day.** Both readings choose a direct model of the event, which has no
 predictive distribution, so it has no CRPS. Target 2 is kept as drafted: the published distribution (#169's gbm with
-nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.**
+nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.** Her
+amendment of 4 October 2026 made it a second primary test (below).
 
 ## The test (#151)
 
@@ -181,7 +195,8 @@ the 2026 forecasts continue the pre-2026 walk.
 2. **Absolute numbers.** The CRPS of the full forecast distribution of the spread, every day, paired against as-of
    persistence (the distribution benchmark in `CLAUDE.md`). The dynamic logit is a direct model of the event and has no
    predictive distribution. The CRPS cell is therefore the published distribution (the gbm with nested PID, #169),
-   **the published model, not the chosen model**, against as-of persistence, reported only, for continuity.
+   **the published model, not the chosen model**, against as-of persistence. Since the amendment of 4 October 2026
+   it is the **second primary test**, on the window's 169 scored days (below).
 3. **The original thresholds.** +5 bp, then +10 bp, with the onsets on #209's at-risk group, kept for continuity.
 
 **The comparators.**
@@ -199,11 +214,12 @@ the 2026 forecasts continue the pre-2026 walk.
 **The metrics.** Brier on each event target and CRPS on the distribution, each paired against its comparators, with
 the 90% stationary-bootstrap interval. Horizons 1 to 5.
 
-**The success criterion: one primary cell only.** It is the plain leap (not the leap onset, not the pressure leap), at
-horizon h = 1, at *J₁* = 3 bp. The frozen model's Brier there must be lower than **each** named baseline's. Each
+**The success criteria: two primary cells, two separate claims** (amended 4 October 2026; see the amendment below).
+The CRPS cell passes when the published distribution's CRPS on the window's 169 scored days is lower than as-of
+persistence's, with the 90% paired interval of the difference excluding zero. The leap cell is the plain leap (not the
+leap onset, not the pressure leap), at horizon h = 1, at *J₁* = 3 bp. The frozen model's Brier there must be lower than **each** named baseline's. Each
 paired difference's 90% stationary-bootstrap interval must exclude 0. Every other cell is **reported only** and
-cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, CRPS (the published model, not the
-chosen model), and +5 and +10 bp.
+cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, and +5 and +10 bp.
 
 **Too few events.** Each event target has the minimum event count #139 already declared: **20 events** in the scored
 period (`onset.MINIMUM_EVENTS`). Below it, that target is reported as inconclusive, with no claim either way. If the
@@ -234,3 +250,68 @@ reported, and it decides nothing.
   pre-2026 data or from earlier rules, and are fixed above. Counting events in the locked period, to choose a threshold
   or for any other reason, is not allowed before #151 scores it.
 - **Labels are on whole basis points** (#155), so the test is scored on the corrected labels.
+
+## Amendment, 4 October 2026, before any opening
+
+Eleonora's amendment, posted on #151 on 4 October 2026 and relayed by the orchestrating session. It was made before
+the lockbox was opened. Directive #220 writes it into this record and extends the freeze.
+
+**The reason.** At the pre-2026 leap rate (164 plain leaps in 1873 scored days), the 169 scored days of the window
+give about 169 × 164 / 1873 ≈ 14.8 expected leap events. The minimum is 20. The count of 169 comes from the panel's
+dates only. No 2026 outcome was read to make it.
+
+1. **A second primary test: CRPS.** The CRPS of the published distribution, exactly as published in #169, against
+   as-of persistence, on all 169 scored days of the window. **Pass:** the published distribution's CRPS is lower,
+   and the 90% paired interval of the difference excludes zero. The claim, if it passes: "the published range
+   forecast beats as-of persistence on the near-blind 2026 days". It never says "warns of stress".
+2. **The leap test is unchanged.** The frozen dynamic logit, recency-weighted Platt, the plain leap at h = 1, both
+   baselines, and a minimum of 20 events. Below the minimum it is reported with its estimate and interval and labelled
+   **inconclusive**. The live record (#215) continues it.
+3. **The two tests are separate claims.** Each is reported on its own. Neither can stand in for the other.
+4. **The freeze is extended** to the published distribution's declaration and code, and to the CRPS comparison
+   path, by a pull request merged before any opening (#220). The CRPS declaration checksum is pinned above ("What is
+   frozen"). The leap test's checksum is unchanged.
+5. **Disclosure.** These 2026 days were already scored inside pooled CRPS aggregates of the archived records from
+   before #169 (the CV+ records). No 2026-only CRPS was published. The CRPS test is therefore **near-blind, not
+   blind**.
+
+**What the CRPS checksum covers.** `scripts/final_test_preregistration.py crps-declaration` prints it, and
+`tests/test_final_test_freeze.py` fails if it moves:
+
+- **The published distribution,** as `docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`
+  declares it: the gbm (`ml.fit_gradient_boosted_quantiles`, the model `compare --model-b gbm` scores) on the nine
+  funding features, with conformal PID under nested walk-forward selection (`recalibration.NestedFoldPid`), its
+  grid, its fallback and its fixed constants. A test checks that this declaration equals the published record's.
+- **The benchmark:** as-of persistence on `spread_bps`.
+- **The fold grid:** expanding window, minimum history 61, refit every 21 scored days, decision 16:00, end
+  2026-09-03.
+- **The CRPS path:** the paired comparison (`baseline.paired_model_comparison`), the CRPS (`metrics.crps_from_quantiles`
+  through the comparison's `crps` loss), the paired stationary bootstrap (`metrics.stationary_bootstrap_interval`) at
+  90%, 2000 replications, mean block length 2, and seed 1970125677. The seed is `compare`'s own, derived from the
+  published panel's digest and the two sides. It is the seed of the published CRPS record.
+- **The window:** 2026-01-01 to 2026-09-03, 169 scored days.
+- **The cell and the pass rule:** `crps_cell` and `crps_verdict` in the same script. The cell scores the frozen
+  run's paired differences on the window's days only. It is split by regime and by pressure-day type, and the split
+  decides nothing. It refuses while the near-blind tier is locked, and refuses a record that is not the frozen run.
+- **The code:** the sha256 of the source of every top-level definition these reach in their own files, as for the
+  leap test.
+
+**The commands the opening run types,** on the published panel rebuilt as above (`PUB.csv`, digest `4ddc3882…`),
+once Eleonora has opened the near-blind tier in `metadata/lockbox.json`:
+
+```
+OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python -m repo_model.cli compare PUB.csv \
+  --registry metadata/sources.json --decision-time 16:00 --minimum-history 61 --refit-every 21 \
+  --splits metadata/evaluation_splits.json --end 2026-09-03 --loss crps \
+  --model-a persistence --feature-a spread_bps \
+  --model-b gbm --calibration-b conformal_pid_nested \
+  --feature-b reserve_balances --feature-b sofr_p25 --feature-b sofr_p75 --feature-b sofr_volume \
+  --feature-b spread_bps --feature-b tbill_13w --feature-b tbill_4w --feature-b tga \
+  --feature-b treasury_settlement --report OUT/crps.json
+PYTHONPATH=src python3 scripts/final_test_preregistration.py crps --report OUT/crps.json --panel PUB.csv \
+  --output OUT/crps_cell.json
+```
+
+**The day count.** The window holds 169 scored days. The count is of the published panel's dates from 2026-01-01 to
+2026-09-03, read from its date column only (`window_dates`). `tests/test_final_test_freeze.py` checks it that way,
+and reads no 2026 outcome. Nothing in #220 scores a 2026 day.
