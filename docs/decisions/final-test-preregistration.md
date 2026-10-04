@@ -5,6 +5,17 @@ locked day is scored. #151 opens the lockbox once and runs exactly what is froze
 3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
 below ("The reading of the selection rule" and "The test").
 
+**The success criterion is the CRPS cell,** since her ruling of 4 October 2026 on #221 (below, "Amendment,
+4 October 2026: the full-range test is the primary cell"): the published distribution (#169's gbm with nested PID)
+against as-of persistence, by CRPS, at h = 1, on the 169 scored days from 2026-01-02 to 2026-09-03. It is
+near-blind, not blind. **Every other cell is reported only** and cannot pass or fail the test: CRPS at horizons 2 to
+5, and every leap and threshold cell (the plain leap, the leap onset, the pressure leap, +5 and +10 bp).
+
+The leap test (the frozen dynamic logit, recalibrated by recency-weighted Platt, on the plain leap at h = 1, against
+both of #139's baselines) was the primary cell from #216's merge until that amendment. The dynamic logit and the
+six-candidate selection below stay as they are: they are the chosen model for the jump question, which is now
+secondary.
+
 Her request, 2 October 2026: "Build the simple pressure model with the scarcity state, fix its design in advance, then
 open the 2026 lockbox once. If it beats the S-curve on days when pressure starts, you have a real forecasting result. If
 not, you still have the case study." "The S-curve" means the persistence-logistic baseline (her clarification of
@@ -12,9 +23,10 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
 ## What is frozen
 
+- **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449`
+- **Declaration checksum:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
   scored day's quarter end, month end and tax date, the Treasury coupon settlement, each scheduled term times the
@@ -30,9 +42,21 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
   - *J_h* at every horizon, the onset and leap-onset calm lengths, and the minimum event count;
   - the fold grid and the interval;
   - the sha256 of the source of every top-level definition the model, the calibrator, the leap targets, the leap
-    baselines and the backtest reach in their own files.
+    baselines and the backtest reach in their own files;
+  - the cells of the test and the role of each (`CELLS`, `PRIMARY_CELL`): the CRPS cell at h = 1 is primary, every
+    other cell is reported only. These were added by the amendment that made the CRPS cell primary, which moved this
+    checksum from #216's `5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449`. Without them the
+    declaration is byte-for-byte #216's, and a test checks that.
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
+
+- **CRPS declaration checksum:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
+- **CRPS sensitivity seed:** `1970125677`
+- **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
+  4 October 2026 (point 4). It is separate from the leap test's. It covers the CRPS test as set out under
+  "Amendment, 4 October 2026, before any opening", with her rulings of the same day on #221: the labels and the
+  block-10 sensitivity interval under its declared seed, then the primary cell at h = 1, the cells and their roles,
+  and the claim.
 
 The commands, on the published panel rebuilt from the tracked fixtures (digest `4ddc3882…`), and on the two scratch
 panels the candidates were measured on:
@@ -163,7 +187,9 @@ candidate but the dynamic logit is outside, so **the dynamic logit (#137) is the
 
 **The CRPS target, her ruling of the same day.** Both readings choose a direct model of the event, which has no
 predictive distribution, so it has no CRPS. Target 2 is kept as drafted: the published distribution (#169's gbm with
-nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.**
+nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.** Her
+amendment of 4 October 2026 made it a second primary test, and her ruling of the same day on #221 made its cell at
+h = 1 the primary cell (below).
 
 ## The test (#151)
 
@@ -173,7 +199,8 @@ the 2026 forecasts continue the pre-2026 walk.
 
 **The targets, in this order.**
 
-1. **Small leaps (the primary target).** #139's as-of leap at #139's *J_h*, exactly as merged
+1. **Small leaps (the primary target until the amendments of 4 October 2026; now reported only).** #139's as-of
+   leap at #139's *J_h*, exactly as merged
    (`docs/decisions/pressure-probability.md`, "Onset view and small-leap targets"). The jump is measured against each
    forecast's as-of anchor, never the day before. *J_h* is fixed by #139's percentile rule on 2018-06-29 to
    2025-12-31: 3 bp at h = 1, and 4 bp at h = 2 to 5. Also on this target: the leap onset, on #209's at-risk
@@ -181,8 +208,10 @@ the 2026 forecasts continue the pre-2026 walk.
 2. **Absolute numbers.** The CRPS of the full forecast distribution of the spread, every day, paired against as-of
    persistence (the distribution benchmark in `CLAUDE.md`). The dynamic logit is a direct model of the event and has no
    predictive distribution. The CRPS cell is therefore the published distribution (the gbm with nested PID, #169),
-   **the published model, not the chosen model**, against as-of persistence, reported only, for continuity.
+   **the published model, not the chosen model**, against as-of persistence. Since the amendments of 4 October
+   2026 its cell at h = 1, on the window's 169 scored days, is **the primary cell** (below).
 3. **The original thresholds.** +5 bp, then +10 bp, with the onsets on #209's at-risk group, kept for continuity.
+   Reported only.
 
 **The comparators.**
 
@@ -199,16 +228,19 @@ the 2026 forecasts continue the pre-2026 walk.
 **The metrics.** Brier on each event target and CRPS on the distribution, each paired against its comparators, with
 the 90% stationary-bootstrap interval. Horizons 1 to 5.
 
-**The success criterion: one primary cell only.** It is the plain leap (not the leap onset, not the pressure leap), at
-horizon h = 1, at *J₁* = 3 bp. The frozen model's Brier there must be lower than **each** named baseline's. Each
-paired difference's 90% stationary-bootstrap interval must exclude 0. Every other cell is **reported only** and
-cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, CRPS (the published model, not the
-chosen model), and +5 and +10 bp.
+**The success criterion: one primary cell, the CRPS cell** (amended twice on 4 October 2026; see the amendments
+below). The published distribution against as-of persistence, by CRPS, at h = 1, on the window's 169 scored days.
+It **passes** when the mean paired difference (persistence − published) is above 0 **and** its 90% lower bound is
+above 0. Otherwise it fails, labelled "worse" when the 90% upper bound is below 0 and "not distinguishable"
+otherwise. Every other cell is **reported only** and cannot pass or fail the test: CRPS at horizons 2 to 5, the plain
+leap at every horizon, the leap onset, the pressure leap, and +5 and +10 bp. The plain leap at h = 1, at *J₁* = 3 bp,
+is still scored as declared above: the frozen model's Brier against **each** named baseline's, with each paired
+difference's 90% stationary-bootstrap interval. It decides nothing.
 
 **Too few events.** Each event target has the minimum event count #139 already declared: **20 events** in the scored
-period (`onset.MINIMUM_EVENTS`). Below it, that target is reported as inconclusive, with no claim either way. If the
-primary cell falls below 20 plain leaps at h = 1, the verdict is **inconclusive**: neither a pass nor a fail. CRPS has
-no minimum, because every day counts. Events in the locked period are counted only when #151 scores it, never before.
+period (`onset.MINIMUM_EVENTS`). Below it, that target is reported as inconclusive, with no claim either way. The
+plain leap at h = 1 below 20 events is reported with its estimate and interval and labelled **inconclusive**; it
+no longer decides the test. CRPS has no minimum, because every day counts. Events in the locked period are counted only when #151 scores it, never before.
 
 **Secondary metrics.** The all-days Brier on every event target, and the false-alarm level on calm days. That level is
 the mean forecast probability on the days of #209's at-risk group whose outcome is 0. It is a mean with no
@@ -225,12 +257,146 @@ reported, and it decides nothing.
 - **The 90% interval is the project's standard,** fixed in advance and not chosen for this test.
 - **The leap is measured on signed jumps:** all daily changes, not up-days only, per #139.
 - **#139's pressure leap** (a leap ending above IORB) is reported as a secondary target.
-- **The claim wording, if the test passes:** "forecasts as-of jumps in SOFR − IORB better than calendar climatology and
-  the persistence-logistic". It never says "warns of stress".
-- **Framing.** The leap target is the primary test because it has enough events to settle, not because it replaces the
-  headline. The +5 and +10 bp results, ties included, are reported next to it. A leap forecast answers a different
-  question from a stress warning.
+- **The claim wording, if the test passes:** "the published model's one-day-ahead forecast of the full distribution
+  of SOFR − IORB was more accurate than as-of persistence over January to September 2026". It never says "warns of
+  stress". (Until the amendments of 4 October 2026 the claim was the leap test's: "forecasts as-of jumps in
+  SOFR − IORB better than calendar climatology and the persistence-logistic".)
+- **Framing.** The CRPS cell is the primary test because Eleonora is interested in the full forecast distribution,
+  not in jumps. The leap and the +5 and +10 bp results, ties included, are reported next to it. Neither a leap
+  forecast nor a range forecast is a stress warning.
 - **No threshold is chosen by looking at 2026.** *J_h*, the calm lengths and the minimum event count all come from
   pre-2026 data or from earlier rules, and are fixed above. Counting events in the locked period, to choose a threshold
   or for any other reason, is not allowed before #151 scores it.
 - **Labels are on whole basis points** (#155), so the test is scored on the corrected labels.
+
+## Amendment, 4 October 2026, before any opening
+
+Eleonora's amendment, posted on #151 on 4 October 2026 and relayed by the orchestrating session. It was made before
+the lockbox was opened. Directive #220 writes it into this record and extends the freeze. **Her later amendment of
+the same day (next section) makes the CRPS cell the one primary cell and the leap test reported only.** What stays
+from this section: the near-blind disclosure, the CRPS test with its pass rule, labels and block-10 sensitivity, and
+the extended freeze. Points 1 to 3 are kept below as she made them, as amended there.
+
+**The reason.** At the pre-2026 leap rate (164 plain leaps in 1873 scored days), the 169 scored days of the window
+give about 169 × 164 / 1873 ≈ 14.8 expected leap events. The minimum is 20. The count of 169 comes from the panel's
+dates only. No 2026 outcome was read to make it.
+
+1. **A second primary test: CRPS.** The CRPS of the published distribution, exactly as published in #169, against
+   as-of persistence, on all 169 scored days of the window. **Pass:** the published distribution's CRPS is lower,
+   and the 90% paired interval of the difference excludes zero. The claim, if it passes: "the published range
+   forecast beats as-of persistence on the near-blind 2026 days". It never says "warns of stress".
+2. **The leap test is unchanged.** The frozen dynamic logit, recency-weighted Platt, the plain leap at h = 1, both
+   baselines, and a minimum of 20 events. Below the minimum it is reported with its estimate and interval and labelled
+   **inconclusive**. The live record (#215) continues it.
+3. **The two tests are separate claims.** Each is reported on its own. Neither can stand in for the other.
+4. **The freeze is extended** to the published distribution's declaration and code, and to the CRPS comparison
+   path, by a pull request merged before any opening (#220). The CRPS declaration checksum is pinned above ("What is
+   frozen"). The leap test's checksum is unchanged.
+5. **Disclosure.** These 2026 days were already scored inside pooled CRPS aggregates of the archived records from
+   before #169 (the CV+ records). No 2026-only CRPS was published. The CRPS test is therefore **near-blind, not
+   blind**.
+
+**What the CRPS checksum covers.** `scripts/final_test_preregistration.py crps-declaration` prints it, and
+`tests/test_final_test_freeze.py` fails if it moves:
+
+- **The published distribution,** as `docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`
+  declares it: the gbm (`ml.fit_gradient_boosted_quantiles`, the model `compare --model-b gbm` scores) on the nine
+  funding features, with conformal PID under nested walk-forward selection (`recalibration.NestedFoldPid`), its
+  grid, its fallback and its fixed constants. A test checks that this declaration equals the published record's.
+- **The benchmark:** as-of persistence on `spread_bps`.
+- **The fold grid:** expanding window, minimum history 61, refit every 21 scored days, decision 16:00, end
+  2026-09-03.
+- **The CRPS path:** the paired comparison (`baseline.paired_model_comparison`), the CRPS (`metrics.crps_from_quantiles`
+  through the comparison's `crps` loss), the paired stationary bootstrap (`metrics.stationary_bootstrap_interval`) at
+  90%, 2000 replications, mean block length 2, and seed 1970125677. The seed is `compare`'s own, derived from the
+  published panel's digest and the two sides. It is the seed of the published CRPS record.
+- **The sensitivity interval:** the same 90% paired stationary bootstrap, 2000 replications, at mean block length
+  10, with seed 1970125677, declared now (her ruling on #221, (b), below). It is reported beside the primary interval
+  and decides nothing.
+- **The labels:** pass, "not distinguishable" and "worse" (her ruling on #221, (a), below).
+- **The window:** 2026-01-01 to 2026-09-03, 169 scored days.
+- **The primary cell, the cells and the claim** (her later ruling of the same day, in the next section): the horizon
+  (h = 1), every cell's role (`CELLS`, `PRIMARY_CELL`) and the claim wording.
+- **The cell and the pass rule:** `crps_cell` and `crps_verdict` in the same script. The cell scores the frozen
+  run's paired differences on the window's days only. It is split by regime and by pressure-day type, and the split
+  decides nothing. It refuses while the near-blind tier is locked, and refuses a record that is not the frozen run.
+- **The code:** the sha256 of the source of every top-level definition these reach in their own files, as for the
+  leap test.
+
+**The commands the opening run types,** on the published panel rebuilt as above (`PUB.csv`, digest `4ddc3882…`),
+once Eleonora has opened the near-blind tier in `metadata/lockbox.json`:
+
+```
+OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python -m repo_model.cli compare PUB.csv \
+  --registry metadata/sources.json --decision-time 16:00 --minimum-history 61 --refit-every 21 \
+  --splits metadata/evaluation_splits.json --end 2026-09-03 --loss crps \
+  --model-a persistence --feature-a spread_bps \
+  --model-b gbm --calibration-b conformal_pid_nested \
+  --feature-b reserve_balances --feature-b sofr_p25 --feature-b sofr_p75 --feature-b sofr_volume \
+  --feature-b spread_bps --feature-b tbill_13w --feature-b tbill_4w --feature-b tga \
+  --feature-b treasury_settlement --report OUT/crps.json
+PYTHONPATH=src python3 scripts/final_test_preregistration.py crps --report OUT/crps.json --panel PUB.csv \
+  --output OUT/crps_cell.json
+```
+
+**Her ruling of 4 October 2026 on #221,** relayed by the orchestrating session, accepts three choices for the CRPS
+cell and adds two reporting rules:
+
+1. The cell comes from **one walk-forward `compare` to 2026-09-03** (the command above), with its per-origin
+   differences cut to the window's 169 days.
+2. The interval is **a fresh stationary bootstrap on those 169 differences**, with the published settings (mean
+   block length 2) and the fixed seed 1970125677.
+3. **Pass:** the mean of (persistence − published) is above 0, and the 90% lower bound is above 0.
+
+Reporting only. These add no change to the rule, so a pass stays exactly as in point 3:
+
+- (a) A non-pass is labelled **"not distinguishable"** if the 90% interval contains 0, and **"worse"** if its upper
+  bound is below 0. An interval above 0 around a mean that is not above 0 is a fail, labelled **"not
+  distinguishable"** (her ruling of 4 October 2026 on #221, in the next section). It is not a pass under the rule.
+- (b) The same 90% interval is **also reported with mean block length 10**, with seed 1970125677 (pinned above as
+  "CRPS sensitivity seed"; it is the primary interval's seed, so only the block length differs). It is a sensitivity
+  report only and decides nothing.
+
+`crps_cell` writes both intervals, `crps_verdict` labels the cell from the primary interval only, and `crps_result`
+turns the label into the test's pass or fail. All three are under the CRPS checksum.
+
+**The day count.** The window holds 169 scored days. The count is of the published panel's dates from 2026-01-01 to
+2026-09-03, read from its date column only (`window_dates`). `tests/test_final_test_freeze.py` checks it that way,
+and reads no 2026 outcome. Nothing in #220 scores a 2026 day.
+
+## Amendment, 4 October 2026: the full-range test is the primary cell
+
+Eleonora's ruling on #221, 4 October 2026, relayed by the orchestrating session. It was made before any locked day
+was scored. Directive #220 writes it into this record and regenerates both checksums.
+
+1. **The success criterion is the CRPS cell:** the published distribution (#169's gbm with nested conformal PID)
+   against as-of persistence, at **h = 1**, over **2026-01-01 to 2026-09-03** (169 scored days, 2026-01-02 to
+   2026-09-03). The pass rule is the one ruled on #221 that morning: the mean paired difference (persistence −
+   published) above 0 **and** the 90% lower bound above 0, with the "not distinguishable" and "worse" labels and the
+   block-length-10 sensitivity reported. **Horizons 2 to 5 are reported only.** `compare` scores one day ahead, so
+   the frozen command (above) is the primary cell's.
+2. **Every leap and threshold cell is reported only** and cannot pass or fail the test: the plain leap, the leap
+   onset, the pressure leap, +5 and +10 bp. The dynamic logit and the six-candidate selection stay in the record as
+   they are, as the chosen model for the jump question, which is now secondary.
+3. **The claim wording, if the test passes:** "the published model's one-day-ahead forecast of the full distribution
+   of SOFR − IORB was more accurate than as-of persistence over January to September 2026". It never says "warns of
+   stress".
+4. **Recorded with the amendment:**
+   - Made on 4 October 2026, before any locked day was scored.
+   - *Reason:* Eleonora is interested in the full forecast distribution, not in jumps.
+   - *Known when deciding:* 2026 is calm (the lockbox record's counts: 5 days above +5 bp and none above +10 bp).
+   - *Also seen before deciding, on pre-2026 data only:* the published CRPS record
+     (`docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`) split into each year's first
+     169 scored days, 2019–2025. The lower bound was above zero in 4 of 7 years (2019, 2023, 2024 and 2025), and the
+     model was clearly worse in 2022, so about 60% of 169-day windows passed. This was computed in a planning session
+     with a stationary bootstrap at block length 2. It is context, not a figure for the record.
+5. **Both checksums are regenerated.** Both declarations carry the cells and their roles (`CELLS`, `PRIMARY_CELL`),
+   and the CRPS declaration also carries the horizon and the claim. The pins are above ("What is frozen"). Without the
+   cells, the leap declaration is #216's, byte for byte.
+
+**The edge case** (an interval above 0 around a mean that is not above 0) is a **fail**, labelled **"not
+distinguishable"**. It is not a pass under the rule.
+
+**What stays from the first amendment of the day:** the near-blind disclosure, the two tests as amended here (the
+CRPS cell primary, the leap test reported only), the labels and the block-10 sensitivity. The leap test was the
+primary cell from #216's merge until this amendment.
