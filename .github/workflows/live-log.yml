@@ -2,8 +2,9 @@ name: live-log
 
 # The live record (#215, Eleonora's decision of 3 October 2026). Each business
 # day after the 16:00 ET decision instant, log the published pressure model's
-# forecast, and its baselines', as one frozen JSON record, written before the
-# outcome exists, appended to the `live-log` branch. Never main, never
+# forecast, and its baselines', with the published distribution and as-of
+# persistence's (Eleonora's ruling of 4 October 2026), as one frozen JSON
+# record, written before the outcome exists, appended to the `live-log` branch. Never main, never
 # rewritten: `live-log` is protected by repository ruleset 24422476 (no
 # deletion, no non-fast-forward push).
 #
@@ -40,6 +41,9 @@ jobs:
       REPO: ${{ github.repository }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       PYTHONDONTWRITEBYTECODE: "1"
+      # One OpenMP thread: the gbm's numbers do not depend on it, and on a
+      # shared runner several threads per fit only slow the nested-PID replay.
+      OMP_NUM_THREADS: "1"
     steps:
       - name: Python 3.11 from the runner's tool cache
         id: python

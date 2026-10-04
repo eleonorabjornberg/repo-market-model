@@ -7,19 +7,24 @@ was logged:
   every logged day whose target day is in the outcome panel and before the
   scoring date is scored, cumulatively from the first logged day. On any other
   date this script refuses to run (`ValueError`).
-* **Metrics:** Brier for each target, horizon and model, paired against each
-  baseline (baseline minus model, a positive mean favouring the model), with a
-  90% stationary-bootstrap interval, split by regime and pressure-day type
-  where the cells allow.
-* **The headline cell** is the plain leap at h = 1 against each baseline.
-  Every other cell is reported, not headlined.
-* **The minimum-event rule:** a target is scored only if the scored period
-  holds at least `onset.MINIMUM_EVENTS` events of it; below that it is
-  reported as inconclusive, with no paired figure.
-* **The headline verdict** is fixed at the first scoring date at which the
-  headline cell meets the minimum. Every later date is an update and never
-  replaces it; earlier dates report the cell as inconclusive
-  (`headline_status`).
+* **The primary result** (Eleonora's ruling of 4 October 2026 on #215): the
+  CRPS of the published distribution (#169's gbm with nested conformal PID)
+  against as-of persistence's, at h = 1, both read from each day's file alone
+  (`crps_from_record`). The pass rule, its labels and the block-10 sensitivity
+  interval are the final test's CRPS cell's (#220, #221): the mean paired
+  difference (persistence - published) above 0 and its 90% lower bound above
+  0 (`crps_verdict`, `crps_result`, the final test's own functions). CRPS at
+  h = 2 to 5 is reported only.
+* **Reported only:** Brier for each event target (+5 bp, +10 bp, #139's plain
+  leap), horizon and model, paired against each baseline (baseline minus
+  model, a positive mean favouring the model), with a 90% stationary-bootstrap
+  interval, split by regime and pressure-day type where the cells allow. A
+  target is scored only if the scored period holds at least
+  `onset.MINIMUM_EVENTS` events of it; below that it is reported as
+  inconclusive, with no paired figure.
+* **The primary result's verdict** is fixed at the first scoring date that
+  scores any day (CRPS has no minimum event count: every day counts). Every
+  later date is an update and never replaces it (`headline_status`).
 * **The lockbox:** logged days are blind-tier days. Until the drafted amendment
   (`docs/decisions/drafts/lockbox-live-record.md`) is merged into
   `docs/decisions/lockbox.md`, this script refuses to run at all.
@@ -42,6 +47,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
+from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
 from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -51,7 +57,8 @@ SPLITS = REPO / "metadata" / "evaluation_splits.json"
 #: The heading the drafted amendment carries; the guard reads it in lockbox.md.
 AMENDMENT_HEADING = "## Amendment: the live record (#215)"
 FIRST_SCORING_DATES = (date(2027, 4, 1), date(2027, 10, 1))
-HEADLINE = {"target": "leap", "horizon": 1}
+#: The live record's primary result (ruling of 4 October 2026 on #215).
+HEADLINE = {"target": "crps", "horizon": 1}
 HORIZONS = (1, 2, 3, 4, 5)
 #: Each target, the baselines it is paired with.
 BASELINES = {
@@ -60,6 +67,23 @@ BASELINES = {
     "leap": (onset.LEAP_PERSISTENCE_LOGISTIC, onset.LEAP_CALENDAR_CLIMATOLOGY),
 }
 SIGN = "paired = Brier(baseline) - Brier(model) per day; a positive mean favours the model"
+CRPS_SIGN = ("paired = CRPS(persistence) - CRPS(published) per day; a positive mean favours "
+             "the published distribution")
+
+
+def _final_test():
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    spec = spec_from_file_location("live_score_final_test", REPO / "scripts" / "final_test_preregistration.py")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+#: The final test's CRPS cell (#220, #221): its pass rule, labels and settings.
+final_test = _final_test()
+crps_verdict = final_test.crps_verdict
+crps_result = final_test.crps_result
 
 
 def is_scoring_date(day: date) -> bool:
@@ -87,13 +111,13 @@ def require_amendment(path: Path = LOCKBOX) -> None:
         )
 
 
-def headline_status(day: date, *, events: int, previous) -> str:
-    """`inconclusive`, `headline_verdict` or `update`, for the headline cell on `day`.
+def headline_status(day: date, *, days: int, previous) -> str:
+    """`inconclusive`, `headline_verdict` or `update`, for the primary result on `day`.
 
     `previous` is the earlier scoring results, each with its `date` and
     `headline_status`. The verdict is fixed once, at the first date whose
-    headline cell holds `onset.MINIMUM_EVENTS` events; every result after it is
-    an update, whatever its events.
+    primary cell scores any day (CRPS has no minimum event count); every result
+    after it is an update, whatever it scores.
 
     Raises:
         ValueError: if a previous result is dated on or after `day`.
@@ -106,9 +130,96 @@ def headline_status(day: date, *, events: int, previous) -> str:
             )
     if any(result["headline_status"] in ("headline_verdict", "update") for result in previous):
         return "update"
-    if events >= onset.MINIMUM_EVENTS:
+    if days > 0:
         return "headline_verdict"
     return "inconclusive"
+
+
+def crps_from_record(record, side: str, h: int, outcome: float) -> float:
+    """One day's CRPS for `side` at horizon `h`, from the day's file alone.
+
+    Raises:
+        ValueError: if the file carries no such distribution.
+    """
+
+    block = record.get("distributions") or {}
+    try:
+        levels = block["levels"]
+        quantiles = block[side]["quantiles_bps"][str(h)]
+    except (KeyError, TypeError) as error:
+        raise ValueError(f"the file carries no {side} distribution at h={h}") from error
+    return crps_from_quantiles(levels, quantiles, outcome)
+
+
+def score_crps(records, rows, splits, day: date) -> dict:
+    """The CRPS cells, cumulatively over `records`: h = 1 primary, h = 2 to 5 reported only."""
+
+    by_date = {row.date: row for row in rows}
+    out = {}
+    for h in HORIZONS:
+        days, published, persistence, regimes, types = [], [], [], [], []
+        for record in records:
+            when = date.fromisoformat(record["targets"][h - 1]["target_date"])
+            if when >= day or when not in by_date:
+                continue
+            row = by_date[when]
+            days.append(when)
+            published.append(crps_from_record(record, "published", h, row.spread_bps))
+            persistence.append(crps_from_record(record, "persistence", h, row.spread_bps))
+            try:
+                regimes.append(splits.regime(when))
+            except ValueError:
+                regimes.append("undeclared")
+            types.append(splits.day_type(row.values))
+        primary = h == HEADLINE["horizon"]
+        cell = {"days": len(days), "role": "primary" if primary else "reported only",
+                "first": days[0].isoformat() if days else None,
+                "last": days[-1].isoformat() if days else None,
+                "sign_convention": CRPS_SIGN}
+        if not days:
+            cell["result" if primary else "note"] = "inconclusive" if primary else "no scored day"
+            out[f"crps/h{h}"] = cell
+            continue
+        differences = [a - b for a, b in zip(persistence, published)]
+        seed = _seed_from((str(day), "crps", str(h)))
+        block = final_test.CRPS_BLOCK_LENGTH + (h - 1)
+
+        def mean_of(indices):
+            return sum(differences[i] for i in indices) / len(indices)
+
+        def interval(block_length):
+            lower, upper = stationary_bootstrap_interval(
+                mean_of, len(differences), block_length=block_length, seed=seed,
+                replications=onset.REPLICATIONS, level=onset.LEVEL,
+            )
+            return {"lower": lower, "upper": upper, "level": onset.LEVEL,
+                    "method": "stationary_bootstrap", "block_length": block_length,
+                    "replications": onset.REPLICATIONS, "seed": seed}
+
+        cell.update(
+            {
+                "crps_persistence_bps": sum(persistence) / len(days),
+                "crps_published_bps": sum(published) / len(days),
+                "mean_difference_bps": mean_of(range(len(days))),
+                "interval": interval(block),
+                "sensitivity_interval": interval(final_test.CRPS_SENSITIVITY_BLOCK_LENGTH),
+            }
+        )
+        every = list(range(len(days)))
+        for label, keys in (("by_regime", regimes), ("by_day_type", types)):
+            cell[label] = {}
+            for key in sorted(set(keys)):
+                positions = [k for k in every if keys[k] == key]
+                cell[label][key] = (
+                    onset.paired_difference(persistence, published, positions,
+                                            block_length=block, seed=_seed_from((str(day), "crps", str(h), key)))
+                    if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
+                )
+        cell["verdict"] = crps_verdict(cell)
+        if primary:
+            cell["result"] = crps_result(cell["verdict"])
+        out[f"crps/h{h}"] = cell
+    return out
 
 
 def _outcome(target, cell_name, spread):
@@ -125,7 +236,7 @@ def _paired(baseline, model, positions, h, *parts):
 
 
 def score(records, rows, splits, day: date) -> dict:
-    """Every cell, cumulatively over `records`, on the outcomes in `rows`."""
+    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only."""
 
     by_date = {row.date: row for row in rows}
     out = {"cells": {}}
@@ -151,7 +262,7 @@ def score(records, rows, splits, day: date) -> dict:
                 types.append(splits.day_type(row.values))
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
-                    "last": days[-1] if days else None, "models": {}}
+                    "last": days[-1] if days else None, "models": {}, "role": "reported only"}
             if events < onset.MINIMUM_EVENTS:
                 cell["result"] = "inconclusive"
                 cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
@@ -206,8 +317,11 @@ def main(argv=None) -> int:
             raise ValueError(f"{path} is a dry run, not a logged day")
         records.append(record)
     previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
-    result = score(records, load_daily_panel(args.panel), load_split_declaration(SPLITS), day)
-    headline = result["cells"][f"{HEADLINE['target']}/h{HEADLINE['horizon']}"]
+    rows = load_daily_panel(args.panel)
+    splits = load_split_declaration(SPLITS)
+    result = score(records, rows, splits, day)
+    result["crps"] = score_crps(records, rows, splits, day)
+    headline = result["crps"][f"{HEADLINE['target']}/h{HEADLINE['horizon']}"]
     result.update(
         {
             "date": day.isoformat(),
@@ -216,7 +330,9 @@ def main(argv=None) -> int:
             "sign_convention": SIGN,
             "minimum_events": onset.MINIMUM_EVENTS,
             "headline": HEADLINE,
-            "headline_status": headline_status(day, events=headline["events"], previous=previous),
+            "crps_sign_convention": CRPS_SIGN,
+            "primary_result": headline.get("result"),
+            "headline_status": headline_status(day, days=headline["days"], previous=previous),
         }
     )
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")

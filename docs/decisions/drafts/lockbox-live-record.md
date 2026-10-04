@@ -26,6 +26,10 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
 - **Training is unchanged.** As this record already says, a model may be trained on, and forecast, the days its
   as-of information set allows. Each day's forecast is fitted on what that day's as-of information set allows,
   and its record carries the code SHA, the declaration digest and the inputs it was made with.
-- **The headline verdict is fixed once**, at the first scoring date whose headline cell (the plain leap at
-  h = 1, against each baseline) holds `onset.MINIMUM_EVENTS` events. Every later scoring date is reported as an
-  update and never replaces it.
+- **The primary result is the CRPS cell at h = 1** (Eleonora's ruling of 4 October 2026 on #215): the published
+  distribution (#169's gbm with nested conformal PID) against as-of persistence, both saved in each day's file,
+  under the final test's pass rule (#220, #221): the mean paired difference (persistence − published) above 0 and
+  its 90% lower bound above 0, labelled "not distinguishable" or "worse" otherwise, with the block-length-10
+  interval reported. CRPS at h = 2 to 5 and every Brier cell (+5 bp, +10 bp, the plain leap) are reported only.
+- **The verdict is fixed once**, at the first scoring date that scores any day of the primary cell (CRPS has no
+  minimum event count). Every later scoring date is reported as an update and never replaces it.

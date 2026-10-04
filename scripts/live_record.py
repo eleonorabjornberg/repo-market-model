@@ -73,6 +73,9 @@ def _script(name):
 
 #: Pressure model v1's published code path (#124, #169).
 v1 = _script("pressure_model_v1")
+#: The final test's frozen CRPS declaration (#220): `CRPS_COMMAND` builds the
+#: published distribution and as-of persistence exactly as `compare` does.
+final_test = _script("final_test_preregistration")
 
 from repo_model import onset, pressure  # noqa: E402
 from repo_model.asof import (  # noqa: E402
@@ -87,9 +90,11 @@ from repo_model.baseline import (  # noqa: E402
     ExceedanceBacktestReport,
     ScoredFold,
     _AsOfFold,
+    _at_decision,
     _check_decision_relative_availability,
     _check_fitter_stayed_inside,
     _exceedance_at_folds,
+    _fit_at_origin,
     _leap_at_folds,
     _ml_libraries,
     _model_settings,
@@ -103,6 +108,7 @@ from repo_model.baseline import (  # noqa: E402
     persistence_logistic_exceedance,
     twcrps_weights,
 )
+from repo_model.contract import QUANTILE_LEVELS  # noqa: E402
 from repo_model.data import (  # noqa: E402
     CALENDAR_COLUMN_RULES,
     SETTLEMENT_ZERO_COLUMNS,
@@ -147,6 +153,16 @@ MODELS = (
         "published": "docs/runs/pressure_model_v1_h{h}.json",
     },
 )
+#: The published distribution's features (`compare`'s `--feature-b`), as the
+#: final test freezes them; their reads are checked against the placeholders.
+CRPS_FEATURES = final_test.CRPS_FEATURES
+#: The published distribution (Eleonora's ruling of 4 October 2026 on #215):
+#: the record `compare` published its CRPS in (#169), whose declaration the
+#: final test freezes as `CRPS_COMMAND`. Each day's file carries its quantile
+#: grid, and as-of persistence's, at every horizon, so that the day's CRPS can
+#: be scored from the file alone.
+CRPS_RECORD = "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
+DISTRIBUTION_SIDES = ("published", "persistence")
 #: The code every record is made with. `None`: the merge commit that brought
 #: this file onto main (`resolve_pin`). It changes only through a dated
 #: version-bump record in `docs/decisions/`, and never retroactively: each
@@ -156,7 +172,10 @@ PINNED_CODE_SHA = None
 #: The steps whose durations a record carries. Fitting and forecasting are one
 #: walk-forward replay per model (the target's forecast is its last fold), so
 #: they are timed together.
-STEPS = ("fetch", "build", "fit_forecast_models", "fit_forecast_baselines", "write", "total")
+STEPS = (
+    "fetch", "build", "fit_forecast_models", "fit_forecast_baselines",
+    "fit_forecast_distributions", "write", "total",
+)
 
 #: Columns the panel is built with: everything v1 and its baselines read.
 BUILD_COLUMNS = (
@@ -179,7 +198,7 @@ PLACEHOLDER_COLUMNS = CALENDAR_COLUMNS + tuple(SETTLEMENT_SERIES)
 
 RECORD_KEYS = (
     "record_version", "decision_day", "decision_instant", "code", "packages", "inputs",
-    "targets", "models", "baselines", "run",
+    "targets", "models", "baselines", "distributions", "run",
 )
 BASELINE_NAMES = {
     "persistence_logistic": PRESSURE_TARGETS,
@@ -303,9 +322,35 @@ def validate_record(record) -> None:
         raise ValueError(f"baselines must hold exactly {sorted(BASELINE_NAMES)}")
     for name, targets in BASELINE_NAMES.items():
         _forecast_block(record["baselines"][name].get("forecasts"), targets, f"baselines.{name}.forecasts")
+    _validate_distributions(record["distributions"])
     durations = record["run"].get("durations_seconds", {})
     if set(durations) != set(STEPS):
         raise ValueError(f"run.durations_seconds must hold {list(STEPS)}")
+
+
+def _validate_distributions(block) -> None:
+    """Both distributions, at every horizon, on the contract's quantile grid."""
+
+    if not isinstance(block, dict) or set(block) != {"levels", *DISTRIBUTION_SIDES}:
+        raise ValueError(f"distributions must hold levels and exactly {list(DISTRIBUTION_SIDES)}")
+    if list(block["levels"]) != list(QUANTILE_LEVELS):
+        raise ValueError(f"distributions.levels must be {list(QUANTILE_LEVELS)}")
+    if block["published"].get("record") != CRPS_RECORD:
+        raise ValueError(f"distributions.published.record must be {CRPS_RECORD}")
+    digest = block["published"].get("declaration_sha256")
+    if not isinstance(digest, str) or len(digest) != 64:
+        raise ValueError("distributions.published.declaration_sha256 is missing")
+    for side in DISTRIBUTION_SIDES:
+        quantiles = block[side].get("quantiles_bps")
+        if not isinstance(quantiles, dict) or set(quantiles) != {str(h) for h in HORIZONS}:
+            raise ValueError(f"distributions.{side}.quantiles_bps must hold horizons {list(HORIZONS)}")
+        for h, vector in quantiles.items():
+            if not isinstance(vector, list) or len(vector) != len(QUANTILE_LEVELS) or not all(
+                isinstance(value, (int, float)) and not isinstance(value, bool) for value in vector
+            ):
+                raise ValueError(
+                    f"distributions.{side}.quantiles_bps[{h}] must be {len(QUANTILE_LEVELS)} numbers"
+                )
 
 
 def record_path(root: Path, day: date) -> Path:
@@ -668,6 +713,141 @@ def baseline_forecasts(rows, h, registry, splits, taus) -> dict:
     return out
 
 
+def crps_declaration_sha256() -> str:
+    """The SHA-256 of the published CRPS record's declaration, canonical JSON."""
+
+    published = json.loads((REPO / CRPS_RECORD).read_text(encoding="utf-8"))
+    canonical = json.dumps(published["declaration"], sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _compare_sides(splits_path: Path = SPLITS):
+    """Both sides of the final test's frozen `compare`, built as `compare` builds them.
+
+    `CRPS_COMMAND` is parsed by the repository's own parser, and each side goes
+    through `cli_eval`'s `_side`, `_online_calibration` and `_select_fitter`,
+    so the fitters and the nested-PID factory are the ones `compare` runs.
+    Returns `{side: (model name, fitter, features, online factory)}` and the
+    parsed arguments.
+    """
+
+    from repo_model.cli import build_parser
+    from repo_model.cli_eval import FITTER_FACTORIES, _online_calibration, _select_fitter, _side
+
+    argv = list(final_test.CRPS_COMMAND)
+    argv[argv.index("--splits") + 1] = str(splits_path)
+    argv[argv.index("--registry") + 1] = str(REGISTRY)
+    args = build_parser().parse_args(argv)
+    sides = {}
+    for side, key in (("persistence", "a"), ("published", "b")):
+        projected, online = _online_calibration(
+            _side(args, key), FITTER_FACTORIES.get(getattr(args, f"model_{key}")),
+            splits=args.splits, refit_every=args.refit_every, side=f"-{key}",
+        )
+        name, fit = _select_fitter(projected, side=f"-{key}")
+        sides[side] = (name, fit, tuple(getattr(args, f"feature_{key}")), online)
+    return sides, args
+
+
+def distribution_run(rows, *, fit, features, online_calibration, registry, horizon,
+                     minimum_history, refit_every):
+    """`paired_model_comparison`'s fold loop for one side, through the last row, scoring nothing.
+
+    The same grid, refit blocks, guards, fits, as-of views and online
+    calibration, in the same order, so the last row's quantile vector is the
+    one `compare` would score; only `horizon` is the record's. Each fold's
+    vector is drawn, as `compare`'s loss draws it, before its label is fed to
+    the online calibration. Returns `(levels, quantiles, settings, train_end)`.
+    """
+
+    declared = tuple(features)
+    _field_sources, sources = _resolve_fields(declared)
+    rule = InformationRule(registry, declared, decision_time=DECISION, horizon=horizon)
+    refit = require_refit_every(refit_every)
+    dates = [row.date for row in rows]
+    grid = fold_grid(
+        dates, registry, decision_time=DECISION, minimum_history=minimum_history, horizon=horizon
+    )
+    if not grid or grid[-1] != len(rows) - 1:
+        raise SplitError(f"{dates[-1]} is not on the fold grid")
+    reads_information = _reads_information(fit)
+    online = None if online_calibration is None else online_calibration(rows, rule)
+    fitted, frame, settings, checked = None, (), {}, False
+    levels = quantiles = None
+    for indices in refit_blocks(grid, refit):
+        for index in indices:
+            info = rule.information_set(dates, index)
+            rule.check(dates, info)
+            for read in info.reads:
+                _check_decision_relative_availability(
+                    registry, read.fields, dates, read.row, index,
+                    decision_time=DECISION, horizon=horizon,
+                )
+            block_frame = rule.frame(rows, info) if index == indices[0] else None
+            if block_frame is not None and len(block_frame) < minimum_history:
+                raise SplitError(f"the fit for {dates[index]} has too few labels")
+            fold = _AsOfFold(index, info, block_frame, rule.observation(rows, info))
+            if block_frame is not None:
+                frame = block_frame
+                fitted = _fit_at_origin(
+                    fit, block_frame, minimum_history=minimum_history,
+                    information=rule, reads_information=reads_information,
+                )
+                if not checked:
+                    _check_fitter_stayed_inside(fitted.features_read, declared, sources)
+                    settings = _with_online_settings(_model_settings(fitted), online)
+                    checked = True
+            view = _at_decision(fitted, rows, rule, fold)
+            if online is not None:
+                view = online.view(view, index, fold.feature_row)
+            if tuple(view.levels) != tuple(QUANTILE_LEVELS):
+                raise ValueError(f"the model reports quantile levels {tuple(view.levels)}")
+            predicted = [float(value) for value in view.predict(fold.feature_row)]
+            if online is not None:
+                online.label(index, rows[index].spread_bps)
+            levels, quantiles = list(view.levels), predicted
+    return levels, quantiles, settings, frame[-1].date
+
+
+def _require_crps_declaration(side, model_name, features, settings) -> None:
+    """A side's run is the published CRPS record's declaration, field by field."""
+
+    declared = json.loads((REPO / CRPS_RECORD).read_text(encoding="utf-8"))["declaration"]
+    declared = declared["model_b" if side == "published" else "model_a"]
+    checks = {"model": model_name, "features": sorted(features)}
+    for key in ("calibration", "calibration_constants", "calibration_selection"):
+        if key in declared or key in settings:
+            checks[key] = json.loads(json.dumps(settings.get(key)))
+    for key, value in checks.items():
+        expected = sorted(declared.get(key)) if key == "features" else declared.get(key)
+        if expected != value:
+            raise ValueError(
+                f"the {side} distribution: {key} is {value!r}, but {CRPS_RECORD} "
+                f"declares {expected!r}"
+            )
+
+
+def distribution_forecasts(rows, h, registry, splits=None) -> dict:
+    """The published distribution and as-of persistence's, for the last row, at horizon `h`.
+
+    `splits` is unused (the nested PID reads `SPLITS` through `compare`'s own
+    factory); it is taken so the three forecast calls share one signature.
+    """
+
+    sides, args = _compare_sides()
+    out = {"declaration_sha256": crps_declaration_sha256()}
+    for side, (name, fit, features, online) in sides.items():
+        levels, quantiles, settings, train_end = distribution_run(
+            rows, fit=fit, features=features, online_calibration=online, registry=registry,
+            horizon=h, minimum_history=args.minimum_history, refit_every=args.refit_every,
+        )
+        _require_crps_declaration(side, name, features, settings)
+        out["levels"] = levels
+        out[side] = quantiles
+        out["train_end"] = train_end
+    return out
+
+
 # -- provenance ---------------------------------------------------------------
 
 
@@ -792,7 +972,7 @@ def run_command(args) -> int:
     for h in HORIZONS:
         rows_h, target_days = extended[h]
         last_real = len(real) - 1
-        for features in (V1_FEATURES[h], CALENDAR_FEATURES, ("spread_bps",)):
+        for features in (V1_FEATURES[h], CALENDAR_FEATURES, ("spread_bps",), CRPS_FEATURES):
             rule = InformationRule(registry, features, decision_time=DECISION, horizon=h)
             require_reads_on_real_rows(rows_h, rule, len(rows_h) - 1, last_real)
         anchor = InformationRule(
@@ -838,6 +1018,25 @@ def run_command(args) -> int:
     durations["fit_forecast_baselines"] = clock.monotonic() - tick
 
     tick = clock.monotonic()
+    _status(args.status, "fit_forecast_distributions")
+    distributions = {
+        "levels": list(QUANTILE_LEVELS),
+        "published": {
+            "record": CRPS_RECORD,
+            "declaration_sha256": crps_declaration_sha256(),
+            "quantiles_bps": {},
+        },
+        "persistence": {"quantiles_bps": {}},
+    }
+    for h in HORIZONS:
+        got = distribution_forecasts(extended[h][0], h, registry)
+        if got["levels"] != list(QUANTILE_LEVELS):
+            raise ValueError(f"the distributions at h={h} are on another quantile grid")
+        for side in DISTRIBUTION_SIDES:
+            distributions[side]["quantiles_bps"][str(h)] = got[side]
+    durations["fit_forecast_distributions"] = clock.monotonic() - tick
+
+    tick = clock.monotonic()
     _status(args.status, "write")
     record = {
         "record_version": RECORD_VERSION,
@@ -857,6 +1056,7 @@ def run_command(args) -> int:
         "targets": targets,
         "models": models,
         "baselines": baselines,
+        "distributions": distributions,
         "run": {
             "started_at": started.isoformat(),
             "workflow_run": args.workflow_run,

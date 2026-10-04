@@ -520,8 +520,15 @@ class CrpsScoringTests(unittest.TestCase):
         self.assertEqual(cell["result"], "fail")
 
     def test_the_rule_and_labels_are_the_final_tests(self):
-        self.assertIs(score.crps_verdict, self.final.crps_verdict)
-        self.assertIs(score.crps_result, self.final.crps_result)
+        import inspect
+
+        # The scorer loads the final test's own file and uses its functions.
+        self.assertEqual(Path(score.final_test.__file__), SCRIPTS / "final_test_preregistration.py")
+        for name in ("crps_verdict", "crps_result"):
+            with self.subTest(function=name):
+                self.assertIs(getattr(score, name), getattr(score.final_test, name))
+                self.assertEqual(inspect.getsource(getattr(score, name)),
+                                 inspect.getsource(getattr(self.final, name)))
         cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
         self.assertEqual(cell["interval"]["level"], 0.9)
         self.assertEqual(cell["interval"]["block_length"], self.final.CRPS_BLOCK_LENGTH)
