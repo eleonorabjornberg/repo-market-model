@@ -17,6 +17,12 @@ checksum". The leap test's checksum does not move. Red first: `CrpsFreezeTests`
 and `CrpsCellTests` were committed before the script had a CRPS declaration,
 and failed with `AttributeError` on the missing `crps_declaration_checksum`.
 
+A recorded change to a newly frozen constant: `PID_GRID_STEPS = (0.01, 0.05,
+0.2)` in `src/repo_model/recalibration.py` changed to `(0.01, 0.05, 0.3)`,
+confirmed applied by grep; `test_the_crps_checksum_is_the_pinned_one` then
+failed with `AssertionError` (the checksum moved to `13f6de82…`), and
+`test_the_leap_checksum_is_unchanged` stayed green. Restored, green.
+
 Mutation record (`CrpsCellTests`, the CRPS cell's lockbox check):
 `lockbox.require_unlocked(window, where="final test CRPS cell")` in
 `crps_cell` deleted, confirmed applied by grep; the test
