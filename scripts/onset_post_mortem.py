@@ -512,15 +512,16 @@ def markdown(document: dict) -> str:
     return "\n".join(out)
 
 
-def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--end", type=date.fromisoformat, required=True, metavar="YYYY-MM-DD")
-    parser.add_argument("--forecasts", type=Path, help="cache of the two models' probabilities")
-    parser.add_argument("--json", type=Path)
-    parser.add_argument("--markdown", type=Path)
-    args = parser.parse_args(argv)
-    require_unlocked([args.end], where="onset_post_mortem")
+def load(end: date, forecasts_path: Optional[Path] = None) -> dict:
+    """The panel, the as-of reads and both forecasts through `end`, checked against the record.
 
+    Returns `rows` (with the state), `reads` (the gauge's as-of series),
+    `scored` (the published fold grid), `forecasts`, `record_check`,
+    `declaration` and `published_columns_digest`. Stops (`ValueError`) unless
+    the forecasts reproduce `docs/runs/pressure_model_v1_h1.json`.
+    """
+
+    require_unlocked([end], where="onset_post_mortem")
     validation = _script("scarcity_validation")
     declaration = load_split_declaration(SPLITS)
     with tempfile.TemporaryDirectory() as directory:
@@ -536,23 +537,47 @@ def main(argv=None) -> int:
                 registry,
                 decision_time=decision,
                 minimum_history=gauge_history(rows, registry, decision_time=decision),
-                end=args.end,
+                end=end,
             )
             scored = sorted(
                 as_of_reads(
-                    rows, registry, decision_time=decision, minimum_history=MINIMUM_HISTORY, end=args.end
+                    rows, registry, decision_time=decision, minimum_history=MINIMUM_HISTORY, end=end
                 )
             )
         published_panel = Path(directory) / "published_columns.csv"
-        if args.forecasts is not None and args.forecasts.exists():
-            forecasts = json.loads(args.forecasts.read_text(encoding="utf-8"))
+        if forecasts_path is not None and forecasts_path.exists():
+            forecasts = json.loads(forecasts_path.read_text(encoding="utf-8"))
         else:
             forecasts = v1_and_persistence(published_panel)
-            if args.forecasts is not None:
-                args.forecasts.write_text(json.dumps(forecasts) + "\n", encoding="utf-8")
+            if forecasts_path is not None:
+                forecasts_path.write_text(json.dumps(forecasts) + "\n", encoding="utf-8")
     if [d.isoformat() for d in scored] != forecasts["scored_dates"]:
         raise ValueError("the as-of reads and the forecasts are not on one fold grid")
     check = check_against_record(forecasts, json.loads(RECORD.read_text(encoding="utf-8")))
+    return {
+        "rows": rows,
+        "reads": reads,
+        "scored": scored,
+        "forecasts": forecasts,
+        "record_check": check,
+        "declaration": declaration,
+        "published_columns_digest": digest,
+    }
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--end", type=date.fromisoformat, required=True, metavar="YYYY-MM-DD")
+    parser.add_argument("--forecasts", type=Path, help="cache of the two models' probabilities")
+    parser.add_argument("--json", type=Path)
+    parser.add_argument("--markdown", type=Path)
+    args = parser.parse_args(argv)
+    require_unlocked([args.end], where="onset_post_mortem")
+
+    loaded = load(args.end, args.forecasts)
+    rows, reads, scored = loaded["rows"], loaded["reads"], loaded["scored"]
+    forecasts, check, declaration = loaded["forecasts"], loaded["record_check"], loaded["declaration"]
+    digest = loaded["published_columns_digest"]
 
     days = onset_days(rows, scored, declaration)
     both = set(days[PRIMARY]) & set(days[DESCRIPTIVE])
