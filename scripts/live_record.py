@@ -163,6 +163,24 @@ CRPS_FEATURES = final_test.CRPS_FEATURES
 #: be scored from the file alone.
 CRPS_RECORD = "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 DISTRIBUTION_SIDES = ("published", "persistence")
+
+
+def published_distribution_record(h: int) -> str:
+    """The published record whose declaration the distribution at horizon `h` runs.
+
+    At h = 1 the CRPS record (`CRPS_RECORD`). At h = 2 to 5 that declaration
+    would read a Treasury settlement not yet scheduled at the decision, which
+    the as-of rule refuses; there it is pressure model v1's published record at
+    `h` (#169): the same gbm and nested PID, without the settlement read.
+    """
+
+    return CRPS_RECORD if h == 1 else MODELS[0]["published"].format(h=h)
+
+
+def published_features(h: int) -> tuple:
+    """The published distribution's features at horizon `h` (v1's `_at_horizon`)."""
+
+    return tuple(v1._at_horizon(CRPS_FEATURES, h))
 #: The code every record is made with. `None`: the merge commit that brought
 #: this file onto main (`resolve_pin`). It changes only through a dated
 #: version-bump record in `docs/decisions/`, and never retroactively: each
@@ -335,11 +353,15 @@ def _validate_distributions(block) -> None:
         raise ValueError(f"distributions must hold levels and exactly {list(DISTRIBUTION_SIDES)}")
     if list(block["levels"]) != list(QUANTILE_LEVELS):
         raise ValueError(f"distributions.levels must be {list(QUANTILE_LEVELS)}")
-    if block["published"].get("record") != CRPS_RECORD:
-        raise ValueError(f"distributions.published.record must be {CRPS_RECORD}")
-    digest = block["published"].get("declaration_sha256")
-    if not isinstance(digest, str) or len(digest) != 64:
-        raise ValueError("distributions.published.declaration_sha256 is missing")
+    if block["published"].get("records") != {
+        str(h): published_distribution_record(h) for h in HORIZONS
+    }:
+        raise ValueError("distributions.published.records must name each horizon's published record")
+    digests = block["published"].get("declaration_sha256")
+    if not isinstance(digests, dict) or set(digests) != {str(h) for h in HORIZONS} or not all(
+        isinstance(digest, str) and len(digest) == 64 for digest in digests.values()
+    ):
+        raise ValueError("distributions.published.declaration_sha256 must hold every horizon")
     for side in DISTRIBUTION_SIDES:
         quantiles = block[side].get("quantiles_bps")
         if not isinstance(quantiles, dict) or set(quantiles) != {str(h) for h in HORIZONS}:
@@ -713,21 +735,22 @@ def baseline_forecasts(rows, h, registry, splits, taus) -> dict:
     return out
 
 
-def crps_declaration_sha256() -> str:
-    """The SHA-256 of the published CRPS record's declaration, canonical JSON."""
+def published_declaration_sha256(h: int) -> str:
+    """The SHA-256 of `published_distribution_record(h)`'s declaration, canonical JSON."""
 
-    published = json.loads((REPO / CRPS_RECORD).read_text(encoding="utf-8"))
+    published = json.loads((REPO / published_distribution_record(h)).read_text(encoding="utf-8"))
     canonical = json.dumps(published["declaration"], sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _compare_sides(splits_path: Path = SPLITS):
+def _compare_sides(h: int = 1, splits_path: Path = SPLITS):
     """Both sides of the final test's frozen `compare`, built as `compare` builds them.
 
     `CRPS_COMMAND` is parsed by the repository's own parser, and each side goes
     through `cli_eval`'s `_side`, `_online_calibration` and `_select_fitter`,
-    so the fitters and the nested-PID factory are the ones `compare` runs.
-    Returns `{side: (model name, fitter, features, online factory)}` and the
+    so the fitters and the nested-PID factory are the ones `compare` runs. At
+    `h` above 1 the published side drops the features `published_features`
+    drops. Returns `{side: (model name, fitter, features, online factory)}` and the
     parsed arguments.
     """
 
@@ -735,6 +758,15 @@ def _compare_sides(splits_path: Path = SPLITS):
     from repo_model.cli_eval import FITTER_FACTORIES, _online_calibration, _select_fitter, _side
 
     argv = list(final_test.CRPS_COMMAND)
+    # At horizon `h`, the published features (`published_features`).
+    dropped = set(CRPS_FEATURES) - set(published_features(h))
+    kept = []
+    for position, part in enumerate(argv):
+        if part in dropped and argv[position - 1] == "--feature-b":
+            kept.pop()
+            continue
+        kept.append(part)
+    argv = kept
     argv[argv.index("--splits") + 1] = str(splits_path)
     argv[argv.index("--registry") + 1] = str(REGISTRY)
     args = build_parser().parse_args(argv)
@@ -809,11 +841,22 @@ def distribution_run(rows, *, fit, features, online_calibration, registry, horiz
     return levels, quantiles, settings, frame[-1].date
 
 
-def _require_crps_declaration(side, model_name, features, settings) -> None:
-    """A side's run is the published CRPS record's declaration, field by field."""
+def _require_crps_declaration(side, h, model_name, features, settings) -> None:
+    """A side's run is its published declaration, field by field.
 
-    declared = json.loads((REPO / CRPS_RECORD).read_text(encoding="utf-8"))["declaration"]
-    declared = declared["model_b" if side == "published" else "model_a"]
+    Persistence is the CRPS record's `model_a` at every horizon. The published
+    distribution is `published_distribution_record(h)`'s: the CRPS record's
+    `model_b` at h = 1, v1's record's declaration after it.
+    """
+
+    if side == "persistence" or h == 1:
+        source = CRPS_RECORD
+        declared = json.loads((REPO / source).read_text(encoding="utf-8"))["declaration"]
+        declared = declared["model_b" if side == "published" else "model_a"]
+    else:
+        source = published_distribution_record(h)
+        declared = json.loads((REPO / source).read_text(encoding="utf-8"))["declaration"]
+        model_name = declared.get("model")
     checks = {"model": model_name, "features": sorted(features)}
     for key in ("calibration", "calibration_constants", "calibration_selection"):
         if key in declared or key in settings:
@@ -822,7 +865,7 @@ def _require_crps_declaration(side, model_name, features, settings) -> None:
         expected = sorted(declared.get(key)) if key == "features" else declared.get(key)
         if expected != value:
             raise ValueError(
-                f"the {side} distribution: {key} is {value!r}, but {CRPS_RECORD} "
+                f"the {side} distribution at h={h}: {key} is {value!r}, but {source} "
                 f"declares {expected!r}"
             )
 
@@ -834,14 +877,14 @@ def distribution_forecasts(rows, h, registry, splits=None) -> dict:
     factory); it is taken so the three forecast calls share one signature.
     """
 
-    sides, args = _compare_sides()
-    out = {"declaration_sha256": crps_declaration_sha256()}
+    sides, args = _compare_sides(h)
+    out = {"declaration_sha256": published_declaration_sha256(h)}
     for side, (name, fit, features, online) in sides.items():
         levels, quantiles, settings, train_end = distribution_run(
             rows, fit=fit, features=features, online_calibration=online, registry=registry,
             horizon=h, minimum_history=args.minimum_history, refit_every=args.refit_every,
         )
-        _require_crps_declaration(side, name, features, settings)
+        _require_crps_declaration(side, h, name, features, settings)
         out["levels"] = levels
         out[side] = quantiles
         out["train_end"] = train_end
@@ -972,7 +1015,7 @@ def run_command(args) -> int:
     for h in HORIZONS:
         rows_h, target_days = extended[h]
         last_real = len(real) - 1
-        for features in (V1_FEATURES[h], CALENDAR_FEATURES, ("spread_bps",), CRPS_FEATURES):
+        for features in (V1_FEATURES[h], CALENDAR_FEATURES, ("spread_bps",), published_features(h)):
             rule = InformationRule(registry, features, decision_time=DECISION, horizon=h)
             require_reads_on_real_rows(rows_h, rule, len(rows_h) - 1, last_real)
         anchor = InformationRule(
@@ -1022,8 +1065,8 @@ def run_command(args) -> int:
     distributions = {
         "levels": list(QUANTILE_LEVELS),
         "published": {
-            "record": CRPS_RECORD,
-            "declaration_sha256": crps_declaration_sha256(),
+            "records": {str(h): published_distribution_record(h) for h in HORIZONS},
+            "declaration_sha256": {str(h): published_declaration_sha256(h) for h in HORIZONS},
             "quantiles_bps": {},
         },
         "persistence": {"quantiles_bps": {}},

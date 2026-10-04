@@ -127,8 +127,8 @@ def _record(day="2026-10-02"):
         "distributions": {
             "levels": list(live.QUANTILE_LEVELS),
             "published": {
-                "record": live.CRPS_RECORD,
-                "declaration_sha256": "4" * 64,
+                "records": {str(h): live.published_distribution_record(h) for h in live.HORIZONS},
+                "declaration_sha256": {str(h): "4" * 64 for h in live.HORIZONS},
                 "quantiles_bps": {str(h): [-2.0, 0.0, 1.0, 2.0, 5.0] for h in live.HORIZONS},
             },
             "persistence": {
@@ -808,8 +808,39 @@ class DistributionAgreementTests(unittest.TestCase):
                 self.assertEqual(again[side], self.got[side])
 
     def test_the_distribution_is_the_published_records(self):
-        self.assertEqual(self.got["declaration_sha256"], live.crps_declaration_sha256())
+        self.assertEqual(self.got["declaration_sha256"], live.published_declaration_sha256(1))
         self.assertEqual(tuple(self.got["levels"]), live.QUANTILE_LEVELS)
+
+
+class PublishedDistributionDeclarationTests(unittest.TestCase):
+    """At each horizon the published distribution is a declaration #169 published.
+
+    At h = 1 it is the CRPS record's (the final test's frozen `compare`). At
+    h = 2 to 5 that declaration would read a Treasury settlement not yet
+    scheduled at the decision, which the as-of rule refuses (`LookAheadError`);
+    there it is pressure model v1's published declaration at that horizon: the
+    same gbm and nested PID, without the settlement read (`_at_horizon`).
+    """
+
+    def test_horizon_one_is_the_crps_record(self):
+        self.assertEqual(live.published_distribution_record(1), live.CRPS_RECORD)
+        self.assertEqual(live.published_features(1), tuple(live.CRPS_FEATURES))
+
+    def test_later_horizons_are_v1s_published_declarations(self):
+        for h in live.HORIZONS[1:]:
+            with self.subTest(h=h):
+                path = live.published_distribution_record(h)
+                self.assertEqual(path, f"docs/runs/pressure_model_v1_h{h}.json")
+                declared = json.loads((ROOT / path).read_text(encoding="utf-8"))["declaration"]
+                self.assertEqual(sorted(live.published_features(h)), sorted(declared["features"]))
+                self.assertNotIn("treasury_settlement", live.published_features(h))
+
+    def test_the_command_side_reads_the_horizons_features(self):
+        for h in live.HORIZONS:
+            with self.subTest(h=h):
+                sides, _args = live._compare_sides(h)
+                self.assertEqual(sides["published"][2], live.published_features(h))
+                self.assertEqual(sides["persistence"][2], ("spread_bps",))
 
 
 if __name__ == "__main__":
