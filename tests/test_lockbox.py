@@ -320,6 +320,12 @@ NOT_ENTRY_POINTS = {
         "(docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
         "only once the lockbox amendment is merged"
     ),
+    "scripts/live_record.distribution_run": (
+        "the live record's distribution loop (#215): trains and forecasts the published "
+        "distribution and as-of persistence as the as-of information set allows, "
+        "computes no loss and scores no day (docs/decisions/lockbox.md); "
+        "scripts/live_score.py scores the record, only once the lockbox amendment is merged"
+    ),
     "scripts/live_record.require_reads_on_real_rows": (
         "checks one live forecast's reads against the placeholder rows (#215); "
         "selects and scores nothing"
