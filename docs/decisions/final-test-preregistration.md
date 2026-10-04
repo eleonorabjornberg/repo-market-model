@@ -42,10 +42,12 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `61c17a3873e99eacc40169c4292fe73dd4deeca6a68ebddc63fbe76a20b37634`
+- **CRPS declaration checksum:** `e7a716618ee9d2c10c5acf014872583b6a3410a59ef90c943b17e81579be72a7`
+- **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
   4 October 2026 (point 4). It is separate from the leap test's, which does not move. It covers the CRPS test as
-  set out under "Amendment, 4 October 2026, before any opening".
+  set out under "Amendment, 4 October 2026, before any opening", with her ruling of the same day on #221 (the labels
+  and the block-10 sensitivity interval, under its declared seed).
 
 The commands, on the published panel rebuilt from the tracked fixtures (digest `4ddc3882…`), and on the two scratch
 panels the candidates were measured on:
@@ -289,6 +291,10 @@ dates only. No 2026 outcome was read to make it.
   through the comparison's `crps` loss), the paired stationary bootstrap (`metrics.stationary_bootstrap_interval`) at
   90%, 2000 replications, mean block length 2, and seed 1970125677. The seed is `compare`'s own, derived from the
   published panel's digest and the two sides. It is the seed of the published CRPS record.
+- **The sensitivity interval:** the same 90% paired stationary bootstrap, 2000 replications, at mean block length
+  10, with seed 1970125677, declared now (her ruling on #221, (b), below). It is reported beside the primary interval
+  and decides nothing.
+- **The labels:** pass, "not distinguishable" and "worse" (her ruling on #221, (a), below).
 - **The window:** 2026-01-01 to 2026-09-03, 169 scored days.
 - **The cell and the pass rule:** `crps_cell` and `crps_verdict` in the same script. The cell scores the frozen
   run's paired differences on the window's days only. It is split by regime and by pressure-day type, and the split
@@ -311,6 +317,27 @@ OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python -m repo_model.cli comp
 PYTHONPATH=src python3 scripts/final_test_preregistration.py crps --report OUT/crps.json --panel PUB.csv \
   --output OUT/crps_cell.json
 ```
+
+**Her ruling of 4 October 2026 on #221,** relayed by the orchestrating session, accepts three choices for the CRPS
+cell and adds two reporting rules:
+
+1. The cell comes from **one walk-forward `compare` to 2026-09-03** (the command above), with its per-origin
+   differences cut to the window's 169 days.
+2. The interval is **a fresh stationary bootstrap on those 169 differences**, with the published settings (mean
+   block length 2) and the fixed seed 1970125677.
+3. **Pass:** the mean of (persistence − published) is above 0, and the 90% lower bound is above 0.
+
+Reporting only. These add no change to the rule, so a pass stays exactly as in point 3:
+
+- (a) A non-pass is labelled **"not distinguishable"** if the 90% interval contains 0, and **"worse"** if its upper
+  bound is below 0. (An interval above 0 around a mean that is not above 0, which the ruling does not label, is
+  reported as "fail".)
+- (b) The same 90% interval is **also reported with mean block length 10**, with seed 1970125677 (pinned above as
+  "CRPS sensitivity seed"; it is the primary interval's seed, so only the block length differs). It is a sensitivity
+  report only and decides nothing.
+
+`crps_cell` writes both intervals, and `crps_verdict` labels the cell from the primary interval only. Both are under
+the CRPS checksum.
 
 **The day count.** The window holds 169 scored days. The count is of the published panel's dates from 2026-01-01 to
 2026-09-03, read from its date column only (`window_dates`). `tests/test_final_test_freeze.py` checks it that way,

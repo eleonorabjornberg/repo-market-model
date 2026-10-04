@@ -779,6 +779,17 @@ CRPS_CALIBRATION = "conformal_pid_nested"
 #: The paired bootstrap's mean block length at h = 1, as `compare` measures it
 #: (`baseline._maximum_horizon_overlap`) and the published record carries it.
 CRPS_BLOCK_LENGTH = 2
+#: The sensitivity report (Eleonora's ruling of 4 October 2026 on #221, (b)): the
+#: same 90% interval at mean block length 10, with this seed, declared before any
+#: opening. It is reported beside the primary interval and decides nothing.
+CRPS_SENSITIVITY_BLOCK_LENGTH = 10
+CRPS_SENSITIVITY_SEED = 1970125677
+#: The cell's labels (the same ruling, (a)): reporting only; a pass is unchanged.
+CRPS_LABELS = {
+    "pass": "mean difference > 0 and 90% lower bound > 0",
+    "not distinguishable": "not a pass, and the 90% interval contains 0",
+    "worse": "the 90% upper bound is below 0",
+}
 #: The command the opening run types, after Eleonora opens the near-blind tier.
 CRPS_COMMAND = (
     "compare", "PUB.csv",
@@ -871,8 +882,14 @@ def crps_declaration() -> dict:
                      "replications": baseline.BOOTSTRAP_REPLICATIONS,
                      "block_length": CRPS_BLOCK_LENGTH, "seed": _crps_seed(),
                      "method": "stationary_bootstrap"},
+        "sensitivity_interval": {"level": baseline.BOOTSTRAP_LEVEL,
+                                 "replications": baseline.BOOTSTRAP_REPLICATIONS,
+                                 "block_length": CRPS_SENSITIVITY_BLOCK_LENGTH,
+                                 "seed": CRPS_SENSITIVITY_SEED,
+                                 "method": "stationary_bootstrap", "decides": "nothing"},
         "pass_rule": "persistence's mean CRPS minus the published distribution's, on the "
                      "window's days, is positive and its 90% paired interval excludes zero",
+        "labels": dict(CRPS_LABELS),
         "panel_sha256": _frozen_panel_sha256(),
         "command": list(CRPS_COMMAND),
         "source_sha256": source,
@@ -939,6 +956,15 @@ def crps_cell(record: dict, rows=None) -> dict:
         replications=baseline.BOOTSTRAP_REPLICATIONS,
         level=baseline.BOOTSTRAP_LEVEL,
     )
+    sensitivity = frozen["sensitivity_interval"]
+    sensitivity_lower, sensitivity_upper = metrics.stationary_bootstrap_interval(
+        mean_difference,
+        len(differences),
+        block_length=sensitivity["block_length"],
+        seed=sensitivity["seed"],
+        replications=sensitivity["replications"],
+        level=sensitivity["level"],
+    )
     cell = {
         "days": len(differences),
         "first": window[0].isoformat(),
@@ -947,6 +973,8 @@ def crps_cell(record: dict, rows=None) -> dict:
         "crps_published_bps": sum(float(e["loss_b_bps"]) for e in inside) / len(inside),
         "mean_difference_bps": mean_difference(range(len(differences))),
         "interval": {"lower": lower, "upper": upper, **frozen["interval"]},
+        "sensitivity_interval": {"lower": sensitivity_lower, "upper": sensitivity_upper,
+                                 **sensitivity},
         "sign_convention": "persistence minus the published distribution; positive "
                            "favours the published distribution",
     }
@@ -962,10 +990,22 @@ def crps_cell(record: dict, rows=None) -> dict:
 
 
 def crps_verdict(cell: dict) -> str:
-    """The CRPS test's pass rule: a lower CRPS, its 90% paired interval excluding zero."""
+    """The CRPS test's pass rule: a lower CRPS, its 90% paired interval excluding zero.
 
-    if cell["mean_difference_bps"] > 0 and cell["interval"]["lower"] > 0:
+    A non-pass is labelled (`CRPS_LABELS`, ruling of 4 October 2026 on #221, (a)):
+    "not distinguishable" when the 90% interval contains 0, "worse" when its upper
+    bound is below 0. The labels add nothing to the rule, and the block-10
+    sensitivity interval is never read here. The one case the ruling leaves
+    unlabelled, an interval above 0 around a mean that is not, is a "fail".
+    """
+
+    interval = cell["interval"]
+    if cell["mean_difference_bps"] > 0 and interval["lower"] > 0:
         return "pass"
+    if interval["upper"] < 0:
+        return "worse"
+    if interval["lower"] <= 0 <= interval["upper"]:
+        return "not distinguishable"
     return "fail"
 
 
@@ -980,7 +1020,8 @@ def crps_command(args) -> int:
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n",
                            encoding="utf-8")
     print(json.dumps({key: cell[key] for key in ("days", "mean_difference_bps", "interval",
-                                                 "verdict")}, indent=1))
+                                                 "sensitivity_interval", "verdict")},
+                     indent=1))
     return 0
 
 

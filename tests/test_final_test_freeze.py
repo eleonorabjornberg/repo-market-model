@@ -21,7 +21,10 @@ A recorded change to a newly frozen constant: `PID_GRID_STEPS = (0.01, 0.05,
 0.2)` in `src/repo_model/recalibration.py` changed to `(0.01, 0.05, 0.3)`,
 confirmed applied by grep; `test_the_crps_checksum_is_the_pinned_one` then
 failed with `AssertionError` (the checksum moved to `13f6de82…`), and
-`test_the_leap_checksum_is_unchanged` stayed green. Restored, green.
+`test_the_leap_checksum_is_unchanged` stayed green. Restored, green. Re-run
+after Eleonora's ruling of 4 October 2026 on #221 (the labels and the block-10
+sensitivity interval, which moved the pin): the checksum then moved to
+`d6c3ecec…`, and the leap test stayed green.
 
 Mutation record (`CrpsCellTests`, the CRPS cell's lockbox check):
 `lockbox.require_unlocked(window, where="final test CRPS cell")` in
@@ -160,6 +163,32 @@ class CrpsFreezeTests(unittest.TestCase):
              "method": interval["method"]},
         )
 
+    def test_the_block_10_sensitivity_is_declared_and_pinned(self):
+        """Ruling of 4 October on #221 (b): block length 10, a seed declared now, deciding nothing."""
+
+        frozen = fp.crps_declaration()
+        self.assertEqual(fp.CRPS_SENSITIVITY_BLOCK_LENGTH, 10)
+        self.assertEqual(str(fp.CRPS_SENSITIVITY_SEED), _pinned("CRPS sensitivity seed"))
+        self.assertEqual(
+            frozen["sensitivity_interval"],
+            {"level": baseline_level(), "replications": baseline_replications(),
+             "block_length": 10, "seed": fp.CRPS_SENSITIVITY_SEED,
+             "method": "stationary_bootstrap", "decides": "nothing"},
+        )
+        # The primary interval is untouched by the sensitivity report.
+        self.assertEqual(frozen["interval"]["block_length"], 2)
+        self.assertEqual(frozen["interval"]["seed"], 1970125677)
+
+    def test_the_labels_are_declared(self):
+        """Ruling of 4 October on #221 (a): reporting labels that add nothing to the pass rule."""
+
+        self.assertEqual(
+            fp.crps_declaration()["labels"],
+            {"pass": "mean difference > 0 and 90% lower bound > 0",
+             "not distinguishable": "not a pass, and the 90% interval contains 0",
+             "worse": "the 90% upper bound is below 0"},
+        )
+
     def test_the_command_parses_and_says_what_the_declaration_says(self):
         from repo_model.cli import build_parser
 
@@ -192,6 +221,8 @@ class CrpsFreezeTests(unittest.TestCase):
             (fp.baseline, "BOOTSTRAP_LEVEL", 0.95),
             (fp, "CRPS_BLOCK_LENGTH", fp.CRPS_BLOCK_LENGTH + 1),
             (fp, "CRPS_WINDOW_DAYS", fp.CRPS_WINDOW_DAYS + 1),
+            (fp, "CRPS_SENSITIVITY_BLOCK_LENGTH", fp.CRPS_SENSITIVITY_BLOCK_LENGTH + 1),
+            (fp, "CRPS_SENSITIVITY_SEED", fp.CRPS_SENSITIVITY_SEED + 1),
         ):
             with self.subTest(name=name), mock.patch.object(module, name, value):
                 self.assertNotEqual(fp.crps_declaration_checksum(), before)
@@ -266,6 +297,14 @@ class WindowDaysTests(unittest.TestCase):
             self.assertEqual(fp.window_dates(panel), [date(2026, 1, 2), date(2026, 9, 3)])
 
 
+def baseline_level():
+    return fp.baseline.BOOTSTRAP_LEVEL
+
+
+def baseline_replications():
+    return fp.baseline.BOOTSTRAP_REPLICATIONS
+
+
 def _synthetic_record(days, differences, **changes):
     published, interval, panel = _published_declaration()
     declaration = {**published, "end": "2026-09-03"}
@@ -326,6 +365,15 @@ class CrpsCellTests(unittest.TestCase):
         self.assertGreater(cell["mean_difference_bps"], 0.5)
         self.assertGreater(cell["interval"]["lower"], 0.0)
         self.assertEqual(fp.crps_verdict(cell), "pass")
+        self.assertEqual(cell["verdict"], "pass")
+        # The block-10 sensitivity interval is reported beside it and decides nothing.
+        sensitivity = cell["sensitivity_interval"]
+        self.assertEqual((sensitivity["block_length"], sensitivity["seed"], sensitivity["decides"]),
+                         (10, fp.CRPS_SENSITIVITY_SEED, "nothing"))
+        self.assertLess(sensitivity["lower"], cell["mean_difference_bps"])
+        self.assertGreater(sensitivity["upper"], cell["mean_difference_bps"])
+        with mock.patch.dict(sensitivity, {"lower": -1.0, "upper": -0.5}):
+            self.assertEqual(fp.crps_verdict(cell), "pass")
 
     def test_with_the_panel_rows_the_cell_is_split_by_regime_and_day_type(self):
         from repo_model.data import DailyObservation
@@ -342,12 +390,20 @@ class CrpsCellTests(unittest.TestCase):
         self.assertEqual(cell["splits"]["by_day_type"]["quarter_end"]["count"], 1)
 
     def test_an_interval_reaching_zero_does_not_pass(self):
-        cell = {"mean_difference_bps": 0.2, "interval": {"lower": -0.01, "upper": 0.4}}
-        self.assertEqual(fp.crps_verdict(cell), "fail")
-        cell = {"mean_difference_bps": -0.2, "interval": {"lower": -0.4, "upper": -0.01}}
-        self.assertEqual(fp.crps_verdict(cell), "fail")
-        cell = {"mean_difference_bps": 0.2, "interval": {"lower": 0.01, "upper": 0.4}}
-        self.assertEqual(fp.crps_verdict(cell), "pass")
+        """Pass is unchanged; a non-pass is labelled (ruling of 4 October on #221, (a))."""
+
+        cases = (
+            (0.2, -0.01, 0.4, "not distinguishable"),
+            (-0.2, -0.4, 0.01, "not distinguishable"),
+            (0.2, 0.0, 0.4, "not distinguishable"),
+            (-0.2, -0.4, 0.0, "not distinguishable"),
+            (-0.2, -0.4, -0.01, "worse"),
+            (0.2, 0.01, 0.4, "pass"),
+        )
+        for mean, lower, upper, label in cases:
+            cell = {"mean_difference_bps": mean, "interval": {"lower": lower, "upper": upper}}
+            with self.subTest(mean=mean, lower=lower, upper=upper):
+                self.assertEqual(fp.crps_verdict(cell), label)
 
     def test_a_record_that_is_not_the_frozen_run_is_refused(self):
         days = self._days()
