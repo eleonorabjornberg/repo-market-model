@@ -1,0 +1,236 @@
+# Decision: the final test, pre-registered
+
+**Status: a draft for Eleonora (#150), in force once she merges it.** It fixes the design of the final test before any
+locked day is scored. #151 opens the lockbox once and runs exactly what is frozen here. Her two rulings of
+3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
+below ("The reading of the selection rule" and "The test").
+
+Her request, 2 October 2026: "Build the simple pressure model with the scarcity state, fix its design in advance, then
+open the 2026 lockbox once. If it beats the S-curve on days when pressure starts, you have a real forecasting result. If
+not, you still have the case study." "The S-curve" means the persistence-logistic baseline (her clarification of
+2 October 2026 on #150).
+
+## What is frozen
+
+- **Model:** `dynamic_logit`
+- **Calibrator:** `platt_recency`
+- **Declaration checksum:** `5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449`
+- **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
+  `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
+  scored day's quarter end, month end and tax date, the Treasury coupon settlement, each scheduled term times the
+  scarcity state, and the lagged index (Kauppi–Saikkonen, persistence chosen on the grid by penalized likelihood at
+  each refit). At horizons 2 to 5 the settlement and its interaction drop, because they are not public at the decision
+  instant. The one recalibration step is recency-weighted Platt
+  (`probability_calibration.walk_forward("platt_recency", …)`, half-life 504 scored days), applied walk-forward to the
+  model's raw probabilities.
+- **Commit:** the code on `main` at `019d1d062e2c133437d453e28c54e412677a8435`, with this record's pull request. The
+  run is `scripts/final_test_preregistration.py`, whose `_dynamic_logit` runner is the frozen model.
+- **The checksum** is `scripts/final_test_preregistration.py declaration`. It covers:
+  - the inputs, the calibrator and its constants;
+  - *J_h* at every horizon, the onset and leap-onset calm lengths, and the minimum event count;
+  - the fold grid and the interval;
+  - the sha256 of the source of every top-level definition the model, the calibrator, the leap targets, the leap
+    baselines and the backtest reach in their own files.
+
+  `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
+
+The commands, on the published panel rebuilt from the tracked fixtures (digest `4ddc3882…`), and on the two scratch
+panels the candidates were measured on:
+
+```
+PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
+PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output V11.csv
+PYTHONPATH=src python3 scripts/early_warning_inputs.py panel --panel PUB.csv --output EW.csv
+OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py candidate --name NAME --panel PANEL --output OUT/NAME.pickle
+PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py calibrator --panel PUB.csv --runs OUT --output OUT/calibrator.json
+PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py select --panel PUB.csv --runs OUT --calibrator platt_recency --output OUT/selection.json
+PYTHONPATH=src python3 scripts/final_test_preregistration.py declaration
+```
+
+`PANEL` is `V11.csv` (digest `4137d0ad…`) for `scarcity_calendar` and `v1_1`, `EW.csv` (digest `f74536e7…`, the
+panel #172 was measured on) for `direct_logistic_sofr_p1`, and `PUB.csv` for the other three. numpy 2.4.6 and
+scikit-learn 1.9.1 (`/opt/rmm-venv`).
+
+## The amendments, in the order she made them
+
+All are Eleonora's, made on 3 October 2026 before the lockbox is opened, and relayed by the orchestrating session on
+#150.
+
+1. **The onset definition.** #150's onset days are #209's at-risk days: every scored day whose previous five panel
+   days were all at or below +5 bp, whatever its outcome. The onsets are the events within that group, and the
+   leap-onset target is amended the same way. Five calm days, as #139 declared; the calm length is not changed after
+   seeing results. #209's one-day variant (#160's definition) is reported beside it, descriptive only. *Reason:*
+   #139's group held only days that turned out to be onsets, so every outcome in it was 1, and the Brier score there
+   rewarded a higher forecast, sharper or not. The amended group is mostly calm days, so its score mostly measures
+   false alarms.
+2. **The selection score.** The model is chosen by plain-leap Brier at h = 1, at #139's *J₁*, on all pre-2026 days,
+   from walk-forward (out-of-sample) forecasts on the test's own fold grid. Onset-day Brier, on the at-risk group, is
+   reported beside it as descriptive only. *Reason:* item 1 of #150 used onset-day Brier, left over from an earlier
+   draft. When the plain leap at h = 1 became the primary cell, the selection rule was not updated to match.
+3. **The candidate list, closed at six; a fixed simplicity ranking; one recalibration step for all.** The scarcity
+   state is not required. Every candidate is scored after the same single recalibration step, applied to its raw
+   probabilities. For the published v1 and v1.1 that step replaces their out-of-fold recalibration. For the stacked
+   combiner it is applied once, to the combiner's output. *Reason:* the two leads left standing by the "Publish?" round
+   (#168, #172), and the model already published, are tested on equal terms with the earlier candidates. With a
+   common step, no candidate wins because of how it was calibrated. With a ranking fixed now, "simplest" cannot be
+   argued after the scores are seen.
+4. **Which calibrator is "#138's winning method".** One calibrator for every candidate, among isotonic, Platt, beta and
+   recency-weighted Platt. The choosing score is the published v1's plain-leap Brier at h = 1, at *J₁*, on all
+   pre-2026 days, walk-forward, from its raw probabilities. Platt is the default. Another method replaces it only if
+   its paired gain over Platt has a 90% interval excluding zero; if several do, the largest gain wins. *Disclosure*,
+   as she recorded it: before the rule was written, the orchestrating session had read #210's summary and #212, but
+   not this cell. *Reason:* #138 merged without naming a single winner.
+5. **The calibrator-selection cell is computed, not read.** It was computed by the run that drafted this record, with
+   the command above. It was not read from #210, #212 or their comments.
+6. **No overlap with the live record.** This test scores no day after the panel end, 2026-09-03. The live record of
+   #215 has no day this test scores: its first logged day falls after 2026-09-03, and its script refuses any earlier
+   day.
+
+## The choice, on pre-2026 evidence only
+
+Every figure below is on the published fold grid at h = 1. The scored days are 2018-06-29 to **2025-12-31**, 1873
+days with 164 plain leaps at *J₁* = 3 bp. Walk-forward, expanding window, refit every 21 scored days, decision 16:00.
+**No locked day is scored**, and each run refuses one. Intervals are 90% stationary-bootstrap intervals, 2000
+replications, block length 2.
+
+**The calibrator.** Published v1's raw plain-leap probability (the distributional gbm before any recalibration), with
+each calibrator fitted walk-forward. Gain = Brier(Platt) − Brier(method).
+
+| Calibrator | Brier | Gain over Platt |
+|---|---|---|
+| isotonic | 0.0811 | +0.0006 [−0.0002, +0.0014] |
+| Platt (default) | 0.0817 | – |
+| beta | 0.0815 | +0.0002 [−0.0002, +0.0005] |
+| **recency-weighted Platt** | **0.0805** | **+0.0011 [+0.0008, +0.0014]** |
+
+Only recency-weighted Platt's gain has an interval excluding zero, so the rule chooses it.
+
+**The model.** Each candidate's raw plain-leap probability, recalibrated once by recency-weighted Platt. The best is
+the lowest Brier. "Versus the best" = Brier(best) − Brier(candidate). Under the paired reading she ruled on (see
+"The reading of the selection rule"), a candidate is within the interval of the best when that paired interval
+reaches zero.
+
+| Rank | Candidate | Brier, raw | Brier, recalibrated | Versus the best | Within |
+|---|---|---|---|---|---|
+| 1 | #128's scarcity-conditioned calendar (logistic, state alone, four levels) | 0.0843 | 0.0789 | −0.0044 [−0.0068, −0.0021] | no |
+| 2 | **#137's dynamic logit** | 0.0787 | **0.0745** | best | **yes** |
+| 3 | v1's direct logistic + `sofr_p1` (#172) | 0.0846 | 0.0788 | −0.0043 [−0.0065, −0.0021] | no |
+| 4 | the published v1 (#169) | 0.0889 | 0.0805 | −0.0060 [−0.0105, −0.0014] | no |
+| 5 | #117's v1.1 (`joint`) | 0.0868 | 0.0790 | −0.0045 [−0.0086, −0.0003] | no |
+| 6 | the stacked combiner (#137, as measured for #168) | 0.0777 | 0.0767 | −0.0023 [−0.0042, −0.0002] | no |
+
+The dynamic logit has the lowest Brier, and every other candidate is worse than it with an interval excluding zero.
+The highest-ranked candidate within the interval of the best is therefore the dynamic logit.
+
+**Descriptive only; these choose nothing.** Onset-day Brier at +5 bp on #209's at-risk group (1586 days, 27 onsets) and
+on the one-day variant (1734 days, 47 events). Plain-leap Brier on the leap-onset at-risk group (1366 days, 64 leap
+onsets). Each is after the same recalibration step.
+
+| Candidate | +5 bp, at-risk group | +5 bp, one-day variant | Plain leap, leap-onset at-risk group |
+|---|---|---|---|
+| scarcity-conditioned calendar | 0.0179 | 0.0285 | 0.0492 |
+| dynamic logit | 0.0163 | 0.0261 | 0.0440 |
+| direct logistic + `sofr_p1` | 0.0146 | 0.0238 | 0.0477 |
+| published v1 | 0.0173 | 0.0299 | 0.0470 |
+| v1.1 | 0.0174 | 0.0302 | 0.0461 |
+| stacked combiner | 0.0159 | 0.0262 | 0.0459 |
+
+**Context only, not the test.** On these pre-2026 days, the frozen model against the two leap baselines on the primary
+cell: +0.0052 [+0.0004, +0.0095] against calendar climatology, and +0.0073 [+0.0018, +0.0122] against the
+persistence-logistic (baseline minus model; positive favours the model). These days chose the model, so this is not
+evidence that it will pass. Only the locked period can say that.
+
+**#160, folded in (context for the test, not a cell of it).** The published v1 against the persistence-logistic, on
+#155's whole-bp labels, at h = 1, 2018-06-29 to 2025-12-31 (#209's worked example, `scripts/onset_at_risk_example.py`).
+Brier(persistence-logistic) − Brier(v1):
+
+- At-risk group: +0.0003 [−0.0009, +0.0014] at +5 bp, and −0.0005 [−0.0010, +0.0001] at +10 bp.
+- One-day variant: −0.0014 [−0.0034, +0.0006] at +5 bp, and −0.0010 [−0.0017, −0.0003] at +10 bp.
+
+## The reading of the selection rule
+
+**Eleonora's ruling, 3 October 2026, on #216.** "Within the bootstrap interval of the best" means the paired reading:
+a candidate is within when the 90% interval of its paired Brier difference from the best reaches zero. Under it every
+candidate but the dynamic logit is outside, so **the dynamic logit (#137) is the frozen model.**
+
+- **The reading was fixed after both outcomes had been shown.** Under the paired reading the rule chooses the dynamic
+  logit. Under the unpaired reading (a candidate is within when its Brier lies inside the 90% bootstrap interval of the
+  best's own Brier, [0.0643, 0.0849]) every candidate is inside, and the highest-ranked, #128's scarcity-conditioned
+  calendar, would have been chosen.
+- **Why the paired reading.** The project's evidence rule is paired comparison: a headline claim "is paired, carries a
+  bootstrap interval" (`CLAUDE.md`, "Benchmarks"). The unpaired interval mostly measures day-to-day variation in the
+  Brier, so it barely separates candidates.
+
+**The CRPS target, her ruling of the same day.** Both readings choose a direct model of the event, which has no
+predictive distribution, so it has no CRPS. Target 2 is kept as drafted: the published distribution (#169's gbm with
+nested PID) against as-of persistence, reported only. It is **the published model, not the chosen model.**
+
+## The test (#151)
+
+**The period.** The near-blind tier, 2026-01-01 to 2026-09-03 (`lockbox.md`), opened once by Eleonora. No day after
+2026-09-03 is scored. Every model is refitted walk-forward on the same fold grid as above, with the same constants, so
+the 2026 forecasts continue the pre-2026 walk.
+
+**The targets, in this order.**
+
+1. **Small leaps (the primary target).** #139's as-of leap at #139's *J_h*, exactly as merged
+   (`docs/decisions/pressure-probability.md`, "Onset view and small-leap targets"). The jump is measured against each
+   forecast's as-of anchor, never the day before. *J_h* is fixed by #139's percentile rule on 2018-06-29 to
+   2025-12-31: 3 bp at h = 1, and 4 bp at h = 2 to 5. Also on this target: the leap onset, on #209's at-risk
+   leap-onset group, and #139's pressure leap (a leap that ends above IORB), which is secondary.
+2. **Absolute numbers.** The CRPS of the full forecast distribution of the spread, every day, paired against as-of
+   persistence (the distribution benchmark in `CLAUDE.md`). The dynamic logit is a direct model of the event and has no
+   predictive distribution. The CRPS cell is therefore the published distribution (the gbm with nested PID, #169),
+   **the published model, not the chosen model**, against as-of persistence, reported only, for continuity.
+3. **The original thresholds.** +5 bp, then +10 bp, with the onsets on #209's at-risk group, kept for continuity.
+
+**The comparators.**
+
+- **Leap targets:** both of #139's named baselines.
+  - *The persistence-logistic* ("the S-curve"): a logistic regression of the plain-leap event on two inputs, both read
+    at the forecast's as-of anchor: the latest as-of jump and the latest as-of spread level. It is fitted walk-forward
+    on the same fold grid, with no other inputs and no interactions (`onset.leap_persistence_logistic`).
+  - *Calendar climatology:* the walk-forward leap frequency by `metadata/evaluation_splits.json` day type
+    (`onset.leap_calendar_climatology`).
+- **+5 and +10 bp:** calendar climatology and the persistence-logistic, as `pressure-probability.md` declares them.
+- **The distribution:** as-of persistence. If Eleonora meant a different S-curve, for example a reserve-demand sigmoid,
+  she corrects this before #151.
+
+**The metrics.** Brier on each event target and CRPS on the distribution, each paired against its comparators, with
+the 90% stationary-bootstrap interval. Horizons 1 to 5.
+
+**The success criterion: one primary cell only.** It is the plain leap (not the leap onset, not the pressure leap), at
+horizon h = 1, at *J₁* = 3 bp. The frozen model's Brier there must be lower than **each** named baseline's. Each
+paired difference's 90% stationary-bootstrap interval must exclude 0. Every other cell is **reported only** and
+cannot pass or fail the test: horizons 2 to 5, the leap onset, the pressure leap, CRPS (the published model, not the
+chosen model), and +5 and +10 bp.
+
+**Too few events.** Each event target has the minimum event count #139 already declared: **20 events** in the scored
+period (`onset.MINIMUM_EVENTS`). Below it, that target is reported as inconclusive, with no claim either way. If the
+primary cell falls below 20 plain leaps at h = 1, the verdict is **inconclusive**: neither a pass nor a fail. CRPS has
+no minimum, because every day counts. Events in the locked period are counted only when #151 scores it, never before.
+
+**Secondary metrics.** The all-days Brier on every event target, and the false-alarm level on calm days. That level is
+the mean forecast probability on the days of #209's at-risk group whose outcome is 0. It is a mean with no
+cut-point, so no threshold has to be chosen for it. 2026 is largely a calm, reserve-management regime.
+
+**The split.** Every cell is split by regime and by pressure-day type, as every published comparison is. The split is
+reported, and it decides nothing.
+
+## Recorded with the design
+
+- **The target was changed partly because of what is known about 2026.** `lockbox.md` publishes the locked period's
+  event counts (5 days above +5 bp, none above +10 bp), and public Fed commentary describes 2026 as calm. The leap
+  target was added knowing that, though no model was scored on 2026.
+- **The 90% interval is the project's standard,** fixed in advance and not chosen for this test.
+- **The leap is measured on signed jumps:** all daily changes, not up-days only, per #139.
+- **#139's pressure leap** (a leap ending above IORB) is reported as a secondary target.
+- **The claim wording, if the test passes:** "forecasts as-of jumps in SOFR − IORB better than calendar climatology and
+  the persistence-logistic". It never says "warns of stress".
+- **Framing.** The leap target is the primary test because it has enough events to settle, not because it replaces the
+  headline. The +5 and +10 bp results, ties included, are reported next to it. A leap forecast answers a different
+  question from a stress warning.
+- **No threshold is chosen by looking at 2026.** *J_h*, the calm lengths and the minimum event count all come from
+  pre-2026 data or from earlier rules, and are fixed above. Counting events in the locked period, to choose a threshold
+  or for any other reason, is not allowed before #151 scores it.
+- **Labels are on whole basis points** (#155), so the test is scored on the corrected labels.
