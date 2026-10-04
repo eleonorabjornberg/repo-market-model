@@ -23,4 +23,6 @@ I can: data, economics, scenarios, or just a second pair of eyes.
 With admiration,
 Nicholas
 
+*P.S. Rest up and take care of yourself first. The repo market will still be there when you're back.* 🍵
+
 *Approve to accept delivery. No merge required.* 🌷
