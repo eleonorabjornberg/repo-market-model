@@ -333,6 +333,17 @@ class ScoringGuardTests(unittest.TestCase):
         draft = ROOT / "docs" / "decisions" / "drafts" / "lockbox-live-record.md"
         self.assertIn(score.AMENDMENT_HEADING, draft.read_text(encoding="utf-8"))
 
+    def test_the_draft_states_the_not_evidence_label_for_later_horizons(self):
+        """Eleonora's ruling of 4 October 2026 (#229): the draft states the label verbatim."""
+
+        draft = ROOT / "docs" / "decisions" / "drafts" / "lockbox-live-record.md"
+        text = " ".join(draft.read_text(encoding="utf-8").split())
+        self.assertIn(
+            "different model from h = 1, and as-of persistence does not widen with horizon, "
+            "so this comparison favours the model; not evidence.",
+            text,
+        )
+
     def test_the_script_refuses_to_run_while_the_amendment_is_unmerged(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
@@ -550,6 +561,37 @@ class CrpsScoringTests(unittest.TestCase):
             with self.subTest(h=h):
                 self.assertEqual(cells[f"crps/h{h}"]["role"], "reported only")
                 self.assertNotIn("result", cells[f"crps/h{h}"])
+
+    def test_every_later_horizon_carries_the_not_evidence_label(self):
+        """Eleonora's ruling of 4 October 2026 (#229): every h = 2-5 CRPS cell is labelled.
+
+        The label is written here verbatim, not read from the script, so a
+        paraphrase in `live_score.py` fails. It sits next to the cell's verdict
+        label (`verdict_label`, adjacent to `verdict` in the sorted output), on
+        a scored cell and on one with no scored day alike. The h = 1 cell does
+        not carry it.
+
+        Red first: run before `live_score.py` wrote the label, this test failed
+        with a `KeyError` on `verdict_label`.
+        """
+
+        label = ("different model from h = 1, and as-of persistence does not widen with "
+                 "horizon, so this comparison favours the model; not evidence.")
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        first = date.fromisoformat(records[0]["targets"][0]["target_date"])
+        for name, day in (("scored", date(2027, 4, 1)), ("no scored day", first)):
+            cells = score.score_crps(records, rows, self.splits, day)
+            for h in live.HORIZONS[1:]:
+                with self.subTest(case=name, h=h):
+                    cell = cells[f"crps/h{h}"]
+                    self.assertEqual(cell["verdict_label"], label)
+                    if name == "scored":
+                        self.assertIn("verdict", cell)
+                    else:
+                        self.assertEqual(cell["days"], 0)
+            with self.subTest(case=name, h=1):
+                self.assertNotIn("verdict_label", cells["crps/h1"])
+                self.assertNotIn("not evidence", json.dumps(cells["crps/h1"]))
 
     def test_the_brier_cells_are_reported_only(self):
         records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
