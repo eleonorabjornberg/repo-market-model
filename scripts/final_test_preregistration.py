@@ -23,8 +23,11 @@ The amendments of 3 October 2026 on #150 fix what is computed here:
   checksum (`declaration`, `declaration_checksum`), which the record pins and
   `tests/test_final_test_freeze.py` checks.
 
-The CRPS test (#220, Eleonora's amendment of 4 October 2026 on #151) is the
-second primary test, with its own frozen declaration and checksum:
+The CRPS test (#220, Eleonora's amendment of 4 October 2026 on #151) has its
+own frozen declaration and checksum. Since her ruling of the same day on #221
+(16:45) its cell at h = 1 is the one primary cell of the final test, and every
+leap and threshold cell is reported only (`CELLS`, `PRIMARY_CELL`, carried by
+both declarations):
 
 * `crps-declaration` prints it (`crps_declaration`, `crps_declaration_checksum`):
   the published distribution exactly as #169 published it (the gbm on the nine
@@ -125,6 +128,28 @@ DEFAULT_CALIBRATOR = "platt"
 CHOSEN = "dynamic_logit"
 #: The calibrator the calibrator rule chose (`calibrator`), frozen by the record.
 CHOSEN_CALIBRATOR = "platt_recency"
+
+#: The cells of the final test and what each decides (Eleonora's ruling of
+#: 4 October 2026 on #221, 16:45: the full-range test is the primary cell). One
+#: cell is primary; every other cell is reported only and cannot pass or fail
+#: the test. Both declarations carry them, so both checksums cover them.
+PRIMARY_CELL = "crps, h = 1"
+CELLS = {
+    "crps, h = 1": "primary",
+    "crps, h = 2 to 5": "reported only",
+    "plain leap, h = 1": "reported only",
+    "plain leap, h = 2 to 5": "reported only",
+    "leap onset": "reported only",
+    "pressure leap": "reported only",
+    "+5 bp": "reported only",
+    "+10 bp": "reported only",
+}
+
+
+def cells() -> dict:
+    """The primary cell and every cell's role, as both declarations carry them."""
+
+    return {"primary": PRIMARY_CELL, "roles": dict(CELLS)}
 
 
 def _proxy(mapping):
@@ -749,6 +774,7 @@ def declaration(name: str = CHOSEN, calibrator: str = CHOSEN_CALIBRATOR) -> dict
         },
         "interval": {"level": pc.LEVEL, "replications": pc.REPLICATIONS,
                      "method": "stationary_bootstrap"},
+        "cells": cells(),
         "source_sha256": source,
     }
 
@@ -785,11 +811,20 @@ CRPS_BLOCK_LENGTH = 2
 CRPS_SENSITIVITY_BLOCK_LENGTH = 10
 CRPS_SENSITIVITY_SEED = 1970125677
 #: The cell's labels (the same ruling, (a)): reporting only; a pass is unchanged.
+#: The edge case, an interval above 0 around a mean that is not above 0, is a
+#: fail labelled "not distinguishable" (her ruling of 4 October 2026, 16:45).
 CRPS_LABELS = {
     "pass": "mean difference > 0 and 90% lower bound > 0",
-    "not distinguishable": "not a pass, and the 90% interval contains 0",
+    "not distinguishable": "not a pass and not worse: the 90% interval contains 0, "
+                           "or lies above 0 around a mean that is not above 0",
     "worse": "the 90% upper bound is below 0",
 }
+#: The primary cell's horizon: `compare` scores one day ahead.
+CRPS_HORIZON = 1
+#: The claim, if the test passes (her ruling of 4 October 2026, 16:45, point 3).
+CRPS_CLAIM = ("the published model's one-day-ahead forecast of the full distribution of "
+              "SOFR − IORB was more accurate than as-of persistence over January to "
+              "September 2026")
 #: The command the opening run types, after Eleonora opens the near-blind tier.
 CRPS_COMMAND = (
     "compare", "PUB.csv",
@@ -814,8 +849,8 @@ _CRPS_SOURCE = (
                                     "BOOTSTRAP_LEVEL", "BOOTSTRAP_REPLICATIONS")),
     ("src/repo_model/metrics.py", ("crps_from_quantiles", "stationary_bootstrap_interval")),
     ("src/repo_model/cli_eval.py", ("_compare", "FITTER_FACTORIES")),
-    ("scripts/final_test_preregistration.py", ("crps_cell", "crps_verdict", "window_dates",
-                                               "crps_command")),
+    ("scripts/final_test_preregistration.py", ("crps_cell", "crps_verdict", "crps_result",
+                                               "window_dates", "crps_command")),
 )
 
 
@@ -871,6 +906,7 @@ def crps_declaration() -> dict:
     return {
         "model_a": {"model": "persistence", "features": ["spread_bps"]},
         "model_b": _published_distribution(),
+        "horizon": CRPS_HORIZON,
         "minimum_history": MINIMUM_HISTORY,
         "refit_every": REFIT_EVERY,
         "decision_time": DECISION.isoformat(timespec="minutes"),
@@ -890,6 +926,8 @@ def crps_declaration() -> dict:
         "pass_rule": "persistence's mean CRPS minus the published distribution's, on the "
                      "window's days, is positive and its 90% paired interval excludes zero",
         "labels": dict(CRPS_LABELS),
+        "claim": CRPS_CLAIM,
+        "cells": cells(),
         "panel_sha256": _frozen_panel_sha256(),
         "command": list(CRPS_COMMAND),
         "source_sha256": source,
@@ -966,6 +1004,8 @@ def crps_cell(record: dict, rows=None) -> dict:
         level=sensitivity["level"],
     )
     cell = {
+        "cell": PRIMARY_CELL,
+        "horizon": CRPS_HORIZON,
         "days": len(differences),
         "first": window[0].isoformat(),
         "last": window[-1].isoformat(),
@@ -986,6 +1026,7 @@ def crps_cell(record: dict, rows=None) -> dict:
             block_length=CRPS_BLOCK_LENGTH, seed=frozen["interval"]["seed"],
         )
     cell["verdict"] = crps_verdict(cell)
+    cell["result"] = crps_result(cell["verdict"])
     return cell
 
 
@@ -993,10 +1034,11 @@ def crps_verdict(cell: dict) -> str:
     """The CRPS test's pass rule: a lower CRPS, its 90% paired interval excluding zero.
 
     A non-pass is labelled (`CRPS_LABELS`, ruling of 4 October 2026 on #221, (a)):
-    "not distinguishable" when the 90% interval contains 0, "worse" when its upper
-    bound is below 0. The labels add nothing to the rule, and the block-10
-    sensitivity interval is never read here. The one case the ruling leaves
-    unlabelled, an interval above 0 around a mean that is not, is a "fail".
+    "worse" when the 90% upper bound is below 0, and otherwise "not
+    distinguishable": the interval contains 0, or (the edge case her ruling of
+    16:45 labelled) it lies above 0 around a mean that is not above 0. The labels
+    add nothing to the rule, and the block-10 sensitivity interval is never read
+    here.
     """
 
     interval = cell["interval"]
@@ -1004,9 +1046,13 @@ def crps_verdict(cell: dict) -> str:
         return "pass"
     if interval["upper"] < 0:
         return "worse"
-    if interval["lower"] <= 0 <= interval["upper"]:
-        return "not distinguishable"
-    return "fail"
+    return "not distinguishable"
+
+
+def crps_result(label: str) -> str:
+    """The final test's result from the primary cell's label: a pass, or a fail."""
+
+    return "pass" if label == "pass" else "fail"
 
 
 def crps_command(args) -> int:
@@ -1019,8 +1065,8 @@ def crps_command(args) -> int:
     document = {"crps_declaration_sha256": crps_declaration_checksum(), "cell": cell}
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n",
                            encoding="utf-8")
-    print(json.dumps({key: cell[key] for key in ("days", "mean_difference_bps", "interval",
-                                                 "sensitivity_interval", "verdict")},
+    print(json.dumps({key: cell[key] for key in ("cell", "days", "mean_difference_bps", "interval",
+                                                 "sensitivity_interval", "verdict", "result")},
                      indent=1))
     return 0
 

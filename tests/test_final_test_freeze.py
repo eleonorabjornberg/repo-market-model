@@ -24,7 +24,11 @@ failed with `AssertionError` (the checksum moved to `13f6de82…`), and
 `test_the_leap_checksum_is_unchanged` stayed green. Restored, green. Re-run
 after Eleonora's ruling of 4 October 2026 on #221 (the labels and the block-10
 sensitivity interval, which moved the pin): the checksum then moved to
-`d6c3ecec…`, and the leap test stayed green.
+`d6c3ecec…`, and the leap test stayed green. Re-run after her ruling of
+4 October 2026 (16:45) on #221, which made the CRPS cell at h = 1 the one
+primary cell and regenerated both checksums (`PrimaryCellTests`, red first
+with 6 failures and 13 errors): the checksum then moved to `b06fdaeb…`, and
+`test_the_leap_checksum_is_the_regenerated_one` stayed green.
 
 Mutation record (`CrpsCellTests`, the CRPS cell's lockbox check):
 `lockbox.require_unlocked(window, where="final test CRPS cell")` in
@@ -127,7 +131,7 @@ class FreezeTests(unittest.TestCase):
 #: The leap checksum #216 pinned, before the ruling of 4 October 2026 (16:45) on
 #: #221 added the cells and their roles to the declaration.
 LEAP_CHECKSUM_AT_216 = "5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449"
-LEAP_CHECKSUM = "PENDING"
+LEAP_CHECKSUM = "28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432"
 PUBLISHED_CRPS = REPO / "docs" / "runs" / "compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 
 
