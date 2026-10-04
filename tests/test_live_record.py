@@ -124,6 +124,17 @@ def _record(day="2026-10-02"):
             onset.LEAP_PERSISTENCE_LOGISTIC: {"forecasts": leap_only},
             onset.LEAP_CALENDAR_CLIMATOLOGY: {"forecasts": leap_only},
         },
+        "distributions": {
+            "levels": list(live.QUANTILE_LEVELS),
+            "published": {
+                "record": live.CRPS_RECORD,
+                "declaration_sha256": "4" * 64,
+                "quantiles_bps": {str(h): [-2.0, 0.0, 1.0, 2.0, 5.0] for h in live.HORIZONS},
+            },
+            "persistence": {
+                "quantiles_bps": {str(h): [-4.0, -1.0, 1.0, 3.0, 8.0] for h in live.HORIZONS},
+            },
+        },
         "run": {
             "started_at": f"{day}T21:30:00+00:00",
             "finished_at": f"{day}T22:00:00+00:00",
@@ -341,18 +352,24 @@ class ScoringGuardTests(unittest.TestCase):
 
 
 class HeadlineVerdictTests(unittest.TestCase):
-    """The verdict is fixed at the first date the headline cell has enough events."""
+    """The primary result's verdict is fixed once, at the first scoring date with a scored day.
 
-    def test_before_the_minimum_every_date_is_inconclusive(self):
+    Eleonora's ruling of 4 October 2026 on #215 makes the CRPS cell at h = 1 the
+    live record's primary result. CRPS has no minimum event count (every day
+    counts, as in the final test), so the verdict is fixed at the first scoring
+    date that scores any day.
+    """
+
+    def test_a_date_with_no_scored_day_is_inconclusive(self):
+        self.assertEqual(score.headline_status(date(2027, 4, 1), days=0, previous=[]), "inconclusive")
+
+    def test_the_first_date_with_a_scored_day_is_the_verdict(self):
         self.assertEqual(
-            score.headline_status(date(2027, 4, 1), events=onset.MINIMUM_EVENTS - 1, previous=[]),
-            "inconclusive",
+            score.headline_status(date(2027, 4, 1), days=1, previous=[]), "headline_verdict"
         )
-
-    def test_the_first_date_that_meets_the_minimum_is_the_verdict(self):
         previous = [{"date": "2027-04-01", "headline_status": "inconclusive"}]
         self.assertEqual(
-            score.headline_status(date(2027, 10, 1), events=onset.MINIMUM_EVENTS, previous=previous),
+            score.headline_status(date(2027, 10, 1), days=120, previous=previous),
             "headline_verdict",
         )
 
@@ -361,20 +378,185 @@ class HeadlineVerdictTests(unittest.TestCase):
             {"date": "2027-04-01", "headline_status": "inconclusive"},
             {"date": "2027-10-01", "headline_status": "headline_verdict"},
         ]
-        for events in (onset.MINIMUM_EVENTS - 1, onset.MINIMUM_EVENTS + 50):
-            with self.subTest(events=events):
+        for days in (0, 400):
+            with self.subTest(days=days):
                 self.assertEqual(
-                    score.headline_status(date(2028, 10, 1), events=events, previous=previous),
+                    score.headline_status(date(2028, 10, 1), days=days, previous=previous),
                     "update",
                 )
 
     def test_a_previous_result_on_or_after_the_date_is_refused(self):
         previous = [{"date": "2027-10-01", "headline_status": "inconclusive"}]
         with self.assertRaises(ValueError):
-            score.headline_status(date(2027, 10, 1), events=30, previous=previous)
+            score.headline_status(date(2027, 10, 1), days=30, previous=previous)
 
-    def test_the_headline_cell_is_the_plain_leap_at_horizon_one(self):
-        self.assertEqual(score.HEADLINE, {"target": "leap", "horizon": 1})
+    def test_the_primary_result_is_the_crps_cell_at_horizon_one(self):
+        self.assertEqual(score.HEADLINE, {"target": "crps", "horizon": 1})
+
+
+class DistributionRecordTests(unittest.TestCase):
+    """Each day's file carries both distributions, and the scorer needs nothing else.
+
+    Eleonora's ruling of 4 October 2026 on #215, point 3: a test fails if a
+    day's file lacks either distribution, or if the scorer cannot reproduce a
+    day's CRPS from the file alone.
+    """
+
+    def test_a_file_without_either_distribution_is_refused(self):
+        for side in ("published", "persistence"):
+            with self.subTest(side=side):
+                record = _record()
+                del record["distributions"][side]
+                with self.assertRaises(ValueError):
+                    live.validate_record(record)
+
+    def test_a_file_missing_a_horizon_or_a_quantile_is_refused(self):
+        def missing_horizon():
+            record = _record()
+            del record["distributions"]["published"]["quantiles_bps"]["4"]
+            return record
+
+        def short_vector():
+            record = _record()
+            record["distributions"]["persistence"]["quantiles_bps"]["1"] = [0.0, 1.0]
+            return record
+
+        def other_levels():
+            record = _record()
+            record["distributions"]["levels"] = [0.1, 0.5, 0.9]
+            return record
+
+        def not_a_number():
+            record = _record()
+            record["distributions"]["published"]["quantiles_bps"]["2"][1] = None
+            return record
+
+        for name, make in {
+            "a horizon missing": missing_horizon, "a short vector": short_vector,
+            "other levels": other_levels, "not a number": not_a_number,
+        }.items():
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    live.validate_record(make())
+
+    def test_the_scorer_reproduces_a_days_crps_from_the_file_alone(self):
+        from repo_model.metrics import crps_from_quantiles
+
+        record = json.loads(json.dumps(_record()))
+        for h in live.HORIZONS:
+            for side in ("published", "persistence"):
+                for outcome in (-3.0, 0.0, 1.4, 12.0):
+                    with self.subTest(h=h, side=side, outcome=outcome):
+                        expected = crps_from_quantiles(
+                            record["distributions"]["levels"],
+                            record["distributions"][side]["quantiles_bps"][str(h)],
+                            outcome,
+                        )
+                        self.assertEqual(score.crps_from_record(record, side, h, outcome), expected)
+
+    def test_the_scorer_refuses_a_file_without_a_distribution(self):
+        record = _record()
+        del record["distributions"]["persistence"]
+        with self.assertRaises(ValueError):
+            score.crps_from_record(record, "persistence", 1, 0.0)
+
+
+def _scoring_records(published, persistence, days=40):
+    """`days` records, one a business day from 2026-10-05, with fixed distributions."""
+
+    from repo_model.data import CALENDAR_COLUMN_RULES, DailyObservation
+
+    records, rows = [], []
+    day = date(2026, 10, 5)
+    while len(records) < days:
+        if live.is_decision_day(day):
+            record = _record(day.isoformat())
+            targets = live.next_decision_days(day, max(live.HORIZONS))
+            for h in live.HORIZONS:
+                record["targets"][h - 1]["target_date"] = targets[h - 1].isoformat()
+                record["distributions"]["published"]["quantiles_bps"][str(h)] = list(published)
+                record["distributions"]["persistence"]["quantiles_bps"][str(h)] = list(persistence)
+            records.append(record)
+        day = day.fromordinal(day.toordinal() + 1)
+    last = date.fromisoformat(records[-1]["targets"][-1]["target_date"])
+    current = date(2026, 10, 5)
+    while current <= last:
+        if live.is_decision_day(current):
+            # The outcome: a spread of 1 bp (SOFR 4.01 against IORB 4.00).
+            values = {"sofr": 4.01, "iorb": 4.00}
+            values.update({column: rule(current) for column, rule in CALENDAR_COLUMN_RULES.items()})
+            rows.append(DailyObservation(date=current, values=values))
+        current = current.fromordinal(current.toordinal() + 1)
+    return records, rows
+
+
+class CrpsScoringTests(unittest.TestCase):
+    """The live record's primary result: CRPS at h = 1, under the final test's pass rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.splits = load_split_declaration(SPLITS)
+        cls.final = _script("final_test_preregistration")
+
+    def _cell(self, published, persistence, h=1):
+        records, rows = _scoring_records(published, persistence)
+        return score.score_crps(records, rows, self.splits, date(2027, 4, 1))[f"crps/h{h}"]
+
+    def test_a_sharper_distribution_at_the_outcome_passes(self):
+        cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        self.assertGreater(cell["mean_difference_bps"], 0)
+        self.assertEqual(cell["verdict"], "pass")
+        self.assertEqual(cell["result"], "pass")
+        self.assertEqual(cell["role"], "primary")
+
+    def test_a_worse_distribution_is_labelled_worse(self):
+        cell = self._cell([-6.0, -2.0, 1.0, 4.0, 9.0], [0.5, 0.8, 1.0, 1.2, 1.5])
+        self.assertEqual(cell["verdict"], "worse")
+        self.assertEqual(cell["result"], "fail")
+
+    def test_identical_distributions_are_not_distinguishable(self):
+        cell = self._cell([0.0, 0.5, 1.0, 1.5, 2.0], [0.0, 0.5, 1.0, 1.5, 2.0])
+        self.assertEqual(cell["verdict"], "not distinguishable")
+        self.assertEqual(cell["result"], "fail")
+
+    def test_the_rule_and_labels_are_the_final_tests(self):
+        self.assertIs(score.crps_verdict, self.final.crps_verdict)
+        self.assertIs(score.crps_result, self.final.crps_result)
+        cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        self.assertEqual(cell["interval"]["level"], 0.9)
+        self.assertEqual(cell["interval"]["block_length"], self.final.CRPS_BLOCK_LENGTH)
+        self.assertEqual(cell["sensitivity_interval"]["block_length"],
+                         self.final.CRPS_SENSITIVITY_BLOCK_LENGTH)
+        self.assertEqual(cell["sensitivity_interval"]["seed"], cell["interval"]["seed"])
+
+    def test_the_sensitivity_interval_decides_nothing(self):
+        cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        cell["sensitivity_interval"]["lower"] = -100.0
+        cell["sensitivity_interval"]["upper"] = -50.0
+        self.assertEqual(score.crps_verdict(cell), "pass")
+
+    def test_every_other_horizon_is_reported_only(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        cells = score.score_crps(records, rows, self.splits, date(2027, 4, 1))
+        self.assertEqual(sorted(cells), [f"crps/h{h}" for h in live.HORIZONS])
+        for h in live.HORIZONS[1:]:
+            with self.subTest(h=h):
+                self.assertEqual(cells[f"crps/h{h}"]["role"], "reported only")
+                self.assertNotIn("result", cells[f"crps/h{h}"])
+
+    def test_the_brier_cells_are_reported_only(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        result = score.score(records, rows, self.splits, date(2027, 4, 1))
+        for name, cell in result["cells"].items():
+            with self.subTest(cell=name):
+                self.assertEqual(cell["role"], "reported only")
+
+    def test_a_target_day_on_or_after_the_scoring_date_is_not_scored(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        cutoff = date.fromisoformat(records[10]["targets"][0]["target_date"])
+        cell = score.score_crps(records, rows, self.splits, cutoff)["crps/h1"]
+        self.assertEqual(cell["days"], 10)
+        self.assertLess(date.fromisoformat(cell["last"]), cutoff)
 
 
 def _fixture_panel(tmp):
@@ -534,6 +716,93 @@ class BaselineAgreementTests(unittest.TestCase):
                 for name, value in expected.items():
                     with self.subTest(h=h, baseline=name, target=kind):
                         self.assertEqual(got[name][kind], value)
+
+
+
+def _have_ml():
+    """`find_spec`, not an import: `tests/test_dependency_boundary.py` forbids one here."""
+
+    return all(importlib.util.find_spec(name) is not None for name in ("numpy", "sklearn"))
+
+
+@unittest.skipUnless(_have_ml(), "the published distribution needs the ml extra")
+class DistributionAgreementTests(unittest.TestCase):
+    """A record's distributions are the ones `compare` scores CRPS from.
+
+    The final test's frozen command (`CRPS_COMMAND`: as-of persistence against
+    the gbm on the nine funding features with nested conformal PID) is run by
+    the repository's own `compare` on the fixture panel cut short (to keep the
+    nested-PID replay quick), ending on the target day of a decision day before
+    the lockbox. The daily script's distributions, made on that panel cut at
+    the day before the decision day and extended by placeholders, must give
+    exactly `compare`'s CRPS on that target day, on each side.
+    """
+
+    #: A Friday; its h = 1 target is Monday 2019-03-04.
+    DECISION_DAY = date(2019, 3, 1)
+    LAST_ROW = date(2019, 3, 15)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp()
+        panel, cls.pit = _fixture_panel(cls.tmp)
+        lines = panel.read_text(encoding="utf-8").splitlines(keepends=True)
+        column = lines[0].rstrip("\r\n").split(",").index("date")
+        cls.short = Path(cls.tmp) / "short.csv"
+        cls.short.write_text(
+            lines[0] + "".join(
+                line for line in lines[1:]
+                if date.fromisoformat(line.split(",")[column]) <= cls.LAST_ROW
+            ),
+            encoding="utf-8",
+        )
+        cls.rows = load_daily_panel(cls.short)
+        cls.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        cls.splits = load_split_declaration(SPLITS)
+        cut = [row for row in cls.rows if row.date < cls.DECISION_DAY]
+        cls.extended, cls.targets = live.extend_panel(cut, cls.DECISION_DAY, 1, cls.pit)
+        cls.got = live.distribution_forecasts(cls.extended, 1, cls.registry, cls.splits)
+        final = _script("final_test_preregistration")
+        argv = [str(cls.short) if part == "PUB.csv" else part for part in final.CRPS_COMMAND]
+        argv[argv.index("--end") + 1] = cls.targets[0].isoformat()
+        argv[argv.index("--report") + 1] = str(Path(cls.tmp) / "compare.json")
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = cli_main(argv)
+        if code != 0:
+            raise RuntimeError("compare did not run")
+        cls.compare = json.loads((Path(cls.tmp) / "compare.json").read_text(encoding="utf-8"))
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def test_each_side_gives_compares_crps_on_the_target_day(self):
+        from repo_model.metrics import crps_from_quantiles
+
+        last = self.compare["comparison"]["per_origin"][-1]
+        self.assertEqual(last["scored_date"], self.targets[0].isoformat())
+        actual = {row.date: row for row in self.rows}[self.targets[0]].spread_bps
+        for side, key in (("persistence", "loss_a_bps"), ("published", "loss_b_bps")):
+            with self.subTest(side=side):
+                crps = crps_from_quantiles(self.got["levels"], self.got[side], actual)
+                self.assertAlmostEqual(crps, float(last[key]), places=9)
+
+    def test_the_placeholders_spread_never_reaches_the_distribution(self):
+        moved = []
+        for row in self.extended:
+            if row.date >= self.DECISION_DAY:
+                values = dict(row.values)
+                values["sofr"] = float(values["sofr"]) + 0.37
+                row = type(row)(date=row.date, values=values)
+            moved.append(row)
+        again = live.distribution_forecasts(moved, 1, self.registry, self.splits)
+        for side in ("published", "persistence"):
+            with self.subTest(side=side):
+                self.assertEqual(again[side], self.got[side])
+
+    def test_the_distribution_is_the_published_records(self):
+        self.assertEqual(self.got["declaration_sha256"], live.crps_declaration_sha256())
+        self.assertEqual(tuple(self.got["levels"]), live.QUANTILE_LEVELS)
 
 
 if __name__ == "__main__":
