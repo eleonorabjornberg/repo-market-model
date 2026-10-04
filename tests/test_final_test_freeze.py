@@ -44,6 +44,7 @@ CLAUDE.md asks of leakage guards; the mutation was re-run then.)
 from __future__ import annotations
 
 import csv
+import hashlib
 import importlib.util
 import json
 import re
@@ -123,7 +124,10 @@ class FreezeTests(unittest.TestCase):
             fp._top_level_source("src/repo_model/onset.py", ("no_such_definition",))
 
 
-LEAP_CHECKSUM = "5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449"
+#: The leap checksum #216 pinned, before the ruling of 4 October 2026 (16:45) on
+#: #221 added the cells and their roles to the declaration.
+LEAP_CHECKSUM_AT_216 = "5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449"
+LEAP_CHECKSUM = "PENDING"
 PUBLISHED_CRPS = REPO / "docs" / "runs" / "compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 
 
@@ -143,9 +147,17 @@ class CrpsFreezeTests(unittest.TestCase):
     def test_the_crps_checksum_is_the_pinned_one(self):
         self.assertEqual(fp.crps_declaration_checksum(), _pinned("CRPS declaration checksum"))
 
-    def test_the_leap_checksum_is_unchanged(self):
+    def test_the_leap_checksum_is_the_regenerated_one(self):
         self.assertEqual(_pinned("Declaration checksum"), LEAP_CHECKSUM)
         self.assertEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
+
+    def test_only_the_cells_moved_the_leap_checksum(self):
+        """Without the cells, the leap declaration is byte-for-byte the one pinned at #216."""
+
+        frozen = fp.declaration()
+        self.assertEqual(frozen.pop("cells"), fp.cells())
+        text = json.dumps(frozen, sort_keys=True, separators=(",", ":"))
+        self.assertEqual(hashlib.sha256(text.encode("utf-8")).hexdigest(), LEAP_CHECKSUM_AT_216)
 
     def test_the_distribution_is_the_published_one(self):
         """Both sides, the fold grid and the decision time, exactly as #169 published them."""
@@ -185,7 +197,8 @@ class CrpsFreezeTests(unittest.TestCase):
         self.assertEqual(
             fp.crps_declaration()["labels"],
             {"pass": "mean difference > 0 and 90% lower bound > 0",
-             "not distinguishable": "not a pass, and the 90% interval contains 0",
+             "not distinguishable": "not a pass and not worse: the 90% interval contains 0, "
+                                    "or lies above 0 around a mean that is not above 0",
              "worse": "the 90% upper bound is below 0"},
         )
 
@@ -261,6 +274,63 @@ class CrpsFreezeTests(unittest.TestCase):
                     if path == "src/repo_model/ml.py":
                         # ml.py holds the leap test's model too; an edit outside it leaves it.
                         self.assertEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
+
+
+class PrimaryCellTests(unittest.TestCase):
+    """The CRPS cell at h = 1 is the one primary cell (ruling of 4 October 2026 on #221, 16:45).
+
+    Every leap and threshold cell, and CRPS at horizons 2 to 5, is reported only.
+    Both checksums cover the cells and their roles.
+    """
+
+    def test_the_crps_cell_at_h1_is_the_only_primary_cell(self):
+        cells = fp.cells()
+        self.assertEqual(cells["primary"], fp.PRIMARY_CELL)
+        self.assertEqual([name for name, role in cells["roles"].items() if role == "primary"],
+                         [fp.PRIMARY_CELL])
+        self.assertEqual(fp.PRIMARY_CELL, "crps, h = 1")
+        frozen = fp.crps_declaration()
+        self.assertEqual(frozen["horizon"], 1)
+        self.assertEqual((frozen["window"]["first"], frozen["window"]["last"]),
+                         ("2026-01-01", "2026-09-03"))
+        self.assertEqual(frozen["model_a"], {"model": "persistence", "features": ["spread_bps"]})
+        self.assertEqual(frozen["model_b"]["calibration"], "conformal_pid_nested")
+
+    def test_every_leap_and_threshold_cell_is_reported_only(self):
+        roles = fp.cells()["roles"]
+        for name in ("crps, h = 2 to 5", "plain leap, h = 1", "plain leap, h = 2 to 5",
+                     "leap onset", "pressure leap", "+5 bp", "+10 bp"):
+            with self.subTest(cell=name):
+                self.assertEqual(roles[name], "reported only")
+
+    def test_both_declarations_carry_the_cells(self):
+        self.assertEqual(fp.declaration()["cells"], fp.cells())
+        self.assertEqual(fp.crps_declaration()["cells"], fp.cells())
+
+    def test_a_changed_role_moves_both_checksums(self):
+        leap, crps = fp.declaration_checksum(), fp.crps_declaration_checksum()
+        moved = {**fp.CELLS, "plain leap, h = 1": "primary"}
+        with mock.patch.object(fp, "CELLS", moved):
+            self.assertNotEqual(fp.declaration_checksum(), leap)
+            self.assertNotEqual(fp.crps_declaration_checksum(), crps)
+        with mock.patch.object(fp, "PRIMARY_CELL", "plain leap, h = 1"):
+            self.assertNotEqual(fp.declaration_checksum(), leap)
+            self.assertNotEqual(fp.crps_declaration_checksum(), crps)
+
+    def test_the_claim_is_declared_and_recorded(self):
+        claim = ("the published model's one-day-ahead forecast of the full distribution of "
+                 "SOFR \u2212 IORB was more accurate than as-of persistence over January to "
+                 "September 2026")
+        self.assertEqual(fp.CRPS_CLAIM, claim)
+        self.assertEqual(fp.crps_declaration()["claim"], claim)
+        record = " ".join(RECORD.read_text(encoding="utf-8").split())
+        self.assertIn(claim, record)
+        self.assertNotIn("warns of stress", claim)
+
+    def test_the_record_names_the_primary_cell(self):
+        self.assertEqual(_pinned("Primary cell"), fp.PRIMARY_CELL)
+        text = RECORD.read_text(encoding="utf-8")
+        self.assertIn("## Amendment, 4 October 2026: the full-range test is the primary cell", text)
 
 
 class WindowDaysTests(unittest.TestCase):
@@ -366,6 +436,8 @@ class CrpsCellTests(unittest.TestCase):
         self.assertGreater(cell["interval"]["lower"], 0.0)
         self.assertEqual(fp.crps_verdict(cell), "pass")
         self.assertEqual(cell["verdict"], "pass")
+        self.assertEqual(cell["result"], "pass")
+        self.assertEqual((cell["cell"], cell["horizon"]), (fp.PRIMARY_CELL, 1))
         # The block-10 sensitivity interval is reported beside it and decides nothing.
         sensitivity = cell["sensitivity_interval"]
         self.assertEqual((sensitivity["block_length"], sensitivity["seed"], sensitivity["decides"]),
@@ -399,11 +471,16 @@ class CrpsCellTests(unittest.TestCase):
             (-0.2, -0.4, 0.0, "not distinguishable"),
             (-0.2, -0.4, -0.01, "worse"),
             (0.2, 0.01, 0.4, "pass"),
+            # The edge case (ruling of 4 October 16:45 on #221): an interval above 0
+            # around a mean that is not above 0 fails, labelled "not distinguishable".
+            (0.0, 0.01, 0.4, "not distinguishable"),
+            (-0.1, 0.01, 0.4, "not distinguishable"),
         )
         for mean, lower, upper, label in cases:
             cell = {"mean_difference_bps": mean, "interval": {"lower": lower, "upper": upper}}
             with self.subTest(mean=mean, lower=lower, upper=upper):
                 self.assertEqual(fp.crps_verdict(cell), label)
+                self.assertEqual(fp.crps_result(label), "pass" if label == "pass" else "fail")
 
     def test_a_record_that_is_not_the_frozen_run_is_refused(self):
         days = self._days()
