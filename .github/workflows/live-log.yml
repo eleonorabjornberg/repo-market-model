@@ -1,0 +1,178 @@
+name: live-log
+
+# The live record (#215, Eleonora's decision of 3 October 2026). Each business
+# day after the 16:00 ET decision instant, log the published pressure model's
+# forecast, and its baselines', with the published distribution and as-of
+# persistence's (Eleonora's ruling of 4 October 2026), as one frozen JSON
+# record, written before the outcome exists, appended to the `live-log` branch. Never main, never
+# rewritten: `live-log` is protected by repository ruleset 24422476 (no
+# deletion, no non-fast-forward push).
+#
+# The code that makes the record is pinned (`scripts/live_record.py pin`): this
+# file runs from main, and the record is made from a worktree at the pinned
+# SHA, which changes only through a dated version-bump record.
+#
+# No third-party action is used: Python 3.11 comes from the runner's own tool
+# cache, and git and gh are the runner's. So there is no action to pin.
+
+on:
+  schedule:
+    # 21:30 UTC is 17:30 EDT and 16:30 EST: after the decision instant either way.
+    - cron: "30 21 * * 1-5"
+  workflow_dispatch:
+
+# contents: write only to push to live-log; issues: write for the digest and
+# failure issues. Eleonora's decision of 3 October 2026 (#215).
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: live-log
+  cancel-in-progress: false
+
+jobs:
+  log:
+    name: log the day's forecast
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      # One OpenMP thread: the gbm's numbers do not depend on it, and on a
+      # shared runner several threads per fit only slow the nested-PID replay.
+      OMP_NUM_THREADS: "1"
+    steps:
+      - name: Python 3.11 from the runner's tool cache
+        id: python
+        run: |
+          base=$(ls -d /opt/hostedtoolcache/Python/3.11.*/x64 | sort -V | tail -1)
+          test -x "$base/bin/python3"
+          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+          echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
+
+      - name: Check out main and the pinned code
+        id: checkout
+        run: |
+          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
+          pin=$(cd main && PYTHONPATH=src "$PY" -B scripts/live_record.py pin --ref origin/main)
+          git -C main worktree add --quiet --detach ../pinned "$pin"
+          echo "PIN=$pin" >> "$GITHUB_ENV"
+
+      - name: Install the ml extra at the versions CI pins
+        id: install
+        run: |
+          "$PY" -m venv venv
+          venv/bin/python -m pip install --quiet "./pinned[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"
+          venv/bin/python -m pip freeze | grep -iE '^(numpy|scikit-learn)=='
+
+      - name: Check out the live-log branch
+        id: branch
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" live-log >/dev/null; then
+            git clone --quiet --branch live-log --single-branch "$url" live-log
+          else
+            git init --quiet -b live-log live-log
+            git -C live-log remote add origin "$url"
+          fi
+          missed=$(cd pinned && PYTHONPATH=src "$PY" -B scripts/live_record.py missed --live-dir ../live-log --date "$DAY")
+          echo "MISSED=$missed" >> "$GITHUB_ENV"
+          if [ "$missed" != '{"missed": []}' ]; then echo "MISSED_ANY=1" >> "$GITHUB_ENV"; fi
+
+      - name: Write the day's record
+        id: record
+        run: |
+          cd pinned
+          PYTHONPATH=src ../venv/bin/python -B scripts/live_record.py run --date "$DAY" \
+            --out-dir ../live-log --work-dir ../work --pinned-sha "$PIN" \
+            --status ../status.json --workflow-run "$RUN_URL"
+
+      - name: Append it to live-log
+        id: push
+        run: |
+          file="live/$DAY.json"
+          cd live-log
+          if [ ! -f "$file" ]; then
+            echo "Not a decision day: nothing to append."
+            exit 0
+          fi
+          git add "$file"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Live record for $DAY (code $PIN)"
+          git push --quiet origin HEAD:refs/heads/live-log
+          echo "SHA256=$(sha256sum "$file" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "WROTE=1" >> "$GITHUB_ENV"
+
+      - name: Post the digest outside the repository
+        id: digest
+        if: env.WROTE == '1'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          test -n "$n"
+          {
+            echo "$DAY: \`live/$DAY.json\`"
+            echo
+            echo "- SHA-256: \`$SHA256\`"
+            echo "- commit on live-log: $COMMIT"
+            echo "- code: $PIN"
+            echo "- run: $RUN_URL"
+          } > digest.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
+
+      - name: Report missed days
+        if: always() && env.MISSED_ANY == '1'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
+          if [ -z "$n" ]; then
+            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
+              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
+              -f 'labels[]=finding' -q .number)
+          fi
+          echo "Missed: decision days with no record, before $DAY: $MISSED. They stay missing (#215). Run: $RUN_URL" > missed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@missed.md >/dev/null
+
+      - name: Open or update the failed-runs issue
+        if: failure()
+        env:
+          OUTCOMES: >-
+            python=${{ steps.python.outcome }}
+            checkout=${{ steps.checkout.outcome }}
+            install=${{ steps.install.outcome }}
+            branch=${{ steps.branch.outcome }}
+            record=${{ steps.record.outcome }}
+            push=${{ steps.push.outcome }}
+            digest=${{ steps.digest.outcome }}
+        run: |
+          step=$(echo "$OUTCOMES" | tr ' ' '\n' | grep '=failure' | head -1 | cut -d= -f1)
+          if [ "$step" = "record" ] && [ -f status.json ]; then
+            step="record ($(sed -E 's/.*"step": "([^"]*)".*/\1/' status.json))"
+          fi
+          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
+          if [ -z "$n" ]; then
+            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
+              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
+              -f 'labels[]=finding' -q .number)
+          fi
+          echo "Failed: $DAY, at step ${step:-unknown}. No record was appended for the day unless the digest issue shows one. Run: $RUN_URL" > failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@failed.md >/dev/null
+
+      - name: Say a run succeeded after a failure
+        if: success() && env.WROTE == '1'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
+          if [ -z "$n" ]; then exit 0; fi
+          last=$(gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" -q '.[-1].body' | tail -1)
+          case "$last" in
+            Failed:*|Missed:*)
+              echo "Succeeded: $DAY was logged after the failure above (commit $COMMIT on live-log). Run: $RUN_URL" > ok.md
+              gh api "repos/$REPO/issues/$n/comments" -F body=@ok.md >/dev/null ;;
+          esac
