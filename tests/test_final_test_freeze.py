@@ -398,6 +398,17 @@ def _synthetic_record(days, differences, **changes):
     return record
 
 
+def _locked_lockbox(scratch):
+    """The tracked declaration with every tier locked, as it stood before #151 opened one."""
+
+    path = Path(scratch) / "locked.json"
+    document = json.loads((REPO / "metadata" / "lockbox.json").read_text(encoding="utf-8"))
+    for tier in document["tiers"]:
+        tier["opened"] = None
+    path.write_text(json.dumps(document), encoding="utf-8")
+    return path
+
+
 def _opened_lockbox(scratch):
     path = Path(scratch) / "lockbox.json"
     document = json.loads((REPO / "metadata" / "lockbox.json").read_text(encoding="utf-8"))
@@ -422,10 +433,14 @@ class CrpsCellTests(unittest.TestCase):
         return days
 
     def test_the_cell_refuses_while_the_near_blind_tier_is_locked(self):
+        """Under the declaration as it stood before #151 opened the tier."""
+
         days = self._days()
         record = _synthetic_record(self.PRE + days, [0.0] * (2 + len(days)))
-        with self.assertRaises(LookAheadError):
-            fp.crps_cell(record)
+        with tempfile.TemporaryDirectory() as scratch, \
+                mock.patch.object(fp.lockbox, "DEFAULT_LOCKBOX", _locked_lockbox(scratch)):
+            with self.assertRaises(LookAheadError):
+                fp.crps_cell(record)
 
     def test_the_cell_scores_only_the_window_and_a_clear_gain_passes(self):
         days = self._days()

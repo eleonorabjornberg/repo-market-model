@@ -198,11 +198,10 @@ python3 scripts/reproduce_milestone_a.py
 ```
 
 It exits 0 only if every figure the record publishes is re-derived exactly, and
-otherwise names each one that moved. **While the near-blind tier is locked it exits 2 after
-the second step**: the record was scored through 2026-09-03, inside the tier, and the
-script refuses to re-score it (`LockedRecord`, naming the tier). The panel still rebuilds
-and verifies. The day the tier is opened in `metadata/lockbox.json`, all three steps run
-again. It writes nothing into the checkout.
+otherwise names each one that moved. The record was scored through 2026-09-03, inside the
+near-blind tier. While that tier was locked the script exited 2 after the second step
+(`LockedRecord`, naming the tier); #151 opened it in `metadata/lockbox.json`, so all three
+steps run again. It writes nothing into the checkout.
 `tests/test_generated_results.py` runs the same function, so the suite goes red the
 day a change to the scoring path moves a published figure. The three steps it runs
 are the published commands, and can be typed by hand:
@@ -227,9 +226,9 @@ PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
   --report /tmp/persistence_funding.json
 ```
 
-The third command scores only through `--end`, which a run on this panel needs while the
-locked tiers are locked: without it the run reaches 2026-01-01 and exits 2 naming the
-near-blind tier. With it, it is the record's declaration scored through 2025, which is not
+The third command scores only through `--end`. While the near-blind tier was locked a run
+on this panel needed it: without it the run reached 2026-01-01 and exited 2 naming the
+tier. With it, it is the record's declaration scored through 2025, which is not
 the published record, and the record states `declaration.end`.
 
 The command names **no columns**, and that is load-bearing. The default is every
