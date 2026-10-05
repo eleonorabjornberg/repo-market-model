@@ -25,6 +25,8 @@ from repo_model.data import exceeds_bp
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
 
+from lockbox_support import PRE_OPENING_LOCKBOX
+
 ROOT = Path(__file__).resolve().parents[1]
 END = date(2025, 12, 31)
 LOCKED = date(2026, 1, 5)
@@ -82,15 +84,18 @@ class AtRiskByStateTests(unittest.TestCase):
 
     # -- the lockbox ---------------------------------------------------------
 
+    # Under the declaration as it stood before #151 opened the near-blind tier.
+
     def test_main_refuses_an_end_in_the_locked_tier_before_anything_is_built(self):
-        with mock.patch.object(self.pm, "load", side_effect=AssertionError("built")):
+        with mock.patch.object(self.pm, "load", side_effect=AssertionError("built")), \
+                mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX):
             with self.assertRaisesRegex(LookAheadError, r"^at_risk_by_state: scored day 2026-01-05"):
                 self.table.main(["--end", LOCKED.isoformat()])
 
     def test_at_risk_days_refuses_a_locked_scored_day(self):
         locked = [row.date for row in self.rows if END < row.date <= LOCKED]
         self.assertTrue(locked)
-        with self.assertRaises(LookAheadError):
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX), self.assertRaises(LookAheadError):
             self.table.at_risk_days(self.rows, self.scored + locked, self.declaration)
 
     def test_no_day_is_locked(self):

@@ -258,6 +258,7 @@ from test_cli_eval import (
 )
 from test_contract import CONFORMANCE_REGRESSORS, ForecastInterfaceConformance
 from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
+from lockbox_support import PRE_OPENING_LOCKBOX
 
 #: The variable a job that exists to exercise the extra sets. See the module
 #: docstring: it is the only way this process can tell "no extra installed, and
@@ -10046,7 +10047,8 @@ class CalibrationRediagnosisScriptTests(unittest.TestCase):
     methods are scored on the same days.
     """
 
-    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    #: The tracked declaration as it stood before #151 opened the near-blind tier.
+    TRACKED_LOCKBOX = PRE_OPENING_LOCKBOX
     SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "calibration_rediagnosis.py"
 
     def setUp(self):
@@ -10108,7 +10110,8 @@ class PidConstantSelectionScriptTests(unittest.TestCase):
     refit block of the grid, and the three methods are scored on the same days.
     """
 
-    TRACKED_LOCKBOX = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
+    #: The tracked declaration as it stood before #151 opened the near-blind tier.
+    TRACKED_LOCKBOX = PRE_OPENING_LOCKBOX
     SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 
     def setUp(self):

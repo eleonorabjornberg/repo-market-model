@@ -32,6 +32,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model import data, evaluation_splits, quarter_peaks  # noqa: E402
 from repo_model.contract import CALENDAR_FEATURES  # noqa: E402
+from lockbox_support import PRE_OPENING_LOCKBOX  # noqa: E402
 from repo_model.data import (  # noqa: E402
     OPT_IN_COLUMNS,
     PANEL_COLUMNS,
@@ -348,7 +349,9 @@ class QuarterPeakTableTests(unittest.TestCase):
             end=date(2025, 12, 31), taus=(5.0, 10.0),
         )
         self.assertEqual(table[0]["window_days_after_end"], 2)
-        with self.assertRaises(LookAheadError):
+        # Under the declaration as it stood before #151 opened the near-blind tier.
+        with unittest.mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX), \
+                self.assertRaises(LookAheadError):
             quarter_peaks.quarter_peak_table(
                 spreads, forecasts, first=(2025, 4), last=(2025, 4),
                 end=date(2026, 1, 5), taus=(5.0, 10.0),

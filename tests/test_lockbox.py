@@ -400,6 +400,24 @@ class TrackedDeclarationTests(unittest.TestCase):
         self.assertIsNone(tiers[1].opened)
 
 
+class PreOpeningFixtureTests(unittest.TestCase):
+    """`lockbox_support.PRE_OPENING_LOCKBOX` is the tracked declaration with both tiers locked."""
+
+    def test_it_differs_from_the_tracked_file_only_in_opened(self):
+        from lockbox_support import PRE_OPENING_LOCKBOX
+
+        tracked = json.loads(TRACKED.read_text(encoding="utf-8"))
+        fixture = json.loads(PRE_OPENING_LOCKBOX.read_text(encoding="utf-8"))
+        self.assertEqual(fixture["version"], tracked["version"])
+        self.assertEqual(
+            [{k: v for k, v in tier.items() if k != "opened"} for tier in fixture["tiers"]],
+            [{k: v for k, v in tier.items() if k != "opened"} for tier in tracked["tiers"]],
+        )
+        self.assertEqual([tier["opened"] for tier in fixture["tiers"]], [None, None])
+        self.assertEqual([tier.name for tier in lockbox.locked_tiers(PRE_OPENING_LOCKBOX)],
+                         ["near_blind", "blind"])
+
+
 class TrackedGuardTests(unittest.TestCase):
     """Under the tracked declaration a near-blind day scores and a blind-tier day is refused."""
 
