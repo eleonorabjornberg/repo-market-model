@@ -55,3 +55,21 @@ therefore a weak test above +10 bp until the blind tier adds to it.
   aggregates, though no choice was made on them by name.
 - The as-of rule, the benchmarks and the evidence rule are unchanged.
 - The event holdouts (`metadata/events.json`) are unchanged. They lie before both tiers.
+
+## Amendment: the near-blind tier is opened (#151)
+
+**Status: a draft for Eleonora (#151), in force once she merges it.** Drafted by the pull request that closes #151,
+as that directive asks.
+
+- **Opened once, on 2026-10-05, for the final test.** Eleonora gave the go ("GO #151", 4 October 2026, relayed on
+  #151). The run that closes #151 opened the near-blind tier (2026-01-01 to 2026-09-03) in `metadata/lockbox.json`,
+  with that ruling as the reference, and ran the frozen command of `docs/decisions/final-test-preregistration.md`
+  once: the published distribution (#169's gbm with nested conformal PID) against as-of persistence, by CRPS, at
+  h = 1. The test's other cells, for the frozen dynamic logit (#137) and the published distribution at h = 2 to 5,
+  were scored in the same run and are reported only. The record is `docs/runs/final_test_near_blind.json`, published
+  whatever it shows.
+- **The near-blind tier is now ordinary history.** Its days may be scored by any comparison, like every day
+  before 2026-01-01. A comparison that chooses a model on them can no longer claim a held-out test on them.
+- **The blind tier stays locked.** Every day after 2026-09-03 is still held back from every comparison. It becomes
+  the next test. The live record (#215) logs blind-tier days; scoring them waits on its own drafted amendment
+  (`docs/decisions/drafts/lockbox-live-record.md`), and this amendment opens none of them.
