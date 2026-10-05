@@ -5,7 +5,7 @@
       "number": 1
     }
   ],
-  "commit": "512c068",
+  "commit": "6f05e3e",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -13,7 +13,7 @@
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
   },
-  "generated_at": "2026-10-02",
+  "generated_at": "2026-10-05",
   "next": {
     "exit": "stable posterior intervals for aggregate effective liquidity, with clear sensitivity to unobserved bank-level reserve distribution",
     "name": "Latent reserves and payment needs",
@@ -37,6 +37,7 @@
     "exceedance_gbm_conformal_pid_nested_funding.json",
     "exceedance_gbm_cross_conformal.json",
     "exceedance_persistence_logistic.json",
+    "final_test_near_blind.json",
     "funding_panel.manifest.json",
     "persistence_funding.json",
     "pressure_model_v1_h1.json",
