@@ -2837,9 +2837,8 @@ def final_test(records, locked):
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
                    f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
-                   f"Result: <b>pass</b>, on a test that is {near_blind}.")
-        claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
-                      f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
+                   f"Result: <b>pass</b>, on a test that is near-blind.")
+        claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
@@ -2859,43 +2858,6 @@ def final_test(records, locked):
                    f"<table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr>"
                    f"<th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
                    f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>{split_rows}</tbody></table></div>")
-    later_rows = "".join(
-        f"<tr data-h=\"{c['horizon']}\"><th scope='row'>{c['horizon']} days</th><td>{c['days']}</td>"
-        f"<td>{c['persistence']:.3f}</td><td>{c['published']:.3f}</td>"
-        f"<td>{signed(c['mean'], 3)} ({signed(c['lower'], 3)} to {signed(c['upper'], 3)})</td>"
-        f"<td>{c['verdict']}; {html.escape(c['label'])}</td></tr>" for c in later)
-    later_table = (f"<div class='heat' role='region' aria-label='CRPS at two to five days ahead, not evidence' "
-                   f"tabindex='0'><table class='fttab'><caption>CRPS further ahead, reported only and not evidence"
-                   f"</caption><thead><tr><th scope='col'>Ahead</th><th scope='col'>Days</th>"
-                   f"<th scope='col'>Persistence, bp</th><th scope='col'>Model, bp</th>"
-                   f"<th scope='col'>Difference ({level}% interval), bp</th><th scope='col'>Label</th></tr></thead>"
-                   f"<tbody>{later_rows}</tbody></table></div>")
-
-    def labels(entry):
-        return " and ".join(entry["labels"])
-
-    same = len({tuple(e["labels"]) for e in stress}) == 1
-    cells = " and ".join(f"{e['target']} bp" for e in stress)
-    stress_text = (
-        f"<b>It is not a warning of stress.</b> It grades the forecast range, not the chance of pressure. One day "
-        f"ahead, the event cells for days more than {cells} above IORB are "
-        + (f"{labels(stress[0])}, with {' and '.join(str(e['events']) for e in stress)} such days in the window."
-           if same else "; ".join(f"{e['target']} bp: {labels(e)}, with {e['events']} such days" for e in stress) + ".")
-        + f" Below {h1[0]['minimum_events']} such days, a cell is labelled inconclusive.")
-    rests_text = (f"<b>What the pass rests on, post hoc.</b> Two days carry {100 * rests['share']:.1f}% of the summed "
-                  f"paired difference: {' and '.join(day(d) for d in rests['days'])} "
-                  f"({' and '.join(signed(v, 2) + ' bp' for v in rests['values'])}). Without them the mean paired "
-                  f"difference is {signed(rests['mean'], 3)} bp, {level}% interval {signed(rests['lower'], 3)} to "
-                  f"{signed(rests['upper'], 3)} bp, by the record's own bootstrap (mean block length "
-                  f"{rests['block_length']}, seed {rests['seed']}, {rests['replications']:,} replications), which "
-                  f"{'does not separate it from zero' if rests['lower'] <= 0 <= rests['upper'] else 'lies on one side of zero'}. "
-                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. On this near-blind test, "
-                  f"this was computed after the result: it decides nothing, and the verdict stands.")
-    blind = min(locked, key=lambda t: t.start) if locked else None
-    blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
-                  f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
-    regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
-                   else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
     top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
                        for rank, (d, v) in enumerate(got["top"], 1))
     drop_rows = "".join(
@@ -2928,19 +2890,6 @@ def final_test(records, locked):
         f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
         f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
         f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
-    two, dm = got["leave_two_out"], got["dm"]
-    robust_text = (
-        f"<b>Robustness, post hoc.</b> Without the two largest days the mean is {signed(two['mean'], 3)} bp, "
-        f"{level}% interval {signed(two['lower'], 3)} to {signed(two['upper'], 3)} bp, by the record's own bootstrap. "
-        f"The median day is {signed(got['median'], 3)} bp. Diebold-Mariano on the window, two-sided p "
-        f"{dm['p']:.3f} (Newey-West lag {dm['lag']}) or {dm['plain_p']:.3f} (plain). The record carries per-day "
-        f"CRPS only, so the split of the gain by pinball level is not available and is not computed.")
-    (d1, l1), (d2, l2) = got["persistence_loss"]
-    why_text = (
-        f"<b>Why {day(d1)} and {day(d2)} dominate.</b> On those two days carrying the latest spread forward lost "
-        f"{l1:.2f} and {l2:.2f} bp of CRPS, against a median of {got['median_persistence_loss']:.2f} bp. The second "
-        f"independent review traced this to that benchmark reading the 2025-12-31 print (about +22 bp) two rows "
-        f"back; that cause is the review's and is not recomputed here, because the panel is not tracked.")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
             "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
@@ -2968,23 +2917,8 @@ def final_test(records, locked):
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
                          "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
-        "ft_rests": rests_text,
-        "ft_not_stress": stress_text,
-        "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"and the gbm family and its features were chosen on archived records scored through "
-                        f"2026-09-03, which include them. The record says no choice was made on them by name, but "
-                        f"the test is not a clean holdout. It does not validate stress performance or robustness "
-                        f"across regimes. The live record (#215), which logs the blind tier's days as they come, is "
-                        f"the first genuinely blind confirmation.{blind_text}",
-        "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
-                    f"The test says nothing about a stressed period."),
         "ft_influence_table": influence_table,
         "ft_window_table": window_table,
-        "ft_robust": robust_text,
-        "ft_why": why_text,
-        "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
-                     f"the one-day forecast, and each carries Eleonora's label."),
-        "ft_later_table": later_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
                      f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
                      f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),

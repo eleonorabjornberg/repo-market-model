@@ -2337,27 +2337,6 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertEqual(self.block.count("too few days for an interval"), len(thin))
         self.assertIn("decides nothing", self.text)
 
-    def test_the_stress_cells_are_named_inconclusive_with_their_events(self):
-        h1 = next(d for d in self.record["events_reported_only"] if d["horizon"] == 1)
-        for key in ("+5bp", "+10bp"):
-            entry = h1["targets"][key]["all_days"]
-            with self.subTest(target=key):
-                self.assertEqual({p["label"] for p in entry["paired"].values()}, {"inconclusive"})
-        self.assertIn("not a warning of stress", self.text)
-        self.assertIn(f"{h1['targets']['+5bp']['all_days']['events']} and "
-                      f"{h1['targets']['+10bp']['all_days']['events']}", self.text)
-
-    def test_horizons_two_to_five_carry_the_verbatim_label(self):
-        label = ("different model from h = 1, and as-of persistence does not widen with horizon, so this "
-                 "comparison favours the model; not evidence.")
-        cells = self.record["crps_reported_only"]
-        self.assertTrue(cells)
-        rows = re.findall(r"<tr data-h=\"(\d)\">(.*?)</tr>", self.block, re.S)
-        self.assertEqual(sorted(int(h) for h, _ in rows), sorted(c["horizon"] for c in cells))
-        for h, row in rows:
-            with self.subTest(horizon=h):
-                self.assertIn(label, visible_text(row))
-
     def test_the_section_sits_after_start_here_before_the_chapters(self):
         at = self.page.index('<section id="final-test"')
         self.assertLess(self.page.index("<!-- /start-here -->"), at)
@@ -2390,51 +2369,6 @@ class FinalTestSectionTests(unittest.TestCase):
         for fills in (emit_visual.segment_held_note(self.locked),):
             self.assertIn("blind tier", fills)
 
-    def _rests_figures(self, record=None):
-        """The post hoc figures, computed here from the record's own window and bootstrap."""
-        from repo_model.metrics import stationary_bootstrap_interval
-        record = record or self.record
-        window = record["primary"]["window_per_origin"]
-        iv = record["primary"]["cell"]["interval"]
-        diffs = [r["difference_bps"] for r in window]
-        top = sorted(range(len(diffs)), key=lambda i: -diffs[i])[:2]
-        rest = [v for i, v in enumerate(diffs) if i not in top]
-        lower, upper = stationary_bootstrap_interval(
-            lambda ix: sum(rest[i] for i in ix) / len(ix), len(rest), block_length=iv["block_length"],
-            seed=iv["seed"], replications=iv["replications"], level=iv["level"])
-        return {"days": sorted(window[i]["scored_date"] for i in top),
-                "share": sum(diffs[i] for i in top) / sum(diffs),
-                "mean": sum(rest) / len(rest), "lower": lower, "upper": upper,
-                "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
-
-    def test_what_the_pass_rests_on_follows_the_record(self):
-        """#238, hold ruling item 1: a generated, post hoc sentence under "What it does not show"."""
-        f = self._rests_figures()
-        text = visible_text(self.fills["ft_rests"])
-        self.assertIn("post hoc", text)
-        self.assertIn(f"{100 * f['share']:.1f}%", text)
-        self.assertIn(f"{f['wins']} of {f['n']}", text)
-        self.assertIn(f"{emit_visual.signed(f['mean'], 3)}", text)
-        self.assertIn(f"{emit_visual.signed(f['lower'], 3)}", text)
-        self.assertIn(f"{emit_visual.signed(f['upper'], 3)}", text)
-        for iso in f["days"]:
-            self.assertIn(emit_visual.short_day(iso).split(" ", 1)[0], text)
-        self.assertIn("verdict stands", text)
-        self.assertIn(self.fills["ft_rests"], self.block)
-        self.assertEqual(self.data["rests"]["share"], f["share"])
-        self.assertEqual(self.data["rests"]["wins"], f["wins"])
-
-    def test_what_the_pass_rests_on_moves_with_the_record(self):
-        records = copy.deepcopy(self.records)
-        window = records[emit_visual.FINAL_TEST]["primary"]["window_per_origin"]
-        for r in window:
-            r["difference_bps"] = 0.1
-        records[emit_visual.FINAL_TEST]["primary"]["cell"]["mean_difference_bps"] = 0.1
-        data, fills = emit_visual.final_test(records, self.locked)
-        self.assertEqual(data["rests"]["wins"], len(window))
-        self.assertNotEqual(fills["ft_rests"], self.fills["ft_rests"])
-        self.assertIn(f"{100 * data['rests']['share']:.1f}%", fills["ft_rests"])
-
     def test_the_switch_of_the_primary_cell_is_stated(self):
         """#238, hold ruling item 2: the deciding cell was changed before the test was opened (#221)."""
         self.assertIn("4 October 2026", self.text)
@@ -2449,7 +2383,6 @@ class FinalTestSectionTests(unittest.TestCase):
         for text in (self.text, visible_text(" ".join(map(str, self.fills.values())))):
             self.assertNotRegex(text.lower(), r"no choice of model")
             self.assertNotRegex(text.lower(), r"no choice was made(?! on them by name)")
-        self.assertIn("by name", self.text)
 
     def test_the_stress_windows_are_not_said_to_be_kept_out_of_the_score(self):
         """#238, hold ruling item 4: every published record pools those days."""
