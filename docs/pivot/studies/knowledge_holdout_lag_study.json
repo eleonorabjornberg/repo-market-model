@@ -1,0 +1,5174 @@
+{
+ "decides_nothing": "the live model keeps the 5-day H.4.1 lag; no published record or headline moves",
+ "h41_lag_pricing": {
+  "declared_lag_calendar_days": 5,
+  "first_scored": "2018-06-29",
+  "information": {
+   "decision_instant": "decision_time on the panel day before the scored day",
+   "features": {
+    "reserve_balances": {
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "hours_observable": {
+      "max": 71.5,
+      "min": 23.5
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "4": 233,
+      "5": 1334,
+      "6": 306
+     }
+    },
+    "sofr_p25": {
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "hours_observable": {
+      "max": 1.0,
+      "min": 1.0
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "sofr_p75": {
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "hours_observable": {
+      "max": 1.0,
+      "min": 1.0
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "sofr_volume": {
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "hours_observable": {
+      "max": 1.0,
+      "min": 1.0
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "spread_bps": {
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "hours_observable": {
+      "max": 1.0,
+      "min": 1.0
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "tbill_13w": {
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "hours_observable": {
+      "max": 95.5,
+      "min": 23.5
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "tbill_4w": {
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "hours_observable": {
+      "max": 95.5,
+      "min": 23.5
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "2": 1873
+     }
+    },
+    "tga": {
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "hours_observable": {
+      "max": 71.5,
+      "min": 23.5
+     },
+     "kind": "observed",
+     "rows_before_scored": {
+      "4": 233,
+      "5": 1334,
+      "6": 306
+     }
+    },
+    "treasury_settlement": {
+     "fields": [
+      "treasury_auctions.treasury_settlement"
+     ],
+     "hours_observable": {
+      "max": 1.0,
+      "min": 1.0
+     },
+     "kind": "scheduled",
+     "rows_before_scored": {
+      "0": 1873
+     }
+    }
+   },
+   "rule": "as_of"
+  },
+  "last_scored": "2025-12-31",
+  "model": "uncalibrated gbm on the nine published funding features",
+  "scored_days": 1873,
+  "shorter": {
+   "1": {
+    "comparison": {
+     "by_tau": {
+      "10": {
+       "benchmark_average_precision": 0.24762000488271252,
+       "benchmark_brier": 0.029037215071722633,
+       "model_brier": 0.030036344068236076,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -0.0018412857624478932,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 865600301,
+         "upper": -0.0002343286653982999
+        },
+        "mean": -0.0009991289965134431,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.0008174571604339548,
+            "upper": 0.00290009860957239
+           },
+           "mean": 0.0008302775850079295
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -0.001578627733445114,
+            "upper": -0.0001636366389884333
+           },
+           "mean": -0.0008004152881675848
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.004118128845267735,
+            "upper": 0.00034678895998336445
+           },
+           "mean": -0.0017457258401369757
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.0193389163096841,
+            "upper": 0.00026915789677147686
+           },
+           "mean": -0.007548006553142648
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -0.0020298584157171953,
+            "upper": -0.0002760835423602847
+           },
+           "mean": -0.0010948893104151293
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -0.000931025154329839,
+            "upper": 0.0012305262648440321
+           },
+           "mean": 9.291908652227443e-05
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.00907906531201761,
+            "upper": -0.0011362401172304282
+           },
+           "mean": -0.004866116875848012
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -1.1389161658440206e-06,
+            "upper": 0.0003256095993321526
+           },
+           "mean": 0.00012590381840471869
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -7.738357769048477e-07,
+            "upper": 3.5089846776618453e-06
+           },
+           "mean": 1.1468298124177593e-06
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -0.00028325984012510876,
+            "upper": -1.8106454728315846e-06
+           },
+           "mean": -0.00012536100801707617
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -0.0009425828792292532,
+            "upper": 0.0005432543886166985
+           },
+           "mean": -0.0001915430407308642
+          }
+         }
+        }
+       },
+       "tau_bp": 10.0
+      },
+      "20": {
+       "benchmark_average_precision": 0.041555421812781525,
+       "benchmark_brier": 0.012373236926172596,
+       "model_brier": 0.01217493454966262,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -3.8354800266036495e-05,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 692590067,
+         "upper": 0.00046707513050411235
+        },
+        "mean": 0.00019830237650997687,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.00023797530228506192,
+            "upper": 0.004202474164652571
+           },
+           "mean": 0.0015081023899001541
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -3.2459602894607334e-05,
+            "upper": 0.0003339904709360273
+           },
+           "mean": 0.00014023649583813215
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.00010099197780109738,
+            "upper": 0.00016620198970483763
+           },
+           "mean": 2.9000850839876195e-05
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.0030063386004179696,
+            "upper": 2.7045374871543684e-05
+           },
+           "mean": -0.001027371501562454
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -8.492860994835011e-05,
+            "upper": 0.00046080022310687415
+           },
+           "mean": 0.0001699104769952152
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": 6.175046515588192e-05,
+            "upper": 0.001224970309931103
+           },
+           "mean": 0.0005220828464719349
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.0005265019956110443,
+            "upper": 0.0017159605582346353
+           },
+           "mean": 0.0005221239772610644
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -0.00010938537921456394,
+            "upper": 2.2338615608837986e-06
+           },
+           "mean": -3.7058052721509e-05
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -8.441638809175914e-07,
+            "upper": 1.3455287211391776e-06
+           },
+           "mean": 2.503504065514845e-07
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -5.235423159443051e-06,
+            "upper": 5.204779965126483e-05
+           },
+           "mean": 1.5504304129418314e-05
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -3.73763082495255e-05,
+            "upper": 0.0017597410540542418
+           },
+           "mean": 0.0007263537864528827
+          }
+         }
+        }
+       },
+       "tau_bp": 20.0
+      },
+      "5": {
+       "benchmark_average_precision": 0.48491086767000063,
+       "benchmark_brier": 0.052073194082631856,
+       "model_brier": 0.052414041312192794,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -0.0014695024290237542,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 52425889,
+         "upper": 0.0008513813067058857
+        },
+        "mean": -0.000340847229560938,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.0015633745032091087,
+            "upper": 0.0057795028009368435
+           },
+           "mean": 0.0021194497358238726
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -0.0016374515037853316,
+            "upper": 0.0006845575812904183
+           },
+           "mean": -0.0004903765677539915
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.009857562559110177,
+            "upper": 0.01627164306991897
+           },
+           "mean": 0.00274103450771131
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.009408878564523155,
+            "upper": 0.002400262372446626
+           },
+           "mean": -0.0031022625101079855
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -0.0018232869062489035,
+            "upper": 0.00025397675951231767
+           },
+           "mean": -0.0007409063607234676
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -0.0036481782385400082,
+            "upper": 0.012843204323269127
+           },
+           "mean": 0.00422141650462124
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.007116186839286558,
+            "upper": 0.003980895567781417
+           },
+           "mean": -0.001675466383098218
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -0.002382654111152529,
+            "upper": 0.0013004461242889405
+           },
+           "mean": -0.0003128067395132829
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -5.587766040592927e-07,
+            "upper": 8.293980976074171e-05
+           },
+           "mean": 2.8117764635598066e-05
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -0.00012994654817535467,
+            "upper": 0.00046261567602627867
+           },
+           "mean": 0.00013410262214406935
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -0.0014646175023670402,
+            "upper": 0.0016969828981090024
+           },
+           "mean": 5.5621609751871324e-05
+          }
+         }
+        }
+       },
+       "tau_bp": 5.0
+      },
+      "50": {
+       "benchmark_average_precision": 0.0015238386934194714,
+       "benchmark_brier": 0.0035525068415103666,
+       "model_brier": 0.0035530957738492677,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -4.620204570591667e-06,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 170630962,
+         "upper": 3.7739443101715576e-06
+        },
+        "mean": -5.889323389011124e-07,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -6.847359502658976e-05,
+            "upper": -4.650487487224863e-06
+           },
+           "mean": -3.1560609086786286e-05
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -1.167698027734796e-06,
+            "upper": 6.470164514610838e-06
+           },
+           "mean": 2.3937183006603434e-06
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -1.589870521829624e-05,
+            "upper": 3.9471996997691465e-06
+           },
+           "mean": -5.244917134058479e-06
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -7.415035076387047e-07,
+            "upper": 6.085290501949352e-06
+           },
+           "mean": 2.5631202984988573e-06
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -5.264515544916485e-06,
+            "upper": 3.8392018508612235e-06
+           },
+           "mean": -7.937399523223444e-07
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -2.5380187827950775e-06,
+            "upper": 6.570318803673766e-06
+           },
+           "mean": 1.7466882592759991e-06
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -2.0157814647372215e-05,
+            "upper": 2.162748667569192e-05
+           },
+           "mean": -2.2740526178900478e-08
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -9.167844971071299e-07,
+            "upper": 2.987772449208585e-06
+           },
+           "mean": 1.0049510566340944e-06
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -7.173586586863969e-07,
+            "upper": 1.0725810739688051e-06
+           },
+           "mean": 1.5391353664110947e-07
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -4.823279881717606e-06,
+            "upper": -1.917507479305187e-06
+           },
+           "mean": -3.3434567880882924e-06
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -5.5575219281032165e-06,
+            "upper": 4.505110102661644e-07
+           },
+           "mean": -2.514250670811037e-06
+          }
+         }
+        }
+       },
+       "tau_bp": 50.0
+      }
+     },
+     "features": [
+      "reserve_balances",
+      "sofr_p25",
+      "sofr_p75",
+      "sofr_volume",
+      "spread_bps",
+      "tbill_13w",
+      "tbill_4w",
+      "tga",
+      "treasury_settlement"
+     ],
+     "model": "gbm_lag_5",
+     "scored_days": 1873,
+     "sign_convention": "difference = brier(gbm_lag_5) - brier(gbm_lag_1) on each scored day; a positive mean means gbm_lag_1 had the lower Brier score, so it beat the benchmark on these days"
+    },
+    "information": {
+     "decision_instant": "decision_time on the panel day before the scored day",
+     "features": {
+      "reserve_balances": {
+       "fields": [
+        "fred_macro_latest_vintage.WRESBAL"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 417,
+        "3": 1456
+       }
+      },
+      "sofr_p25": {
+       "fields": [
+        "nyfed_sofr.SOFR_p25"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "sofr_p75": {
+       "fields": [
+        "nyfed_sofr.SOFR_p75"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "sofr_volume": {
+       "fields": [
+        "nyfed_sofr.SOFR_volume"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "spread_bps": {
+       "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tbill_13w": {
+       "fields": [
+        "treasury_bill_rates.tbill_13w_coupon_equivalent"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tbill_4w": {
+       "fields": [
+        "treasury_bill_rates.tbill_4w_coupon_equivalent"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tga": {
+       "fields": [
+        "fred_macro_latest_vintage.WTREGEN"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 417,
+        "3": 1456
+       }
+      },
+      "treasury_settlement": {
+       "fields": [
+        "treasury_auctions.treasury_settlement"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "scheduled",
+       "rows_before_scored": {
+        "0": 1873
+       }
+      }
+     },
+     "rule": "as_of"
+    },
+    "same_grid": true,
+    "scored_days": 1873
+   },
+   "2": {
+    "comparison": {
+     "by_tau": {
+      "10": {
+       "benchmark_average_precision": 0.24762000488271252,
+       "benchmark_brier": 0.029037215071722633,
+       "model_brier": 0.029713757913180736,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -0.0013599318621551025,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 809161920,
+         "upper": -8.313405822084292e-05
+        },
+        "mean": -0.0006765428414581033,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.0016014617912960586,
+            "upper": 0.002324315957479511
+           },
+           "mean": 0.00032187498960804383
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -0.0008383357512395249,
+            "upper": 4.856153891293199e-05
+           },
+           "mean": -0.0003561894393168002
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.004647251215807378,
+            "upper": -3.8739782405812776e-06
+           },
+           "mean": -0.0020924526586980066
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.01906947899348836,
+            "upper": 3.806889239242668e-05
+           },
+           "mean": -0.007696997778420279
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -0.0014840141548677689,
+            "upper": -0.00012559328641573967
+           },
+           "mean": -0.0007569454231329795
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -0.000802066518436118,
+            "upper": 0.0013114939769681977
+           },
+           "mean": 0.00024036607009085892
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.007024429805608331,
+            "upper": -0.0008377024127102113
+           },
+           "mean": -0.0037049441950761024
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": 3.0002538065355296e-06,
+            "upper": 0.00047014478986104975
+           },
+           "mean": 0.00018364296178100735
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -2.0437131069726864e-07,
+            "upper": 3.602476129193913e-06
+           },
+           "mean": 1.4867743077046507e-06
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -4.309704568528589e-05,
+            "upper": 0.00015130974330284082
+           },
+           "mean": 3.734500532004714e-05
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -0.00042076888420196536,
+            "upper": 0.0009866319200860564
+           },
+           "mean": 0.00026364092041389955
+          }
+         }
+        }
+       },
+       "tau_bp": 10.0
+      },
+      "20": {
+       "benchmark_average_precision": 0.041555421812781525,
+       "benchmark_brier": 0.012373236926172596,
+       "model_brier": 0.012251913548170686,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -9.682144833569606e-05,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 1600280729,
+         "upper": 0.0003632955067076314
+        },
+        "mean": 0.00012132337800191059,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.00020607252545602484,
+            "upper": 0.0038263777461146073
+           },
+           "mean": 0.0014899674038004363
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -9.9969349837981e-05,
+            "upper": 0.00022101561295386415
+           },
+           "mean": 5.567573943883305e-05
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.0001422363853874515,
+            "upper": 4.248299581510937e-06
+           },
+           "mean": -5.4418228588948876e-05
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.0031105716752151953,
+            "upper": -1.1521557317858716e-05
+           },
+           "mean": -0.0010706966530526776
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -0.00013374976255627302,
+            "upper": 0.0003584165852122625
+           },
+           "mean": 9.472465436557606e-05
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -1.3081642832220642e-05,
+            "upper": 0.0011347613882710262
+           },
+           "mean": 0.000424654517747947
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.0007113095684052035,
+            "upper": 0.0015029062751923028
+           },
+           "mean": 0.00033574042593060384
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -5.125642193290581e-05,
+            "upper": 4.693272529850947e-06
+           },
+           "mean": -1.781187562090296e-05
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -3.851106675109863e-07,
+            "upper": 1.5828879263282724e-06
+           },
+           "mean": 5.851227667184821e-07
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -3.65427392627794e-06,
+            "upper": 1.733526930980234e-06
+           },
+           "mean": -1.13413126596385e-06
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -7.652321718525977e-05,
+            "upper": 0.0010612989340588984
+           },
+           "mean": 0.00042430790779645657
+          }
+         }
+        }
+       },
+       "tau_bp": 20.0
+      },
+      "5": {
+       "benchmark_average_precision": 0.48491086767000063,
+       "benchmark_brier": 0.052073194082631856,
+       "model_brier": 0.05205341652117638,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -0.0008840357719065436,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 590313015,
+         "upper": 0.0009473816142239938
+        },
+        "mean": 1.9777561455477932e-05,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -0.001029188466698355,
+            "upper": 0.004690916362400038
+           },
+           "mean": 0.0015962881460745342
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -0.001090475875030068,
+            "upper": 0.0008692096658311863
+           },
+           "mean": -0.00010755409694087588
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -0.013033211905565492,
+            "upper": 0.004120976675815117
+           },
+           "mean": -0.0029851277358950764
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -0.001734681250728814,
+            "upper": 0.0030303300711734442
+           },
+           "mean": 0.0005496358422431733
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -0.000951266930494491,
+            "upper": 0.000546512438145635
+           },
+           "mean": -0.00021593184148710392
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -0.0038907339913208457,
+            "upper": 0.010302332301877935
+           },
+           "mean": 0.00270780134865408
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -0.005253688150442049,
+            "upper": 0.0036461006874080435
+           },
+           "mean": -0.0009433057665493393
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": -0.0004056264122754961,
+            "upper": 0.0016608466747168866
+           },
+           "mean": 0.0005369565365990618
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -3.394474028208776e-08,
+            "upper": 8.181631697877192e-05
+           },
+           "mean": 2.8460101624243683e-05
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -0.00043860877521396794,
+            "upper": -1.4432777800971501e-05
+           },
+           "mean": -0.00021461691963836768
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -5.0652158294102764e-06,
+            "upper": 0.002372787451484469
+           },
+           "mean": 0.0011581245713665437
+          }
+         }
+        }
+       },
+       "tau_bp": 5.0
+      },
+      "50": {
+       "benchmark_average_precision": 0.0015238386934194714,
+       "benchmark_brier": 0.0035525068415103666,
+       "model_brier": 0.0035559365627998054,
+       "paired_brier_difference": {
+        "interval": {
+         "block_length": 2,
+         "level": 0.9,
+         "lower": -7.947602075881555e-06,
+         "method": "stationary_bootstrap",
+         "replications": 2000,
+         "seed": 1210866432,
+         "upper": 7.177757665683118e-07
+        },
+        "mean": -3.4297212894388723e-06,
+        "splits": {
+         "by_day_type": {
+          "month_end": {
+           "count": 158,
+           "interval": {
+            "lower": -6.379675314351561e-05,
+            "upper": -2.0162702840673555e-06
+           },
+           "mean": -2.5917077372311584e-05
+          },
+          "ordinary": {
+           "count": 1595,
+           "interval": {
+            "lower": -5.175027325218973e-06,
+            "upper": 2.499395568449667e-06
+           },
+           "mean": -1.192454176339687e-06
+          },
+          "quarter_end": {
+           "count": 31,
+           "interval": {
+            "lower": -2.8407295858099678e-05,
+            "upper": 3.3270605553997865e-06
+           },
+           "mean": -9.525742822458322e-06
+          },
+          "tax_date": {
+           "count": 89,
+           "interval": {
+            "lower": -5.471447057807407e-06,
+            "upper": 2.5824160609267475e-06
+           },
+           "mean": -1.4798574329556022e-06
+          }
+         },
+         "by_quarter_end_window": {
+          "outside_quarter_end_window": {
+           "count": 1722,
+           "interval": {
+            "lower": -8.59085692492736e-06,
+            "upper": 6.495463441179077e-07
+           },
+           "mean": -3.764243743143301e-06
+          },
+          "quarter_end_window": {
+           "count": 151,
+           "interval": {
+            "lower": -4.857322046898742e-06,
+            "upper": 5.7628947323556525e-06
+           },
+           "mean": 3.851639111024264e-07
+          }
+         },
+         "by_regime": {
+          "2018-19": {
+           "count": 375,
+           "interval": {
+            "lower": -3.850277593015726e-05,
+            "upper": 3.467154769226051e-06
+           },
+           "mean": -1.6493626621124583e-05
+          },
+          "2020": {
+           "count": 251,
+           "interval": {
+            "lower": 1.08499415355608e-06,
+            "upper": 4.690722625438917e-06
+           },
+           "mean": 2.8326548819388684e-06
+          },
+          "2021-23": {
+           "count": 748,
+           "interval": {
+            "lower": -2.996157712819694e-07,
+            "upper": 1.2211789215202886e-06
+           },
+           "mean": 4.7007230423319883e-07
+          },
+          "2024": {
+           "count": 250,
+           "interval": {
+            "lower": -3.6006499050442875e-06,
+            "upper": -7.692686133648747e-07
+           },
+           "mean": -2.1683569393631824e-06
+          },
+          "2025-26": {
+           "count": 249,
+           "interval": {
+            "lower": -5.775553587730411e-06,
+            "upper": -5.468429317596456e-07
+           },
+           "mean": -3.049314121634021e-06
+          }
+         }
+        }
+       },
+       "tau_bp": 50.0
+      }
+     },
+     "features": [
+      "reserve_balances",
+      "sofr_p25",
+      "sofr_p75",
+      "sofr_volume",
+      "spread_bps",
+      "tbill_13w",
+      "tbill_4w",
+      "tga",
+      "treasury_settlement"
+     ],
+     "model": "gbm_lag_5",
+     "scored_days": 1873,
+     "sign_convention": "difference = brier(gbm_lag_5) - brier(gbm_lag_2) on each scored day; a positive mean means gbm_lag_2 had the lower Brier score, so it beat the benchmark on these days"
+    },
+    "information": {
+     "decision_instant": "decision_time on the panel day before the scored day",
+     "features": {
+      "reserve_balances": {
+       "fields": [
+        "fred_macro_latest_vintage.WRESBAL"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 392,
+        "3": 425,
+        "4": 1056
+       }
+      },
+      "sofr_p25": {
+       "fields": [
+        "nyfed_sofr.SOFR_p25"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "sofr_p75": {
+       "fields": [
+        "nyfed_sofr.SOFR_p75"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "sofr_volume": {
+       "fields": [
+        "nyfed_sofr.SOFR_volume"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "spread_bps": {
+       "fields": [
+        "fred_macro_latest_vintage.IOER",
+        "fred_macro_latest_vintage.IORB",
+        "nyfed_sofr.SOFR"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tbill_13w": {
+       "fields": [
+        "treasury_bill_rates.tbill_13w_coupon_equivalent"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tbill_4w": {
+       "fields": [
+        "treasury_bill_rates.tbill_4w_coupon_equivalent"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 1873
+       }
+      },
+      "tga": {
+       "fields": [
+        "fred_macro_latest_vintage.WTREGEN"
+       ],
+       "hours_observable": {
+        "max": 95.5,
+        "min": 23.5
+       },
+       "kind": "observed",
+       "rows_before_scored": {
+        "2": 392,
+        "3": 425,
+        "4": 1056
+       }
+      },
+      "treasury_settlement": {
+       "fields": [
+        "treasury_auctions.treasury_settlement"
+       ],
+       "hours_observable": {
+        "max": 1.0,
+        "min": 1.0
+       },
+       "kind": "scheduled",
+       "rows_before_scored": {
+        "0": 1873
+       }
+      }
+     },
+     "rule": "as_of"
+    },
+    "same_grid": true,
+    "scored_days": 1873
+   }
+  },
+  "sign": "5-day Brier minus shorter-lag Brier; positive favours the shorter lag"
+ },
+ "h41_measured_lags": [
+  {
+   "first_vintage_with": "2020-12-28",
+   "lag_calendar_days_at_least": 5,
+   "lag_calendar_days_at_most": 5,
+   "last_vintage_without": "2020-12-27",
+   "observation": "2020-12-23",
+   "series": "WRESBAL"
+  },
+  {
+   "first_vintage_with": "2025-11-28",
+   "lag_calendar_days_at_least": 2,
+   "lag_calendar_days_at_most": 2,
+   "last_vintage_without": "2025-11-27",
+   "observation": "2025-11-26",
+   "series": "WRESBAL"
+  },
+  {
+   "first_vintage_with": "2026-09-10",
+   "lag_calendar_days_at_least": 1,
+   "lag_calendar_days_at_most": 1,
+   "last_vintage_without": "2026-09-09",
+   "observation": "2026-09-09",
+   "series": "WRESBAL"
+  },
+  {
+   "first_vintage_with": "2020-12-28",
+   "lag_calendar_days_at_least": 5,
+   "lag_calendar_days_at_most": 5,
+   "last_vintage_without": "2020-12-27",
+   "observation": "2020-12-23",
+   "series": "WLRRAOL"
+  },
+  {
+   "first_vintage_with": "2025-11-28",
+   "lag_calendar_days_at_least": 2,
+   "lag_calendar_days_at_most": 2,
+   "last_vintage_without": "2025-11-27",
+   "observation": "2025-11-26",
+   "series": "WLRRAOL"
+  },
+  {
+   "first_vintage_with": "2026-09-10",
+   "lag_calendar_days_at_least": 1,
+   "lag_calendar_days_at_most": 1,
+   "last_vintage_without": "2026-09-09",
+   "observation": "2026-09-09",
+   "series": "WLRRAOL"
+  }
+ ],
+ "knowledge_holdout": {
+  "bootstrap": {
+   "block_length": 2,
+   "level": 0.9,
+   "replications": 2000
+  },
+  "comparisons": {
+   "calendar_climatology vs climatology": {
+    "10": {
+     "benchmark_brier": 0.343278986824318,
+     "days": 15,
+     "model_brier": 0.33769211009995015,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.00952410351370133,
+       "upper": 0.02337914521030335
+      },
+      "mean": 0.005586876724367721,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.018441636109537328,
+          "upper": -4.951761303064227e-06
+         },
+         "mean": -0.008405498309079084
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.06155637685815496
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.00952410351370133,
+          "upper": 0.02337914521030335
+         },
+         "mean": 0.005586876724367721
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 10; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.02931908953428757
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.017404511394109225,
+          "upper": 0.0034553918187352
+         },
+         "mean": -0.0062792296805922
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.255761092410572,
+     "days": 15,
+     "model_brier": 0.2648725460043035,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.017545174876315937,
+       "upper": -0.0014573493271837147
+      },
+      "mean": -0.00911145359373148,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0055711433381818954,
+          "upper": 0.0005979981407260827
+         },
+         "mean": -0.001840409434241034
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.038195630231693256
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.017545174876315937,
+          "upper": -0.0014573493271837147
+         },
+         "mean": -0.00911145359373148
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.022836097989044162
+        },
+        "2020": {
+         "count": 10,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 752; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.0022491313960751355
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.34255371318964417,
+     "days": 15,
+     "model_brier": 0.30660116199921694,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.009409116772697502,
+       "upper": 0.08874138147817211
+      },
+      "mean": 0.0359525511904272,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.022318423200137057,
+          "upper": 0.0013051010104267347
+         },
+         "mean": -0.01044026598282828
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 3; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.22152381988344919
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.009409116772697502,
+          "upper": 0.08874138147817211
+         },
+         "mean": 0.0359525511904272
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 32; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.11780736237911293
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.017731005960972174,
+          "upper": 0.011073207232381282
+         },
+         "mean": -0.004974854403915643
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06598827046429477,
+     "days": 15,
+     "model_brier": 0.06667207705747448,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.002149562044563623,
+       "upper": 6.025975992900182e-05
+      },
+      "mean": -0.0006838065931797604,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": 4.4576999785166116e-05,
+          "upper": 6.314868942918208e-05
+         },
+         "mean": 5.5926365678731415e-05
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 1; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.003642738428613731
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.002149562044563623,
+          "upper": 6.025975992900182e-05
+         },
+         "mean": -0.0006838065931797604
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 5; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.002177717158397647
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": 6.314868942918206e-05,
+          "upper": 6.314868942918208e-05
+         },
+         "mean": 6.314868942918208e-05
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "climatology vs climatology": {
+    "10": {
+     "benchmark_brier": 0.343278986824318,
+     "days": 15,
+     "model_brier": 0.343278986824318,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 10; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 216; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.255761092410572,
+     "days": 15,
+     "model_brier": 0.255761092410572,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 4; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 87; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.34255371318964417,
+     "days": 15,
+     "model_brier": 0.34255371318964417,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 136; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06598827046429477,
+     "days": 15,
+     "model_brier": 0.06598827046429477,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 26; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 26; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": 0.0,
+          "upper": 0.0
+         },
+         "mean": 0.0
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_4 vs calendar_climatology": {
+    "10": {
+     "benchmark_brier": 0.33769211009995015,
+     "days": 15,
+     "model_brier": 0.27059836736086673,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.038721776293421564,
+       "upper": 0.1885861197308673
+      },
+      "mean": 0.06709374273908345,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.07544772268887054,
+          "upper": 0.13396668543355691
+         },
+         "mean": 0.012166532807004722
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.28680258246739837
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.038721776293421564,
+          "upper": 0.1885861197308673
+         },
+         "mean": 0.06709374273908345
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.23416568316593328
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.06276988090329358,
+          "upper": 0.027089898250015582
+         },
+         "mean": -0.01644222747434146
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.2648725460043035,
+     "days": 15,
+     "model_brier": 0.23808506311521313,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.0108876881748937,
+       "upper": 0.07415450147844409
+      },
+      "mean": 0.02678748288909034,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.027840586200994673,
+          "upper": 0.0006611714170762575
+         },
+         "mean": -0.012078860699151742
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.18225285724205864
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.0108876881748937,
+          "upper": 0.07415450147844409
+         },
+         "mean": 0.02678748288909034
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 76; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.09105426422541041
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.020486846894531067,
+          "upper": 0.006836549505111897
+         },
+         "mean": -0.005345907779069698
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.30660116199921694,
+     "days": 15,
+     "model_brier": 0.21544474441397365,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.05340809421845705,
+       "upper": 0.23447316377637045
+      },
+      "mean": 0.09115641758524326,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.09157789781554145,
+          "upper": 0.22635956943118413
+         },
+         "mean": 0.051805765020840944
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.24855902784285253
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.05340809421845705,
+          "upper": 0.23447316377637045
+         },
+         "mean": 0.09115641758524326
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 172; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.4017988624429744
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.1320852323753362,
+          "upper": 0.01128312052307459
+         },
+         "mean": -0.0641648048436223
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06667207705747448,
+     "days": 15,
+     "model_brier": 0.0658668513235968,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.00182483674111456,
+       "upper": 0.005648484782183407
+      },
+      "mean": 0.0008052257338777238,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0019348000130379513,
+          "upper": -0.0015969838027006956
+         },
+         "mean": -0.0017810867278433078
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.01115047558076185
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.00182483674111456,
+          "upper": 0.005648484782183407
+         },
+         "mean": 0.0008052257338777238
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 19; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.006204182918789452
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0019893152786575686,
+          "upper": -0.0018132525335097529
+         },
+         "mean": -0.0018942528585781406
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_4 vs climatology": {
+    "10": {
+     "benchmark_brier": 0.343278986824318,
+     "days": 15,
+     "model_brier": 0.27059836736086673,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.03887569333319765,
+       "upper": 0.20263812503930487
+      },
+      "mean": 0.0726806194634512,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.07957557868572328,
+          "upper": 0.11053399110263641
+         },
+         "mean": 0.00376103449792565
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 8; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.3483589593255534
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.03887569333319765,
+          "upper": 0.20263812503930487
+         },
+         "mean": 0.0726806194634512
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 10; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.26348477270022086
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.06539660090097016,
+          "upper": 0.015523080177962957
+         },
+         "mean": -0.022721457154933657
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.255761092410572,
+     "days": 15,
+     "model_brier": 0.23808506311521313,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.014408103488001296,
+       "upper": 0.06018901494525762
+      },
+      "mean": 0.017676029295358855,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.027332757384510017,
+          "upper": -0.002372361022547434
+         },
+         "mean": -0.013919270133392779
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 2; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.14405722701036539
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.014408103488001296,
+          "upper": 0.06018901494525762
+         },
+         "mean": 0.017676029295358855
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 18; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.06821816623636624
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.021076176323159824,
+          "upper": 0.0037890185846711642
+         },
+         "mean": -0.007595039175144834
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.34255371318964417,
+     "days": 15,
+     "model_brier": 0.21544474441397365,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.035550460069027574,
+       "upper": 0.3084592817361986
+      },
+      "mean": 0.1271089687756705,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.09928089953063986,
+          "upper": 0.21928777249196144
+         },
+         "mean": 0.04136549903801271
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.4700828477263017
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.035550460069027574,
+          "upper": 0.3084592817361986
+         },
+         "mean": 0.1271089687756705
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.5196062248220873
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.14133392005798712,
+          "upper": 0.010041021100019079
+         },
+         "mean": -0.06913965924753794
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06598827046429477,
+     "days": 15,
+     "model_brier": 0.0658668513235968,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.0017631535168142695,
+       "upper": 0.003435283917649677
+      },
+      "mean": 0.0001214191406979629,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0018807240887077537,
+          "upper": -0.001545705639765833
+         },
+         "mean": -0.0017251603621645762
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.00750773715214812
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.0017631535168142695,
+          "upper": 0.003435283917649677
+         },
+         "mean": 0.0001214191406979629
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.004026465760391805
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0019234618114184032,
+          "upper": -0.001750341631522381
+         },
+         "mean": -0.0018311041691489584
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_4 vs persistence_logistic": {
+    "10": {
+     "benchmark_brier": 0.2877198545648676,
+     "days": 15,
+     "model_brier": 0.27059836736086673,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.017057350658593484,
+       "upper": 0.05336364117816927
+      },
+      "mean": 0.01712148720400081,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.043337178815438734,
+          "upper": 0.016565304452544418
+         },
+         "mean": -0.010756348066891769
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.12863282828757114
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.017057350658593484,
+          "upper": 0.05336364117816927
+         },
+         "mean": 0.01712148720400081
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.04206805491373727
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.019495195852239206,
+          "upper": 0.029393885965278584
+         },
+         "mean": 0.0046482033491325805
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.3132177397902148,
+     "days": 15,
+     "model_brier": 0.23808506311521313,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.006275030840829517,
+       "upper": 0.19142239393763993
+      },
+      "mean": 0.07513267667500154,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.014364140148722417,
+          "upper": 0.22054711760639445
+         },
+         "mean": 0.07279992054489016
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0844637011954471
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.006275030840829517,
+          "upper": 0.19142239393763993
+         },
+         "mean": 0.07513267667500154
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 76; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.23987219275728777
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.020769662901345732,
+          "upper": 0.002897996879028316
+         },
+         "mean": -0.0072370813661415696
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.25626582653593216,
+     "days": 15,
+     "model_brier": 0.21544474441397365,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.04358790352671549,
+       "upper": 0.13629188135891537
+      },
+      "mean": 0.04082108212195845,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.06447302888212793,
+          "upper": 0.14348998329802817
+         },
+         "mean": 0.0261690498986276
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.09942921101528185
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.04358790352671549,
+          "upper": 0.13629188135891537
+         },
+         "mean": 0.04082108212195845
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 172; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.059266327693757004
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.07860273641352725,
+          "upper": 0.1709295889596321
+         },
+         "mean": 0.03159845933605917
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.12773268616769676,
+     "days": 15,
+     "model_brier": 0.0658668513235968,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.0017301355255884977,
+       "upper": 0.1842653457752228
+      },
+      "mean": 0.0618658348441,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.001859867463553441,
+          "upper": 0.2303989942283362
+         },
+         "mean": 0.07563079067434611
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.006806011523115565
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.0017301355255884977,
+          "upper": 0.1842653457752228
+         },
+         "mean": 0.0618658348441
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 19; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.18925170064583924
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0019149047255486071,
+          "upper": -0.0017517092112625417
+         },
+         "mean": -0.0018270980567696362
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_9 vs calendar_climatology": {
+    "10": {
+     "benchmark_brier": 0.33769211009995015,
+     "days": 15,
+     "model_brier": 0.2804676467943696,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.03610852674096571,
+       "upper": 0.17138640735241933
+      },
+      "mean": 0.05722446330558062,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.06355052361242454,
+          "upper": 0.11320706556320521
+         },
+         "mean": 0.007845352625124051
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.2547409060274069
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.03610852674096571,
+          "upper": 0.17138640735241933
+         },
+         "mean": 0.05722446330558062
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.23703266434591813
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.06988509847204698,
+          "upper": -0.000750618090872922
+         },
+         "mean": -0.03267963721458814
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.2648725460043035,
+     "days": 15,
+     "model_brier": 0.23552679187983902,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.00288761307590339,
+       "upper": 0.06947023323138513
+      },
+      "mean": 0.029345754124464465,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.014931925654090345,
+          "upper": 0.006305363433297928
+         },
+         "mean": -0.0037314877370790943
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.16165472157063873
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.00288761307590339,
+          "upper": 0.06947023323138513
+         },
+         "mean": 0.029345754124464465
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 76; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0847967584322811
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.00727619853892376,
+          "upper": 0.010984878202323696
+         },
+         "mean": 0.0016202519705561496
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.30660116199921694,
+     "days": 15,
+     "model_brier": 0.21004459568067224,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.04761931305417611,
+       "upper": 0.24908342909930226
+      },
+      "mean": 0.09655656631854473,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.09627579797653618,
+          "upper": 0.2409437412382607
+         },
+         "mean": 0.05689700565378927
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.2551948089775662
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.04761931305417611,
+          "upper": 0.24908342909930226
+         },
+         "mean": 0.09655656631854473
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 172; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.4043328501105389
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.14758299818865714,
+          "upper": 0.033833434810993775
+         },
+         "mean": -0.0573315755774524
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06667207705747448,
+     "days": 15,
+     "model_brier": 0.06580168565436714,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.001731245093190036,
+       "upper": 0.005528725739658128
+      },
+      "mean": 0.000870391403107388,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0018502111880671507,
+          "upper": -0.0013607921907075405
+         },
+         "mean": -0.0016418421706889874
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.01091932569829289
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.001731245093190036,
+          "upper": 0.005528725739658128
+         },
+         "mean": 0.000870391403107388
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 19; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.006258305778382894
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0018923542268238797,
+          "upper": -0.0017647974655691362
+         },
+         "mean": -0.0018235657845303652
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_9 vs climatology": {
+    "10": {
+     "benchmark_brier": 0.343278986824318,
+     "days": 15,
+     "model_brier": 0.2804676467943696,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.03923095147435621,
+       "upper": 0.18423122030784048
+      },
+      "mean": 0.06281134002994833,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.07387215669879671,
+          "upper": 0.10124555689627018
+         },
+         "mean": -0.0005601456839550338
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 8; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.3162972828855619
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.03923095147435621,
+          "upper": 0.18423122030784048
+         },
+         "mean": 0.06281134002994833
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 10; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.2663517538802057
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.07581510653037413,
+          "upper": -0.0015546746179310284
+         },
+         "mean": -0.038958866895180334
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.255761092410572,
+     "days": 15,
+     "model_brier": 0.23552679187983902,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.00458938886542921,
+       "upper": 0.05433483175653677
+      },
+      "mean": 0.020234300530732992,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.014471353254850189,
+          "upper": 0.0017274808788319339
+         },
+         "mean": -0.00557189717132013
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 2; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.12345909133894546
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.00458938886542921,
+          "upper": 0.05433483175653677
+         },
+         "mean": 0.020234300530732992
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 18; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.06196066044323695
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0065192198869667315,
+          "upper": 0.005617812797388832
+         },
+         "mean": -0.0006288794255189859
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.34255371318964417,
+     "days": 15,
+     "model_brier": 0.21004459568067224,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.03523423915102911,
+       "upper": 0.31196709508143877
+      },
+      "mean": 0.13250911750897193,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.11076244796361476,
+          "upper": 0.23188392393669333
+         },
+         "mean": 0.04645673967096103
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.47671862886101546
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.03523423915102911,
+          "upper": 0.31196709508143877
+         },
+         "mean": 0.13250911750897193
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.5221402124896518
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.15598110263081733,
+          "upper": 0.033289432002578445
+         },
+         "mean": -0.06230642998136804
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06598827046429477,
+     "days": 15,
+     "model_brier": 0.06580168565436714,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.0016677819707815904,
+       "upper": 0.00329975816609691
+      },
+      "mean": 0.000186584809927627,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0017949832547656695,
+          "upper": -0.0013075509649307761
+         },
+         "mean": -0.001585915805010256
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0072765872696791585
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.0016677819707815904,
+          "upper": 0.00329975816609691
+         },
+         "mean": 0.000186584809927627
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.004080588619985248
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0018263432578768946,
+          "upper": -0.0017018395991307412
+         },
+         "mean": -0.0017604170951011835
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "gbm_published_9 vs persistence_logistic": {
+    "10": {
+     "benchmark_brier": 0.2877198545648676,
+     "days": 15,
+     "model_brier": 0.2804676467943696,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.036555908020848016,
+       "upper": 0.0496781540070187
+      },
+      "mean": 0.007252207770497978,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.06030799227800226,
+          "upper": 0.026482357590217404
+         },
+         "mean": -0.015077528248772442
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.09657115184757965
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.036555908020848016,
+          "upper": 0.0496781540070187
+         },
+         "mean": 0.007252207770497978
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 37; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.04493503609372214
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.04228234018892159,
+          "upper": 0.02027756367413763
+         },
+         "mean": -0.0115892063911141
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.3132177397902148,
+     "days": 15,
+     "model_brier": 0.23552679187983902,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": 0.0015035529640907346,
+       "upper": 0.19846537292141234
+      },
+      "mean": 0.07769094791037569,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0032909798460340717,
+          "upper": 0.22840035002222214
+         },
+         "mean": 0.08114729350696281
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.06386556552402718
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": 0.0015035529640907346,
+          "upper": 0.19846537292141234
+         },
+         "mean": 0.07769094791037569
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 76; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.23361468696415852
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.006526174695841193,
+          "upper": 0.005752181159931463
+         },
+         "mean": -0.0002709216165157225
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.25626582653593216,
+     "days": 15,
+     "model_brier": 0.21004459568067224,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.027995262388876882,
+       "upper": 0.12708387877557278
+      },
+      "mean": 0.046221230855259865,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.04560539529366492,
+          "upper": 0.12628967560268448
+         },
+         "mean": 0.031260290531575946
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.10606499214999558
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.027995262388876882,
+          "upper": 0.12708387877557278
+         },
+         "mean": 0.046221230855259865
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 172; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.06180031536132145
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.05494497835489356,
+          "upper": 0.1512112328072793
+         },
+         "mean": 0.03843168860222908
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.12773268616769676,
+     "days": 15,
+     "model_brier": 0.06580168565436714,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.001651572757840525,
+       "upper": 0.18454982213206758
+      },
+      "mean": 0.06193100051332967,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.0017808441377674495,
+          "upper": 0.230629900831653
+         },
+         "mean": 0.07577003523150043
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.006574861640646603
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.001651572757840525,
+          "upper": 0.18454982213206758
+         },
+         "mean": 0.06193100051332967
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 19; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.18930582350543274
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0018195626224907476,
+          "upper": -0.001702986976906589
+         },
+         "mean": -0.001756410982721861
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "persistence_logistic vs calendar_climatology": {
+    "10": {
+     "benchmark_brier": 0.33769211009995015,
+     "days": 15,
+     "model_brier": 0.2877198545648676,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.05062806691491746,
+       "upper": 0.16651733207682337
+      },
+      "mean": 0.04997225553508267,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.07446843462802209,
+          "upper": 0.1559424282480682
+         },
+         "mean": 0.0229228808738965
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 8; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.1581697541798273
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.05062806691491746,
+          "upper": 0.16651733207682337
+         },
+         "mean": 0.04997225553508267
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 22; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.19209762825219606
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.07362007600666234,
+          "upper": 0.020274890790928545
+         },
+         "mean": -0.02109043082347404
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.2648725460043035,
+     "days": 15,
+     "model_brier": 0.3132177397902148,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.165384806310163,
+       "upper": 0.026915803196778647
+      },
+      "mean": -0.04834519378591122,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.2544441632321661,
+          "upper": 0.0036375074394454977
+         },
+         "mean": -0.08487878124404193
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.09778915604661154
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.165384806310163,
+          "upper": 0.026915803196778647
+         },
+         "mean": -0.04834519378591122
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 16; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.1488179285318774
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.0008170209512427902,
+          "upper": 0.00581501421481305
+         },
+         "mean": 0.001891173587071872
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.30660116199921694,
+     "days": 15,
+     "model_brier": 0.25626582653593216,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.12255096709600109,
+       "upper": 0.2301935300134296
+      },
+      "mean": 0.050335335463284836,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.17778920699234588,
+          "upper": 0.2403463014146334
+         },
+         "mean": 0.025636715122213355
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.14912981682757065
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.12255096709600109,
+          "upper": 0.2301935300134296
+         },
+         "mean": 0.050335335463284836
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 108; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.3425325347492174
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.26638993301545016,
+          "upper": 0.03834385594657596
+         },
+         "mean": -0.09576326417968148
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06667207705747448,
+     "days": 15,
+     "model_brier": 0.12773268616769676,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.18302513112137905,
+       "upper": 0.0016940196621994552
+      },
+      "mean": -0.06106060911022228,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.2320709825867634,
+          "upper": -6.592095187256819e-05
+         },
+         "mean": -0.07741187740218942
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 5; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0043444640576462855
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.18302513112137905,
+          "upper": 0.0016940196621994552
+         },
+         "mean": -0.06106060911022228
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 45; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.1830475177270498
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -7.465726352962735e-05,
+          "upper": -6.152650227398048e-05
+         },
+         "mean": -6.715480180850421e-05
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   },
+   "persistence_logistic vs climatology": {
+    "10": {
+     "benchmark_brier": 0.343278986824318,
+     "days": 15,
+     "model_brier": 0.2877198545648676,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.04770073015903225,
+       "upper": 0.18894897050990542
+      },
+      "mean": 0.0555591322594504,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.08412942995675692,
+          "upper": 0.14622070417139088
+         },
+         "mean": 0.014517382564817423
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.21972613103798225
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.04770073015903225,
+          "upper": 0.18894897050990542
+         },
+         "mean": 0.0555591322594504
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 10; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.22141671778648364
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.07887003623209525,
+          "upper": 0.008845658622854713
+         },
+         "mean": -0.02736966050406623
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 6,
+     "tau_bp": 10.0
+    },
+    "20": {
+     "benchmark_brier": 0.255761092410572,
+     "days": 15,
+     "model_brier": 0.3132177397902148,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.17438680388472177,
+       "upper": 0.013888883681738531
+      },
+      "mean": -0.057456647379642685,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.25483102290809506,
+          "upper": -0.0002490487344221353
+         },
+         "mean": -0.08671919067828297
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.05959352581491828
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.17438680388472177,
+          "upper": 0.013888883681738531
+         },
+         "mean": -0.057456647379642685
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.17165402652092154
+        },
+        "2020": {
+         "count": 10,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 752; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.0003579578090032637
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 4,
+     "tau_bp": 20.0
+    },
+    "5": {
+     "benchmark_brier": 0.34255371318964417,
+     "days": 15,
+     "model_brier": 0.25626582653593216,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.10115692024317421,
+       "upper": 0.2729529077127647
+      },
+      "mean": 0.08628788665371204,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.18257922012406078,
+          "upper": 0.21789144026407878
+         },
+         "mean": 0.015196449139385082
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 3; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.37065363671101986
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.10115692024317421,
+          "upper": 0.2729529077127647
+         },
+         "mean": 0.08628788665371204
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 32; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.4603398971283304
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -0.26012097027885445,
+          "upper": 0.025742995114776478
+         },
+         "mean": -0.10073811858359712
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 8,
+     "tau_bp": 5.0
+    },
+    "50": {
+     "benchmark_brier": 0.06598827046429477,
+     "days": 15,
+     "model_brier": 0.12773268616769676,
+     "paired_brier_difference": {
+      "interval": {
+       "level": 0.9,
+       "lower": -0.18537625931255344,
+       "upper": 0.0002763470010478533
+      },
+      "mean": -0.06174441570340204,
+      "splits": {
+       "by_day_type": {
+        "month_end": {
+         "count": 0
+        },
+        "ordinary": {
+         "count": 12,
+         "interval": {
+          "lower": -0.23203624973917097,
+          "upper": -3.0945222109895213e-06
+         },
+         "mean": -0.07735595103651069
+        },
+        "quarter_end": {
+         "count": 0
+        },
+        "tax_date": {
+         "count": 3,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 1; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": 0.0007017256290325552
+        }
+       },
+       "by_quarter_end_window": {
+        "outside_quarter_end_window": {
+         "count": 15,
+         "interval": {
+          "lower": -0.18537625931255344,
+          "upper": 0.0002763470010478533
+         },
+         "mean": -0.06174441570340204
+        },
+        "quarter_end_window": {
+         "count": 0
+        }
+       },
+       "by_regime": {
+        "2018-19": {
+         "count": 5,
+         "interval_unavailable": "statistic returned nan on bootstrap replication 5; discarding such replicates would narrow the interval, so this raises instead",
+         "mean": -0.18522523488544745
+        },
+        "2020": {
+         "count": 10,
+         "interval": {
+          "lower": -1.112278634261428e-05,
+          "upper": 1.595228747139825e-06
+         },
+         "mean": -4.006112379322141e-06
+        },
+        "2021-23": {
+         "count": 0
+        },
+        "2024": {
+         "count": 0
+        },
+        "2025-26": {
+         "count": 0
+        }
+       }
+      }
+     },
+     "positive_days": 1,
+     "tau_bp": 50.0
+    }
+   }
+  },
+  "curves": {
+   "calendar_climatology": [
+    {
+     "date": "2019-09-16",
+     "exceedance": [
+      0.3888888888888889,
+      0.1111111111111111,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "date": "2019-09-17",
+     "exceedance": [
+      0.3888888888888889,
+      0.1111111111111111,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "date": "2019-09-18",
+     "exceedance": [
+      0.3888888888888889,
+      0.1111111111111111,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "date": "2019-09-19",
+     "exceedance": [
+      0.20454545454545456,
+      0.05519480519480519,
+      0.012987012987012988,
+      0.003246753246753247
+     ]
+    },
+    {
+     "date": "2019-09-20",
+     "exceedance": [
+      0.20454545454545456,
+      0.05519480519480519,
+      0.012987012987012988,
+      0.003246753246753247
+     ]
+    },
+    {
+     "date": "2020-03-09",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-10",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-11",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-12",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-13",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-16",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-17",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-18",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-19",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    },
+    {
+     "date": "2020-03-20",
+     "exceedance": [
+      0.19362745098039216,
+      0.058823529411764705,
+      0.014705882352941176,
+      0.0024509803921568627
+     ]
+    }
+   ],
+   "climatology": [
+    {
+     "date": "2019-09-16",
+     "exceedance": [
+      0.22865013774104684,
+      0.07713498622589532,
+      0.01928374655647383,
+      0.005509641873278237
+     ]
+    },
+    {
+     "date": "2019-09-17",
+     "exceedance": [
+      0.22865013774104684,
+      0.07713498622589532,
+      0.01928374655647383,
+      0.005509641873278237
+     ]
+    },
+    {
+     "date": "2019-09-18",
+     "exceedance": [
+      0.22865013774104684,
+      0.07713498622589532,
+      0.01928374655647383,
+      0.005509641873278237
+     ]
+    },
+    {
+     "date": "2019-09-19",
+     "exceedance": [
+      0.22865013774104684,
+      0.07713498622589532,
+      0.01928374655647383,
+      0.005509641873278237
+     ]
+    },
+    {
+     "date": "2019-09-20",
+     "exceedance": [
+      0.22865013774104684,
+      0.07713498622589532,
+      0.01928374655647383,
+      0.005509641873278237
+     ]
+    },
+    {
+     "date": "2020-03-09",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-10",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-11",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-12",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-13",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-16",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-17",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-18",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-19",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    },
+    {
+     "date": "2020-03-20",
+     "exceedance": [
+      0.2203742203742204,
+      0.08316008316008316,
+      0.029106029106029108,
+      0.008316008316008316
+     ]
+    }
+   ],
+   "gbm_published_4": [
+    {
+     "date": "2019-09-16",
+     "exceedance": [
+      0.5586117891597366,
+      0.2539720643165194,
+      0.04300735089592689,
+      0.01806850837182883
+     ]
+    },
+    {
+     "date": "2019-09-17",
+     "exceedance": [
+      0.5772558984695022,
+      0.129055243073379,
+      0.042303658072074146,
+      0.017637947001096888
+     ]
+    },
+    {
+     "date": "2019-09-18",
+     "exceedance": [
+      0.9659829631770142,
+      0.558570308508763,
+      0.21245684912351515,
+      0.03445140186860196
+     ]
+    },
+    {
+     "date": "2019-09-19",
+     "exceedance": [
+      0.9643311435786214,
+      0.6191603788108824,
+      0.21388349622402825,
+      0.03547244751161227
+     ]
+    },
+    {
+     "date": "2019-09-20",
+     "exceedance": [
+      0.9698939912331175,
+      0.6635087317861255,
+      0.21465885878472313,
+      0.034544180829262805
+     ]
+    },
+    {
+     "date": "2020-03-09",
+     "exceedance": [
+      0.34769787442833233,
+      0.06972431483711183,
+      0.04834705240462178,
+      0.043202817828430495
+     ]
+    },
+    {
+     "date": "2020-03-10",
+     "exceedance": [
+      0.04999098801910706,
+      0.04913962871861144,
+      0.04743691011762041,
+      0.04232875431464711
+     ]
+    },
+    {
+     "date": "2020-03-11",
+     "exceedance": [
+      0.04999089795876799,
+      0.04913970153269143,
+      0.04743730868053819,
+      0.04233013012407849
+     ]
+    },
+    {
+     "date": "2020-03-12",
+     "exceedance": [
+      0.04998024128912393,
+      0.04913606558843897,
+      0.047447714187068835,
+      0.04238265998295854
+     ]
+    },
+    {
+     "date": "2020-03-13",
+     "exceedance": [
+      0.3738220324658613,
+      0.10619836183830123,
+      0.048481597220589756,
+      0.04333341689423953
+     ]
+    },
+    {
+     "date": "2020-03-16",
+     "exceedance": [
+      0.43544961919395686,
+      0.14933957097525874,
+      0.04864576546307087,
+      0.04350007320161109
+     ]
+    },
+    {
+     "date": "2020-03-17",
+     "exceedance": [
+      0.04999098801910706,
+      0.04913962871861144,
+      0.04743691011762041,
+      0.04232875431464711
+     ]
+    },
+    {
+     "date": "2020-03-18",
+     "exceedance": [
+      0.48108909338469474,
+      0.3938106019858426,
+      0.22669041077439311,
+      0.046918954959456305
+     ]
+    },
+    {
+     "date": "2020-03-19",
+     "exceedance": [
+      0.48108909338469474,
+      0.3938106019858426,
+      0.22669041077439311,
+      0.046918954959456305
+     ]
+    },
+    {
+     "date": "2020-03-20",
+     "exceedance": [
+      0.04999098801910706,
+      0.04913962871861144,
+      0.04743691011762041,
+      0.04232875431464711
+     ]
+    }
+   ],
+   "gbm_published_9": [
+    {
+     "date": "2019-09-16",
+     "exceedance": [
+      0.6925275468894219,
+      0.2797753456286217,
+      0.042286955778518376,
+      0.017645853793521127
+     ]
+    },
+    {
+     "date": "2019-09-17",
+     "exceedance": [
+      0.49712635983054154,
+      0.09719494057380518,
+      0.04195225713671935,
+      0.017027625092425724
+     ]
+    },
+    {
+     "date": "2019-09-18",
+     "exceedance": [
+      0.9141819597138621,
+      0.47811196200885864,
+      0.1753994405709638,
+      0.026380995386494077
+     ]
+    },
+    {
+     "date": "2019-09-19",
+     "exceedance": [
+      0.935956535738444,
+      0.4961360002261168,
+      0.17930164323082742,
+      0.02784017749023271
+     ]
+    },
+    {
+     "date": "2019-09-20",
+     "exceedance": [
+      0.9270995278891954,
+      0.46998275365790676,
+      0.1707882264615609,
+      0.026691862684480094
+     ]
+    },
+    {
+     "date": "2020-03-09",
+     "exceedance": [
+      0.04970683028125322,
+      0.04886794508333481,
+      0.047190174687497866,
+      0.04215686349998693
+     ]
+    },
+    {
+     "date": "2020-03-10",
+     "exceedance": [
+      0.04950640769410408,
+      0.04866364449115912,
+      0.046978118085269194,
+      0.04192153886759942
+     ]
+    },
+    {
+     "date": "2020-03-11",
+     "exceedance": [
+      0.049339310978991135,
+      0.048501883975988314,
+      0.04682702996998256,
+      0.041802467951965294
+     ]
+    },
+    {
+     "date": "2020-03-12",
+     "exceedance": [
+      0.04985028838460981,
+      0.049006152497209965,
+      0.04731788072241028,
+      0.0422530653980111
+     ]
+    },
+    {
+     "date": "2020-03-13",
+     "exceedance": [
+      0.049733995334719006,
+      0.0488943095707528,
+      0.04721493804282029,
+      0.04217682345902296
+     ]
+    },
+    {
+     "date": "2020-03-16",
+     "exceedance": [
+      0.420352085600033,
+      0.04970056694981173,
+      0.048008165805979885,
+      0.04293096237448446
+     ]
+    },
+    {
+     "date": "2020-03-17",
+     "exceedance": [
+      0.04953705107006556,
+      0.04869612768294229,
+      0.04701428090869575,
+      0.04196874058595623
+     ]
+    },
+    {
+     "date": "2020-03-18",
+     "exceedance": [
+      0.5639210861753761,
+      0.38864303171245285,
+      0.10798943297450936,
+      0.04502927142097557
+     ]
+    },
+    {
+     "date": "2020-03-19",
+     "exceedance": [
+      0.5603765035283783,
+      0.39082200883165774,
+      0.14524448774786325,
+      0.04535186302113969
+     ]
+    },
+    {
+     "date": "2020-03-20",
+     "exceedance": [
+      0.04952416344633037,
+      0.04868363590122016,
+      0.04700258081099962,
+      0.04195941554033822
+     ]
+    }
+   ],
+   "persistence_logistic": [
+    {
+     "date": "2019-09-16",
+     "exceedance": [
+      0.4218184575233412,
+      0.11646490247910987,
+      0.025565638677611444,
+      0.006636601717289538
+     ]
+    },
+    {
+     "date": "2019-09-17",
+     "exceedance": [
+      0.4218184575233412,
+      0.11646490247910987,
+      0.025565638677611444,
+      0.006636601717289538
+     ]
+    },
+    {
+     "date": "2019-09-18",
+     "exceedance": [
+      0.9337193258462031,
+      0.4215602272246565,
+      0.1013410642470511,
+      0.012317560510600593
+     ]
+    },
+    {
+     "date": "2019-09-19",
+     "exceedance": [
+      1.0,
+      0.9999999989232715,
+      0.9999998475364212,
+      0.9633295364288299
+     ]
+    },
+    {
+     "date": "2019-09-20",
+     "exceedance": [
+      0.9850787230700598,
+      0.6400972144368979,
+      0.1944086951219147,
+      0.016978452971169358
+     ]
+    },
+    {
+     "date": "2020-03-09",
+     "exceedance": [
+      0.19494885667674125,
+      0.07117995950702644,
+      0.02824506948889208,
+      0.008248202499550088
+     ]
+    },
+    {
+     "date": "2020-03-10",
+     "exceedance": [
+      0.16190498211449406,
+      0.06302832028747654,
+      0.027703542962908063,
+      0.00815949035626167
+     ]
+    },
+    {
+     "date": "2020-03-11",
+     "exceedance": [
+      0.14715410561005468,
+      0.05928680664681578,
+      0.027436575353078457,
+      0.008115489793663682
+     ]
+    },
+    {
+     "date": "2020-03-12",
+     "exceedance": [
+      0.17782619082788578,
+      0.06698914151857344,
+      0.027973033547088307,
+      0.008203727507997667
+     ]
+    },
+    {
+     "date": "2020-03-13",
+     "exceedance": [
+      0.2536501276865876,
+      0.08524273261894696,
+      0.02907667584768713,
+      0.008383067115743421
+     ]
+    },
+    {
+     "date": "2020-03-16",
+     "exceedance": [
+      0.3741730759047229,
+      0.11433127110867365,
+      0.03051573233262227,
+      0.008612716865490646
+     ]
+    },
+    {
+     "date": "2020-03-17",
+     "exceedance": [
+      0.16190498211449406,
+      0.06302832028747654,
+      0.027703542962908063,
+      0.00815949035626167
+     ]
+    },
+    {
+     "date": "2020-03-18",
+     "exceedance": [
+      0.5407852982656941,
+      0.16027986227260646,
+      0.03233377889520566,
+      0.008896541309038188
+     ]
+    },
+    {
+     "date": "2020-03-19",
+     "exceedance": [
+      0.965338543284306,
+      0.5421412063316872,
+      0.04229160377370258,
+      0.010348473359144557
+     ]
+    },
+    {
+     "date": "2020-03-20",
+     "exceedance": [
+      0.16190498211449406,
+      0.06302832028747654,
+      0.027703542962908063,
+      0.00815949035626167
+     ]
+    }
+   ]
+  },
+  "days": [
+   "2019-09-16",
+   "2019-09-17",
+   "2019-09-18",
+   "2019-09-19",
+   "2019-09-20",
+   "2020-03-09",
+   "2020-03-10",
+   "2020-03-11",
+   "2020-03-12",
+   "2020-03-13",
+   "2020-03-16",
+   "2020-03-17",
+   "2020-03-18",
+   "2020-03-19",
+   "2020-03-20"
+  ],
+  "label": "uncalibrated: no published (calibrated) model is held out from these windows",
+  "realized_bps": [
+   33.00000000000001,
+   315.0,
+   44.99999999999997,
+   14.999999999999991,
+   6.000000000000005,
+   -1.0000000000000009,
+   1.0000000000000009,
+   4.999999999999982,
+   9.999999999999986,
+   0.0,
+   16.0,
+   44.00000000000001,
+   0.0,
+   -4.000000000000001,
+   -6.000000000000001
+  ],
+  "sign": "benchmark Brier minus model Brier; positive favours the model",
+  "taus_bp": [
+   5.0,
+   10.0,
+   20.0,
+   50.0
+  ],
+  "windows": [
+   {
+    "end": "2019-09-20",
+    "last_train_date": "2019-09-12",
+    "name": "sep-2019",
+    "start": "2019-09-16",
+    "train_rows": 363
+   },
+   {
+    "end": "2020-03-20",
+    "last_train_date": "2020-03-05",
+    "name": "mar-2020",
+    "start": "2020-03-09",
+    "train_rows": 481
+   }
+  ]
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "reported_only": true
+}
