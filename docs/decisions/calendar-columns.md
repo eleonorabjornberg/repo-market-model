@@ -20,6 +20,26 @@ date; it draws on an announced schedule with a publication date and an availabil
 needs a source declaration rather than a calendar-feature entry. Declaring it in `CALENDAR_FEATURES`
 would smuggle a source past the classifier, which is the one thing that classifier exists to prevent.
 
+## The tax-date rule as it stands, and the next version's (#279; Eleonora's ruling of 6 October 2026, #269 item 17)
+
+**As it stands (version 1).** `tax_date` is 1.0 on the corporate estimated-tax deadline and on the two business
+days after it (`data.tax_date`). The deadline is the 15th of April, June, September and December, rolled forward
+off Saturdays, Sundays and the District of Columbia legal holidays of those months (`data._tax_deadline_holidays`).
+The two days after it are counted by the same weekday-and-DC-holiday arithmetic. Announced postponements (the IRS
+relief of 2020, say) and holidays appointed by proclamation are not modelled: the column is the statutory date.
+The text above is this rule; nothing in this section changes it.
+
+**Her intended rule for the next version.**
+
+- The deadline stays on the DC rule (26 USC 7503).
+- The payment days after it are counted on the market calendar (`metadata/market_holidays.json`), not on the DC
+  holidays.
+- Announced postponements are tracked by their announcement date, so that a postponement counts only from the day
+  it was public.
+
+**Why it waits.** `tax_date` feeds the scorecaster, which is part of the frozen model. Changing the rule changes
+the model's inputs, so the change belongs to the next version and is not made here.
+
 ## Why a countdown and not a signed distance
 
 The first design measured a signed distance to the *nearer* month boundary, clipped at five days. It

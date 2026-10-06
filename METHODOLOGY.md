@@ -36,7 +36,7 @@ defines it.
 **The information set.** "Next-day" means a forecast made at 16:00 on the business day
 before the scored day. The as-of information rule
 ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)) reads each
-input at its latest value public at that instant, and the records in `docs/runs/` are
+input at its latest value declared public at that instant, and the records in `docs/runs/` are
 scored under it. The records published before it read every input at the row dated at
 least seven calendar days earlier, which never leaks and is about a week stale; they are
 archived in `docs/runs/archive/pre-asof/`, and the readings of them below are readings of
@@ -133,6 +133,9 @@ the data layer and the evaluation code, and each is held by a test rather than b
   interface.
 - **The two holdout roles stay apart.** Rolling-origin scoring and the frozen, checksummed
   September 2019 and March 2020 event windows are distinct in code and in reporting.
+  No published (calibrated) model is held out from the stress windows: the published records
+  score them like any other days and train on them once they are past. A knowledge holdout is a separate run, for the
+  models it names, and is labelled as such (Eleonora's ruling of 6 October 2026, #269 item 18).
 - **A run publishes a record, not a printout.** `backtest`, `compare` and
   `exceedance-backtest` write the declared feature set, the sources, the decision time, the
   panel's digest and extent, the folds, and the metrics unrounded, with stationary-bootstrap
@@ -174,8 +177,11 @@ stops being published here, or if one that has been repaired is still published.
   a future vintage that restated an observation would turn nothing red.
 - **No event-window result is claimed.** The event-window evaluator cannot yet express the
   published model's calibration and tail settings.
-- **Everything is a backtest.** No forecast here has been made against a day that had not
-  already happened.
+- **The published records are backtests; the live record is forward.** Every figure in
+  `docs/runs/` scores days that had already happened when it was scored. The final test
+  (`docs/final-test.md`) opened the near-blind tier once, and the live record
+  (`docs/decisions/lockbox.md`) logs forecasts before their days, so a result there is
+  not a backtest.
 
 ## Reading the pre-as-of records
 
@@ -185,7 +191,8 @@ still good for. What they said about volatility and the tails is not restated he
 reading of them rests on the stale information set, and a copy on this page would be one more
 copy to correct. The figures are in those records, and
 [`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md) §4 lists the conclusions drawn
-from them that re-open under the as-of rule. What the as-of records measure is in the README's
+from them that re-open under the as-of rule. The feature set was fixed without re-measuring those
+verdicts; re-scoring them belongs with next-version research. What the as-of records measure is in the README's
 generated blocks, and the verdict on them is in `PLAN.md`.
 
 *A reading, not a tested claim:* repo spikes arrive with the calendar and the balance sheet
@@ -270,6 +277,20 @@ redesign borrows.
   rates, volumes and money-fund data. A monitor, not a forecast.
 - Monin (2019), [*The OFR Financial Stress Index*](https://www.financialresearch.gov/working-papers/files/OFRwp-17-04_The-OFR-Financial-Stress-Index.pdf),
   *Risks* 7(1).
+
+## Month-end in the reporting split
+
+Decided by Eleonora on 6 October 2026 (#269, item 16, option (a); built in #278). A reporting split counts
+month-end as the month's last two business days on the market calendar (`metadata/market_holidays.json`), read from
+the date by `SplitDeclaration.reporting_day_type`, not as `days_to_month_end <= 2` calendar days, which misreads a
+month that ends on a weekend or a holiday. The live scorer (`scripts/live_score.py`) reports by it and says so in
+`month_end_rule`. Anything scored before then keeps the split it was scored by, and a published record adopts the
+new one at its next publish.
+
+Two things still count calendar days, on purpose. The scorecaster's window (`recalibration.py`) is part of the frozen
+model. The frozen final-test comparison code (`baseline.split_document`, whose checksum the freeze pins) splits by
+`SplitDeclaration.day_type`. Making either agree with the reporting split is a v2 candidate, and for the second a
+change to a pre-registered test that is Eleonora's to make.
 
 ## Where the run records live
 

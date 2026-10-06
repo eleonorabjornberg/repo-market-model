@@ -2580,6 +2580,51 @@ def last_business_day_of_quarter(year: int, quarter: int) -> date:
     return end
 
 
+#: The reporting split's month-end: the month's last business days (#278,
+#: Eleonora's ruling of 6 October 2026 on #269, item 16, option (a)).
+MONTH_END_BUSINESS_DAYS = 2
+
+
+def last_business_days_of_month(
+    year: int, month: int, count: int = MONTH_END_BUSINESS_DAYS
+) -> Tuple[date, ...]:
+    """The month's last `count` business days, earliest first.
+
+    A business day is a weekday not in the market holiday table, as for
+    `quarter_end`. A month ending on a weekend or a holiday therefore counts
+    back from its last business day, not from its last calendar day.
+
+    Raises:
+        ValueError: if the table does not wholly cover the month.
+    """
+
+    holidays = market_holidays()
+    start = date(year, month, 1)
+    end = date(year, month, _last_day_of_month(start))
+    if start < holidays.first or end > holidays.last:
+        raise ValueError(
+            f"the market holiday table covers {holidays.first.isoformat()} to "
+            f"{holidays.last.isoformat()}, not {year}-{month:02d}"
+        )
+    found = []
+    day = end
+    while len(found) < count:
+        if day.weekday() < 5 and day not in holidays.closed:
+            found.append(day)
+        day -= timedelta(days=1)
+    return tuple(reversed(found))
+
+
+def in_last_business_days_of_month(day: date) -> bool:
+    """Whether `day` is one of its month's last `MONTH_END_BUSINESS_DAYS` business days.
+
+    Computed from the date and the market holiday table alone. Not a calendar
+    column: `days_to_month_end` is unchanged, and so is the panel.
+    """
+
+    return day in last_business_days_of_month(day.year, day.month)
+
+
 #: The quarter-end window: the quarter's last business day and this many
 #: business days either side (#140, decided in
 #: `docs/decisions/quarter-end-window.md`).
