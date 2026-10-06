@@ -10,7 +10,7 @@
       "number": 2
     }
   ],
-  "commit": "a91b32d",
+  "commit": "c006cbe",
   "figures": {
     "dependencies": 0,
     "event_windows": 2,
@@ -51,6 +51,7 @@
     "pressure_model_v1_h3.json",
     "pressure_model_v1_h4.json",
     "pressure_model_v1_h5.json",
+    "pressure_model_v2_distribution_h1.json",
     "published_distribution_daily_h1.json",
     "published_distribution_daily_h2.json",
     "published_distribution_daily_h3.json",
