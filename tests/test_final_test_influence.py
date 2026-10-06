@@ -10,14 +10,14 @@ the sentence that implied a clean holdout.
 Mutation record (`InfluenceTests`, the ordering of the top days): `ordered = sorted(
 range(n), key=lambda i: -diffs[i])` in `influence` changed to `key=lambda i: diffs[i]`
 (smallest first), confirmed applied by grep; `test_drop_top_five_and_ten` then failed
-with `AssertionError` (0.17406 != 0.0251: the means were of the wrong days).
+with `AssertionError` (0.20648599479853025 != 0.0251 within 4 places; the means were of the wrong days).
 Restored, green.
 
 Mutation record (`WordingTests`, the unhedged sentence): the generator's
 `FINAL_TEST_HEDGE` replaced by the old text "a stretch of days that no choice of model
 had been made on" in `scripts/emit_results.py`, confirmed applied by grep;
 `test_the_unhedged_sentence_does_not_return` then failed with `AssertionError`
-(the forbidden sentence was found in the generated block). Restored, green.
+('no choice of model had been made on' unexpectedly found in the generated block). Restored, green.
 """
 
 from __future__ import annotations

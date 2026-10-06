@@ -2676,7 +2676,7 @@ def final_test(records, locked):
         if not entry.get("count"):
             return f"<tr><th scope='row'>{name}</th><td>0</td><td>–</td><td>–</td></tr>"
         cells = (f"<td>{signed(entry['interval']['lower'], 3)} to {signed(entry['interval']['upper'], 3)}</td>"
-                 if "interval" in entry else "<td>too few days for an interval</td>")
+                 if "interval" in entry else "<td>no interval: the bootstrap is undefined on this few days</td>")
         return f"<tr><th scope='row'>{name}</th><td>{entry['count']}</td><td>{signed(entry['mean'], 3)}</td>{cells}</tr>"
 
     window_table = (
