@@ -6235,9 +6235,15 @@ class AbsentValueReasonTests(unittest.TestCase):
                 [(fixture.SUPPRESSED_REF_DATE, (suppressed_series,))],
             )
 
+        fetches = []
+
         def nyfed_artifacts(rate_payload, volume_payload):
+            # One output root per fetch: these payloads are synthetic and differ
+            # in length for one request, which a shared root would refuse as a
+            # shorter re-fetch (#268).
+            fetches.append(None)
             artifacts = fetch_nyfed_reference_rate(
-                self.root / "nyfed",
+                self.root / "nyfed" / str(len(fetches)),
                 "sofr",
                 "2026-01-01",
                 "2026-01-06",
