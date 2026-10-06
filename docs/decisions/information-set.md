@@ -1,7 +1,10 @@
 # Decision: a forecast uses exactly the information public at its decision instant
 
-**Status: decided, not yet implemented.** The implementing pull request lands the guards, and
-every record scored under the previous rule is re-scored or archived.
+**Status: decided and implemented** (#27; the guards are `repo_model.asof`). Every record scored
+under the previous rule was re-scored or archived.
+
+> **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
+> read lag). A decision is in force only once she merges it.
 
 ## The rule
 
@@ -11,7 +14,11 @@ A forecast for scored day `T` is made at the declared decision time on the last 
 1. **Each input is read per field, at its latest value whose declared first-observable instant is at
    or before the decision instant.** The declarations are the registry's own `release_lag` blocks,
    read through `baseline._declared_availability`. Under them, the daily NY Fed rates and bill rates
-   are read at the row two panel days before `T`, and the H.4.1 weekly series at their latest print.
+   are read at the row two panel days before `T`, and the H.4.1 weekly series at the latest row whose declared instant (the row's date plus the registry's
+   five calendar days, at the declared time) is at or before the decision. Each Wednesday level is carried
+   on the rows after it (`weekly-carry.md`), so a value is read 5 to 12 days after its Thursday print, and a
+   newer print was public and unread on 795 of 2042 scored days. That is the safe direction and not a
+   leak. A record's `hours_observable` counts from the observation row's declared instant and says so.
 2. **Values that refer to `T` itself are admissible only as declared scheduled inputs**, meaning a
    value announced before the decision instant. That covers:
    - the calendar columns, which are always known;

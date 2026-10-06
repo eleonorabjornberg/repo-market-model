@@ -184,7 +184,10 @@ def published_features(h: int) -> tuple:
 #: The code every record is made with. `None`: the merge commit that brought
 #: this file onto main (`resolve_pin`). It changes only through a dated
 #: version-bump record in `docs/decisions/`, and never retroactively: each
-#: record carries the SHA it was made with.
+#: record carries the SHA it was made with. A pull request that changes it,
+#: `resolve_pin`, or the models logged (`MODELS` and the records named here)
+#: cites Eleonora's own approval in `metadata/owner_attestations.json`, which CI
+#: checks (`scripts/owner_attested.py`, #256).
 PINNED_CODE_SHA = None
 
 #: The steps whose durations a record carries. Fitting and forecasting are one

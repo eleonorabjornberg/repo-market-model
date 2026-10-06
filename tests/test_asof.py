@@ -18,6 +18,7 @@ from pathlib import Path
 from repo_model.asof import (
     InformationRule,
     StaleReadError,
+    information_summary,
     fold_grid,
     refit_blocks,
     validate_scheduled_availability,
@@ -213,6 +214,48 @@ class PerFieldReadTests(unittest.TestCase):
     def test_the_target_is_read_at_the_anchor(self):
         read = read_of(self.info, "spread_bps")
         self.assertEqual(read.row, self.info.anchor)
+
+
+class WeeklyObservationAgeTests(unittest.TestCase):
+    """A carried weekly cell is aged from its observation, not from its row (#267).
+
+    `reserve_balances` is the H.4.1's Wednesday level, carried on every panel
+    row until the next print. The row read is the latest whose declared instant
+    (row date + 5 calendar days, 16:30) is at or before the decision; the
+    observation behind it was declared earlier, so the cell is older than the
+    row says.
+
+    Mutation: `return available - timedelta(days=behind)` -> `return available`
+    in `_observation_available` (aging the value from its row's declared
+    instant) -> `AssertionError: 23.5 != 47.5` in
+    `test_the_age_is_counted_from_the_observation_row`.
+    """
+
+    def setUp(self):
+        self.rule = rule(["reserve_balances"])
+        self.info = self.rule.information_set(DATES, index_of(date(2026, 1, 22)))
+        self.read = read_of(self.info, "reserve_balances")
+
+    def test_the_row_read_is_thursday_the_fifteenth(self):
+        self.assertEqual(DATES[self.read.row], date(2026, 1, 15))
+        self.assertEqual(self.read.hours, 23.5)  # row's own instant: Tue 20th 16:30
+
+    def test_the_age_is_counted_from_the_observation_row(self):
+        # Wednesday 14th's print was declared at Mon 19th 16:30; read Wed 21st 16:00.
+        self.assertEqual(self.read.observation_hours, 47.5)
+
+    def test_the_summary_reports_the_observation_age_and_names_its_basis(self):
+        summary = information_summary(self.rule, [self.info])
+        feature = summary["features"]["reserve_balances"]
+        self.assertEqual(feature["hours_observable"], {"min": 47.5, "max": 47.5})
+        self.assertIn("observation", feature["hours_observable_basis"])
+
+    def test_a_daily_field_is_aged_from_its_own_row(self):
+        read = read_of(self.rule_daily().information_set(DATES, index_of(date(2026, 1, 22))), "sofr_volume")
+        self.assertEqual(read.observation_hours, read.hours)
+
+    def rule_daily(self):
+        return rule(["sofr_volume"])
 
 
 class ObservationTests(unittest.TestCase):
