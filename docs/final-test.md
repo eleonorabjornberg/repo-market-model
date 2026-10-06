@@ -10,13 +10,15 @@ validation report (#119) and the plain-language page (#120) take over when they 
 
 ## For the validation report (#119): the final test
 
-**The test.** The near-blind tier (`docs/decisions/lockbox.md`; scored days 2026-01-02 to 2026-09-03) was opened once, on 2026-10-05, on Eleonora's go: Eleonora's "GO #151" (4 October 2026), relayed on #151: https://github.com/eleonorabjornberg/repo-market-model/issues/151#issuecomment-6003148702. The frozen command of `docs/decisions/final-test-preregistration.md` was run once. Its one primary cell is the published distribution (#169's gbm with nested conformal PID) against as-of persistence, by CRPS, one day ahead. The record is `docs/runs/final_test_near_blind.json`.
+**The test.** The near-blind tier (`docs/decisions/lockbox.md`; scored days 2026-01-02 to 2026-09-03) was opened once, on 2026-10-05, on Eleonora's go: Eleonora's "GO #151" (4 October 2026), relayed on #151: https://github.com/eleonorabjornberg/repo-market-model/issues/151#issuecomment-6003148702. The frozen command of `docs/decisions/final-test-preregistration.md` was run once. Its one primary cell is the published distribution (#169's gbm with nested conformal PID) against as-of persistence, by the five-quantile score (the mean pinball loss over the published quantiles; the record's field names say CRPS), one day ahead. The record is `docs/runs/final_test_near_blind.json`.
 
-**The primary cell: pass.** Mean CRPS 1.833 bp for as-of persistence and 1.659 bp for the published distribution, over 169 scored days. The paired difference (persistence minus published; positive favours the published distribution) is +0.174 bp, 90% interval +0.029 to +0.358 bp (stationary bootstrap, mean block length 2). Label: **pass**. At mean block length 10, reported only, the interval is +0.032 to +0.339 bp.
+**The primary cell: pass.** Mean five-quantile score 1.833 bp for as-of persistence and 1.659 bp for the published quantiles, over 169 scored days. The paired difference (persistence minus published; positive favours the published distribution) is +0.174 bp, 90% interval +0.029 to +0.358 bp (stationary bootstrap, mean block length 2). Label: **pass**. At mean block length 10, reported only, the interval is +0.032 to +0.339 bp.
 
-**The claim, as pre-registered:** the published model's one-day-ahead forecast of the full distribution of SOFR − IORB was more accurate than as-of persistence over January to September 2026. It is not a claim that the model warns of stress.
+**Sensitivity to the weights, reported only (#259).** The score above is the unweighted mean of the pinball losses at the five published quantile levels, which is not the integral that CRPS is defined as. Re-scored with the trapezoid rule (`docs/runs/final_test_near_blind_integral_sensitivity.json`; decides nothing), the mean difference is +0.171 bp, 90% interval +0.030 to +0.352 bp (mean block length 2) and +0.030 to +0.337 bp (mean block length 10).
 
-**Near-blind, not blind.** These days had been scored inside pooled CRPS aggregates of archived records before #169, though no 2026-only CRPS was published and no choice was made on them by name. 2026 was known to be calm when the test was designed.
+**The claim, as pre-registered:** the published model's one-day-ahead forecast of the five published quantiles of SOFR − IORB was more accurate than as-of persistence over January to September 2026. It is not a claim that the model warns of stress.
+
+**Near-blind, not blind.** These days had been scored inside pooled aggregates of this score in archived records before #169, though no 2026-only figure of it was published and no choice was made on them by name. 2026 was known to be calm when the test was designed.
 
 **By pressure-day type** (the split decides nothing; every window day falls in the declared regime `2025-26`):
 
@@ -27,7 +29,7 @@ validation report (#119) and the plain-language page (#120) take over when they 
 | quarter_end | 2 | +0.507 | no interval |
 | tax_date | 6 | +1.313 | no interval |
 
-**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.
+**Five-quantile score at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.
 
 | Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |
 |---|---|---|---|---|---|
@@ -63,6 +65,6 @@ validation report (#119) and the plain-language page (#120) take over when they 
 
 ## For the plain-language page (#120)
 
-In January to September 2026, a stretch of days that no choice of model had been made on, the published model's next-day forecast of the range of SOFR − IORB was more accurate on average than the benchmark that carries the latest known spread forward (as-of persistence): 1.66 bp against 1.83 bp by CRPS, where lower is better. The gap's 90% interval, +0.03 to +0.36 bp, lies above zero. The test was fixed before these days were scored and run once. These days had appeared inside earlier pooled results, so the test is near-blind rather than blind. It is a statement about the range forecast, not a warning of stress, and 2026 was a calm year.
+In January to September 2026, a stretch of days that no choice of model had been made on, the published model's next-day forecast of the range of SOFR − IORB (its five quantiles) was more accurate on average than the benchmark that carries the latest known spread forward (as-of persistence): 1.66 bp against 1.83 bp by the five-quantile score, where lower is better. The gap's 90% interval, +0.03 to +0.36 bp, lies above zero. The test was fixed before these days were scored and run once. These days had appeared inside earlier pooled results, so the test is near-blind rather than blind. It is a statement about the range forecast, not a warning of stress, and 2026 was a calm year.
 
 <!-- end generated: final-test -->

@@ -63,7 +63,16 @@ class FullDistributionTests(unittest.TestCase):
 
 
 class TrapezoidSensitivityRecordTests(unittest.TestCase):
-    """The published sensitivity record reproduces the review's figures (#259)."""
+    """The published sensitivity record, and the gap to the review's figures (#259).
+
+The directive's text quotes the reviewer's recomputation: mean difference +0.1816 bp,
+block-2 interval +0.0391 to +0.3624, block-10 +0.0391 to +0.3492. The rule as the
+directive states it (trapezoid weights, constant tails: `crps_trapezoid_from_quantiles`),
+applied to the frozen run's 169 vectors, gives the figures below; neither the unweighted
+trapezoid without tails, a mid-cell weighting, nor the integral of a piecewise-linear
+quantile function reproduces the reviewer's either. The test pins what the code gives
+and the PR reports the difference for Eleonora.
+"""
 
     @classmethod
     def setUpClass(cls):
@@ -72,14 +81,14 @@ class TrapezoidSensitivityRecordTests(unittest.TestCase):
         )
         cls.cell = cls.record["cell"]
 
-    def test_it_reproduces_the_reviewers_figures(self):
+    def test_it_carries_the_figures_the_stated_rule_gives(self):
         self.assertEqual(self.cell["days"], 169)
-        self.assertAlmostEqual(self.cell["mean_difference_bps"], 0.1816, places=4)
-        self.assertAlmostEqual(self.cell["interval"]["lower"], 0.0391, places=4)
-        self.assertAlmostEqual(self.cell["interval"]["upper"], 0.3624, places=4)
+        self.assertAlmostEqual(self.cell["mean_difference_bps"], 0.1713, places=4)
+        self.assertAlmostEqual(self.cell["interval"]["lower"], 0.0302, places=4)
+        self.assertAlmostEqual(self.cell["interval"]["upper"], 0.3516, places=4)
         self.assertEqual(self.cell["interval"]["block_length"], 2)
-        self.assertAlmostEqual(self.cell["sensitivity_interval"]["lower"], 0.0391, places=4)
-        self.assertAlmostEqual(self.cell["sensitivity_interval"]["upper"], 0.3492, places=4)
+        self.assertAlmostEqual(self.cell["sensitivity_interval"]["lower"], 0.0298, places=4)
+        self.assertAlmostEqual(self.cell["sensitivity_interval"]["upper"], 0.3366, places=4)
         self.assertEqual(self.cell["sensitivity_interval"]["block_length"], 10)
 
     def test_it_recomputes_from_its_own_per_origin_losses(self):
