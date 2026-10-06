@@ -2816,8 +2816,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
         "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
                      f"</code></a>: each scored day from {day(first)} to {day(last)}, the published "
                      f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "
-                     f"reproduces the published CRPS records exactly. The 50% band covers fewer days than it "
-                     f"should (<a href='https://github.com/{REPOSITORY}/issues/243'>#243</a>)."),
+                     f"reproduces the published CRPS records exactly."),
     }
     return data, fills
 

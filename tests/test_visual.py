@@ -71,7 +71,8 @@ class RegenerationTests(unittest.TestCase):
     def test_only_the_model_data_reads_run_records(self):
         """The descriptive chapters read no run record; the model chapters read nothing else.
 
-        The final test's section (#238) reads its one record and nothing else.
+        The final test's section (#238) reads its one record and nothing else, and
+        "Forecast against what happened" (#246) reads only its series' daily records.
 
         N4's status engine also reads docs/runs/, but only declarations:
         `run_record_declarations` keeps a record's declaration, its derived
@@ -88,6 +89,8 @@ class RegenerationTests(unittest.TestCase):
                         self.assertTrue(emit_visual.is_published_record(path), path)
                 elif rel == f"{emit_visual.DATA_DIR}/final_test.json":
                     self.assertEqual(set(inputs), {emit_visual.FINAL_TEST})
+                elif rel == f"{emit_visual.DATA_DIR}/forecast_daily.json":
+                    self.assertEqual(set(inputs), {s["record"] for s in emit_visual.FORECAST_DAILY_SERIES})
                 elif not rel.endswith("/newcomer_n4.json"):
                     for path in inputs:
                         self.assertFalse(path.startswith("docs/runs"), path)
