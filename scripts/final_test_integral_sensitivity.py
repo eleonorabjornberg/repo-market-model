@@ -1,18 +1,25 @@
-"""The final test's primary cell, re-scored with the trapezoid CRPS (#259): reported only.
+"""The final test's primary cell, re-scored with integral rules for the CRPS (#259): reported only.
 
 The final test's score is `metrics.crps_from_quantiles`, the unweighted mean of
-five pinball losses. It is a fixed score and not the CRPS integral. The
-independent review's rule for that integral is `metrics.crps_trapezoid_from_quantiles`
-(trapezoid weights between the declared levels, constant tails). This script
-scores the same frozen paired comparison with it, once, and publishes the
-result as a new record beside `docs/runs/final_test_near_blind.json`:
+five pinball losses. It is a fixed score and not the CRPS integral. This script
+scores the same frozen paired comparison under three rules for that integral, once
+each, and publishes the result as a new record beside `docs/runs/final_test_near_blind.json`.
+The rules, with the equal-weight primary as the fourth row, are:
 
-    PYTHONPATH=src python3 scripts/final_test_integral_sensitivity.py compare PUB.csv --report OUT/integral.json
-    PYTHONPATH=src python3 scripts/final_test_integral_sensitivity.py assemble OUT/integral.json \\
-        --output docs/runs/final_test_near_blind_integral_sensitivity.json
+- `trapezoid`: cell-width weights (0.15, 0.225, 0.25, 0.225, 0.15) times two, flat tails
+  (`metrics.crps_trapezoid_from_quantiles`);
+- `exact-flat`: the integral of the piecewise-linear quantile function, flat tails;
+- `exact-linear`: the same, with the end segments extended linearly to 0 and 1
+  (`metrics.crps_piecewise_linear_from_quantiles`).
+
+    PYTHONPATH=src python3 scripts/final_test_integral_sensitivity.py compare PUB.csv --report OUT/trapezoid.json
+    PYTHONPATH=src python3 scripts/final_test_integral_sensitivity.py assemble OUT/trapezoid.json \\
+        OUT/trapezoid-exact-flat.json OUT/trapezoid-exact-linear.json --output docs/runs/final_test_near_blind_integral_sensitivity.json
 
 `compare` runs the frozen command (`final_test_preregistration.CRPS_COMMAND`)
-with its loss swapped for the trapezoid one, injected here at run time. The
+with its loss swapped for the trapezoid one, injected here at run time. The same pass records each
+scored quantile vector and writes the two exact rules' reports beside it, so every rule scores
+identical vectors. The
 frozen declaration hashes `baseline.COMPARISON_LOSSES`, so the loss is not added
 to that module: the pre-registered primary test is unchanged, and the declaration
 checksum is the one the published record carries.
@@ -47,42 +54,113 @@ def _script(name):
 
 fp = _script("final_test_preregistration")
 
-LOSS_KEY = "crps-integral"
-STATISTIC = "crps_integral"
+RULES = {
+    "trapezoid": {
+        "loss_key": "crps-integral", "statistic": "crps_integral",
+        "label": "cell-width trapezoid, flat tails",
+        "rule": "the trapezoid rule: the quantile loss is linear between the declared levels and constant "
+                "beyond the lowest and highest, so the weights are the cell widths (0.15, 0.225, 0.25, 0.225, "
+                "0.15) and the score is twice the weighted sum (`metrics.crps_trapezoid_from_quantiles`)",
+    },
+    "exact-flat": {
+        "loss_key": "crps-exact-flat", "statistic": "crps_exact_flat",
+        "label": "exact piecewise-linear, flat tails",
+        "rule": "twice the exact integral of the quantile loss for the piecewise-linear quantile function, "
+                "the end quantiles held beyond the lowest and highest levels "
+                "(`metrics.crps_piecewise_linear_from_quantiles`, tails flat)",
+    },
+    "exact-linear": {
+        "loss_key": "crps-exact-linear", "statistic": "crps_exact_linear",
+        "label": "exact piecewise-linear, linear tails",
+        "rule": "as exact-flat, with the end segments' lines extended to 0 and 1 "
+                "(`metrics.crps_piecewise_linear_from_quantiles`, tails linear)",
+    },
+}
 RECORD_NAME = "final_test_near_blind_integral_sensitivity.json"
 PRIMARY_RECORD = "docs/runs/final_test_near_blind.json"
-RULE = ("the trapezoid rule: the quantile loss is linear between the declared levels and constant "
-        "beyond the lowest and highest, and the score is twice its integral over (0, 1) "
-        "(`metrics.crps_trapezoid_from_quantiles`)")
-SIGN = ("persistence minus the published distribution, both by the trapezoid CRPS; positive "
+SIGN = ("persistence minus the published distribution, both by the rule named; positive "
         "favours the published distribution")
+FUNCTIONS = {
+    "trapezoid": metrics.crps_trapezoid_from_quantiles,
+    "exact-flat": lambda levels, quantiles, actual: metrics.crps_piecewise_linear_from_quantiles(
+        levels, quantiles, actual, tails="flat"),
+    "exact-linear": lambda levels, quantiles, actual: metrics.crps_piecewise_linear_from_quantiles(
+        levels, quantiles, actual, tails="linear"),
+}
 
 
-def _integral_at(fitted, feature_row, actual):
-    levels = tuple(fitted.levels)
-    if levels != tuple(QUANTILE_LEVELS):
-        raise ValueError(f"the fitted model reports quantile levels {levels}, not the contract's")
-    return metrics.crps_trapezoid_from_quantiles(levels, fitted.predict(feature_row), actual)
+def _recording_loss(calls):
+    """The trapezoid loss, recording every vector it scores so one pass yields all three rules."""
+
+    def at(fitted, feature_row, actual):
+        levels = tuple(fitted.levels)
+        if levels != tuple(QUANTILE_LEVELS):
+            raise ValueError(f"the fitted model reports quantile levels {levels}, not the contract's")
+        quantiles = fitted.predict(feature_row)
+        calls.append({rule: score(levels, quantiles, actual) for rule, score in FUNCTIONS.items()})
+        return calls[-1]["trapezoid"]
+
+    return at
 
 
-def command() -> list:
+def command(rule="trapezoid") -> list:
     """The frozen command with its loss swapped; nothing else differs."""
 
     argv = list(fp.CRPS_COMMAND)
-    argv[argv.index("--loss") + 1] = LOSS_KEY
+    argv[argv.index("--loss") + 1] = RULES[rule]["loss_key"]
     return argv
 
 
+def _pair(calls, per_origin):
+    """The calls' scores per origin, as (persistence, published), by matching the trapezoid values.
+
+    The walk may score the two models interleaved or one after the other; the order that
+    reproduces every origin's reported losses is the one used, and none matching is an error.
+    """
+
+    n = len(per_origin)
+    if len(calls) != 2 * n:
+        raise ValueError(f"{len(calls)} scored vectors for {n} origins")
+    layouts = {
+        "interleaved, persistence first": [(calls[2 * i], calls[2 * i + 1]) for i in range(n)],
+        "interleaved, published first": [(calls[2 * i + 1], calls[2 * i]) for i in range(n)],
+        "persistence block first": [(calls[i], calls[n + i]) for i in range(n)],
+        "published block first": [(calls[n + i], calls[i]) for i in range(n)],
+    }
+    for pairs in layouts.values():
+        if all(abs(a["trapezoid"] - float(o["loss_a_bps"])) < 1e-9 and abs(b["trapezoid"] - float(o["loss_b_bps"])) < 1e-9
+               for (a, b), o in zip(pairs, per_origin)):
+            return pairs
+    raise ValueError("the scored vectors do not reproduce the report's trapezoid losses in any order")
+
+
 def compare_command(args) -> int:
+    calls = []
     losses = dict(baseline.COMPARISON_LOSSES)
-    losses[LOSS_KEY] = baseline._ComparisonLoss(f"{STATISTIC}_bps", STATISTIC, _integral_at)
+    spec = RULES["trapezoid"]
+    losses[spec["loss_key"]] = baseline._ComparisonLoss(
+        f"{spec['statistic']}_bps", spec["statistic"], _recording_loss(calls))
     patched = baseline.MappingProxyType(losses)
     baseline.COMPARISON_LOSSES = patched
     cli_eval.COMPARISON_LOSSES = patched
-    argv = command()
+    argv = command("trapezoid")
     argv[1] = str(args.panel)
     argv[argv.index("--report") + 1] = str(args.report)
-    return cli.main(argv)
+    status = cli.main(argv)
+    if status:
+        return status
+    report = json.loads(args.report.read_text(encoding="utf-8"))
+    per_origin = report["comparison"]["per_origin"]
+    pairs = _pair(calls, per_origin)
+    for rule in ("exact-flat", "exact-linear"):
+        extra = json.loads(json.dumps(report))
+        extra["comparison"]["loss"] = f"{RULES[rule]['statistic']}_bps"
+        for entry, (a, b) in zip(extra["comparison"]["per_origin"], pairs):
+            entry["loss_a_bps"], entry["loss_b_bps"] = a[rule], b[rule]
+            entry["difference_bps"] = a[rule] - b[rule]
+        args.report.with_name(f"{args.report.stem}-{rule}.json").write_text(
+            json.dumps(extra, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return 0
 
 
 def window(compare: dict) -> list:
@@ -103,16 +181,18 @@ def interval(differences, block_length, seed):
             "seed": seed, "method": "stationary_bootstrap"}
 
 
-def cell(compare: dict) -> dict:
+def cell(compare: dict, rule="trapezoid") -> dict:
     """The sensitivity cell, from the swapped-loss report's window days."""
+
+    statistic = RULES[rule]["statistic"]
 
     frozen = fp.crps_declaration()
     declared = compare["declaration"]
     for key in ("model_a", "model_b", "minimum_history", "refit_every", "decision_time", "end"):
         if declared.get(key) != frozen[key]:
             raise ValueError(f"the report's {key} is not the frozen CRPS test's")
-    if compare["comparison"].get("loss") != f"{STATISTIC}_bps":
-        raise ValueError("the report's loss is not the trapezoid CRPS")
+    if compare["comparison"].get("loss") != f"{statistic}_bps":
+        raise ValueError(f"the report's loss is not the {rule} rule's")
     if compare["panel"]["sha256"] != frozen["panel_sha256"]:
         raise ValueError("the report was not scored on the published panel")
     inside = window(compare)
@@ -121,7 +201,8 @@ def cell(compare: dict) -> dict:
     differences = [float(entry["difference_bps"]) for entry in inside]
     sensitivity = frozen["sensitivity_interval"]
     return {
-        "cell": "crps, h = 1, trapezoid",
+        "cell": f"crps, h = 1, {RULES[rule]['label']}",
+        "rule": RULES[rule]["rule"],
         "role": "reported only",
         "horizon": fp.CRPS_HORIZON,
         "days": len(inside),
@@ -136,30 +217,50 @@ def cell(compare: dict) -> dict:
     }
 
 
+def _row(name, label, cell_):
+    return {"rule": name, "label": label, "mean_difference_bps": cell_["mean_difference_bps"],
+            "interval": cell_["interval"], "sensitivity_interval": cell_["sensitivity_interval"]}
+
+
 def assemble_command(args) -> int:
-    compare = json.loads(args.report.read_text(encoding="utf-8"))
+    reports = {"trapezoid": args.trapezoid, "exact-flat": args.exact_flat, "exact-linear": args.exact_linear}
+    compares = {rule: json.loads(path.read_text(encoding="utf-8")) for rule, path in reports.items()}
     primary = json.loads((REPO / PRIMARY_RECORD).read_text(encoding="utf-8"))
+    cells = {rule: cell(compare, rule) for rule, compare in compares.items()}
+    plain = primary["primary"]["cell"]
+    rows = [{"rule": "equal-weights", "label": "equal weights (the primary score)",
+             "mean_difference_bps": plain["mean_difference_bps"], "interval": plain["interval"],
+             "sensitivity_interval": plain["sensitivity_interval"]}]
+    rows += [_row(rule, RULES[rule]["label"], cells[rule]) for rule in RULES]
     document = {
         "directive": "#259",
-        "record": "the final test's primary cell, re-scored with the trapezoid CRPS: reported only, "
+        "record": "the final test's primary cell, re-scored with integral rules for the CRPS: reported only, "
                   "decides nothing",
         "primary_record": PRIMARY_RECORD,
-        "rule": RULE,
+        "rule": RULES["trapezoid"]["rule"],
+        "rules": {rule: RULES[rule]["rule"] for rule in RULES},
         "crps_declaration_sha256": fp.crps_declaration_checksum(),
         "primary_cell_by_the_plain_score": {
-            key: primary["primary"]["cell"][key]
+            key: plain[key]
             for key in ("crps_persistence_bps", "crps_published_bps", "mean_difference_bps", "days")
         },
         "command": command(),
-        "cell": cell(compare),
+        "cell": cells["trapezoid"],
+        "rows": rows,
+        "other_rules": {
+            rule: {"cell": cells[rule],
+                   "window_per_origin": [
+                       {key: entry[key] for key in ("scored_date", "loss_a_bps", "loss_b_bps", "difference_bps")}
+                       for entry in window(compares[rule])]}
+            for rule in ("exact-flat", "exact-linear")
+        },
         "window_per_origin": [
             {key: entry[key] for key in ("scored_date", "loss_a_bps", "loss_b_bps", "difference_bps")}
-            for entry in window(compare)
+            for entry in window(compares["trapezoid"])
         ],
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({key: document["cell"][key] for key in
-                      ("days", "mean_difference_bps", "interval", "sensitivity_interval")}, indent=1))
+    print(json.dumps(rows, indent=1))
     return 0
 
 
@@ -171,7 +272,9 @@ def main(argv=None) -> int:
     one.add_argument("--report", type=Path, required=True)
     one.set_defaults(run=compare_command)
     two = sub.add_parser("assemble")
-    two.add_argument("report", type=Path)
+    two.add_argument("trapezoid", type=Path)
+    two.add_argument("exact_flat", type=Path)
+    two.add_argument("exact_linear", type=Path)
     two.add_argument("--output", type=Path, default=REPO / "docs" / "runs" / RECORD_NAME)
     two.set_defaults(run=assemble_command)
     args = parser.parse_args(argv)

@@ -154,6 +154,7 @@ __all__ = [
     "log_score",
     "pinball_loss",
     "crps_from_quantiles",
+    "crps_piecewise_linear_from_quantiles",
     "crps_trapezoid_from_quantiles",
     "precision_recall_curve",
     "stationary_bootstrap_indices",
@@ -806,7 +807,7 @@ def crps_trapezoid_from_quantiles(
     declared levels. On a grid that is not uniform it overweights the outer
     levels, so it is a fixed score and not a numerical approximation of the
     integral `CRPS = 2 * integral over (0, 1) of the quantile loss`. This is the
-    reviewer's rule (#259) for that integral: the quantile loss between two
+    trapezoid rule (#259) for that integral: the quantile loss between two
     declared levels is the straight line through its two ends (the trapezoid),
     and beyond the lowest and highest declared levels it is held constant at
     its value there (constant tails). It reduces to `|observed - point|` for a
@@ -830,6 +831,63 @@ def crps_trapezoid_from_quantiles(
     area = grid[0] * losses[0] + (1.0 - grid[-1]) * losses[-1]
     for position in range(1, len(grid)):
         area += (grid[position] - grid[position - 1]) * (losses[position - 1] + losses[position]) / 2.0
+    return 2.0 * area
+
+
+def crps_piecewise_linear_from_quantiles(
+    levels: Sequence[float],
+    predicted: Sequence[float],
+    observed: float,
+    tails: str = "flat",
+) -> float:
+    """The CRPS integral of a piecewise-linear quantile function, in closed form (#259).
+
+    `CRPS = 2 * integral over (0, 1) of (y - q(tau)) * (tau - 1{y < q(tau)})`, where `q`
+    is the straight line between declared levels. Beyond the lowest and highest levels
+    `tails="flat"` holds the end quantile and `tails="linear"` extends the end segment's
+    line to 0 and 1. The integrand is quadratic between kinks, so Simpson's rule on each
+    piece (split where `q` crosses `y`) is exact. A reported-only companion: every
+    primary cell stays on `crps_from_quantiles`.
+    """
+
+    if tails not in ("flat", "linear"):
+        raise MetricError(f"tails must be 'flat' or 'linear', not {tails!r}")
+    grid = _validate_levels(levels)
+    values = [float(value) for value in predicted]
+    if len(values) != len(grid):
+        raise MetricError(f"{len(grid)} levels against {len(values)} quantiles")
+    for position in range(1, len(values)):
+        if values[position] < values[position - 1]:
+            raise MetricError(
+                f"quantiles cross: level {grid[position - 1]} predicts "
+                f"{values[position - 1]} but level {grid[position]} predicts "
+                f"{values[position]}"
+            )
+    knots, heights = list(grid), list(values)
+    if tails == "flat" or len(grid) < 2:
+        low, high = values[0], values[-1]
+    else:
+        low = values[0] - (values[1] - values[0]) / (grid[1] - grid[0]) * grid[0]
+        high = values[-1] + (values[-1] - values[-2]) / (grid[-1] - grid[-2]) * (1.0 - grid[-1])
+    knots = [0.0] + knots + [1.0]
+    heights = [low] + heights + [high]
+
+    def loss(tau: float, q: float) -> float:
+        return (observed - q) * (tau - (1.0 if observed < q else 0.0))
+
+    def simpson(a: float, b: float, qa: float, qb: float) -> float:
+        qm = (qa + qb) / 2.0
+        return (b - a) / 6.0 * (loss(a, qa) + 4.0 * loss((a + b) / 2.0, qm) + loss(b, qb))
+
+    area = 0.0
+    for position in range(1, len(knots)):
+        a, b = knots[position - 1], knots[position]
+        qa, qb = heights[position - 1], heights[position]
+        if (qa - observed) * (qb - observed) < 0.0:
+            cross = a + (b - a) * (observed - qa) / (qb - qa)
+            area += simpson(a, cross, qa, observed) + simpson(cross, b, observed, qb)
+        else:
+            area += simpson(a, b, qa, qb)
     return 2.0 * area
 
 

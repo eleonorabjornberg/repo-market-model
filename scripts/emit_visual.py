@@ -24,6 +24,12 @@ half); and how the project was built. Nothing on the page is typed:
   alone, through `from_record`: the verdict, the pre-registered claim (quoted
   only on a pass, beside the near-blind disclosure), the split by day type and
   the reported-only cells with their verbatim labels.
+* The "Forecast against what happened" section (#246) reads
+  `docs/runs/published_distribution_daily_h1.json` alone, through
+  `from_record`: each scored day's five quantiles at h = 1 and the actual
+  spread, drawn by year, and an accuracy table in absolute basis points for
+  2018-2025 and 2026 apart. A day in a locked tier is refused, not drawn.
+  v2's line and bands join through `FORECAST_DAILY_SERIES` (#244).
 * Days in a locked tier of `metadata/lockbox.json` (`docs/decisions/lockbox.md`)
   are drawn greyed and labelled "held out", and are left out of every count,
   share, median and generated sentence (#141 ruling 3). The tiers are read
@@ -94,7 +100,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model.asof import declared_availability, fold_grid  # noqa: E402
-from repo_model.contract import CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_DEPLETION_BREAK_BN  # noqa: E402
+from repo_model.contract import (  # noqa: E402
+    CALENDAR_FEATURES, FEATURE_FIELDS, ON_RRP_BREAK_PROVENANCE, ON_RRP_DEPLETION_BREAK_BN,
+)
 from repo_model.data import (  # noqa: E402
     QUARTER_END_WINDOW_BUSINESS_DAYS, TAX_DEADLINE_MONTHS, corporate_tax_deadline, exceeds_bp, quarter_end_window)
 from repo_model.ingest import (  # noqa: E402
@@ -105,7 +113,7 @@ from repo_model.ingest import (  # noqa: E402
     load_snapshot_manifest,
     parse_snapshots,
 )
-from repo_model.lockbox import locked_tier, locked_tiers  # noqa: E402
+from repo_model.lockbox import load_lockbox, locked_tier, locked_tiers  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 from repo_model.scarcity import (  # noqa: E402
     BOOTSTRAP_BLOCK_LENGTH,
@@ -147,9 +155,13 @@ ISSUES = "docs/visual/issues.json"
 RUNS = "docs/runs"
 #: The final test (#151): the near-blind tier opened once. The site's "Final test" section (#238) reads it alone.
 FINAL_TEST = f"{RUNS}/final_test_near_blind.json"
+#: The published distribution's daily forecasts at h = 1 (#246).
+FORECAST_DAILY = f"{RUNS}/published_distribution_daily_h1.json"
 SNAPSHOTS = "tests/fixtures/snapshots"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
+#: The use limitation (#261): one statement, read here and by `emit_results.py`.
+USE_LIMITATION = "docs/use-limitation.md"
 PAGE = "site/index.html"
 DATA_DIR = "docs/visual/data"
 
@@ -158,6 +170,8 @@ DATA_DIR = "docs/visual/data"
 INPUTS = (
     "scripts/emit_visual.py",
     "scripts/scarcity_validation.py",
+    "scripts/final_test_influence.py",
+    USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
     GLOSSARY,
@@ -175,6 +189,7 @@ INPUTS = (
     MAP,
     ISSUES,
     FINAL_TEST,
+    FORECAST_DAILY,
     f":(glob){RUNS}/*.json",
     SNAPSHOTS,
 )
@@ -352,6 +367,24 @@ FINAL_TEST_DAY_TYPES = ("ordinary", "month_end", "quarter_end", "tax_date")
 #: The event cells the section names when it says the test is not a warning of stress.
 FINAL_TEST_STRESS_TARGETS = (("+5bp", "+5"), ("+10bp", "+10"))
 #: The second amendment's outcome labels (4 October 2026), as `scripts/emit_results.py` renders them.
+#: The distributions "Forecast against what happened" draws, in order (#246). Each
+#: names a published record holding every scored day's quantiles and actual
+#: spread on one grid. This is the hook for pressure model v2 (#244): when its
+#: daily record is published, it is added here, with no other change.
+FORECAST_DAILY_SERIES = (
+    {"key": "v1", "label": "The published model", "record": FORECAST_DAILY},
+)
+#: The quantile levels the section reads: the 90% band is the outer pair, the 50% band the inner.
+FORECAST_DAILY_LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
+#: The accuracy table's two periods: before 2026, and 2026 (opened history, #151).
+FORECAST_DAILY_SPLIT = "2026-01-01"
+#: The spread is whole basis points carried as floats; a tie is read within this.
+FORECAST_DAILY_TIE_BP = 1e-9
+#: How many of the largest misses the table names per period, and the 2026 list shows.
+FORECAST_DAILY_LARGEST, FORECAST_DAILY_MISSES = 3, 5
+#: The interior band's label until v2 replaces it (#243).
+FORECAST_DAILY_50_LABEL = "not yet calibrated (#243)"
+
 FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown", "worse": "shown worse"}
 
 
@@ -535,6 +568,16 @@ def newcomer_nav(template):
     return f"<ol>{items}</ol>"
 
 
+def use_limitation_fill(repo):
+    """`{{use_limitation}}`: the one blockquote line of `docs/use-limitation.md` (#261)."""
+    text = (Path(repo) / USE_LIMITATION).read_text(encoding="utf-8")
+    found = [line[2:].strip() for line in text.splitlines() if line.startswith("> ")]
+    if len(found) != 1 or not found[0]:
+        raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line, the statement; "
+                          f"found {len(found)}")
+    return {"use_limitation": html.escape(found[0], quote=False)}
+
+
 def fill(template, fills):
     """Fill `{{name}}` placeholders; any left over is an error."""
     out = template
@@ -617,6 +660,22 @@ def clock(t):
 
 def link(claim):
     return f"{claim['text']} (<a href='{claim['src']}'>source</a>)."
+
+
+def marker_text(event, rows, key):
+    """An annotation's text, with its figures read from that event's own panel row (#270, finding 25).
+
+    `{spike_sofr}` and `{spike_bp}` name the day the annotation is dated, not the
+    series' largest spread, which only happens to be the same day today.
+    """
+
+    text = event["text"]
+    if "{spike" not in text:
+        return text
+    row = next((r for r in rows if r["date"] == event["date"]), None)
+    if row is None:
+        raise VisualError(f"the annotation for {event['date']} quotes its day's SOFR, and the panel has no row for it")
+    return text.format(spike_sofr=f"{float(row['sofr']):.2f}%", spike_bp=row[key])
 
 
 def held_as(names):
@@ -891,7 +950,7 @@ def history(rows, notes, thresholds, regimes, windows, locked):
     tail = [r for r in kept if r["s"] > tail_bp]
     tail_years = sorted({yr(r) for r in tail})
     events = [{"date": e["date"], "src": e["src"],
-               "text": e["text"].format(spike_sofr=f"{float(spike['sofr']):.2f}%", spike_bp=spike["s"])}
+               "text": marker_text(e, kept, "s")}
               for e in notes["events"]]
     iorb_from = next(e["date"] for e in notes["events"] if e.get("role") == "iorb_from")
     late_qe = type_count(late, 0)
@@ -1153,8 +1212,7 @@ def newcomer_n1(rows, locked, thresholds, notes):
     if missing:
         raise VisualError(f"N1 marks events {missing} that annotations.json does not carry")
     episodes = [{"date": d, "src": by_date[d]["src"],
-                 "text": by_date[d]["text"].format(spike_sofr=f"{float(spike['sofr']):.2f}%",
-                                                   spike_bp=spike["n1_s"])}
+                 "text": marker_text(by_date[d], kept, "n1_s")}
                 for d in N1_EPISODES if locked_tier(date.fromisoformat(d), locked) is None]
     spans = held_out_spans(rows, locked)
     clusters = cluster_years(by_year)
@@ -1639,6 +1697,29 @@ def tag_details(tag_map, rows, registry, notes, glossary, parties):
     return "".join(out)
 
 
+def opened_days_note(rows, lockbox_path):
+    """The Start-here counts include the days of every opened tier; say so, from the lockbox (#270, finding 25).
+
+    An opened tier is ordinary history (`docs/decisions/lockbox.md`), so its days
+    are in every count above. Written for a reader who knows the near-blind tier
+    was once held back: how many of the panel's days it holds, and when it was opened.
+    Empty when no tier has been opened.
+    """
+
+    parts = []
+    for tier in load_lockbox(lockbox_path):
+        if tier.opened is None:
+            continue
+        first, last = tier.start.isoformat(), tier.end.isoformat() if tier.end else rows[-1]["date"]
+        n = sum(1 for r in rows if first <= r["date"] <= last)
+        if n:
+            parts.append(f"{n} of the days counted in the views below ({day(first)} to {day(last)}) are in the "
+                         f"{tier.name.replace('_', '-')} tier, opened on {day(tier.opened[0].isoformat())} "
+                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>); an opened tier is ordinary history, "
+                         f"so those days are in the counts.")
+    return "".join(f"<p class='note'>{p}</p>" for p in parts)
+
+
 def segment_held_note(locked):
     """The segment chart's held-out sentence, from the lockbox and the rule's own cut-off."""
     before = date.fromisoformat(SEGMENT_DAY_RULE["before"])
@@ -1836,6 +1917,20 @@ def pct(x):
     return f"{100 * x:.1f}%" if 0 < x < 0.1 else f"{round(100 * x)}%"
 
 
+def break_provenance_note(brk):
+    """What the page says of the ON RRP break's origin, from `contract.ON_RRP_BREAK_PROVENANCE` (#270, finding 23)."""
+
+    p = ON_RRP_BREAK_PROVENANCE
+    low, high = p["insensitive_between_bn"]
+    overlap = ("; those weeks overlap the days counted here, so it was not chosen blind to them"
+               if p["overlaps_scored_days"] else "")
+    return (f"The {brk} break is the project's constant, taken from the "
+            f"<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md'>"
+            f"advisor evidence pack</a>, which read it off {p['read_off']}{overlap}. It was fixed before this project "
+            f"used it and is not tuned here on these days; the review of that pack ({p['re_check']}) found the "
+            f"reading insensitive to a break anywhere from ${low:,.0f}bn to ${high:,.0f}bn.")
+
+
 def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
     """N3 "When does it happen?": the 2x2 of quarter-end against scarce or abundant cash (#147).
 
@@ -1913,6 +2008,7 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
         "n3_table": table(pressure_bp), "n3_table_second": table(second_bp),
         "n3_first": day(kept[0]["date"]), "n3_last": day(kept[-1]["date"]),
         "n3_break": brk,
+        "n3_break_note": break_provenance_note(brk),
         "n3_window_caption": (
             f"Quarter-end here is the column <code>quarter_end_window</code>: the quarter's last business day and "
             f"the {word(QUARTER_END_WINDOW_BUSINESS_DAYS)} business days either side, {word(window_days)} days in "
@@ -1989,7 +2085,7 @@ def runs(days, key):
     return out
 
 
-def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status, notes):
+def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status, notes, rows):
     """The #115 reserve-scarcity state as a band lane, with the ON RRP buffer as its sub-lane (#148).
 
     `scored` is `scarcity_days(...)[0]`: each scored day's as-of state and its
@@ -2002,7 +2098,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
     says from those shares whether pressure-day frequency rises with the state;
     when it does not, it says so plainly and that the band is not a working
     indicator (Eleonora's ruling of 2 October 2026 on #148). `status` is the
-    N4 engine's derived status for the map tag `BAND_TAG`.
+    N4 engine's derived status for the map tag `BAND_TAG`. `rows` is the panel: the
+    held-out spans are `held_out_spans(rows, locked)`, the same helper every view uses.
     """
     taus = [int(t) for t in thresholds["taus_bp"][:2]]
     kept = [d for d in scored if locked_tier(d.day, locked) is None]
@@ -2030,8 +2127,7 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
         rates = [by_state[str(k)]["above"][str(t)]["rate"] for k in states]
         rises[str(t)] = all(b >= a for a, b in zip(rates, rates[1:]))
     last = kept[-1].day
-    spans_held = [{"name": tier.name, "start": tier.start.isoformat(), "end": tier.end.isoformat() if tier.end else None}
-                  for tier in locked if tier.end is None or tier.end > last]
+    spans_held = held_out_spans(rows, locked)
     data = {
         "spans": spans, "buffer_spans": buffer_spans, "labels": {str(k): v for k, v in STATE_LABELS.items()},
         "band": list(SATIATION_BAND), "buffer_bn": ON_RRP_BUFFER_BN, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
@@ -2298,7 +2394,7 @@ def n5_when(at, today):
     A later date may fall in a locked tier, so the sentence gives the gap, not the date.
     """
     gap = (at.date() - today).days
-    when = f"at {clock(at.time())} New York time"
+    when = f"at the declared instant, {clock(at.time())} New York time"
     if gap < 0:
         return f"was announced {-gap} calendar {'day' if gap == -1 else 'days'} before it, {when}"
     if gap == 0:
@@ -2460,13 +2556,13 @@ def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, 
             "window_business_days": N5_WINDOW_BUSINESS_DAYS, "quarter_ends": quarter_ends, "series": series,
             "steps": steps, "sources": {k: v[1] for k, v in N5_SNAPSHOTS.items()}}
     fills = {
-        "n5_lede": (f"Two quarter-ends, chosen in advance by a rule that reads only the Fed's overnight reverse repo "
-                    f"balance: {day(s['date'])}, with cash scarce, and {day(a['date'])}, with cash abundant. SOFR less "
+        "n5_lede": (f"Two quarter-ends, chosen by a rule fixed on 2 October 2026 that reads no rate or spread, only the "
+                    f"Fed's overnight reverse repo balance: {day(s['date'])}, with cash scarce, and {day(a['date'])}, with cash abundant. SOFR less "
                     f"IORB closed at {on_day('scarce')} on the first and {on_day('abundant')} on the second. Step "
                     f"through what the Fed and its staff describe happening around a quarter-end, and what each "
                     f"public series did then."),
         "n5_rule": (f"The scarce case is the most recent quarter-end before {day(before)} on which the ON RRP result "
-                    f"public at the {clock(decision)} decision the business day before was below {below}: "
+                    f"public at the declared decision instant ({clock(decision)} New York time) the business day before was below {below}: "
                     f"{day(s['date'])}, which read ${s['on_rrp']['bn']:,.1f}bn. The abundant case is the quarter-end "
                     f"before then with the largest such result: {day(a['date'])}, which read "
                     f"${a['on_rrp']['bn']:,.0f}bn. The rule never reads a rate or a spread"),
@@ -2512,6 +2608,13 @@ def rests_on(window, interval, mean, rel):
             "share": sum(diffs[i] for i in top) / total, "mean": sum(rest) / len(rest), "lower": lower,
             "upper": upper, "block_length": interval["block_length"], "seed": interval["seed"],
             "replications": interval["replications"], "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
+
+
+def _influence_module():
+    spec = importlib.util.spec_from_file_location("final_test_influence", ROOT / "scripts" / "final_test_influence.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def final_test(records, locked):
@@ -2580,6 +2683,13 @@ def final_test(records, locked):
                       "verdict": FINAL_TEST_LABELS[node["verdict"]], "label": node["verdict_label"]})
 
     rests = rests_on(get("primary", "window_per_origin"), get(*cell, "interval"), mean, rel)
+    influence_module = _influence_module()
+    try:
+        got = influence_module.influence(records[rel])
+    except ValueError as error:
+        raise VisualError(f"{rel}: {error}") from error
+    leap = influence_module.leap_against_climatology(records[rel])
+    by_window = get(*cell, "splits", "by_quarter_end_window")
 
     x, y = date.fromisoformat(first), date.fromisoformat(last)
     window = (f"{x.day} {x:%B} to {day(last)}" if x.year == y.year else f"{day(first)} to {day(last)}")
@@ -2649,9 +2759,55 @@ def final_test(records, locked):
                   f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
     regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
                    else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
+    top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
+                       for rank, (d, v) in enumerate(got["top"], 1))
+    drop_rows = "".join(
+        f"<tr><th scope='row'>Mean after dropping the top {k} day{'' if k == 1 else 's'}</th><td>{signed(got['drop'][k], 4)}</td></tr>"
+        for k in influence_module.DROPS)
+    influence_table = (
+        f"<div class='heat' role='region' aria-label='How much a few days carry of the final test' tabindex='0'>"
+        f"<table class='fttab'><caption>Influence of single days. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<th scope='col'>Measure</th><th scope='col'>Paired difference, bp</th></tr></thead><tbody>"
+        f"<tr><th scope='row'>Mean</th><td>{signed(got['mean'], 4)}</td></tr>"
+        f"<tr><th scope='row'>Median</th><td>{signed(got['median'], 4)}</td></tr>{drop_rows}"
+        f"<tr><th scope='row'>Days the model won</th><td>{got['wins']} of {got['n']}</td></tr></tbody></table></div>"
+        f"<details><summary>The ten days that contribute most</summary><div class='heat' role='region' "
+        f"aria-label='The ten days that contribute most' tabindex='0'><table class='fttab'><thead><tr>"
+        f"<th scope='col'>Rank</th><th scope='col'>Day</th><th scope='col'>Paired difference, bp</th></tr></thead>"
+        f"<tbody>{top_rows}</tbody></table></div></details>")
+
+    def window_row(key, name):
+        entry = by_window.get(key, {})
+        if not entry.get("count"):
+            return f"<tr><th scope='row'>{name}</th><td>0</td><td>–</td><td>–</td></tr>"
+        cells = (f"<td>{signed(entry['interval']['lower'], 3)} to {signed(entry['interval']['upper'], 3)}</td>"
+                 if "interval" in entry else "<td>no interval: the bootstrap is undefined on this few days</td>")
+        return f"<tr><th scope='row'>{name}</th><td>{entry['count']}</td><td>{signed(entry['mean'], 3)}</td>{cells}</tr>"
+
+    window_table = (
+        f"<div class='heat' role='region' aria-label='The final test by quarter-end window' tabindex='0'>"
+        f"<table class='fttab'><caption>By quarter-end window. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<th scope='col'>Window</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
+        f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
+        f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
+        f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
+    two, dm = got["leave_two_out"], got["dm"]
+    robust_text = (
+        f"<b>Robustness, post hoc.</b> Without the two largest days the mean is {signed(two['mean'], 3)} bp, "
+        f"{level}% interval {signed(two['lower'], 3)} to {signed(two['upper'], 3)} bp, by the record's own bootstrap. "
+        f"The median day is {signed(got['median'], 3)} bp. Diebold-Mariano on the window, two-sided p "
+        f"{dm['p']:.3f} (Newey-West lag {dm['lag']}) or {dm['plain_p']:.3f} (plain). The record carries per-day "
+        f"CRPS only, so the split of the gain by pinball level is not available and is not computed.")
+    (d1, l1), (d2, l2) = got["persistence_loss"]
+    why_text = (
+        f"<b>Why {day(d1)} and {day(d2)} dominate.</b> On those two days carrying the latest spread forward lost "
+        f"{l1:.2f} and {l2:.2f} bp of the five-quantile score, against a median of {got['median_persistence_loss']:.2f} bp. The second "
+        f"independent review traced this to that benchmark reading the 2025-12-31 print (about +22 bp) two rows "
+        f"back; that cause is the review's and is not recomputed here, because the panel is not tracked.")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
-            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests}
+            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
+            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap}
     fills = {
         "ft_verdict": verdict,
         "ft_claim": claim_html,
@@ -2669,19 +2825,192 @@ def final_test(records, locked):
                          "a forecast range was from the spread that actually came, in basis points, so lower is better."),
         "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
                       f"deciding cell was changed from the plain-leap probability cell (#216) to this five-quantile score cell, "
-                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment."),
+                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment. "
+                      + (f"On the opened record the plain leap does not beat calendar climatology: mean Brier "
+                         f"difference {signed(leap['mean'], 4)}, {round(100 * leap['level'])}% interval "
+                         f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
+                         f"(reported only)." if leap else
+                         "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
         "ft_rests": rests_text,
         "ft_not_stress": stress_text,
         "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"though the record says no choice was made on them by name.{blind_text}",
+                        f"and the gbm family and its features were chosen on archived records scored through "
+                        f"2026-09-03, which include them. The record says no choice was made on them by name, but "
+                        f"the test is not a clean holdout. It does not validate stress performance or robustness "
+                        f"across regimes. The live record (#215), which logs the blind tier's days as they come, is "
+                        f"the first genuinely blind confirmation.{blind_text}",
         "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
                     f"The test says nothing about a stressed period."),
+        "ft_influence_table": influence_table,
+        "ft_window_table": window_table,
+        "ft_robust": robust_text,
+        "ft_why": why_text,
         "ft_later": (f"<b>The five-quantile score two to five days ahead is not evidence.</b> Those cells use a different model from "
                      f"the one-day forecast, and each carries Eleonora's label."),
         "ft_later_table": later_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
                      f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
                      f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
+    }
+    return data, fills
+
+
+def forecast_accuracy(days):
+    """The accuracy of one distribution on `days`, in absolute basis points.
+
+    `days` are a daily record's entries. The error is the actual spread minus
+    the median forecast. A band holds a day when the actual is inside it or on
+    its edge, within `FORECAST_DAILY_TIE_BP`; a miss is below or above it.
+    """
+    tol = FORECAST_DAILY_TIE_BP
+    n = len(days)
+    errors = [d["actual_bps"] - d["quantiles_bps"][2] for d in days]
+    absolute = sorted(abs(e) for e in errors)
+
+    def band(lo, hi):
+        below = sum(1 for d in days if d["actual_bps"] < d["quantiles_bps"][lo] - tol)
+        above = sum(1 for d in days if d["actual_bps"] > d["quantiles_bps"][hi] + tol)
+        return {"inside": (n - below - above) / n, "below": below, "above": above,
+                "width": sum(d["quantiles_bps"][hi] - d["quantiles_bps"][lo] for d in days) / n}
+
+    ranked = sorted(zip(days, errors), key=lambda pair: -abs(pair[1]))
+    return {
+        "days": n,
+        "mean_abs_error": sum(absolute) / n,
+        "median_abs_error": statistics.median(absolute),
+        "within_1": sum(1 for e in absolute if e <= 1 + tol) / n,
+        "within_2": sum(1 for e in absolute if e <= 2 + tol) / n,
+        "largest": [{"date": d["date"], "miss": e} for d, e in ranked[:FORECAST_DAILY_LARGEST]],
+        "band_90": band(0, 4),
+        "band_50": band(1, 3),
+    }
+
+
+def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
+    """The "Forecast against what happened" section (#246), read off each series' record.
+
+    Every number goes through `from_record`. Each series is a published daily
+    record on the same scored days; a day in a locked tier (the blind tier, and
+    the live record's days) is refused, so none is drawn or counted. The
+    accuracy table is in absolute basis points, 2018-2025 and 2026 apart; no
+    benchmark is in it.
+    """
+    drawn = []
+    for entry in series:
+        rel = entry["record"]
+        levels = from_record(records, rel, "levels")
+        if list(levels) != FORECAST_DAILY_LEVELS:
+            raise VisualError(f"{rel}: quantile levels {levels}, not {FORECAST_DAILY_LEVELS}")
+        days = from_record(records, rel, "days")
+        if not days:
+            raise VisualError(f"{rel} carries no day")
+        for d in days:
+            tier = locked_tier(date.fromisoformat(d["date"]), locked)
+            if tier is not None:
+                raise VisualError(f"{rel}: {d['date']} is in the locked {tier.name} tier; no blind or "
+                                  f"live-record day is drawn or counted")
+        drawn.append((entry, rel, days))
+    dates = [d["date"] for d in drawn[0][2]]
+    if dates != sorted(set(dates)):
+        raise VisualError(f"{drawn[0][1]}: its days are not in order, once each")
+    for entry, rel, days in drawn[1:]:
+        if [d["date"] for d in days] != dates:
+            raise VisualError(f"{rel} is not on the scored days of {drawn[0][1]}")
+    first, last = dates[0], dates[-1]
+
+    periods = []
+    for key, label, inside in (
+            ("2018-2025", f"{first[:4]}–2025", lambda iso: iso < FORECAST_DAILY_SPLIT),
+            ("2026", None, lambda iso: iso >= FORECAST_DAILY_SPLIT)):
+        rows = []
+        for entry, rel, days in drawn:
+            kept = [d for d in days if inside(d["date"])]
+            if not kept:
+                raise VisualError(f"{rel} carries no day in {key}")
+            rows.append({"series": entry["key"], **forecast_accuracy(kept)})
+        kept = [d for d in drawn[0][2] if inside(d["date"])]
+        a, b = date.fromisoformat(kept[0]["date"]), date.fromisoformat(kept[-1]["date"])
+        periods.append({"key": key, "label": label or f"{a.year}, {a:%B} to {b:%B}",
+                        "first": kept[0]["date"], "last": kept[-1]["date"], "rows": rows})
+
+    v1 = drawn[0][2]
+    later = [d for d in v1 if d["date"] >= FORECAST_DAILY_SPLIT]
+    ranked = sorted(later, key=lambda d: -abs(d["actual_bps"] - d["quantiles_bps"][2]))
+    misses = [{"date": d["date"], "actual": d["actual_bps"], "median": d["quantiles_bps"][2],
+               "low": d["quantiles_bps"][0], "high": d["quantiles_bps"][4],
+               "miss": d["actual_bps"] - d["quantiles_bps"][2]} for d in ranked[:FORECAST_DAILY_MISSES]]
+    years = sorted({int(iso[:4]) for iso in dates})
+    data = {
+        "records": [rel for _, rel, _ in drawn], "first": first, "last": last, "levels": FORECAST_DAILY_LEVELS,
+        "years": years, "default_year": years[-1], "band_50_label": FORECAST_DAILY_50_LABEL,
+        "series": [{"key": entry["key"], "label": entry["label"],
+                    "days": [[d["date"], *(round(v, 3) for v in (d["actual_bps"], *d["quantiles_bps"]))]
+                             for d in days]}
+                   for entry, rel, days in drawn],
+        "periods": periods, "misses_2026": misses,
+    }
+
+    many = len(drawn) > 1
+    heads = "".join(f"<th scope='col'>{p['label']}{', ' + html.escape(e['label']) if many else ''}</th>"
+                    for p in periods for e, _, _ in drawn)
+    cols = [row for p in periods for row in p["rows"]]
+
+    def line(name, cell):
+        return f"<tr><th scope='row'>{name}</th>" + "".join(f"<td>{cell(r)}</td>" for r in cols) + "</tr>"
+
+    def band(r, key):
+        b = r[key]
+        return f"{100 * b['inside']:.0f}% ({b['below']} below, {b['above']} above)"
+
+    def largest(r):
+        return "<br>".join(f"{signed(m['miss'], 1)} bp, {short_day(m['date'])}" for m in r["largest"])
+
+    body = "".join((
+        line("Days scored", lambda r: f"{r['days']:,}"),
+        line("Mean absolute error of the median, bp", lambda r: f"{r['mean_abs_error']:.2f}"),
+        line("Median absolute error of the median, bp", lambda r: f"{r['median_abs_error']:.2f}"),
+        line("Days within 1 bp of the median", lambda r: f"{100 * r['within_1']:.0f}%"),
+        line("Days within 2 bp of the median", lambda r: f"{100 * r['within_2']:.0f}%"),
+        line("Largest misses, actual minus median", largest),
+        line("Actual inside the 90% band (misses below, above)", lambda r: band(r, "band_90")),
+        line(f"Actual inside the 50% band, {FORECAST_DAILY_50_LABEL} (misses below, above)",
+             lambda r: band(r, "band_50")),
+        line("Mean width of the 90% band, bp", lambda r: f"{r['band_90']['width']:.2f}"),
+        line("Mean width of the 50% band, bp", lambda r: f"{r['band_50']['width']:.2f}"),
+    ))
+    table = (f"<div class='heat' role='region' aria-label='How far off the forecast was, in basis points' "
+             f"tabindex='0'><table class='fttab fdtab'><caption>How far off it was, in basis points. A band holds a day "
+             f"when the actual spread is inside it or on its edge.</caption><thead><tr><th scope='col'>Measure</th>"
+             f"{heads}</tr></thead><tbody>{body}</tbody></table></div>")
+    miss_rows = "".join(
+        f"<tr><td>{day(m['date'])}</td><td>{signed(m['actual'], 0)}</td><td>{signed(m['median'], 2)}</td>"
+        f"<td>{signed(m['low'], 2)} to {signed(m['high'], 2)}</td><td>{signed(m['miss'], 2)}</td></tr>"
+        for m in misses)
+    miss_table = (f"<div class='heat' role='region' aria-label='The biggest misses of 2026' tabindex='0'>"
+                  f"<table class='fttab'><caption>The biggest misses of {periods[1]['label']}</caption><thead><tr>"
+                  f"<th scope='col'>Date</th><th scope='col'>Actual, bp</th><th scope='col'>Forecast median, bp</th>"
+                  f"<th scope='col'>90% band, bp</th><th scope='col'>Miss, bp</th></tr></thead>"
+                  f"<tbody>{miss_rows}</tbody></table></div>")
+    recent = periods[1]["rows"][0]
+    options = "".join(f"<option value='{y}'{' selected' if y == years[-1] else ''}>{y}</option>" for y in years)
+    fills = {
+        "fd_lede": (f"Each day at the decision time the model forecasts the next day's SOFR − IORB as a range. In "
+                    f"{periods[1]['label']}, its median was off by {recent['mean_abs_error']:.2f} bp on an "
+                    f"average day and within 1 bp of the actual spread on {100 * recent['within_1']:.0f}% of "
+                    f"days, and the actual spread fell inside its 90% band on "
+                    f"{100 * recent['band_90']['inside']:.0f}% of days."),
+        "fd_year_options": options,
+        "fd_first_year": years[0],
+        "fd_band_50": FORECAST_DAILY_50_LABEL,
+        "fd_table": table,
+        "fd_misses": miss_table,
+        "fd_hidden": (f"<b>No day after {day(last)} is drawn or counted.</b> Later days are in the blind tier, "
+                      f"and the live record's forecasts are among them; none is shown until its scoring date "
+                      f"opens it (<a href='{LOCKBOX_RULE}'>the lockbox</a>)."),
+        "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
+                     f"</code></a>: each scored day from {day(first)} to {day(last)}, the published "
+                     f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "
+                     f"reproduces the published CRPS records exactly."),
     }
     return data, fills
 
@@ -2708,6 +3037,7 @@ def generate(repo, commit=None):
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
     final, final_fills = final_test(records, locked)
+    daily, daily_fills = forecast_daily(records, locked)
     pending = pending_figures(records)
     commit = commit or input_commit(repo)
 
@@ -2726,6 +3056,7 @@ def generate(repo, commit=None):
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
+    fills.update(use_limitation_fill(repo))
     fills.update(n1_fills)
     fills.update(n2_fills)
     fills.update(n3_fills)
@@ -2741,7 +3072,7 @@ def generate(repo, commit=None):
         raise VisualError(f"the band's legend reads the map tag {BAND_TAG!r}, which map.json does not carry")
     icon, label = next((i, w) for k, i, w in STATUSES if k == tag["status"])
     band, band_fills = newcomer_band(scored, locked, thresholds, registry, decision, on_rrp,
-                                     {"key": tag["status"], "icon": icon, "word": label, "reason": tag["reason"]}, notes)
+                                     {"key": tag["status"], "icon": icon, "word": label, "reason": tag["reason"]}, notes, rows)
     fills.update(band_fills)
     n5_snaps, n5_digests = n5_snapshots(repo)
     try:
@@ -2804,6 +3135,7 @@ def generate(repo, commit=None):
     })
     fills.update(model_fills)
     fills.update(final_fills)
+    fills.update(daily_fills)
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
@@ -2820,7 +3152,7 @@ def generate(repo, commit=None):
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
                 "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band,
-                "newcomer_n5": n5, "final_test": final}
+                "newcomer_n5": n5, "final_test": final, "forecast_daily": daily}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -2836,7 +3168,8 @@ def generate(repo, commit=None):
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
-    own = {"model": model_provenance, "final_test": final_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
+    daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
+    own = {"model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}
     out = {}
     for name, payload in payloads.items():
@@ -2844,10 +3177,12 @@ def generate(repo, commit=None):
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model", "newcomer_n1", "newcomer_n2",
-                                          "newcomer_n3", "newcomer_band", "newcomer_n5", "final_test")}
+                                          "newcomer_n3", "newcomer_band", "newcomer_n5", "final_test",
+                                          "forecast_daily")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
+    fills["opened_note"] = opened_days_note(rows, repo / LOCKBOX)
     if "/*__DATA__*/null" not in template:
         raise VisualError("the template has no /*__DATA__*/null slot")
     page = template.replace("/*__DATA__*/null", json.dumps(page_data, sort_keys=True, separators=(",", ":"),

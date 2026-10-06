@@ -17,6 +17,7 @@ import json
 import re
 import subprocess
 import unittest
+from datetime import date
 from pathlib import Path
 
 from repo_model import lockbox
@@ -70,7 +71,8 @@ class RegenerationTests(unittest.TestCase):
     def test_only_the_model_data_reads_run_records(self):
         """The descriptive chapters read no run record; the model chapters read nothing else.
 
-        The final test's section (#238) reads its one record and nothing else.
+        The final test's section (#238) reads its one record and nothing else, and
+        "Forecast against what happened" (#246) reads only its series' daily records.
 
         N4's status engine also reads docs/runs/, but only declarations:
         `run_record_declarations` keeps a record's declaration, its derived
@@ -87,6 +89,8 @@ class RegenerationTests(unittest.TestCase):
                         self.assertTrue(emit_visual.is_published_record(path), path)
                 elif rel == f"{emit_visual.DATA_DIR}/final_test.json":
                     self.assertEqual(set(inputs), {emit_visual.FINAL_TEST})
+                elif rel == f"{emit_visual.DATA_DIR}/forecast_daily.json":
+                    self.assertEqual(set(inputs), {s["record"] for s in emit_visual.FORECAST_DAILY_SERIES})
                 elif not rel.endswith("/newcomer_n4.json"):
                     for path in inputs:
                         self.assertFalse(path.startswith("docs/runs"), path)
@@ -1193,7 +1197,7 @@ class NewcomerBandBase(unittest.TestCase):
     def run_band(cls, scored, locked=None, status=None):
         return emit_visual.newcomer_band(list(scored), cls.locked if locked is None else locked, cls.thresholds,
                                          cls.registry, cls.decision, cls.on_rrp, cls.status if status is None
-                                         else status, cls.notes)
+                                         else status, cls.notes, cls.rows)
 
     def locked_days(self):
         return [emit_visual.date.fromisoformat(r["date"]) for r in self.rows
@@ -2465,5 +2469,258 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertIn("https://eleonorabjornberg.github.io/repo-market-model/#final-test", line)
 
 
+
+def forecast_daily_block(page):
+    """The "Forecast against what happened" section on the page, from its opening tag to its close."""
+    start = page.index('<section id="forecast-actual"')
+    return page[start:page.index("</section>", start)]
+
+
+class ForecastDailySectionTests(unittest.TestCase):
+    """#246: each day's forecast against the actual spread, read off
+    `docs/runs/published_distribution_daily_h1.json`.
+
+    The accuracy figures are recomputed here from the record, independently of
+    the generator, so a record or a page that drifts fails. No day after the
+    panel end, blind tier or live record, may appear.
+    """
+
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+    record = json.loads((ROOT / "docs/runs/published_distribution_daily_h1.json").read_text(encoding="utf-8"))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.records = published_records()
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.data, cls.fills = emit_visual.forecast_daily(cls.records, cls.locked)
+        cls.doc = json.loads((ROOT / emit_visual.DATA_DIR / "forecast_daily.json").read_text(encoding="utf-8"))
+        cls.block = forecast_daily_block(cls.page)
+        cls.text = visible_text(cls.block)
+
+    @staticmethod
+    def expected(days):
+        """The accuracy table for `days`, computed here from the record's own fields."""
+        tol = 1e-9
+        errors = [d["actual_bps"] - d["quantiles_bps"][2] for d in days]
+        absolute = sorted(abs(e) for e in errors)
+        n = len(days)
+
+        def band(lo, hi):
+            below = sum(1 for d in days if d["actual_bps"] < d["quantiles_bps"][lo] - tol)
+            above = sum(1 for d in days if d["actual_bps"] > d["quantiles_bps"][hi] + tol)
+            width = sum(d["quantiles_bps"][hi] - d["quantiles_bps"][lo] for d in days) / n
+            return {"inside": (n - below - above) / n, "below": below, "above": above, "width": width}
+
+        return {
+            "days": n,
+            "mean_abs_error": sum(absolute) / n,
+            "median_abs_error": (absolute[(n - 1) // 2] + absolute[n // 2]) / 2,
+            "within_1": sum(1 for e in absolute if e <= 1 + tol) / n,
+            "within_2": sum(1 for e in absolute if e <= 2 + tol) / n,
+            "band_90": band(0, 4),
+            "band_50": band(1, 3),
+        }
+
+    def period_days(self, first, last):
+        return [d for d in self.record["days"] if first <= d["date"] <= last]
+
+    def test_the_record_is_an_input(self):
+        self.assertIn(emit_visual.FORECAST_DAILY, emit_visual.INPUTS)
+        self.assertEqual(self.doc["provenance"]["inputs"],
+                         {emit_visual.FORECAST_DAILY: emit_visual.sha256(ROOT / emit_visual.FORECAST_DAILY)})
+
+    def test_the_accuracy_table_is_recomputed_from_the_record(self):
+        for data in (self.data, self.doc["data"]):
+            self.assertEqual([p["key"] for p in data["periods"]], ["2018-2025", "2026"])
+            for period in data["periods"]:
+                days = self.period_days(period["first"], period["last"])
+                want = self.expected(days)
+                for row in period["rows"]:
+                    with self.subTest(period=period["key"], series=row["series"]):
+                        for key in ("days", "mean_abs_error", "median_abs_error", "within_1", "within_2"):
+                            self.assertAlmostEqual(row[key], want[key], places=12, msg=key)
+                        for band in ("band_90", "band_50"):
+                            for key in ("inside", "below", "above", "width"):
+                                self.assertAlmostEqual(row[band][key], want[band][key], places=12,
+                                                       msg=f"{band}.{key}")
+
+    def test_the_periods_split_at_2026_and_end_at_the_panel_end(self):
+        periods = {p["key"]: p for p in self.data["periods"]}
+        self.assertEqual(periods["2018-2025"]["first"], self.record["first"])
+        self.assertEqual(periods["2018-2025"]["last"], "2025-12-31")
+        self.assertEqual(periods["2026"]["first"], "2026-01-02")
+        self.assertEqual(periods["2026"]["last"], self.record["last"])
+        self.assertEqual(sum(p["rows"][0]["days"] for p in self.data["periods"]), len(self.record["days"]))
+
+    def test_the_largest_misses_are_the_records_largest(self):
+        for period in self.data["periods"]:
+            days = self.period_days(period["first"], period["last"])
+            ranked = sorted(days, key=lambda d: -abs(d["actual_bps"] - d["quantiles_bps"][2]))
+            with self.subTest(period=period["key"]):
+                self.assertEqual([m["date"] for m in period["rows"][0]["largest"]],
+                                 [d["date"] for d in ranked[:len(period["rows"][0]["largest"])]])
+        days = self.period_days("2026-01-01", "2026-12-31")
+        ranked = sorted(days, key=lambda d: -abs(d["actual_bps"] - d["quantiles_bps"][2]))
+        misses = self.data["misses_2026"]
+        self.assertTrue(misses)
+        self.assertEqual([m["date"] for m in misses], [d["date"] for d in ranked[:len(misses)]])
+        for miss, source in zip(misses, ranked):
+            self.assertEqual(miss["actual"], source["actual_bps"])
+            self.assertEqual(miss["median"], source["quantiles_bps"][2])
+            self.assertEqual((miss["low"], miss["high"]), (source["quantiles_bps"][0], source["quantiles_bps"][4]))
+
+    def test_the_page_quotes_the_table(self):
+        for period in self.data["periods"]:
+            row = period["rows"][0]
+            with self.subTest(period=period["key"]):
+                self.assertIn(f"{row['mean_abs_error']:.2f}", self.text)
+                self.assertIn(f"{row['median_abs_error']:.2f}", self.text)
+                self.assertIn(f"{100 * row['band_90']['inside']:.0f}%", self.text)
+                self.assertIn(f"{100 * row['band_50']['inside']:.0f}%", self.text)
+                self.assertIn(f"{row['band_90']['width']:.2f}", self.text)
+        for miss in self.data["misses_2026"]:
+            self.assertIn(f"<td>{emit_visual.day(miss['date'])}</td>", self.block)
+
+    def test_the_chart_reads_every_day_of_the_record(self):
+        days = self.data["series"][0]["days"]
+        self.assertEqual([d[0] for d in days], [d["date"] for d in self.record["days"]])
+        for drawn, source in zip(days, self.record["days"]):
+            self.assertEqual(drawn[1:], [round(v, 3) for v in [source["actual_bps"], *source["quantiles_bps"]]])
+
+    def test_the_chart_defaults_to_2026_with_any_year_on_a_control(self):
+        self.assertEqual(self.data["default_year"], 2026)
+        self.assertEqual(self.data["years"], list(range(2018, 2027)))
+        self.assertRegex(self.block, r'<select[^>]*id="fdyear"')
+        self.assertIn('id="fdchart"', self.block)
+
+    def test_a_drifted_record_moves_the_section(self):
+        records = copy.deepcopy(self.records)
+        target = records[emit_visual.FORECAST_DAILY]["days"][-1]
+        target["actual_bps"] = target["quantiles_bps"][2] + 40.0
+        data, _ = emit_visual.forecast_daily(records, self.locked)
+        self.assertEqual(data["misses_2026"][0]["date"], target["date"])
+        self.assertNotEqual(data["periods"][1]["rows"][0]["mean_abs_error"],
+                            self.data["periods"][1]["rows"][0]["mean_abs_error"])
+
+    def test_a_missing_record_or_field_is_refused(self):
+        records = copy.deepcopy(self.records)
+        del records[emit_visual.FORECAST_DAILY]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.forecast_daily(records, self.locked)
+        records = copy.deepcopy(self.records)
+        del records[emit_visual.FORECAST_DAILY]["levels"]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.forecast_daily(records, self.locked)
+
+    def test_no_blind_or_live_day_appears(self):
+        last = max(t.start for t in self.locked)
+        for d in self.data["series"][0]["days"]:
+            self.assertLess(d[0], last.isoformat())
+            self.assertIsNone(lockbox.locked_tier(date.fromisoformat(d[0]), self.locked))
+        self.assertIn("2026-09-03", self.data["last"])
+
+    def test_a_locked_day_in_the_record_is_refused(self):
+        records = copy.deepcopy(self.records)
+        extra = dict(records[emit_visual.FORECAST_DAILY]["days"][-1], date="2026-09-04")
+        records[emit_visual.FORECAST_DAILY]["days"].append(extra)
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.forecast_daily(records, self.locked)
+
+    def test_the_page_says_blind_days_stay_hidden(self):
+        self.assertIn("No day after 3 September 2026 is drawn or counted", self.text)
+        self.assertIn("live record", self.text)
+        self.assertIn(emit_visual.LOCKBOX_RULE, self.block)
+
+    def test_the_50_percent_band_says_it_is_not_yet_calibrated(self):
+        self.assertIn("not yet calibrated (#243)", self.text)
+        template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+        self.assertIn("not yet calibrated (#243)", template[template.index("function renderForecastDaily"):])
+
+    def test_absolute_numbers_come_before_any_benchmark(self):
+        self.assertNotIn("persistence", self.text.split("Largest misses")[0].lower())
+
+    def test_the_v2_hook_adds_a_series_without_other_changes(self):
+        """#246 point 4: v2's line and bands join `FORECAST_DAILY_SERIES`; v2 itself is not added."""
+        self.assertEqual([s["key"] for s in emit_visual.FORECAST_DAILY_SERIES], ["v1"])
+        series = emit_visual.FORECAST_DAILY_SERIES + (
+            {"key": "v2", "label": "Pressure model v2", "record": emit_visual.FORECAST_DAILY},)
+        data, fills = emit_visual.forecast_daily(self.records, self.locked, series=series)
+        self.assertEqual([s["key"] for s in data["series"]], ["v1", "v2"])
+        for period in data["periods"]:
+            self.assertEqual([r["series"] for r in period["rows"]], ["v1", "v2"])
+        self.assertIn("Pressure model v2", fills["fd_table"])
+
+    def test_the_section_sits_after_the_final_test_before_the_chapters(self):
+        at = self.page.index('<section id="forecast-actual"')
+        self.assertLess(self.page.index('<section id="final-test"'), at)
+        self.assertLess(at, self.page.index('<section id="plumbing">'))
+        self.assertIn('href="#forecast-actual"', self.page[:self.page.index("<!-- start-here -->")])
+        self.assertIn(f"https://github.com/{emit_visual.REPOSITORY}/blob/main/{emit_visual.FORECAST_DAILY}",
+                      self.block)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class FindingProseTests(unittest.TestCase):
+    """The page prose the second independent review found false or loose (#270, findings 23, 25, 31, 33)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (ROOT / "site/index.html").read_text(encoding="utf-8")
+
+    def test_the_break_is_not_said_to_be_untuned_without_its_provenance(self):
+        provenance = emit_visual.break_provenance_note("$100bn")
+        self.assertIn(provenance, self.page)
+        self.assertIn("weekly 2018-2026 pressure frequencies", provenance)
+        self.assertIn("not chosen blind", provenance)
+
+    def test_no_view_says_its_days_were_chosen_in_advance(self):
+        self.assertNotIn("chosen in advance", self.page)
+        self.assertIn("fixed on 2 October 2026 that reads no rate or spread", self.page)
+
+    def test_an_annotation_quotes_its_own_days_row_not_the_largest_spread(self):
+        rows = [{"date": "2019-09-17", "sofr": "5.25", "s": 315},
+                {"date": "2025-12-01", "sofr": "9.00", "s": 999}]
+        event = {"date": "2019-09-17", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IOER"}
+        self.assertEqual(emit_visual.marker_text(event, rows, "s"), "SOFR prints 5.25%, 315 bp above IOER")
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.marker_text(event, rows[1:], "s")
+
+    def test_the_opened_days_inside_the_counts_are_marked(self):
+        rows = [{"date": "2025-12-31"}, {"date": "2026-01-02"}, {"date": "2026-09-03"}]
+        note = emit_visual.opened_days_note(rows, ROOT / emit_visual.LOCKBOX)
+        self.assertIn("2 of the days counted", note)
+        self.assertIn("near-blind", note)
+        self.assertIn("169 of the days counted", self.page)
+
+    def test_the_march_2020_cut_is_dated_as_the_sunday_it_was(self):
+        notes = json.loads((ROOT / "docs/visual/annotations.json").read_text(encoding="utf-8"))
+        text = next(e["text"] for e in notes["events"] if e["date"] == "2020-03-15")
+        self.assertIn("Sunday", text)
+
+    def test_the_band_view_holds_out_what_every_other_view_holds_out(self):
+        data = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_band.json").read_text(encoding="utf-8"))["data"]
+        n1 = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n1.json").read_text(encoding="utf-8"))["data"]
+        self.assertEqual(data["held_out"], n1["held_out"])
+
+
+class OverviewNotebookTests(unittest.TestCase):
+    """`notebooks/00_overview.ipynb` states what it is and defines a pressure day as the project does (#270, finding 33)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = (ROOT / "notebooks/00_overview.ipynb").read_text(encoding="utf-8")
+
+    def test_no_stale_banner_or_roadmap_remains(self):
+        self.assertNotIn("re-score pending", self.text)
+        self.assertNotIn("Next, in order", self.text)
+
+    def test_it_says_it_is_a_pinned_pre_as_of_illustration(self):
+        self.assertIn("pinned to panel 4ddc3882", self.text)
+
+    def test_a_pressure_day_is_whole_bp_strictly_above_five(self):
+        self.assertNotIn(">= 5", self.text)
+        self.assertNotIn(">= threshold", self.text)
+        self.assertIn("round() > 5", self.text)

@@ -63,15 +63,12 @@ class FullDistributionTests(unittest.TestCase):
 
 
 class TrapezoidSensitivityRecordTests(unittest.TestCase):
-    """The published sensitivity record, and the gap to the review's figures (#259).
+    """The published sensitivity record (#259): four rules for the same 169 daily vectors.
 
-The directive's text quotes the reviewer's recomputation: mean difference +0.1816 bp,
-block-2 interval +0.0391 to +0.3624, block-10 +0.0391 to +0.3492. The rule as the
-directive states it (trapezoid weights, constant tails: `crps_trapezoid_from_quantiles`),
-applied to the frozen run's 169 vectors, gives the figures below; neither the unweighted
-trapezoid without tails, a mid-cell weighting, nor the integral of a piecewise-linear
-quantile function reproduces the reviewer's either. The test pins what the code gives
-and the PR reports the difference for Eleonora.
+Rows: equal weights (the primary score), the cell-width trapezoid with flat tails, the exact
+piecewise-linear integral with flat tails, and the same with linear tails. Each uses the record's
+bootstrap (block lengths 2 and 10, the frozen seeds, 2,000 replications, 90% percentile). The test
+pins what the code gives.
 """
 
     @classmethod
@@ -80,6 +77,29 @@ and the PR reports the difference for Eleonora.
             (REPO / "docs/runs/final_test_near_blind_integral_sensitivity.json").read_text(encoding="utf-8")
         )
         cls.cell = cls.record["cell"]
+
+    def test_it_carries_all_four_rules_with_their_figures(self):
+        rows = {row["rule"]: row for row in self.record["rows"]}
+        self.assertEqual(list(rows), ["equal-weights", "trapezoid", "exact-flat", "exact-linear"])
+        expected = {"equal-weights": (0.1741, 0.0293, 0.3583), "trapezoid": (0.1713, 0.0302, 0.3516),
+                    "exact-flat": (0.2049, 0.0622, 0.3866), "exact-linear": (0.2010, 0.0591, 0.3813)}
+        for name, (mean, lower, upper) in expected.items():
+            with self.subTest(rule=name):
+                row = rows[name]
+                self.assertAlmostEqual(row["mean_difference_bps"], mean, places=4)
+                self.assertAlmostEqual(row["interval"]["lower"], lower, places=4)
+                self.assertAlmostEqual(row["interval"]["upper"], upper, places=4)
+                self.assertEqual(row["interval"]["block_length"], 2)
+                self.assertEqual(row["sensitivity_interval"]["block_length"], 10)
+                self.assertGreater(row["interval"]["lower"], 0.0)
+        self.assertIn("(0.15, 0.225, 0.25, 0.225, 0.15)", self.record["rules"]["trapezoid"])
+
+    def test_it_never_cites_a_figure_it_cannot_reproduce(self):
+        text = json.dumps(self.record)
+        for path in ("README.md", "docs/final-test.md"):
+            text += (REPO / path).read_text(encoding="utf-8")
+        for figure in ("0.1816", "0.3624", "first review"):
+            self.assertNotIn(figure, text)
 
     def test_it_carries_the_figures_the_stated_rule_gives(self):
         self.assertEqual(self.cell["days"], 169)

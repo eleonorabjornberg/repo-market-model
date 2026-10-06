@@ -10,10 +10,10 @@
       "number": 2
     }
   ],
-  "commit": "39a8d2b",
+  "commit": "d00400e",
   "figures": {
     "dependencies": 0,
-    "event_holdouts": 2,
+    "event_windows": 2,
     "panel_end": "2026-09-03",
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
@@ -43,7 +43,6 @@
     "exceedance_gbm_cross_conformal.json",
     "exceedance_persistence_logistic.json",
     "final_test_near_blind.json",
-    "final_test_near_blind_integral_sensitivity.json",
     "funding_panel.manifest.json",
     "persistence_funding.json",
     "pressure_model_v1_h1.json",
@@ -51,7 +50,9 @@
     "pressure_model_v1_h3.json",
     "pressure_model_v1_h4.json",
     "pressure_model_v1_h5.json",
+    "published_distribution_daily_h1.json",
     "v1_interior_diagnosis.json"
   ],
+  "schema_version": 1,
   "total_phases": 8
 }
