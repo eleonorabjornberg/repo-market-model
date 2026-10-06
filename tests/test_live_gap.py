@@ -283,6 +283,10 @@ class GapScoringTests(unittest.TestCase):
             with self.subTest(h=h):
                 self.assertEqual(block["crps"][f"crps/h{h}"]["verdict_label"], NOT_EVIDENCE)
         self.assertNotIn("verdict_label", block["crps"]["crps/h1"])
+        self.assertNotIn("design", block["crps"]["crps/h1"])
+        for h in range(2, 6):
+            self.assertIn("served stale", block["crps"][f"crps/h{h}"]["design"])
+            self.assertNotIn("verdict", block["crps"][f"crps/h{h}"])
 
     def test_every_gap_cell_is_reported_only_and_cannot_pass_or_fail(self):
         block = self._gap()
