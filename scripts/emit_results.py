@@ -50,6 +50,7 @@ FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
+BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
 
 BEGIN = "<!-- generated: key-findings -->"
 END = "<!-- end generated: key-findings -->"
@@ -656,12 +657,16 @@ def _influence_module():
 def use_limitation():
     """The use-limitation statement, from `docs/use-limitation.md` (#261).
 
-    Exactly one blockquote line is the statement. Anything else is a data error,
+    Exactly one blockquote line under `## The statement` is the statement (the
+    plain-English version, under its own heading, is the results page's: #316). Anything else is a data error,
     so an edit that leaves no statement, or two, fails here rather than
     publishing a page without it.
     """
 
-    found = [line[2:].strip() for line in USE_LIMITATION.read_text(encoding="utf-8").splitlines()
+    text = USE_LIMITATION.read_text(encoding="utf-8")
+    start = text.index("\n## The statement\n")
+    end = text.find("\n## ", start + 1)
+    found = [line[2:].strip() for line in text[start:end if end >= 0 else None].splitlines()
              if line.startswith("> ")]
     if len(found) != 1 or not found[0]:
         raise RecordError("%s must carry exactly one blockquote line, the statement; found %d"
@@ -1355,11 +1360,46 @@ def coverage_section(challengers, persistence):
         if not (interval["lower"] <= nominal <= interval["upper"]):
             verdicts.append(model)
     add("")
+    published = [r for r in found
+                 if r["declaration"].get("calibration") == "conformal_pid_nested"
+                 and r["metrics"]["interval_calibration"].get("origins")]
     add("A realised-coverage interval that excludes the nominal probability is a "
         "calibration finding. %s" % (
-            "It is one for: %s." % ", ".join(verdicts) if verdicts
-            else "None of these models has one."))
+            "On the pooled interval it is one for: %s." % ", ".join(verdicts) if verdicts
+            else "No pooled interval is one."))
+    if published:
+        # The pooled interval hides what the project's own split shows (#265): say so
+        # from the split cells, never from the pooled figure alone.
+        add("")
+        add(band_coverage_module().finding_sentence(band_coverage()[1]))
     return lines
+
+
+_BAND = []
+
+
+def band_coverage_module():
+    """`scripts/band_coverage.py`, loaded once."""
+
+    if "module" not in _BAND_MODULE:
+        spec = importlib.util.spec_from_file_location(
+            "band_coverage", ROOT / "scripts/band_coverage.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["band_coverage"] = module
+        spec.loader.exec_module(module)
+        _BAND_MODULE["module"] = module
+    return _BAND_MODULE["module"]
+
+
+_BAND_MODULE = {}
+
+
+def band_coverage():
+    """`(record, table, h2-5 cells, days)` of the published distribution's band split, computed once."""
+
+    if not _BAND:
+        _BAND.append(band_coverage_module().compute(RUNS))
+    return _BAND[0]
 
 
 def limitations_section():
@@ -1727,6 +1767,8 @@ def rendered(persistence, exceedance, conditional):
         FIGURES / "reliability-gbm-dark.svg": figure_svg(conditional, "dark",
                                                          CONDITIONAL_TITLE),
         NOTEBOOK: notebook(WALKTHROUGH.read_text(encoding="utf-8")),
+        BAND_PAGE: band_coverage_module().render(*band_coverage()[0:1], band_coverage()[1],
+                                                 band_coverage()[2], band_coverage()[3]),
     }
     pages = {
         README: (

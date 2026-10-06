@@ -158,6 +158,7 @@ __all__ = [
     "crps_trapezoid_from_quantiles",
     "precision_recall_curve",
     "stationary_bootstrap_indices",
+    "stationary_bootstrap_intervals",
     "stationary_bootstrap_interval",
     "threshold_weighted_crps",
 ]
@@ -1203,3 +1204,69 @@ def stationary_bootstrap_interval(
     draws.sort()
     tail = (1.0 - level) / 2.0
     return _quantile(draws, tail), _quantile(draws, 1.0 - tail)
+
+
+def stationary_bootstrap_intervals(
+    statistics: Callable[[Sequence[int]], Sequence[float]],
+    n: int,
+    *,
+    block_length: float,
+    seed: int,
+    replications: int = 2000,
+    level: float = 0.90,
+) -> Tuple[Tuple[float, float], ...]:
+    """One interval per statistic, all read off the same stationary block resamples.
+
+    A table of many cells over one series (a split by day type and regime) needs
+    one resample per replication and not one per cell. `statistics` is called
+    with each resampled index sequence and returns one value per cell, always the
+    same number. Cell `k`'s interval is exactly what `stationary_bootstrap_interval`
+    returns for that cell's statistic alone at the same `n`, `block_length`, `seed`
+    and `replications`: the resamples are the same draws in the same order.
+
+    Raises:
+        MetricError: on the arguments `stationary_bootstrap_interval` refuses,
+            on a non-finite value in any cell on any resample (dropping it would
+            narrow that cell's interval), or if a call returns a different
+            number of values than the first.
+    """
+
+    if not callable(statistics):
+        raise MetricError("statistics must be callable")
+    if isinstance(replications, bool) or not isinstance(replications, int) or replications < 2:
+        raise MetricError(f"replications must be an int >= 2, got {replications!r}")
+    if not 0.0 < level < 1.0:
+        raise MetricError(f"level must be in (0, 1), got {level}")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise MetricError(
+            f"seed must be an int, got {seed!r}; an unseeded interval is not "
+            "reproducible, and reproducibility is load-bearing here"
+        )
+
+    rng = random.Random(seed)
+    draws: Optional[list] = None
+    for replication in range(replications):
+        indices = stationary_bootstrap_indices(n, block_length, rng)
+        values = tuple(statistics(indices))
+        if draws is None:
+            draws = [[] for _ in values]
+        if len(values) != len(draws):
+            raise MetricError(
+                f"statistics returned {len(values)} values on bootstrap replication "
+                f"{replication} and {len(draws)} on the first"
+            )
+        for cell, value in enumerate(values):
+            if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise MetricError(
+                    f"statistic {cell} returned {value!r} on bootstrap replication "
+                    f"{replication}; discarding such replicates would narrow the "
+                    "interval, so this raises instead"
+                )
+            draws[cell].append(float(value))
+
+    tail = (1.0 - level) / 2.0
+    out = []
+    for cell in draws or ():
+        cell.sort()
+        out.append((_quantile(cell, tail), _quantile(cell, 1.0 - tail)))
+    return tuple(out)

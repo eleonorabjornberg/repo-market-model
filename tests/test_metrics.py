@@ -1978,5 +1978,48 @@ class ValidationGuardMessageTests(unittest.TestCase):
             self.assertEqual(metrics._quantile((1.0, 2.0, 3.0, 4.0), 0.25), 1.75)
 
 
+class SharedResampleIntervalTests(unittest.TestCase):
+    """`stationary_bootstrap_intervals`: several statistics on one set of resamples (#265).
+
+    A table of many cells over one series is one resample per replication, not
+    one per cell, and each cell's interval is exactly the one
+    `stationary_bootstrap_interval` returns for it alone.
+    """
+
+    DATA = (1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0)
+
+    def test_each_interval_equals_the_single_statistic_interval(self):
+        data = self.DATA
+        first = lambda idx: sum(data[i] for i in idx) / len(idx)
+        second = lambda idx: sum(1.0 - data[i] for i in idx) / len(idx)
+        both = metrics.stationary_bootstrap_intervals(
+            lambda idx: (first(idx), second(idx)), len(data),
+            block_length=2, seed=7, replications=200,
+        )
+        self.assertEqual(both[0], stationary_bootstrap_interval(
+            first, len(data), block_length=2, seed=7, replications=200))
+        self.assertEqual(both[1], stationary_bootstrap_interval(
+            second, len(data), block_length=2, seed=7, replications=200))
+
+    def test_a_non_finite_value_raises_and_is_not_dropped(self):
+        with self.assertRaises(MetricError):
+            metrics.stationary_bootstrap_intervals(
+                lambda idx: (0.5, float("nan")), 5,
+                block_length=2, seed=1, replications=5,
+            )
+
+    def test_a_wrong_width_raises(self):
+        calls = []
+
+        def statistic(idx):
+            calls.append(1)
+            return (0.5, 0.5) if len(calls) == 1 else (0.5,)
+
+        with self.assertRaises(MetricError):
+            metrics.stationary_bootstrap_intervals(
+                statistic, 5, block_length=2, seed=1, replications=5,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
