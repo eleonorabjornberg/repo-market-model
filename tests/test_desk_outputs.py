@@ -10,7 +10,9 @@ reserve-scarcity state (#115) read as of each forecast's decision instant.
   (Q3 on PR #241) and labelled wherever the mean is shown (`MEAN_LABEL`);
 * the turn-contribution arithmetic (`calendar_days_carried`,
   `turn_contribution`), calendar-day weighted as ruled (Q2 on PR #241);
-* the "not yet calibrated (#243)" label beside the published 25-75 band;
+* the "not yet calibrated (#243)" label beside the published 25-75 band, and
+  beside the expected value, with the mean's measured quarter-end bias
+  (`mean_bias_label`, ruling on #269 item 11);
 * the scheduled pressure-day tags, read from the repository's own calendar
   columns and the split declaration;
 * the scarcity state's as-of read (`scarcity_at`), which reuses
@@ -156,15 +158,21 @@ class LabelTests(unittest.TestCase):
     def test_the_labels_are_the_rulings_words(self):
         self.assertEqual(
             self.desk.MEAN_LABEL,
-            "flat beyond the 5th and 95th percentiles, so it understates a right-skewed turn",
+            "not yet calibrated (#243): computed from the uncalibrated interior quantiles",
         )
         self.assertEqual(self.desk.BAND_25_75_LABEL, "not yet calibrated (#243)")
+
+    def test_the_causal_sentence_is_gone(self):
+        self.assertNotIn("understates", self.desk.MEAN_LABEL)
+        self.assertNotIn("right-skewed", self.desk.MEAN_LABEL)
+        self.assertNotIn("understates", self.desk.mean_bias_label())
 
     def test_the_markdown_labels_the_expected_value_and_turn_contribution(self):
         days = SummaryTests.days()
         tables = {1: self.desk.summarise(days, horizon=1, splits=SPLITS)}
         markdown = self.desk._markdown(tables, "2025-01-02", "2025-01-29")
         self.assertIn(self.desk.MEAN_LABEL, markdown)
+        self.assertIn(self.desk.mean_bias_label(), markdown)
 
 
 class PressureDayTagTests(unittest.TestCase):
@@ -232,15 +240,15 @@ class UpperTailTests(unittest.TestCase):
     def test_the_plain_statement(self):
         self.assertEqual(
             self.desk.upper_tail_statement(QUANTILE_LEVELS, (-2.0, 0.0, 1.0, 2.0, 20.0)),
-            "expected +3.4 bp (flat beyond the 5th and 95th percentiles, so it understates a "
-            "right-skewed turn), 5% chance above +20.0 bp",
+            "expected +3.4 bp (not yet calibrated (#243): computed from the "
+            "uncalibrated interior quantiles), 5% chance above +20.0 bp",
         )
 
     def test_a_negative_expectation_keeps_its_sign(self):
         self.assertEqual(
             self.desk.upper_tail_statement(QUANTILE_LEVELS, (-9.0, -8.0, -7.0, -6.0, -5.0)),
-            "expected -7.0 bp (flat beyond the 5th and 95th percentiles, so it understates a "
-            "right-skewed turn), 5% chance above -5.0 bp",
+            "expected -7.0 bp (not yet calibrated (#243): computed from the "
+            "uncalibrated interior quantiles), 5% chance above -5.0 bp",
         )
 
 
@@ -487,6 +495,7 @@ class LiveOutputsTests(unittest.TestCase):
             self.desk.mean_from_quantiles(QUANTILE_LEVELS, grid) / 30,
         )
         self.assertEqual(quarter_end["mean_label"], self.desk.MEAN_LABEL)
+        self.assertEqual(quarter_end["mean_bias"], self.desk.mean_bias_label())
         self.assertIsNone(report["targets"][4]["expected_turn_contribution_bps"])
         for target in report["targets"]:
             self.assertEqual(target["published_band_25_75"], "not yet calibrated (#243)")
@@ -507,6 +516,47 @@ DIAGNOSIS = json.loads((ROOT / "docs" / "runs" / "v1_interior_diagnosis.json").r
 
 def _recorded_coverage(horizon, day_type):
     return DIAGNOSIS["q1_calibration"][f"h{horizon}_2018_2025"]["splits"]["by_day_type"][day_type]
+
+
+class MeanBiasLabelTests(unittest.TestCase):
+    """The mean's measured quarter-end bias replaces the causal sentence (#266, ruling on #269 item 11).
+
+    The figures are recomputed from the published record's per-day rows
+    (`v1_h1_per_day` of `docs/runs/v1_interior_diagnosis.json`, its diagnosis
+    window, h = 1): the forecast mean minus the outcome on quarter-end days, with
+    the desk's stationary-bootstrap interval. Nothing is typed into the script.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+
+    def _expected(self):
+        record = DIAGNOSIS
+        first, last = (date.fromisoformat(day) for day in record["windows"]["diagnosis"])
+        splits = self.desk.load_split_declaration(self.desk.SPLITS)
+        labels, errors = [], []
+        for when, outcome, grid in record["v1_h1_per_day"]:
+            day = date.fromisoformat(when)
+            if first <= day <= last:
+                labels.append(splits.day_type(self.desk.calendar_values(day)))
+                errors.append(self.desk.mean_from_quantiles(QUANTILE_LEVELS, grid) - outcome)
+        return self.desk._cell(labels, errors, "quarter_end", horizon=1, name="mean_bias")
+
+    def test_the_label_states_the_measured_bias_window_and_interval(self):
+        cell = self._expected()
+        label = self.desk.mean_bias_label()
+        self.assertAlmostEqual(cell["mean"], -6.9, places=1)
+        self.assertIn(f"{cell['mean']:+.1f} bp", label)
+        self.assertIn(f"{cell['interval']['lower']:+.1f} to {cell['interval']['upper']:+.1f}", label)
+        self.assertIn(f"{cell['count']} quarter-end days", label)
+        self.assertIn("2018-06-29 to 2025-12-31", label)
+        self.assertIn("h = 1", label)
+
+    def test_the_window_stops_before_the_opened_2026_days(self):
+        # The per-day rows run on into 2026, a tier the lockbox keeps; the label reads the diagnosis window only.
+        self.assertGreater(DIAGNOSIS["v1_h1_per_day"][-1][0], "2025-12-31")
+        self.assertNotIn("2026", self.desk.mean_bias_label())
 
 
 class TurnDayBandLabelTests(unittest.TestCase):

@@ -21,7 +21,8 @@ and nothing here writes into `docs/runs/`.
    times the calendar days of its month it carries
    (`calendar_days_carried`), over the calendar days in the month, as SOFR
    averages are computed. Eleonora ruled on both on PR #241 (Q2: the period;
-   Q3: the mean rule, kept and labelled `MEAN_LABEL` wherever it is shown).
+   Q3: the mean rule, kept; shown with `MEAN_LABEL` and the measured
+   bias `mean_bias_label`, as ruled on #269 item 11).
 4. **The reserve-scarcity state** (#115, `repo_model.scarcity`) beside every
    forecast, read as of the forecast's decision instant (`scarcity_at`), with
    its ON RRP leg as "buffer present" or "buffer gone". It is not an input to
@@ -69,6 +70,7 @@ import math
 import sys
 import tempfile
 from datetime import date, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -137,9 +139,11 @@ MEAN_RULE = (
     "the mean of the piecewise-linear quantile function through the grid's "
     "points, held flat beyond the outer levels"
 )
-#: The label the ruling puts wherever the expected value or the turn
-#: contribution is shown.
-MEAN_LABEL = "flat beyond the 5th and 95th percentiles, so it understates a right-skewed turn"
+#: The label wherever the expected value or the turn contribution is shown: the
+#: mean is computed from the interior quantiles, which are not calibrated
+#: (Eleonora's ruling on #269 item 11, replacing the causal sentence of the
+#: ruling on PR #241, Q3). The measured bias is `mean_bias_label`.
+MEAN_LABEL = "not yet calibrated (#243): computed from the uncalibrated interior quantiles"
 #: The period `turn_contribution` states (Eleonora's ruling on PR #241, Q2).
 PERIOD_RULE = (
     "the day's calendar month, weighted by calendar day as SOFR averages are "
@@ -359,6 +363,37 @@ def band_5_95_label(tags: Sequence[str], horizon: int) -> Optional[str]:
             + (f" ({read})" if read else "")
         )
     return "; ".join(parts) + " (docs/runs/v1_interior_diagnosis.json, 2018-2025)"
+
+
+@lru_cache(maxsize=None)
+def mean_bias_label() -> str:
+    """The published mean's measured bias on quarter-ends, read from the record at run time.
+
+    The forecast mean (`mean_from_quantiles`) minus the outcome, on the
+    quarter-end days of `INTERIOR_RECORD`'s per-day rows at h = 1, inside the
+    record's diagnosis window only (its rows run on into the opened 2026 days,
+    which this never reads), with the desk's stationary-bootstrap interval over
+    every day of the window. Negative: the mean sits below what happened.
+    """
+
+    record = json.loads(INTERIOR_RECORD.read_text(encoding="utf-8"))
+    first, last = (date.fromisoformat(day) for day in record["windows"]["diagnosis"])
+    splits = load_split_declaration(SPLITS)
+    labels, errors = [], []
+    for when, outcome, grid in record["v1_h1_per_day"]:
+        day = date.fromisoformat(when)
+        if first <= day <= last:
+            labels.append(splits.day_type(calendar_values(day)))
+            errors.append(mean_from_quantiles(QUANTILE_LEVELS, grid) - float(outcome))
+    cell = _cell(labels, errors, "quarter_end", horizon=1, name="mean_bias")
+    if "interval" not in cell:
+        raise ValueError(f"the quarter-end mean bias has no interval: {cell}")
+    return (
+        f"measured bias of the mean on quarter-ends, h = 1: forecast mean minus outcome "
+        f"{cell['mean']:+.1f} bp (90% interval {cell['interval']['lower']:+.1f} to "
+        f"{cell['interval']['upper']:+.1f}, {cell['count']} quarter-end days, "
+        f"{first} to {last}; docs/runs/v1_interior_diagnosis.json)"
+    )
 
 
 def upper_tail_statement(levels: Sequence[float], quantiles: Sequence[float]) -> str:
@@ -726,8 +761,8 @@ def _markdown(tables: dict, first: str, last: str) -> str:
              "minimum is ruled.", ""]
     lines.append("### By pressure-day tag")
     lines.append("")
-    lines.append(f"† Mean and expected turn contribution: {MEAN_LABEL}. Turn contribution: "
-                 "calendar-day weighted, as SOFR averages are computed.")
+    lines.append(f"† Mean and expected turn contribution: {MEAN_LABEL}; {mean_bias_label()}. "
+                 "Turn contribution: calendar-day weighted, as SOFR averages are computed.")
     lines.append("")
     lines.append("| h | Tag | Days | Mean† / q95 / realised (bp) | Coverage published | "
                  "Coverage persistence | CRPS persistence − published | Turn contribution "
@@ -800,6 +835,7 @@ def _examples(annotated: Mapping[int, List[dict]], when: str) -> List[dict]:
                     "published_band_5_95": band_5_95_label(day["tags"], h),
                     "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
                     "mean_label": MEAN_LABEL,
+                    "mean_bias": mean_bias_label(),
                     "expected_turn_contribution_bps": turn_contribution(
                         mean_from_quantiles(QUANTILE_LEVELS, day["published"]),
                         date.fromisoformat(when),
@@ -839,6 +875,7 @@ def tables_command(args) -> int:
         "published_columns_digest": digest,
         "mean_rule": MEAN_RULE,
         "mean_label": MEAN_LABEL,
+        "mean_bias": mean_bias_label(),
         "period_rule": PERIOD_RULE,
         "published_band_25_75": BAND_25_75_LABEL,
         "scarcity": {"band": list(scarcity.SATIATION_BAND), "on_rrp_buffer_bn": scarcity.ON_RRP_BUFFER_BN},
@@ -850,6 +887,7 @@ def tables_command(args) -> int:
                  "published_band_5_95": band_5_95_label(day["tags"], h),
                  "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
                  "mean_label": MEAN_LABEL,
+                 "mean_bias": mean_bias_label(),
                  "expected_turn_contribution_bps": turn_contribution(
                      mean_from_quantiles(QUANTILE_LEVELS, day["published"]),
                      date.fromisoformat(day["date"]))}
@@ -920,6 +958,7 @@ def live_outputs(record: dict, rows: Sequence[DailyObservation], registry, split
             "published_band_5_95": band_5_95_label(tags, h),
             "statement": upper_tail_statement(levels, grid),
             "mean_label": MEAN_LABEL,
+            "mean_bias": mean_bias_label(),
             "expected_turn_contribution_bps": turn_contribution(mean, when) if tags else None,
             "scarcity": state,
         })
