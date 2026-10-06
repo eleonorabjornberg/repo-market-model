@@ -7,14 +7,16 @@ can drift from it or be edited by hand.
 Mutation record
 ---------------
 
-Recorded for the one guard this module adds, `statement()` in
-`scripts/emit_results.py`, which refuses a source file with no statement:
+Neither generator guard is a leakage, availability or staleness guard, so no
+mutation is required. The two recorded here show the tests are not vacuous. Each
+was applied to a fresh clone, the generator re-run, and the result read:
 
-1. In `scripts/emit_results.py`, the README block's entry removed from `pages`
-   (the `USE_LIMITATION_BEGIN` line). Kills `test_readme_carries_the_statement`
-   -- `AssertionError`.
-2. In `scripts/emit_visual.py`, the `use_limitation` fill set to `""`. Kills
-   `test_results_page_carries_the_statement_twice` -- `AssertionError`.
+1. `scripts/emit_results.py`: the README block's body `"**Use limitation.** " +
+   use_limitation(),` replaced by `"",`, then `emit_results.py` re-run. Kills
+   `test_readme_carries_the_statement` -- `AssertionError: 0 != 1`.
+2. `scripts/emit_visual.py`: `use_limitation_fill` returns `{"use_limitation": ""}`,
+   then `emit_visual.py` re-run. Kills `test_results_page_carries_the_statement_twice`
+   -- `AssertionError: 0 != 2`.
 """
 
 import re
