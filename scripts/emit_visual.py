@@ -2762,8 +2762,8 @@ def final_test(records, locked):
     Every figure goes through `from_record`. The verdict is the record's
     result, stated next to the near-blind disclosure; the claim is the record's
     pre-registered sentence, quoted only on a pass. The split by day type
-    decides nothing, and a cell the record gives no interval says so. The CRPS
-    cells at h = 2 to 5 each carry their verbatim label from the record (#229).
+    decides nothing, and a cell the record gives no interval says so. The five-quantile
+    score cells at h = 2 to 5 each carry their verbatim label from the record (#229).
     """
     rel = FINAL_TEST
 
@@ -2780,7 +2780,9 @@ def final_test(records, locked):
     first, last, n = get(*cell, "first"), get(*cell, "last"), get(*cell, "days")
     if (result == "pass") != (lower > 0):
         raise VisualError(f"{rel}: the result {result!r} does not match its interval {lower} to {upper}")
-    claim = get("primary", "claim")
+    # The pre-registered wording says "full distribution"; the score is the mean pinball loss over
+    # five published quantiles (#259), so a generated page names what is scored.
+    claim = get("primary", "claim").replace("the full distribution of", "the five published quantiles of")
     opened = get("opened", "date")
     checksum = get("crps_declaration_sha256")
     prereg = get("pre_registration")
@@ -2836,13 +2838,13 @@ def final_test(records, locked):
     if result == "pass":
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
-                   f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
+                   f"five-quantile score, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
                    f"Result: <b>pass</b>, on a test that is near-blind.")
         claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
-                   f"{persistence:.2f} bp of CRPS, where lower is better, with a {level}% interval for the gap of "
+                   f"{persistence:.2f} bp of five-quantile score, where lower is better, with a {level}% interval for the gap of "
                    f"{gap}. Result: <b>fail</b>, on a test that is {near_blind}. No claim is made.")
         claim_html = ""
 
@@ -2907,10 +2909,10 @@ def final_test(records, locked):
         "ft_once": f"<b>Run once,</b> on {day(opened)}, on Eleonora's go, and published whatever it showed.",
         "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, "
                          "forecasts the next day from the latest spread known at the decision time. Both are graded "
-                         "by CRPS: how far a forecast range was from the spread that actually came, in basis "
-                         "points, so lower is better."),
+                         "by the five-quantile score (the mean pinball loss over the five published quantiles): how far "
+                         "a forecast range was from the spread that actually came, in basis points, so lower is better."),
         "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
-                      f"deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
+                      f"deciding cell was changed from the plain-leap probability cell (#216) to this five-quantile score cell, "
                       f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment. "
                       + (f"On the opened record the plain leap does not beat calendar climatology: mean Brier "
                          f"difference {signed(leap['mean'], 4)}, {round(100 * leap['level'])}% interval "
