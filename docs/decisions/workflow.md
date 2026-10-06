@@ -64,14 +64,19 @@ that step's line in the same pull request, so the plan never lags the tree.
 ## Confirmed exceptions to "never merges"
 
 The planning-session line above ("It never merges") stays as written. This note records what Eleonora herself
-confirmed about the process record. It quotes her own comment on #269, which she typed in the web UI
-(`performed_via_github_app` null, per #256), unedited:
+confirmed about the process record. It quotes two of her own comments on #269, which she typed in the web UI
+(`performed_via_github_app` null, per #256), unedited. The first:
 <https://github.com/eleonorabjornberg/repo-market-model/issues/269#issuecomment-6019863374>
 
 > #153 and #236 were my merges. I made the switch call without reviewing 2026 data, because leaps were less relevant to the actual spread I'm trying to forecast.
 
+The second:
+<https://github.com/eleonorabjornberg/repo-market-model/issues/269#issuecomment-6019982763>
+
+> I approved the merges of #216 (the final-test pre-registration) and #224 (its amendment). The orchestrating session merged both on my instruction, given off GitHub, before the 2026 days were opened
+
 So #153 and #236 are recorded as her merges, and the 4 October primary-cell switch as her call. Nothing here
-records more than she wrote.
+records more than these two comments say.
 
 ## Market colour stays off repository threads
 
