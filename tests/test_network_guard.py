@@ -19,6 +19,7 @@ Then, in a disposable copy under /tmp with `PYTHONDONTWRITEBYTECODE=1`:
 
 import socket
 import unittest
+from pathlib import Path
 import urllib.request
 
 import netguard
@@ -49,6 +50,12 @@ class NetworkGuardTests(unittest.TestCase):
         before = socket.getaddrinfo
         netguard.install()
         self.assertIs(socket.getaddrinfo, before)
+
+    def test_ci_runs_the_suite_with_networking_disabled(self):
+        ci = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("unshare --net python3 -B -m unittest discover -s tests", ci)
 
 
 if __name__ == "__main__":
