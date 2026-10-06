@@ -20,6 +20,8 @@ from pathlib import Path
 from repo_model import data
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration
 
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
+
 ROOT = Path(__file__).resolve().parents[1]
 SPLITS = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
 
