@@ -275,6 +275,20 @@ redesign borrows.
 - Monin (2019), [*The OFR Financial Stress Index*](https://www.financialresearch.gov/working-papers/files/OFRwp-17-04_The-OFR-Financial-Stress-Index.pdf),
   *Risks* 7(1).
 
+## Month-end in the reporting split
+
+Decided by Eleonora on 6 October 2026 (#269, item 16, option (a); built in #278). A reporting split counts
+month-end as the month's last two business days on the market calendar (`metadata/market_holidays.json`), read from
+the date by `SplitDeclaration.reporting_day_type`, not as `days_to_month_end <= 2` calendar days, which misreads a
+month that ends on a weekend or a holiday. The live scorer (`scripts/live_score.py`) reports by it and says so in
+`month_end_rule`. Anything scored before then keeps the split it was scored by, and a published record adopts the
+new one at its next publish.
+
+Two things still count calendar days, on purpose. The scorecaster's window (`recalibration.py`) is part of the frozen
+model. The frozen final-test comparison code (`baseline.split_document`, whose checksum the freeze pins) splits by
+`SplitDeclaration.day_type`. Making either agree with the reporting split is a v2 candidate, and for the second a
+change to a pre-registered test that is Eleonora's to make.
+
 ## Where the run records live
 
 `docs/runs/` holds the published records and the frozen panel's original build manifest.
