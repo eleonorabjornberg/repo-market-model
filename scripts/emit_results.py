@@ -281,9 +281,20 @@ def key_findings(persistence, exceedance, conditional):
     add("")
     splits = require(metrics, "mae_bps_splits")
     add("**Persistence by regime and by pressure-day type.** The same errors, split as "
-        "`metadata/evaluation_splits.json` declares (status: %s). Each interval resamples "
-        "the whole series with the pooled interval's block length and seed, and averages "
-        "the resampled days of the group."
+        "`metadata/evaluation_splits.json` declares. Its regimes are the period slices of "
+        "`docs/pivot/lag-assessment.md`, declared before the reserve-scarcity state "
+        "existed; the file's own status line still reads \"%s\" and is carried unedited "
+        "in every record, because its digest is. The scarcity state now exists (plan "
+        "step 6), and re-declaring the regimes by it is Eleonora's decision. Each interval "
+        "resamples the whole series with the pooled interval's block length and seed, and "
+        "averages the resampled days of the group. A limitation of the regimes: reserves "
+        "and the Treasury General Account move the published forecast by a few basis "
+        "points at most across the plausible 2026-27 range (largest single-quantile "
+        "change on the grid in "
+        "[`docs/pivot/evidence/reserves-sensitivity/`](docs/pivot/evidence/reserves-sensitivity/), "
+        "from `scripts/reserves_sensitivity.py`; the median cell moves a quantile by about one "
+        "basis point). A drain that these two inputs signal therefore barely reaches the "
+        "forecast, which responds mainly to realised SOFR."
         % require(persistence, "splits", "declaration", "status").split(":")[0])
     add("")
     lines.extend(split_table(splits, "by_regime", "Regime", "Mean absolute error"))
@@ -486,7 +497,11 @@ def pressure_v1_section():
         "(`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days "
         "and paired day by day with both benchmarks. Each cell is the benchmark's Brier "
         "score minus the model's, with its 90% stationary-bootstrap interval; a positive "
-        "value favours the model.")
+        "value favours the model. At horizons 2 to 5 the published q25, q50 and q75 are the "
+        "one-step gbm served stale, bit-identical across h = 2 to 5 on every decision day; "
+        "only the conformal PID outer pair (q05, q95) differs by horizon. At h = 1 "
+        "`treasury_settlement` is trained as settlement(p) predicting spread(p+1) and served "
+        "as settlement(T) predicting spread(T): a change of meaning, not leakage.")
     add("")
     header = "| Horizon | Scored days |"
     rule = "|---|---|"
@@ -713,7 +728,9 @@ def final_test_section():
                                        _ft_interval(entry)))
     add("")
     add("**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is "
-        "pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.")
+        "pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step "
+        "gbm served stale, identical across those horizons; only the PID outer pair differs. "
+        "Each cell carries Eleonora's label of 4 October 2026.")
     add("")
     add("| Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |")
     add("|---|---|---|---|---|---|")
@@ -1046,6 +1063,24 @@ def _challenger_group(found):
                   key=lambda pair: -pair[1]["comparison"]["mean_difference_bps"])
 
 
+def concentration_sentence(record):
+    """How much of a paired CRPS gain rests on a few days (#267, finding 18).
+
+    One sentence from the record's own per-origin differences: the share of the
+    summed difference that the single best day and the best five days carry, and
+    the mean difference with those five days capped at the sixth best.
+    """
+    differences = [origin["difference_bps"] for origin in record["comparison"]["per_origin"]]
+    total, n = sum(differences), len(differences)
+    if n < 7 or total <= 0:
+        return None
+    ranked = sorted(differences, reverse=True)
+    capped = (total - sum(ranked[:5]) + 5 * ranked[5]) / n
+    return ("The pooled gain rests on a few days: the single best day carries %d%% of it and the best "
+            "five days %d%%; with those five days capped at the sixth best, the mean difference is "
+            "%+.2f bp." % (round(100 * ranked[0] / total), round(100 * sum(ranked[:5]) / total), capped))
+
+
 def challenger_section():
     groups = challenger_records()
     lines, rows = _challenger_table(groups[0])
@@ -1087,6 +1122,12 @@ def _challenger_table(rows):
         add("| %s | %s bp | %+.2f bp | %+.2f to %+.2f bp | %s |" % (
             label, bp(c["model_b"]["crps_bps"]), c["mean_difference_bps"],
             interval["lower"], interval["upper"], verdict))
+    for label, record in rows:
+        if record["comparison"]["mean_difference_interval"]["lower"] > 0:
+            sentence = concentration_sentence(record)
+            if sentence:
+                add("")
+                add("Row %s: %s" % (label.split(" on ")[0].replace("`", ""), sentence))
     return lines, rows
 
 
@@ -1255,8 +1296,9 @@ def headline(persistence, exceedance):
     lines.append("")
     lines.append("- The forecasting machinery has been run end to end on real market data "
                  "covering %s to %s, and scored at **%d separate decision points** — each "
-                 "one made only from the latest information already public at 4 pm the "
-                 "day before."
+                 "one made only from information already public at 4 pm the "
+                 "day before (a weekly series is read a few days after its print, the safe "
+                 "direction)."
                  % (panel["first_date"], panel["last_date"], folds["count"]))
     lines.append("- On that history, a simple benchmark — the latest public value, carried "
                  "forward — is "
@@ -1267,8 +1309,9 @@ def headline(persistence, exceedance):
                                  pct(nominal, 0)))
     lines.append("- The scoring itself has been checked against a case where the right "
                  "answer is known in advance: a forecast with no information in it scores "
-                 "**%s skill**, exactly as it must. Every later claim of skill rests on "
-                 "that." % bp(worst, 3))
+                 "**%s skill**, exactly as it must. That is a check that the scoring is not "
+                 "biased, not the ground of any skill claim: each claim below is paired "
+                 "against its benchmark, with an interval." % bp(worst, 3))
     lines.append("")
     lines.append("**Every result below is paired against its benchmark and split by regime "
                  "and by type of day.** Phase 2's verdict on these records is in "

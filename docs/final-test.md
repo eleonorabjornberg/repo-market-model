@@ -29,7 +29,7 @@ validation report (#119) and the plain-language page (#120) take over when they 
 | quarter_end | 2 | +0.507 | no interval |
 | tax_date | 6 | +1.313 | no interval |
 
-**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.
+**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step gbm served stale, identical across those horizons; only the PID outer pair differs. Each cell carries Eleonora's label of 4 October 2026.
 
 | Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |
 |---|---|---|---|---|---|

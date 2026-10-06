@@ -373,7 +373,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <ul>
       <li>{{n3_window_caption}}</li>
       <li>{{n3_read}} The amount is what the facility accepted that day, summed over its operations, from the New York Fed's operation results (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
-      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and never tuned on these days. The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
+      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and not tuned by this project on these days. The pack drew it from the same history, so it was not chosen blind to them: the review of that pack (#96) re-checked it on our definitions, on days before 2026 only. The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
       <li>A day counts when its spread, in whole basis points, is strictly above the line (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{n3_interval}}</li>
     </ul>
     <p>The band:</p>
@@ -585,7 +585,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <li><b>Coupon settlement:</b> a day on which Treasury notes or bonds sold at auction settle.</li>
       <li><b>Other:</b> every remaining business day, bill settlements included.</li>
     </ul>
-    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the provisional regimes of <code>metadata/evaluation_splits.json</code>.</p>
+    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the regimes of <code>metadata/evaluation_splits.json</code>, the period slices declared before the reserve-scarcity state existed; re-declaring them by that state is a decision still open.</p>
   </details>
 </section>
 
@@ -602,6 +602,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <summary>Go deeper: what this does and does not show</summary>
     <ul>
       <li>Each dot is drawn from the declaration the as-of rule itself reads (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/information-set.md">the information rule</a>), through the same function. A lag counted in business days skips weekends and holidays; one counted in calendar days does not, so its dot can fall on a day with no decision.</li>
+      <li>The weekly H.4.1 series, reserves and the TGA, are declared five calendar days after the row's date, so each is read 5 to 12 days after its Thursday print. A newer print was public and unread on about two scored days in five. That is the safe direction, not a leak.</li>
       <li>It shows the clock only. How much a stale input costs a forecast is a model result and appears only in the model chapters.</li>
     </ul>
     <p>To see which value each input supplies on a given day, run section 5 of the <a href="https://colab.research.google.com/github/eleonorabjornberg/repo-market-model/blob/main/notebooks/00_overview.ipynb">overview notebook</a> in Colab.</p>
