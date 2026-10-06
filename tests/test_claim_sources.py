@@ -83,6 +83,10 @@ ATTRIBUTION = {
         "names the issue that asked for owner attestation; the sentence says "
         "where the rule's text stands; no figure rests on it"
     ),
+    ("README.md", 294): (
+        "names the pull request that merged the owner-attestation check and its draft rule; "
+        "the sentence says what it merged; no figure rests on it"
+    ),
     ("README.md", 269): (
         "names the issue where Eleonora states which merges were hers, each linked to "
         "her comment; no figure rests on it"
