@@ -4,8 +4,9 @@
 for both would conflate, and requires that they stay separate in code and in
 reporting:
 
-1. **Scoring holdout** -- crisis dates excluded from the headline metric but
-   available for training once they are in the past. This is the deployable
+1. **Scoring holdout** -- crisis dates are scored and pooled in the headline
+   metric like every other date, and are available for training once they are
+   in the past (nothing excludes them). This is the deployable
    model, and it is produced by the backtests in `repo_model.baseline`.
 2. **Knowledge holdout** -- crises stripped from training entirely, scored once
    per window. An extrapolation check, reported separately and never averaged

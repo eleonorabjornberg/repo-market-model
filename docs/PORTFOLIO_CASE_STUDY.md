@@ -58,8 +58,9 @@ Five controls hold the evidence together:
 
 Models are scored by as-of rolling-origin backtesting: train on an expanding window of what was
 public at each decision instant, forecast the next business day, score, advance, refitting every
-21 scored days on one shared fold grid. September 2019 and March 2020 are frozen as knowledge
-holdouts, so no model is tuned on the episodes it exists to warn about.
+21 scored days on one shared fold grid. September 2019 and March 2020 are frozen and checksummed as event
+windows. Their days are scored and pooled in every headline, like the rest, and the expanding window
+trains on each episode once it is past.
 
 Five model families sit behind one interface — persistence, ARX, threshold regression,
 rolling-residual intervals, and gradient-boosted quantile regression, the last with

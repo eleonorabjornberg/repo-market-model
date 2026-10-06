@@ -42,6 +42,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 RUNS = ROOT / "docs/runs"
 FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
@@ -1013,6 +1016,58 @@ def _challenger_group(found):
                   key=lambda pair: -pair[1]["comparison"]["mean_difference_bps"])
 
 
+EVENTS = ROOT / "metadata/events.json"
+
+
+def event_windows():
+    """[(name, start, end)] from `metadata/events.json`, the frozen stress windows."""
+
+    with EVENTS.open(encoding="utf-8") as handle:
+        windows = require(json.load(handle), "windows")
+    return [(w["name"], w["start"], w["end"]) for w in windows]
+
+
+def stress_window_figures(record):
+    """What the stress windows carry of a comparison's paired gain, read off its `per_origin` days (#264).
+
+    Reported only: it decides nothing. The windows' days are scored and pooled in the
+    record's mean like every other day; this takes them out of a copy to say how much
+    of the gain they are. The interval on the rest is the record's own bootstrap
+    (block length, seed, replications, level).
+    """
+
+    comparison = require(record, "comparison")
+    rows = require(comparison, "per_origin")
+    interval = require(comparison, "mean_difference_interval")
+    windows = event_windows()
+    inside = [any(start <= row["scored_date"] <= end for _, start, end in windows) for row in rows]
+    diffs = [row["difference_bps"] for row in rows]
+    rest = [d for d, flag in zip(diffs, inside) if not flag]
+    total = sum(diffs)
+    if not rest or total <= 0:
+        raise RecordError("no stress-window share: the record has no days outside the windows "
+                          "or its summed paired difference is not positive")
+    lower, upper = stationary_bootstrap_interval(
+        lambda ix: sum(rest[i] for i in ix) / len(ix), len(rest),
+        block_length=interval["block_length"], seed=interval["seed"],
+        replications=interval["replications"], level=interval["level"])
+    return {"days": sum(inside), "of": len(rows), "share": sum(d for d, f in zip(diffs, inside) if f) / total,
+            "mean": total / len(rows), "rest_mean": sum(rest) / len(rest), "rest_lower": lower,
+            "rest_upper": upper, "level": interval["level"]}
+
+
+def stress_window_sentence(record):
+    """The reported-only sentence beside a beating challenger row (#264)."""
+
+    f = stress_window_figures(record)
+    return ("*Reported only, deciding nothing:* the %d scored days inside the stress windows "
+            "(`metadata/events.json`) are scored and pooled in the figure above, and carry "
+            "%.1f%% of its summed paired gain; over the other %d days the mean difference is "
+            "%+.2f bp (%d%% interval %+.2f to %+.2f bp, the record's own bootstrap)."
+            % (f["days"], 100 * f["share"], f["of"] - f["days"], f["rest_mean"],
+               round(100 * f["level"]), f["rest_lower"], f["rest_upper"]))
+
+
 def challenger_section():
     groups = challenger_records()
     lines, rows = _challenger_table(groups[0])
@@ -1054,6 +1109,10 @@ def _challenger_table(rows):
         add("| %s | %s bp | %+.2f bp | %+.2f to %+.2f bp | %s |" % (
             label, bp(c["model_b"]["crps_bps"]), c["mean_difference_bps"],
             interval["lower"], interval["upper"], verdict))
+    for label, record in rows:
+        if record["comparison"]["mean_difference_interval"]["lower"] > 0:
+            add("")
+            add("%s: %s" % (label, stress_window_sentence(record)))
     return lines, rows
 
 

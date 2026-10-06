@@ -114,6 +114,10 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.71 bp | +0.35 bp | +0.13 to +0.65 bp | beats persistence |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.80 bp | +0.27 bp | +0.04 to +0.57 bp | beats persistence |
 
+gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`: *Reported only, deciding nothing:* the 15 scored days inside the stress windows (`metadata/events.json`) are scored and pooled in the figure above, and carry 47.6% of its summed paired gain; over the other 2027 days the mean difference is +0.19 bp (90% interval +0.09 to +0.29 bp, the record's own bootstrap).
+
+gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`: *Reported only, deciding nothing:* the 15 scored days inside the stress windows (`metadata/events.json`) are scored and pooled in the figure above, and carry 64.6% of its summed paired gain; over the other 2027 days the mean difference is +0.09 bp (90% interval -0.01 to +0.21 bp, the record's own bootstrap).
+
 *Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
 
 **Challengers against persistence.** Each challenger is scored on the same 1873 origins (minimum history 61, refitted every 21 scored days); persistence's CRPS is 2.09 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
@@ -121,6 +125,8 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 | Challenger | CRPS | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
 | gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.66 bp | +0.43 bp | +0.19 to +0.74 bp | beats persistence |
+
+gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement`: *Reported only, deciding nothing:* the 15 scored days inside the stress windows (`metadata/events.json`) are scored and pooled in the figure above, and carry 43.3% of its summed paired gain; over the other 1858 days the mean difference is +0.24 bp (90% interval +0.14 to +0.36 bp, the record's own bootstrap).
 
 **The paired difference by regime and by pressure-day type** (persistence's CRPS minus the challenger's, bp, with its 90% interval):
 
