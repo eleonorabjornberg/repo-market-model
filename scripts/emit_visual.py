@@ -2632,8 +2632,8 @@ def final_test(records, locked):
                   f"{signed(rests['upper'], 3)} bp, by the record's own bootstrap (mean block length "
                   f"{rests['block_length']}, seed {rests['seed']}, {rests['replications']:,} replications), which "
                   f"{'does not separate it from zero' if rests['lower'] <= 0 <= rests['upper'] else 'lies on one side of zero'}. "
-                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. This was computed after the "
-                  f"result: it decides nothing, and the verdict stands.")
+                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. On this near-blind test, "
+                  f"this was computed after the result: it decides nothing, and the verdict stands.")
     blind = min(locked, key=lambda t: t.start) if locked else None
     blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
                   f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
@@ -2659,7 +2659,7 @@ def final_test(records, locked):
                          "points, so lower is better."),
         "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
                       f"deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
-                      f"under <a href='https://github.com/{REPOSITORY}/issues/221'>Eleonora's ruling on #221</a>."),
+                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment."),
         "ft_rests": rests_text,
         "ft_not_stress": stress_text,
         "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "

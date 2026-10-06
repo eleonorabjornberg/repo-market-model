@@ -2425,6 +2425,7 @@ class FinalTestSectionTests(unittest.TestCase):
         window = records[emit_visual.FINAL_TEST]["primary"]["window_per_origin"]
         for r in window:
             r["difference_bps"] = 0.1
+        records[emit_visual.FINAL_TEST]["primary"]["cell"]["mean_difference_bps"] = 0.1
         data, fills = emit_visual.final_test(records, self.locked)
         self.assertEqual(data["rests"]["wins"], len(window))
         self.assertNotEqual(fills["ft_rests"], self.fills["ft_rests"])
@@ -2435,14 +2436,15 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertIn("4 October 2026", self.text)
         self.assertIn("plain-leap probability cell", self.text)
         self.assertIn("#216", self.text)
-        self.assertRegex(self.block, r"href='[^']*issues/221[^']*'")
+        self.assertIn("#221", self.text)
+        self.assertIn("docs/decisions/final-test-preregistration.md", self.block)
         self.assertIn("before the test was opened", self.text)
 
     def test_no_sentence_says_no_choice_of_model_was_made(self):
         """#238, hold ruling item 3: only the record's own hedge, "by name", may appear."""
         for text in (self.text, visible_text(" ".join(map(str, self.fills.values())))):
             self.assertNotRegex(text.lower(), r"no choice of model")
-            self.assertNotRegex(text.lower(), r"no choice was made")
+            self.assertNotRegex(text.lower(), r"no choice was made(?! on them by name)")
         self.assertIn("by name", self.text)
 
     def test_the_stress_windows_are_not_said_to_be_kept_out_of_the_score(self):
