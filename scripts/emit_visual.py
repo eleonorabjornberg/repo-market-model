@@ -160,6 +160,7 @@ DATA_DIR = "docs/visual/data"
 INPUTS = (
     "scripts/emit_visual.py",
     "scripts/scarcity_validation.py",
+    "scripts/final_test_influence.py",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
@@ -2527,6 +2528,13 @@ def rests_on(window, interval, mean, rel):
             "replications": interval["replications"], "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
 
 
+def _influence_module():
+    spec = importlib.util.spec_from_file_location("final_test_influence", ROOT / "scripts" / "final_test_influence.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def final_test(records, locked):
     """The "Final test" section (#238), read off `FINAL_TEST` alone.
 
@@ -2591,6 +2599,13 @@ def final_test(records, locked):
                       "verdict": FINAL_TEST_LABELS[node["verdict"]], "label": node["verdict_label"]})
 
     rests = rests_on(get("primary", "window_per_origin"), get(*cell, "interval"), mean, rel)
+    influence_module = _influence_module()
+    try:
+        got = influence_module.influence(records[rel])
+    except ValueError as error:
+        raise VisualError(f"{rel}: {error}") from error
+    leap = influence_module.leap_against_climatology(records[rel])
+    by_window = get(*cell, "splits", "by_quarter_end_window")
 
     x, y = date.fromisoformat(first), date.fromisoformat(last)
     window = (f"{x.day} {x:%B} to {day(last)}" if x.year == y.year else f"{day(first)} to {day(last)}")
@@ -2660,9 +2675,55 @@ def final_test(records, locked):
                   f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
     regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
                    else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
+    top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
+                       for rank, (d, v) in enumerate(got["top"], 1))
+    drop_rows = "".join(
+        f"<tr><th scope='row'>Mean after dropping the top {k} day{'' if k == 1 else 's'}</th><td>{signed(got['drop'][k], 4)}</td></tr>"
+        for k in influence_module.DROPS)
+    influence_table = (
+        f"<div class='heat' role='region' aria-label='How much a few days carry of the final test' tabindex='0'>"
+        f"<table class='fttab'><caption>Influence of single days. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<th scope='col'>Measure</th><th scope='col'>Paired difference, bp</th></tr></thead><tbody>"
+        f"<tr><th scope='row'>Mean</th><td>{signed(got['mean'], 4)}</td></tr>"
+        f"<tr><th scope='row'>Median</th><td>{signed(got['median'], 4)}</td></tr>{drop_rows}"
+        f"<tr><th scope='row'>Days the model won</th><td>{got['wins']} of {got['n']}</td></tr></tbody></table></div>"
+        f"<details><summary>The ten days that contribute most</summary><div class='heat' role='region' "
+        f"aria-label='The ten days that contribute most' tabindex='0'><table class='fttab'><thead><tr>"
+        f"<th scope='col'>Rank</th><th scope='col'>Day</th><th scope='col'>Paired difference, bp</th></tr></thead>"
+        f"<tbody>{top_rows}</tbody></table></div></details>")
+
+    def window_row(key, name):
+        entry = by_window.get(key, {})
+        if not entry.get("count"):
+            return f"<tr><th scope='row'>{name}</th><td>0</td><td>–</td><td>–</td></tr>"
+        cells = (f"<td>{signed(entry['interval']['lower'], 3)} to {signed(entry['interval']['upper'], 3)}</td>"
+                 if "interval" in entry else "<td>no interval: the bootstrap is undefined on this few days</td>")
+        return f"<tr><th scope='row'>{name}</th><td>{entry['count']}</td><td>{signed(entry['mean'], 3)}</td>{cells}</tr>"
+
+    window_table = (
+        f"<div class='heat' role='region' aria-label='The final test by quarter-end window' tabindex='0'>"
+        f"<table class='fttab'><caption>By quarter-end window. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<th scope='col'>Window</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
+        f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
+        f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
+        f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
+    two, dm = got["leave_two_out"], got["dm"]
+    robust_text = (
+        f"<b>Robustness, post hoc.</b> Without the two largest days the mean is {signed(two['mean'], 3)} bp, "
+        f"{level}% interval {signed(two['lower'], 3)} to {signed(two['upper'], 3)} bp, by the record's own bootstrap. "
+        f"The median day is {signed(got['median'], 3)} bp. Diebold-Mariano on the window, two-sided p "
+        f"{dm['p']:.3f} (Newey-West lag {dm['lag']}) or {dm['plain_p']:.3f} (plain). The record carries per-day "
+        f"CRPS only, so the split of the gain by pinball level is not available and is not computed.")
+    (d1, l1), (d2, l2) = got["persistence_loss"]
+    why_text = (
+        f"<b>Why {day(d1)} and {day(d2)} dominate.</b> On those two days carrying the latest spread forward lost "
+        f"{l1:.2f} and {l2:.2f} bp of CRPS, against a median of {got['median_persistence_loss']:.2f} bp. The second "
+        f"independent review traced this to that benchmark reading the 2025-12-31 print (about +22 bp) two rows "
+        f"back; that cause is the review's and is not recomputed here, because the panel is not tracked.")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
-            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests}
+            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
+            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap}
     fills = {
         "ft_verdict": verdict,
         "ft_claim": claim_html,
@@ -2680,13 +2741,26 @@ def final_test(records, locked):
                          "points, so lower is better."),
         "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
                       f"deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
-                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment."),
+                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment. "
+                      + (f"On the opened record the plain leap does not beat calendar climatology: mean Brier "
+                         f"difference {signed(leap['mean'], 4)}, {round(100 * leap['level'])}% interval "
+                         f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
+                         f"(reported only)." if leap else
+                         "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
         "ft_rests": rests_text,
         "ft_not_stress": stress_text,
         "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"though the record says no choice was made on them by name.{blind_text}",
+                        f"and the gbm family and its features were chosen on archived records scored through "
+                        f"2026-09-03, which include them. The record says no choice was made on them by name, but "
+                        f"the test is not a clean holdout. It does not validate stress performance or robustness "
+                        f"across regimes. The live record (#215), which logs the blind tier's days as they come, is "
+                        f"the first genuinely blind confirmation.{blind_text}",
         "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
                     f"The test says nothing about a stressed period."),
+        "ft_influence_table": influence_table,
+        "ft_window_table": window_table,
+        "ft_robust": robust_text,
+        "ft_why": why_text,
         "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
                      f"the one-day forecast, and each carries Eleonora's label."),
         "ft_later_table": later_table,
