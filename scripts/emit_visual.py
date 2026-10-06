@@ -20,6 +20,10 @@ half); and how the project was built. Nothing on the page is typed:
   figure that no published record carries yet (lead time) is a generated
   placeholder, and the generator refuses that placeholder once a
   record carries the figure (`pending_figures`).
+* The "Final test" section (#238) reads `docs/runs/final_test_near_blind.json`
+  alone, through `from_record`: the verdict, the pre-registered claim (quoted
+  only on a pass, beside the near-blind disclosure), the split by day type and
+  the reported-only cells with their verbatim labels.
 * Days in a locked tier of `metadata/lockbox.json` (`docs/decisions/lockbox.md`)
   are drawn greyed and labelled "held out", and are left out of every count,
   share, median and generated sentence (#141 ruling 3). The tiers are read
@@ -141,6 +145,8 @@ GLOSSARY = "docs/visual/glossary.json"
 MAP = "docs/visual/map.json"
 ISSUES = "docs/visual/issues.json"
 RUNS = "docs/runs"
+#: The final test (#151): the near-blind tier opened once. The site's "Final test" section (#238) reads it alone.
+FINAL_TEST = f"{RUNS}/final_test_near_blind.json"
 SNAPSHOTS = "tests/fixtures/snapshots"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
@@ -168,6 +174,7 @@ INPUTS = (
     H8,
     MAP,
     ISSUES,
+    FINAL_TEST,
     f":(glob){RUNS}/*.json",
     SNAPSHOTS,
 )
@@ -204,6 +211,7 @@ PENDING = (
 RESERVE_BILLIONS = (100.0, 100_000.0)
 
 LOCKBOX_RULE = "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/lockbox.md"
+BLOB = f"https://github.com/{REPOSITORY}/blob/main/"
 CLIP_BP = 45  # top of the full-period scale; days above it are drawn off the frame
 
 #: The newcomer layer's views (#141), in reading order: (section id, title, subtitle).
@@ -337,6 +345,14 @@ COLUMN_LABELS = {
     "tax_date": "Tax-date flag",
     "days_to_month_end": "Days to month-end",
 }
+
+
+#: The final test's split by pressure-day type, in the order the section lists it.
+FINAL_TEST_DAY_TYPES = ("ordinary", "month_end", "quarter_end", "tax_date")
+#: The event cells the section names when it says the test is not a warning of stress.
+FINAL_TEST_STRESS_TARGETS = (("+5bp", "+5"), ("+10bp", "+10"))
+#: The second amendment's outcome labels (4 October 2026), as `scripts/emit_results.py` renders them.
+FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown", "worse": "shown worse"}
 
 
 class VisualError(ValueError):
@@ -601,6 +617,22 @@ def clock(t):
 
 def link(claim):
     return f"{claim['text']} (<a href='{claim['src']}'>source</a>)."
+
+
+def held_as(names):
+    """What held-out days are: the locked tiers they fall in, which no test has opened (`docs/decisions/lockbox.md`)."""
+    tiers = list(dict.fromkeys(n.replace("_", "-") for n in names))
+    what = (f"the {tiers[0]} tier" if len(tiers) == 1 else
+            "the " + " and ".join(tiers) + " tiers")
+    return f"held out as {what}, which no test has opened (<a href='{LOCKBOX_RULE}'>the lockbox rule</a>)"
+
+
+def signed(value, places):
+    """A signed figure as the page prints it, with a true minus sign: '+0.5', '−0.5'."""
+    text = f"{abs(value):.{places}f}"
+    if float(text) == 0:
+        return text
+    return ("+" if value > 0 else "−") + text
 
 
 # ---------------------------------------------------------------- chapter 1
@@ -900,13 +932,12 @@ def history(rows, notes, thresholds, regimes, windows, locked):
         "c_coupon_demand": link(notes["claims"]["coupon_demand"]),
         "held_out_note": (
             "<p class='note'>Grey, labelled “held out”: the days " + held_from
-            + ", the project's locked final test period (<a href='" + LOCKBOX_RULE + "'>lockbox rule</a>). "
+            + ", " + held_as(h["name"] for h in held) + ". "
             "These days are drawn but not coloured, counted or described anywhere on this page.</p>") if held else "",
         "held_out_dots": " Grey dots: held-out days, not counted." if held else "",
         "held_out_footer": (
-            " The days " + held_from + " are held out under the "
-            "<a href='" + LOCKBOX_RULE + "'>lockbox rule</a>: they are drawn greyed and left out of every count, "
-            "median and sentence.") if held else "",
+            " The days " + held_from + " are " + held_as(h["name"] for h in held)
+            + ": they are drawn greyed and left out of every count, median and sentence.") if held else "",
     }
     data = {
         "rows": out_rows, "types": TYPES, "events": events,
@@ -1146,9 +1177,8 @@ def newcomer_n1(rows, locked, thresholds, notes):
         "n1_off_scale": days(len(off)),
         "n1_spike": f"{bp(spike['n1_s'])} bp on {day(spike['date'])}",
         "n1_src_triparty": notes["claims"]["triparty_actors"]["src"],
-        "n1_held_note": (f"Days from {day(spans[0]['start'])} on are held out for the project's final test "
-                         f"(<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/"
-                         f"decisions/lockbox.md'>the lockbox rule</a>). They are drawn in grey, labelled "
+        "n1_held_note": (f"Days from {day(spans[0]['start'])} on are {held_as(h['name'] for h in spans)}. "
+                         f"They are drawn in grey, labelled "
                          f"&ldquo;held out&rdquo;, and left out of every count and sentence in this view."
                          if spans else "No day on this chart is held out."),
         "n1_iorb_from": day(iorb_from),
@@ -1614,9 +1644,11 @@ def segment_held_note(locked):
     before = date.fromisoformat(SEGMENT_DAY_RULE["before"])
     starts = sorted(t.start for t in locked)
     if starts and starts[0] < before:
-        return (f"Days from {day(starts[0].isoformat())} on are held out for the project's final test "
-                f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>) and are never chosen.")
-    lock = f"; the project's locked final test period starts on {day(starts[0].isoformat())}" if starts else ""
+        return (f"Days from {day(starts[0].isoformat())} on are {held_as(t.name for t in locked)}, "
+                f"and are never chosen.")
+    first = min(locked, key=lambda t: t.start) if locked else None
+    lock = (f"; the {first.name.replace('_', '-')} tier, which no test has opened, starts on "
+            f"{day(first.start.isoformat())}" if first else "")
     return f"No day in this chart is held out: the rule picks only days before {day(before.isoformat())}{lock}."
 
 
@@ -1898,8 +1930,8 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
              else "With cash scarce, no day outside the quarter-end window saw pressure. ")
             + ("With cash abundant, quarter-ends did not always pass quietly." if aq["above"][str(pressure_bp)]["k"]
                else "With cash abundant, every quarter-end window counted here passed quietly.")),
-        "n3_held_note": (f"Days from {day(spans[0]['start'])} on are held out for the project's final test "
-                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>). They are in no cell and no sentence "
+        "n3_held_note": (f"Days from {day(spans[0]['start'])} on are {held_as(h['name'] for h in spans)}. "
+                         f"They are in no cell and no sentence "
                          f"in this view." if spans else "No day in this view is held out."),
         "n3_interval": (f"Each interval is a {round(100 * BOOTSTRAP_LEVEL)}% stationary-bootstrap interval that "
                         f"resamples a cell's days in blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, because "
@@ -2037,8 +2069,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
         + "</tr>" for k in states)
     low, high = SATIATION_BAND
     brk = f"${ON_RRP_BUFFER_BN:,.0f}bn"
-    held = (f" Days from {day(spans_held[0]['start'])} on are held out for the project's final test "
-            f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>): the band is not drawn on them and they are in no "
+    held = (f" Days from {day(spans_held[0]['start'])} on are {held_as(h['name'] for h in spans_held)}: "
+            f"the band is not drawn on them and they are in no "
             f"share here." if spans_held else "")
     fills = {
         "band_status": (f"<span class='bandchip'><span aria-hidden='true'>{status['icon']}</span> {status['word']}</span> "
@@ -2142,7 +2174,7 @@ def newcomer_n2(rows, registry, decision, locked, thresholds):
         "n2_held_note": (
             "Hollow grey marks: the scored days " + " and ".join(
                 f"from {day(h['start'])} to {day(h['end'])}" for h in spans)
-            + ", held out for the project's final test (<a href='" + LOCKBOX_RULE + "'>the lockbox rule</a>). "
+            + ", " + held_as(h["name"] for h in spans) + ". "
             "They are drawn without their spread and left out of every count and sentence in this view."
             if spans else "No scored day is held out."),
     }
@@ -2435,10 +2467,169 @@ def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, 
         "n5_map": map_svg(tag_map, tags, {k: html.escape(v) for k, v in tag_map["parties"].items()}, prefix="n5"),
         "n5_step_list": f'<ol class="n5list" aria-label="Steps">{"".join(items)}</ol>',
         "n5_panels": "".join(panels),
-        "n5_held_note": (f"Days from {day(held[0])} on are held out for the project's final test "
-                         f"(<a href='{LOCKBOX_RULE}'>the lockbox rule</a>): they are drawn greyed, without their "
+        "n5_held_note": (f"Days from {day(held[0])} on are "
+                         f"{held_as(locked_tier(date.fromisoformat(d), locked).name for d in held)}: "
+                         f"they are drawn greyed, without their "
                          f"values, and are in no sentence here." if held else "No day in these charts is held out."),
         "n5_table": table("scarce") + table("abundant"),
+    }
+    return data, fills
+
+
+# ---------------------------------------------------------------- the final test (#238)
+
+
+def final_test(records, locked):
+    """The "Final test" section (#238), read off `FINAL_TEST` alone.
+
+    Every figure goes through `from_record`. The verdict is the record's
+    result, stated next to the near-blind disclosure; the claim is the record's
+    pre-registered sentence, quoted only on a pass. The split by day type
+    decides nothing, and a cell the record gives no interval says so. The CRPS
+    cells at h = 2 to 5 each carry their verbatim label from the record (#229).
+    """
+    rel = FINAL_TEST
+
+    def get(*keys):
+        return from_record(records, rel, *keys)
+
+    cell = ("primary", "cell")
+    result = get(*cell, "result")
+    if result not in ("pass", "fail"):
+        raise VisualError(f"{rel}: the primary cell's result is {result!r}, neither pass nor fail")
+    persistence, published = get(*cell, "crps_persistence_bps"), get(*cell, "crps_published_bps")
+    mean, lower, upper = get(*cell, "mean_difference_bps"), get(*cell, "interval", "lower"), get(*cell, "interval", "upper")
+    level = round(100 * get(*cell, "interval", "level"))
+    first, last, n = get(*cell, "first"), get(*cell, "last"), get(*cell, "days")
+    if (result == "pass") != (lower > 0):
+        raise VisualError(f"{rel}: the result {result!r} does not match its interval {lower} to {upper}")
+    claim = get("primary", "claim")
+    opened = get("opened", "date")
+    checksum = get("crps_declaration_sha256")
+    prereg = get("pre_registration")
+
+    by_type = get(*cell, "splits", "by_day_type")
+    split = []
+    for key in FINAL_TEST_DAY_TYPES:
+        if key not in by_type:
+            raise VisualError(f"{rel} carries no day type {key!r}")
+        g = cell + ("splits", "by_day_type", key)
+        row = {"key": key, "label": DAY_TYPES[key], "count": get(*g, "count"), "mean": get(*g, "mean")}
+        if "interval" in by_type[key]:
+            row["lower"], row["upper"] = get(*g, "interval", "lower"), get(*g, "interval", "upper")
+        split.append(row)
+    regimes = [k for k, v in get(*cell, "splits", "by_regime").items() if v.get("count")]
+
+    h1 = [d for d in get("events_reported_only") if d.get("horizon") == 1]
+    if len(h1) != 1:
+        raise VisualError(f"{rel} carries {len(h1)} event documents at h = 1, not one")
+    if "minimum_events" not in h1[0]:
+        raise VisualError(f"{rel}: the h = 1 event document carries no minimum_events")
+    stress = []
+    for key, name in FINAL_TEST_STRESS_TARGETS:
+        entry = h1[0].get("targets", {}).get(key, {}).get("all_days")
+        if entry is None:
+            raise VisualError(f"{rel} carries no h = 1 event cell {key!r}")
+        labels = sorted({p["label"] for p in entry["paired"].values()})
+        stress.append({"target": name, "events": entry["events"], "labels": labels})
+
+    later = []
+    for node in get("crps_reported_only"):
+        if "interval" not in node:
+            raise VisualError(f"{rel}: the CRPS cell at h = {node.get('horizon')} carries no interval")
+        later.append({"horizon": node["horizon"], "days": node["days"], "persistence": node["crps_persistence_bps"],
+                      "published": node["crps_published_bps"], "mean": node["mean_difference_bps"],
+                      "lower": node["interval"]["lower"], "upper": node["interval"]["upper"],
+                      "verdict": FINAL_TEST_LABELS[node["verdict"]], "label": node["verdict_label"]})
+
+    x, y = date.fromisoformat(first), date.fromisoformat(last)
+    window = (f"{x.day} {x:%B} to {day(last)}" if x.year == y.year else f"{day(first)} to {day(last)}")
+    gap = f"{signed(lower, 2)} to {signed(upper, 2)} bp"
+    near_blind = ("near-blind, not blind: these days had appeared inside earlier pooled results, though no choice "
+                  "of model was made on them by name")
+    if result == "pass":
+        verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
+                   f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
+                   f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
+                   f"Result: <b>pass</b>, on a test that is {near_blind}.")
+        claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
+                      f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
+    else:
+        verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
+                   f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
+                   f"{persistence:.2f} bp of CRPS, where lower is better, with a {level}% interval for the gap of "
+                   f"{gap}. Result: <b>fail</b>, on a test that is {near_blind}. No claim is made.")
+        claim_html = ""
+
+    def interval_cell(row):
+        if "lower" not in row:
+            return "<td>too few days for an interval</td>"
+        return f"<td>{signed(row['lower'], 3)} to {signed(row['upper'], 3)}</td>"
+
+    split_rows = "".join(
+        f"<tr><th scope='row'>{r['label']}</th><td>{r['count']}</td><td>{signed(r['mean'], 3)}</td>{interval_cell(r)}</tr>"
+        for r in split)
+    split_table = (f"<div class='heat' role='region' aria-label='The final test by type of day' tabindex='0'>"
+                   f"<table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr>"
+                   f"<th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
+                   f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>{split_rows}</tbody></table></div>")
+    later_rows = "".join(
+        f"<tr data-h=\"{c['horizon']}\"><th scope='row'>{c['horizon']} days</th><td>{c['days']}</td>"
+        f"<td>{c['persistence']:.3f}</td><td>{c['published']:.3f}</td>"
+        f"<td>{signed(c['mean'], 3)} ({signed(c['lower'], 3)} to {signed(c['upper'], 3)})</td>"
+        f"<td>{c['verdict']}; {html.escape(c['label'])}</td></tr>" for c in later)
+    later_table = (f"<div class='heat' role='region' aria-label='CRPS at two to five days ahead, not evidence' "
+                   f"tabindex='0'><table class='fttab'><caption>CRPS further ahead, reported only and not evidence"
+                   f"</caption><thead><tr><th scope='col'>Ahead</th><th scope='col'>Days</th>"
+                   f"<th scope='col'>Persistence, bp</th><th scope='col'>Model, bp</th>"
+                   f"<th scope='col'>Difference ({level}% interval), bp</th><th scope='col'>Label</th></tr></thead>"
+                   f"<tbody>{later_rows}</tbody></table></div>")
+
+    def labels(entry):
+        return " and ".join(entry["labels"])
+
+    same = len({tuple(e["labels"]) for e in stress}) == 1
+    cells = " and ".join(f"{e['target']} bp" for e in stress)
+    stress_text = (
+        f"<b>It is not a warning of stress.</b> It grades the forecast range, not the chance of pressure. One day "
+        f"ahead, the event cells for days more than {cells} above IORB are "
+        + (f"{labels(stress[0])}, with {' and '.join(str(e['events']) for e in stress)} such days in the window."
+           if same else "; ".join(f"{e['target']} bp: {labels(e)}, with {e['events']} such days" for e in stress) + ".")
+        + f" Below {h1[0]['minimum_events']} such days, a cell is labelled inconclusive.")
+    blind = min(locked, key=lambda t: t.start) if locked else None
+    blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
+                  f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
+    regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
+                   else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
+    data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
+            "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
+            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later}
+    fills = {
+        "ft_verdict": verdict,
+        "ft_claim": claim_html,
+        "ft_days": f"{n:,}",
+        "ft_level": level,
+        "ft_window": window,
+        "ft_split_table": split_table,
+        "ft_fixed": (f"<b>Fixed first.</b> The design, the benchmark and the command were written down and "
+                     f"checksummed (<code>{checksum[:12]}</code>) before any of these days was scored "
+                     f"(<a href='{BLOB}{prereg}'>the pre-registration</a>)."),
+        "ft_once": f"<b>Run once,</b> on {day(opened)}, on Eleonora's go, and published whatever it showed.",
+        "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, "
+                         "forecasts the next day from the latest spread known at the decision time. Both are graded "
+                         "by CRPS: how far a forecast range was from the spread that actually came, in basis "
+                         "points, so lower is better."),
+        "ft_not_stress": stress_text,
+        "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
+                        f"though no choice of model was made on them by name.{blind_text}",
+        "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
+                    f"The test says nothing about a stressed period."),
+        "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
+                     f"the one-day forecast, and each carries Eleonora's label."),
+        "ft_later_table": later_table,
+        "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
+                     f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
+                     f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
     }
     return data, fills
 
@@ -2464,6 +2655,7 @@ def generate(repo, commit=None):
     check_glossary(glossary)
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
+    final, final_fills = final_test(records, locked)
     pending = pending_figures(records)
     commit = commit or input_commit(repo)
 
@@ -2559,6 +2751,7 @@ def generate(repo, commit=None):
         "lead_time_placeholder": pending["lead_time"],
     })
     fills.update(model_fills)
+    fills.update(final_fills)
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
@@ -2575,7 +2768,7 @@ def generate(repo, commit=None):
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
                 "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band,
-                "newcomer_n5": n5}
+                "newcomer_n5": n5, "final_test": final}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -2590,7 +2783,8 @@ def generate(repo, commit=None):
     n5_provenance = {**provenance, "status_from": f"{DATA_DIR}/newcomer_n4.json",
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
-    own = {"model": model_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
+    final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
+    own = {"model": model_provenance, "final_test": final_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}
     out = {}
     for name, payload in payloads.items():
@@ -2598,7 +2792,7 @@ def generate(repo, commit=None):
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model", "newcomer_n1", "newcomer_n2",
-                                          "newcomer_n3", "newcomer_band", "newcomer_n5")}
+                                          "newcomer_n3", "newcomer_band", "newcomer_n5", "final_test")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)
