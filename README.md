@@ -85,7 +85,7 @@ origins**, first scored 2018-06-29, last scored 2026-09-03. Run at `cd6be36`.
 | Measure | Benchmark | Value | 90% interval |
 |---|---|---|---|
 | Mean absolute error | persistence | 2.53 bp | 2.12 to 3.02 bp |
-| CRPS | persistence | 2.07 bp | not intervalled |
+| Five-quantile score | persistence | 2.07 bp | not intervalled |
 | Interval coverage | nominal 90% | **85.7%** | 84.0% to 87.3% |
 | Pinball loss, quantile 0.05 | persistence | 0.74 bp | not intervalled |
 | Pinball loss, quantile 0.25 | persistence | 1.17 bp | not intervalled |
@@ -114,9 +114,9 @@ The interval is a stationary bootstrap, block length 2, 2000 replications, on th
 | quarter end | 33 | 7.42 | 4.09 to 11.10 |
 | tax date | 95 | 6.14 | 2.34 to 12.52 |
 
-**Challengers against persistence.** Each challenger is scored on the same 2042 origins (minimum history 61, refitted every 21 scored days); persistence's CRPS is 2.07 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
+**Challengers against persistence.** Each challenger is scored on the same 2042 origins (minimum history 61, refitted every 21 scored days); persistence's five-quantile score is 2.07 bp (the mean pinball loss over the published quantiles; CRPS, in the records' field names, where it is defined as this). The difference is persistence's score minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
 
-| Challenger | CRPS | Difference | 90% interval | Verdict |
+| Challenger | Five-quantile score | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
 | gbm on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.71 bp | +0.35 bp | +0.13 to +0.65 bp | beats persistence |
 | gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps` | 1.80 bp | +0.27 bp | +0.04 to +0.57 bp | beats persistence |
@@ -131,9 +131,9 @@ gbm (calibration `cross_conformal`, calibration folds `5`) on `sofr_p25`, `sofr_
 
 *Scored on a shorter window: 1873 origins, 2018-06-29 to 2025-12-31 (`--end 2025-12-31`), the days before the locked periods of `docs/decisions/lockbox.md`. These figures are not comparable with the tables above, which score the panel to its end.*
 
-**Challengers against persistence.** Each challenger is scored on the same 1873 origins (minimum history 61, refitted every 21 scored days); persistence's CRPS is 2.09 bp. The difference is persistence's CRPS minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
+**Challengers against persistence.** Each challenger is scored on the same 1873 origins (minimum history 61, refitted every 21 scored days); persistence's five-quantile score is 2.09 bp (the mean pinball loss over the published quantiles; CRPS, in the records' field names, where it is defined as this). The difference is persistence's score minus the challenger's, so a positive value favours the challenger; its interval is a stationary bootstrap (block length 2, 2000 replications) on the per-origin differences.
 
-| Challenger | CRPS | Difference | 90% interval | Verdict |
+| Challenger | Five-quantile score | Difference | 90% interval | Verdict |
 |---|---|---|---|---|
 | gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement` | 1.66 bp | +0.43 bp | +0.19 to +0.74 bp | beats persistence |
 
@@ -141,7 +141,7 @@ Row gbm (calibration conformal_pid_nested): The pooled gain rests on a few days:
 
 gbm (calibration `conformal_pid_nested`) on `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`, `tbill_4w`, `tga`, `treasury_settlement`: *Reported only, deciding nothing:* the 15 scored days inside the stress windows (`metadata/events.json`) are scored and pooled in the figure above, and carry 43.3% of its summed paired gain; over the other 1858 days the mean difference is +0.24 bp (90% interval +0.14 to +0.36 bp, the record's own bootstrap).
 
-**The paired difference by regime and by pressure-day type** (persistence's CRPS minus the challenger's, bp, with its 90% interval):
+**The paired difference by regime and by pressure-day type** (persistence's five-quantile score minus the challenger's, bp, with its 90% interval):
 
 | | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|

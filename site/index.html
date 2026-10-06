@@ -465,12 +465,12 @@ table.fttab.fdtab td{white-space:nowrap}
 <section id="final-test" aria-labelledby="final-test-title">
   <p class="kicker">The result</p>
   <h2 id="final-test-title">The final test</h2>
-  <p class="prose lede">From 2 January to 3 September 2026, the model's next-day forecast of the range of SOFR − IORB was more accurate than carrying the latest spread forward: 1.66 bp against 1.83 bp of CRPS, where lower is better, and the 90% interval of the gap, +0.03 to +0.36 bp, lies above zero. Result: <b>pass</b>, on a test that is near-blind.</p>
+  <p class="prose lede">From 2 January to 3 September 2026, the model's next-day forecast of the range of SOFR − IORB was more accurate than carrying the latest spread forward: 1.66 bp against 1.83 bp of five-quantile score, where lower is better, and the 90% interval of the gap, +0.03 to +0.36 bp, lies above zero. Result: <b>pass</b>, on a test that is near-blind.</p>
   <p class="uselimit"><b>Use limitation.</b> This is a research forecast of next-day overnight borrowing costs, not a warning system or a tool for managing risk. It has been tested mostly in calm conditions, so it needs re-checking if the market changes sharply.</p>
-  <p class='ftclaim'><b>The claim:</b> the published model&#x27;s one-day-ahead forecast of the full distribution of SOFR − IORB was more accurate than as-of persistence over January to September 2026.</p>
+  <p class='ftclaim'><b>The claim:</b> the published model&#x27;s one-day-ahead forecast of the five published quantiles of SOFR − IORB was more accurate than as-of persistence over January to September 2026.</p>
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, 2 January to 3 September 2026</div>
-      <div class="s">Above: mean CRPS over the 169 scored days, in basis points; lower is better. Below: the mean paired difference, persistence minus the model, with its 90% interval; right of zero favours the model</div></figcaption>
+      <div class="s">Above: mean five-quantile score over the 169 scored days, in basis points; lower is better. Below: the mean paired difference, persistence minus the model, with its 90% interval; right of zero favours the model</div></figcaption>
     <div class="chart" id="ftchart"><div class="tip"></div></div>
   </figure>
   <div class='heat' role='region' aria-label='The final test by type of day' tabindex='0'><table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr><th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th><th scope='col'>90% interval, bp</th></tr></thead><tbody><tr><th scope='row'>Ordinary</th><td>147</td><td>+0.152</td><td>−0.006 to +0.360</td></tr><tr><th scope='row'>Month-end</th><td>14</td><td>−0.125</td><td>−0.262 to +0.024</td></tr><tr><th scope='row'>Quarter-end</th><td>2</td><td>+0.507</td><td>too few days for an interval</td></tr><tr><th scope='row'>Tax date</th><td>6</td><td>+1.313</td><td>too few days for an interval</td></tr></tbody></table></div>
@@ -480,8 +480,8 @@ table.fttab.fdtab td{white-space:nowrap}
   <ul class="ftlist">
     <li><b>Fixed first.</b> The design, the benchmark and the command were written down and checksummed (<code>d0847824027e</code>) before any of these days was scored (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'>the pre-registration</a>).</li>
     <li><b>Run once,</b> on 5 October 2026, on Eleonora's go, and published whatever it showed.</li>
-    <li><b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, forecasts the next day from the latest spread known at the decision time. Both are graded by CRPS: how far a forecast range was from the spread that actually came, in basis points, so lower is better.</li>
-    <li><b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, under Eleonora's ruling on #221, recorded in <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'>the pre-registration</a>'s amendment. On the opened record the plain leap does not beat calendar climatology: mean Brier difference +0.0053, 90% interval −0.0029 to +0.0137, label not shown (reported only).</li>
+    <li><b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, forecasts the next day from the latest spread known at the decision time. Both are graded by the five-quantile score (the mean pinball loss over the five published quantiles): how far a forecast range was from the spread that actually came, in basis points, so lower is better.</li>
+    <li><b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the deciding cell was changed from the plain-leap probability cell (#216) to this five-quantile score cell, under Eleonora's ruling on #221, recorded in <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'>the pre-registration</a>'s amendment. On the opened record the plain leap does not beat calendar climatology: mean Brier difference +0.0053, 90% interval −0.0029 to +0.0137, label not shown (reported only).</li>
   </ul>
   <p class="ftlinks">The record: <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/runs/final_test_near_blind.json'><code>docs/runs/final_test_near_blind.json</code></a>. The write-up: <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/final-test.md'><code>docs/final-test.md</code></a>. The design: <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'><code>docs/decisions/final-test-preregistration.md</code></a>.</p>
 </section>
@@ -1525,7 +1525,7 @@ function renderFinalTest() {
   const f2 = v => v.toFixed(2), s2 = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
   const H = m.t + bars.length * rowH + gap + 14 + rowH + m.b;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-    .attr("aria-label", `Mean CRPS over ${FT.days} days: carrying the latest spread forward ${f2(FT.persistence)} bp, the published model ${f2(FT.published)} bp. Paired difference ${s2(FT.mean)} bp, ${FT.level}% interval ${s2(FT.lower)} to ${s2(FT.upper)} bp.`);
+    .attr("aria-label", `Mean five-quantile score over ${FT.days} days: carrying the latest spread forward ${f2(FT.persistence)} bp, the published model ${f2(FT.published)} bp. Paired difference ${s2(FT.mean)} bp, ${FT.level}% interval ${s2(FT.lower)} to ${s2(FT.upper)} bp.`);
   const xa = d3.scaleLinear([0, d3.max(bars, b => b.v) * 1.15], [m.l, W - m.r]);
   const label = (y, text) => svg.append("text").attr("x", narrow ? m.l : m.l - 12).attr("y", narrow ? y - 12 : y + 4).attr("text-anchor", narrow ? "start" : "end").style("font-size", "11.5px").style("fill", "var(--ink)").text(text);
   bars.forEach((b, i) => {
@@ -1539,7 +1539,7 @@ function renderFinalTest() {
   const x = d3.scaleLinear([-ext, ext], [m.l, W - m.r]).nice();
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 6)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", top).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").selectAll("text").data(x.ticks(narrow ? 4 : 6)).join("text").attr("x", d => x(d)).attr("y", H - m.b + 16).attr("text-anchor", "middle").text(d => d === 0 ? "0" : s2(d));
-  svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", H - 4).attr("text-anchor", "end").text("Persistence's CRPS minus the model's, bp");
+  svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", H - 4).attr("text-anchor", "end").text("Persistence's five-quantile score minus the model's, bp");
   label(cy, "Mean paired difference");
   const col = FT.lower > 0 ? "var(--sofr)" : FT.upper < 0 ? "var(--pressure)" : "var(--ink-3)";
   svg.append("line").attr("x1", x(FT.lower)).attr("x2", x(FT.upper)).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 2.4).style("stroke-linecap", "round");
