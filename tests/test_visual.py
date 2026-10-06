@@ -11,6 +11,7 @@ the mutated line, and what the test then raised.
 
 import copy
 import csv
+import html
 import importlib.util
 import json
 import re
@@ -69,6 +70,8 @@ class RegenerationTests(unittest.TestCase):
     def test_only_the_model_data_reads_run_records(self):
         """The descriptive chapters read no run record; the model chapters read nothing else.
 
+        The final test's section (#238) reads its one record and nothing else.
+
         N4's status engine also reads docs/runs/, but only declarations:
         `run_record_declarations` keeps a record's declaration, its derived
         fields and a comparison's verdict, and nothing else (#141 §3).
@@ -82,6 +85,8 @@ class RegenerationTests(unittest.TestCase):
                     self.assertTrue(inputs)
                     for path in inputs:
                         self.assertTrue(emit_visual.is_published_record(path), path)
+                elif rel == f"{emit_visual.DATA_DIR}/final_test.json":
+                    self.assertEqual(set(inputs), {emit_visual.FINAL_TEST})
                 elif not rel.endswith("/newcomer_n4.json"):
                     for path in inputs:
                         self.assertFalse(path.startswith("docs/runs"), path)
@@ -2212,6 +2217,179 @@ class NewcomerN5PageTests(unittest.TestCase):
                 rel = str(path.relative_to(ROOT))
                 with self.subTest(path=rel):
                     self.assertEqual(inputs[rel], emit_visual.sha256(path))
+
+
+# ---------------------------------------------------------------- the final test on the site (#238)
+
+
+def final_test_block(page):
+    """The final test's section on the page, from its opening tag to its close."""
+    start = page.index('<section id="final-test"')
+    return page[start:page.index("</section>", start)]
+
+
+def visible_text(block):
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", block)))
+
+
+class FinalTestSectionTests(unittest.TestCase):
+    """#238: the final test's result on the site, read off `docs/runs/final_test_near_blind.json`.
+
+    Every figure is read from the record through `from_record`; the committed
+    page and data must carry the record's values, so a record that drifts from
+    the page fails here as well as in the byte-for-byte regeneration test.
+    """
+
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+    record = json.loads((ROOT / "docs/runs/final_test_near_blind.json").read_text(encoding="utf-8"))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.records = published_records()
+        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.data, cls.fills = emit_visual.final_test(cls.records, cls.locked)
+        cls.block = final_test_block(cls.page)
+        cls.text = visible_text(cls.block)
+
+    def test_the_record_is_an_input(self):
+        self.assertIn(emit_visual.FINAL_TEST, emit_visual.INPUTS)
+        doc = json.loads((ROOT / emit_visual.DATA_DIR / "final_test.json").read_text(encoding="utf-8"))
+        self.assertEqual(doc["provenance"]["inputs"],
+                         {emit_visual.FINAL_TEST: emit_visual.sha256(ROOT / emit_visual.FINAL_TEST)})
+
+    def test_the_figures_are_the_records_values(self):
+        cell = self.record["primary"]["cell"]
+        doc = json.loads((ROOT / emit_visual.DATA_DIR / "final_test.json").read_text(encoding="utf-8"))
+        for data in (self.data, doc["data"]):
+            self.assertEqual(data["persistence"], cell["crps_persistence_bps"])
+            self.assertEqual(data["published"], cell["crps_published_bps"])
+            self.assertEqual(data["mean"], cell["mean_difference_bps"])
+            self.assertEqual(data["lower"], cell["interval"]["lower"])
+            self.assertEqual(data["upper"], cell["interval"]["upper"])
+            self.assertEqual(data["level"], round(100 * cell["interval"]["level"]))
+            self.assertEqual(data["days"], cell["days"])
+            self.assertEqual(data["result"], cell["result"])
+            for row in data["by_day_type"]:
+                source = cell["splits"]["by_day_type"][row["key"]]
+                with self.subTest(day_type=row["key"]):
+                    self.assertEqual(row["count"], source["count"])
+                    self.assertEqual(row["mean"], source["mean"])
+                    self.assertEqual(row.get("lower"), source.get("interval", {}).get("lower"))
+                    self.assertEqual(row.get("upper"), source.get("interval", {}).get("upper"))
+
+    def test_the_page_quotes_the_record(self):
+        cell = self.record["primary"]["cell"]
+        for value in (cell["crps_published_bps"], cell["crps_persistence_bps"]):
+            self.assertIn(f"{value:.2f} bp", self.text)
+        lo, hi = cell["interval"]["lower"], cell["interval"]["upper"]
+        self.assertIn(f"+{lo:.2f} to +{hi:.2f} bp", self.text)
+        self.assertIn(f"{cell['result']}", self.text)
+        for key, entry in cell["splits"]["by_day_type"].items():
+            with self.subTest(day_type=key):
+                self.assertIn(f"<td>{entry['count']}</td>", self.block)
+
+    def test_a_drifted_record_moves_the_section(self):
+        records = copy.deepcopy(self.records)
+        records[emit_visual.FINAL_TEST]["primary"]["cell"]["crps_published_bps"] = 1.7123
+        data, fills = emit_visual.final_test(records, self.locked)
+        self.assertEqual(data["published"], 1.7123)
+        self.assertIn("1.71 bp", fills["ft_verdict"])
+        self.assertNotEqual(fills["ft_verdict"], self.fills["ft_verdict"])
+
+    def test_a_missing_figure_is_refused(self):
+        records = copy.deepcopy(self.records)
+        del records[emit_visual.FINAL_TEST]["primary"]["cell"]["interval"]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.final_test(records, self.locked)
+        records = copy.deepcopy(self.records)
+        del records[emit_visual.FINAL_TEST]
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.final_test(records, self.locked)
+
+    def test_the_claim_is_the_preregistered_one(self):
+        self.assertIn(self.record["primary"]["claim"], self.text)
+        self.assertNotRegex(self.text.lower(), r"warns? of stress")
+        self.assertNotRegex(self.page.lower(), r"warns of stress")
+
+    def test_a_pass_is_never_stated_without_the_near_blind_disclosure(self):
+        for paragraph in re.findall(r"<(p|li)[^>]*>(.*?)</\1>", self.block, re.S):
+            words = visible_text(paragraph[1])
+            if re.search(r"\bpass\b", words):
+                with self.subTest(paragraph=words[:80]):
+                    self.assertIn("near-blind", words)
+
+    def test_a_failed_test_states_no_claim(self):
+        records = copy.deepcopy(self.records)
+        records[emit_visual.FINAL_TEST]["primary"]["cell"]["result"] = "fail"
+        records[emit_visual.FINAL_TEST]["primary"]["cell"]["interval"]["lower"] = -0.01
+        _, fills = emit_visual.final_test(records, self.locked)
+        self.assertNotIn(self.record["primary"]["claim"], " ".join(map(str, fills.values())))
+        self.assertIn("not shown", fills["ft_verdict"])
+
+    def test_cells_too_small_for_an_interval_say_so(self):
+        split = self.record["primary"]["cell"]["splits"]["by_day_type"]
+        thin = [k for k, v in split.items() if "interval" not in v]
+        self.assertTrue(thin)
+        self.assertEqual(self.block.count("too few days for an interval"), len(thin))
+        self.assertIn("decides nothing", self.text)
+
+    def test_the_stress_cells_are_named_inconclusive_with_their_events(self):
+        h1 = next(d for d in self.record["events_reported_only"] if d["horizon"] == 1)
+        for key in ("+5bp", "+10bp"):
+            entry = h1["targets"][key]["all_days"]
+            with self.subTest(target=key):
+                self.assertEqual({p["label"] for p in entry["paired"].values()}, {"inconclusive"})
+        self.assertIn("not a warning of stress", self.text)
+        self.assertIn(f"{h1['targets']['+5bp']['all_days']['events']} and "
+                      f"{h1['targets']['+10bp']['all_days']['events']}", self.text)
+
+    def test_horizons_two_to_five_carry_the_verbatim_label(self):
+        label = ("different model from h = 1, and as-of persistence does not widen with horizon, so this "
+                 "comparison favours the model; not evidence.")
+        cells = self.record["crps_reported_only"]
+        self.assertTrue(cells)
+        rows = re.findall(r"<tr data-h=\"(\d)\">(.*?)</tr>", self.block, re.S)
+        self.assertEqual(sorted(int(h) for h, _ in rows), sorted(c["horizon"] for c in cells))
+        for h, row in rows:
+            with self.subTest(horizon=h):
+                self.assertIn(label, visible_text(row))
+
+    def test_the_section_sits_after_start_here_before_the_chapters(self):
+        at = self.page.index('<section id="final-test"')
+        self.assertLess(self.page.index("<!-- /start-here -->"), at)
+        self.assertLess(at, self.page.index('<section id="plumbing">'))
+        self.assertIn('href="#final-test"', self.page[:self.page.index("<!-- start-here -->")])
+        self.assertRegex(self.block, r'<svg|id="ftchart"')
+
+    def test_the_nav_item_carries_no_result_marker(self):
+        """Review of c39eab4 on #240: a typed check mark beside "The final test" in the nav read as
+        "passed" whatever the record said, with no near-blind disclosure beside it. The nav item's
+        marker is neutral; the result is stated only in the section, read off the record."""
+        template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+        for name, text in (("template", template), ("page", self.page)):
+            with self.subTest(source=name):
+                item = re.search(r'<li[^>]*><b>([^<]*)</b><span><a href="#final-test">', text)
+                self.assertIsNotNone(item)
+                marker = html.unescape(item.group(1)).strip()
+                self.assertTrue(marker)
+                self.assertFalse(set(marker) & set("\u2713\u2714\u2717\u2718\u2715\u2716\u2705\u274c\u2611\u2612"), marker)
+                self.assertNotRegex(marker, r"(?i)pass|fail|^x$|[&#;]")
+
+    def test_it_links_the_record_and_its_documents(self):
+        for path in (emit_visual.FINAL_TEST, "docs/final-test.md", "docs/decisions/final-test-preregistration.md"):
+            with self.subTest(path=path):
+                self.assertIn(f"https://github.com/{emit_visual.REPOSITORY}/blob/main/{path}", self.block)
+
+    def test_the_blind_days_are_never_called_the_final_test(self):
+        self.assertNotIn("held out for the project's final test", self.page)
+        self.assertNotIn("final test period", self.page)
+        for fills in (emit_visual.segment_held_note(self.locked),):
+            self.assertIn("blind tier", fills)
+
+    def test_readme_links_the_section_from_the_explorer_line(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        line = next(l for l in readme.splitlines() if "[the explorer](" in l)
+        self.assertIn("https://eleonorabjornberg.github.io/repo-market-model/#final-test", line)
 
 
 if __name__ == "__main__":
