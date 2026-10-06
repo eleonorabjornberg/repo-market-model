@@ -781,6 +781,51 @@ class PublishedPythonVersionTests(unittest.TestCase):
         )
 
 
+#: A library version in prose: "numpy 2.4.6", "scikit-learn 1.9.1".
+LIBRARY_VERSION = re.compile(r"\b(numpy|scikit-learn)\s+(\d+\.\d+\.\d+)\b")
+
+
+def ci_library_pins(root=REPO_ROOT):
+    """The versions the `ml` job installs: `"numpy==2.4.6" "scikit-learn==1.9.1"`."""
+    text = (root / ".github" / "workflows" / "tests.yml").read_text()
+    return {name: version for name, version in re.findall(r'"(numpy|scikit-learn)==([\d.]+)"', text)}
+
+
+class PublishedLibraryVersionTests(unittest.TestCase):
+    """A library version in published prose is the CI pin, or says it is archived (#267).
+
+    `REPRODUCIBILITY.md` said the records were fitted with numpy 2.0.2 and
+    scikit-learn 1.6.1 while CI's `ml` job, the records in `docs/runs/` and the
+    rmm environment all use 2.4.6 and 1.9.1. A version that describes the
+    archived pre-as-of records is allowed where the line or the one before it
+    says "archived".
+
+    Mutation, recorded on `REPRODUCIBILITY.md`: the fitted-with line set back to
+    "numpy 2.0.2" with the word "archived" removed from the line above ->
+    `AssertionError: [] != ['REPRODUCIBILITY.md:28: numpy 2.0.2 ...']`.
+    """
+
+    def test_the_ci_pins_are_read(self):
+        self.assertEqual(set(ci_library_pins()), {"numpy", "scikit-learn"})
+
+    def test_every_stated_library_version_is_the_pin_or_archived(self):
+        pins = ci_library_pins()
+        offences = []
+        for relative, path in published_markdown():
+            if relative.startswith("docs/archive/"):  # superseded and not binding
+                continue
+            lines = path.read_text().splitlines()
+            for number, line in enumerate(lines, start=1):
+                for name, version in LIBRARY_VERSION.findall(line):
+                    if version == pins[name]:
+                        continue
+                    context = f"{lines[number - 2] if number > 1 else ''} {line}".lower()
+                    if "archived" in context or "pre-asof" in context:
+                        continue
+                    offences.append(f"{relative}:{number}: {name} {version} (CI pins {pins[name]})")
+        self.assertEqual([], offences)
+
+
 class SpecifierEvaluationTests(unittest.TestCase):
     """A declaration is evaluated as a specifier, not searched for as a substring.
 

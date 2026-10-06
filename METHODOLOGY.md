@@ -36,7 +36,7 @@ defines it.
 **The information set.** "Next-day" means a forecast made at 16:00 on the business day
 before the scored day. The as-of information rule
 ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)) reads each
-input at its latest value public at that instant, and the records in `docs/runs/` are
+input at its latest value declared public at that instant, and the records in `docs/runs/` are
 scored under it. The records published before it read every input at the row dated at
 least seven calendar days earlier, which never leaks and is about a week stale; they are
 archived in `docs/runs/archive/pre-asof/`, and the readings of them below are readings of
@@ -177,8 +177,11 @@ stops being published here, or if one that has been repaired is still published.
   a future vintage that restated an observation would turn nothing red.
 - **No event-window result is claimed.** The event-window evaluator cannot yet express the
   published model's calibration and tail settings.
-- **Everything is a backtest.** No forecast here has been made against a day that had not
-  already happened.
+- **The published records are backtests; the live record is forward.** Every figure in
+  `docs/runs/` scores days that had already happened when it was scored. The final test
+  (`docs/final-test.md`) opened the near-blind tier once, and the live record
+  (`docs/decisions/lockbox.md`) logs forecasts before their days, so a result there is
+  not a backtest.
 
 ## Reading the pre-as-of records
 

@@ -2020,6 +2020,11 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
         spreads = [d.spread_bps for d in kept if d.state is not None and int(d.state) == state]
         by_state[str(state)] = {"label": STATE_LABELS[state], "n": len(spreads),
                                 "above": {str(t): rate_cell([int(exceeds_bp(s, t)) for s in spreads]) for t in taus}}
+    # The last year's own days by state (#267): the whole-period table pools years in which the
+    # state was mostly abundant, so a year spent in tight or scarce is shown on its own row.
+    last_year = kept[-1].day.year
+    year_n = {str(state): sum(1 for d in kept if d.day.year == last_year and d.state is not None
+                              and int(d.state) == state) for state in states}
     rises = {}
     for t in taus:
         rates = [by_state[str(k)]["above"][str(t)]["rate"] for k in states]
@@ -2030,7 +2035,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
     data = {
         "spans": spans, "buffer_spans": buffer_spans, "labels": {str(k): v for k, v in STATE_LABELS.items()},
         "band": list(SATIATION_BAND), "buffer_bn": ON_RRP_BUFFER_BN, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
-        "by_state": by_state, "rises": rises, "taus": taus, "held_out": spans_held,
+        "by_state": by_state, "last_year": {"year": last_year, "days_by_state": year_n},
+        "rises": rises, "taus": taus, "held_out": spans_held,
         "status": {k: status[k] for k in ("key", "icon", "word")},
         "counted": {"first": kept[0].day.isoformat(), "last": last.isoformat(), "n": len(kept),
                     "unknown": sum(1 for d in kept if d.state is None)},
@@ -2067,6 +2073,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
                   f"{pct(by_state[str(k)]['above'][str(t)]['interval'][0])} to "
                   f"{pct(by_state[str(k)]['above'][str(t)]['interval'][1])}</td>" for t in taus)
         + "</tr>" for k in states)
+    body += (f"<tr><th scope='row'>{last_year} only</th><td colspan='{1 + len(taus)}'>days by state, "
+             + " / ".join(f"{k} {year_n[str(k)]}" for k in states) + "</td></tr>")
     low, high = SATIATION_BAND
     brk = f"${ON_RRP_BUFFER_BN:,.0f}bn"
     held = (f" Days from {day(spans_held[0]['start'])} on are {held_as(h['name'] for h in spans_held)}: "
@@ -2479,6 +2487,33 @@ def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, 
 # ---------------------------------------------------------------- the final test (#238)
 
 
+def rests_on(window, interval, mean, rel):
+    """What the primary cell's pass rests on (#238, hold ruling): computed after the result, decides nothing.
+
+    The two days with the largest paired difference, their share of the summed difference, the mean and interval
+    of the rest under the record's own bootstrap (block length, seed, replications, level), and how many days
+    the published model won. Read off `window_per_origin`; nothing is typed.
+    """
+    diffs = [r["difference_bps"] for r in window]
+    if len(diffs) < 5:
+        raise VisualError(f"{rel}: window_per_origin has {len(diffs)} days, too few to ask what a pass rests on")
+    top = sorted(range(len(diffs)), key=lambda i: -diffs[i])[:2]
+    total = sum(diffs)
+    if total <= 0:
+        raise VisualError(f"{rel}: the summed paired difference is not positive, so a share of it is undefined")
+    if abs(total / len(diffs) - mean) > 1e-9:
+        raise VisualError(f"{rel}: window_per_origin does not average to the cell's mean_difference_bps")
+    rest = [v for i, v in enumerate(diffs) if i not in top]
+    lower, upper = stationary_bootstrap_interval(
+        lambda ix: sum(rest[i] for i in ix) / len(ix), len(rest), block_length=interval["block_length"],
+        seed=interval["seed"], replications=interval["replications"], level=interval["level"])
+    ordered = sorted(top, key=lambda i: window[i]["scored_date"])
+    return {"days": [window[i]["scored_date"] for i in ordered], "values": [diffs[i] for i in ordered],
+            "share": sum(diffs[i] for i in top) / total, "mean": sum(rest) / len(rest), "lower": lower,
+            "upper": upper, "block_length": interval["block_length"], "seed": interval["seed"],
+            "replications": interval["replications"], "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
+
+
 def final_test(records, locked):
     """The "Final test" section (#238), read off `FINAL_TEST` alone.
 
@@ -2542,11 +2577,13 @@ def final_test(records, locked):
                       "lower": node["interval"]["lower"], "upper": node["interval"]["upper"],
                       "verdict": FINAL_TEST_LABELS[node["verdict"]], "label": node["verdict_label"]})
 
+    rests = rests_on(get("primary", "window_per_origin"), get(*cell, "interval"), mean, rel)
+
     x, y = date.fromisoformat(first), date.fromisoformat(last)
     window = (f"{x.day} {x:%B} to {day(last)}" if x.year == y.year else f"{day(first)} to {day(last)}")
     gap = f"{signed(lower, 2)} to {signed(upper, 2)} bp"
-    near_blind = ("near-blind, not blind: these days had appeared inside earlier pooled results, though no choice "
-                  "of model was made on them by name")
+    near_blind = ("near-blind, not blind: these days had appeared inside earlier pooled results, though the record "
+                  "says no choice was made on them by name")
     if result == "pass":
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
@@ -2596,6 +2633,15 @@ def final_test(records, locked):
         + (f"{labels(stress[0])}, with {' and '.join(str(e['events']) for e in stress)} such days in the window."
            if same else "; ".join(f"{e['target']} bp: {labels(e)}, with {e['events']} such days" for e in stress) + ".")
         + f" Below {h1[0]['minimum_events']} such days, a cell is labelled inconclusive.")
+    rests_text = (f"<b>What the pass rests on, post hoc.</b> Two days carry {100 * rests['share']:.1f}% of the summed "
+                  f"paired difference: {' and '.join(day(d) for d in rests['days'])} "
+                  f"({' and '.join(signed(v, 2) + ' bp' for v in rests['values'])}). Without them the mean paired "
+                  f"difference is {signed(rests['mean'], 3)} bp, {level}% interval {signed(rests['lower'], 3)} to "
+                  f"{signed(rests['upper'], 3)} bp, by the record's own bootstrap (mean block length "
+                  f"{rests['block_length']}, seed {rests['seed']}, {rests['replications']:,} replications), which "
+                  f"{'does not separate it from zero' if rests['lower'] <= 0 <= rests['upper'] else 'lies on one side of zero'}. "
+                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. On this near-blind test, "
+                  f"this was computed after the result: it decides nothing, and the verdict stands.")
     blind = min(locked, key=lambda t: t.start) if locked else None
     blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
                   f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
@@ -2603,7 +2649,7 @@ def final_test(records, locked):
                    else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
-            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later}
+            "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests}
     fills = {
         "ft_verdict": verdict,
         "ft_claim": claim_html,
@@ -2619,9 +2665,13 @@ def final_test(records, locked):
                          "forecasts the next day from the latest spread known at the decision time. Both are graded "
                          "by CRPS: how far a forecast range was from the spread that actually came, in basis "
                          "points, so lower is better."),
+        "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
+                      f"deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
+                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment."),
+        "ft_rests": rests_text,
         "ft_not_stress": stress_text,
         "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"though no choice of model was made on them by name.{blind_text}",
+                        f"though the record says no choice was made on them by name.{blind_text}",
         "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
                     f"The test says nothing about a stressed period."),
         "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
