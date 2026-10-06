@@ -1166,6 +1166,10 @@ def status_line():
     still_open = "".join(
         ", with phase %d, %s, still open alongside it" % (item["number"], item["name"])
         for item in emit_status.alongside(phases, number))
+    closed = emit_status.closed_for_now(phases, number)
+    if closed:
+        still_open += ", after %s closed for now" % " and ".join(
+            "phase %d, %s," % (item["number"], item["name"]) for item in closed)
     lines.append("**Where this is: phase %d of %d — %s (%s)%s.** Its exit criterion is "
                  "%s. Next is phase %d, %s. The machine-readable version is "
                  "[`docs/status.json`](docs/status.json), regenerated from the same "
