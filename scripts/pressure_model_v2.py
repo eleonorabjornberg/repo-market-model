@@ -600,6 +600,59 @@ THIRD_LOOK_LABEL = ("a third look at 2023-2025, scored once for v1 and the final
                     "design, and every historical edge of v2 over v1 stays exploratory")
 
 
+# ---------------------------------------------------------------------------
+# The fourth round: recover the quarter-end and tax-date shortfalls (ruling of 6 October 2026, 18:29 and 18:30)
+# ---------------------------------------------------------------------------
+
+#: Eleonora's ruling on PR #252 of 6 October 2026, 18:29: "Keep the term and let's regain the quarter-end and tax-date
+#: shortfalls somehow", and, at 18:30, "extend to 2023 and explore that". The inner block is extended through 2023-12-31
+#: (23 quarter-ends, where the 19 of the old inner block were under `min_samples_leaf` 20, so the trees could not split
+#: on `quarter_end`); the outer block becomes 2024 and 2025. 2023 was read at the first three looks: the fourth look's
+#: outer block is a subset of the ones read before, and the earlier blocks (`INNER`, `OUTER`) and the looks at them are
+#: kept as they were. The boundary is declared in the same commit as the candidates and the rule, before any candidate
+#: is scored on it.
+INNER4 = (date(2018, 6, 29), date(2023, 12, 31))
+OUTER4 = (date(2024, 1, 1), date(2025, 12, 31))
+
+#: Every candidate is v2 as it stands (depth-3 trees, nested PID, interior layer, width layer) with changes to the trees
+#: only. The first three are the third round's candidates re-run on the extended block (`qe_indicator` is the indicator
+#: alone, which ruling 18:30 asks to see re-run; `qe_indicator_and_month_end_countdown` is the term Eleonora kept). The
+#: others add `tax_date` (a `contract.CALENDAR_FEATURES` panel column: the tax-date shortfall is the other cell the term
+#: hurt), and/or lower `min_samples_leaf` to 10 so that a rare day type can own a leaf. None needs a new panel column or
+#: a new `ml.py` definition: `candidate_setup` hands `min_samples_leaf` to the fitter as its own setting.
+#: Complexity is (changes to how the trees are trained, input columns added), as `QE_CANDIDATES`'.
+FOURTH_CANDIDATES = {
+    "base": QE_CANDIDATES["base"],
+    "qe_indicator": QE_CANDIDATES["qe_indicator"],
+    "qe_indicator_and_month_end_countdown": QE_CANDIDATES["qe_indicator_and_month_end_countdown"],
+    "qe_and_tax_date": {
+        "what": "the quarter-end indicator and the tax-date indicator, `quarter_end` and `tax_date`",
+        "features": ("quarter_end", "tax_date"), "training_pairs": None, "complexity": (0, 2)},
+    "qe_tax_and_month_end_countdown": {
+        "what": "the kept term (`quarter_end`, `days_to_month_end`) and `tax_date`",
+        "features": ("quarter_end", "tax_date", "days_to_month_end"), "training_pairs": None, "complexity": (0, 3)},
+    "qe_indicator_leaf10": {
+        "what": "the quarter-end indicator alone, with `min_samples_leaf` 10 (a rare day type may own a leaf)",
+        "features": ("quarter_end",), "training_pairs": None, "min_samples_leaf": 10, "complexity": (1, 1)},
+    "qe_tax_countdown_leaf10": {
+        "what": "the kept term and `tax_date`, with `min_samples_leaf` 10",
+        "features": ("quarter_end", "tax_date", "days_to_month_end"), "training_pairs": None,
+        "min_samples_leaf": 10, "complexity": (1, 3)},
+}
+FOURTH_SELECTION = {
+    "window": "2018-06-29 to 2023-12-31 (`INNER4`), h = 1",
+    "rule": FIX_SELECTION["rule"],
+    "unchanged": QE_SELECTION["unchanged"],
+    "recovery": ("the means are chosen by the rule above, which reads CRPS and the eligibility gates, as in the third "
+                 "round. The shortfalls the ruling names are reported for every candidate and decide nothing: "
+                 "the quarter-end and tax-date 50% bands (counts, intervals only from `minimum_days`), P(y <= q50) "
+                 "and mean y - q50 in those cells, and whether the trees split on `quarter_end` and `tax_date` "
+                 "(`tree_use`)"),
+    "outer": ("the outer block (`OUTER4`) is scored a fourth time, once, for the chosen candidate, after it is "
+              "committed as `CHOSEN_FOURTH`; the first three looks are kept as they were"),
+}
+
+
 def candidate_setup(fit, features, name):
     """A quarter-end candidate's fitter and feature list, from the published side's.
 
@@ -611,9 +664,10 @@ def candidate_setup(fit, features, name):
     replaces no estimator class.
     """
 
-    if name not in QE_CANDIDATES:
+    candidates = {**QE_CANDIDATES, **FOURTH_CANDIDATES}
+    if name not in candidates:
         raise ValueError(f"unknown quarter-end candidate {name!r}")
-    spec = QE_CANDIDATES[name]
+    spec = candidates[name]
     extras = tuple(spec["features"])
     clash = sorted(set(extras) & set(features))
     if clash:
@@ -625,6 +679,8 @@ def candidate_setup(fit, features, name):
     keywords.update(V2_TREE_SETTINGS)
     if spec["training_pairs"] is not None:
         keywords["training_pairs"] = spec["training_pairs"]
+    if "min_samples_leaf" in spec:
+        keywords["min_samples_leaf"] = spec["min_samples_leaf"]
     return functools.partial(ml.fit_depth_limited_quantiles, *fit.args, **keywords), tuple(features) + extras
 
 
@@ -850,11 +906,11 @@ def fix_choice(days, v1_days, cells, rows, splits) -> dict:
     }
 
 
-def select_quarter_end(summaries, paired_to_leader):
-    """`QE_SELECTION`, applied to the eligible candidates' summaries."""
+def select_quarter_end(summaries, paired_to_leader, candidates=QE_CANDIDATES):
+    """`QE_SELECTION` (or `FOURTH_SELECTION`, the same rule), applied to the eligible candidates' summaries."""
 
     return _select_simplest(summaries, paired_to_leader,
-                            {name: QE_CANDIDATES[name]["complexity"] for name in summaries})
+                            {name: candidates[name]["complexity"] for name in summaries})
 
 
 def with_day_types(days, rows, splits):
@@ -866,8 +922,12 @@ def with_day_types(days, rows, splits):
     return [dict(d, type=kind) for d, kind in zip(days, types)]
 
 
-def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
+def quarter_end_choice(candidate_days, v1_days, cells, rows, splits, *, block=INNER, candidates=QE_CANDIDATES,
+                       selection=QE_SELECTION, tag="qe") -> dict:
     """The quarter-end term, chosen on the inner block only (`QE_SELECTION`).
+
+    The fourth round calls it with `block=INNER4`, `candidates=FOURTH_CANDIDATES`, `selection=FOURTH_SELECTION`
+    and its own seed `tag`; the rule and the measures are the same.
 
     `candidate_days` maps each candidate to its days (`date`, `anchor`, `y`,
     `type`, the pressure-day type, and `v2`, the vector of v2 built on that candidate's trees); every
@@ -876,7 +936,7 @@ def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
     day outside the inner block.
     """
 
-    if not candidate_days or any(not _in(d["date"], INNER) for days in candidate_days.values() for d in days):
+    if not candidate_days or any(not _in(d["date"], block) for days in candidate_days.values() for d in days):
         raise ValueError("the quarter-end term is chosen on the inner block only")
     reference = candidate_days["base"]
     if any([(d["date"], d["y"]) for d in days] != [(d["date"], d["y"]) for d in reference]
@@ -886,42 +946,42 @@ def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
     vectors = {name: [d["v2"] for d in days] for name, days in candidate_days.items()}
     summaries, gates, candidates = {}, {}, {}
     for name, vecs in vectors.items():
-        summaries[name] = dx._summary(v1_days, vecs, INNER)
+        summaries[name] = dx._summary(v1_days, vecs, block)
         gates[name] = conditional_gates(_with_cells(reference, cells, "v", vecs), "v")
         diagnostic = [{"date": d["date"], "y": d["y"], "v": v, "type": d["type"], "cells": set(cells[d["date"]])}
                       for d, v in zip(reference, vecs)]
         candidates[name] = {
-            "what": QE_CANDIDATES[name]["what"],
-            "features_added": list(QE_CANDIDATES[name]["features"]),
-            "training_pairs": QE_CANDIDATES[name]["training_pairs"],
-            "complexity": list(QE_CANDIDATES[name]["complexity"]),
+            "what": candidates[name]["what"],
+            "features_added": list(candidates[name]["features"]),
+            "training_pairs": candidates[name]["training_pairs"],
+            "complexity": list(candidates[name]["complexity"]),
             "inner": summaries[name],
             "conditional_gates_inner": gates[name],
-            "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vecs, rows, splits, INNER, ("#244", "qe", name, "v1")),
+            "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vecs, rows, splits, block, ("#244", tag, name, "v1")),
             "paired_vs_base_inner": (None if name == "base" else
-                                     dx.paired(v1_days, vectors["base"], vecs, rows, splits, INNER,
-                                               ("#244", "qe", name, "base"))),
+                                     dx.paired(v1_days, vectors["base"], vecs, rows, splits, block,
+                                               ("#244", tag, name, "base"))),
             "by_day_type": {
-                cell: _diagnostic_cell([d for d in diagnostic if _cell_members(d)[cell]], "v", ("qe", name, cell))
+                cell: _diagnostic_cell([d for d in diagnostic if _cell_members(d)[cell]], "v", (tag, name, cell))
                 for cell in ("all", "quarter_end", "year_end", "tax_date", "month_end", "ordinary")},
         }
     pair_cache = {}
 
     def paired_to_leader(name, leader):
         if (name, leader) not in pair_cache:
-            pair_cache[(name, leader)] = dx.paired(v1_days, vectors[leader], vectors[name], rows, splits, INNER,
-                                                   ("#244", "qe", name, "vs", leader))
+            pair_cache[(name, leader)] = dx.paired(v1_days, vectors[leader], vectors[name], rows, splits, block,
+                                                   ("#244", tag, name, "vs", leader))
         return pair_cache[(name, leader)]
 
     eligible = {n: summaries[n] for n in vectors if eligible_inner(summaries[n], gates[n], reading=BINDING_READING)}
-    selection = select_quarter_end(eligible, paired_to_leader)
+    chosen = select_quarter_end(eligible, paired_to_leader, candidates)
     return {
-        "declared": {"candidates": QE_CANDIDATES, "selection": QE_SELECTION, "tree_settings": V2_TREE_SETTINGS,
+        "declared": {"candidates": candidates, "selection": selection, "tree_settings": V2_TREE_SETTINGS,
                      "reading": BINDING_READING},
-        "window": [INNER[0].isoformat(), INNER[1].isoformat()],
+        "window": [block[0].isoformat(), block[1].isoformat()],
         "days": len(reference),
         "candidates": candidates,
-        "selection": selection,
+        "selection": chosen,
         "paired_against_leader": {f"{a}_vs_{b}": {k: v for k, v in p.items() if k != "splits"}
                                   for (a, b), p in pair_cache.items()},
         "vectors": vectors,

@@ -649,6 +649,81 @@ class QuarterEndDeclarationTests(unittest.TestCase):
         self.assertIn("lower", cell["band_50"])
 
 
+class FourthRoundDeclarationTests(unittest.TestCase):
+    """The fourth round (Eleonora's rulings on PR #252 of 6 October 2026, 18:29 and 18:30), declared before scoring.
+
+    The extended inner block, the outer block it leaves, the candidates and the rule are fixed in one commit, before
+    any candidate is scored on the extended block.
+    """
+
+    def test_the_blocks_are_extended_through_2023(self):
+        self.assertEqual(v2.INNER4, (date(2018, 6, 29), date(2023, 12, 31)))
+        self.assertEqual(v2.OUTER4, (date(2024, 1, 1), date(2025, 12, 31)))
+        self.assertEqual(v2.INNER4[0], v2.DECIDES[0])
+        self.assertEqual(v2.OUTER4[1], v2.DECIDES[1])
+        self.assertEqual(v2.OUTER4[0] - v2.INNER4[1], timedelta(days=1))
+        # The earlier blocks, and the looks at them, are kept as they were.
+        self.assertEqual(v2.INNER, (date(2018, 6, 29), date(2022, 12, 31)))
+        self.assertEqual(v2.OUTER, (date(2023, 1, 1), date(2025, 12, 31)))
+
+    def test_the_candidates_and_their_complexity(self):
+        self.assertEqual(set(v2.FOURTH_CANDIDATES),
+                         {"base", "qe_indicator", "qe_indicator_and_month_end_countdown", "qe_and_tax_date",
+                          "qe_tax_and_month_end_countdown", "qe_indicator_leaf10", "qe_tax_countdown_leaf10"})
+        for name in ("base", "qe_indicator", "qe_indicator_and_month_end_countdown"):
+            self.assertIs(v2.FOURTH_CANDIDATES[name], v2.QE_CANDIDATES[name], name)
+        for name, spec in v2.FOURTH_CANDIDATES.items():
+            self.assertEqual(len(spec["complexity"]), 2, name)
+            for column in spec["features"]:
+                self.assertIn(column, CALENDAR_FEATURES, name)
+            self.assertIsNone(spec["training_pairs"], name)
+            self.assertEqual(spec["complexity"][1], len(spec["features"]), name)
+        # Training the trees differently (a smaller leaf) is less simple than adding an input column.
+        self.assertLess(v2.FOURTH_CANDIDATES["qe_tax_and_month_end_countdown"]["complexity"],
+                        v2.FOURTH_CANDIDATES["qe_tax_countdown_leaf10"]["complexity"])
+        self.assertLess(v2.FOURTH_CANDIDATES["qe_indicator"]["complexity"],
+                        v2.FOURTH_CANDIDATES["qe_indicator_leaf10"]["complexity"])
+        self.assertIn(v2.CHOSEN_QE_FIX, v2.FOURTH_CANDIDATES)
+
+    def test_the_rule_is_the_fixs(self):
+        self.assertEqual(v2.FOURTH_SELECTION["rule"], v2.FIX_SELECTION["rule"])
+        self.assertEqual(v2.FOURTH_SELECTION["unchanged"], v2.QE_SELECTION["unchanged"])
+        self.assertIn("2023-12-31", v2.FOURTH_SELECTION["window"])
+
+    def test_a_leaf_size_is_the_fitters_own_setting(self):
+        base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga",), min_samples_leaf=20)
+        fit, features = v2.candidate_setup(base, ("tga", "spread_bps"), "qe_tax_countdown_leaf10")
+        self.assertEqual(fit.keywords["min_samples_leaf"], 10)
+        self.assertEqual(fit.keywords["regressors"], ("tga", "quarter_end", "tax_date", "days_to_month_end"))
+        self.assertEqual(features, ("tga", "spread_bps", "quarter_end", "tax_date", "days_to_month_end"))
+        fit, _features = v2.candidate_setup(base, ("tga", "spread_bps"), "qe_and_tax_date")
+        self.assertEqual(fit.keywords["min_samples_leaf"], 20)  # untouched when a candidate declares none
+        self.assertIs(fit.func, ml.fit_depth_limited_quantiles)
+
+    def test_the_choice_reads_the_extended_inner_block_only(self):
+        """The quarter-end choice refuses a day outside the block it is given (`ValueError`).
+
+        Mutation record. Disposable copy of the tree, CPython 3.11, `PYTHONDONTWRITEBYTECODE=1`, this class run
+        alone, control green. In `quarter_end_choice`, the block test `any(not _in(d["date"], block) ...)` was
+        replaced by `False`, and `diff` confirmed it. This test then failed with `AssertionError: "inner block only"
+        does not match "fmean requires at least one data point"` (a `StatisticsError` from the scoring that went
+        ahead, not the guard's message). Restored, green.
+        """
+
+        day = {"anchor": "2023-12-28", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary", "type": "ordinary",
+               "v2": [0.0] * 5}
+        in_2023 = [dict(day, date="2023-06-02")]
+        outer = [dict(day, date="2024-01-03")]
+        with self.assertRaisesRegex(ValueError, "inner block only"):
+            v2.quarter_end_choice({"base": outer}, [], {}, [], None, block=v2.INNER4)
+        with self.assertRaisesRegex(ValueError, "inner block only"):
+            v2.quarter_end_choice({"base": in_2023}, [], {}, [], None)  # 2023 is outside the old inner block
+        # 2023 passes the extended block's guard (it then fails for want of a v1 walk, not for the block).
+        with self.assertRaises(Exception) as caught:
+            v2.quarter_end_choice({"base": in_2023}, [], {}, [], None, block=v2.INNER4)
+        self.assertNotIn("inner block only", str(caught.exception))
+
+
 def _sha(rows):
     return v2.vectors_sha256(rows)
 
