@@ -246,6 +246,8 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 .fdcontrol{font-family:var(--sans);font-size:.86rem;color:var(--ink-2);margin:4px 0 8px}
 .fdcontrol select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:2px 6px}
 .fdhidden{font-size:.9rem}
+table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
+table.fttab.fdtab td{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -495,7 +497,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <p class="fdcontrol"><label for="fdyear">Year</label> <select id="fdyear"><option value='2018'>2018</option><option value='2019'>2019</option><option value='2020'>2020</option><option value='2021'>2021</option><option value='2022'>2022</option><option value='2023'>2023</option><option value='2024'>2024</option><option value='2025'>2025</option><option value='2026' selected>2026</option></select></p>
     <div class="chart" id="fdchart"><div class="tip"></div></div>
   </figure>
-  <div class='heat' role='region' aria-label='How far off the forecast was, in basis points' tabindex='0'><table class='fttab'><caption>How far off it was, in basis points. A band holds a day when the actual spread is inside it or on its edge.</caption><thead><tr><th scope='col'>Measure</th><th scope='col'>2018–2025</th><th scope='col'>2026, January to September</th></tr></thead><tbody><tr><th scope='row'>Days scored</th><td>1,873</td><td>169</td></tr><tr><th scope='row'>Mean absolute error of the median, bp</th><td>2.26</td><td>2.51</td></tr><tr><th scope='row'>Median absolute error of the median, bp</th><td>1.00</td><td>1.95</td></tr><tr><th scope='row'>Days within 1 bp of the median</th><td>50%</td><td>27%</td></tr><tr><th scope='row'>Days within 2 bp of the median</th><td>69%</td><td>51%</td></tr><tr><th scope='row'>Largest misses, actual minus median</th><td>+309.1 bp, 17 Sep 2019<br>+74.0 bp, 2 Jan 2019<br>+59.0 bp, 31 Dec 2018</td><td>+9.8 bp, 26 May 2026<br>+9.7 bp, 15 Jun 2026<br>−8.8 bp, 9 Jul 2026</td></tr><tr><th scope='row'>Actual inside the 90% band (misses below, above)</th><td>89% (95 below, 115 above)</td><td>93% (7 below, 5 above)</td></tr><tr><th scope='row'>Actual inside the 50% band, not yet calibrated (#243) (misses below, above)</th><td>33% (754 below, 503 above)</td><td>20% (80 below, 55 above)</td></tr><tr><th scope='row'>Mean width of the 90% band, bp</th><td>10.75</td><td>12.02</td></tr><tr><th scope='row'>Mean width of the 50% band, bp</th><td>2.00</td><td>1.93</td></tr></tbody></table></div>
+  <div class='heat' role='region' aria-label='How far off the forecast was, in basis points' tabindex='0'><table class='fttab fdtab'><caption>How far off it was, in basis points. A band holds a day when the actual spread is inside it or on its edge.</caption><thead><tr><th scope='col'>Measure</th><th scope='col'>2018–2025</th><th scope='col'>2026, January to September</th></tr></thead><tbody><tr><th scope='row'>Days scored</th><td>1,873</td><td>169</td></tr><tr><th scope='row'>Mean absolute error of the median, bp</th><td>2.26</td><td>2.51</td></tr><tr><th scope='row'>Median absolute error of the median, bp</th><td>1.00</td><td>1.95</td></tr><tr><th scope='row'>Days within 1 bp of the median</th><td>50%</td><td>27%</td></tr><tr><th scope='row'>Days within 2 bp of the median</th><td>69%</td><td>51%</td></tr><tr><th scope='row'>Largest misses, actual minus median</th><td>+309.1 bp, 17 Sep 2019<br>+74.0 bp, 2 Jan 2019<br>+59.0 bp, 31 Dec 2018</td><td>+9.8 bp, 26 May 2026<br>+9.7 bp, 15 Jun 2026<br>−8.8 bp, 9 Jul 2026</td></tr><tr><th scope='row'>Actual inside the 90% band (misses below, above)</th><td>89% (95 below, 115 above)</td><td>93% (7 below, 5 above)</td></tr><tr><th scope='row'>Actual inside the 50% band, not yet calibrated (#243) (misses below, above)</th><td>33% (754 below, 503 above)</td><td>20% (80 below, 55 above)</td></tr><tr><th scope='row'>Mean width of the 90% band, bp</th><td>10.75</td><td>12.02</td></tr><tr><th scope='row'>Mean width of the 50% band, bp</th><td>2.00</td><td>1.93</td></tr></tbody></table></div>
   <div class='heat' role='region' aria-label='The biggest misses of 2026' tabindex='0'><table class='fttab'><caption>The biggest misses of 2026, January to September</caption><thead><tr><th scope='col'>Date</th><th scope='col'>Actual, bp</th><th scope='col'>Forecast median, bp</th><th scope='col'>90% band, bp</th><th scope='col'>Miss, bp</th></tr></thead><tbody><tr><td>26 May 2026</td><td>−2</td><td>−11.75</td><td>−17.26 to −4.68</td><td>+9.75</td></tr><tr><td>15 June 2026</td><td>+4</td><td>−5.66</td><td>−9.12 to +0.68</td><td>+9.66</td></tr><tr><td>9 July 2026</td><td>−12</td><td>−3.24</td><td>−7.61 to +3.27</td><td>−8.76</td></tr><tr><td>15 April 2026</td><td>+7</td><td>−1.53</td><td>−5.92 to +3.88</td><td>+8.53</td></tr><tr><td>27 May 2026</td><td>−2</td><td>−10.38</td><td>−14.13 to −0.94</td><td>+8.38</td></tr></tbody></table></div>
   <p class="prose fdhidden"><b>No day after 3 September 2026 is drawn or counted.</b> Later days are in the blind tier, and the live record's forecasts are among them; none is shown until its scoring date opens it (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/lockbox.md'>the lockbox</a>).</p>
   <p class="ftlinks">Every figure here is read from <a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/runs/published_distribution_daily_h1.json'><code>docs/runs/published_distribution_daily_h1.json</code></a>: each scored day from 29 June 2018 to 3 September 2026, the published distribution's five quantiles one day ahead and the actual spread. Its daily CRPS reproduces the published CRPS records exactly. The 50% band covers fewer days than it should (<a href='https://github.com/eleonorabjornberg/repo-market-model/issues/243'>#243</a>).</p>
@@ -707,7 +709,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>487dc799735ea9ea9df11d4b3860cbae0b552024</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>65ba8a7682950da19950f06c761cf19e05168e29</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>Chapters 5 and 6 are drawn only from the six run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -1556,13 +1558,13 @@ function renderForecastDaily() {
   const g = svg.append("g").attr("transform", `translate(${m.l},12)`);
   let at = 0, row = 0;
   key.forEach(([kind, text]) => {
-    const w = 22 + 6.2 * text.length;
-    if (at + w > W - m.l - m.r) { at = 0; row += 16; }
-    const k = g.append("g").attr("transform", `translate(${at},${row})`);
+    const k = g.append("g");
     if (kind === "dot") k.append("circle").attr("cx", 6).attr("cy", 0).attr("r", 2.6).style("fill", "var(--ink)");
     else if (kind === "line") k.append("line").attr("x1", 0).attr("x2", 12).attr("y1", 0).attr("y2", 0).style("stroke", FD_COLOURS[0]).style("stroke-width", 1.6);
     else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", kind === "b90" ? .16 : .3);
-    k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text);
+    const w = 17 + k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text).node().getComputedTextLength() + 14;
+    if (at && at + w > W - m.l - m.r) { at = 0; row += 16; }
+    k.attr("transform", `translate(${at},${row})`);
     at += w;
   });
 }
