@@ -18116,7 +18116,6 @@
     ],
     "tie_bps": 1e-09
    },
-   "max_depth": 3,
    "width_calibration": {
     "classes": {
      "month_end": "turn",
