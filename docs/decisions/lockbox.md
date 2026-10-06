@@ -66,7 +66,9 @@ as that directive asks.
   with that ruling as the reference, and ran the frozen command of `docs/decisions/final-test-preregistration.md`
   once: the published distribution (#169's gbm with nested conformal PID) against as-of persistence, by CRPS, at
   h = 1. The test's other cells, for the frozen dynamic logit (#137) and the published distribution at h = 2 to 5,
-  were scored in the same run and are reported only. The record is `docs/runs/final_test_near_blind.json`, published
+  were scored in the same run and are reported only. The method for the h = 2 to 5 cells was
+  chosen after the 2026 days were seen, because the lockbox was opened before one was declared (Eleonora's ruling of
+  6 October 2026, #223, relayed). They are labelled so on the page and never change the test's verdict. The record is `docs/runs/final_test_near_blind.json`, published
   whatever it shows.
 - **The near-blind tier is now ordinary history.** Its days may be scored by any comparison, like every day
   before 2026-01-01. A comparison that chooses a model on them can no longer claim a held-out test on them.

@@ -3736,6 +3736,59 @@ def fit_gradient_boosted_quantiles(
     )
 
 
+#: Pressure model v2's trees (#244): v1's, with a maximum depth of 3. #247's candidate (iv) applied the setting by
+#: replacing the estimator class inside its own script; it is declared here, in the module that fits, and applied by
+#: `fit_depth_limited_quantiles`. The inner block chose it (`scripts/pressure_model_v2.py`, `V2_TREE_SETTINGS`).
+V2_TREE_SETTINGS = MappingProxyType({"max_depth": 3})
+
+
+def fit_depth_limited_quantiles(
+    train_frame: Sequence[DailyObservation],
+    regressors: Sequence[str],
+    cutoff: Optional[date] = None,
+    minimum_history: int = 20,
+    *,
+    max_depth: int,
+    information: Optional[InformationRule] = None,
+    **settings: Any,
+) -> FittedGradientBoostedQuantiles:
+    """`fit_gradient_boosted_quantiles`, with every tree limited to `max_depth` levels.
+
+    The published fitter itself, run with the estimator it builds limited in depth for the length of one fit: the
+    full fit's estimators and every excluding model's carry the setting. Everything else is
+    `fit_gradient_boosted_quantiles`' own: its arguments, its guards and its refusals. **The published fitter's
+    source is not touched** (the final test's CRPS declaration hashes it, and the definitions it reads), so a fit
+    made without this function builds exactly the estimators every published gbm record was produced with, and the
+    estimator class is put back when this fit ends, however it ends.
+
+    Args:
+        max_depth: an int of at least 1, **required**: a depth is a choice, and a default would be a silent one.
+        information: handed to `fit_gradient_boosted_quantiles` (named here so a fold loop sees that this fitter
+            reads the as-of rule, as it does for the published fitter).
+
+    Raises:
+        ValueError: if `max_depth` is not an int of at least 1; `MissingMLExtraError` without the `ml` extra; and
+            whatever `fit_gradient_boosted_quantiles` raises.
+    """
+
+    if isinstance(max_depth, bool) or not isinstance(max_depth, int) or max_depth < 1:
+        raise ValueError(f"max_depth must be an int of at least 1, got {max_depth!r}")
+    published = _estimator_class()
+
+    def limited(**kwargs: Any) -> Any:
+        return published(**kwargs, max_depth=max_depth)
+
+    module = globals()
+    original = module["_estimator_class"]
+    module["_estimator_class"] = lambda: limited
+    try:
+        return fit_gradient_boosted_quantiles(
+            train_frame, regressors, cutoff, minimum_history, information=information, **settings
+        )
+    finally:
+        module["_estimator_class"] = original
+
+
 def gbm_exceedance(
     regressors: Sequence[str],
     minimum_history: int = 20,
