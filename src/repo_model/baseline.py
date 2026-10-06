@@ -6353,7 +6353,7 @@ def calendar_climatology_exceedance(
 #
 # **Which holdout this is, and why it matters here more than usual.** The
 # contract's "Two holdout roles" separates the scoring holdout -- crisis dates
-# excluded from the headline metric but available for training once past,
+# scored and pooled in the headline metric but available for training once past,
 # produced by the backtests here -- from the knowledge holdout, produced by
 # `event_eval` and "reported separately and never averaged into the main
 # table". This path is the first, and it is the only one an aggregate belongs
