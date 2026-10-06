@@ -15,7 +15,12 @@ reserve-scarcity state (#115) read as of each forecast's decision instant.
   columns and the split declaration;
 * the scarcity state's as-of read (`scarcity_at`), which reuses
   `InformationRule`'s read and both of its guards;
-* the history's lockbox refusal (`require_unlocked` before any fit).
+* the history's lockbox refusal (`require_unlocked` before any fit), both the
+  helper's and the walk's own (`distribution_history`, #266);
+* the 5-95 band's label on quarter-ends, year-ends and tax dates, read from the
+  published record (#266);
+* the `live` subcommand's refusal of a measurement panel that ends early (#266);
+* the interval's minimum cell size (#266).
 
 Written first, and watched failing: before `scripts/desk_outputs.py` existed
 every class failed in `setUpClass` with `FileNotFoundError` on the script's path.
@@ -32,9 +37,12 @@ import json
 import unittest
 from datetime import date, datetime, time
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.evaluation_splits import load_split_declaration
+from repo_model.asof import StaleReadError
 from repo_model.splits import LookAheadError
 
 from test_scarcity import DATES, raw_rows, scarcity_inputs_on
@@ -339,6 +347,47 @@ class HistoryLockboxTests(unittest.TestCase):
         self.desk.require_history_unlocked([date(2025, 12, 31), date(2026, 9, 3)])
 
 
+class DistributionHistoryLockboxTests(unittest.TestCase):
+    """The walk itself refuses a locked scored day, before any fit (#266).
+
+    `HistoryLockboxTests` holds the helper; this holds that `distribution_history`
+    calls it. The fold grid is stubbed to put a blind-tier day in the scored set
+    and every name the fit path would reach is stubbed unreachable, so a walk
+    that skipped the check would fit on a blind-tier day.
+
+    **Recorded mutation**, 6 October 2026, same protocol: in
+    `scripts/desk_outputs.py`, `distribution_history`, the line
+    `require_history_unlocked([dates[index] for index in scored])` replaced by
+    `pass` (confirmed applied by grep). `test_the_walk_refuses_a_blind_tier_day_before_any_fit`
+    then fails with `AssertionError: a fit was reached before the lockbox check`.
+    Restored, all green.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+
+    def test_the_walk_refuses_a_blind_tier_day_before_any_fit(self):
+        rows = [SimpleNamespace(date=day, spread_bps=1.0)
+                for day in (date(2026, 9, 3), date(2026, 9, 4))]
+
+        def unreachable(*args, **kwargs):
+            raise AssertionError("a fit was reached before the lockbox check")
+
+        sides = {"published": ("gbm", unreachable, ("spread_bps",), None)}
+        args = SimpleNamespace(minimum_history=61, refit_every=21)
+        stub = SimpleNamespace(_compare_sides=lambda h: (sides, args),
+                               _require_crps_declaration=unreachable)
+        with mock.patch.object(self.desk, "live", stub), \
+                mock.patch.object(self.desk, "fold_grid", lambda dates, registry, **kwargs: [0, 1]), \
+                mock.patch.object(self.desk, "_resolve_fields", unreachable), \
+                mock.patch.object(self.desk, "InformationRule", unreachable), \
+                mock.patch.object(self.desk, "require_refit_every", unreachable), \
+                mock.patch.object(self.desk, "refit_blocks", unreachable):
+            with self.assertRaises(LookAheadError):
+                self.desk.distribution_history(rows, 1, {}, last=date(2026, 9, 4))
+
+
 class SummaryTests(unittest.TestCase):
     """The tables: paired against persistence, split by tag, regime and state."""
 
@@ -369,7 +418,8 @@ class SummaryTests(unittest.TestCase):
 
     def test_a_tag_cell_counts_its_days_and_pairs_the_two_sides(self):
         days = self.days()
-        table = self.desk.summarise(days, horizon=1, splits=SPLITS)
+        with mock.patch.object(self.desk, "MINIMUM_CELL_DAYS", 2):
+            table = self.desk.summarise(days, horizon=1, splits=SPLITS)
         cell = table["by_tag"]["month_end"]
         tagged = [day for day in days if day["tags"]]
         self.assertEqual(cell["days"], len(tagged))
@@ -450,6 +500,209 @@ class LiveOutputsTests(unittest.TestCase):
         self.assertLess(date.fromisoformat(state["read_date"]), date(2026, 9, 25))
         self.assertEqual(state["state"], 1)
         self.assertEqual(state["buffer"], "buffer present")
+
+
+DIAGNOSIS = json.loads((ROOT / "docs" / "runs" / "v1_interior_diagnosis.json").read_text(encoding="utf-8"))
+
+
+def _recorded_coverage(horizon, day_type):
+    return DIAGNOSIS["q1_calibration"][f"h{horizon}_2018_2025"]["splits"]["by_day_type"][day_type]
+
+
+class TurnDayBandLabelTests(unittest.TestCase):
+    """The 5-95 band says its realised coverage is below nominal on a turn day (#266).
+
+    The figures are the published record's (`docs/runs/v1_interior_diagnosis.json`,
+    2018-2025, the repository's exclusive day type), never typed into the script.
+    This replaces the relayed clause that let the band be shown unlabelled.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+
+    def test_a_quarter_end_carries_the_recorded_coverage_at_every_horizon(self):
+        for horizon in range(1, 6):
+            label = self.desk.band_5_95_label(("month_end", "quarter_end"), horizon)
+            recorded = _recorded_coverage(horizon, "quarter_end")
+            self.assertIn(f"{recorded['band_90_half_edge']:.1f}%", label)
+            self.assertIn("below the nominal 90%", label)
+            self.assertIn("above q95", label)
+            self.assertIn(f"h = {horizon}", label)
+
+    def test_the_known_quarter_end_figures(self):
+        self.assertIn("77.4%", self.desk.band_5_95_label(("quarter_end",), 1))
+        for horizon in range(2, 6):
+            figure = _recorded_coverage(horizon, "quarter_end")["band_90_half_edge"]
+            self.assertTrue(50.0 <= figure <= 60.0, figure)
+
+    def test_misses_are_reported_by_side_from_the_record(self):
+        recorded = _recorded_coverage(1, "quarter_end")
+        above = 100.0 - recorded["coverage_half_tie"]["0.95"]
+        below = recorded["coverage_half_tie"]["0.05"]
+        label = self.desk.band_5_95_label(("quarter_end",), 1)
+        self.assertIn(f"{above:.1f}% of days above q95", label)
+        self.assertIn(f"{below:.1f}% below q05", label)
+
+    def test_a_tax_date_carries_its_own_day_type_figure(self):
+        recorded = _recorded_coverage(1, "tax_date")
+        self.assertIn(f"{recorded['band_90_half_edge']:.1f}%",
+                      self.desk.band_5_95_label(("tax_date",), 1))
+
+    def test_a_year_end_is_read_from_the_quarter_end_day_type(self):
+        label = self.desk.band_5_95_label(("month_end", "quarter_end", "year_end"), 1)
+        self.assertIn("year-end", label)
+        self.assertIn("77.4%", label)
+
+    def test_other_days_carry_no_label(self):
+        self.assertIsNone(self.desk.band_5_95_label((), 1))
+        self.assertIsNone(self.desk.band_5_95_label(("month_end", "coupon_settlement"), 1))
+
+    def test_the_live_output_labels_a_turn_day_and_not_an_ordinary_one(self):
+        from test_live_record import _record
+
+        record = _record("2026-09-25")
+        for target, when in zip(record["targets"], (
+                "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02")):
+            target["target_date"] = when
+        switch = scarcity_inputs_on()
+        switch.start()
+        self.addCleanup(switch.stop)
+        from datetime import timedelta
+
+        from repo_model.data import DailyObservation
+        from repo_model.scarcity import with_reserve_scarcity_state
+
+        days, when = [], date(2026, 9, 1)
+        while when <= date(2026, 9, 25):
+            if when.weekday() < 5 and when != date(2026, 9, 7):
+                days.append(when)
+            when += timedelta(days=1)
+        rows = with_reserve_scarcity_state([
+            DailyObservation(day, {"sofr": 4.0, "iorb": 4.0, "reserve_balances": 2900.0,
+                                   "bank_total_assets": 23000.0, "on_rrp": 150.0})
+            for day in days
+        ])
+        report = self.desk.live_outputs(record, rows, REGISTRY, SPLITS)
+        by_date = {t["target_date"]: t for t in report["targets"]}
+        self.assertIn("50.0%", by_date["2026-09-30"]["published_band_5_95"])
+        self.assertIsNone(by_date["2026-09-29"]["published_band_5_95"])
+
+    def test_the_tables_json_labels_a_turn_day_example(self):
+        day = {"date": "2025-12-31", "tags": ["month_end", "quarter_end", "year_end"],
+               "published": [-1.0, 0.0, 1.0, 2.0, 3.0], "outcome_bps": 1.0, "state": 1,
+               "buffer": "buffer gone", "state_read_date": "2025-12-30"}
+        (example,) = self.desk._examples({1: [day]}, "2025-12-31")
+        self.assertIn("77.4%", example["published_band_5_95"])
+
+
+class StaleMeasurementPanelTests(unittest.TestCase):
+    """`live` refuses a state read from a panel that ended before the decision (#266).
+
+    A measurement panel whose last row is older than the declared limit
+    (`data.ON_RRP_MAX_GAP_DAYS`, the daily column's measured longest gap) used
+    to be padded with an empty decision row and read up to 32 days stale.
+
+    **Recorded mutation**, 6 October 2026, same protocol: in
+    `scripts/desk_outputs.py`, `live_outputs`, the guard
+    `if not real or (decision_day - real[-1].date).days > STALE_PANEL_DAYS: raise ...`
+    replaced by `pass` (confirmed applied by grep).
+    `test_a_panel_that_ended_early_is_refused` then fails with
+    `AssertionError: ValueError not raised` (and the empty-panel test an `IndexError`). Restored, all green.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+        from test_live_record import _record
+
+        record = _record("2026-09-25")
+        for target, when in zip(record["targets"], (
+                "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02")):
+            target["target_date"] = when
+        cls.record = record
+
+    def setUp(self):
+        switch = scarcity_inputs_on()
+        switch.start()
+        self.addCleanup(switch.stop)
+
+    @staticmethod
+    def rows(last):
+        from datetime import timedelta
+
+        from repo_model.data import DailyObservation
+        from repo_model.scarcity import with_reserve_scarcity_state
+
+        days, when = [], date(2026, 8, 1)
+        while when <= last:
+            if when.weekday() < 5 and when != date(2026, 9, 7):
+                days.append(when)
+            when += timedelta(days=1)
+        return with_reserve_scarcity_state([
+            DailyObservation(day, {"sofr": 4.0, "iorb": 4.0, "reserve_balances": 2900.0,
+                                   "bank_total_assets": 23000.0, "on_rrp": 150.0})
+            for day in days
+        ])
+
+    def test_a_panel_that_ended_early_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            self.desk.live_outputs(self.record, self.rows(date(2026, 8, 24)), REGISTRY, SPLITS)
+        self.assertIsInstance(caught.exception, StaleReadError)
+
+    def test_the_limit_is_the_declared_one(self):
+        from repo_model.data import ON_RRP_MAX_GAP_DAYS
+
+        self.assertEqual(self.desk.STALE_PANEL_DAYS, ON_RRP_MAX_GAP_DAYS)
+
+    def test_a_panel_ending_within_the_limit_is_read(self):
+        # Friday 25 September's decision, last row Tuesday 22: three days.
+        rows = [row for row in self.rows(date(2026, 9, 25)) if row.date <= date(2026, 9, 22)]
+        report = self.desk.live_outputs(self.record, rows, REGISTRY, SPLITS)
+        self.assertLess(date.fromisoformat(report["targets"][0]["scarcity"]["read_date"]),
+                        date(2026, 9, 25))
+
+    def test_an_empty_panel_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.desk.live_outputs(self.record, [], REGISTRY, SPLITS)
+
+
+class MinimumCellSizeTests(unittest.TestCase):
+    """A cell below the minimum day count carries no interval, whatever the seed (#266)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+
+    def labels(self, inside, outside=60):
+        return ["in"] * inside + ["out"] * outside
+
+    def test_the_rule_is_the_final_tests_minimum_count(self):
+        from repo_model import onset
+
+        self.assertEqual(self.desk.MINIMUM_CELL_DAYS, onset.MINIMUM_EVENTS)
+
+    def test_a_small_cell_has_a_mean_and_no_interval(self):
+        minimum = self.desk.MINIMUM_CELL_DAYS
+        labels = self.labels(minimum - 1)
+        cell = self.desk._cell(labels, [float(i % 3) for i in range(len(labels))], "in",
+                               horizon=1, name="x")
+        self.assertIn("mean", cell)
+        self.assertNotIn("interval", cell)
+        self.assertIn("too few days", cell["interval_unavailable"])
+        self.assertIn(str(minimum), cell["interval_unavailable"])
+        self.assertEqual(self.desk._fmt(cell), f"{cell['mean']:.3f} [too few days]")
+
+    def test_a_cell_at_the_minimum_has_an_interval(self):
+        labels = self.labels(self.desk.MINIMUM_CELL_DAYS)
+        cell = self.desk._cell(labels, [float(i % 3) for i in range(len(labels))], "in",
+                               horizon=1, name="x")
+        self.assertIn("interval", cell)
+
+    def test_the_tables_name_the_rule(self):
+        tables = {1: self.desk.summarise(SummaryTests.days(), horizon=1, splits=SPLITS)}
+        text = self.desk._markdown(tables, "2025-01-02", "2025-01-29")
+        self.assertIn(f"fewer than {self.desk.MINIMUM_CELL_DAYS} days", text)
 
 
 if __name__ == "__main__":

@@ -29,7 +29,9 @@ and nothing here writes into `docs/runs/`.
 
 Wherever the published distribution's 25th-75th percentile band is shown, it
 carries `BAND_25_75_LABEL` (Eleonora's ruling on PR #241, #243): that band is
-not calibrated; the 5-95 band is, and is shown unlabelled.
+not calibrated. The 5-95 band is shown unlabelled except on a quarter-end, year-end
+or tax date, where it carries `band_5_95_label`: its realised coverage on that day type
+is below nominal and its misses fall above q95, read from the published record (#266).
 
 The history replays the published distribution and as-of persistence exactly
 as the live record runs them (`live_record._compare_sides`, the fold loop of
@@ -86,7 +88,13 @@ def _script(name):
 live = _script("live_record")
 
 from repo_model import scarcity  # noqa: E402
-from repo_model.asof import InformationRule, fold_grid, refit_blocks, require_refit_every  # noqa: E402
+from repo_model.asof import (  # noqa: E402
+    InformationRule,
+    StaleReadError,
+    fold_grid,
+    refit_blocks,
+    require_refit_every,
+)
 from repo_model.baseline import (  # noqa: E402
     _AsOfFold,
     _at_decision,
@@ -99,10 +107,16 @@ from repo_model.baseline import (  # noqa: E402
     _with_online_settings,
 )
 from repo_model.contract import QUANTILE_LEVELS  # noqa: E402
-from repo_model.data import CALENDAR_COLUMN_RULES, DailyObservation, market_holidays  # noqa: E402
+from repo_model.data import (  # noqa: E402
+    CALENDAR_COLUMN_RULES,
+    ON_RRP_MAX_GAP_DAYS,
+    DailyObservation,
+    market_holidays,
+)
 from repo_model.evaluation_splits import DAY_TYPES, load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import MetricError, crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
+from repo_model.onset import MINIMUM_EVENTS  # noqa: E402
 
 DECISION = live.DECISION
 HORIZONS = live.HORIZONS
@@ -134,6 +148,25 @@ PERIOD_RULE = (
 )
 #: The label beside the published distribution's 25-75 band (ruling on PR #241, #243).
 BAND_25_75_LABEL = "not yet calibrated (#243)"
+
+#: The published record whose coverage by day type the 5-95 band's label reads (#266).
+INTERIOR_RECORD = REPO / "docs" / "runs" / "v1_interior_diagnosis.json"
+#: The tags whose 5-95 band is labelled, and the exclusive day type whose recorded
+#: coverage each reads: a year-end is a December quarter-end.
+BAND_5_95_TURN_TAGS = {"quarter_end": "quarter_end", "year_end": "quarter_end", "tax_date": "tax_date"}
+
+#: The fewest days a cell may have and still carry an interval. A cell below it
+#: shows its mean and "too few days": whether a 4-8 day cell got an interval
+#: used to depend on the bootstrap seed (#266). The count is the minimum the
+#: final test's pages use (`onset.MINIMUM_EVENTS`), taken as the project's
+#: until Eleonora rules a project-wide minimum for cells of days.
+MINIMUM_CELL_DAYS = MINIMUM_EVENTS
+
+#: The oldest a measurement panel's last row may be, in calendar days before the
+#: decision day, when `live` reads the scarcity state: the declared maximum gap of
+#: the daily carry column (`data.ON_RRP_MAX_GAP_DAYS`, a Friday to the Tuesday
+#: after a Monday holiday). A longer gap is a panel that ended early.
+STALE_PANEL_DAYS = ON_RRP_MAX_GAP_DAYS
 
 #: The interval's settings: the project's level and replications, the stationary
 #: bootstrap, and a mean block of h + 1 days -- overlapping h-step errors share
@@ -296,6 +329,36 @@ def calendar_values(day: date) -> Dict[str, float]:
         column: CALENDAR_COLUMN_RULES[column](day)
         for column in ("days_to_month_end", "quarter_end", "tax_date")
     }
+
+
+def band_5_95_label(tags: Sequence[str], horizon: int) -> Optional[str]:
+    """The 5-95 band's label on a quarter-end, year-end or tax date, else `None`.
+
+    The band is shown unlabelled on other days. On a turn day its realised
+    coverage is below nominal, and the misses fall above q95. Every figure is
+    read from the published record (`INTERIOR_RECORD`, 2018-2025, the
+    repository's exclusive day type at `horizon`), never typed here (#266).
+    """
+
+    turn = [tag for tag in BAND_5_95_TURN_TAGS if tag in tags]
+    if not turn:
+        return None
+    cells = json.loads(INTERIOR_RECORD.read_text(encoding="utf-8"))["q1_calibration"][
+        f"h{horizon}_2018_2025"]["splits"]["by_day_type"]
+    parts = []
+    for tag in turn:
+        day_type = BAND_5_95_TURN_TAGS[tag]
+        cell = cells[day_type]
+        above = 100.0 - cell["coverage_half_tie"]["0.95"]
+        below = cell["coverage_half_tie"]["0.05"]
+        read = f"read from {day_type.replace('_', '-')} days" if tag != day_type else ""
+        parts.append(
+            f"{tag.replace('_', '-')} 5-95 band, h = {horizon}: realised coverage "
+            f"{cell['band_90_half_edge']:.1f}% of {cell['days']} days, below the nominal "
+            f"{NOMINAL_COVERAGE:.0%}; misses {above:.1f}% of days above q95, {below:.1f}% below q05"
+            + (f" ({read})" if read else "")
+        )
+    return "; ".join(parts) + " (docs/runs/v1_interior_diagnosis.json, 2018-2025)"
 
 
 def upper_tail_statement(levels: Sequence[float], quantiles: Sequence[float]) -> str:
@@ -496,6 +559,11 @@ def _cell(labels, series, group, *, horizon, name):
     if not count:
         return cell
     cell["mean"] = sum(value for value, inside in zip(values, member) if inside) / count
+    if count < MINIMUM_CELL_DAYS:
+        cell["interval_unavailable"] = (
+            f"too few days: {count}, fewer than the minimum of {MINIMUM_CELL_DAYS}"
+        )
+        return cell
 
     def statistic(indices):
         drawn = [values[i] for i in indices if member[i]]
@@ -652,7 +720,10 @@ def _markdown(tables: dict, first: str, last: str) -> str:
     lines = [f"Scored days {first} to {last}. Intervals: stationary bootstrap over every scored "
              f"day of the horizon, mean block h + 1, {BOOTSTRAP_LEVEL:.0%}, "
              f"{BOOTSTRAP_REPLICATIONS} replications. Paired against as-of persistence; "
-             "positive CRPS and turn-error differences favour the published distribution.", ""]
+             "positive CRPS and turn-error differences favour the published distribution. "
+             f"A cell of fewer than {MINIMUM_CELL_DAYS} days carries no interval (\"too few "
+             "days\"): the final test's minimum count, applied to days until a project-wide "
+             "minimum is ruled.", ""]
     lines.append("### By pressure-day tag")
     lines.append("")
     lines.append(f"† Mean and expected turn contribution: {MEAN_LABEL}. Turn contribution: "
@@ -726,6 +797,7 @@ def _examples(annotated: Mapping[int, List[dict]], when: str) -> List[dict]:
                     "tags": day["tags"],
                     "published_grid_bps": day["published"],
                     "published_band_25_75": BAND_25_75_LABEL,
+                    "published_band_5_95": band_5_95_label(day["tags"], h),
                     "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
                     "mean_label": MEAN_LABEL,
                     "expected_turn_contribution_bps": turn_contribution(
@@ -775,6 +847,7 @@ def tables_command(args) -> int:
         "pressure_days": {
             str(h): [
                 {**day, "published_band_25_75": BAND_25_75_LABEL,
+                 "published_band_5_95": band_5_95_label(day["tags"], h),
                  "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
                  "mean_label": MEAN_LABEL,
                  "expected_turn_contribution_bps": turn_contribution(
@@ -813,7 +886,14 @@ def live_outputs(record: dict, rows: Sequence[DailyObservation], registry, split
     live.validate_record(record)
     decision_day = date.fromisoformat(record["decision_day"])
     real = [row for row in rows if row.date <= decision_day]
-    if not real or real[-1].date != decision_day:
+    if not real or (decision_day - real[-1].date).days > STALE_PANEL_DAYS:
+        raise StaleReadError(
+            f"the measurement panel's last row on or before {decision_day} is "
+            f"{real[-1].date if real else 'absent'}, older than the declared limit of "
+            f"{STALE_PANEL_DAYS} calendar days: the state would be read from a panel that "
+            "ended early"
+        )
+    if real[-1].date != decision_day:
         real.append(DailyObservation(decision_day, {}))
     targets = record["targets"]
     first = date.fromisoformat(targets[0]["target_date"])
@@ -837,6 +917,7 @@ def live_outputs(record: dict, rows: Sequence[DailyObservation], registry, split
             "coupon_settlement": "not read: the live file does not carry the day's settlement",
             "published_grid_bps": grid,
             "published_band_25_75": BAND_25_75_LABEL,
+            "published_band_5_95": band_5_95_label(tags, h),
             "statement": upper_tail_statement(levels, grid),
             "mean_label": MEAN_LABEL,
             "expected_turn_contribution_bps": turn_contribution(mean, when) if tags else None,
