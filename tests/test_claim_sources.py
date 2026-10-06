@@ -80,6 +80,7 @@ ATTRIBUTION = {
         "PLAN.md, which the same sentence links"
     ),
     ("PLAN.md", 73): "names the issue where Eleonora ruled the verdict this heading states",
+    ("PLAN.md", 233): "work-tracking issue: Phase 3's plan; no figure rests on it",
     ("docs/PORTFOLIO_CASE_STUDY.md", 155): (
         "names the correction; what it corrected is stated by "
         "decisions/pressure-probability.md and runs/archive/pre-whole-bp/, both linked "

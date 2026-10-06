@@ -65,7 +65,7 @@ here is cheaper than discovering it later.
 Exit criterion: one command validates a panel and produces a leakage-safe baseline
 backtest. **Met.**
 
-## Phase 1 — Public U.S. dataset (in progress)
+## Phase 1 — Public U.S. dataset (closed for now)
 
 Ingest and align:
 
@@ -93,6 +93,10 @@ are panel columns.
 
 Exit criterion: frozen, checksummed modeling snapshots with provenance and a data
 quality report.
+
+**Closed for now (Eleonora, 5 October 2026):** *"Let's start phase 3 alongside and consider
+1 & 2 closed for now."* The exit criterion is not declared met, and the items not yet ingested
+above stay open.
 
 ## Milestone A — the first observable result (published and reproducible)
 
@@ -162,7 +166,7 @@ records about a guard shaped to fit the thing it measures. What closes the gap i
 rebuild described above. See `METHODOLOGY.md` ("Known limitations") for what the benchmark does and
 does not establish.
 
-## Phase 2 — Forecasting benchmarks and probabilistic ML (in progress)
+## Phase 2 — Forecasting benchmarks and probabilistic ML (closed for now)
 
 Benchmarks:
 
@@ -225,10 +229,17 @@ sections of `README.md`.
   probability on this evidence.
 
 A conditional predictor against climatology on a knowledge-holdout window is still unscored.
-The heading stays *in progress*, and no Phase 3 work has begun. Exit-criterion verdicts are the
-human's.
+Exit-criterion verdicts are the human's.
 
-## Phase 3 — Latent reserves and payment needs
+**Closed for now (Eleonora, 5 October 2026):** she closed this phase by decision, with its tail
+clause still measured and failing on #73's evidence, and with two items open: a conditional
+predictor scored against climatology on the knowledge holdouts, and the diagnosis of why the
+exceedance curve flattens across thresholds. In her words: *"Let's start phase 3 alongside and
+consider 1 & 2 closed for now."*
+
+## Phase 3 — Latent reserves and payment needs (in progress)
+
+Its plan is [#233](https://github.com/eleonorabjornberg/repo-market-model/issues/233).
 
 Estimate deployable liquidity rather than a reported internal buffer:
 
@@ -321,7 +332,7 @@ and in the block briefs; what belongs here is the order of the milestones and wh
 
 1. **Milestone A — the first observable result.** **Met**, both clauses -- see above.
    Every guard now protects an observable quantity, and the reproduction is a test.
-2. **Finish Phase 1's provenance work on what is already ingested**, before widening.
+2. **Phase 1's provenance work on what is already ingested**, before widening.
    The N-MFP identity tolerance is settled as a calibrated absolute bound: a relative
    bound was argued from three orders of magnitude of scale, and the coverage floor and
    monthly assembly left a 2.9x range, over which scale explains almost none of the
@@ -330,15 +341,16 @@ and in the block briefs; what belongs here is the order of the milestones and wh
    done at the adapter and in the panel, a settlement-free day reading `0.0` inside the
    snapshot's coverage. Both are recorded in
    `docs/DATA_QUALITY_DECISIONS.md`.
-3. **Then widen Phase 1**: primary-dealer positions, the 4- and 13-week bill yields and the
-   settlement components are sourced; the liquidity proxies are next. The published Milestone A panel stays pinned to its
+3. **Phase 1 widened**: primary-dealer positions, the 4- and 13-week bill yields and the
+   settlement components are sourced. The published Milestone A panel stays pinned to its
    manifest's columns, so a new source does not move it.
-4. **Phase 2's remaining tail work**: a diagnostic block on why the conditional model's
-   exceedance curve flattens across thresholds -- the measurement is published and the
-   explanation is not -- and a conditional model scored against climatology on the
-   declared knowledge holdouts. A model change comes after the diagnosis, not instead of
-   it. The tail clause fails on the as-of records (above).
-5. **Phases 3 and 4.**
+4. **Phases 1 and 2 closed for now** (Eleonora, 5 October 2026), with items open. Phase 1's
+   liquidity proxies are not ingested. Phase 2's tail clause fails on the as-of records
+   (above), and two items stay open: a diagnosis of why the conditional model's exceedance
+   curve flattens across thresholds, and a conditional model scored against climatology on
+   the declared knowledge holdouts. A model change comes after the diagnosis, not instead of
+   it.
+5. **Phase 3, in progress** -- its plan is #233 -- **then Phase 4.**
 6. **Decision point**, then Phases 5 through 7 or a stop.
 
 ## How this document stays true
