@@ -39,7 +39,15 @@ and `QE_SELECTION` were declared in one commit before any candidate was walked, 
 setting declared in `ml.py` (`ml.V2_TREE_SETTINGS`, applied by `ml.fit_depth_limited_quantiles`, `candidate_setup`). The choice is on
 the inner block only (`choose-quarter-end`), committed as `CHOSEN_QE_FIX` before the outer block is scored a third time.
 
-Six subcommands:
+Eleonora's rulings on PR #252 of 6 October 2026 (18:29 and 18:30) then asked to recover the quarter-end and tax-date
+shortfalls, with the inner block extended through 2023 (`INNER4`; the outer block becomes 2024-2025, `OUTER4`).
+`FOURTH_CANDIDATES`, `FOURTH_SELECTION` and the new boundary were declared in one commit before any candidate was scored
+on the extended block; the choice (`choose-fourth`) is `CHOSEN_FOURTH`, committed before the outer block was scored a
+fourth time. The first three looks (and the third round's choice) are kept in the record as they were.
+
+Seven subcommands:
+
+* `choose-fourth`: the fourth round's term, chosen on the extended inner block only, with `tree_use` per candidate.
 
 * `choose-quarter-end`: the quarter-end term, chosen on the inner block only (`quarter_end_choice`).
 
@@ -73,11 +81,18 @@ Six subcommands:
         --before-fix-record OUT/before_fix.json --output OUT/diagnosis.json
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py choose-fix --panel PUB.csv \\
         --before-fix-record OUT/before_fix.json --output OUT/fix_choice.json
-    # v2 (the chosen candidate and the fix) at h = 1 to 5, then the record.
+    # The fourth round: every FOURTH_CANDIDATES walk at h = 1, then the choice on the extended inner block.
+    OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py walk \\
+        --panel PUB.csv --horizon 1 --candidate NAME --output OUT/q4_NAME_h1.json
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py choose-fourth --panel PUB.csv \\
+        --walks OUT/q4_*_h1.json --v1-walk OUT/walk_v1_h1.json --output OUT/fourth_choice.json
+    # v2 (CHOSEN_FOURTH, with the fix) at h = 1 to 5 (h = 1 is q4_CHOSEN_FOURTH_h1.json), then the record. The third-look record
+    # is `git show 0e3feb7:docs/runs/pressure_model_v2_distribution_h1.json`.
     OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py walk \\
         --panel PUB.csv --horizon H --output OUT/v2_hH.json
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py assemble --panel PUB.csv \\
         --walks OUT/v2_h*.json --variant-walks OUT/walk_*_h1.json OUT/v1walk_h*.json \\
+        --candidate-walks OUT/q4_*_h1.json --third-look-record OUT/third_look.json \\
         --before-fix-record OUT/before_fix.json --output docs/runs/pressure_model_v2_distribution_h1.json
 """
 
@@ -1479,6 +1494,15 @@ def assemble_command(args) -> int:
     inner_block = validation_block(INNER4, "inner (extended through 2023)")
     outer_block = validation_block(OUTER4, "outer (2024-2025)")
     outer_block["label"] = FOURTH_LOOK_LABEL
+    # The third look's v2 (the kept term) on the same 2024-2025 days: its vectors are the third look's and those days were
+    # read at the first three looks, so this is a subset of a look already taken, not a new one.
+    third_days = [dict(d, v2=t["v2"]) for d, t in zip(days, third_walk)]
+    third_on_outer = window_block([d for d in third_days if _in(d["date"], OUTER4)], rows, splits, persistence,
+                                  "outer (2024-2025), v2 as at the third look")
+    third_on_outer["label"] = (f"v2 with the kept term ({CHOSEN_QE_FIX}) on 2024-2025: its vectors are the third look's, "
+                               "scored on days already read at the first three looks; not a new look")
+    third_on_outer["crps"]["v2_vs_v1"]["edge_label"] = EXPLORATORY
+    third_on_outer["bar"] = bar_verdict(third_on_outer["coverage"], third_on_outer["crps"]["v2_vs_v1"])
     first_outer, second_outer = looks["outer_block_before_fix"], looks["outer_block_second_look"]
     third_outer = looks["outer_block"]
     if ("first look" not in first_outer["label"] or "second look" not in second_outer["label"]
@@ -1589,6 +1613,7 @@ def assemble_command(args) -> int:
         "outer_block_before_fix": first_outer,
         "outer_block_second_look": second_outer,
         "outer_block_third_look": third_outer,
+        "outer_block_third_model_2024_2025": third_on_outer,
         "inner_block_third_round": looks["inner_block"],
         "outer_diagnosis": outer_diagnosis,
         "window_2018_2025": main_block,

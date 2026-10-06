@@ -868,7 +868,7 @@ class RecordTests(unittest.TestCase):
     def test_the_diagnosis_reads_the_inner_block_only(self):
         diagnosis = self.record["inner_diagnosis"]
         self.assertEqual(diagnosis["declared"], v2.DIAGNOSIS)
-        self.assertEqual(diagnosis["days"], self.record["inner_block"]["days"])
+        self.assertEqual(diagnosis["days"], self.record["inner_block_third_round"]["days"])  # `INNER`, as before
         self.assertEqual(set(diagnosis["models"]), {"v1", "iv", "fixed", "final"})
         for model in diagnosis["models"].values():
             self.assertEqual(set(model["by_cell"]), set(v2.DIAGNOSIS["cells"]))
@@ -880,25 +880,65 @@ class RecordTests(unittest.TestCase):
             self.assertLessEqual(model["by_cell"]["year_end"]["days"], model["by_cell"]["quarter_end"]["days"])
         self.assertIn("diagnostics only", v2.DIAGNOSIS["status"])
 
-    def test_the_outer_block_was_looked_at_three_times_and_says_so(self):
+    def test_the_outer_block_was_looked_at_four_times_and_says_so(self):
         first, second = self.record["outer_block_before_fix"], self.record["outer_block_second_look"]
-        third = self.record["outer_block"]
+        third, fourth = self.record["outer_block_third_look"], self.record["outer_block"]
         for look in (second, third):
             self.assertEqual((first["first"], first["last"]), (look["first"], look["last"]))
             self.assertEqual(first["coverage_v1"], look["coverage_v1"])
+        self.assertEqual((first["first"], first["last"]), ("2023-01-03", "2025-12-31"))
+        self.assertEqual((fourth["first"], fourth["last"]), ("2024-01-02", "2025-12-31"))
         self.assertIn("first look", first["label"])
         self.assertIn("second look", second["label"])
-        self.assertEqual(third["label"], v2.THIRD_LOOK_LABEL)
         self.assertIn("third look", third["label"])
-        self.assertIn("three times", third["label"])
+        self.assertEqual(third["label"], v2.THIRD_LOOK_LABEL)  # kept as it was
+        self.assertEqual(fourth["label"], v2.FOURTH_LOOK_LABEL)
+        self.assertIn("fourth look", fourth["label"])
+        self.assertIn("four times", fourth["label"])
+        # The third look's v2 on the same 2024-2025 days is a subset of a look already taken, and says so.
+        subset = self.record["outer_block_third_model_2024_2025"]
+        self.assertEqual((subset["first"], subset["last"]), (fourth["first"], fourth["last"]))
+        self.assertIn("not a new look", subset["label"])
+        self.assertEqual(subset["coverage_v1"], fourth["coverage_v1"])
+
+    def test_the_fourth_round_was_chosen_on_the_extended_inner_block_by_the_declared_rule(self):
+        declared = self.record["outer_validation_declared"]["fourth_round"]
+        self.assertEqual(declared["chosen"], v2.CHOSEN_FOURTH)
+        self.assertEqual(declared["candidates"], json.loads(json.dumps(v2.FOURTH_CANDIDATES)))
+        self.assertEqual(declared["selection"], v2.FOURTH_SELECTION)
+        self.assertEqual(declared["inner"], ["2018-06-29", "2023-12-31"])
+        self.assertEqual(declared["outer"], ["2024-01-01", "2025-12-31"])
+        self.assertEqual(self.record["model"]["quarter_end_candidate"], v2.CHOSEN_FOURTH)
+        choice = self.record["fourth_round_choice"]
+        self.assertEqual(choice["window"], ["2018-06-29", "2023-12-31"])
+        self.assertEqual(choice["selection"]["recommended"], v2.CHOSEN_FOURTH)
+        self.assertEqual(set(choice["candidates"]), set(v2.FOURTH_CANDIDATES))
+        self.assertEqual(choice["quarter_ends_in_block"], 23)
+        eligible = choice["selection"]["eligible"]
+        leader = min(eligible, key=lambda n: (choice["candidates"][n]["inner"]["crps"],
+                                              tuple(choice["candidates"][n]["complexity"]), n))
+        self.assertEqual(choice["selection"]["leader"], leader)
+        for name, candidate in choice["candidates"].items():
+            gates = candidate["conditional_gates_inner"]
+            self.assertEqual(name in eligible,
+                             dx.eligible(candidate["inner"]) and not any(g["verdict"] == "fail" for g in gates.values()))
+            # Whether the trees split on the calendar columns it added is reported for every candidate.
+            for column in v2.FOURTH_CANDIDATES[name]["features"]:
+                self.assertIn(column, candidate["tree_use"], name)
+            cells = candidate["by_day_type"]
+            self.assertEqual(sum(cells[k]["days"] for k in ("quarter_end", "tax_date", "month_end", "ordinary")),
+                             cells["all"]["days"])
+        # With 23 quarter-ends the quarter-end cell is conclusive on the extended block: the kept term fails it.
+        kept = choice["candidates"][v2.CHOSEN_QE_FIX]["conditional_gates_inner"]["band_90_quarter_end"]
+        self.assertEqual((kept["days"], kept["verdict"]), (23, "fail"))
+        self.assertNotIn(v2.CHOSEN_QE_FIX, eligible)
 
     def test_the_quarter_end_term_was_chosen_on_the_inner_block_by_the_declared_rule(self):
         declared = self.record["outer_validation_declared"]["quarter_end"]
         self.assertEqual(declared["chosen"], v2.CHOSEN_QE_FIX)
         self.assertEqual(declared["candidates"], json.loads(json.dumps(v2.QE_CANDIDATES)))
         self.assertEqual(declared["selection"], v2.QE_SELECTION)
-        self.assertEqual(self.record["model"]["quarter_end_candidate"], v2.CHOSEN_QE_FIX)
-        choice = self.record["quarter_end_choice"]
+        choice = self.record["quarter_end_choice"]  # the third round's, kept as it was
         self.assertEqual(choice["window"], ["2018-06-29", "2022-12-31"])
         self.assertEqual(choice["selection"]["recommended"], v2.CHOSEN_QE_FIX)
         self.assertEqual(set(choice["candidates"]), set(v2.QE_CANDIDATES))
@@ -919,6 +959,7 @@ class RecordTests(unittest.TestCase):
     def test_a_cell_under_the_minimum_days_carries_no_interval_anywhere(self):
         minimum = v2.CONDITIONAL_GATES["minimum_days"]
         blocks = [self.record["quarter_end_choice"]["candidates"][n]["by_day_type"] for n in v2.QE_CANDIDATES]
+        blocks += [self.record["fourth_round_choice"]["candidates"][n]["by_day_type"] for n in v2.FOURTH_CANDIDATES]
         blocks += [m["by_cell"] for m in self.record["inner_diagnosis"]["models"].values()]
         blocks += [m["by_cell"] for m in self.record["outer_diagnosis"]["models"].values()]
         seen_small = False
@@ -935,7 +976,7 @@ class RecordTests(unittest.TestCase):
 
     def test_the_outer_diagnosis_covers_the_outer_days(self):
         diagnosis = self.record["outer_diagnosis"]
-        self.assertEqual(set(diagnosis["models"]), {"v1", "base", "v2"})
+        self.assertEqual(set(diagnosis["models"]), {"v1", "base", "third", "v2"})
         for model in diagnosis["models"].values():
             cells = model["by_cell"]
             self.assertEqual(cells["all"]["days"], self.record["outer_block"]["days"])
@@ -953,11 +994,11 @@ class RecordTests(unittest.TestCase):
                         self.assertEqual(gate["verdict"], "pass" if gate["value"] >= gate["at_least"] else "fail")
                     else:
                         self.assertEqual(gate["verdict"], "pass" if gate["value"] <= gate["at_most"] else "fail")
-        self.assertEqual(self.record["outer_block"]["first"], "2023-01-03")
-        self.assertEqual(self.record["inner_block"]["last"], "2022-12-30")
+        self.assertEqual(self.record["outer_block"]["first"], "2024-01-02")
+        self.assertEqual(self.record["inner_block"]["last"], "2023-12-29")
 
     def test_every_historical_edge_is_labelled_exploratory(self):
-        for name in ("inner_block", "outer_block", "window_2018_2025"):
+        for name in ("inner_block", "outer_block", "outer_block_third_model_2024_2025", "window_2018_2025"):
             self.assertEqual(self.record[name]["crps"]["v2_vs_v1"]["edge_label"], v2.EXPLORATORY)
 
     def test_crps_figures_are_finite(self):
