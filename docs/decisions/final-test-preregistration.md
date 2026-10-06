@@ -268,6 +268,13 @@ reported, and it decides nothing.
   pre-2026 data or from earlier rules, and are fixed above. Counting events in the locked period, to choose a threshold
   or for any other reason, is not allowed before #151 scores it.
 - **Labels are on whole basis points** (#155), so the test is scored on the corrected labels.
+- **`_refuse_locked` is a fixed boundary** (recorded on #279, Eleonora's ruling of 6 October 2026, #269 item 20).
+  The selection run's own lockbox check, `final_test_preregistration._refuse_locked`, refuses any scored day on or
+  after 2026-01-01. That date is part of the test's definition, not of the lockbox: the final test's selection is
+  defined on data through 2025-12-31, and it stays so whatever the lockbox later opens (the near-blind tier was
+  opened on 2026-10-05, and the selection is unchanged). The check is not under the declaration checksums, because
+  it is not among the definitions they hash; `RefuseLockedTests` in `tests/test_final_test_freeze.py` protects it,
+  with its recorded mutation. The frozen script is not edited to say this.
 
 ## Amendment, 4 October 2026, before any opening
 

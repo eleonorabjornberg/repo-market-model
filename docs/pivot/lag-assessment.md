@@ -105,6 +105,8 @@ Around the two episodes, P(≥ 5 bp) came out as follows:
 
 ## 4. How far it reaches
 
+**Status of these verdicts (6 October 2026, #279).** The feature set was fixed without re-measuring the verdicts below; re-scoring them belongs with next-version research (Eleonora's ruling of 6 October 2026, #269 item 19).
+
 **Affected: re-measure before citing.**
 - **All 44 run records** and the event-holdout journals. They stay valid as measurements of the conservative design,
   but they do not measure a next-day forecast.

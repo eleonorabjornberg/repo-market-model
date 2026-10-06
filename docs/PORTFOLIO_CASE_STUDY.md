@@ -45,7 +45,8 @@ Five controls hold the evidence together:
   purge that made every forecast from a feature row several business days old: the published
   forecasts were about a week stale. That was a finding, not a feature. Every figure here is
   re-scored under the as-of rule, and the earlier records are archived
-  ([`pivot/lag-assessment.md`](pivot/lag-assessment.md)).
+  ([`pivot/lag-assessment.md`](pivot/lag-assessment.md)). The feature set was fixed without
+  re-measuring that assessment's verdicts; re-scoring them belongs with next-version research.
 - **Typed absence.** A missing value, a declared structural zero, an excluded cross-section and
   a withheld field are four different things, each carrying its reason into the record.
 - **Guards proven to fire.** Each has a recorded mutation that breaks the behaviour it
