@@ -687,7 +687,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>0fedd68b98f6aeeaae863d7c66846d90d1140448</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>a7018576c50c5124db9df63f824ef6df47395c7a</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>Chapters 5 and 6 are drawn only from the six run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -1478,11 +1478,11 @@ const FT = D.final_test;
 function renderFinalTest() {
   const host = d3.select("#ftchart"); host.select("svg").remove();
   const W = host.node().clientWidth, narrow = W < 560;
-  const m = {t: 10, r: 18, b: 34, l: narrow ? 10 : 190}, rowH = narrow ? 44 : 30, gap = 34;
   const bars = [{label: "Carrying the latest spread forward", v: FT.persistence, c: "var(--ink-3)"},
                 {label: "The published model", v: FT.published, c: "var(--sofr)"}];
+  const m = {t: 10, r: 18, b: 34, l: narrow ? 10 : 24 + 6.4 * d3.max(bars, b => b.label.length)}, rowH = narrow ? 44 : 30, gap = 34;
   const f2 = v => v.toFixed(2), s2 = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
-  const H = m.t + bars.length * rowH + gap + rowH + m.b;
+  const H = m.t + bars.length * rowH + gap + 14 + rowH + m.b;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
     .attr("aria-label", `Mean CRPS over ${FT.days} days: carrying the latest spread forward ${f2(FT.persistence)} bp, the published model ${f2(FT.published)} bp. Paired difference ${s2(FT.mean)} bp, ${FT.level}% interval ${s2(FT.lower)} to ${s2(FT.upper)} bp.`);
   const xa = d3.scaleLinear([0, d3.max(bars, b => b.v) * 1.15], [m.l, W - m.r]);
@@ -1493,7 +1493,7 @@ function renderFinalTest() {
     svg.append("rect").attr("x", xa(0)).attr("y", cy - 6).attr("width", xa(b.v) - xa(0)).attr("height", 12).attr("rx", 2).style("fill", b.c);
     svg.append("text").attr("class", "lab").attr("x", xa(b.v) + 6).attr("y", cy + 4).text(`${f2(b.v)} bp`);
   });
-  const top = m.t + bars.length * rowH + gap, cy = top + (narrow ? 27 : rowH / 2);
+  const top = m.t + bars.length * rowH + gap + 14, cy = top + (narrow ? 27 : rowH / 2);
   const ext = Math.max(Math.abs(FT.lower), Math.abs(FT.upper)) * 1.25;
   const x = d3.scaleLinear([-ext, ext], [m.l, W - m.r]).nice();
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 6)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", top).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
@@ -1503,7 +1503,7 @@ function renderFinalTest() {
   const col = FT.lower > 0 ? "var(--sofr)" : FT.upper < 0 ? "var(--pressure)" : "var(--ink-3)";
   svg.append("line").attr("x1", x(FT.lower)).attr("x2", x(FT.upper)).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 2.4).style("stroke-linecap", "round");
   svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
-  svg.append("text").attr("class", "lab").attr("x", x(FT.upper) + 6).attr("y", cy + 4).text(`${s2(FT.mean)} bp (${s2(FT.lower)} to ${s2(FT.upper)})`);
+  svg.append("text").attr("class", "lab").attr("x", x(FT.mean)).attr("y", cy - 11).attr("text-anchor", "middle").style("fill", "var(--ink-2)").text(`${s2(FT.mean)} bp (${FT.level}%: ${s2(FT.lower)} to ${s2(FT.upper)})`);
 }
 const renderAll = () => { renderFinalTest(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();

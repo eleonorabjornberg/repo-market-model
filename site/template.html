@@ -1503,7 +1503,7 @@ function renderFinalTest() {
   const col = FT.lower > 0 ? "var(--sofr)" : FT.upper < 0 ? "var(--pressure)" : "var(--ink-3)";
   svg.append("line").attr("x1", x(FT.lower)).attr("x2", x(FT.upper)).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 2.4).style("stroke-linecap", "round");
   svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
-  svg.append("text").attr("class", "lab").attr("x", x(FT.mean)).attr("y", cy - 11).attr("text-anchor", "middle").style("fill", "var(--ink-2)").text(`${s2(FT.mean)} bp (${FT.level}%: ${s2(FT.lower)} to ${s2(FT.upper)})`);
+  svg.append("text").attr("class", "lab").attr("x", narrow ? W - m.r : x(FT.mean)).attr("y", narrow ? cy + 19 : cy - 11).attr("text-anchor", narrow ? "end" : "middle").style("fill", "var(--ink-2)").text(`${s2(FT.mean)} bp (${FT.level}%: ${s2(FT.lower)} to ${s2(FT.upper)})`);
 }
 const renderAll = () => { renderFinalTest(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
