@@ -42,10 +42,19 @@ was logged:
   other date, or before the amendment heading is in `lockbox.md`, refuses
   (`require_gap_scoring`, `ValueError`).
 
+* **Integrity** (#254): before reading any record, the script verifies the
+  live log (`load_records`, `scripts/live_integrity.py`'s `verify`). Every
+  file's SHA-256 must equal its #225 digest, the hash chain must be unbroken,
+  and every file must have been added by `github-actions[bot]` in an add-only
+  commit. Otherwise it refuses (`ValueError`). `--live-dir` is therefore a
+  clean checkout of `live-log`, and `--digests` holds the #225 comments, one
+  JSON object per line, each with `author` and `body`.
+
 Results are published whatever they show, as a new record:
 
     PYTHONPATH=src python3 scripts/live_score.py --date YYYY-MM-DD --live-dir LIVE \\
-        --panel PANEL --output OUT.json [--gap-dir GAP] [--previous EARLIER.json ...]
+        --digests DIGESTS.jsonl --panel PANEL --output OUT.json [--gap-dir GAP] \\
+        [--previous EARLIER.json ...]
 
 `--gap-dir` is required on the first scoring date and refused on every other.
 """
@@ -113,6 +122,45 @@ def _live():
 
 
 _LIVE = None
+
+
+def _integrity():
+    """`scripts/live_integrity.py`, loaded once."""
+
+    global _INTEGRITY
+    if _INTEGRITY is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_integrity", REPO / "scripts" / "live_integrity.py")
+        _INTEGRITY = module_from_spec(spec)
+        spec.loader.exec_module(_INTEGRITY)
+    return _INTEGRITY
+
+
+_INTEGRITY = None
+
+
+def load_records(live_dir: Path, digests) -> list:
+    """The live log's records, after the log is verified (#254).
+
+    Raises:
+        ValueError: no digests, any integrity check failing, a malformed
+            record, or a dry run.
+    """
+
+    if digests is None:
+        raise ValueError("the live record is scored only against its #225 digests: pass --digests")
+    integrity = _integrity()
+    integrity.verify(live_dir, integrity.parse_digests(digests))
+    live = _live()
+    records = []
+    for path in sorted((Path(live_dir) / "live").glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        live.validate_record(record)
+        if record.get("dry_run"):
+            raise ValueError(f"{path} is a dry run, not a logged day")
+        records.append(record)
+    return records
 
 
 def _final_test():
@@ -550,6 +598,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--date", required=True)
     parser.add_argument("--live-dir", required=True, type=Path)
+    parser.add_argument("--digests", type=Path, default=None,
+                        help="the #225 digest comments, one JSON object per line (#254)")
     parser.add_argument("--panel", required=True, type=Path, help="the outcome panel")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--previous", action="append", default=[], type=Path)
@@ -567,14 +617,7 @@ def main(argv=None) -> int:
     elif day == GAP_SCORING_DATE:
         raise ValueError(f"{day} scores the blind gap in the same run (#235): pass --gap-dir")
 
-    live = _live()
-    records = []
-    for path in sorted((args.live_dir / "live").glob("*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        live.validate_record(record)
-        if record.get("dry_run"):
-            raise ValueError(f"{path} is a dry run, not a logged day")
-        records.append(record)
+    records = load_records(args.live_dir, args.digests)
     previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(SPLITS)

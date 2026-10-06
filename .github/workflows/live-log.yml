@@ -8,6 +8,14 @@ name: live-log
 # rewritten: `live-log` is protected by repository ruleset 24422476 (no
 # deletion, no non-fast-forward push).
 #
+# The ruleset alone does not stop a fast-forward commit from changing an
+# existing file (#254). So `scripts/live_integrity.py`, run from main:
+# chains each new record to the one before it (`chain`), checks that the
+# day's commit only adds the day's file before it is pushed (`check-append`),
+# and every day re-checks every logged file against its digest on the
+# "Live record: daily digests" issue, its chain and its commit (`verify`).
+# A mismatch fails the run, and the failure reaches the failed-runs issue.
+#
 # The code that makes the record is pinned (`scripts/live_record.py pin`): this
 # file runs from main, and the record is made from a worktree at the pinned
 # SHA, which changes only through a dated version-bump record.
@@ -99,10 +107,13 @@ jobs:
             echo "Not a decision day: nothing to append."
             exit 0
           fi
+          base=$(git rev-parse --verify -q HEAD || echo none)
+          "$PY" -B ../main/scripts/live_integrity.py chain --live-dir . --date "$DAY"
           git add "$file"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit --quiet -m "Live record for $DAY (code $PIN)"
+          "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$DAY" --base "$base"
           git push --quiet origin HEAD:refs/heads/live-log
           echo "SHA256=$(sha256sum "$file" | cut -d' ' -f1)" >> "$GITHUB_ENV"
           echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
@@ -124,6 +135,17 @@ jobs:
             echo "- run: $RUN_URL"
           } > digest.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
+
+      - name: Verify every logged file
+        id: integrity
+        if: always() && steps.branch.outcome == 'success'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          test -n "$n"
+          gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests.jsonl
+          "$PY" -B main/scripts/live_integrity.py verify --live-dir live-log --digests digests.jsonl
 
       - name: Report missed days
         if: always() && env.MISSED_ANY == '1'
@@ -149,6 +171,7 @@ jobs:
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
             digest=${{ steps.digest.outcome }}
+            integrity=${{ steps.integrity.outcome }}
         run: |
           step=$(echo "$OUTCOMES" | tr ' ' '\n' | grep '=failure' | head -1 | cut -d= -f1)
           if [ "$step" = "record" ] && [ -f status.json ]; then
