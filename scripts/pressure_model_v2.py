@@ -1,21 +1,22 @@
 """Pressure model v2's distribution at h = 1, scored against v1 and as-of persistence (#244).
 
-v2 is the fix #247 recommends, built in `repo_model.interior`: v1's trees and
-nested conformal PID, unchanged, with each interior level (q25, q50, q75)
-moved by its own online quantile tracker. Nothing in v1 changes: its walk is
-the final test's (`final_test_opening.distribution_walk` with
-`live_record._compare_sides(1)`), and v2's calibration runs v1's nested PID
-first and keeps its vector beside v2's.
+v2 is #247's candidate (iv), the one the inner block chooses (below): v1's
+features, as-of fold grid, refit cadence and nested conformal PID on trees of
+maximum depth 3 (`V2_TREE_SETTINGS`), with each interior level (q25, q50,
+q75) moved by its own online quantile tracker (`repo_model.interior`). Nothing
+in v1 changes: v1 is its own walk, #247's (`final_test_opening.distribution_walk`
+with `live_record._compare_sides(1)`), and v2's walk changes the trees only
+inside its own process.
 
 The bar (`BAR`, from #244) and the 2026 gate (`GATE`, from Eleonora's scoping
-ruling on #244) are declared here before anything is scored.
+ruling on #244) were declared here before anything was scored.
 
-* The bar is read on 2018-06-29 to 2025-12-31.
+* The bar is read on the inner and outer blocks, and on 2018-06-29 to
+  2025-12-31 pooled, which is exploratory.
 * The gate is read on 2026-01-02 to 2026-09-03, the opened near-blind window.
   Those days motivated the fix (#243), so they are seen data, not evidence.
-* v2 has no other choice to make. Its only setting, the tracking step, is
-  chosen online, by nested walk-forward selection at each 21-day refit block
-  from labels observable at that block's anchor.
+* The tracking step is chosen online, by nested walk-forward selection at each
+  21-day refit block from labels observable at that block's anchor.
 * No day after 2026-09-03 is read.
 
 Eleonora's ruling on PR #252 (6 October 2026) applies her amendment of #247
@@ -27,22 +28,34 @@ as `CHOSEN`. Only then is the outer block (`OUTER`, 2023-01-01 to 2025-12-31)
 scored, once, for v1 and the chosen candidate. Any historical edge of v2 over
 v1 is labelled `EXPLORATORY`.
 
-Two subcommands:
+Three subcommands:
 
-* `walk`: the published side's walk with v2's calibration. Each scored day
-  keeps its anchor, its outcome, v1's vector and v2's.
+* `choose`: #247's question 7, redone on the inner block (`inner_choice`).
+* `walk`: v2's walk: the published side's features and fold grid with v2's
+  trees and calibration. Each scored day keeps its anchor, its outcome, the
+  PID vector of v2's trees and v2's vector.
 * `assemble`: the record, `docs/runs/pressure_model_v2_distribution_h1.json`.
   It first checks that v1's vectors are #247's to the byte
   (`v1_interior_diagnosis.json`), that they reproduce the published h = 1 CRPS
-  records exactly, and that v2's vectors are #247's reference implementation
-  applied to them.
+  records exactly, that the inner block still chooses `CHOSEN`, and that v2's
+  vectors are #247's reference implementation of that candidate.
 
     PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs \\
         --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
+    # #247's walks: v1 and every question 4 variant at h = 1, and v1 at h = 2 to 5.
+    OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/interior_diagnosis.py walk \\
+        --panel PUB.csv --horizon 1 --variant NAME --no-in-sample --output OUT/walk_NAME_h1.json
+    OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/interior_diagnosis.py walk \\
+        --panel PUB.csv --horizon H --variant v1 --output OUT/v1walk_hH.json
+    # The inner block's choice (it printed the CHOSEN committed below).
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py choose --panel PUB.csv \\
+        --walks OUT/walk_*_h1.json --output OUT/choice.json
+    # v2 (the chosen candidate) at h = 1 to 5, then the record.
     OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py walk \\
         --panel PUB.csv --horizon H --output OUT/v2_hH.json
-    PYTHONPATH=src python3 scripts/pressure_model_v2.py assemble --panel PUB.csv \\
-        --walks OUT/v2_h*.json --output docs/runs/pressure_model_v2_distribution_h1.json
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py assemble --panel PUB.csv \\
+        --walks OUT/v2_h*.json --variant-walks OUT/walk_*_h1.json OUT/v1walk_h*.json \\
+        --output docs/runs/pressure_model_v2_distribution_h1.json
 """
 
 from __future__ import annotations
@@ -319,11 +332,15 @@ def inner_choice(v1_days, variant_days, rows, splits, cells) -> dict:
     trees = [d["issued"] for d in variant_days[best]]
 
     tracked, choices = dx.interior_tracking(v1_days)
-    tracked_trees, choices_trees = dx.interior_tracking([dict(d, issued=v) for d, v in zip(v1_days, trees)])
+    tracked_trees, _ = dx.interior_tracking([dict(d, issued=v) for d, v in zip(v1_days, trees)])
     # The step selection is walk-forward: run on the inner block alone, it issues the same vectors.
     inner_only, inner_choices = dx.interior_tracking(inner_days)
     if inner_only != tracked[: len(inner_days)] or inner_positions != list(range(len(inner_days))):
         raise ValueError("(i) on the inner block alone differs from its walk's inner days")
+    inner_trees, inner_choices_trees = dx.interior_tracking(
+        [dict(d, issued=v) for d, v in zip(inner_days, trees)])
+    if inner_trees != tracked_trees[: len(inner_days)]:
+        raise ValueError("(iv) on the inner block alone differs from its walk's inner days")
     vectors = {
         "i_interior_tracking": tracked,
         "ii_regularised_trees": trees,
@@ -368,8 +385,9 @@ def inner_choice(v1_days, variant_days, rows, splits, cells) -> dict:
         "paired_against_leader": {f"{a}_vs_{b}": {k: v for k, v in p.items() if k != "splits"}
                                   for (a, b), p in pair_cache.items()},
         "i_step_choices_inner": inner_choices,
-        "i_inner_alone_equals_walk": True,
-        "iv_step_choices_inner": [c for c in choices_trees if c["first"] <= INNER[1].isoformat()],
+        "iv_step_choices_inner": inner_choices_trees,
+        "inner_alone_equals_walk": ("(i) and (iv), with their step selection run on the inner block's days "
+                                    "alone, issue exactly their walks' inner vectors"),
         "vectors": vectors,
     }
 
@@ -430,6 +448,9 @@ def walk_command(args) -> int:
     registry = json.loads(fp.REGISTRY.read_text())
     sides, parsed = lr._compare_sides(h)
     name, fit, features, _v1_online = sides["published"]
+    from repo_model import ml
+
+    dx._with_tree_settings(ml, V2_TREE_SETTINGS)
     built = []
 
     def v2_online(rows_, rule):
@@ -453,9 +474,9 @@ def walk_command(args) -> int:
         if list(d.vector) != vector:
             raise ValueError(f"{rows[index].date}: the walk read another vector than v2 issued")
         days.append({"date": rows[index].date.isoformat(), "anchor": d.anchor.isoformat(),
-                     "y": rows[index].spread_bps, "v1": list(d.pid), "v2": list(d.vector)})
+                     "y": rows[index].spread_bps, "pid": list(d.pid), "v2": list(d.vector)})
     document = {"directive": "#244", "horizon": h, "panel_sha256": panel_sha256(args.panel),
-                "model": name, "settings": settings,
+                "model": name, "settings": settings, "tree_settings": V2_TREE_SETTINGS,
                 "interior_blocks": calibration.account()["interior_blocks"], "days": days}
     args.output.write_text(json.dumps(document, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "days": len(days)}))
@@ -614,7 +635,25 @@ def assemble_command(args) -> int:
             raise ValueError(f"{path} was walked on another panel")
         if max(d["date"] for d in document["days"]) > LAST_READ.isoformat():
             raise ValueError(f"{path} reads a day after {LAST_READ}")
+        if document.get("tree_settings") != V2_TREE_SETTINGS:
+            raise ValueError(f"{path} was not walked with v2's trees")
         walks[document["horizon"]] = document
+
+    # v1 at each horizon is its own walk (#247's, unchanged trees), joined by date.
+    v1_walks = {}
+    for path in args.variant_walks:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if document["variant"] == "v1":
+            if document["panel_sha256"] != panel_sha256(args.panel):
+                raise ValueError(f"{path} was walked on another panel")
+            v1_walks[document["horizon"]] = document["days"]
+    for h, document in walks.items():
+        if h not in v1_walks:
+            raise ValueError(f"no v1 walk at h = {h}")
+        if [(d["date"], d["y"]) for d in document["days"]] != [(e["date"], e["y"]) for e in v1_walks[h]]:
+            raise ValueError(f"v1's and v2's walks at h = {h} score different days")
+        for d, e in zip(document["days"], v1_walks[h]):
+            d["v1"] = e["issued"]
     days = walks[1]["days"]
 
     # v1 untouched: #247's vectors to the byte, and the published CRPS exactly.
@@ -625,9 +664,9 @@ def assemble_command(args) -> int:
         raise ValueError("v1's vectors differ from #247's walk")
     dx.reproduction_check([{"date": d["date"], "y": d["y"], "issued": d["v1"]} for d in days])
 
-    # v2 is #247's reference implementation applied to v1.
+    # v2 is #247's reference implementation of (iv): (i)'s tracking applied to (ii)'s PID vectors.
     reference, choices = dx.interior_tracking(
-        [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["v1"]} for d in days])
+        [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["pid"]} for d in days])
     if [d["v2"] for d in days] != reference:
         raise ValueError("v2's vectors differ from #247's reference implementation")
 
@@ -650,6 +689,8 @@ def assemble_command(args) -> int:
         raise ValueError(f"the inner block chooses {picks}; CHOSEN is {CHOSEN!r}")
     if chosen_vectors[CHOSEN] != [d["v2"] for d in days]:
         raise ValueError("v2's vectors are not the chosen candidate's")
+    if [d["issued"] for d in variant_walks[V2_TREE_VARIANT]] != [d["pid"] for d in days]:
+        raise ValueError("v2's trees and PID are not #247's walk of its tree setting")
 
     def validation_block(window, label):
         sub = [d for d in days if _in(d["date"], window)]
@@ -676,7 +717,7 @@ def assemble_command(args) -> int:
     check_block["coverage_interval_v1"] = coverage_interval(check, "v1", ("2026", "v1"))
     check_block["gate"] = gate_verdict(check_block["coverage_interval"], check_block["crps"]["v2_vs_v1"])
 
-    outer_moved = sum(1 for d in days if d["v2"][0] != d["v1"][0] or d["v2"][4] != d["v1"][4])
+    outer_moved = sum(1 for d in days if d["v2"][0] != d["pid"][0] or d["v2"][4] != d["pid"][4])
     record = {
         "record": "pressure_model_v2_distribution_h1",
         "directive": "#244",
@@ -684,10 +725,14 @@ def assemble_command(args) -> int:
                         "whether v2 joins the live record is Eleonora's decision (#245)"),
         "model": {
             "name": "pressure model v2 (distribution)",
-            "built_from": "#247's recommendation (docs/diagnosis-interior-calibration.md)",
+            "built_from": ("#247's candidate (iv), chosen again on the inner block (ruling on PR #252): "
+                           "v1's features, fold grid and nested PID on trees of maximum depth 3, with "
+                           "each interior level tracked online"),
             "v1": walks[1]["model"],
             "settings": walks[1]["settings"],
-            "code": "src/repo_model/interior.py (NestedInteriorFoldPid)",
+            "tree_settings": V2_TREE_SETTINGS,
+            "code": ("src/repo_model/interior.py (NestedInteriorFoldPid); the tree setting is applied as "
+                     "#247's walk applies it (scripts/interior_diagnosis._with_tree_settings)"),
         },
         "panel_sha256": walks[1]["panel_sha256"],
         "walk": "scripts/final_test_opening.distribution_walk with live_record._compare_sides(1)",
@@ -708,6 +753,8 @@ def assemble_command(args) -> int:
         },
         "v2_vectors_sha256": vectors_sha256([[d["date"], d["v2"]] for d in days]),
         "v2_equals_reference": True,
+        "per_day_h1": {"columns": ["date", "y", "pid_of_v2_trees", "v2"],
+                       "rows": [[d["date"], d["y"], d["pid"], d["v2"]] for d in days]},
         "days_the_sort_moved_an_outer_quantile": outer_moved,
         "interior_step_choices": walks[1]["interior_blocks"],
         "outer_validation_declared": {"inner": [INNER[0].isoformat(), INNER[1].isoformat()],
@@ -761,9 +808,10 @@ def _variant_walks(paths, panel):
     walks = {}
     for path in paths:
         document = json.loads(path.read_text(encoding="utf-8"))
-        if document["panel_sha256"] != panel_sha256(panel) or document["horizon"] != 1:
-            raise ValueError(f"{path} is not an h = 1 walk on the published panel")
-        walks[document["variant"]] = document["days"]
+        if document["panel_sha256"] != panel_sha256(panel):
+            raise ValueError(f"{path} was walked on another panel")
+        if document["horizon"] == 1:
+            walks[document["variant"]] = document["days"]
     missing = sorted(set(dx.VARIANTS) - set(walks))
     if missing:
         raise ValueError(f"missing #247 walks: {missing}")
@@ -807,7 +855,7 @@ def main(argv=None) -> int:
     asm.add_argument("--panel", type=Path, required=True)
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
     asm.add_argument("--variant-walks", type=Path, nargs="+", required=True,
-                     help="#247's h = 1 walks, v1 and every variant, for the inner choice")
+                     help="#247's walks: v1 and every variant at h = 1, and v1 at h = 2 to 5")
     asm.add_argument("--output", type=Path, default=RECORD)
     asm.set_defaults(func=assemble_command)
     args = parser.parse_args(argv)

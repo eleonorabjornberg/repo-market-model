@@ -3,8 +3,10 @@
 #247's diagnosis (`docs/diagnosis-interior-calibration.md`, merged in #250)
 found v1's interior too narrow, and its declared selection rule chose (i):
 per-level online quantile tracking of q25, q50 and q75 on v1's unchanged trees
-and nested PID. #244 builds exactly that, as `repo_model.interior`, and names it
-pressure model v2. These tests hold it to that:
+and nested PID. #244 built that as `repo_model.interior`. Eleonora's ruling on
+PR #252 then had the choice redone on the inner block (2018-06-29 to
+2022-12-31) with conditional gates, and it chose (iv): the same tracking on
+trees of maximum depth 3. That is pressure model v2. These tests hold it to that:
 
 * `ReferenceTests`: driven one day at a time, `OnlineInterior` issues the
   vectors and makes the step choices of #247's reference implementation
@@ -15,9 +17,12 @@ pressure model v2. These tests hold it to that:
 * `FoldLoopTests`: inside a fold loop, `NestedInteriorFoldPid`'s inner PID
   vector is `NestedFoldPid`'s to the bit (v1 is untouched), and the vector it
   issues is `OnlineInterior`'s over those PID vectors.
+* `OuterValidationDeclarationTests`: the inner and outer blocks, the
+  conditional gates and the eligibility readings, as declared before scoring.
 * `RecordTests`: `docs/runs/pressure_model_v2_distribution_h1.json` against
   #247's record (v1 byte-identical on the published panel, v2 the reference
-  applied to v1), the published CRPS records, and the declared bar and gate.
+  of the chosen candidate), the published CRPS records, the declared bar and
+  gate, the inner choice and the outer block.
 
 Red first: written before `repo_model.interior` and
 `scripts/pressure_model_v2.py` existed (`ModuleNotFoundError`).
@@ -340,14 +345,21 @@ class RecordTests(unittest.TestCase):
         self.assertTrue(self.record["v1_unchanged"]["identical_to_v1_interior_diagnosis"])
         self.assertEqual(self.record["panel_sha256"], self.diagnosis["panel_sha256"])
 
-    def test_v2_is_the_reference_applied_to_v1(self):
+    def test_v2_is_the_reference_of_the_chosen_candidate(self):
+        """v2 is (iv): #247's interior tracking applied to the PID vectors of its depth-3 trees."""
+
         anchors = dict(self.record["anchors"])
-        days = [{"date": day, "anchor": anchors[day], "y": y, "issued": vector}
-                for day, y, vector in self.diagnosis["v1_h1_per_day"]]
+        rows = self.record["per_day_h1"]["rows"]
+        days = [{"date": day, "anchor": anchors[day], "y": y, "issued": pid} for day, y, pid, _v2 in rows]
         expected, _ = dx.interior_tracking(days)
-        self.assertEqual(self.record["v2_vectors_sha256"],
-                         _sha([[d["date"], vector] for d, vector in zip(days, expected)]))
+        self.assertEqual([v for *_, v in rows], expected)
+        self.assertEqual(self.record["v2_vectors_sha256"], _sha([[d["date"], v] for d, v in zip(days, expected)]))
+        self.assertEqual([[day, y] for day, y, _v in self.diagnosis["v1_h1_per_day"]],
+                         [[day, y] for day, y, *_ in rows])
         self.assertTrue(self.record["v2_equals_reference"])
+        self.assertEqual(v2.CHOSEN, "iv_regularised_and_tracking")
+        self.assertEqual(self.record["model"]["tree_settings"], v2.V2_TREE_SETTINGS)
+        self.assertEqual(dx.VARIANTS[v2.V2_TREE_VARIANT], v2.V2_TREE_SETTINGS)
 
     def test_v1_reproduces_the_published_crps(self):
         published = json.loads(CRPS_RECORD.read_text(encoding="utf-8"))
