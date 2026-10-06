@@ -515,8 +515,14 @@ table.fttab.fdtab td{white-space:nowrap}
 
 <section id="plumbing">
   <h2><span class="n">1</span>The plumbing</h2>
-  <p class="prose lede">The Fed brackets the market with rates of its own. Under the implementation note of {{note_issued}}, its standing repo rate is {{srp_vs_iorb}} bp from IORB and its overnight reverse repo rate {{rrp_vs_iorb}} bp.</p>
-  <div class="prose"><p>Who lends cash to whom is mapped in <a href="#n4">N4</a>. This chapter goes deeper: the repo segments the New York Fed's reference rates are built from, and the rates the Fed sets on either side of them.</p></div>
+  <p class="prose lede">The Fed brackets the market with a firm floor, its overnight reverse repo rate, and a soft ceiling, its standing repo rate. Under the implementation note of {{note_issued}}, the standing repo rate is {{srp_vs_iorb}} bp from IORB and the overnight reverse repo rate {{rrp_vs_iorb}} bp.</p>
+  <div class="prose">
+    <p><b>SOFR</b> is the cost of borrowing cash overnight with Treasury securities as collateral. {{c_sofr_median}} On {{shown_day}} it was set from about {{latest_volume}} of trades. {{c_triparty_actors}}</p>
+    <p>Bank-to-bank lending is a different rate, the federal funds rate. {{c_fhlb_fed_funds}}</p>
+    <p><b>Why IORB is the anchor.</b> {{c_iorb_pays}} A bank can therefore always earn IORB without lending to anyone, so it has little reason to lend in repo for less. SOFR above IORB means spare cash is not reaching the repo market at the Fed's rate.</p>
+    <p><b>Why the floor is firm and the ceiling is soft.</b> Money funds do not earn IORB, which is paid to banks. {{c_mmf_on_rrp}} The overnight reverse repo rate is therefore a floor under what a money fund will accept. {{c_srf_access}} SOFR can pass the ceiling: on {{srp_cross_day}} it printed {{srp_cross_sofr}}, above the standing repo rate of {{srp_cross_rate}} then in force (event {{srp_event_n}} in chapter 2).</p>
+    <p>Who lends cash to whom is mapped in <a href="#n4">N4</a>. This chapter goes deeper: the repo segments the New York Fed's reference rates are built from, and the rates the Fed sets on either side of them.</p>
+  </div>
   <details class="wide" id="plumbing-deeper">
     <summary>Go deeper: the segments and the Fed's administered rates</summary>
     <figure>
@@ -552,6 +558,10 @@ table.fttab.fdtab td{white-space:nowrap}
 <section id="history">
   <h2><span class="n">2</span>{{n_years_word}} years in one line</h2>
   <p class="prose lede">SOFR closed above the Fed's rate on reserves on {{above_ample}} in {{ample}}, and on {{above_late}} in {{late}}. It was more than {{tail_bp}} bp above on {{n_tail}}, {{tail_where}}.</p>
+  <div class="prose">
+    <p><b>How big is pressure?</b> A day more than +{{pressure_bp}} bp above is mild. The largest, on {{spike_day}}, was {{spike_bp}} bp, and the New York Fed answered with repo operations that week (event {{spike_event_n}} below).</p>
+    <p><b>Why calm days sit below zero.</b> In {{ample}}, the median day was {{ample_gap}} IORB. Money funds cannot earn IORB, but they can lend to the Fed at the overnight reverse repo rate, which the Fed sets below IORB, so when cash is abundant SOFR settles near that floor. {{c_rrp_floor}}</p>
+  </div>
   <figure>
     <figcaption><div class="t">Pressure arrives in episodes, not at random</div>
       <div class="s">SOFR minus the Fed's rate on reserves, basis points, each business day from {{first_day}} to {{last_day}}</div></figcaption>
@@ -590,6 +600,7 @@ table.fttab.fdtab td{white-space:nowrap}
   </figure>
   <div class="prose">
     <p>Banks need more reserves as their balance sheets grow and as rules tighten, so a dollar figure from one period does not compare with one from another. {{c_reserve_ratio}} The project will use that ratio once the bank-assets series is added.</p>
+    <p><b>Reserves are only half of it.</b> The other half is the Fed's overnight reverse repo facility (ON RRP), where money funds park cash instead of lending it. {{c_on_rrp_buffer}} A thin buffer makes pressure possible, not certain: in {{ample}}, ON RRP was below {{buffer_break}} on {{n_low_ample}} and pressure came on {{n_low_ample_pressure}} of them, because reserves were abundant. Over all the days counted here, pressure came on {{share_low}} of the days with ON RRP below {{buffer_break}}, against {{share_high}} of the others.</p>
     <p>This chart describes what happened together. It does not show that one caused the other.</p>
   </div>
 
@@ -600,7 +611,8 @@ table.fttab.fdtab td{white-space:nowrap}
   </figure>
   <div class="prose">
     <p class="lede" style="font-size:1.08rem">In {{early}}, pressure came on {{ord_early}} ordinary days. In {{late}} it came on {{ord_late}}, but on {{qe_late}} quarter-ends. In {{ample}}, when reserves were most plentiful, {{quiet_ample}}.</p>
-    <p>The usual explanations are these, and the table does not test them. {{c_quarter_end}} {{c_tax_date}} {{c_settlement}} {{c_coupon_demand}}</p>
+    <p>The usual explanations are these, and the table does not test them. {{c_quarter_end}} {{c_qe_foreign}} {{c_tax_date}} {{c_settlement}} {{c_coupon_demand}}</p>
+    <p>{{c_limitation_why}}</p>
   </div>
   <details>
     <summary>Go deeper: how the days are classified</summary>
@@ -608,7 +620,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <ul>
       <li><b>Quarter-end:</b> the last business day of March, June, September or December (the panel's <code>quarter_end</code> flag).</li>
       <li><b>Month-end:</b> the last business day of any other month.</li>
-      <li><b>Tax window:</b> the quarterly tax deadlines and the business days after each that the panel's <code>tax_date</code> flag marks.</li>
+      <li><b>Tax window:</b> the corporate tax dates and the business days after each that the panel's <code>tax_date</code> flag marks.</li>
       <li><b>Coupon settlement:</b> a day on which Treasury notes or bonds sold at auction settle.</li>
       <li><b>Other:</b> every remaining business day, bill settlements included.</li>
     </ul>
