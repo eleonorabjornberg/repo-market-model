@@ -499,9 +499,7 @@ def pending_figures(records):
         if carriers:
             raise VisualError(f"{carriers[0]} carries {marker}, but the page draws no figure of {what} "
                               f"yet: draw it from the record rather than publish a placeholder")
-        out[key] = (f"No published record in <code>{RUNS}/</code> carries {what}, so this page draws "
-                    f"no figure of it. The generator draws model figures only from such a record, and "
-                    f"refuses one that no record carries.")
+        out[key] = f"Not yet drawn: {what}, because no published record carries it."
     return out
 
 

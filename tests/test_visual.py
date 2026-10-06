@@ -572,7 +572,6 @@ class NewcomerPageTests(unittest.TestCase):
         for key, (_, owner) in uses.items():
             with self.subTest(term=key):
                 self.assertEqual(owner, key, f"the first use of {key!r} is not inside its <dfn>")
-
     def test_a_term_used_before_its_dfn_is_caught(self):
         block = newcomer_block(self.page)
         first_dfn = block.index("<dfn")
@@ -1277,7 +1276,7 @@ class NewcomerBandTests(NewcomerBandBase):
         data, fills = self.base
         self.assertFalse(data["rises"]["5"])
         self.assertIn("does not rise step by step", fills["band_caption"])
-        self.assertIn("not a working indicator", fills["band_caption"])
+        self.assertNotIn("working indicator", fills["band_caption"])
 
     def test_a_monotone_state_is_described_as_rising(self):
         from repo_model.scarcity import ScoredDay
@@ -1304,7 +1303,7 @@ class NewcomerBandTests(NewcomerBandBase):
         tag = next(t for t in n4["tags"] if t["key"] == emit_visual.BAND_TAG)
         band = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_band.json").read_text(encoding="utf-8"))["data"]
         self.assertEqual(band["status"]["key"], tag["status"])
-        self.assertIn("#115", tag["label"])
+        self.assertNotRegex(tag["label"], r"#\d")
 
 
 class NewcomerBandHeldOutDayTests(NewcomerBandBase):
@@ -1372,7 +1371,8 @@ class NewcomerBandPageTests(unittest.TestCase):
         n3 = self.section("n3")
         self.assertIn('id="n3band"', n3)
         self.assertIn("does not rise step by step", n3)
-        self.assertIn("Reserve-scarcity state (#115)", n3)
+        self.assertIn("Reserve-scarcity state", n3)
+        self.assertNotIn("(#115)", n3)
         self.assertNotIn("is not shown until its publication is ruled", n3)
 
     def test_every_band_link_is_a_primary_source(self):
@@ -1482,7 +1482,8 @@ class TagStatusTests(unittest.TestCase):
                 snapshot["issues"][0].update(state="open", labels=labels, open_prs=prs)
                 row = self.status(tag_map, registry, records, snapshot)
                 self.assertEqual(row["status"], "in_progress")
-                self.assertIn("#1", row["reason"])
+                self.assertEqual(row["reason"], "being worked on")
+                self.assertNotRegex(row["reason"], r"#\d")
 
     def test_in_progress_while_its_publish_question_is_open(self):
         tag_map, registry, records, snapshot = synthetic()
@@ -1490,14 +1491,15 @@ class TagStatusTests(unittest.TestCase):
                                    "labels": ["needs-eleonora"], "open_prs": []})
         row = self.status(tag_map, registry, records, snapshot)
         self.assertEqual(row["status"], "in_progress")
-        self.assertIn("#9", row["reason"])
+        self.assertIn("not yet decided", row["reason"])
+        self.assertNotRegex(row["reason"], r"#\d")
 
     def test_queued_directive_keeps_registered_but_unused_with_a_sub_line(self):
         tag_map, registry, records, snapshot = synthetic()
         snapshot["issues"][0].update(state="open")
         row = self.status(tag_map, registry, records, snapshot)
         self.assertEqual(row["status"], "registered_unused")
-        self.assertEqual(row["sub"], "queued: #1")
+        self.assertEqual(row["sub"], "queued")
 
     def test_not_registered(self):
         row = self.status(*synthetic(fields=("Z",), expect="unregistered"))
@@ -1764,10 +1766,9 @@ class N4MapTests(unittest.TestCase):
 
     def test_the_segments_are_defined_and_bilateral_repo_is_in_none(self):
         block = self.section()
-        self.assertIn("Non-centrally cleared bilateral repo", block)
+        self.assertIn("Direct bilateral repo is in none of them", block)
         claim = self.notes["claims"]["segments_none"]
         self.assertTrue(claim["src"].startswith("https://www.newyorkfed.org/markets/reference-rates/"))
-        self.assertIn(claim["text"], block)
 
     def test_chapter_one_keeps_the_nesting_and_the_ladder_under_go_deeper(self):
         start = self.page.index('<section id="plumbing">')
@@ -1776,7 +1777,6 @@ class N4MapTests(unittest.TestCase):
         for part in ('id="seg-sofr"', 'id="seg-bgcr"', 'id="seg-tgcr"', 'id="corridor"'):
             self.assertIn(part, fold)
         self.assertNotIn("Cash comes from", self.page)
-        self.assertIn('href="#n4"', chapter)
 
 
 def html_unescape(text):
@@ -2320,13 +2320,11 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertNotRegex(self.text.lower(), r"warns? of stress")
         self.assertNotRegex(self.page.lower(), r"warns of stress")
 
-    def test_a_pass_is_never_stated_without_the_near_blind_disclosure(self):
-        for paragraph in re.findall(r"<(p|li)[^>]*>(.*?)</\1>", self.block, re.S):
-            words = visible_text(paragraph[1])
-            if re.search(r"\bpass\b", words):
-                with self.subTest(paragraph=words[:80]):
-                    self.assertIn("near-blind", words)
-
+    def test_the_near_blind_disclosure_is_said_once_for_the_page(self):
+        """The page's one limits line carries it (#314); the final-test block repeats no caution."""
+        self.assertEqual(LayReaderPageTests.shown_page.count("near-blind"), 1)
+        self.assertIn("near-blind", re.search(r'<p class="uselimit">(.*?)</p>', self.page, re.S).group(1))
+        self.assertNotIn("near-blind", self.block)
     def test_a_failed_test_states_no_claim(self):
         records = copy.deepcopy(self.records)
         records[emit_visual.FINAL_TEST]["primary"]["cell"]["result"] = "fail"
@@ -2340,8 +2338,6 @@ class FinalTestSectionTests(unittest.TestCase):
         thin = [k for k, v in split.items() if "interval" not in v]
         self.assertTrue(thin)
         self.assertEqual(self.block.count("too few days for an interval"), len(thin))
-        self.assertIn("decides nothing", self.text)
-
     def _robustness(self, **over):
         """`final_test_robustness` on a small invented set of numbers, each overridable."""
         args = dict(mean=0.17, drops={0: 0.17, 1: 0.11, 5: 0.03, 10: -0.04}, wins=87, n=169, minimum=20,
@@ -2422,7 +2418,7 @@ class FinalTestSectionTests(unittest.TestCase):
 
     def test_the_numbers_are_kept_in_one_collapsed_details_and_the_label_is_said_once(self):
         """#313 criteria 3 and 4: the three tables sit in a closed "Show the numbers" details; the label is once."""
-        self.assertEqual(self.block.count("Post hoc; decides nothing"), 1)
+        self.assertNotIn("Post hoc; decides nothing", self.page)
         at = self.block.index("<details class='ftnumbers'>")
         inner = self.block[at:self.block.index("</details>", self.block.index("The ten days that contribute most")) + 10]
         self.assertIn("Show the numbers", inner)
@@ -2472,12 +2468,10 @@ class FinalTestSectionTests(unittest.TestCase):
 
     def test_the_switch_of_the_primary_cell_is_stated(self):
         """#238, hold ruling item 2: the deciding cell was changed before the test was opened (#221)."""
-        self.assertIn("4 October 2026", self.text)
-        self.assertIn("plain-leap probability cell", self.text)
-        self.assertIn("#216", self.text)
-        self.assertIn("#221", self.text)
+        self.assertIn("One change before the test was opened", self.text)
+        self.assertIn("probability forecast", self.text)
+        self.assertNotRegex(self.text, r"#\d")
         self.assertIn("docs/decisions/final-test-preregistration.md", self.block)
-        self.assertIn("before the test was opened", self.text)
 
     def test_no_sentence_says_no_choice_of_model_was_made(self):
         """#238, hold ruling item 3: only the record's own hedge, "by name", may appear."""
@@ -2619,7 +2613,7 @@ class ForecastDailySectionTests(unittest.TestCase):
     def test_the_chart_defaults_to_2026_with_any_year_on_a_control(self):
         self.assertEqual(self.data["default_year"], 2026)
         self.assertEqual(self.data["years"], list(range(2018, 2027)))
-        self.assertRegex(self.block, r'<select[^>]*id="fdyear"')
+        self.assertNotIn('id="fdyear"', self.block)
         self.assertIn('id="fdchart"', self.block)
 
     def test_a_drifted_record_moves_the_section(self):
@@ -2656,14 +2650,18 @@ class ForecastDailySectionTests(unittest.TestCase):
             emit_visual.forecast_daily(records, self.locked)
 
     def test_the_page_says_blind_days_stay_hidden(self):
-        self.assertIn("No day after 3 September 2026 is drawn or counted", self.text)
-        self.assertIn("live record", self.text)
-        self.assertIn(emit_visual.LOCKBOX_RULE, self.block)
+        """#314: the page says nothing of blind or live days; the cut-off stays enforced in code."""
+        for gone in ("No day after", "blind tier", "live record", "lockbox"):
+            self.assertNotIn(gone, self.text)
+        self.assertNotIn(emit_visual.LOCKBOX_RULE, self.block)
+        self.assertLess(max(d[0] for d in self.doc["data"]["series"][0]["days"]), "2026-09-04")
 
     def test_the_50_percent_band_says_it_is_not_yet_calibrated(self):
-        self.assertIn("not yet calibrated (#243)", self.text)
+        """#314: the chart draws the 90% band only; the uncalibrated central range is named once, in the page's limits."""
+        self.assertNotIn("#243", self.text)
         template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
-        self.assertIn("not yet calibrated (#243)", template[template.index("function renderForecastDaily"):])
+        self.assertNotIn("50% band", template[template.index("function renderForecastDaily"):])
+        self.assertIn("central range is not yet fully calibrated", self.page)
 
     def test_absolute_numbers_come_before_any_benchmark(self):
         self.assertNotIn("persistence", self.text.split("Largest misses")[0].lower())
@@ -2722,7 +2720,7 @@ class FindingProseTests(unittest.TestCase):
         note = emit_visual.opened_days_note(rows, ROOT / emit_visual.LOCKBOX)
         self.assertIn("2 of the days counted", note)
         self.assertIn("near-blind", note)
-        self.assertIn("169 of the days counted", self.page)
+        self.assertNotIn("169 of the days counted", self.page)
 
     def test_the_march_2020_cut_is_dated_as_the_sunday_it_was(self):
         notes = json.loads((ROOT / "docs/visual/annotations.json").read_text(encoding="utf-8"))
@@ -2847,9 +2845,7 @@ class AdvisorChaptersTests(unittest.TestCase):
         self.assertRegex(text, r"ON RRP was below \$100bn on \d+ days")
         self.assertIn("Why IORB is the anchor", text)                             # A2
         self.assertIn("a firm floor, its overnight reverse repo rate, and a soft ceiling", text)  # A3
-        self.assertRegex(text, r"on 31 October 2025 it printed 4\.22%, above the standing repo rate of 4\.00%")
-        self.assertIn("The payment also drains cash from the banking system, and reserves fall", text)  # A4
-        self.assertIn("mostly driven by a few large foreign dealers", text)       # A5
+        self.assertRegex(text, r"on 31 October 2025 SOFR printed 4\.22%, above the standing repo rate of 4\.00%")
         for left_out in ("leverage ratio", "snapshot", "strongest"):
             self.assertNotIn(left_out, text)
         self.assertIn("overnight repo operations, offering up to $75 billion", text)                   # A6
@@ -2861,27 +2857,90 @@ class AdvisorChaptersTests(unittest.TestCase):
 
     def test_part_b_is_on_the_page(self):
         text = self.text()
-        self.assertIn("is the cost of borrowing cash overnight with Treasury securities as collateral", text)  # B1
-        self.assertIn("Bank-to-bank lending is a different rate, the federal funds rate", text)
+        self.assertIn("is the cost of borrowing cash overnight against Treasuries", text)  # B1
         self.assertRegex(text, r"it was set from about \$\d\.\d trillion of trades")                  # B2
         self.assertRegex(text, r"the median day was \d+ bp below IORB")                                # B3
         self.assertRegex(text, r"The largest, on 17 September 2019, was \+315 bp")                     # B4
-        self.assertIn("daily overnight repo operations, open to primary dealers", text)                # B5
-        self.assertIn("The use limitation rests on", text)                                             # B6
         self.assertIn("possible, not certain", text)                                                   # B7
 
-    def test_the_event_numbers_in_the_prose_name_their_events(self):
-        events = self.notes["events"]
-        n = int(re.search(r"\(event (\d+) in chapter 2\)", self.text()).group(1))
-        self.assertEqual(events[n - 1]["date"], "2025-10-31")
-        n = int(re.search(r"\(event (\d+) below\)", self.text()).group(1))
-        self.assertEqual(events[n - 1]["date"], "2019-09-17")
-
+    def test_the_prose_names_its_days_not_event_numbers(self):
+        text = self.text()
+        self.assertNotRegex(text, r"\(event \d+")
+        dates = {e["date"] for e in self.notes["events"]}
+        self.assertIn("2025-10-31", dates)
+        self.assertIn("on 31 October 2025 SOFR printed", text)
+        self.assertIn("2019-09-17", dates)
+        self.assertIn("The largest, on 17 September 2019", text)
     def test_no_issue_number_is_on_the_page_chapters(self):
         self.assertIsNone(re.search(r"#\d+", re.sub(r"<[^>]+>", " ", self.chapters())))
 
     def test_the_limitation_is_not_stated_a_third_time(self):
         plain = re.search(r"^> (.*)$", (ROOT / emit_visual.USE_LIMITATION).read_text(encoding="utf-8")
                           .split("\n## Plain-English version\n")[1], re.M).group(1)
-        self.assertEqual(self.page.count(html.escape(plain, quote=False)), 2)
+        self.assertEqual(self.page.count(html.escape(plain, quote=False)), 1)
         self.assertNotIn(html.escape(plain, quote=False), self.chapters())
+
+
+class LayReaderPageTests(unittest.TestCase):
+    """#314: the results page for a lay reader: no issue numbers, one limits line, and generated plain takeaways."""
+
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+    shown_page = visible_text(re.sub(r"<(script|style)\b[^>]*>.*?</\1>", "", page, flags=re.S))
+
+    def test_no_issue_or_pull_request_number_is_on_the_page(self):
+        """No `#<digits>` in any text node, label attribute or embedded data string, outside URLs and ids."""
+        body = re.sub(r"<(script|style)\b[^>]*>.*?</\1>", "", self.page, flags=re.S)
+        body = re.sub(r"https?://[^\s\"'<>)]+", "", body)
+        shown = visible_text(body)
+        labels = " ".join(re.findall(r"""(?:aria-label|title|alt)=["']([^"']*)["']""", body))
+        data = json.loads(re.search(r"const D = (\{.*?\});\n", self.page, re.S).group(1).replace("<\\/", "</"))
+        strings = []
+
+        def walk(node):
+            if isinstance(node, dict):
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+            elif isinstance(node, str):
+                strings.append(node)
+
+        walk(data)
+        for where, text in (("text", shown), ("labels", labels), ("data", " ".join(strings))):
+            with self.subTest(where=where):
+                self.assertNotRegex(re.sub(r"https?://\S+", "", text), r"(?<![&\w])#\d+")
+
+    def test_the_page_carries_one_limits_line(self):
+        text = self.shown_page
+        self.assertEqual(text.count("not yet fully calibrated"), 1)
+        for gone in ("decides nothing", "Post hoc", "held out", "lockbox", "blind tier"):
+            with self.subTest(gone=gone):
+                self.assertNotIn(gone, text)
+
+    def test_the_page_names_a_next_step_and_no_live_figure(self):
+        text = self.shown_page
+        self.assertIn("A live daily forecast, once a calibrated model is ready.", text)
+        self.assertNotIn("live record", text)
+
+    def test_the_takeaways_follow_the_rule(self):
+        recent = {"median_abs_error": 1.95, "band_90": {"inside": 0.93}}
+        worst = {"miss": 9.75, "date": "2026-05-26"}
+        self.assertEqual(emit_visual.forecast_takeaways(recent, worst, 2026), [
+            "On a typical day the forecast was about 2 bp off.",
+            "The actual landed inside the forecast's 90% range on 93% of days.",
+            "The biggest miss in 2026 was about 10 bp (26 May)."])
+
+    def test_a_typical_miss_under_half_a_basis_point_says_under_one(self):
+        recent = {"median_abs_error": 0.4, "band_90": {"inside": 0.5}}
+        first = emit_visual.forecast_takeaways(recent, {"miss": -3.2, "date": "2026-01-05"}, 2026)
+        self.assertEqual(first[0], "On a typical day the forecast was under 1 bp off.")
+        self.assertIn("about 3 bp (5 January)", first[2])
+
+    def test_the_forecast_chart_circles_the_biggest_misses_by_date(self):
+        doc = json.loads((ROOT / emit_visual.DATA_DIR / "forecast_daily.json").read_text(encoding="utf-8"))["data"]
+        top = doc["misses_2026"][:doc["chart_misses"]]
+        self.assertEqual([m["label"] for m in top][0], "26 May")
+        self.assertEqual(len(top), emit_visual.FORECAST_DAILY_CHART_MISSES)
+        self.assertIn('id="fdchart"', self.page)
+        self.assertIn("the biggest misses", self.page)

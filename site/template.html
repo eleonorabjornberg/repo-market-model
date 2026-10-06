@@ -395,7 +395,7 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2 id="n4-title"><span class="n">N4</span>Who lends to whom</h2>
   <p class="prose lede">{{n4_lede}}</p>
   <div class="prose">
-    <p>Cash moves between the Fed, the Treasury, money funds, banks, dealers and other lenders. Each public series that measures one of those flows is a tag on the map: for example the balance at {{dfn_on_rrp}}, the balance of {{dfn_tga}}, or take-up at {{dfn_srf}}.</p>
+    <p>Cash moves between the Fed, the Treasury, money funds, banks, dealers and other lenders. Each public series that measures one of those flows is a tag on the map: for example the balance at {{dfn_on_rrp}}, the balance of {{dfn_tga}}, the gap between {{dfn_effr}} and IORB, take-up at {{dfn_srf}}, or the {{dfn_percentile}}s of each day's SOFR trades.</p>
     <p>Three New York Fed rates price the repo segments: <b>TGCR</b> ({{dfn_triparty}}), <b>BGCR</b> (tri-party plus {{dfn_gcf}}) and <b>SOFR</b> (BGCR plus cleared {{dfn_dvp}}). Direct bilateral repo is in none of them.</p>
   </div>
   <figure>
@@ -419,7 +419,7 @@ table.fttab.fdtab td{white-space:nowrap}
     {{n4_status_table}}
     <ul>
       <li><b>Used</b>: a published forecast reads it. <b>Tried and hurt</b>: adding it made the forecast worse. <b>In progress</b>: being worked on. <b>Registered but unused</b>: the project has the source and no forecast reads it. <b>Not registered</b>: the project has no source for it.</li>
-      <li>The days were chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. It never reads a rate or a spread. {{n4_seg_held}}</li>
+      <li>The days were chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. It never reads a rate or a spread.</li>
       <li>The segment chart's days come from the panel's <code>quarter_end</code> flag (the last business day of the quarter), the statutory corporate tax deadlines, the scheduled coupon settlements, and the New York Fed's ON RRP results read as they stood at each day's decision. The values are below.</li>
     </ul>
     {{n4_seg_table}}
@@ -444,7 +444,6 @@ table.fttab.fdtab td{white-space:nowrap}
   <details class="wide">
     <summary>Go deeper: the values, and how the two quarter-ends were chosen</summary>
     <p>{{n5_rule}}</p>
-    <p>{{n5_held_note}}</p>
     <ul>
       <li>The two quarter-ends come from one rule, declared in the generator before any chart was drawn. It reads only the panel's <code>quarter_end</code> flag (the quarter's last business day) and the New York Fed's ON RRP results, read as they stood at each decision, as N3 and N4 read them (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
       <li>The Treasury's account and reserve balances are drawn as the change since the window's first day, because their levels differ by thousands of billions. Rates are drawn less IORB, in whole basis points.</li>
@@ -721,7 +720,7 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2>Next steps</h2>
   <ul>
     <li>A live daily forecast, once a calibrated model is ready.</li>
-    <li>Lead time before pressure begins, once a published record carries it.</li>
+    <li>{{lead_time_placeholder}}</li>
   </ul>
 </section>
 
