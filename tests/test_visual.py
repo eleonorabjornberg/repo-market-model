@@ -2390,6 +2390,74 @@ class FinalTestSectionTests(unittest.TestCase):
         for fills in (emit_visual.segment_held_note(self.locked),):
             self.assertIn("blind tier", fills)
 
+    def _rests_figures(self, record=None):
+        """The post hoc figures, computed here from the record's own window and bootstrap."""
+        from repo_model.metrics import stationary_bootstrap_interval
+        record = record or self.record
+        window = record["primary"]["window_per_origin"]
+        iv = record["primary"]["cell"]["interval"]
+        diffs = [r["difference_bps"] for r in window]
+        top = sorted(range(len(diffs)), key=lambda i: -diffs[i])[:2]
+        rest = [v for i, v in enumerate(diffs) if i not in top]
+        lower, upper = stationary_bootstrap_interval(
+            lambda ix: sum(rest[i] for i in ix) / len(ix), len(rest), block_length=iv["block_length"],
+            seed=iv["seed"], replications=iv["replications"], level=iv["level"])
+        return {"days": sorted(window[i]["scored_date"] for i in top),
+                "share": sum(diffs[i] for i in top) / sum(diffs),
+                "mean": sum(rest) / len(rest), "lower": lower, "upper": upper,
+                "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
+
+    def test_what_the_pass_rests_on_follows_the_record(self):
+        """#238, hold ruling item 1: a generated, post hoc sentence under "What it does not show"."""
+        f = self._rests_figures()
+        text = visible_text(self.fills["ft_rests"])
+        self.assertIn("post hoc", text)
+        self.assertIn(f"{100 * f['share']:.1f}%", text)
+        self.assertIn(f"{f['wins']} of {f['n']}", text)
+        self.assertIn(f"{emit_visual.signed(f['mean'], 3)}", text)
+        self.assertIn(f"{emit_visual.signed(f['lower'], 3)}", text)
+        self.assertIn(f"{emit_visual.signed(f['upper'], 3)}", text)
+        for iso in f["days"]:
+            self.assertIn(emit_visual.short_day(iso).split(" ", 1)[0], text)
+        self.assertIn("verdict stands", text)
+        self.assertIn(self.fills["ft_rests"], self.block)
+        self.assertEqual(self.data["rests"]["share"], f["share"])
+        self.assertEqual(self.data["rests"]["wins"], f["wins"])
+
+    def test_what_the_pass_rests_on_moves_with_the_record(self):
+        records = copy.deepcopy(self.records)
+        window = records[emit_visual.FINAL_TEST]["primary"]["window_per_origin"]
+        for r in window:
+            r["difference_bps"] = 0.1
+        records[emit_visual.FINAL_TEST]["primary"]["cell"]["mean_difference_bps"] = 0.1
+        data, fills = emit_visual.final_test(records, self.locked)
+        self.assertEqual(data["rests"]["wins"], len(window))
+        self.assertNotEqual(fills["ft_rests"], self.fills["ft_rests"])
+        self.assertIn(f"{100 * data['rests']['share']:.1f}%", fills["ft_rests"])
+
+    def test_the_switch_of_the_primary_cell_is_stated(self):
+        """#238, hold ruling item 2: the deciding cell was changed before the test was opened (#221)."""
+        self.assertIn("4 October 2026", self.text)
+        self.assertIn("plain-leap probability cell", self.text)
+        self.assertIn("#216", self.text)
+        self.assertIn("#221", self.text)
+        self.assertIn("docs/decisions/final-test-preregistration.md", self.block)
+        self.assertIn("before the test was opened", self.text)
+
+    def test_no_sentence_says_no_choice_of_model_was_made(self):
+        """#238, hold ruling item 3: only the record's own hedge, "by name", may appear."""
+        for text in (self.text, visible_text(" ".join(map(str, self.fills.values())))):
+            self.assertNotRegex(text.lower(), r"no choice of model")
+            self.assertNotRegex(text.lower(), r"no choice was made(?! on them by name)")
+        self.assertIn("by name", self.text)
+
+    def test_the_stress_windows_are_not_said_to_be_kept_out_of_the_score(self):
+        """#238, hold ruling item 4: every published record pools those days."""
+        template = (ROOT / "site/template.html").read_text(encoding="utf-8")
+        for text in (self.page, template):
+            self.assertNotIn("kept out of the headline score", text)
+            self.assertNotIn("reported on their own", text)
+
     def test_readme_links_the_section_from_the_explorer_line(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         line = next(l for l in readme.splitlines() if "[the explorer](" in l)
