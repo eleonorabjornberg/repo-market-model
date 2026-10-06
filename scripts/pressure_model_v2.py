@@ -34,7 +34,14 @@ pressure-day type to be diagnosed on the inner block and fixed. `DIAGNOSIS` and
 was committed before the outer block was scored a second time. The fix is a width
 tracker on the 50% band after (iv)'s levels (`repo_model.interior.OnlineWidth`).
 
-Five subcommands:
+Eleonora's ruling on PR #252 of 6 October 2026 (16:48) then asked for a quarter-end location term. `QE_CANDIDATES`
+and `QE_SELECTION` were declared in one commit before any candidate was walked, with (iv)'s depth-3 trees made a
+setting of the fit in `ml.py` (`ml.fit_gradient_boosted_quantiles(max_depth=3)`, `candidate_setup`). The choice is on
+the inner block only (`choose-quarter-end`), committed as `CHOSEN_QE_FIX` before the outer block is scored a third time.
+
+Six subcommands:
+
+* `choose-quarter-end`: the quarter-end term, chosen on the inner block only (`quarter_end_choice`).
 
 * `diagnose`: v1 and (iv), by pressure-day type and regime, on the inner block only.
 * `choose-fix`: the fix, chosen on the inner block only (`fix_choice`).
@@ -224,7 +231,10 @@ CHOSEN = "iv_regularised_and_tracking"
 
 #: (iv)'s trees: (ii)'s setting, chosen again on the inner block by #247's rule
 #: (no question 4 variant meets the bar there; max depth 3 has the lowest CRPS).
-#: Applied as #247's walk applies it (`interior_diagnosis._with_tree_settings`).
+#: #247's walk applied it by replacing the estimator class in its own process
+#: (`interior_diagnosis._with_tree_settings`); v2 applies it as a setting of the fit,
+#: `ml.fit_gradient_boosted_quantiles(max_depth=3)`, which names it in the fit's
+#: `model_settings` (`candidate_setup`). The two give the same trees, which `assemble` checks.
 V2_TREE_SETTINGS = {"max_depth": 3}
 V2_TREE_VARIANT = "max_depth_3"
 
@@ -527,6 +537,77 @@ FIX_SELECTION = {
 CHOSEN_FIX = "vii_width_turn_vs_ordinary"
 
 
+# ---------------------------------------------------------------------------
+# The quarter-end location term (Eleonora's ruling on PR #252, 6 October 2026, 16:48)
+# ---------------------------------------------------------------------------
+
+#: The ruling: "build the quarter-end correction into v2 now". The width fix does not move the quarter-end
+#: shortfall, which is a location shift (the realised median sits above the band on quarter-ends in 2018-19 and
+#: the outer block). These candidates for a quarter-end location term are declared in one commit, before any of
+#: them is walked or scored. They are chosen on the inner block only, by `QE_SELECTION`; the choice is committed
+#: as `CHOSEN_QE_FIX` before the outer block is scored a third time. Every candidate is v2 as it stands (the trees
+#: of depth `V2_TREE_SETTINGS`, the nested PID, the interior layer, the width layer) with one change to the trees.
+#:
+#: * (a) a calendar feature in the trees. `quarter_end` and `days_to_month_end` are `contract.CALENDAR_FEATURES`:
+#:   panel columns, a function of the date, read at the scored day itself by the as-of rule, so they need no new
+#:   code in `ml.py` and no new panel column. "Days to quarter-end on the market calendar"
+#:   (`metadata/market_holidays.json`) as a column of its own would be a new calendar column in `data.py` and
+#:   `contract.py` and a new panel digest; it is not built here (a question for Eleonora in the PR).
+#: * (b) direct per-horizon training pairs (#105, `ml.TRAINING_PAIRS`): each target is paired with the as-of read
+#:   a forecast of it makes, as the fit is served.
+#: * (c) the simplest version of either: `qe_indicator` (one added column) and `direct_pairs` (the plain setting).
+#:
+#: Complexity is (changes to how the trees are trained, input columns added): changing how the trees are trained is
+#: less simple than adding an input, and both are less simple than leaving the trees as they are.
+QE_CANDIDATES = {
+    "base": {"what": "v2 as it stands, with no quarter-end term (the choice before this ruling)",
+             "features": (), "training_pairs": None, "complexity": (0, 0)},
+    "qe_indicator": {"what": "a quarter-end indicator, `quarter_end`, added to the trees' features",
+                     "features": ("quarter_end",), "training_pairs": None, "complexity": (0, 1)},
+    "qe_indicator_and_month_end_countdown": {
+        "what": ("the indicator and `days_to_month_end` (calendar days to the month's end: 0, 1, 2 on the days "
+                 "before a quarter-end), both panel columns, added to the trees' features"),
+        "features": ("quarter_end", "days_to_month_end"), "training_pairs": None, "complexity": (0, 2)},
+    "direct_pairs": {"what": "the trees trained on direct per-horizon pairs (`training_pairs=\"direct\"`)",
+                     "features": (), "training_pairs": "direct", "complexity": (1, 0)},
+}
+QE_SELECTION = {
+    "window": INNER_SELECTION["window"],
+    "rule": FIX_SELECTION["rule"],
+    "unchanged": ("the pooled 90% gate stays pass/fail; the per-day-type 50% bands, quarter-end and year-end "
+                  "included, are diagnostics with counts, and no interval under "
+                  "`CONDITIONAL_GATES['minimum_days']` days ('too few days')"),
+    "outer": ("the outer block is scored a third time, once, for the chosen candidate, after it is committed as "
+              "`CHOSEN_QE_FIX`; the first and second looks are kept as they are"),
+}
+
+
+def candidate_setup(fit, features, name):
+    """A quarter-end candidate's fitter and feature list, from the published side's.
+
+    `fit` is the published side's `functools.partial` of
+    `ml.fit_gradient_boosted_quantiles`, `features` its declared features. v2's
+    trees are the same fitter with `ml`'s `max_depth` setting (`V2_TREE_SETTINGS`);
+    the candidate adds its calendar columns to both lists, or its training
+    pairs, and nothing else. No estimator class is replaced.
+    """
+
+    if name not in QE_CANDIDATES:
+        raise ValueError(f"unknown quarter-end candidate {name!r}")
+    spec = QE_CANDIDATES[name]
+    extras = tuple(spec["features"])
+    clash = sorted(set(extras) & set(features))
+    if clash:
+        raise ValueError(f"{clash} are already among the published features")
+    keywords = dict(fit.keywords)
+    keywords["regressors"] = tuple(keywords["regressors"]) + extras
+    keywords.update(V2_TREE_SETTINGS)
+    if spec["training_pairs"] is not None:
+        keywords["training_pairs"] = spec["training_pairs"]
+    return functools.partial(fit.func, *fit.args, **keywords), tuple(features) + extras
+
+
+
 def _partition_class(partition, kind):
     if partition == "pooled":
         return "all"
@@ -662,13 +743,12 @@ def fix_vectors(days):
     return out
 
 
-def select_fix(summaries, paired_to_leader):
-    """`FIX_SELECTION`, applied to the eligible candidates' summaries."""
+def _select_simplest(summaries, paired_to_leader, complexity):
+    """The declared rule on eligible candidates' summaries: the lowest CRPS leads; a simpler candidate within its interval wins."""
 
     passing = sorted(summaries)
     if not passing:
         return {"recommended": None, "eligible": [], "leader": None, "reason": "no candidate is eligible"}
-    complexity = {name: FIX_CANDIDATES[name]["complexity"] for name in passing}
     leader = min(passing, key=lambda n: (summaries[n]["crps"], complexity[n], n))
     simpler = []
     for name in passing:
@@ -686,6 +766,13 @@ def select_fix(summaries, paired_to_leader):
         reason = (f"{leader} has the lowest CRPS of the eligible candidates, and no simpler eligible "
                   f"candidate is within its interval")
     return {"recommended": chosen, "eligible": passing, "leader": leader, "reason": reason}
+
+
+def select_fix(summaries, paired_to_leader):
+    """`FIX_SELECTION`, applied to the eligible candidates' summaries."""
+
+    return _select_simplest(summaries, paired_to_leader,
+                            {name: FIX_CANDIDATES[name]["complexity"] for name in summaries})
 
 
 def fix_choice(days, v1_days, cells, rows, splits) -> dict:
@@ -742,6 +829,75 @@ def fix_choice(days, v1_days, cells, rows, splits) -> dict:
     }
 
 
+def select_quarter_end(summaries, paired_to_leader):
+    """`QE_SELECTION`, applied to the eligible candidates' summaries."""
+
+    return _select_simplest(summaries, paired_to_leader,
+                            {name: QE_CANDIDATES[name]["complexity"] for name in summaries})
+
+
+def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
+    """The quarter-end term, chosen on the inner block only (`QE_SELECTION`).
+
+    `candidate_days` maps each candidate to its days (`date`, `anchor`, `y`,
+    `kind` and `v2`, the vector of v2 built on that candidate's trees); every
+    candidate walks the same days. `v1_days` is v1 on the same days in #247's
+    format (`issued`). `cells` maps a date to its conditional cells. Refuses a
+    day outside the inner block.
+    """
+
+    if not candidate_days or any(not _in(d["date"], INNER) for days in candidate_days.values() for d in days):
+        raise ValueError("the quarter-end term is chosen on the inner block only")
+    reference = candidate_days["base"]
+    if any([(d["date"], d["y"]) for d in days] != [(d["date"], d["y"]) for d in reference]
+           for days in candidate_days.values()):
+        raise ValueError("the candidates' walks score different days")
+    v1_vectors = [d["issued"] for d in v1_days]
+    vectors = {name: [d["v2"] for d in days] for name, days in candidate_days.items()}
+    summaries, gates, candidates = {}, {}, {}
+    for name, vecs in vectors.items():
+        summaries[name] = dx._summary(v1_days, vecs, INNER)
+        gates[name] = conditional_gates(_with_cells(reference, cells, "v", vecs), "v")
+        diagnostic = [{"date": d["date"], "y": d["y"], "v": v, "type": d["kind"], "cells": set(cells[d["date"]])}
+                      for d, v in zip(reference, vecs)]
+        candidates[name] = {
+            "what": QE_CANDIDATES[name]["what"],
+            "features_added": list(QE_CANDIDATES[name]["features"]),
+            "training_pairs": QE_CANDIDATES[name]["training_pairs"],
+            "complexity": list(QE_CANDIDATES[name]["complexity"]),
+            "inner": summaries[name],
+            "conditional_gates_inner": gates[name],
+            "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vecs, rows, splits, INNER, ("#244", "qe", name, "v1")),
+            "paired_vs_base_inner": (None if name == "base" else
+                                     dx.paired(v1_days, vectors["base"], vecs, rows, splits, INNER,
+                                               ("#244", "qe", name, "base"))),
+            "by_day_type": {
+                cell: _diagnostic_cell([d for d in diagnostic if _cell_members(d)[cell]], "v", ("qe", name, cell))
+                for cell in ("all", "quarter_end", "year_end", "tax_date", "month_end", "ordinary")},
+        }
+    pair_cache = {}
+
+    def paired_to_leader(name, leader):
+        if (name, leader) not in pair_cache:
+            pair_cache[(name, leader)] = dx.paired(v1_days, vectors[leader], vectors[name], rows, splits, INNER,
+                                                   ("#244", "qe", name, "vs", leader))
+        return pair_cache[(name, leader)]
+
+    eligible = {n: summaries[n] for n in vectors if eligible_inner(summaries[n], gates[n], reading=BINDING_READING)}
+    selection = select_quarter_end(eligible, paired_to_leader)
+    return {
+        "declared": {"candidates": QE_CANDIDATES, "selection": QE_SELECTION, "tree_settings": V2_TREE_SETTINGS,
+                     "reading": BINDING_READING},
+        "window": [INNER[0].isoformat(), INNER[1].isoformat()],
+        "days": len(reference),
+        "candidates": candidates,
+        "selection": selection,
+        "paired_against_leader": {f"{a}_vs_{b}": {k: v for k, v in p.items() if k != "splits"}
+                                  for (a, b), p in pair_cache.items()},
+        "vectors": vectors,
+    }
+
+
 def _cell_members(day) -> dict:
     kind = day["type"]
     return {
@@ -762,13 +918,20 @@ def _diagnostic_cell(days, field, seed_parts) -> dict:
     if not n:
         return out
     cov = band_coverage(days, field)
-    interval = coverage_interval(days, field, seed_parts)
     centre = sorted(d["y"] - d[field][2] for d in days)
+    if n < CONDITIONAL_GATES["minimum_days"]:
+        # The minimum-cell rule (ruling of 6 October 2026, 16:48): no interval under the minimum.
+        band_50 = {"coverage": cov["band_50_half_edge"], "interval": "too few days"}
+        band_90 = {"coverage": cov["band_90_half_edge"], "interval": "too few days"}
+    else:
+        interval = coverage_interval(days, field, seed_parts)
+        band_50 = {"coverage": cov["band_50_half_edge"], "lower": interval["band_50"]["lower"],
+                   "upper": interval["band_50"]["upper"]}
+        band_90 = {"coverage": cov["band_90_half_edge"], "lower": interval["band_90"]["lower"],
+                   "upper": interval["band_90"]["upper"]}
     out.update(
-        band_50={"coverage": cov["band_50_half_edge"], "lower": interval["band_50"]["lower"],
-                 "upper": interval["band_50"]["upper"]},
-        band_90={"coverage": cov["band_90_half_edge"], "lower": interval["band_90"]["lower"],
-                 "upper": interval["band_90"]["upper"]},
+        band_50=band_50,
+        band_90=band_90,
         p_below={level: cov["coverage_half_tie"][level] for level in ("0.25", "0.5", "0.75")},
         band_50_miss_below=cov["band_50_miss_below"],
         band_50_miss_above=cov["band_50_miss_above"],
@@ -841,9 +1004,7 @@ def walk_command(args) -> int:
     registry = json.loads(fp.REGISTRY.read_text())
     sides, parsed = lr._compare_sides(h)
     name, fit, features, _v1_online = sides["published"]
-    from repo_model import ml
-
-    dx._with_tree_settings(ml, V2_TREE_SETTINGS)
+    fit, features = candidate_setup(fit, features, args.candidate)
     built = []
 
     def v2_online(rows_, rule):
@@ -872,6 +1033,7 @@ def walk_command(args) -> int:
     account = calibration.account()
     document = {"directive": "#244", "horizon": h, "panel_sha256": panel_sha256(args.panel),
                 "model": name, "settings": settings, "tree_settings": V2_TREE_SETTINGS,
+                "candidate": args.candidate, "features": list(features),
                 "interior_blocks": account["interior_blocks"], "width_blocks": account["width_blocks"],
                 "days": days}
     args.output.write_text(json.dumps(document, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
@@ -1338,12 +1500,44 @@ def choose_fix_command(args) -> int:
     return 0
 
 
+def choose_quarter_end_command(args) -> int:
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    if panel_sha256(args.panel) != fp._frozen_panel_sha256():
+        raise ValueError("the panel is not the published panel")
+    splits = load_split_declaration(fp.SPLITS)
+    candidate_days = {}
+    for path in args.walks:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if document["panel_sha256"] != panel_sha256(args.panel):
+            raise ValueError(f"{path} was walked on another panel")
+        if document["horizon"] != 1 or document.get("tree_settings") != V2_TREE_SETTINGS:
+            raise ValueError(f"{path} is not a v2 walk at h = 1")
+        # The walk reaches past the inner block; the choice reads the inner block's days and no others.
+        candidate_days[document["candidate"]] = [d for d in document["days"] if _in(d["date"], INNER)]
+    if set(candidate_days) != set(QE_CANDIDATES):
+        raise ValueError(f"the walks are for {sorted(candidate_days)}, not {sorted(QE_CANDIDATES)}")
+    v1 = json.loads(args.v1_walk.read_text(encoding="utf-8"))
+    if v1["variant"] != "v1" or v1["horizon"] != 1 or v1["panel_sha256"] != panel_sha256(args.panel):
+        raise ValueError(f"{args.v1_walk} is not v1's walk at h = 1 on the published panel")
+    v1_days = [d for d in v1["days"] if _in(d["date"], INNER)]
+    scored = [date.fromisoformat(d["date"]) for d in candidate_days["base"]]
+    cells = day_cells(rows, scored)
+    result = quarter_end_choice(candidate_days, v1_days, cells, rows, splits)
+    result.pop("vectors")
+    args.output.write_text(json.dumps(result, indent=1, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
+    print(json.dumps({"selection": result["selection"]}, indent=1))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     wk = sub.add_parser("walk", help="the published side's walk with v2's calibration")
     wk.add_argument("--panel", type=Path, required=True)
     wk.add_argument("--horizon", type=int, choices=dx.HORIZONS, default=1)
+    wk.add_argument("--candidate", choices=sorted(QE_CANDIDATES), default="base",
+                    help="the quarter-end candidate whose trees v2 is built on (QE_CANDIDATES)")
     wk.add_argument("--output", type=Path, required=True)
     wk.set_defaults(func=walk_command)
     ch = sub.add_parser("choose", help="#247's choice, redone on the inner block (ruling on PR #252)")
@@ -1361,6 +1555,12 @@ def main(argv=None) -> int:
     cf.add_argument("--before-fix-record", type=Path, required=True)
     cf.add_argument("--output", type=Path, required=True)
     cf.set_defaults(func=choose_fix_command)
+    cq = sub.add_parser("choose-quarter-end", help="the quarter-end term, chosen on the inner block only")
+    cq.add_argument("--panel", type=Path, required=True)
+    cq.add_argument("--walks", type=Path, nargs="+", required=True, help="every candidate's v2 walk at h = 1")
+    cq.add_argument("--v1-walk", type=Path, required=True, help="#247's v1 walk at h = 1")
+    cq.add_argument("--output", type=Path, required=True)
+    cq.set_defaults(func=choose_quarter_end_command)
     asm = sub.add_parser("assemble", help="the record, from the walks")
     asm.add_argument("--panel", type=Path, required=True)
     asm.add_argument("--walks", type=Path, nargs="+", required=True)

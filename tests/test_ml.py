@@ -9389,6 +9389,87 @@ class DirectTrainingPairsTests(unittest.TestCase):
 
 
 
+class MaxDepthSettingTests(unittest.TestCase):
+    """`max_depth` (#244): the depth of every tree, a setting of the fit and not an override.
+
+    Pressure model v2's trees are v1's with a maximum depth of 3 (#247's
+    candidate (iv)). A script that swapped the estimator class in its own
+    process applied that setting where no record of the fit could name it; here
+    it is an argument of `fit_gradient_boosted_quantiles`, reaches the full fit
+    and every excluding model's, is named in `model_settings` when set, and
+    leaves a fit that does not set it as it was.
+
+    Red first: `fit_gradient_boosted_quantiles` had no `max_depth`
+    (`TypeError: unexpected keyword argument`).
+
+    Mutation record. `/opt/rmm-venv`, CPython 3.11, `PYTHONDONTWRITEBYTECODE=1`,
+    this class run alone, in a disposable copy, control green. In the second
+    `_fitted_levels` call of `fit_gradient_boosted_quantiles` (the excluding
+    models'), `max_depth` was deleted from the arguments, and `diff` confirmed it.
+    `test_every_estimator_carries_the_depth`'s excluding-model subtest then
+    failed with `AssertionError: Items in the first set but not the second` (the block's depths
+    were `{None}`, not `{2}`). Restored, green.
+    """
+
+    ROWS = 70
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = business_day_frame(self.ROWS)
+
+    def fit(self, **overrides):
+        options = {"minimum_history": 20, "calibration": "cross_conformal", "calibration_folds": 3,
+                   "information": _depth_rule(self.rows)}
+        options.update(overrides)
+        return ml.fit_gradient_boosted_quantiles(self.rows, ("on_rrp", "sofr_volume"), **options)
+
+    def test_every_estimator_carries_the_depth(self):
+        fitted = self.fit(max_depth=2)
+        with self.subTest("the full fit"):
+            self.assertTrue(fitted._estimators)
+            self.assertEqual({e.max_depth for e in fitted._estimators}, {2})
+        with self.subTest("every excluding model"):
+            self.assertEqual(len(fitted.calibration_blocks), 3)
+            for block in fitted.calibration_blocks:
+                self.assertEqual({e.max_depth for e in block.estimators}, {2})
+        with self.subTest("named when set"):
+            self.assertEqual(fitted.max_depth, 2)
+            self.assertEqual(fitted.model_settings["max_depth"], 2)
+            self.assertEqual(dict(baseline._model_settings(fitted))["max_depth"], 2)
+
+    def test_absent_is_the_fit_it_always_was(self):
+        fitted = self.fit()
+        self.assertIsNone(fitted.max_depth)
+        self.assertNotIn("max_depth", fitted.model_settings)
+        self.assertEqual({e.max_depth for e in fitted._estimators}, {None})
+        explicit = self.fit(max_depth=None)
+        self.assertEqual(fitted.model_settings, explicit.model_settings)
+        self.assertEqual(fitted.predict(self.rows[-1]), explicit.predict(self.rows[-1]))
+
+    def test_a_shallower_tree_changes_the_forecast(self):
+        # The setting is not ignored: depth 1 (a stump per round) cannot equal the unlimited tree's law.
+        self.assertNotEqual(self.fit().predict(self.rows[-1]), self.fit(max_depth=1).predict(self.rows[-1]))
+
+    def test_refusals(self):
+        for bad in (0, -1, True, 2.5, "3"):
+            with self.subTest(max_depth=bad):
+                with self.assertRaisesRegex(ValueError, "max_depth"):
+                    self.fit(max_depth=bad)
+
+
+def _depth_rule(rows):
+    """An as-of rule for `on_rrp` and `sofr_volume` over `rows`, one calendar day of lag each."""
+
+    from repo_model.asof import InformationRule
+    from repo_model.contract import sources_for_features
+
+    lag = {"basis": "record_date", "unit": "calendar_days", "days": 1, "available_time": "00:00",
+           "timezone": "America/New_York"}
+    features = ("on_rrp", "sofr_volume", "spread_bps")
+    registry = {source: {"release_lag": dict(lag)} for source in sources_for_features(features)}
+    return InformationRule(registry, features, decision_time=time(16, 0))
+
+
 # --------------------------------------------------------------------------
 # Direct pressure-probability models (#114)
 # --------------------------------------------------------------------------

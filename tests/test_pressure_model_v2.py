@@ -67,6 +67,7 @@ then failed with `AssertionError: ValueError not raised`. Restored, green.
 
 from __future__ import annotations
 
+import functools
 import importlib.util
 import json
 import math
@@ -75,7 +76,8 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
-from repo_model import interior, recalibration
+from repo_model import interior, ml, recalibration
+from repo_model.contract import CALENDAR_FEATURES
 from repo_model.metrics import crps_from_quantiles
 from repo_model.splits import LookAheadError
 
@@ -549,6 +551,85 @@ class FixDeclarationTests(unittest.TestCase):
         self.assertTrue(v2._cell_members(day)["year_end"])
         self.assertTrue(v2._cell_members(dict(day, date="2020-09-30"))["quarter_end"])
         self.assertFalse(v2._cell_members(dict(day, date="2020-09-30"))["year_end"])
+
+
+class QuarterEndDeclarationTests(unittest.TestCase):
+    """The quarter-end location term (Eleonora's ruling on PR #252 of 6 October 2026), declared before it is scored.
+
+    The candidates, the rule that chooses among them and the depth of v2's trees are fixed in one commit, before any
+    candidate is walked. The depth is a setting of the fit (`ml.fit_gradient_boosted_quantiles(max_depth=...)`), not an
+    override of the estimator class in this script.
+    """
+
+    def test_the_candidates_and_their_complexity(self):
+        self.assertEqual(set(v2.QE_CANDIDATES),
+                         {"base", "qe_indicator", "qe_indicator_and_month_end_countdown", "direct_pairs"})
+        for name, spec in v2.QE_CANDIDATES.items():
+            self.assertEqual(len(spec["complexity"]), 2, name)
+            for column in spec["features"]:
+                self.assertIn(column, CALENDAR_FEATURES, name)
+            self.assertIn(spec["training_pairs"], (None, *ml.TRAINING_PAIRS), name)
+        self.assertEqual(v2.QE_CANDIDATES["base"]["complexity"], (0, 0))
+        self.assertEqual(v2.QE_CANDIDATES["base"]["features"], ())
+        self.assertIsNone(v2.QE_CANDIDATES["base"]["training_pairs"])
+        # Changing how the trees are trained is less simple than adding an input column.
+        self.assertLess(v2.QE_CANDIDATES["qe_indicator"]["complexity"], v2.QE_CANDIDATES["direct_pairs"]["complexity"])
+        self.assertLess(v2.QE_CANDIDATES["qe_indicator"]["complexity"],
+                        v2.QE_CANDIDATES["qe_indicator_and_month_end_countdown"]["complexity"])
+
+    def test_the_trees_depth_is_an_ml_setting_not_a_script_override(self):
+        self.assertEqual(v2.V2_TREE_SETTINGS, {"max_depth": 3})
+        base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga", "sofr_volume"))
+        before = ml._estimator_class
+        fit, features = v2.candidate_setup(base, ("tga", "spread_bps", "sofr_volume"), "base")
+        self.assertIs(ml._estimator_class, before)
+        self.assertEqual(fit.keywords["max_depth"], 3)
+        self.assertEqual(fit.keywords["regressors"], ("tga", "sofr_volume"))
+        self.assertEqual(features, ("tga", "spread_bps", "sofr_volume"))
+        self.assertNotIn("training_pairs", fit.keywords)
+
+    def test_a_candidate_adds_exactly_what_it_declares(self):
+        base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga",))
+        fit, features = v2.candidate_setup(base, ("tga", "spread_bps"), "qe_indicator_and_month_end_countdown")
+        self.assertEqual(fit.keywords["regressors"], ("tga", "quarter_end", "days_to_month_end"))
+        self.assertEqual(features, ("tga", "spread_bps", "quarter_end", "days_to_month_end"))
+        fit, features = v2.candidate_setup(base, ("tga", "spread_bps"), "direct_pairs")
+        self.assertEqual(fit.keywords["training_pairs"], "direct")
+        self.assertEqual(features, ("tga", "spread_bps"))
+        with self.assertRaises(ValueError):
+            v2.candidate_setup(base, ("tga", "spread_bps"), "nope")
+        with self.assertRaises(ValueError):  # a feature the published set already carries
+            v2.candidate_setup(functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("quarter_end",)),
+                               ("quarter_end", "spread_bps"), "qe_indicator")
+
+    def test_the_selection_rule_is_the_fixs(self):
+        self.assertEqual(v2.QE_SELECTION["rule"], v2.FIX_SELECTION["rule"])
+        summaries = {"base": {"crps": 1.83}, "qe_indicator": {"crps": 1.82}, "direct_pairs": {"crps": 1.81}}
+        excludes = {"interval": {"lower": 0.001, "upper": 0.03}}
+        includes = {"interval": {"lower": -0.01, "upper": 0.03}}
+        self.assertEqual(v2.select_quarter_end(summaries, lambda n, leader: excludes)["recommended"], "direct_pairs")
+        simpler = v2.select_quarter_end(summaries, lambda n, leader: includes)
+        self.assertEqual(simpler["leader"], "direct_pairs")
+        self.assertEqual(simpler["recommended"], "base")
+        self.assertIsNone(v2.select_quarter_end({}, lambda n, leader: includes)["recommended"])
+
+    def test_the_choice_refuses_the_outer_block(self):
+        outer = [{"date": "2023-01-03", "anchor": "2022-12-30", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary"}]
+        with self.assertRaises(ValueError):
+            v2.quarter_end_choice({"base": outer}, [], {}, [], None)
+
+    def test_a_cell_under_the_minimum_gets_no_interval(self):
+        # Ruling item 4: under `CONDITIONAL_GATES["minimum_days"]` days a diagnostic cell carries no interval.
+        vector = [-4.0, -1.0, 0.0, 1.0, 4.0]
+        few = [{"date": f"2020-03-{k:02d}", "y": 0.5, "v": vector} for k in range(1, 6)]
+        cell = v2._diagnostic_cell(few, "v", ("t",))
+        self.assertEqual(cell["days"], 5)
+        self.assertEqual(cell["band_50"]["interval"], "too few days")
+        self.assertNotIn("lower", cell["band_50"])
+        self.assertNotIn("lower", cell["band_90"])
+        many = [dict(d, date=f"2020-04-{k:02d}") for k, d in enumerate(few * 5, 1)]
+        cell = v2._diagnostic_cell(many, "v", ("t",))
+        self.assertIn("lower", cell["band_50"])
 
 
 def _sha(rows):
