@@ -61,6 +61,25 @@ gh issue list --repo eleonorabjornberg/repo-market-model --label needs-eleonora
 **Keep the roadmap honest.** `docs/pivot/plan.md` §7 is the sequence. A pull request that completes a step updates
 that step's line in the same pull request, so the plan never lags the tree.
 
+## Confirmed exceptions to "never merges"
+
+The planning-session line above ("It never merges") stays as written. This note records what Eleonora herself
+confirmed about the process record. It quotes her own comment on #269, which she typed in the web UI
+(`performed_via_github_app` null, per #256), unedited:
+<https://github.com/eleonorabjornberg/repo-market-model/issues/269#issuecomment-6019863374>
+
+> #153 and #236 were my merges. I made the switch call without reviewing 2026 data, because leaps were less relevant to the actual spread I'm trying to forecast.
+
+So #153 and #236 are recorded as her merges, and the 4 October primary-cell switch as her call. Nothing here
+records more than she wrote.
+
+## Market colour stays off repository threads
+
+Decided by Eleonora, 6 October 2026 (#269, item 15; context #219). Commentary about market conditions on days in the
+blind tier of `docs/decisions/lockbox.md` is kept off repository threads (issues, pull requests, comments and
+commit messages) until those days are scored. It protects the blind tier: a comment on what the market did is
+information about outcomes that no forecast built afterwards may be seen to have used.
+
 ## Legacy gates
 
 The ownership gate, its CI job and its Claude Code hook are retired, by directive 04.
@@ -76,6 +95,7 @@ escalates instead of merging (the pull request labelled `needs-eleonora`) when t
 - changes `docs/decisions/` beyond recording a decision its directive says she has made;
 - states a verdict on an exit criterion, or a public claim not generated from a record;
 - lacks a required recorded mutation, or one that was not killed, or has any `expectedFailure`;
+- changes `metadata/lockbox.json`, which opens a lockbox tier: opening one decides what has been seen;
 - moves the panel digest when its directive does not rebuild the panel, or reaches well outside its directive;
 - leaves the reviewer unsure.
 

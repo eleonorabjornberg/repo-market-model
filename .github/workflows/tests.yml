@@ -2,9 +2,9 @@ name: tests
 
 on:
   pull_request:
-    branches: [main, improvements]
+    branches: [main]
   push:
-    branches: [main, improvements]
+    branches: [main]
   # Weekly run on main, so a change in the runner image or a dependency surfaces
   # between one merge and the next Monday.
   schedule:
