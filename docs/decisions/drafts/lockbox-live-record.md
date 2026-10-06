@@ -1,9 +1,12 @@
 # Draft amendment to `lockbox.md`: the live record
 
 **Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #215, as that directive
-asks. It takes effect only when Eleonora merges the section below into `docs/decisions/lockbox.md`, under the
-heading it carries. Until then `scripts/live_score.py` refuses to run at all: it reads that heading in
-`lockbox.md`, not in this file.
+asks, and amended by the one that closes #277. It takes effect only when Eleonora merges the
+section below into `docs/decisions/lockbox.md`, under the heading it carries. Since #277
+(Eleonora's ruling on #269 item 6), `scripts/live_score.py` no longer reads that heading: it scores only through
+`lockbox.require_unlocked`, so it refuses any day `metadata/lockbox.json` has not opened. A scoring date opens
+only the days before it, by splitting the blind tier there (`lockbox.split_tier`); committing that split is
+Eleonora's own action (#256).
 
 The section to merge, as drafted:
 

@@ -349,13 +349,13 @@ NOT_ENTRY_POINTS = {
         "the live record's forecast loop (#215): trains and forecasts as the as-of "
         "information set allows, computes no metric and scores no day "
         "(docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
-        "only once the lockbox amendment is merged"
+        "through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
     ),
     "scripts/live_record.distribution_run": (
         "the live record's distribution loop (#215): trains and forecasts the published "
         "distribution and as-of persistence as the as-of information set allows, "
         "computes no loss and scores no day (docs/decisions/lockbox.md); "
-        "scripts/live_score.py scores the record, only once the lockbox amendment is merged"
+        "scripts/live_score.py scores the record, through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
     ),
     "scripts/live_record.require_reads_on_real_rows": (
         "checks one live forecast's reads against the placeholder rows (#215); "
