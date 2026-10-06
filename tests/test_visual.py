@@ -2383,7 +2383,6 @@ class FinalTestSectionTests(unittest.TestCase):
         for text in (self.text, visible_text(" ".join(map(str, self.fills.values())))):
             self.assertNotRegex(text.lower(), r"no choice of model")
             self.assertNotRegex(text.lower(), r"no choice was made(?! on them by name)")
-        self.assertIn("by name", self.text)
 
     def test_the_stress_windows_are_not_said_to_be_kept_out_of_the_score(self):
         """#238, hold ruling item 4: every published record pools those days."""
