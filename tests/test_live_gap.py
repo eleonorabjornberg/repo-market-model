@@ -13,8 +13,9 @@ These tests pin, before any gap day is scored:
   targets (`GapBoundaryTests`);
 * that no target day is in both the gap and the live record at the same
   horizon (`GapBoundaryTests`);
-* that scoring a gap day refuses before 2027-04-01, after it, or while the
-  amendment heading is absent from `lockbox.md` (`GapGuardTests`);
+* that scoring a gap day refuses before 2027-04-01 and after it
+  (`GapGuardTests`); the lockbox guard on those days is in `test_live_lockbox.py`
+  (#277);
 * that every gap cell carries its labels verbatim and never reaches the
   verdict (`GapScoringTests`);
 * that a reconstructed forecast is never a live record and is never written
@@ -36,6 +37,7 @@ from pathlib import Path
 from repo_model.data import CALENDAR_COLUMN_RULES, DailyObservation
 from repo_model.evaluation_splits import load_split_declaration
 
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 from test_live_record import ROOT, SPLITS, _record, _script, live, score
 
 gap = _script("live_gap")
@@ -57,16 +59,6 @@ def _first_live_record():
     for h, day in FIRST_LIVE_TARGETS.items():
         record["targets"][h - 1]["target_date"] = day
     return record
-
-
-def _amended_lockbox(tmp):
-    path = Path(tmp) / "lockbox.md"
-    path.write_text(
-        (ROOT / "docs" / "decisions" / "lockbox.md").read_text(encoding="utf-8")
-        + "\n" + score.AMENDMENT_HEADING + "\n\nText.\n",
-        encoding="utf-8",
-    )
-    return path
 
 
 def _gap_record(day, published, persistence):
@@ -182,10 +174,11 @@ class GapBoundaryTests(unittest.TestCase):
 
 
 class GapGuardTests(unittest.TestCase):
-    """Scoring a gap day refuses before 2027-04-01, after it, or without the amendment heading.
+    """Scoring a gap day refuses before 2027-04-01 and after it.
 
-    The refusal is a `ValueError`, the type the live score's lockbox guard
-    (`require_amendment`) raises.
+    The refusal is a `ValueError`. The lockbox guard is separate and covered in
+    `test_live_lockbox.py` (#277): the gap's days are scored through
+    `lockbox.require_unlocked` like every other scored day.
 
     Mutation record (#235). In a disposable copy, `live_score.require_gap_scoring`'s
     date check (`if day != GAP_SCORING_DATE:`) changed to `if day > GAP_SCORING_DATE:`,
@@ -196,41 +189,28 @@ class GapGuardTests(unittest.TestCase):
     """
 
     def test_a_date_before_the_first_scoring_date_is_refused(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            lockbox = _amended_lockbox(tmp)
-            for day in (date(2026, 10, 6), date(2027, 3, 31)):
-                with self.subTest(day=day):
-                    with self.assertRaises(ValueError):
-                        score.require_gap_scoring(day, lockbox)
+        for day in (date(2026, 10, 6), date(2027, 3, 31)):
+            with self.subTest(day=day):
+                with self.assertRaises(ValueError):
+                    score.require_gap_scoring(day)
 
     def test_a_later_scoring_date_is_refused(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            lockbox = _amended_lockbox(tmp)
-            for day in (date(2027, 4, 2), date(2027, 10, 1), date(2028, 10, 1)):
-                with self.subTest(day=day):
-                    with self.assertRaises(ValueError):
-                        score.require_gap_scoring(day, lockbox)
+        for day in (date(2027, 4, 2), date(2027, 10, 1), date(2028, 10, 1)):
+            with self.subTest(day=day):
+                with self.assertRaises(ValueError):
+                    score.require_gap_scoring(day)
 
-    def test_the_tracked_lockbox_has_no_amendment_so_the_gap_is_refused(self):
-        with self.assertRaises(ValueError):
-            score.require_gap_scoring(date(2027, 4, 1), ROOT / "docs" / "decisions" / "lockbox.md")
-
-    def test_the_first_scoring_date_with_the_amendment_passes(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            score.require_gap_scoring(date(2027, 4, 1), _amended_lockbox(tmp))
+    def test_the_first_scoring_date_passes(self):
+        score.require_gap_scoring(date(2027, 4, 1))
 
     def test_the_scorer_refuses_before_reading_a_cell(self):
         records = _gap_records(SHARP, WIDE)
         rows = _outcomes(date(2026, 8, 3), date(2026, 10, 30))
         splits = load_split_declaration(SPLITS)
-        with tempfile.TemporaryDirectory() as tmp:
-            lockbox = _amended_lockbox(tmp)
-            for day, path in ((date(2027, 3, 31), lockbox), (date(2027, 10, 1), lockbox),
-                              (date(2027, 4, 1), ROOT / "docs" / "decisions" / "lockbox.md")):
-                with self.subTest(day=day, lockbox=path.name):
-                    with self.assertRaises(ValueError):
-                        score.score_gap(records, _first_live_record(), rows, splits, day,
-                                        lockbox=path)
+        for day in (date(2027, 3, 31), date(2027, 10, 1)):
+            with self.subTest(day=day):
+                with self.assertRaises(ValueError):
+                    score.score_gap(records, _first_live_record(), rows, splits, day)
 
     def test_the_draft_carries_the_gap_bullet_and_its_label(self):
         draft = ROOT / "docs" / "decisions" / "drafts" / "lockbox-live-record.md"
@@ -245,17 +225,11 @@ class GapScoringTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.splits = load_split_declaration(SPLITS)
-        cls.tmp = tempfile.TemporaryDirectory()
-        cls.lockbox = _amended_lockbox(cls.tmp.name)
         cls.rows = _outcomes(date(2026, 8, 3), date(2026, 12, 31))
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp.cleanup()
 
     def _gap(self, published=SHARP, persistence=WIDE):
         return score.score_gap(_gap_records(published, persistence), _first_live_record(),
-                               self.rows, self.splits, date(2027, 4, 1), lockbox=self.lockbox)
+                               self.rows, self.splits, date(2027, 4, 1))
 
     def test_each_horizon_scores_exactly_its_gap(self):
         block = self._gap()
@@ -306,7 +280,7 @@ class GapScoringTests(unittest.TestCase):
         for gap_records in (None, _gap_records(SHARP, WIDE), _gap_records(WIDE, SHARP)):
             result = score.assemble(
                 live_records, rows, self.splits, date(2027, 4, 1), previous=[],
-                gap_records=gap_records, lockbox=self.lockbox,
+                gap_records=gap_records,
             )
             results.append(result)
         verdicts = [(r["primary_result"], r["headline_status"], r["crps"]["crps/h1"]["verdict"])
@@ -337,18 +311,18 @@ class GapScoringTests(unittest.TestCase):
         late = _gap_record(date(2026, 10, 5), SHARP, WIDE)
         with self.assertRaises(ValueError):
             score.score_gap(records + [late], _first_live_record(), self.rows, self.splits,
-                            date(2027, 4, 1), lockbox=self.lockbox)
+                            date(2027, 4, 1))
 
     def test_the_first_scoring_date_requires_the_gap_and_no_later_date_takes_it(self):
         live_records = _live_records(SHARP, WIDE, days=60)
         rows = _outcomes(date(2026, 8, 3), date(2027, 3, 31))
         with self.assertRaises(ValueError):
             score.assemble(live_records, rows, self.splits, date(2027, 4, 1), previous=[],
-                           gap_records=None, lockbox=self.lockbox, require_gap=True)
+                           gap_records=None, require_gap=True)
         with self.assertRaises(ValueError):
             score.assemble(live_records, rows, self.splits, date(2027, 10, 1),
                            previous=[{"date": "2027-04-01", "headline_status": "headline_verdict"}],
-                           gap_records=_gap_records(SHARP, WIDE), lockbox=self.lockbox)
+                           gap_records=_gap_records(SHARP, WIDE))
 
 
 class GapRecordTests(unittest.TestCase):
