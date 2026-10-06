@@ -65,7 +65,7 @@ from repo_model import onset  # noqa: E402
 from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
 from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
-from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration  # noqa: E402
 
 LOCKBOX = REPO / "docs" / "decisions" / "lockbox.md"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
@@ -214,7 +214,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
                 regimes.append(splits.regime(when))
             except ValueError:
                 regimes.append("undeclared")
-            types.append(splits.day_type(row.values))
+            types.append(splits.reporting_day_type(when, row.values))
         primary = h == HEADLINE["horizon"]
         cell = {"days": len(days), "role": "primary" if primary else "reported only",
                 "first": days[0].isoformat() if days else None,
@@ -305,7 +305,7 @@ def score(records, rows, splits, day: date) -> dict:
                     regimes.append(splits.regime(when))
                 except ValueError:
                     regimes.append("undeclared")
-                types.append(splits.day_type(row.values))
+                types.append(splits.reporting_day_type(when, row.values))
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
@@ -532,6 +532,7 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
             "logged_days": [record["decision_day"] for record in records],
             "sign_convention": SIGN,
             "minimum_events": onset.MINIMUM_EVENTS,
+            "month_end_rule": MONTH_END_RULE,
             "headline": HEADLINE,
             "crps_sign_convention": CRPS_SIGN,
             "primary_result": headline.get("result"),
