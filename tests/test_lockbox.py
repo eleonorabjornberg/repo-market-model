@@ -18,6 +18,14 @@ What is held here:
   code (`src/repo_model/` and `scripts/`): a new function that selects scored
   days, or a new CLI subcommand, fails here until it is classified;
 * an opened tier is allowed, and opening needs a ruling reference.
+
+**Since #151 opened the near-blind tier** (2026-10-05, Eleonora's "GO #151"),
+the tracked declaration locks the blind tier only. `TrackedDeclarationTests`
+and `TrackedGuardTests` hold that. The guard tests (`LockedScoredDayTests`,
+`CommandTests`, `ScriptTests`) keep their synthetic panels, dated around
+2026-01-01, and score them under `relocked_declaration`: the tracked file with
+every tier's `opened` set back to `null`, as it stood before #151. Their
+refusals and mutation records are unchanged.
 """
 
 from __future__ import annotations
@@ -57,6 +65,25 @@ TRACKED = Path(__file__).resolve().parents[1] / "metadata" / "lockbox.json"
 
 FEATURES = ("spread_bps",)
 DECISION_TIME = time(16, 0)
+
+
+def relocked_declaration(testcase):
+    """The tracked declaration with every tier locked, as it stood before #151.
+
+    Patched in as `lockbox.DEFAULT_LOCKBOX` for the rest of `testcase`.
+    """
+
+    document = json.loads(TRACKED.read_text(encoding="utf-8"))
+    for tier in document["tiers"]:
+        tier["opened"] = None
+    directory = tempfile.TemporaryDirectory()
+    testcase.addCleanup(directory.cleanup)
+    path = Path(directory.name) / "lockbox.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    patcher = mock.patch.object(lockbox, "DEFAULT_LOCKBOX", path)
+    patcher.start()
+    testcase.addCleanup(patcher.stop)
+    return path
 TAUS = (5.0, 10.0, 20.0, 50.0)
 MINIMUM_HISTORY = 10
 FIRST_LOCKED = date(2026, 1, 1)
@@ -340,6 +367,12 @@ NOT_ENTRY_POINTS = {
         "onset post-mortem (#214); compares nothing, and walks _as_of_folds, "
         "which refuses a locked day (tests/test_onset_post_mortem.py)"
     ),
+    "scripts/final_test_opening.distribution_walk": (
+        "the final test opening's walk of the published distribution and as-of "
+        "persistence at h = 2 to 5 (#151), reported only; it refuses a locked "
+        "scored day itself before any fit (tests/test_final_test_opening.py, "
+        "WindowGuardTests)"
+    ),
     "scripts/onset_post_mortem.gauge_history": (
         "finds the first fold-grid day whose state is public (#214); reads no "
         "outcome and scores nothing, as_of_reads walks the guarded grid"
@@ -350,16 +383,51 @@ NOT_ENTRY_POINTS = {
 class TrackedDeclarationTests(unittest.TestCase):
     """`metadata/lockbox.json` says what `docs/decisions/lockbox.md` decided."""
 
-    def test_the_tracked_tiers_are_the_decided_ones_and_both_are_locked(self):
+    def test_the_tracked_tiers_are_the_decided_ones_and_only_the_blind_one_is_locked(self):
         tiers = lockbox.load_lockbox()
         self.assertEqual(lockbox.DEFAULT_LOCKBOX.resolve(), TRACKED)
         self.assertEqual(
-            [(tier.name, tier.start, tier.end, tier.opened) for tier in tiers],
+            [(tier.name, tier.start, tier.end) for tier in tiers],
             [
-                ("near_blind", date(2026, 1, 1), date(2026, 9, 3), None),
-                ("blind", date(2026, 9, 4), None, None),
+                ("near_blind", date(2026, 1, 1), date(2026, 9, 3)),
+                ("blind", date(2026, 9, 4), None),
             ],
         )
+        # Opened once, by #151, on Eleonora's go; the blind tier stays locked.
+        opened_on, ruling = tiers[0].opened
+        self.assertEqual(opened_on, date(2026, 10, 5))
+        self.assertIn("GO #151", ruling)
+        self.assertIsNone(tiers[1].opened)
+
+
+class PreOpeningFixtureTests(unittest.TestCase):
+    """`lockbox_support.PRE_OPENING_LOCKBOX` is the tracked declaration with both tiers locked."""
+
+    def test_it_differs_from_the_tracked_file_only_in_opened(self):
+        from lockbox_support import PRE_OPENING_LOCKBOX
+
+        tracked = json.loads(TRACKED.read_text(encoding="utf-8"))
+        fixture = json.loads(PRE_OPENING_LOCKBOX.read_text(encoding="utf-8"))
+        self.assertEqual(fixture["version"], tracked["version"])
+        self.assertEqual(
+            [{k: v for k, v in tier.items() if k != "opened"} for tier in fixture["tiers"]],
+            [{k: v for k, v in tier.items() if k != "opened"} for tier in tracked["tiers"]],
+        )
+        self.assertEqual([tier["opened"] for tier in fixture["tiers"]], [None, None])
+        self.assertEqual([tier.name for tier in lockbox.locked_tiers(PRE_OPENING_LOCKBOX)],
+                         ["near_blind", "blind"])
+
+
+class TrackedGuardTests(unittest.TestCase):
+    """Under the tracked declaration a near-blind day scores and a blind-tier day is refused."""
+
+    def test_a_near_blind_day_is_ordinary_history(self):
+        lockbox.require_unlocked([date(2026, 1, 2), date(2026, 9, 3)], where="test")
+
+    def test_a_blind_tier_day_is_refused(self):
+        with self.assertRaises(LookAheadError) as caught:
+            lockbox.require_unlocked([date(2026, 9, 3), date(2026, 9, 4)], where="test")
+        self.assertIn("scored day 2026-09-04 is in the locked blind tier", str(caught.exception))
 
 
 class MalformedDeclarationTests(unittest.TestCase):
@@ -443,7 +511,12 @@ class LockedScoredDayTests(unittest.TestCase):
     are checked and a locked one never is. Kills
     `test_every_entry_point_refuses_a_locked_scored_day`, which raised
     `AssertionError: LookAheadError not raised` at every entry point.
+
+    Scored under `relocked_declaration` since #151 opened the near-blind tier.
     """
+
+    def setUp(self):
+        relocked_declaration(self)
 
     def test_every_entry_point_refuses_a_locked_scored_day(self):
         rows = crossing_panel()
@@ -520,6 +593,7 @@ class LockedTierTests(unittest.TestCase):
     def declaration(self, opened=()):
         document = json.loads(TRACKED.read_text(encoding="utf-8"))
         for tier in document["tiers"]:
+            tier["opened"] = None
             if tier["name"] in opened:
                 tier["opened"] = {"date": "2026-10-02",
                                   "ruling": "a test fixture standing in for Eleonora's ruling"}
@@ -529,8 +603,8 @@ class LockedTierTests(unittest.TestCase):
         path.write_text(json.dumps(document), encoding="utf-8")
         return path
 
-    def test_the_tracked_declaration_locks_both_tiers(self):
-        self.assertEqual([tier.name for tier in lockbox.locked_tiers()], ["near_blind", "blind"])
+    def test_the_tracked_declaration_locks_the_blind_tier_only(self):
+        self.assertEqual([tier.name for tier in lockbox.locked_tiers()], ["blind"])
 
     def test_an_opened_tier_is_ordinary_history(self):
         tiers = lockbox.locked_tiers(self.declaration(opened=("near_blind",)))
@@ -556,8 +630,13 @@ class CommandTests(EventHoldoutHarness):
     """Every scoring subcommand refuses a locked day; `--end` scores before it.
 
     The panel is `EventHoldoutHarness`'s: business days from 2025-11-03, its
-    event window in January 2026.
+    event window in January 2026. Scored under `relocked_declaration` since
+    #151 opened the near-blind tier.
     """
+
+    def setUp(self):
+        super().setUp()
+        relocked_declaration(self)
 
     def argv(self, command, end=None):
         report = str(self.tmp / f"{command}.json")
@@ -660,11 +739,13 @@ class ScriptTests(EventHoldoutHarness):
     whole, each script's fold walk reaches the guard and is refused; with
     `--end` before the tier, it walks to its end and reports. So a change to
     `_as_of_folds`'s signature, or a script that stops reaching the guard,
-    fails here rather than on the next hand run.
+    fails here rather than on the next hand run. Scored under
+    `relocked_declaration` since #151 opened the near-blind tier.
     """
 
     def setUp(self):
         super().setUp()
+        relocked_declaration(self)
         # Long enough before the tier for a two-regime fit at the first origin.
         self.days = business_days(date(2025, 6, 2), 170)
         self.panel = self.write_panel()

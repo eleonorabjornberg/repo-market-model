@@ -26,6 +26,12 @@ from unittest import mock
 from repo_model import lockbox
 
 SYNTHETIC_LOCKBOX = Path(__file__).resolve().parent / "fixtures" / "lockbox_synthetic.json"
+#: The tracked declaration as it stood before #151 opened the near-blind tier:
+#: both tiers locked. Tests of the guard and of the greyed days keep their
+#: panels dated around 2026-01-01 and read this one; `test_lockbox.py`
+#: (`PreOpeningFixtureTests`) checks it differs from the tracked file only in
+#: `opened`.
+PRE_OPENING_LOCKBOX = Path(__file__).resolve().parent / "fixtures" / "lockbox_pre_opening.json"
 
 _patch = mock.patch.object(lockbox, "DEFAULT_LOCKBOX", SYNTHETIC_LOCKBOX)
 

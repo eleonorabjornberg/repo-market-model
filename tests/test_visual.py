@@ -19,6 +19,8 @@ import unittest
 from pathlib import Path
 
 from repo_model import lockbox
+
+from lockbox_support import PRE_OPENING_LOCKBOX
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -329,6 +331,11 @@ class HeldOutDayTests(unittest.TestCase):
 
     The tiers are read from `metadata/lockbox.json` through
     `repo_model.lockbox.locked_tiers`; a tier marked opened is ordinary history.
+    Since #151 opened the near-blind tier, the published panel reaches no locked
+    day, so these tests read `PRE_OPENING_LOCKBOX` (both tiers locked), and only
+    the page itself is checked under the tracked declaration. The mutation below
+    was re-run then: every test but test_the_panel_reaches_a_locked_tier and
+    test_the_page_draws_and_captions_the_held_out_days failed with AssertionError.
 
     Recorded mutation: `return [r for r in rows if locked_tier(...) is None]`
     -> `return list(rows)` in `counted`. Every test below except
@@ -349,7 +356,7 @@ class HeldOutDayTests(unittest.TestCase):
                       (emit_visual.ANNOTATIONS, emit_visual.THRESHOLDS)]
         cls.inputs += [emit_visual.read_json(emit_visual.SPLITS, ROOT)["regimes"],
                        emit_visual.read_json(emit_visual.EVENTS, ROOT)["windows"]]
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
 
     def history(self, rows, locked):
@@ -439,7 +446,9 @@ class HeldOutDayTests(unittest.TestCase):
     def test_the_page_draws_and_captions_the_held_out_days(self):
         self.assertIn("held out", self.page)
         self.assertIn("docs/decisions/lockbox.md", self.page)
-        shown = emit_visual.counted(self.rows, self.locked)[-1]["date"]
+        # The page is drawn under the tracked declaration, not the pre-opening one.
+        tracked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        shown = emit_visual.counted(self.rows, tracked)[-1]["date"]
         self.assertIn(f"Rates on {emit_visual.day(shown)}", self.page)
 
 
@@ -699,7 +708,7 @@ class NewcomerHeldOutDayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
         cls.rows = list(csv.DictReader(raw.decode().splitlines()))
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
         cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
 
@@ -782,7 +791,7 @@ class NewcomerN2Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.rows = panel_rows()
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
         cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
@@ -945,7 +954,7 @@ class NewcomerN3Base(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
         cls.rows = list(csv.DictReader(raw.decode().splitlines()))
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
         cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
         cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
@@ -1164,7 +1173,7 @@ class NewcomerBandBase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
         cls.rows = list(csv.DictReader(raw.decode().splitlines()))
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
         cls.thresholds = json.loads((ROOT / emit_visual.THRESHOLDS).read_text(encoding="utf-8"))
         cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
@@ -1788,7 +1797,7 @@ class SegmentDayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
         cls.rows = list(csv.DictReader(raw.decode().splitlines()))
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
         cls.on_rrp, _ = emit_visual.on_rrp_results(ROOT)
         cls.decision = emit_visual.time.fromisoformat(manifest["decision_time"])
@@ -1833,7 +1842,7 @@ class SegmentDayTests(unittest.TestCase):
 
     def test_a_locked_day_is_never_chosen(self):
         """Under a tier that starts inside 2025, its days drop out, and perturbing them changes nothing."""
-        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        document = json.loads(PRE_OPENING_LOCKBOX.read_text(encoding="utf-8"))
         document["tiers"][0]["start"] = "2025-07-01"
         import tempfile
         directory = tempfile.TemporaryDirectory()
@@ -1887,7 +1896,7 @@ class NewcomerN5Base(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
         cls.rows = list(csv.DictReader(raw.decode().splitlines()))
-        cls.locked = lockbox.locked_tiers(ROOT / emit_visual.LOCKBOX)
+        cls.locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
         cls.registry = json.loads((ROOT / emit_visual.SOURCES).read_text(encoding="utf-8"))
         cls.notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
         cls.tag_map = json.loads((ROOT / emit_visual.MAP).read_text(encoding="utf-8"))
@@ -1956,7 +1965,7 @@ class NewcomerN5RuleTests(NewcomerN5Base):
         self.assertEqual(self.choose(moved), self.chosen)
 
     def test_a_locked_day_is_never_chosen(self):
-        document = json.loads((ROOT / emit_visual.LOCKBOX).read_text(encoding="utf-8"))
+        document = json.loads(PRE_OPENING_LOCKBOX.read_text(encoding="utf-8"))
         document["tiers"][0]["start"] = "2025-07-01"
         import tempfile
         directory = tempfile.TemporaryDirectory()

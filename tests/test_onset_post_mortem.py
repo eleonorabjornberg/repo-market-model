@@ -19,11 +19,14 @@ import tempfile
 import unittest
 from datetime import date, time
 from pathlib import Path
+from unittest import mock
 
 from repo_model import onset
 from repo_model.data import DailyObservation, exceeds_bp
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
+
+from lockbox_support import PRE_OPENING_LOCKBOX
 
 ROOT = Path(__file__).resolve().parents[1]
 END = date(2025, 12, 31)
@@ -68,21 +71,25 @@ class OnsetPostMortemTests(unittest.TestCase):
 
     # -- the lockbox ---------------------------------------------------------
 
+    # Under the declaration as it stood before #151 opened the near-blind tier.
+
     def test_main_refuses_an_end_in_the_locked_tier_before_anything_is_built(self):
-        with self.assertRaisesRegex(LookAheadError, r"^onset_post_mortem: scored day 2026-01-05"):
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX), \
+                self.assertRaisesRegex(LookAheadError, r"^onset_post_mortem: scored day 2026-01-05"):
             self.pm.main(["--end", LOCKED.isoformat()])
 
     def test_the_as_of_reads_refuse_a_locked_scored_day(self):
         from repo_model.scarcity import measurement_declaration
 
-        with measurement_declaration(), self.assertRaisesRegex(LookAheadError, "locked"):
+        with measurement_declaration(), mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX), \
+                self.assertRaisesRegex(LookAheadError, "locked"):
             self.pm.as_of_reads(
                 self.rows, self.registry, decision_time=self.decision, minimum_history=61, end=LOCKED
             )
 
     def test_onset_days_refuses_a_locked_scored_day(self):
         locked = [row.date for row in self.rows if END < row.date <= LOCKED]
-        with self.assertRaises(LookAheadError):
+        with mock.patch("repo_model.lockbox.DEFAULT_LOCKBOX", PRE_OPENING_LOCKBOX), self.assertRaises(LookAheadError):
             self.pm.onset_days(self.rows, self.scored + locked, self.declaration)
 
     def test_no_scored_day_is_locked(self):
