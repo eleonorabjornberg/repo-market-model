@@ -839,8 +839,11 @@ def final_test_section():
         "walk-forward by recency-weighted Platt, on all window days. Each paired cell is the "
         "baseline's Brier score minus the model's, with its 90%% interval; a positive value favours "
         "the model. Below %d events a cell is labelled inconclusive. None of these cells passes or "
-        "fails the test, and a leap is not a stress warning."
-        % require(record, "events_reported_only")[0]["minimum_events"])
+        "fails the test, and a leap is not a stress warning. At h = 1 a plain leap is a rise of at "
+        "least %g bp over the as-of anchor two rows back, not over the previous day, so a day-on-day "
+        "rise is not always one."
+        % (require(record, "events_reported_only")[0]["minimum_events"],
+           require(record, "events_reported_only")[0]["leap_threshold_bp"]))
     add("")
     add("| Horizon | Target | Events | Brier, model | vs calendar climatology | vs persistence-logistic |")
     add("|---|---|---|---|---|---|")
@@ -1430,12 +1433,12 @@ def status_line():
     if closed:
         still_open += ", after %s closed for now" % " and ".join(
             "phase %d, %s," % (item["number"], item["name"]) for item in closed)
-    lines.append("**Where this is: phase %d of %d — %s (%s)%s.** Its exit criterion is "
+    lines.append("**Where this is: phase %d of %d (numbered from 0) — %s (%s)%s.** Its exit criterion is "
                  "%s. Next is phase %d, %s. The machine-readable version is "
                  "[`docs/status.json`](docs/status.json), regenerated from the same "
                  "headings in the pull request that changes them, and checked in CI, "
                  "rather than edited."
-                 % (phase["number"], len(phases) - 1, phase["name"], state, still_open,
+                 % (phase["number"], len(phases), phase["name"], state, still_open,
                     emit_status.require_exit(phase, "the current phase"),
                     following["number"], following["name"]))
     lines.append("")
