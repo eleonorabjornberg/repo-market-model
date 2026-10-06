@@ -49,6 +49,7 @@ from .metrics import MetricError, stationary_bootstrap_interval
 __all__ = [
     "DAY_TYPE_COLUMNS",
     "QUARTER_END_WINDOW_GROUPS",
+    "MONTH_END_RULE",
     "SplitDeclaration",
     "load_split_declaration",
     "quarter_end_window_label",
@@ -65,6 +66,18 @@ DAY_TYPES = ("quarter_end", "month_end", "tax_date", "ordinary")
 #: The quarter-end window split, reported beside `DAY_TYPES`: every scored day
 #: is in exactly one of the two groups.
 QUARTER_END_WINDOW_GROUPS = ("quarter_end_window", "outside_quarter_end_window")
+
+
+#: How the reporting split reads month-end (#278, Eleonora's ruling of 6 October
+#: 2026 on #269, item 16). A result scored by `SplitDeclaration.reporting_day_type`
+#: carries it, so a reader cannot compare it with the old calendar-day split
+#: unawares. `document()` does not: it describes the declaration the frozen
+#: reports were split by, and those still read `day_type`.
+MONTH_END_RULE = (
+    "month_end = the month's last 2 business days on the market calendar "
+    "(metadata/market_holidays.json); before #278 it was days_to_month_end <= "
+    "month_end_window_days calendar days"
+)
 
 
 def quarter_end_window_label(when: date) -> str:
@@ -114,6 +127,31 @@ class SplitDeclaration:
         if read["tax_date"] == 1.0:
             return "tax_date"
         return "ordinary"
+
+    def reporting_day_type(self, when: date, values: Mapping[str, Optional[float]]) -> str:
+        """The pressure-day type a result is *reported* by.
+
+        Same precedence as `day_type`, but `month_end` is one of the month's
+        last two business days on the market calendar
+        (`data.in_last_business_days_of_month`), read from `when`, not
+        `days_to_month_end` calendar days. `day_type` is unchanged: the
+        scorecaster's window (`recalibration.py`) and every model that groups by
+        it are part of the frozen model, and that window counts calendar days.
+        The mismatch is a v2 candidate.
+
+        Raises:
+            ValueError: as `day_type`, and if the market holiday table does not
+                cover `when`'s month.
+        """
+
+        from .data import in_last_business_days_of_month
+
+        kind = self.day_type(values)
+        if kind == "quarter_end":
+            return kind
+        if in_last_business_days_of_month(when):
+            return "month_end"
+        return "tax_date" if float(values["tax_date"]) == 1.0 else "ordinary"
 
     def regime(self, when: date) -> str:
         """The declared regime a date falls in.

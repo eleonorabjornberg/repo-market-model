@@ -201,7 +201,8 @@ path, the metric implementations, the two pressure-probability benchmarks and th
 declared regime and pressure-day-type splits. The records scored under the earlier purge
 rule read every input about a week late; they are archived in
 `docs/runs/archive/pre-asof/`, and what they showed is re-opened
-(`docs/pivot/lag-assessment.md` §4). The re-scored evidence is in `docs/runs/` and in the
+(`docs/pivot/lag-assessment.md` §4). The feature set was fixed without re-measuring those
+verdicts; re-scoring them belongs with next-version research. The re-scored evidence is in `docs/runs/` and in the
 generated sections of `README.md`: persistence, gbm uncalibrated and cross-conformal, and
 the published funding declaration, each paired against persistence; and their exceedance
 probabilities, each paired against the calendar-type climatology and the
