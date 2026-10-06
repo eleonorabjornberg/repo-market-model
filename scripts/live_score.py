@@ -28,9 +28,14 @@ was logged:
 * **The primary result's verdict** is fixed at the first scoring date that
   scores any day (CRPS has no minimum event count: every day counts). Every
   later date is an update and never replaces it (`headline_status`).
-* **The lockbox:** logged days are blind-tier days. Until the drafted amendment
-  (`docs/decisions/drafts/lockbox-live-record.md`) is merged into
-  `docs/decisions/lockbox.md`, this script refuses to run at all.
+* **The lockbox** (#277, Eleonora's ruling on #269 item 6): logged days are
+  blind-tier days, and this script scores them through the same mechanism as
+  every comparison. Every day it scores goes through
+  `lockbox.require_unlocked` (`_require_scored_days_unlocked`), which reads
+  `metadata/lockbox.json` and raises `LookAheadError` on a day in a tier that is
+  not opened. A scoring date opens only the days before it: `lockbox.split_tier`
+  splits the blind tier there, and committing that split is Eleonora's own
+  action (#256). No heading in `lockbox.md` gates the script.
 * **The blind gap** (Eleonora's ruling of 5 October 2026 on #235, "Option 2",
   and "keep reported only"): at each horizon, the target days after the panel
   end (2026-09-03) and before the first target day the live record carries
@@ -39,8 +44,8 @@ was logged:
   as a separate block (`score_gap`), from forecasts `scripts/live_gap.py`
   reconstructs at the pinned code. Every gap cell is reported only, carries
   `GAP_LABEL` verbatim and never reaches the verdict. Scoring a gap day on any
-  other date, or before the amendment heading is in `lockbox.md`, refuses
-  (`require_gap_scoring`, `ValueError`).
+  other date refuses (`require_gap_scoring`, `ValueError`), and its days go
+  through the lockbox guard like every other scored day.
 
 * **Integrity** (#254): before reading any record, the script verifies the
   live log (`load_records`, `scripts/live_integrity.py`'s `verify`). Every
@@ -75,11 +80,9 @@ from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interva
 from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration  # noqa: E402
+from repo_model.lockbox import require_unlocked  # noqa: E402
 
-LOCKBOX = REPO / "docs" / "decisions" / "lockbox.md"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
-#: The heading the drafted amendment carries; the guard reads it in lockbox.md.
-AMENDMENT_HEADING = "## Amendment: the live record (#215)"
 FIRST_SCORING_DATES = (date(2027, 4, 1), date(2027, 10, 1))
 #: The live record's primary result (ruling of 4 October 2026 on #215).
 HEADLINE = {"target": "crps", "horizon": 1}
@@ -209,15 +212,14 @@ def require_scoring_date(day: date) -> None:
         )
 
 
-def require_amendment(path: Path = LOCKBOX) -> None:
-    """Refuse to score until the lockbox amendment is merged into `path`."""
+def _require_scored_days_unlocked(days, *, where: str) -> None:
+    """Refuse a scored day in a tier `metadata/lockbox.json` has not opened (#277).
 
-    text = Path(path).read_text(encoding="utf-8")
-    if AMENDMENT_HEADING not in text.splitlines():
-        raise ValueError(
-            f"{path} carries no '{AMENDMENT_HEADING}': the live record's days are "
-            f"blind-tier days, opened only once Eleonora merges the amendment"
-        )
+    Raises:
+        LookAheadError: naming the tier and the first offending day.
+    """
+
+    require_unlocked([date.fromisoformat(str(day)) for day in days], where=where)
 
 
 def headline_status(day: date, *, days: int, previous) -> str:
@@ -301,6 +303,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
             persistence.append(crps_from_record(record, "persistence", h, row.spread_bps))
             regimes.append(_regime(splits, when))
             types.append(splits.reporting_day_type(when, row.values))
+        _require_scored_days_unlocked(days, where=f"live_score.score_crps h={h}")
         primary = h == HEADLINE["horizon"]
         cell = {"days": len(days), "role": "primary" if primary else "reported only",
                 "first": days[0].isoformat() if days else None,
@@ -390,6 +393,7 @@ def score(records, rows, splits, day: date) -> dict:
                     bench[name].append(record["baselines"][name]["forecasts"][str(h)][cell_name])
                 regimes.append(_regime(splits, when))
                 types.append(splits.reporting_day_type(when, row.values))
+            _require_scored_days_unlocked(days, where=f"live_score.score {cell_name} h={h}")
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
@@ -422,19 +426,20 @@ def score(records, rows, splits, day: date) -> dict:
 # -- the blind gap (#235) ------------------------------------------------------
 
 
-def require_gap_scoring(day: date, path: Path = LOCKBOX) -> None:
-    """Refuse to score a gap day except on the first scoring date, with the amendment merged.
+def require_gap_scoring(day: date) -> None:
+    """Refuse to score a gap day except on the first scoring date.
+
+    The gap's days are scored through `score_crps` and `score`, so
+    `lockbox.require_unlocked` guards each of them like any other scored day.
 
     Raises:
-        ValueError: on any date but `GAP_SCORING_DATE`, or while `path` carries
-            no `AMENDMENT_HEADING` (the type `require_amendment` raises).
+        ValueError: on any date but `GAP_SCORING_DATE`.
     """
 
     if day != GAP_SCORING_DATE:
         raise ValueError(
             f"the blind gap is scored once, on {GAP_SCORING_DATE}, not on {day} (#235)"
         )
-    require_amendment(path)
 
 
 def first_live_targets(record) -> dict:
@@ -540,7 +545,7 @@ def _as_gap_cell(cell) -> dict:
     return cell
 
 
-def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = LOCKBOX) -> dict:
+def score_gap(records, first_live, rows, splits, day: date) -> dict:
     """The blind gap's cells (#235), scored once: every one reported only.
 
     `records` are the reconstructed gap forecasts (`validate_gap_record`);
@@ -553,9 +558,10 @@ def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = L
     Raises:
         ValueError: before anything is read, unless `require_gap_scoring`
             passes; on a malformed or repeated gap record.
+        LookAheadError: on a gap day the lockbox has not opened.
     """
 
-    require_gap_scoring(day, lockbox)
+    require_gap_scoring(day)
     bounds = first_live_targets(first_live)
     for record in records:
         validate_gap_record(record)
@@ -590,7 +596,7 @@ def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = L
 
 
 def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
-             lockbox: Path = LOCKBOX, require_gap: bool = False) -> dict:
+             require_gap: bool = False) -> dict:
     """The scoring result: the live cells, the primary result, and the gap block apart.
 
     The primary result and its status are read off the live cells alone; the
@@ -626,7 +632,7 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
         first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
         if not first:
             raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
-        result["gap"] = score_gap(gap_records, first[0], rows, splits, day, lockbox=lockbox)
+        result["gap"] = score_gap(gap_records, first[0], rows, splits, day)
     return result
 
 
@@ -645,11 +651,10 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     day = date.fromisoformat(args.date)
     require_scoring_date(day)
-    require_amendment(LOCKBOX)
     if args.output.exists():
         raise ValueError(f"{args.output} exists: a result is published as a new record")
     if args.gap_dir is not None:
-        require_gap_scoring(day, LOCKBOX)
+        require_gap_scoring(day)
     elif day == GAP_SCORING_DATE:
         raise ValueError(f"{day} scores the blind gap in the same run (#235): pass --gap-dir")
 
