@@ -377,6 +377,16 @@ NOT_ENTRY_POINTS = {
         "finds the first fold-grid day whose state is public (#214); reads no "
         "outcome and scores nothing, as_of_reads walks the guarded grid"
     ),
+    "scripts/desk_outputs.distribution_history": (
+        "the desk outputs' walk of the published distribution and as-of "
+        "persistence at h = 1 to 5 (#232), reporting only; it refuses a locked "
+        "scored day itself before any fit (tests/test_desk_outputs.py, "
+        "HistoryLockboxTests)"
+    ),
+    "scripts/desk_outputs.scarcity_at": (
+        "reads the declared scarcity state as of one forecast's decision instant "
+        "(#232) for display beside it; reads no outcome and scores nothing"
+    ),
 }
 
 
