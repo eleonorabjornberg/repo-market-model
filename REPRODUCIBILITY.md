@@ -25,7 +25,8 @@ re-run from their own `declaration` blocks; no script re-checks them yet.
   (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`. CI pins numpy 2.4.6
   and scikit-learn 1.9.1, and the rmm environment is to pin the same. A gbm record names the versions
   it was fitted with in `provenance.ml_libraries`; the records in `docs/runs/` were
-  fitted with numpy 2.0.2 and scikit-learn 1.6.1, and a re-run under other versions
+  fitted with numpy 2.4.6 and scikit-learn 1.9.1 (the archived pre-as-of records with
+  numpy 2.0.2 and scikit-learn 1.6.1), and a re-run under other versions
   is a new measurement, not a reproduction
 - commands run from the repository root
 
@@ -232,8 +233,8 @@ tier. With it, it is the record's declaration scored through 2025, which is not
 the published record, and the record states `declaration.end`.
 
 The command names **no columns**, and that is load-bearing. The default is every
-declared column: seventeen are built and four are recorded in `refused_columns` with
-the reason the pricing function gives. Naming only the built columns produces the same
+declared column: each is built unless the pricing function refuses it, and a refusal is
+recorded in `refused_columns` with the reason the pricing function gives. Naming only the built columns produces the same
 panel bytes and an *empty* refusal record, which `tests/test_data.py` refuses -- and
 naming the refused ones as well does not run at all: `--column` treats a column it
 cannot price as an error, not as a refusal. The refusal record exists only on the

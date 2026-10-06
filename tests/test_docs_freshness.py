@@ -65,6 +65,7 @@ import subprocess
 import shlex
 import sys
 import unittest
+import warnings
 
 from repo_model import cli
 
@@ -100,52 +101,54 @@ DAY_MONTH_YEAR = re.compile(
 MONTH_YEAR = re.compile(r"\b(" + "|".join(MONTHS) + r")\s+(\d{4})\b")
 
 
-def ignored_by_git(root):
-    """What git would leave out of a clone of `root`, or None if git cannot say.
-
-    Untracked, ignored entries, with an ignored directory reported once as
-    `dir/` rather than file by file. None when `root` is not a git work tree --
-    a disposable mutation copy is not one -- and the caller then reads what it
-    always read: the walk, less `EXCLUDED_PREFIXES`.
-    """
+def tracked_markdown(root):
+    """Every Markdown path git tracks under `root`, or None if git cannot say."""
     try:
         listed = subprocess.run(
-            [
-                "git", "-C", str(root), "ls-files", "-z", "--others",
-                "--ignored", "--exclude-standard", "--directory",
-            ],
+            ["git", "-C", str(root), "ls-files", "-z", "--", "*.md"],
             capture_output=True,
             check=True,
         ).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
-    return tuple(
+    return [
         entry for entry in listed.decode("utf-8", "surrogateescape").split("\0")
         if entry
-    )
+    ]
 
 
 def published_markdown(root=REPO_ROOT):
     """Every Markdown file a clone of this repository would contain.
 
-    The walk alone answers a different question -- every Markdown file on this
-    disk -- and the two came apart when a worktree grew a `.venv/`: this guard
-    then read the READMEs of installed packages as published pages, and a
-    package's release date or its own test count would have failed the suite of
-    a repository that never shipped it. See `PublishedScopeTests`.
+    A clone receives what git tracks, so that is the scope: `git ls-files
+    '*.md'`. An untracked scratch file (`review/REPORT.md`) is not published
+    and cannot fail the suite; a walk of the disk answered a different question
+    -- every Markdown file on this disk -- and the two came apart when a
+    worktree grew a `.venv/` and then a review folder. See `PublishedScopeTests`
+    and `TrackedScopeTests`.
+
+    Where git cannot answer (a disposable mutation copy is not a work tree, or
+    git is missing), the walk is read, less `EXCLUDED_PREFIXES`, and a warning says so: the fallback is never silent.
     """
-    ignored = ignored_by_git(root) or ()
+    tracked = tracked_markdown(root)
+    if tracked is not None:
+        return [
+            (relative, root / relative)
+            for relative in sorted(tracked)
+            if not relative.startswith(EXCLUDED_PREFIXES)
+            and (root / relative).is_file()
+        ]
+    warnings.warn(
+        f"git cannot list tracked files under {root}: falling back to walking "
+        f"every Markdown file on disk",
+        stacklevel=2,
+    )
     found = []
     for path in sorted(root.rglob("*.md")):
         relative = path.relative_to(root).as_posix()
         if relative.startswith(".git/") or "/.git/" in f"/{relative}":
             continue
         if relative.startswith(EXCLUDED_PREFIXES):
-            continue
-        if any(
-            relative == entry or (entry.endswith("/") and relative.startswith(entry))
-            for entry in ignored
-        ):
             continue
         found.append((relative, path))
     return found
@@ -472,15 +475,16 @@ class PublishedScopeTests(unittest.TestCase):
     one it did not name, because no Markdown in that virtualenv happened to
     carry a date or a count. Latent is not absent.
 
-    **The repair.** Git says what it would leave out; paths under an ignored
-    entry are dropped. Where git cannot answer (a copy that is not a work
-    tree), the walk is what it was, so the repair narrows no existing scope.
+    **The repair.** Git says what a clone contains. It first did so by listing
+    what it ignores; the scope is now what git tracks (`TrackedScopeTests`),
+    which covers the ignored directory too. The mutation recorded on `1bef17a`
+    (the ignore filter reduced to `False`) no longer applies: the filter is
+    gone. This test stays as the anchor that an ignored directory is not read.
 
-    **Mutation, recorded on `1bef17a`, Python 3.10.12.** Filter removed from
-    `published_markdown` (the `any(...)` clause reduced to `False`): kills
-    `test_a_directory_git_ignores_is_not_published` alone, `AssertionError`
-    naming the planted README. Unmutated control green before and after. The
-    in-repo plant under that mutation reproduces the two failures above.
+    **Mutation, recorded on `25486ed`, Python 3.10.12.** `tracked_markdown`
+    made to return `None` (the walk runs): kills
+    `test_a_directory_git_ignores_is_not_published` as well, `AssertionError`
+    naming the planted README. Unmutated control green before and after.
     """
 
     def test_a_directory_git_ignores_is_not_published(self):
@@ -499,10 +503,83 @@ class PublishedScopeTests(unittest.TestCase):
             package.mkdir(parents=True)
             (package / "README.md").write_text("# pkg\n")
             (root / "NOTES.md").write_text("# notes\n")
+            subprocess.run(
+                ["git", "-C", str(root), "add", "NOTES.md"],
+                check=True,
+                capture_output=True,
+            )
             found = [relative for relative, _ in published_markdown(root)]
             # The anchor: a scope that reads nothing would also exclude the plant.
             self.assertIn("NOTES.md", found)
             self.assertNotIn(".venv/lib/python3.9/site-packages/pkg/README.md", found)
+
+
+class TrackedScopeTests(unittest.TestCase):
+    """Scope is what git tracks: a scratch file nobody committed is not published.
+
+    **The defect.** `published_markdown()` read every Markdown file on disk that
+    git did not *ignore*. An untracked scratch file such as `review/REPORT.md`
+    is not ignored, so a date or a test count in it failed the suite of a
+    repository that never shipped it (the hiring review of 6 October 2026,
+    finding 3).
+
+    **The repair.** `git ls-files '*.md'` is the scope. Where git cannot answer
+    (not a work tree, or no git), the walk is read and the fallback
+    warns, so it is never silent.
+
+    **Mutation, recorded on `25486ed`, Python 3.10.12.** `tracked_markdown`
+    made to return `None`, so the walk runs (the pre-repair scope): kills
+    `test_an_untracked_file_is_ignored_and_a_tracked_one_is_caught` alone,
+    `AssertionError` naming the untracked `review/REPORT.md`. Unmutated control
+    green before and after.
+    """
+
+    def _repository(self, tmp):
+        root = pathlib.Path(tmp)
+        try:
+            subprocess.run(
+                ["git", "init", "-q", str(root)], check=True, capture_output=True
+            )
+        except (OSError, subprocess.CalledProcessError):
+            self.skipTest("git is not available to say what it tracks")
+        return root
+
+    def test_an_untracked_file_is_ignored_and_a_tracked_one_is_caught(self):
+        import tempfile
+
+        forbidden = "Released 1 January 2999 with 4321 tests.\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repository(tmp)
+            (root / "review").mkdir()
+            (root / "review" / "REPORT.md").write_text(forbidden)
+            (root / "TRACKED.md").write_text(forbidden)
+            subprocess.run(
+                ["git", "-C", str(root), "add", "TRACKED.md"],
+                check=True,
+                capture_output=True,
+            )
+            found = [relative for relative, _ in published_markdown(root)]
+            self.assertIn("TRACKED.md", found)
+            self.assertNotIn("review/REPORT.md", found)
+            # The forbidden pattern really is one this suite forbids.
+            self.assertTrue(dates_in(forbidden))
+            self.assertTrue(COUNT_CLAIM.search(forbidden))
+
+    def test_without_git_the_walk_is_read_and_says_so(self):
+        import tempfile
+        import warnings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)  # not a work tree
+            (root / "NOTES.md").write_text("# notes\n")
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                found = [relative for relative, _ in published_markdown(root)]
+            self.assertIn("NOTES.md", found)
+            self.assertTrue(
+                any("falling back" in str(w.message) for w in caught),
+                "the fallback to the walk must say so",
+            )
 
 
 class PublishedDocumentTests(unittest.TestCase):
@@ -781,6 +858,51 @@ class PublishedPythonVersionTests(unittest.TestCase):
         )
 
 
+#: A library version in prose: "numpy 2.4.6", "scikit-learn 1.9.1".
+LIBRARY_VERSION = re.compile(r"\b(numpy|scikit-learn)\s+(\d+\.\d+\.\d+)\b")
+
+
+def ci_library_pins(root=REPO_ROOT):
+    """The versions the `ml` job installs: `"numpy==2.4.6" "scikit-learn==1.9.1"`."""
+    text = (root / ".github" / "workflows" / "tests.yml").read_text()
+    return {name: version for name, version in re.findall(r'"(numpy|scikit-learn)==([\d.]+)"', text)}
+
+
+class PublishedLibraryVersionTests(unittest.TestCase):
+    """A library version in published prose is the CI pin, or says it is archived (#267).
+
+    `REPRODUCIBILITY.md` said the records were fitted with numpy 2.0.2 and
+    scikit-learn 1.6.1 while CI's `ml` job, the records in `docs/runs/` and the
+    rmm environment all use 2.4.6 and 1.9.1. A version that describes the
+    archived pre-as-of records is allowed where the line or the one before it
+    says "archived".
+
+    Mutation, recorded on `REPRODUCIBILITY.md`: the fitted-with line set back to
+    "numpy 2.0.2" with the word "archived" removed from the line above ->
+    `AssertionError: [] != ['REPRODUCIBILITY.md:28: numpy 2.0.2 ...']`.
+    """
+
+    def test_the_ci_pins_are_read(self):
+        self.assertEqual(set(ci_library_pins()), {"numpy", "scikit-learn"})
+
+    def test_every_stated_library_version_is_the_pin_or_archived(self):
+        pins = ci_library_pins()
+        offences = []
+        for relative, path in published_markdown():
+            if relative.startswith("docs/archive/"):  # superseded and not binding
+                continue
+            lines = path.read_text().splitlines()
+            for number, line in enumerate(lines, start=1):
+                for name, version in LIBRARY_VERSION.findall(line):
+                    if version == pins[name]:
+                        continue
+                    context = f"{lines[number - 2] if number > 1 else ''} {line}".lower()
+                    if "archived" in context or "pre-asof" in context:
+                        continue
+                    offences.append(f"{relative}:{number}: {name} {version} (CI pins {pins[name]})")
+        self.assertEqual([], offences)
+
+
 class SpecifierEvaluationTests(unittest.TestCase):
     """A declaration is evaluated as a specifier, not searched for as a substring.
 
@@ -1004,37 +1126,20 @@ def _identity_tolerance_is_a_single_absolute():
 # against the registry or the code -- never against another document, and never
 # against the presence of a test class, which is a claim about the suite rather
 # than about the software.
-def _a_clone_does_not_receive_the_frozen_panel():
-    """The panel is not in a clone, so no runnable invocation can publish `build`.
+def _event_holdout_appends_to_the_journal():
+    """`event-holdout` still writes an append-only journal record when it scores.
 
-    `docs/PROJECT_STATUS.md` states the blocker in prose: the three unpublished
-    subcommands "each exit on something a clone does not have, and `build`'s is
-    the same missing thing as Milestone A's open reproduction clause." This is
-    that sentence made evaluable.
-
-    Asked of git rather than of the filesystem: the panel exists in the
-    integration checkout, which is exactly the checkout where asking the
-    filesystem would answer the wrong question. Returns True while a clone
-    would not receive it, and therefore while the limitation is blocked rather
-    than merely open.
-
-    **Weakened since the reproduction landed, and recorded rather than
-    re-shaped.** `build` is now published against the tracked inputs, so a clone
-    can rebuild the panel it does not receive. This still returns True, because
-    the file is still untracked, but for `event-holdout` -- the command it now
-    stands for -- it is no longer the whole reason. Replacing it is a human
-    decision about the journal write, not a predicate edit.
+    What keeps that command unpublished is its journal write: running it as a
+    documented example would append a record to the tracked journal. The check
+    reads the evaluator's source for the append, the one place the claim lives
+    (#270, finding 35: the predicate that stood here asked whether the frozen
+    panel file is tracked, which stopped being the blocker once `build` was
+    published against the tracked inputs).
     """
-    try:
-        listed = subprocess.run(
-            ["git", "ls-files", "--error-unmatch", "data/processed/funding_panel.csv"],
-            cwd=str(REPO_ROOT),
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return True
-    return listed.returncode != 0
+    source = (REPO_ROOT / "src" / "repo_model" / "event_eval.py").read_text(
+        encoding="utf-8"
+    )
+    return "journal" in source and "append" in source
 
 
 #: Where a limitation lives, and therefore **who is able to close it**. This is
@@ -1074,6 +1179,58 @@ def _every_source_is_public():
     page say whether that source is the one these rows were waiting for.
     """
     return all(source.get("access") == "public" for source in registry().values())
+
+
+def _pre_asof_archive_exists():
+    """The pre-as-of records are still archived, so they are still a week-old measurement."""
+    archive = REPO_ROOT / "docs" / "runs" / "archive" / "pre-asof"
+    return archive.is_dir() and any(archive.glob("*.json"))
+
+
+def _nmfp1_does_not_report_the_balance_sheet():
+    """The registry's own derivation still counts the n_mfp1 era as not evaluable."""
+    entry = registry()["sec_nmfp"]
+    era = entry["cross_section"]["eras"][0]
+    note = _collapsed(entry["identities"][0]["tolerance_note"])
+    return era["era_id"] == "n_mfp1" and "not evaluable at all, being the n_mfp1 era" in note
+
+
+def _revision_evidence_is_prose():
+    """Every field that claims it is never revised carries a string, not a re-runnable check.
+
+    A `revision_evidence` string names a comparison; nothing in the suite re-runs it
+    against a new vintage. It holds until a source declares evidence a script checks.
+    """
+    declared = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "revision_evidence":
+                    declared.append(value)
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(registry())
+    return bool(declared) and all(isinstance(value, str) for value in declared)
+
+
+def _no_event_window_record_is_published():
+    """No record at the top level of `docs/runs/` scores an event window."""
+    return not any(
+        "event" in path.name or "holdout" in path.name
+        for path in (REPO_ROOT / "docs" / "runs").glob("*.json")
+    )
+
+
+def _no_live_record_is_scored():
+    """No record at the top level of `docs/runs/` scores a live (forward) forecast."""
+    return not any(
+        "live" in path.name for path in (REPO_ROOT / "docs" / "runs").glob("*.json")
+    )
 
 
 LIMITATIONS = (
@@ -1137,7 +1294,7 @@ LIMITATIONS = (
         "METHODOLOGY.md",
         ("**Part of the command line is unpublished.**",),
         _part_of_the_cli_is_unpublished,
-        _a_clone_does_not_receive_the_frozen_panel,
+        _event_holdout_appends_to_the_journal,
     ),
     (
         "nmfp_absence_indistinguishable",
@@ -1149,6 +1306,46 @@ LIMITATIONS = (
         ("an absent value and a parse failure still have the same representation,",),
         _nmfp_absence_is_indistinguishable_from_parse_failure,
         _sec_nmfp_structural_zeros_are_unreviewed,
+    ),
+    (
+        "archived_records_week_old",
+        "documentation",
+        "METHODOLOGY.md",
+        ("**The archived records use a week-old information set.**",),
+        _pre_asof_archive_exists,
+        None,
+    ),
+    (
+        "nmfp_pre_2016_balance_sheet",
+        "data",
+        "METHODOLOGY.md",
+        ("**The pre-2016 N-MFP balance sheet is missing two of three left-hand terms.**",),
+        _nmfp1_does_not_report_the_balance_sheet,
+        None,
+    ),
+    (
+        "never_revised_claim_is_prose",
+        "declaration",
+        "METHODOLOGY.md",
+        ("**The never-revised claim is prose.**",),
+        _revision_evidence_is_prose,
+        None,
+    ),
+    (
+        "no_event_window_result",
+        "software",
+        "METHODOLOGY.md",
+        ("**No event-window result is claimed.**",),
+        _no_event_window_record_is_published,
+        None,
+    ),
+    (
+        "records_are_backtests",
+        "documentation",
+        "METHODOLOGY.md",
+        ("**The published records are backtests; the live record is forward.**",),
+        _no_live_record_is_scored,
+        None,
     ),
 )
 
@@ -1335,6 +1532,19 @@ class PublishedLimitationTests(unittest.TestCase):
         `futures_basis_absent` alone -- each row has its own sentence, so one
         can be repaired without the other. Disposable copy, control green
         before and after, 3.10.12.
+
+    11. **The five bullets declared** (#270, finding 35: the archived records, the
+        pre-2016 N-MFP balance sheet, the never-revised claim, no event-window result,
+        and backtest versus live). Each predicate was first written wrong once: the
+        never-revised one looked for `revision_evidence` only at the top level of a
+        source and `test_no_published_limitation_outlives_its_repair` failed,
+        `AssertionError` naming `never_revised_claim_is_prose`. Mutation: the
+        `**No event-window result is claimed.**` sentence's bold markers removed
+        from `METHODOLOGY.md` while the limitation holds. Killed
+        `test_every_limitation_that_still_holds_is_still_published`, `AssertionError`
+        naming `no_event_window_result`, one test in this module. The CLI row's
+        blocker is now `_event_holdout_appends_to_the_journal`, the reason the
+        METHODOLOGY bullet gives, in place of the frozen-panel predicate.
     """
 
     def test_no_published_limitation_outlives_its_repair(self):

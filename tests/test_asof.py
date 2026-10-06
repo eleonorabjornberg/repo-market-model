@@ -18,6 +18,7 @@ from pathlib import Path
 from repo_model.asof import (
     InformationRule,
     StaleReadError,
+    information_summary,
     fold_grid,
     refit_blocks,
     validate_scheduled_availability,
@@ -215,6 +216,48 @@ class PerFieldReadTests(unittest.TestCase):
         self.assertEqual(read.row, self.info.anchor)
 
 
+class WeeklyObservationAgeTests(unittest.TestCase):
+    """A carried weekly cell is aged from its observation, not from its row (#267).
+
+    `reserve_balances` is the H.4.1's Wednesday level, carried on every panel
+    row until the next print. The row read is the latest whose declared instant
+    (row date + 5 calendar days, 16:30) is at or before the decision; the
+    observation behind it was declared earlier, so the cell is older than the
+    row says.
+
+    Mutation: `return available - timedelta(days=behind)` -> `return available`
+    in `_observation_available` (aging the value from its row's declared
+    instant) -> `AssertionError: 23.5 != 47.5` in
+    `test_the_age_is_counted_from_the_observation_row`.
+    """
+
+    def setUp(self):
+        self.rule = rule(["reserve_balances"])
+        self.info = self.rule.information_set(DATES, index_of(date(2026, 1, 22)))
+        self.read = read_of(self.info, "reserve_balances")
+
+    def test_the_row_read_is_thursday_the_fifteenth(self):
+        self.assertEqual(DATES[self.read.row], date(2026, 1, 15))
+        self.assertEqual(self.read.hours, 23.5)  # row's own instant: Tue 20th 16:30
+
+    def test_the_age_is_counted_from_the_observation_row(self):
+        # Wednesday 14th's print was declared at Mon 19th 16:30; read Wed 21st 16:00.
+        self.assertEqual(self.read.observation_hours, 47.5)
+
+    def test_the_summary_reports_the_observation_age_and_names_its_basis(self):
+        summary = information_summary(self.rule, [self.info])
+        feature = summary["features"]["reserve_balances"]
+        self.assertEqual(feature["hours_observable"], {"min": 47.5, "max": 47.5})
+        self.assertIn("observation", feature["hours_observable_basis"])
+
+    def test_a_daily_field_is_aged_from_its_own_row(self):
+        read = read_of(self.rule_daily().information_set(DATES, index_of(date(2026, 1, 22))), "sofr_volume")
+        self.assertEqual(read.observation_hours, read.hours)
+
+    def rule_daily(self):
+        return rule(["sofr_volume"])
+
+
 class ObservationTests(unittest.TestCase):
     FEATURES = PerFieldReadTests.FEATURES
 
@@ -328,9 +371,77 @@ class GuardTests(unittest.TestCase):
             self.rule.check(DATES, self.rule.information_set(DATES, scored))
 
     def test_a_read_newer_than_the_decision_is_leakage(self):
+        """A read first observable after the decision instant is leakage.
+
+        Recorded mutation (CLAUDE.md): in `InformationRule.check`, `if available
+        > deadline:` mutated to `if False:`. This test then fails, raising
+        `AssertionError` ("LookAheadError not raised").
+        """
+
         read = read_of(self.info, "sofr_volume")
         with self.assertRaises(LookAheadError):
             self.rule.check(DATES, self.replaced("sofr_volume", read.row + 1))
+
+    def test_an_information_set_naming_the_wrong_decision_instant_is_leakage(self):
+        """The set must name the rule's own decision instant for its scored row.
+
+        A set that claims a later instant would let every read be judged against
+        a deadline the rule never made.
+
+        Recorded mutation (CLAUDE.md): in `InformationRule.check`, `if deadline !=
+        info.decision_instant:` mutated to `if False:`. This test then fails,
+        raising `AssertionError` ("LookAheadError not raised").
+        """
+
+        later = self.info.decision_instant + timedelta(days=1)
+        with self.assertRaisesRegex(LookAheadError, "names the decision instant"):
+            self.rule.check(DATES, self.info._replace(decision_instant=later))
+
+    def test_an_observed_read_at_the_scored_row_is_leakage(self):
+        """An observed value is never the scored day's own row.
+
+        Recorded mutation (CLAUDE.md): in `InformationRule.check`, `read.row >
+        scored or (read.kind == KIND_OBSERVED and read.row >= scored)` mutated
+        to `read.row > scored`. This test then fails, raising `AssertionError`
+        (the message "not before the scored row" does not match): the read at
+        the scored row is then refused only by the availability guard, whose
+        message is "first observable at ..., after the ... decision". The
+        guard is pinned by its message, because a second guard also refuses
+        this read.
+        """
+
+        with self.assertRaisesRegex(LookAheadError, "not before the scored row"):
+            self.rule.check(DATES, self.replaced("sofr_volume", self.scored))
+
+    def test_a_scheduled_input_read_after_the_scored_day_is_leakage(self):
+        """A scheduled input may refer to the scored day and no later row.
+
+        Recorded mutation (CLAUDE.md): in `InformationRule.check`, `read.row >
+        scored` mutated to `read.row > scored + 1`. This test then fails,
+        raising `AssertionError` (the message "not before the scored row" does
+        not match): the read one row past the scored day then passes the first
+        guard and is refused only by the availability guard, whose message is
+        "first observable at ..., after the ... decision".
+        """
+
+        with self.assertRaisesRegex(LookAheadError, "not before the scored row"):
+            self.rule.check(DATES, self.replaced("treasury_settlement_bills", self.scored + 1))
+
+    def test_a_model_is_not_handed_reads_out_of_step_with_the_declared_groups(self):
+        """`observation` refuses reads that do not pair with the declared groups.
+
+        The line carries `pragma: no cover` because only a construction bug
+        reaches it; it is a leakage guard all the same (a read taken for one
+        feature would be filed under another), so it is driven directly.
+
+        Recorded mutation (CLAUDE.md): in `InformationRule.observation`, `if
+        read.feature != group.feature:` mutated to `if False:`. This test then
+        fails, raising `AssertionError` ("LookAheadError not raised").
+        """
+
+        swapped = self.info._replace(reads=tuple(reversed(self.info.reads)))
+        with self.assertRaisesRegex(LookAheadError, "out of step"):
+            self.rule.observation(ROWS, swapped)
 
     def test_a_read_older_than_the_latest_admissible_is_stale(self):
         """The staleness guard, driven directly with a read one row too old."""

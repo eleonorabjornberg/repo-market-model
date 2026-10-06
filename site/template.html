@@ -241,8 +241,14 @@ table.fttab caption{text-align:left;font-weight:600;color:var(--ink);padding:0 0
 table.fttab th,table.fttab td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--rule);background:none;color:var(--ink-2);border-radius:0;min-width:0;white-space:normal}
 table.fttab th[scope=row]{color:var(--ink);font-weight:600;white-space:nowrap}
 table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.uselimit{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink);border-left:3px solid var(--ink-2);padding:2px 0 2px 12px;margin:14px 0;max-width:80ch}
 .ftlinks{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:18px 0 0;max-width:80ch}
 .ftlinks code{font-size:.78rem;word-break:break-all}
+.fdcontrol{font-family:var(--sans);font-size:.86rem;color:var(--ink-2);margin:4px 0 8px}
+.fdcontrol select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:2px 6px}
+.fdhidden{font-size:.9rem}
+table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
+table.fttab.fdtab td{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -252,9 +258,11 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <div class="prose intro">
     <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
   </div>
+  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
+      <li class="live"><b>&#9670;</b><span><a href="#forecast-actual">Forecast against what happened</a><small>Each day, in basis points</small></span></li>
       <li class="live"><b>1</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed's rates</small></span></li>
       <li class="live"><b>2</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
       <li class="live"><b>3</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
@@ -270,6 +278,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 <div id="start">
   <p class="kicker">Start here</p>
   <div class="prose"><p>New to this market? These views are for you, in order. Each says what it shows in one sentence, draws it, explains it in plain words, and ends with a fold that leads into the technical chapter below.</p></div>
+  {{opened_note}}
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
 <section id="n1" aria-labelledby="n1-title">
@@ -371,7 +380,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <ul>
       <li>{{n3_window_caption}}</li>
       <li>{{n3_read}} The amount is what the facility accepted that day, summed over its operations, from the New York Fed's operation results (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
-      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and never tuned on these days. The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
+      <li>{{n3_break_note}} The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
       <li>A day counts when its spread, in whole basis points, is strictly above the line (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{n3_interval}}</li>
     </ul>
     <p>The band:</p>
@@ -403,7 +412,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <div class="n4details">{{n4_details}}</div>
   </figure>
   <figure>
-    <figcaption><div class="t">The three segment rates, each less IORB, on days chosen in advance</div>
+    <figcaption><div class="t">The three segment rates, each less IORB, on days chosen by a rule fixed on 2 October 2026 that reads no rate or spread</div>
       <div class="s">Basis points. {{n4_seg_counts}}, chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. The rule never reads a rate or a spread</div></figcaption>
     <div class="chart" id="n4seg"><div class="tip"></div></div>
     <p class="held-note">{{n4_seg_held}}</p>
@@ -457,6 +466,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <p class="kicker">The result</p>
   <h2 id="final-test-title">The final test</h2>
   <p class="prose lede">{{ft_verdict}}</p>
+  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
   {{ft_claim}}
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
@@ -464,14 +474,20 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <div class="chart" id="ftchart"><div class="tip"></div></div>
   </figure>
   {{ft_split_table}}
+  {{ft_window_table}}
+  {{ft_influence_table}}
   <h3 class="sub">How the test was run</h3>
   <ul class="ftlist">
     <li>{{ft_fixed}}</li>
     <li>{{ft_once}}</li>
     <li>{{ft_benchmark}}</li>
+    <li>{{ft_switch}}</li>
   </ul>
   <h3 class="sub">What it does not show</h3>
   <ul class="ftlist">
+    <li>{{ft_rests}}</li>
+    <li>{{ft_why}}</li>
+    <li>{{ft_robust}}</li>
     <li>{{ft_not_stress}}</li>
     <li>{{ft_not_blind}}</li>
     <li>{{ft_calm}}</li>
@@ -479,6 +495,22 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <details><summary>The cells two to five days ahead, each with its label</summary>{{ft_later_table}}</details></li>
   </ul>
   <p class="ftlinks">{{ft_links}}</p>
+</section>
+
+<section id="forecast-actual" aria-labelledby="forecast-actual-title">
+  <p class="kicker">Day by day</p>
+  <h2 id="forecast-actual-title">Forecast against what happened</h2>
+  <p class="prose lede">{{fd_lede}}</p>
+  <figure>
+    <figcaption><div class="t">The forecast one day ahead and the spread that came, <span id="fdyearlabel"></span></div>
+      <div class="s">SOFR − IORB in basis points. Points: the actual spread. Line: the model's median forecast. Shaded: its 90% band and, darker, its 50% band, {{fd_band_50}}</div></figcaption>
+    <p class="fdcontrol"><label for="fdyear">Year</label> <select id="fdyear">{{fd_year_options}}</select></p>
+    <div class="chart" id="fdchart"><div class="tip"></div></div>
+  </figure>
+  {{fd_table}}
+  {{fd_misses}}
+  <p class="prose fdhidden">{{fd_hidden}}</p>
+  <p class="ftlinks">{{fd_links}}</p>
 </section>
 
 <section id="plumbing">
@@ -528,7 +560,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <label class="tog"><input type="checkbox" id="bandToggle"> Show the middle half of the day's trades</label>
     </div>
     <div class="chart" id="spread"><div class="tip"></div></div>
-    <p class="note">Red line: days more than +{{pressure_bp}} bp above, also marked by the dashed threshold. Shaded: periods when the Fed was shrinking its balance sheet. Hatched: the stress windows kept out of the headline score. Numbered markers: the events listed below.</p>
+    <p class="note">Red line: days more than +{{pressure_bp}} bp above, also marked by the dashed threshold. Shaded: periods when the Fed was shrinking its balance sheet. Hatched: the stress windows. Numbered markers: the events listed below.</p>
     {{held_out_note}}
   </figure>
   <ol class="events" id="events">{{event_list}}</ol>
@@ -539,7 +571,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <li><b>The Fed's rate on reserves</b> is IORB from {{iorb_from}}. Before that the Fed paid IOER, the rate on excess reserves, and the chart uses it so that {{holdout_months}} are covered. The switch is marked as event {{iorb_event_n}}.</li>
       <li><b>The middle half of the day's trades</b> is the band between SOFR's 25th and 75th volume-weighted percentiles, less the same rate. The New York Fed did not publish it on {{band_missing}} in the sample.</li>
       <li><b>+{{pressure_bp}} and +{{second_bp}} bp</b> are the project's headline thresholds: the forecast gives the probability that tomorrow's spread is above each of them.</li>
-      <li><b>The stress windows</b>, {{holdouts}}, are frozen and checksummed. They are kept out of the headline score and reported on their own, so that a few extreme days cannot dominate the average.</li>
+      <li><b>The stress windows</b>, {{holdouts}}, are frozen and checksummed. Every published result pools those days with the rest.</li>
       <li>In the full view the scale stops at +{{clip_bp}} bp so that ordinary days stay readable. {{n_off_scale}} rise above it and leave the frame; the largest, {{spike_bp}} bp on {{spike_day}}, is labelled, and hovering shows the rest.</li>
     </ul>
     <p>To rebuild this data yourself, run section 4 of the <a href="https://colab.research.google.com/github/eleonorabjornberg/repo-market-model/blob/main/notebooks/00_overview.ipynb">overview notebook</a> in Colab.</p>
@@ -580,7 +612,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <li><b>Coupon settlement:</b> a day on which Treasury notes or bonds sold at auction settle.</li>
       <li><b>Other:</b> every remaining business day, bill settlements included.</li>
     </ul>
-    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the provisional regimes of <code>metadata/evaluation_splits.json</code>.</p>
+    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the regimes of <code>metadata/evaluation_splits.json</code>, the period slices declared before the reserve-scarcity state existed; re-declaring them by that state is a decision still open.</p>
   </details>
 </section>
 
@@ -597,6 +629,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <summary>Go deeper: what this does and does not show</summary>
     <ul>
       <li>Each dot is drawn from the declaration the as-of rule itself reads (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/information-set.md">the information rule</a>), through the same function. A lag counted in business days skips weekends and holidays; one counted in calendar days does not, so its dot can fall on a day with no decision.</li>
+      <li>The weekly H.4.1 series, reserves and the TGA, are declared five calendar days after the row's date, so each is read 5 to 12 days after its Thursday print. A newer print was public and unread on about two scored days in five. That is the safe direction, not a leak.</li>
       <li>It shows the clock only. How much a stale input costs a forecast is a model result and appears only in the model chapters.</li>
     </ul>
     <p>To see which value each input supplies on a given day, run section 5 of the <a href="https://colab.research.google.com/github/eleonorabjornberg/repo-market-model/blob/main/notebooks/00_overview.ipynb">overview notebook</a> in Colab.</p>
@@ -1270,7 +1303,7 @@ function renderN4Seg() {
   const x = d3.scaleLinear([Math.min(0, d3.min(vals)), Math.max(0, d3.max(vals))], [m.l, W - m.r]).nice();
   const yc = i => m.t + i * rowH + rowH / 2;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen in advance, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
+    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen by a rule fixed on 2 October 2026 that reads no rate or spread, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 8)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d))
     .attr("y1", m.t - 6).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(sgn).tickSizeOuter(0));
@@ -1505,7 +1538,49 @@ function renderFinalTest() {
   svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
   svg.append("text").attr("class", "lab").attr("x", narrow ? W - m.r : x(FT.mean)).attr("y", narrow ? cy + 19 : cy - 11).attr("text-anchor", narrow ? "end" : "middle").style("fill", "var(--ink-2)").text(`${s2(FT.mean)} bp (${FT.level}%: ${s2(FT.lower)} to ${s2(FT.upper)})`);
 }
-const renderAll = () => { renderFinalTest(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
+const FD = D.forecast_daily;
+const FD_COLOURS = ["var(--sofr)", "var(--pressure)"];
+function renderForecastDaily() {
+  const host = d3.select("#fdchart"); host.select("svg").remove();
+  const year = +document.getElementById("fdyear").value;
+  document.getElementById("fdyearlabel").textContent = String(year);
+  const W = host.node().clientWidth, narrow = W < 560, H = narrow ? 300 : 340;
+  const m = {t: narrow ? 46 : 30, r: 14, b: 30, l: 40};
+  const rows = FD.series.map(s => s.days.filter(d => d[0].startsWith(String(year))).map(d => ({t: parse(d[0]), y: d[1], q: d.slice(2)})));
+  const days = rows[0];
+  if (!days.length) return;
+  const lo = d3.min(rows.flat(), d => Math.min(d.y, d.q[0])), hi = d3.max(rows.flat(), d => Math.max(d.y, d.q[4]));
+  const x = d3.scaleUtc(d3.extent(days, d => d.t), [m.l, W - m.r]);
+  const y = d3.scaleLinear([Math.min(lo, 0), Math.max(hi, 0)], [H - m.b, m.t]).nice();
+  const inside = days.filter(d => d.y >= d.q[0] - 1e-9 && d.y <= d.q[4] + 1e-9).length;
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+    .attr("aria-label", `Daily chart for ${year}, ${days.length} scored days from ${fmt(days[0].t)} to ${fmt(days.at(-1).t)}: the actual SOFR − IORB as points, the model's median forecast one day ahead as a line, and its 90% and 50% bands shaded; the 50% band is not yet calibrated (#243). The actual spread fell inside the 90% band on ${inside} of the ${days.length} days. The accuracy table below gives the figures.`);
+  svg.append("g").selectAll("line").data(y.ticks(5)).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", d => y(d)).attr("y2", d => y(d)).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(sgn).tickSizeOuter(0));
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(d3.utcFormat(narrow ? "%b" : "%b %Y")).tickSizeOuter(0));
+  rows.forEach((pts, si) => {
+    const c = FD_COLOURS[si % FD_COLOURS.length];
+    svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[0])).y1(d => y(d.q[4]))).style("fill", c).style("opacity", .16);
+    svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[1])).y1(d => y(d.q[3]))).style("fill", c).style("opacity", .3);
+    svg.append("path").datum(pts).attr("d", d3.line().x(d => x(d.t)).y(d => y(d.q[2]))).style("fill", "none").style("stroke", c).style("stroke-width", 1.4).style("stroke-dasharray", si ? "4 3" : null);
+  });
+  svg.append("g").selectAll("circle").data(days).join("circle").attr("cx", d => x(d.t)).attr("cy", d => y(d.y)).attr("r", narrow ? 1.6 : 2.1).style("fill", "var(--ink)");
+  const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"], ["b50", "50% band, not yet calibrated (#243)"]];
+  const g = svg.append("g").attr("transform", `translate(${m.l},12)`);
+  let at = 0, row = 0;
+  key.forEach(([kind, text]) => {
+    const k = g.append("g");
+    if (kind === "dot") k.append("circle").attr("cx", 6).attr("cy", 0).attr("r", 2.6).style("fill", "var(--ink)");
+    else if (kind === "line") k.append("line").attr("x1", 0).attr("x2", 12).attr("y1", 0).attr("y2", 0).style("stroke", FD_COLOURS[0]).style("stroke-width", 1.6);
+    else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", kind === "b90" ? .16 : .3);
+    const w = 17 + k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text).node().getComputedTextLength() + 14;
+    if (at && at + w > W - m.l - m.r) { at = 0; row += 16; }
+    k.attr("transform", `translate(${at},${row})`);
+    at += w;
+  });
+}
+document.getElementById("fdyear").addEventListener("change", renderForecastDaily);
+const renderAll = () => { renderFinalTest(); renderForecastDaily(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);

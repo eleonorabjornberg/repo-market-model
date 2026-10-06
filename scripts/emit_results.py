@@ -42,6 +42,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 RUNS = ROOT / "docs/runs"
 FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
@@ -59,6 +62,11 @@ CORRECTION_BEGIN = "<!-- generated: correction -->"
 CORRECTION_END = "<!-- end generated: correction -->"
 HEADLINE_BEGIN = "<!-- generated: headline -->"
 HEADLINE_END = "<!-- end generated: headline -->"
+USE_LIMITATION_BEGIN = "<!-- generated: use-limitation -->"
+USE_LIMITATION_END = "<!-- end generated: use-limitation -->"
+#: The use limitation (#261). One statement, kept in one file, carried by the README, the
+#: final-test page and the results page (which `emit_visual.py` reads from the same file).
+USE_LIMITATION = ROOT / "docs/use-limitation.md"
 
 PERSISTENCE = "persistence_funding.json"
 EXCEEDANCE = "exceedance_climatology.json"
@@ -276,9 +284,20 @@ def key_findings(persistence, exceedance, conditional):
     add("")
     splits = require(metrics, "mae_bps_splits")
     add("**Persistence by regime and by pressure-day type.** The same errors, split as "
-        "`metadata/evaluation_splits.json` declares (status: %s). Each interval resamples "
-        "the whole series with the pooled interval's block length and seed, and averages "
-        "the resampled days of the group."
+        "`metadata/evaluation_splits.json` declares. Its regimes are the period slices of "
+        "`docs/pivot/lag-assessment.md`, declared before the reserve-scarcity state "
+        "existed; the file's own status line still reads \"%s\" and is carried unedited "
+        "in every record, because its digest is. The scarcity state now exists (plan "
+        "step 6), and re-declaring the regimes by it is Eleonora's decision. Each interval "
+        "resamples the whole series with the pooled interval's block length and seed, and "
+        "averages the resampled days of the group. A limitation of the regimes: reserves "
+        "and the Treasury General Account move the published forecast by a few basis "
+        "points at most across the plausible 2026-27 range (largest single-quantile "
+        "change on the grid in "
+        "[`docs/pivot/evidence/reserves-sensitivity/`](docs/pivot/evidence/reserves-sensitivity/), "
+        "from `scripts/reserves_sensitivity.py`; the median cell moves a quantile by about one "
+        "basis point). A drain that these two inputs signal therefore barely reaches the "
+        "forecast, which responds mainly to realised SOFR."
         % require(persistence, "splits", "declaration", "status").split(":")[0])
     add("")
     lines.extend(split_table(splits, "by_regime", "Regime", "Mean absolute error"))
@@ -481,7 +500,11 @@ def pressure_v1_section():
         "(`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days "
         "and paired day by day with both benchmarks. Each cell is the benchmark's Brier "
         "score minus the model's, with its 90% stationary-bootstrap interval; a positive "
-        "value favours the model.")
+        "value favours the model. At horizons 2 to 5 the published q25, q50 and q75 are the "
+        "one-step gbm served stale, bit-identical across h = 2 to 5 on every decision day; "
+        "only the conformal PID outer pair (q05, q95) differs by horizon. At h = 1 "
+        "`treasury_settlement` is trained as settlement(p) predicting spread(p+1) and served "
+        "as settlement(T) predicting spread(T): a change of meaning, not leakage.")
     add("")
     header = "| Horizon | Scored days |"
     rule = "|---|---|"
@@ -608,11 +631,102 @@ FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown",
                      "worse": "shown worse"}
 
 
+#: The accurate replacement for the sentence that said no choice of model had been made on these
+#: days (#260, second review, finding 1): the record's own hedge, and the reason it is needed.
+FINAL_TEST_HEDGE = ("a stretch of days on which no choice was made by name, though the gbm family and its "
+                    "features were chosen on archived records scored through 2026-09-03, which include them")
+
+
+def _influence_module():
+    spec = importlib.util.spec_from_file_location("final_test_influence", ROOT / "scripts" / "final_test_influence.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def use_limitation():
+    """The use-limitation statement, from `docs/use-limitation.md` (#261).
+
+    Exactly one blockquote line under `## The statement` is the statement (the
+    plain-English version, under its own heading, is the results page's: #316). Anything else is a data error,
+    so an edit that leaves no statement, or two, fails here rather than
+    publishing a page without it.
+    """
+
+    text = USE_LIMITATION.read_text(encoding="utf-8")
+    start = text.index("\n## The statement\n")
+    end = text.find("\n## ", start + 1)
+    found = [line[2:].strip() for line in text[start:end if end >= 0 else None].splitlines()
+             if line.startswith("> ")]
+    if len(found) != 1 or not found[0]:
+        raise RecordError("%s must carry exactly one blockquote line, the statement; found %d"
+                          % (USE_LIMITATION.relative_to(ROOT), len(found)))
+    return found[0]
+
+
+def use_limitation_block():
+    return "\n".join([
+        USE_LIMITATION_BEGIN,
+        "<!-- Generated by scripts/emit_results.py from docs/use-limitation.md. Do not edit by hand. -->",
+        "",
+        "**Use limitation.** " + use_limitation(),
+        "",
+        USE_LIMITATION_END])
+
+
 def _ft_interval(entry, places=3):
     if "interval" not in entry:
         return "no interval"
     return "%s to %s" % (signed(entry["interval"]["lower"], places),
                          signed(entry["interval"]["upper"], places))
+
+
+def _influence_blocks(cell, record):
+    """The influence table, the robustness rows and the 5-6 January sentence (#260), post hoc."""
+
+    got = _influence_module().influence(record)
+    level = round(100 * require(cell, "interval", "level"))
+    out = []
+    add = out.append
+    add("**Influence of single days** (post hoc; decides nothing). The paired difference, persistence minus "
+        "the published distribution, over the %d days; every figure is computed from the record's per-day "
+        "differences, with no new scoring." % got["n"])
+    add("")
+    add("| Measure | bp |")
+    add("|---|---|")
+    add("| Mean | %s |" % signed(got["mean"], 4))
+    add("| Median | %s |" % signed(got["median"], 4))
+    for k in (1, 5, 10):
+        add("| Mean after dropping the top %d day%s | %s |" % (k, "" if k == 1 else "s", signed(got["drop"][k], 4)))
+    add("| Days the published distribution won | %d of %d |" % (got["wins"], got["n"]))
+    add("")
+    add("The ten days that contribute most:")
+    add("")
+    add("| Rank | Day | Paired difference, bp |")
+    add("|---|---|---|")
+    for rank, (day, value) in enumerate(got["top"], 1):
+        add("| %d | %s | %s |" % (rank, day, signed(value, 2)))
+    add("")
+    two = got["leave_two_out"]
+    dm = got["dm"]
+    add("**Robustness rows** (post hoc; decides nothing). Without the two largest days the mean is %s bp, %d%% "
+        "interval %s to %s bp, under the record's own bootstrap (stationary, mean block length %d, seed %d, "
+        "%s replications). The median day is %s bp. Diebold-Mariano on the window, two-sided normal p: "
+        "%s (statistic %s) with a Newey-West long-run variance at lag %d, and %s (statistic %s) with none. "
+        "The record carries per-day CRPS only, not per-level pinball losses, so the split of the gain into "
+        "the lower (q05, q25) and upper (q75, q95) levels is not available here and is not computed."
+        % (signed(two["mean"], 3), level, signed(two["lower"], 3), signed(two["upper"], 3), two["block_length"],
+           two["seed"], format(two["replications"], ","), signed(got["median"], 3), "%.3f" % dm["p"],
+           signed(dm["stat"], 2), dm["lag"], "%.3f" % dm["plain_p"], signed(dm["plain_stat"], 2)))
+    add("")
+    (first_day, first_loss), (second_day, second_loss) = got["persistence_loss"]
+    add("**Why %s and %s dominate.** On those two days as-of persistence lost %s and %s bp of CRPS, against a "
+        "median of %s bp across the window (the record's `loss_a_bps`). The second independent review traced "
+        "this to as-of persistence reading the 2025-12-31 print (about +22 bp) two rows back; that cause is "
+        "the review's, and is not recomputed here because the panel is not tracked."
+        % (first_day, second_day, bp(first_loss, 2), bp(second_loss, 2), bp(got["median_persistence_loss"], 2)))
+    add("")
+    return out
 
 
 def final_test_section():
@@ -632,6 +746,8 @@ def final_test_section():
     lines = [FINAL_TEST_BEGIN,
              "<!-- Generated by scripts/emit_results.py from docs/runs/. Do not edit by hand. -->", ""]
     add = lines.append
+    add("**Use limitation.** " + use_limitation())
+    add("")
     add("## For the validation report (#119): the final test")
     add("")
     add("**The test.** The near-blind tier (`docs/decisions/lockbox.md`; scored days %s to %s) was opened "
@@ -662,9 +778,26 @@ def final_test_section():
         add("**No claim is made:** the pre-registered claim is stated only on a pass.")
     add("")
     add("**Near-blind, not blind.** These days had been scored inside pooled CRPS aggregates of "
-        "archived records before #169, though no 2026-only CRPS was published and no choice was made "
-        "on them by name. 2026 was known to be calm when the test was designed.")
+        "archived records before #169, and the gbm family and its features were chosen on archived records "
+        "scored through 2026-09-03, which include them. No 2026-only CRPS was published and no choice was "
+        "made on them by name, but the test is not a clean holdout. 2026 was known to be calm when the test "
+        "was designed. The test does not validate stress performance or robustness across regimes. The "
+        "live record (#215), which logs the blind tier's days as they come, is the first genuinely blind "
+        "confirmation.")
     add("")
+    switch = _influence_module().leap_against_climatology(record)
+    if switch is None:
+        leap = "the record does not carry that cell, so no figure is given here"
+    else:
+        leap = ("on the opened record the plain leap does not beat calendar climatology: mean Brier difference "
+                "%s, %d%% interval %s to %s, label %s (reported only)"
+                % (signed(switch["mean"], 4), round(100 * switch["level"]), signed(switch["lower"], 4),
+                   signed(switch["upper"], 4), switch["label"]))
+    add("**The deciding cell was changed before the opening.** On 4 October 2026, under Eleonora's ruling on "
+        "#221, the deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
+        "before the tier was opened; %s." % leap)
+    add("")
+    lines.extend(_influence_blocks(cell, record))
     add("**By pressure-day type** (the split decides nothing; every window day falls in the "
         "declared regime `2025-26`):")
     add("")
@@ -679,8 +812,23 @@ def final_test_section():
         add("| %s | %d | %s | %s |" % (key, entry["count"], signed(entry["mean"], 3),
                                        _ft_interval(entry)))
     add("")
+    add("**By quarter-end window** (post hoc; decides nothing):")
+    add("")
+    add("| Window | Days | Mean difference, bp | 90% interval, bp |")
+    add("|---|---|---|---|")
+    by_window = require(cell, "splits", "by_quarter_end_window")
+    for key, name in (("outside_quarter_end_window", "outside the quarter-end window"),
+                      ("quarter_end_window", "in the quarter-end window")):
+        entry = by_window.get(key, {"count": 0})
+        if not entry.get("count"):
+            add("| %s | 0 | – | – |" % name)
+            continue
+        add("| %s | %d | %s | %s |" % (name, entry["count"], signed(entry["mean"], 3), _ft_interval(entry)))
+    add("")
     add("**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is "
-        "pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.")
+        "pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step "
+        "gbm served stale, identical across those horizons; only the PID outer pair differs. "
+        "Each cell carries Eleonora's label of 4 October 2026.")
     add("")
     add("| Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |")
     add("|---|---|---|---|---|---|")
@@ -694,8 +842,11 @@ def final_test_section():
         "walk-forward by recency-weighted Platt, on all window days. Each paired cell is the "
         "baseline's Brier score minus the model's, with its 90%% interval; a positive value favours "
         "the model. Below %d events a cell is labelled inconclusive. None of these cells passes or "
-        "fails the test, and a leap is not a stress warning."
-        % require(record, "events_reported_only")[0]["minimum_events"])
+        "fails the test, and a leap is not a stress warning. At h = 1 a plain leap is a rise of at "
+        "least %g bp over the as-of anchor two rows back, not over the previous day, so a day-on-day "
+        "rise is not always one."
+        % (require(record, "events_reported_only")[0]["minimum_events"],
+           require(record, "events_reported_only")[0]["leap_threshold_bp"]))
     add("")
     add("| Horizon | Target | Events | Brier, model | vs calendar climatology | vs persistence-logistic |")
     add("|---|---|---|---|---|---|")
@@ -712,27 +863,27 @@ def final_test_section():
     add("")
     add("## For the plain-language page (#120)")
     add("")
+    tail = ("These days had appeared inside earlier pooled results, so the test is near-blind rather than blind, "
+            "not a clean holdout. It does not validate stress performance or robustness across regimes. The first "
+            "genuinely blind confirmation is the live record.")
+    figures = (bp(require(cell, "crps_published_bps"), 2), bp(require(cell, "crps_persistence_bps"), 2),
+               _ft_interval(cell, 2))
     if passed:
-        add("In January to September 2026, a stretch of days that no choice of model had been made on, "
+        add("In January to September 2026 (%s), "
             "the published model's next-day forecast of the range of SOFR − IORB was more accurate on "
             "average than the benchmark that carries the latest known spread forward "
             "(as-of persistence): %s bp against %s bp by CRPS, where lower is better. The gap's 90%% "
-            "interval, %s bp, lies above zero. The test was fixed before these days were scored and run "
-            "once. These days had appeared inside earlier pooled results, so the test is near-blind rather "
-            "than blind. It is a statement about the range forecast, not a warning of stress, and 2026 "
-            "was a calm year."
-            % (bp(require(cell, "crps_published_bps"), 2), bp(require(cell, "crps_persistence_bps"), 2),
-               _ft_interval(cell, 2)))
+            "interval, %s bp, lies above zero. Its design, benchmark and command were fixed before these "
+            "days were scored, and it was run once. A few days drive the mean: see the influence table "
+            "above. %s It is a statement about the range forecast, not a warning of stress, and 2026 "
+            "was a calm year." % ((FINAL_TEST_HEDGE,) + figures + (tail,)))
     else:
-        add("In January to September 2026, a stretch of days that no choice of model had been made on, "
+        add("In January to September 2026 (%s), "
             "the published model's next-day forecast of the range of SOFR − IORB was not shown to be "
             "more accurate than the benchmark that carries the latest known "
             "spread forward (as-of persistence): %s bp against %s bp by CRPS, where lower is better, with a 90%% "
-            "interval for the gap of %s bp. The test was fixed before these days were scored and run once. "
-            "These days had appeared inside earlier pooled results, so the test is near-blind rather "
-            "than blind."
-            % (bp(require(cell, "crps_published_bps"), 2), bp(require(cell, "crps_persistence_bps"), 2),
-               _ft_interval(cell, 2)))
+            "interval for the gap of %s bp. Its design, benchmark and command were fixed before these days "
+            "were scored, and it was run once. %s" % ((FINAL_TEST_HEDGE,) + figures + (tail,)))
     add("")
     add(FINAL_TEST_END)
     return "\n".join(lines)
@@ -1013,6 +1164,76 @@ def _challenger_group(found):
                   key=lambda pair: -pair[1]["comparison"]["mean_difference_bps"])
 
 
+EVENTS = ROOT / "metadata/events.json"
+
+
+def event_windows():
+    """[(name, start, end)] from `metadata/events.json`, the frozen stress windows."""
+
+    with EVENTS.open(encoding="utf-8") as handle:
+        windows = require(json.load(handle), "windows")
+    return [(w["name"], w["start"], w["end"]) for w in windows]
+
+
+def stress_window_figures(record):
+    """What the stress windows carry of a comparison's paired gain, read off its `per_origin` days (#264).
+
+    Reported only: it decides nothing. The windows' days are scored and pooled in the
+    record's mean like every other day; this takes them out of a copy to say how much
+    of the gain they are. The interval on the rest is the record's own bootstrap
+    (block length, seed, replications, level).
+    """
+
+    comparison = require(record, "comparison")
+    rows = require(comparison, "per_origin")
+    interval = require(comparison, "mean_difference_interval")
+    windows = event_windows()
+    inside = [any(start <= row["scored_date"] <= end for _, start, end in windows) for row in rows]
+    diffs = [row["difference_bps"] for row in rows]
+    rest = [d for d, flag in zip(diffs, inside) if not flag]
+    total = sum(diffs)
+    if not rest or total <= 0:
+        raise RecordError("no stress-window share: the record has no days outside the windows "
+                          "or its summed paired difference is not positive")
+    lower, upper = stationary_bootstrap_interval(
+        lambda ix: sum(rest[i] for i in ix) / len(ix), len(rest),
+        block_length=interval["block_length"], seed=interval["seed"],
+        replications=interval["replications"], level=interval["level"])
+    return {"days": sum(inside), "of": len(rows), "share": sum(d for d, f in zip(diffs, inside) if f) / total,
+            "mean": total / len(rows), "rest_mean": sum(rest) / len(rest), "rest_lower": lower,
+            "rest_upper": upper, "level": interval["level"]}
+
+
+def stress_window_sentence(record):
+    """The reported-only sentence beside a beating challenger row (#264)."""
+
+    f = stress_window_figures(record)
+    return ("*Reported only, deciding nothing:* the %d scored days inside the stress windows "
+            "(`metadata/events.json`) are scored and pooled in the figure above, and carry "
+            "%.1f%% of its summed paired gain; over the other %d days the mean difference is "
+            "%+.2f bp (%d%% interval %+.2f to %+.2f bp, the record's own bootstrap)."
+            % (f["days"], 100 * f["share"], f["of"] - f["days"], f["rest_mean"],
+               round(100 * f["level"]), f["rest_lower"], f["rest_upper"]))
+
+
+def concentration_sentence(record):
+    """How much of a paired CRPS gain rests on a few days (#267, finding 18).
+
+    One sentence from the record's own per-origin differences: the share of the
+    summed difference that the single best day and the best five days carry, and
+    the mean difference with those five days capped at the sixth best.
+    """
+    differences = [origin["difference_bps"] for origin in record["comparison"]["per_origin"]]
+    total, n = sum(differences), len(differences)
+    if n < 7 or total <= 0:
+        return None
+    ranked = sorted(differences, reverse=True)
+    capped = (total - sum(ranked[:5]) + 5 * ranked[5]) / n
+    return ("The pooled gain rests on a few days: the single best day carries %d%% of it and the best "
+            "five days %d%%; with those five days capped at the sixth best, the mean difference is "
+            "%+.2f bp." % (round(100 * ranked[0] / total), round(100 * sum(ranked[:5]) / total), capped))
+
+
 def challenger_section():
     groups = challenger_records()
     lines, rows = _challenger_table(groups[0])
@@ -1054,6 +1275,14 @@ def _challenger_table(rows):
         add("| %s | %s bp | %+.2f bp | %+.2f to %+.2f bp | %s |" % (
             label, bp(c["model_b"]["crps_bps"]), c["mean_difference_bps"],
             interval["lower"], interval["upper"], verdict))
+    for label, record in rows:
+        if record["comparison"]["mean_difference_interval"]["lower"] > 0:
+            sentence = concentration_sentence(record)
+            if sentence:
+                add("")
+                add("Row %s: %s" % (label.split(" on ")[0].replace("`", ""), sentence))
+            add("")
+            add("%s: %s" % (label, stress_window_sentence(record)))
     return lines, rows
 
 
@@ -1172,12 +1401,12 @@ def status_line():
     if closed:
         still_open += ", after %s closed for now" % " and ".join(
             "phase %d, %s," % (item["number"], item["name"]) for item in closed)
-    lines.append("**Where this is: phase %d of %d — %s (%s)%s.** Its exit criterion is "
+    lines.append("**Where this is: phase %d of %d (numbered from 0) — %s (%s)%s.** Its exit criterion is "
                  "%s. Next is phase %d, %s. The machine-readable version is "
                  "[`docs/status.json`](docs/status.json), regenerated from the same "
                  "headings in the pull request that changes them, and checked in CI, "
                  "rather than edited."
-                 % (phase["number"], len(phases) - 1, phase["name"], state, still_open,
+                 % (phase["number"], len(phases), phase["name"], state, still_open,
                     emit_status.require_exit(phase, "the current phase"),
                     following["number"], following["name"]))
     lines.append("")
@@ -1222,8 +1451,9 @@ def headline(persistence, exceedance):
     lines.append("")
     lines.append("- The forecasting machinery has been run end to end on real market data "
                  "covering %s to %s, and scored at **%d separate decision points** — each "
-                 "one made only from the latest information already public at 4 pm the "
-                 "day before."
+                 "one made only from information already public at 4 pm the "
+                 "day before (a weekly series is read a few days after its print, the safe "
+                 "direction)."
                  % (panel["first_date"], panel["last_date"], folds["count"]))
     lines.append("- On that history, a simple benchmark — the latest public value, carried "
                  "forward — is "
@@ -1234,8 +1464,9 @@ def headline(persistence, exceedance):
                                  pct(nominal, 0)))
     lines.append("- The scoring itself has been checked against a case where the right "
                  "answer is known in advance: a forecast with no information in it scores "
-                 "**%s skill**, exactly as it must. Every later claim of skill rests on "
-                 "that." % bp(worst, 3))
+                 "**%s skill**, exactly as it must. That is a check that the scoring is not "
+                 "biased, not the ground of any skill claim: each claim below is paired "
+                 "against its benchmark, with an interval." % bp(worst, 3))
     lines.append("")
     lines.append("**Every result below is paired against its benchmark and split by regime "
                  "and by type of day.** Phase 2's verdict on these records is in "
@@ -1476,6 +1707,7 @@ def rendered(persistence, exceedance, conditional):
             (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
             (STATUS_BEGIN, STATUS_END, status_line()),
             (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
+            (USE_LIMITATION_BEGIN, USE_LIMITATION_END, use_limitation_block()),
         ),
         CASE_STUDY: (
             (CORRECTION_BEGIN, CORRECTION_END, correction_section()),

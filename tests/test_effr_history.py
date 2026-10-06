@@ -245,6 +245,26 @@ class HistoryReadTests(unittest.TestCase):
         with self.assertRaises(LookAheadError):
             rule.check(self.dates, read._replace(rows=rows))
 
+    def test_the_independent_check_refuses_a_read_at_the_scored_row(self):
+        """A read at the scored row, or after it, is refused whatever its availability.
+
+        Recorded mutation (CLAUDE.md): in `HistoryRule.check`, `if position >=
+        index:` mutated to `if False:`. This test then fails, raising
+        `AssertionError` (the message "not before the scored row" does not match):
+        the read is then refused only by the availability guard, whose message
+        is "is public at ..., after the ... decision". The row-order guard is
+        pinned by its message because both refuse this read.
+        """
+
+        rule = effr_history.HistoryRule(REGISTRY, decision_time=time(16, 0), horizon=1)
+        scored = self.dates.index(date(2009, 6, 17))
+        read = rule.read(self.dates, scored)
+        for position in (scored, scored + 1):
+            rows = dict(read.rows)
+            rows["spread_bps"] = position
+            with self.assertRaisesRegex(LookAheadError, "not before the scored row"):
+                rule.check(self.dates, read._replace(rows=rows))
+
     def test_every_history_pair_passes_the_independent_check(self):
         rule = effr_history.HistoryRule(REGISTRY, decision_time=time(16, 0), horizon=1)
         pool = effr_history.history_pairs(_StubDesign(), rule, self.rows)

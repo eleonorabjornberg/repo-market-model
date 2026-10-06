@@ -172,6 +172,63 @@ def load_reproduction():
     return module
 
 
+class StressWindowShareTests(unittest.TestCase):
+    """The README states what the stress windows carry of the paired gain (#264).
+
+    The sentence is generated from the record's `per_origin` differences, with the
+    record's own bootstrap settings, and is labelled reported-only. The windows
+    are `metadata/events.json`'s; their days are scored and pooled, never excluded.
+
+    Mutations (6 Oct 2026, a disposable copy): `if window[0] <= day <= window[1]`
+    -> `if window[0] < day < window[1]` in `stress_window_figures` drops the first
+    and last window day: `test_the_figures_are_recomputed_from_the_per_origin_days`
+    fails with `AssertionError` (a share that differs from the independent
+    recomputation). Changing one `per_origin` difference in a copy of the record
+    moves the sentence: `test_the_sentence_follows_the_record`.
+    """
+
+    RECORD = "compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
+
+    def record(self):
+        return json.loads((REPO_ROOT / "docs/runs" / self.RECORD).read_text(encoding="utf-8"))
+
+    def windows(self):
+        events = json.loads((REPO_ROOT / "metadata/events.json").read_text(encoding="utf-8"))
+        return [(w["start"], w["end"]) for w in events["windows"]]
+
+    def test_the_figures_are_recomputed_from_the_per_origin_days(self):
+        generator = load_generator()
+        record = self.record()
+        rows = record["comparison"]["per_origin"]
+        inside = [r["difference_bps"] for r in rows
+                  if any(a <= r["scored_date"] <= b for a, b in self.windows())]
+        total = sum(r["difference_bps"] for r in rows)
+        figures = generator.stress_window_figures(record)
+        self.assertEqual(figures["days"], len(inside))
+        self.assertAlmostEqual(figures["share"], sum(inside) / total, places=12)
+        self.assertAlmostEqual(figures["rest_mean"], (total - sum(inside)) / (len(rows) - len(inside)), places=12)
+        self.assertLess(figures["rest_lower"], figures["rest_mean"])
+        self.assertGreater(figures["rest_upper"], figures["rest_mean"])
+
+    def test_the_sentence_is_reported_only_and_in_the_readme(self):
+        generator = load_generator()
+        sentence = generator.stress_window_sentence(self.record())
+        self.assertIn("Reported only", sentence)
+        self.assertIn("scored and pooled", sentence)
+        figures = generator.stress_window_figures(self.record())
+        self.assertIn("%.1f%%" % (100 * figures["share"]), sentence)
+        self.assertIn(sentence, (REPO_ROOT / "README.md").read_text(encoding="utf-8"))
+
+    def test_the_sentence_follows_the_record(self):
+        generator = load_generator()
+        record = self.record()
+        before = generator.stress_window_sentence(record)
+        for row in record["comparison"]["per_origin"]:
+            if row["scored_date"] == "2019-09-19":
+                row["difference_bps"] += 50.0
+        self.assertNotEqual(generator.stress_window_sentence(record), before)
+
+
 class ReproductionComparisonDirectionTests(unittest.TestCase):
     """`_differences` is asymmetric, and the asymmetry is the clause it holds.
 

@@ -184,7 +184,10 @@ def published_features(h: int) -> tuple:
 #: The code every record is made with. `None`: the merge commit that brought
 #: this file onto main (`resolve_pin`). It changes only through a dated
 #: version-bump record in `docs/decisions/`, and never retroactively: each
-#: record carries the SHA it was made with.
+#: record carries the SHA it was made with. A pull request that changes it,
+#: `resolve_pin`, or the models logged (`MODELS` and the records named here)
+#: cites Eleonora's own approval in `metadata/owner_attestations.json`, which CI
+#: checks (`scripts/owner_attested.py`, #256).
 PINNED_CODE_SHA = None
 
 #: The steps whose durations a record carries. Fitting and forecasting are one
@@ -292,9 +295,8 @@ def _forecast_block(block, targets, where):
 def validate_record(record) -> None:
     """The record's schema. Raises `ValueError` naming what is wrong."""
 
-    if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | (
-        {"dry_run"} if isinstance(record, dict) and "dry_run" in record else set()
-    ):
+    optional = {"dry_run", "chain"} & set(record) if isinstance(record, dict) else set()
+    if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | optional:
         missing = sorted(set(RECORD_KEYS) - set(record or {}))
         raise ValueError(f"a record holds exactly {list(RECORD_KEYS)}; missing {missing}")
     if record["record_version"] != RECORD_VERSION:
@@ -344,6 +346,25 @@ def validate_record(record) -> None:
     durations = record["run"].get("durations_seconds", {})
     if set(durations) != set(STEPS):
         raise ValueError(f"run.durations_seconds must hold {list(STEPS)}")
+    if "chain" in record:
+        _validate_chain(record["chain"], day)
+
+
+def _validate_chain(chain, day: date) -> None:
+    """The hash-chain block `scripts/live_integrity.py` adds before a record is committed (#254).
+
+    Its values are checked against the log by `live_integrity.verify`; this is
+    only their shape.
+    """
+
+    if not isinstance(chain, dict) or set(chain) != {"prev_date", "prev_sha256", "prev_commit"}:
+        raise ValueError("chain must hold exactly prev_date, prev_sha256 and prev_commit")
+    if date.fromisoformat(chain["prev_date"]) >= day:
+        raise ValueError("chain.prev_date must be before the decision day")
+    for key, length in (("prev_sha256", 64), ("prev_commit", 40)):
+        value = chain[key]
+        if not isinstance(value, str) or len(value) != length or set(value) - set("0123456789abcdef"):
+            raise ValueError(f"chain.{key} must be {length} lowercase hex digits")
 
 
 def _validate_distributions(block) -> None:
