@@ -18,6 +18,16 @@ after the panel end (2026-09-03) is read: the walk's fold grid ends there.
 
     OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/forecast_daily.py \\
         --panel PUB.csv --output docs/runs/published_distribution_daily_h1.json
+
+`--horizon H` (2 to 5, #290) walks the same published distribution at h = H and keeps
+the days of the record's own window, 2018-06-29 to 2025-12-31 (`WINDOW_END`), for
+the band-coverage split. The walk still runs to the panel end, because the
+calibration state is sequential, and its mean CRPS over 2026-01-02 to 2026-09-03 is
+checked against the final test's reported cell for that horizon, exactly
+(`reproduction_check_horizon`); no day after 2025-12-31 is written.
+
+    OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/forecast_daily.py \\
+        --panel PUB.csv --horizon 2 --output docs/runs/published_distribution_daily_h2.json
 """
 
 from __future__ import annotations
@@ -38,6 +48,8 @@ RUNS = REPO / "docs" / "runs"
 CRPS_RECORD = "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 FINAL_TEST = "docs/runs/final_test_near_blind.json"
 HORIZON = 1
+WINDOW_END = "2025-12-31"
+OPENED_FIRST = "2026-01-01"
 
 
 def _script(name):
@@ -68,10 +80,30 @@ def reproduction_check(levels, days) -> dict:
     return {"records": [CRPS_RECORD, FINAL_TEST], "exact": True}
 
 
+def reproduction_check_horizon(levels, days, horizon) -> dict:
+    """Mean CRPS over the opened 2026 days against the final test's cell for `horizon`, exactly."""
+
+    final = json.loads((REPO / FINAL_TEST).read_text(encoding="utf-8"))
+    cells = [c for c in final["crps_reported_only"] if c["horizon"] == horizon]
+    if len(cells) != 1:
+        raise ValueError(f"the final test has no single reported cell at h = {horizon}")
+    cell = cells[0]
+    window = [crps_from_quantiles(levels, day["quantiles_bps"], day["actual_bps"])
+              for day in days if day["date"] >= OPENED_FIRST]
+    mean = sum(window) / len(window) if window else None
+    if len(window) != cell["days"] or mean != cell["crps_published_bps"]:
+        raise ValueError(f"the walk at h = {horizon} does not reproduce the final test's cell "
+                         f"({len(window)} days, mean {mean}; the cell has {cell['days']} days, "
+                         f"{cell['crps_published_bps']})")
+    return {"records": [FINAL_TEST], "exact": True, "window": [cell["first"], cell["last"]],
+            "days": len(window), "mean_crps_bps": mean}
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--panel", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--horizon", type=int, choices=range(1, 6), default=HORIZON)
     args = parser.parse_args(argv)
 
     fto = _script("final_test_opening")
@@ -83,28 +115,36 @@ def main(argv=None) -> int:
     lr = fto._script("live_record")
     fto.live_record = lr
     registry = json.loads(fp.REGISTRY.read_text(encoding="utf-8"))
-    sides, parsed = lr._compare_sides(HORIZON)
+    horizon = args.horizon
+    sides, parsed = lr._compare_sides(horizon)
     name, fit, features, online = sides["published"]
     walk, levels, settings = fto.distribution_walk(
         rows, fit=fit, features=features, online_calibration=online, registry=registry,
-        horizon=HORIZON, minimum_history=parsed.minimum_history, refit_every=parsed.refit_every,
+        horizon=horizon, minimum_history=parsed.minimum_history, refit_every=parsed.refit_every,
     )
-    lr._require_crps_declaration("published", HORIZON, name, features, settings)
+    lr._require_crps_declaration("published", horizon, name, features, settings)
     days = [{"date": rows[index].date.isoformat(), "quantiles_bps": list(quantiles),
              "actual_bps": rows[index].spread_bps} for index, quantiles in walk]
-    reproduces = reproduction_check(levels, days)
-    if lr.published_distribution_record(HORIZON) != CRPS_RECORD:
-        raise ValueError("the published distribution at h = 1 is not the CRPS record's")
+    published_record = lr.published_distribution_record(horizon)
+    if horizon == 1:
+        reproduces = reproduction_check(levels, days)
+        if published_record != CRPS_RECORD:
+            raise ValueError("the published distribution at h = 1 is not the CRPS record's")
+    else:
+        reproduces = reproduction_check_horizon(levels, days, horizon)
+        days = [day for day in days if day["date"] <= WINDOW_END]
     document = {
-        "directive": "#246",
-        "record": ("the published distribution's daily forecasts at h = 1 against the actual "
-                   "SOFR - IORB, every scored day"),
+        "directive": "#246" if horizon == 1 else "#290",
+        "record": (f"the published distribution's daily forecasts at h = {horizon} against the "
+                   "actual SOFR - IORB, every scored day" + (
+                       "" if horizon == 1 else f" from 2018-06-29 to {WINDOW_END}")),
         "decides": "nothing",
-        "horizon": HORIZON,
+        "horizon": horizon,
         "panel_sha256": panel_sha256(args.panel),
-        "published_record": CRPS_RECORD,
-        "published_declaration_sha256": lr.published_declaration_sha256(HORIZON),
-        "walk": "final_test_opening.distribution_walk on live_record._compare_sides(1)['published']",
+        "published_record": published_record,
+        "published_declaration_sha256": lr.published_declaration_sha256(horizon),
+        "walk": ("final_test_opening.distribution_walk on "
+                 f"live_record._compare_sides({horizon})['published']"),
         "levels": list(levels),
         "first": days[0]["date"],
         "last": days[-1]["date"],

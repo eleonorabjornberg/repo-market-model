@@ -39,6 +39,7 @@ import importlib.util
 import json
 import math
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +52,9 @@ README = ROOT / "README.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
 BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
+#: The model documentation and validation report (#119): prose written by hand, every figure in a block
+#: `scripts/validation_report.py` renders from the records.
+VALIDATION_PAGE = ROOT / "docs/model/validation.md"
 
 BEGIN = "<!-- generated: key-findings -->"
 END = "<!-- end generated: key-findings -->"
@@ -859,7 +863,10 @@ def final_test_section():
     add("**Five-quantile score at horizons 2 to 5, reported only.** The published distribution at each horizon is "
         "pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step "
         "gbm served stale, identical across those horizons; only the PID outer pair differs. "
-        "Each cell carries Eleonora's label of 4 October 2026.")
+        "Each cell carries Eleonora's label of 4 October 2026. The lockbox was opened before a method "
+        "was declared for these cells, so the method used is chosen after the 2026 days were seen "
+        "(ruling of 6 October 2026, #223). The cells stay reported only and never change the final "
+        "test's verdict.")
     add("")
     add("| Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |")
     add("|---|---|---|---|---|---|")
@@ -1371,7 +1378,7 @@ def coverage_section(challengers, persistence):
         # The pooled interval hides what the project's own split shows (#265): say so
         # from the split cells, never from the pooled figure alone.
         add("")
-        add(band_coverage_module().finding_sentence(band_coverage()[1]))
+        add(band_coverage_module().finding_sentence(band_coverage()[1], band_coverage()[2]))
     return lines
 
 
@@ -1392,6 +1399,22 @@ def band_coverage_module():
 
 
 _BAND_MODULE = {}
+
+
+def validation_report_module():
+    """`scripts/validation_report.py`, loaded once."""
+
+    if "module" not in _VALIDATION_MODULE:
+        spec = importlib.util.spec_from_file_location(
+            "validation_report", ROOT / "scripts/validation_report.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["validation_report"] = module
+        spec.loader.exec_module(module)
+        _VALIDATION_MODULE["module"] = module
+    return _VALIDATION_MODULE["module"]
+
+
+_VALIDATION_MODULE = {}
 
 
 def band_coverage():
@@ -1784,6 +1807,7 @@ def rendered(persistence, exceedance, conditional):
         FINAL_TEST_PAGE: (
             (FINAL_TEST_BEGIN, FINAL_TEST_END, final_test_section()),
         ),
+        VALIDATION_PAGE: tuple(validation_report_module().blocks(types.SimpleNamespace(**globals()))),
     }
     for page, blocks in pages.items():
         if not page.exists():
