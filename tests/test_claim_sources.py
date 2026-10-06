@@ -75,6 +75,10 @@ _DECISION = "names the ruling that made this decision; the rule is the record it
 
 #: (page, number): why the link is attribution, not the source of a figure.
 ATTRIBUTION = {
+    ("docs/decisions/workflow.md", 269): (
+        "names the comment where Eleonora confirmed the #153 and #236 merges; the note "
+        "quotes it and states no figure"
+    ),
     ("README.md", 73): (
         "names the issue where the Phase 2 verdict was ruled; the verdict is stated in "
         "PLAN.md, which the same sentence links"
