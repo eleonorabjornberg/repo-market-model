@@ -57,6 +57,10 @@ from pathlib import Path
 HEADING = re.compile(r"^## Phase (\d+) — (.+)$")
 MARKER = re.compile(r"^(.*?)\s*\(([^()]+)\)$")
 CRITERION = re.compile(r"^Exit criterion[^:]*:\s*(.*)$")
+# A phase stopped by a human decision with items still open (Eleonora,
+# 5 October 2026, #234). It is not complete, and it is not open work beside the
+# current phase; the status file lists it on its own.
+CLOSED = "closed for now"
 
 
 class PlanError(RuntimeError):
@@ -138,16 +142,21 @@ def current_phase(phases):
     publishing Phase 1 as the current phase understated the work as surely as
     publishing Phase 2 as complete would overstate it. So the current phase is
     the latest one marked "(in progress)"; every phase before it must be marked
-    complete or in progress, and the open ones are published beside it by
-    `alongside`.
+    complete, in progress or closed for now; the open ones are published
+    beside it by `alongside`, and the closed ones by `closed_for_now`.
 
     Raising is the point. If PLAN.md will not say that the phase being worked
     is in progress, this file has nothing to publish, and a guess would be the
     hand-written claim the repository exists to refuse.
     """
     done = [phase for phase in phases if phase["marker"] == "complete"]
-    outstanding = [phase for phase in phases if phase["marker"] != "complete"]
+    outstanding = [phase for phase in phases
+                   if phase["marker"] not in ("complete", CLOSED)]
     if not outstanding:
+        if any(phase["marker"] == CLOSED for phase in phases):
+            raise PlanError(
+                "PLAN.md marks every unfinished phase closed for now, so no "
+                "phase is in progress. Say which one is being worked.")
         return len(phases) - 1, "complete"
 
     current = outstanding[0]
@@ -174,6 +183,13 @@ def current_phase(phases):
             "PLAN.md marks phase %d in progress while phase %d, before it, is "
             "marked neither complete nor in progress (%s). Say which it is."
             % (latest["number"], gap[0]["number"], gap[0]["marker"] or "nothing"))
+    later = [phase for phase in phases
+             if phase["marker"] == CLOSED and phase["number"] > latest["number"]]
+    if later:
+        raise PlanError(
+            "PLAN.md marks phase %d closed for now, after phase %d, the latest "
+            "in progress. A phase is closed for now only once work has moved past it."
+            % (later[0]["number"], latest["number"]))
     return latest["number"], "in progress"
 
 
@@ -181,7 +197,15 @@ def alongside(phases, number):
     """Earlier phases still open while phase `number` is the one published."""
     return [{"number": phase["number"], "name": phase["name"]}
             for phase in phases
-            if phase["number"] < number and phase["marker"] != "complete"]
+            if phase["number"] < number
+            and phase["marker"] not in ("complete", CLOSED)]
+
+
+def closed_for_now(phases, number):
+    """Earlier phases closed for now: neither finished nor worked beside it."""
+    return [{"number": phase["number"], "name": phase["name"]}
+            for phase in phases
+            if phase["number"] < number and phase["marker"] == CLOSED]
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -250,6 +274,7 @@ def main():
         "commit": commit,
         "phase": {"number": phase["number"], "name": phase["name"], "state": state},
         "alongside": alongside(phases, number),
+        "closed_for_now": closed_for_now(phases, number),
         "next": {"number": following["number"], "name": following["name"],
                  "exit": require_exit(following, "the next phase")},
         "total_phases": len(phases),
