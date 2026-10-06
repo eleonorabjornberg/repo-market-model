@@ -4,7 +4,7 @@ Eleonora's decision of 3 October 2026 (#215): every business day after the
 16:00 ET decision instant, a scheduled GitHub Actions workflow logs the
 published pressure model v1's forecast, and its baselines', as one frozen JSON
 record on the append-only `live-log` branch. The record is scored only on the
-pre-registered dates, and only once the drafted lockbox amendment is merged.
+pre-registered dates, and only on days `metadata/lockbox.json` has opened (#277).
 
 These tests pin what the directive fixes before any day is logged:
 
@@ -14,8 +14,8 @@ These tests pin what the directive fixes before any day is logged:
   (`DecisionDayTests`);
 * the record's schema, the refusal to overwrite a day and the refusal to log a
   day on or before the panel end, 2026-09-03 (`RecordTests`);
-* the scoring dates, the refusal while the lockbox amendment is unmerged, and
-  the headline-verdict rule (`ScoringGuardTests`, `HeadlineVerdictTests`);
+* the scoring dates and the headline-verdict rule (the lockbox guard is in
+  `test_live_lockbox.py`) (`ScoringGuardTests`, `HeadlineVerdictTests`);
 * that a forecast read off placeholder rows is refused (`PlaceholderGuardTests`);
 * that the baselines' forecasts in a record are the repository's baseline
   functions' on the same panel (`BaselineAgreementTests`).
@@ -37,6 +37,7 @@ import tempfile
 import unittest
 from datetime import date, time
 from pathlib import Path
+from unittest import mock
 
 from repo_model import onset
 from repo_model.asof import InformationRule
@@ -49,6 +50,8 @@ from repo_model.cli import main as cli_main
 from repo_model.data import load_daily_panel, load_stress_thresholds
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
+
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -324,24 +327,6 @@ class ScoringGuardTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     score.require_scoring_date(day)
 
-    def test_the_tracked_lockbox_has_no_amendment_so_scoring_is_refused(self):
-        with self.assertRaises(ValueError):
-            score.require_amendment(ROOT / "docs" / "decisions" / "lockbox.md")
-
-    def test_a_merged_amendment_lets_scoring_through_the_guard(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "lockbox.md"
-            path.write_text(
-                (ROOT / "docs" / "decisions" / "lockbox.md").read_text(encoding="utf-8")
-                + "\n" + score.AMENDMENT_HEADING + "\n\nText.\n",
-                encoding="utf-8",
-            )
-            score.require_amendment(path)
-
-    def test_the_draft_carries_the_heading_the_guard_reads(self):
-        draft = ROOT / "docs" / "decisions" / "drafts" / "lockbox-live-record.md"
-        self.assertIn(score.AMENDMENT_HEADING, draft.read_text(encoding="utf-8"))
-
     def test_the_draft_states_the_not_evidence_label_for_later_horizons(self):
         """Eleonora's ruling of 4 October 2026 (#229): the draft states the label verbatim."""
 
@@ -353,14 +338,19 @@ class ScoringGuardTests(unittest.TestCase):
             text,
         )
 
-    def test_the_script_refuses_to_run_while_the_amendment_is_unmerged(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaises(ValueError):
-                score.main(
-                    ["--date", "2027-04-01", "--live-dir", tmp, "--panel", str(Path(tmp) / "p.csv"),
-                     "--output", str(Path(tmp) / "out.json")]
-                )
-            self.assertFalse((Path(tmp) / "out.json").exists())
+    def test_the_script_refuses_a_locked_day_and_writes_nothing(self):
+        """Under the tracked declaration the first logged day is in the blind tier (#277)."""
+
+        from repo_model import lockbox
+
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            lockbox, "DEFAULT_LOCKBOX", ROOT / "metadata" / "lockbox.json"
+        ):
+            with self.assertRaises(LookAheadError):
+                score.assemble(records, rows, load_split_declaration(SPLITS), date(2027, 4, 1),
+                               previous=[])
+            self.assertEqual(list(Path(tmp).iterdir()), [])
 
     def test_the_script_refuses_a_non_scoring_date_before_reading_anything(self):
         with tempfile.TemporaryDirectory() as tmp:

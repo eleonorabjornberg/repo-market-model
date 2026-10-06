@@ -526,16 +526,13 @@ class ScorerRefusalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo, comments = build_log(tmp)
             comments = [c for c in comments if not c["body"].startswith("2026-10-06")]
-            lockbox = Path(tmp) / "lockbox.md"
-            lockbox.write_text(score.AMENDMENT_HEADING + "\n", encoding="utf-8")
             out = Path(tmp) / "out.json"
-            with mock.patch.object(score, "LOCKBOX", lockbox):
-                with self.assertRaisesRegex(ValueError, "digest"):
-                    score.main(
-                        ["--date", "2027-10-01", "--live-dir", str(repo), "--digests",
-                         str(save(comments, tmp)), "--panel", str(Path(tmp) / "missing.csv"),
-                         "--output", str(out)]
-                    )
+            with self.assertRaisesRegex(ValueError, "digest"):
+                score.main(
+                    ["--date", "2027-10-01", "--live-dir", str(repo), "--digests",
+                     str(save(comments, tmp)), "--panel", str(Path(tmp) / "missing.csv"),
+                     "--output", str(out)]
+                )
             self.assertFalse(out.exists())
 
 

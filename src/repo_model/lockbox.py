@@ -20,6 +20,17 @@ declaration argument, and no CLI flag or environment variable is read here.
 A pull request that changes the tiers also cites Eleonora's own approval in
 `metadata/owner_attestations.json`, which CI checks (`scripts/owner_attested.py`,
 #256; the rule is a draft for her, `docs/decisions/drafts/owner-attestation.md`).
+
+**Opening a scoring date's days (#277).** A scoring date opens only the part of a
+tier before it, so the tier is split rather than opened whole: `split_tier`
+takes the declaration, a tier name and the scoring date, and returns a new
+declaration in which the days before that date are an opened tier (carrying the
+date and the ruling) and the rest stays the locked tier, under its old name, so
+it can be split again at the next scoring date. It writes nothing and opens
+nothing by itself: `render_declaration` gives the file's exact text, and
+committing it to `metadata/lockbox.json` is Eleonora's own action (#256). The
+live scorer (`scripts/live_score.py`) scores only through `require_unlocked`;
+no heading in `lockbox.md` gates it.
 """
 
 from __future__ import annotations
@@ -40,7 +51,9 @@ __all__ = [
     "load_lockbox",
     "locked_tier",
     "locked_tiers",
+    "render_declaration",
     "require_unlocked",
+    "split_tier",
 ]
 
 
@@ -105,6 +118,10 @@ def load_lockbox(path: Path = DEFAULT_LOCKBOX) -> Tuple[LockboxTier, ...]:
         declaration = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise DataContractError(f"cannot load lockbox metadata: {exc}") from exc
+    return _parse_declaration(declaration)
+
+
+def _parse_declaration(declaration: object) -> Tuple[LockboxTier, ...]:
     if not isinstance(declaration, dict):
         raise DataContractError("lockbox metadata must be an object")
     if isinstance(declaration.get("version"), bool) or declaration.get("version") != 1:
@@ -185,3 +202,71 @@ def require_unlocked(scored_days: Iterable[date], *, where: str) -> None:
                     f"scores only unlocked days, so end the run before "
                     f"{tier.start} or have the tier opened in metadata/lockbox.json"
                 )
+
+
+def _day_before(day: date) -> date:
+    return date.fromordinal(day.toordinal() - 1)
+
+
+def split_tier(
+    declaration: dict, tier: str, before: date, *, opened_on: date, ruling: str
+) -> dict:
+    """A copy of `declaration` with the days of `tier` before `before` opened (#277).
+
+    `tier` must be locked and must hold `before` strictly after its first day.
+    It becomes two tiers: the days from its start to the day before `before`,
+    opened on `opened_on` under `ruling` and named
+    `<tier>_<start>_to_<last day>`, and the days from `before` on, still locked
+    and keeping the name `tier` and the old end. A scoring date opens the days
+    scored before it and no other, and splitting the remainder again at the next
+    date opens the next stretch.
+
+    Nothing is written: this returns a declaration. Opening a tier is
+    owner-attested (#256), so committing the result to `metadata/lockbox.json`
+    is Eleonora's own action. The input is not changed, and the result is
+    validated by the loader's own rules.
+
+    Raises:
+        ValueError: if `tier` is not a locked tier of `declaration`, or
+            `before` is not after its start and inside it.
+        DataContractError: if `ruling` is empty, or the result is malformed.
+    """
+
+    if not isinstance(ruling, str) or not ruling.strip():
+        raise DataContractError("opening a tier needs a reference to Eleonora's ruling")
+    tiers = _parse_declaration(declaration)
+    names = [t.name for t in tiers]
+    if tier not in names:
+        raise ValueError(f"no tier named {tier!r} in the declaration")
+    index = names.index(tier)
+    target = tiers[index]
+    if target.opened is not None:
+        raise ValueError(f"tier {tier!r} is already opened")
+    if not (target.start < before and (target.end is None or before <= target.end)):
+        raise ValueError(
+            f"a split of {tier!r} ({target.start} to {target.end or 'open-ended'}) needs a date "
+            f"after its first day and inside it, not {before}"
+        )
+    last = _day_before(before)
+    opened = {
+        "name": f"{tier}_{target.start.isoformat()}_to_{last.isoformat()}",
+        "start": target.start.isoformat(),
+        "end": last.isoformat(),
+        "opened": {"date": opened_on.isoformat(), "ruling": ruling},
+    }
+    locked = {
+        "name": tier,
+        "start": before.isoformat(),
+        "end": None if target.end is None else target.end.isoformat(),
+        "opened": None,
+    }
+    result = json.loads(json.dumps(declaration))
+    result["tiers"][index : index + 1] = [opened, locked]
+    _parse_declaration(result)
+    return result
+
+
+def render_declaration(declaration: dict) -> str:
+    """The text of `declaration` in the tracked file's format (sorted keys, two-space indent)."""
+
+    return json.dumps(declaration, indent=2, sort_keys=True) + "\n"
