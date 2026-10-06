@@ -246,6 +246,8 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 .fdcontrol{font-family:var(--sans);font-size:.86rem;color:var(--ink-2);margin:4px 0 8px}
 .fdcontrol select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:2px 6px}
 .fdhidden{font-size:.9rem}
+table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
+table.fttab.fdtab td{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1556,13 +1558,13 @@ function renderForecastDaily() {
   const g = svg.append("g").attr("transform", `translate(${m.l},12)`);
   let at = 0, row = 0;
   key.forEach(([kind, text]) => {
-    const w = 22 + 6.2 * text.length;
-    if (at + w > W - m.l - m.r) { at = 0; row += 16; }
-    const k = g.append("g").attr("transform", `translate(${at},${row})`);
+    const k = g.append("g");
     if (kind === "dot") k.append("circle").attr("cx", 6).attr("cy", 0).attr("r", 2.6).style("fill", "var(--ink)");
     else if (kind === "line") k.append("line").attr("x1", 0).attr("x2", 12).attr("y1", 0).attr("y2", 0).style("stroke", FD_COLOURS[0]).style("stroke-width", 1.6);
     else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", kind === "b90" ? .16 : .3);
-    k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text);
+    const w = 17 + k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text).node().getComputedTextLength() + 14;
+    if (at && at + w > W - m.l - m.r) { at = 0; row += 16; }
+    k.attr("transform", `translate(${at},${row})`);
     at += w;
   });
 }

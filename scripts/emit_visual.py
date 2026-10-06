@@ -2785,7 +2785,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
         line("Mean width of the 50% band, bp", lambda r: f"{r['band_50']['width']:.2f}"),
     ))
     table = (f"<div class='heat' role='region' aria-label='How far off the forecast was, in basis points' "
-             f"tabindex='0'><table class='fttab'><caption>How far off it was, in basis points. A band holds a day "
+             f"tabindex='0'><table class='fttab fdtab'><caption>How far off it was, in basis points. A band holds a day "
              f"when the actual spread is inside it or on its edge.</caption><thead><tr><th scope='col'>Measure</th>"
              f"{heads}</tr></thead><tbody>{body}</tbody></table></div>")
     miss_rows = "".join(
