@@ -6,9 +6,24 @@
     "ruling": "Eleonora's ruling of 2 October 2026 on #119 and #120: this sentence, and no stronger form"
   },
   "sources": [
-    {"key": "fomc_memo", "label": "FOMC memo, 13 September 2019 (Fed staff, the fed funds − IOER spread)", "url": "https://www.federalreserve.gov/monetarypolicy/files/FOMC20190913memo02.pdf", "fetched": true},
-    {"key": "cornelissen", "label": "Cornelissen (2021), the daily SOFR LSTM thesis", "url": "https://essay.utwente.nl/86418/1/Cornelissen_MA_BMS.pdf", "fetched": false},
-    {"key": "gellert", "label": "Gellert and Schlögl (2021), futures-implied month-end premia", "url": "https://arxiv.org/pdf/2101.04308", "fetched": false}
+    {
+      "key": "fomc_memo",
+      "label": "FOMC memo, 13 September 2019 (Fed staff, the fed funds − IOER spread)",
+      "url": "https://www.federalreserve.gov/monetarypolicy/files/FOMC20190913memo02.pdf",
+      "fetched": true
+    },
+    {
+      "key": "cornelissen",
+      "label": "Cornelissen (2021), the daily SOFR LSTM thesis",
+      "url": "https://essay.utwente.nl/86418/1/Cornelissen_MA_BMS.pdf",
+      "fetched": false
+    },
+    {
+      "key": "gellert",
+      "label": "Gellert and Schlögl (2021), futures-implied month-end premia",
+      "url": "https://arxiv.org/pdf/2101.04308",
+      "fetched": false
+    }
   ],
   "fork": {
     "repository": "nicholasberoud/repo-market-model",
@@ -24,16 +39,35 @@
     "release_url": "https://www.sec.gov/files/rules/final/2025/34-102487.pdf",
     "release_fetched": false,
     "dates": [
-      {"what": "eligible secondary-market cash Treasury trades", "date": "31 December 2026"},
-      {"what": "eligible Treasury repo", "date": "30 June 2027"}
+      {
+        "what": "eligible secondary-market cash Treasury trades",
+        "when": "by the end of 2026"
+      },
+      {
+        "what": "eligible Treasury repo",
+        "when": "by mid-2027"
+      }
     ],
-    "speech": {"label": "the New York Fed's speech of 9 July 2026", "url": "https://www.newyorkfed.org/newsevents/speeches/2026/per260709", "fetched": true,
-               "says": "requires eligible secondary-market Treasury cash transactions to be centrally cleared \"by the end of 2026\" and eligible Treasury repo and reverse repo \"by mid-2027\", and that repo activity \"has begun migrating from uncleared to cleared markets\"",
-               "cleared_share": "its footnote cites Office of Financial Research staff analysis that approximately 58 percent of repo volumes subject to the rule were already being cleared in the first eight months of 2025 (the scope of 2 October 2026 said early 2025)"},
-    "methodology": {"label": "the New York Fed's reference-rate methodology", "url": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates", "fetched": true,
-                    "says": "SOFR includes the trades used in BGCR (tri-party and GCF repo) plus transactions cleared through FICC's delivery-versus-payment repo service, so it does not cover repo that is neither tri-party, GCF nor FICC-cleared"},
-    "ofr_blog": {"label": "the OFR's blog post of 22 April 2025", "url": "https://www.financialresearch.gov/the-ofr-blog/2025/04/22/how-the-treasury-clearing-rule-for-repo-might-affect-sofr/", "fetched": false,
-                 "says": "the OFR expects little change to SOFR's median but fatter tails"},
-    "panel_end": "2026-09-03"
+    "speech": {
+      "label": "the New York Fed's speech of 9 July 2026",
+      "url": "https://www.newyorkfed.org/newsevents/speeches/2026/per260709",
+      "fetched": true,
+      "says": "requires eligible secondary-market Treasury cash transactions to be centrally cleared \"by the end of 2026\" and eligible Treasury repo and reverse repo \"by mid-2027\", and that repo activity \"has begun migrating from uncleared to cleared markets\"",
+      "cleared_share": "its footnote cites Office of Financial Research staff analysis that approximately 58 percent of repo volumes subject to the rule were already being cleared in the first eight months of 2025 (the scope of 2 October 2026 said early 2025)"
+    },
+    "methodology": {
+      "label": "the New York Fed's reference-rate methodology",
+      "url": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates",
+      "fetched": true,
+      "says": "SOFR includes the trades used in BGCR (tri-party and GCF repo) plus transactions cleared through FICC's delivery-versus-payment repo service, so it does not cover repo that is neither tri-party, GCF nor FICC-cleared"
+    },
+    "ofr_blog": {
+      "label": "the OFR's blog post of 22 April 2025",
+      "url": "https://www.financialresearch.gov/the-ofr-blog/2025/04/22/how-the-treasury-clearing-rule-for-repo-might-affect-sofr/",
+      "fetched": false,
+      "says": "the OFR expects little change to SOFR's median but fatter tails"
+    },
+    "panel_end": "2026-09-03",
+    "dates_note": "The scope gives the exact compliance dates, the last day of 2026 for cash trades and the last day of the first half of the next year for repo. They are not written out here, because `tests/test_docs_freshness.py` refuses a published page that states a date that has not happened; the fetched speech's own wording is used instead."
   }
 }

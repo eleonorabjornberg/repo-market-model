@@ -439,7 +439,7 @@ def _join_bullets(section):
 def clearing_block(emit):
     data = _json(SOURCES)
     c = data["clearing"]
-    dates = " and of ".join("%s from **%s**" % (d["what"], d["date"]) for d in c["dates"])
+    dates = " and of ".join("%s **%s**" % (d["what"], d["when"]) for d in c["dates"])
     note = lambda item: "" if item["fetched"] else "; not fetched: this environment's network policy refused the host"
     lines = [
         "**The Treasury clearing mandate.** (%s.)" % c["scope"],
@@ -447,7 +447,7 @@ def clearing_block(emit):
         "- **The dates.** The SEC's Treasury clearing rule requires central clearing of %s (%s: %s%s). %s %s "
         "(%s) says it requires %s." % (
             dates, c["release"], c["release_url"], note({"fetched": c["release_fetched"]}),
-            "The release itself was not read, so the exact dates rest on the scope; the New York Fed's speech,",
+            "The release itself was not read, so the timing rests on the scope; the New York Fed's speech,",
             c["speech"]["label"], c["speech"]["url"], c["speech"]["says"]),
         "- **What it means for the target.** %s (%s, %s). Repo migrating into clearing therefore drifts SOFR's "
         "composition and volume. The migration is gradual and already under way: %s." % (
@@ -456,6 +456,7 @@ def clearing_block(emit):
         "- **The expected effect.** The expectation of little change to SOFR's median but fatter tails is the "
         "OFR's (%s: %s%s). This project's target is the tail." % (
             c["ofr_blog"]["label"], c["ofr_blog"]["url"], note(c["ofr_blog"])),
+        "  %s" % c["dates_note"],
         "- **Where it falls.** Both compliance dates fall after the panel ends (%s), so there is no clean break "
         "inside the scoring window or the near-blind tier. The drift overlaps the 2025 regime and the locked "
         "period: watch it when the lockbox is opened, above all for any input built on `SOFR_volume`."
@@ -491,9 +492,9 @@ def monitoring_block(emit):
         "a missed day is recorded as missed, not back-filled (`live_record.py missed`).",
         "- **Digests and failure tracking.** The log is verified against its published digests before any score is "
         "read (`scripts/live_integrity.py`), and a run that failed is reported rather than silently skipped.",
-        "- **Interim reports.** Scored only on the pre-registered dates, %s and %s, then every 1 October, "
-        "cumulatively from the first logged day; on any other date the scorer refuses to run "
-        "(`scripts/live_score.py`)." % (first.isoformat(), second.isoformat()),
+        "- **Interim reports.** Scored only on the pre-registered dates, the first two of which both fall in %d "
+        "(`live_score.FIRST_SCORING_DATES`), then every 1 October, cumulatively from the first logged day; on "
+        "any other date the scorer refuses to run (`scripts/live_score.py`)." % first.year,
         "- **The primary result.** The %s of the published distribution against as-of persistence's, at horizon %d, "
         "with the final test's pass rule, labels and block-10 sensitivity interval."
         % (live.HEADLINE["target"].upper(), live.HEADLINE["horizon"]),

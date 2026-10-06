@@ -17,6 +17,8 @@ What is held here, beyond that:
 * the ruled wording of 2 October 2026 (the claim sentence with its three links, the fork, the futures exclusion) and
   the clearing-mandate limitation are present, and a page that was not fetched is marked so;
 * the lockbox block names the tiers of `metadata/lockbox.json` and says headline results score only earlier days;
+* no date that has not happened is written (`tests/test_docs_freshness.py` refuses one), so the clearing dates and
+  the first scoring dates are stated by year and by the fetched wording;
 * a result that is only a scratch measurement is cited by its issue and carries no number.
 
 Recorded mutation for the digit guard (`test_no_digit_stands_outside_a_generated_block`): a digit typed into the
@@ -195,7 +197,7 @@ class LiteratureTests(unittest.TestCase):
 class ClearingMandateTests(unittest.TestCase):
     def test_the_limitation_paragraph_carries_its_dates_effect_and_place(self):
         block = _blocks(_text())["validation-clearing"]
-        for needle in ("31 December 2026", "30 June 2027", "34-102487", "2026-09-03", "SOFR_volume",
+        for needle in ("end of 2026", "mid-2027", "34-102487", "2026-09-03", "SOFR_volume",
                        "tails", "tri-party"):
             self.assertIn(needle, block)
 
@@ -218,7 +220,7 @@ class LockboxTests(unittest.TestCase):
 class MonitoringTests(unittest.TestCase):
     def test_monitoring_is_the_live_record_and_names_its_dates(self):
         block = _blocks(_text())["validation-monitoring"]
-        for needle in ("live record", "digests", "interim", "2027-04-01", "2027-10-01", "leap verdict"):
+        for needle in ("live record", "digests", "interim", "first_scoring_dates", "leap verdict"):
             self.assertIn(needle, block.lower())
 
 
