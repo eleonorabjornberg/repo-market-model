@@ -399,7 +399,7 @@ was scored. Directive #220 writes it into this record and regenerates both check
    - *Also seen before deciding, on pre-2026 data only:* the published CRPS record
      (`docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`) split into each year's first
      169 scored days, 2019–2025. The lower bound was above zero in 4 of 7 years (2019, 2023, 2024 and 2025), and the
-     model was clearly worse in 2022, so about 60% of 169-day windows passed. This was computed in a planning session
+     model was clearly worse in 2022, so about 60% of 169-day windows passed. That 60% is how often a window passed in the years seen, which is the test's power if the model has the skill it showed then. It is not a base rate of false positives: under no skill the pass rate is the test's own false-positive rate, which this planning computation did not measure. (A wording correction proposed in #267, for Eleonora to review.) This was computed in a planning session
      with a stationary bootstrap at block length 2. It is context, not a figure for the record.
 5. **Both checksums are regenerated.** Both declarations carry the cells and their roles (`CELLS`, `PRIMARY_CELL`),
    and the CRPS declaration also carries the horizon and the claim. The pins are above ("What is frozen"). Without the
