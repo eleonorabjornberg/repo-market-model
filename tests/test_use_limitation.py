@@ -16,7 +16,17 @@ was applied to a fresh clone, the generator re-run, and the result read:
    `test_readme_carries_the_statement` -- `AssertionError: 0 != 1`.
 2. `scripts/emit_visual.py`: `use_limitation_fill` returns `{"use_limitation": ""}`,
    then `emit_visual.py` re-run. Kills `test_results_page_carries_the_statement_twice`
-   -- `AssertionError: 0 != 2`.
+   (renamed in #316 to `test_results_page_carries_the_plain_version_twice`) -- `AssertionError: 0 != 2`.
+
+#316 added the plain-English version, which the page now carries instead (the page test
+counts it, and no longer the technical statement). Two more, applied the same way:
+
+3. `scripts/emit_visual.py`: `use_limitation_fill` reads `## The statement` instead of
+   `## Plain-English version`, then `emit_visual.py` re-run. Kills
+   `test_results_page_carries_the_plain_version_twice` -- `AssertionError: 0 != 2`.
+4. `docs/use-limitation.md`: "market" in the plain version replaced by "regime". Kills
+   `test_plain_version_is_one_short_blockquote_without_jargon` -- `AssertionError: 'regime'
+   unexpectedly found in ...`.
 """
 
 import re
@@ -32,13 +42,31 @@ RULED = ("A research forecast of the SOFR − IORB spread. It is not a stress-wa
          "material policy or regime change.")
 
 
+#: What the plain version may not contain (#316): the technical vocabulary of the statement.
+BANNED = ("VaR", "desk", "quantile", "turns", "regime", "quarter-end", "conformal", "coverage", "calibrat",
+          "scarce", "ON RRP", "IORB", "SOFR")
+
+
 def read(rel):
     return (ROOT / rel).read_text(encoding="utf-8")
 
 
+def section(heading):
+    """The body of `## <heading>` in `docs/use-limitation.md`, up to the next `## `."""
+    text = SOURCE.read_text(encoding="utf-8")
+    start = text.index("\n## %s\n" % heading) + 1
+    nxt = text.find("\n## ", start + 1)
+    return text[start:] if nxt < 0 else text[start:nxt]
+
+
+def plain():
+    """The one blockquote under `## Plain-English version`: the marker another repository reads (#316)."""
+    return re.findall(r"^> (.*)$", section("Plain-English version"), re.M)
+
+
 class UseLimitationTests(unittest.TestCase):
     def test_source_is_the_ruled_wording(self):
-        self.assertEqual(re.findall(r"^> (.*)$", SOURCE.read_text(encoding="utf-8"), re.M), [RULED])
+        self.assertEqual(re.findall(r"^> (.*)$", section("The statement"), re.M), [RULED])
 
     def test_readme_carries_the_statement(self):
         text = read("README.md")
@@ -51,12 +79,32 @@ class UseLimitationTests(unittest.TestCase):
         start, end = text.index("<!-- generated: final-test -->"), text.index("<!-- end generated: final-test -->")
         self.assertIn(RULED, text[start:end])
 
-    def test_results_page_carries_the_statement_twice(self):
+    def test_results_page_carries_the_plain_version_twice(self):
         page = read("site/index.html")
-        self.assertEqual(page.count(RULED), 2)
-        self.assertLess(page.index(RULED), page.index('id="start"'))
+        (version,) = plain()
+        self.assertEqual(page.count(version), 2)
+        self.assertEqual(page.count(RULED), 0)
+        self.assertLess(page.index(version), page.index('id="start"'))
         final = page[page.index('<section id="final-test"'):]
-        self.assertIn(RULED, final[:final.index("</section>")])
+        self.assertIn(version, final[:final.index("</section>")])
+
+    def test_plain_version_is_one_short_blockquote_without_jargon(self):
+        found = plain()
+        self.assertEqual(len(found), 1, "the section must hold exactly one blockquote")
+        text = found[0]
+        self.assertIsNone(re.search(r"#\d", text), "an issue number in the plain version")
+        for term in BANNED:
+            self.assertNotIn(term.lower(), text.lower(), term)
+        sentences = [x for x in re.split(r"(?<=[.!?])\s+", text) if x]
+        self.assertLessEqual(len(sentences), 2)
+        for sentence in sentences:
+            self.assertLessEqual(len(sentence.split()), 30, sentence)
+
+    def test_the_marker_is_documented_in_the_file(self):
+        text = SOURCE.read_text(encoding="utf-8")
+        self.assertIn("first blockquote under `## Plain-English version`", text)
+        self.assertIn("## The statement", text)
+        self.assertEqual(len(re.findall(r"^## Plain-English version$", text, re.M)), 1)
 
     def test_triggers_are_listed_and_marked_proposed(self):
         text = SOURCE.read_text(encoding="utf-8")
