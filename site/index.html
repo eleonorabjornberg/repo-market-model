@@ -694,7 +694,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>d515eaf26359c1c802d97c786822fda264339d32</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>63584932ba254a9ae574ab1e74c53c8e1600011e</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>Chapters 5 and 6 are drawn only from the six run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -1277,7 +1277,7 @@ function renderN4Seg() {
   const x = d3.scaleLinear([Math.min(0, d3.min(vals)), Math.max(0, d3.max(vals))], [m.l, W - m.r]).nice();
   const yc = i => m.t + i * rowH + rowH / 2;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen in advance, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
+    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen by a rule fixed on 2 October 2026 that reads no rate or spread, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 8)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d))
     .attr("y1", m.t - 6).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(sgn).tickSizeOuter(0));

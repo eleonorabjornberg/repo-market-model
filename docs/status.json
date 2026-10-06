@@ -13,7 +13,7 @@
   "commit": "d0c92b2",
   "figures": {
     "dependencies": 0,
-    "event_holdouts": 2,
+    "event_windows": 2,
     "panel_end": "2026-09-03",
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
@@ -52,5 +52,6 @@
     "pressure_model_v1_h5.json",
     "v1_interior_diagnosis.json"
   ],
+  "schema_version": 1,
   "total_phases": 8
 }
