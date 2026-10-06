@@ -562,7 +562,16 @@ class RuleTests(unittest.TestCase):
 
 
 class RefuseLockedTests(unittest.TestCase):
-    """The selection run refuses a locked day (`docs/decisions/lockbox.md`)."""
+    """The selection run refuses a locked day (`docs/decisions/lockbox.md`).
+
+    The boundary is the fixed 2026-01-01 of the final test's definition, not
+    `metadata/lockbox.json` (`docs/decisions/final-test-preregistration.md`).
+
+    Recorded mutation (CLAUDE.md): in `final_test_preregistration._refuse_locked`,
+    `when >= date(2026, 1, 1)` mutated to `when > date(2026, 1, 1)`.
+    `test_the_first_locked_day_is_refused` then fails, raising `AssertionError`
+    ("LookAheadError not raised").
+    """
 
     def test_the_first_locked_day_is_refused(self):
         with self.assertRaises(LookAheadError):
