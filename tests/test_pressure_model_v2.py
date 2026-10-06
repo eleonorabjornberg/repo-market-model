@@ -577,6 +577,9 @@ class QuarterEndDeclarationTests(unittest.TestCase):
         self.assertLess(v2.QE_CANDIDATES["qe_indicator"]["complexity"],
                         v2.QE_CANDIDATES["qe_indicator_and_month_end_countdown"]["complexity"])
 
+    def test_the_chosen_term_is_a_declared_candidate(self):
+        self.assertIn(v2.CHOSEN_QE_FIX, v2.QE_CANDIDATES)
+
     def test_the_trees_depth_is_an_ml_setting_not_a_script_override(self):
         self.assertEqual(v2.V2_TREE_SETTINGS, {"max_depth": 3})
         base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga", "sofr_volume"))
@@ -614,7 +617,8 @@ class QuarterEndDeclarationTests(unittest.TestCase):
         self.assertIsNone(v2.select_quarter_end({}, lambda n, leader: includes)["recommended"])
 
     def test_the_choice_refuses_the_outer_block(self):
-        outer = [{"date": "2023-01-03", "anchor": "2022-12-30", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary"}]
+        outer = [{"date": "2023-01-03", "anchor": "2022-12-30", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary",
+                  "type": "ordinary"}]
         with self.assertRaises(ValueError):
             v2.quarter_end_choice({"base": outer}, [], {}, [], None)
 
@@ -732,7 +736,7 @@ class RecordTests(unittest.TestCase):
         diagnosis = self.record["inner_diagnosis"]
         self.assertEqual(diagnosis["declared"], v2.DIAGNOSIS)
         self.assertEqual(diagnosis["days"], self.record["inner_block"]["days"])
-        self.assertEqual(set(diagnosis["models"]), {"v1", "iv", "fixed"})
+        self.assertEqual(set(diagnosis["models"]), {"v1", "iv", "fixed", "final"})
         for model in diagnosis["models"].values():
             self.assertEqual(set(model["by_cell"]), set(v2.DIAGNOSIS["cells"]))
             self.assertEqual(model["by_cell"]["all"]["days"], diagnosis["days"])
@@ -743,12 +747,66 @@ class RecordTests(unittest.TestCase):
             self.assertLessEqual(model["by_cell"]["year_end"]["days"], model["by_cell"]["quarter_end"]["days"])
         self.assertIn("diagnostics only", v2.DIAGNOSIS["status"])
 
-    def test_the_outer_block_was_looked_at_twice_and_says_so(self):
-        first, second = self.record["outer_block_before_fix"], self.record["outer_block"]
-        self.assertEqual((first["first"], first["last"]), (second["first"], second["last"]))
+    def test_the_outer_block_was_looked_at_three_times_and_says_so(self):
+        first, second = self.record["outer_block_before_fix"], self.record["outer_block_second_look"]
+        third = self.record["outer_block"]
+        for look in (second, third):
+            self.assertEqual((first["first"], first["last"]), (look["first"], look["last"]))
+            self.assertEqual(first["coverage_v1"], look["coverage_v1"])
         self.assertIn("first look", first["label"])
         self.assertIn("second look", second["label"])
-        self.assertEqual(first["coverage_v1"], second["coverage_v1"])
+        self.assertEqual(third["label"], v2.THIRD_LOOK_LABEL)
+        self.assertIn("third look", third["label"])
+        self.assertIn("three times", third["label"])
+
+    def test_the_quarter_end_term_was_chosen_on_the_inner_block_by_the_declared_rule(self):
+        declared = self.record["outer_validation_declared"]["quarter_end"]
+        self.assertEqual(declared["chosen"], v2.CHOSEN_QE_FIX)
+        self.assertEqual(declared["candidates"], json.loads(json.dumps(v2.QE_CANDIDATES)))
+        self.assertEqual(declared["selection"], v2.QE_SELECTION)
+        self.assertEqual(self.record["model"]["quarter_end_candidate"], v2.CHOSEN_QE_FIX)
+        choice = self.record["quarter_end_choice"]
+        self.assertEqual(choice["window"], ["2018-06-29", "2022-12-31"])
+        self.assertEqual(choice["selection"]["recommended"], v2.CHOSEN_QE_FIX)
+        self.assertEqual(set(choice["candidates"]), set(v2.QE_CANDIDATES))
+        eligible = choice["selection"]["eligible"]
+        leader = min(eligible, key=lambda n: (choice["candidates"][n]["inner"]["crps"],
+                                              tuple(choice["candidates"][n]["complexity"]), n))
+        self.assertEqual(choice["selection"]["leader"], leader)
+        for name, candidate in choice["candidates"].items():
+            gates = candidate["conditional_gates_inner"]
+            self.assertEqual(name in eligible,
+                             dx.eligible(candidate["inner"]) and not any(g["verdict"] == "fail" for g in gates.values()))
+            # Every candidate carries the quarter-end and year-end rows, with counts.
+            cells = candidate["by_day_type"]
+            self.assertLessEqual(cells["year_end"]["days"], cells["quarter_end"]["days"])
+            self.assertEqual(sum(cells[k]["days"] for k in ("quarter_end", "tax_date", "month_end", "ordinary")),
+                             cells["all"]["days"])
+
+    def test_a_cell_under_the_minimum_days_carries_no_interval_anywhere(self):
+        minimum = v2.CONDITIONAL_GATES["minimum_days"]
+        blocks = [self.record["quarter_end_choice"]["candidates"][n]["by_day_type"] for n in v2.QE_CANDIDATES]
+        blocks += [m["by_cell"] for m in self.record["inner_diagnosis"]["models"].values()]
+        blocks += [m["by_cell"] for m in self.record["outer_diagnosis"]["models"].values()]
+        seen_small = False
+        for block in blocks:
+            for name, cell in block.items():
+                for band in ("band_50", "band_90"):
+                    if cell["days"] < minimum:
+                        seen_small = True
+                        self.assertEqual(cell[band]["interval"], "too few days", name)
+                        self.assertNotIn("lower", cell[band], name)
+                    else:
+                        self.assertIn("lower", cell[band], name)
+        self.assertTrue(seen_small)
+
+    def test_the_outer_diagnosis_covers_the_outer_days(self):
+        diagnosis = self.record["outer_diagnosis"]
+        self.assertEqual(set(diagnosis["models"]), {"v1", "base", "v2"})
+        for model in diagnosis["models"].values():
+            cells = model["by_cell"]
+            self.assertEqual(cells["all"]["days"], self.record["outer_block"]["days"])
+            self.assertLessEqual(cells["year_end"]["days"], cells["quarter_end"]["days"])
 
     def test_the_inner_and_outer_verdicts_are_the_declared_rules_applied(self):
         for name in ("inner_block", "outer_block"):

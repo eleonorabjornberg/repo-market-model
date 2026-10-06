@@ -582,6 +582,22 @@ QE_SELECTION = {
 }
 
 
+#: The quarter-end term the inner block chose (`choose-quarter-end`, run on 6 October 2026), committed before the
+#: outer block is scored a third time. Under `QE_SELECTION` it is the leader (inner CRPS 1.799 against the base's
+#: 1.828, paired gain +0.029 [+0.005, +0.052]) and the interval of each simpler eligible candidate against it
+#: excludes 0, so none is preferred. The quarter-end indicator alone leaves v2's vectors unchanged (the trees never
+#: split on it: 19 inner quarter-ends against `min_samples_leaf` 20). The choice does NOT move the quarter-end 50% band
+#: (31.6% on 19 days, as before); the evidence for it is the pooled inner CRPS.
+CHOSEN_QE_FIX = "qe_indicator_and_month_end_countdown"
+
+THIRD_LOOK_LABEL = ("a third look at 2023-2025, scored once for v1 and the final v2 only (ruling of 6 October 2026, "
+                    "16:48). The outer block has now been read three times: the first look, for (iv) before the "
+                    "width fix, is `outer_block_before_fix`; the second, for v2 with the width fix, is "
+                    "`outer_block_second_look`; both are kept as they were. The width fix and the quarter-end "
+                    "term were each designed after an earlier look, so this block is no longer unseen by the "
+                    "design, and every historical edge of v2 over v1 stays exploratory")
+
+
 def candidate_setup(fit, features, name):
     """A quarter-end candidate's fitter and feature list, from the published side's.
 
@@ -836,11 +852,20 @@ def select_quarter_end(summaries, paired_to_leader):
                             {name: QE_CANDIDATES[name]["complexity"] for name in summaries})
 
 
+def with_day_types(days, rows, splits):
+    """`days` with each day's pressure-day type under `type` (the split declaration's; a walk's `kind` is a width class)."""
+
+    from repo_model.baseline import _split_labels
+
+    _regimes, types = _split_labels(splits, rows, [date.fromisoformat(d["date"]) for d in days])
+    return [dict(d, type=kind) for d, kind in zip(days, types)]
+
+
 def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
     """The quarter-end term, chosen on the inner block only (`QE_SELECTION`).
 
     `candidate_days` maps each candidate to its days (`date`, `anchor`, `y`,
-    `kind` and `v2`, the vector of v2 built on that candidate's trees); every
+    `type`, the pressure-day type, and `v2`, the vector of v2 built on that candidate's trees); every
     candidate walks the same days. `v1_days` is v1 on the same days in #247's
     format (`issued`). `cells` maps a date to its conditional cells. Refuses a
     day outside the inner block.
@@ -858,7 +883,7 @@ def quarter_end_choice(candidate_days, v1_days, cells, rows, splits) -> dict:
     for name, vecs in vectors.items():
         summaries[name] = dx._summary(v1_days, vecs, INNER)
         gates[name] = conditional_gates(_with_cells(reference, cells, "v", vecs), "v")
-        diagnostic = [{"date": d["date"], "y": d["y"], "v": v, "type": d["kind"], "cells": set(cells[d["date"]])}
+        diagnostic = [{"date": d["date"], "y": d["y"], "v": v, "type": d["type"], "cells": set(cells[d["date"]])}
                       for d, v in zip(reference, vecs)]
         candidates[name] = {
             "what": QE_CANDIDATES[name]["what"],
@@ -1195,7 +1220,22 @@ def assemble_command(args) -> int:
             raise ValueError(f"{path} reads a day after {LAST_READ}")
         if document.get("tree_settings") != V2_TREE_SETTINGS:
             raise ValueError(f"{path} was not walked with v2's trees")
+        if document.get("candidate") != CHOSEN_QE_FIX:
+            raise ValueError(f"{path} was walked for {document.get('candidate')!r}, not for CHOSEN_QE_FIX")
         walks[document["horizon"]] = document
+    candidate_walks = {}
+    for path in args.candidate_walks:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if document["panel_sha256"] != panel_sha256(args.panel) or document["horizon"] != 1:
+            raise ValueError(f"{path} is not a candidate walk at h = 1 on the published panel")
+        if document.get("tree_settings") != V2_TREE_SETTINGS:
+            raise ValueError(f"{path} was not walked with v2's trees")
+        candidate_walks[document["candidate"]] = document
+    if set(candidate_walks) != set(QE_CANDIDATES):
+        raise ValueError(f"the candidate walks are for {sorted(candidate_walks)}, not {sorted(QE_CANDIDATES)}")
+    if candidate_walks[CHOSEN_QE_FIX]["days"] != walks[1]["days"]:
+        raise ValueError("CHOSEN_QE_FIX's candidate walk is not the walk the record is assembled from")
+    base_days = candidate_walks["base"]["days"]
 
     # v1 at each horizon is its own walk (#247's, unchanged trees), joined by date.
     v1_walks = {}
@@ -1252,33 +1292,48 @@ def assemble_command(args) -> int:
     picks = {reading: choice["selection"][reading]["recommended"] for reading in READINGS}
     if picks[BINDING_READING] != CHOSEN:
         raise ValueError(f"the inner block chooses {picks}; CHOSEN is {CHOSEN!r}")
-    if chosen_vectors[CHOSEN] != [d["tracked"] for d in days]:
+    if chosen_vectors[CHOSEN] != [d["tracked"] for d in base_days]:
         raise ValueError("the interior layer's vectors are not the chosen candidate's")
-    if [d["issued"] for d in variant_walks[V2_TREE_VARIANT]] != [d["pid"] for d in days]:
+    # The depth-3 setting of `ml` gives the trees #247's walk gave by replacing the estimator class.
+    if [d["issued"] for d in variant_walks[V2_TREE_VARIANT]] != [d["pid"] for d in base_days]:
         raise ValueError("v2's trees and PID are not #247's walk of its tree setting")
 
     # The fix, chosen on the inner block only; it must be the candidate committed as CHOSEN_FIX.
     before_fix = json.loads(args.before_fix_record.read_text(encoding="utf-8"))
     inner_days, _inner_cells = inner_days_from_record(
-        {"anchors": [[d["date"], d["anchor"]] for d in days],
-         "per_day_h1": {"rows": [[d["date"], d["y"], d["pid"], d["tracked"]] for d in days]}}, rows, splits)
+        {"anchors": [[d["date"], d["anchor"]] for d in base_days],
+         "per_day_h1": {"rows": [[d["date"], d["y"], d["pid"], d["tracked"]] for d in base_days]}}, rows, splits)
     v1_inner = [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["v1"]} for d in inner_days]
     fix = fix_choice(inner_days, v1_inner, cells, rows, splits)
     fix_candidate_vectors = fix.pop("vectors")
     if fix["selection"]["recommended"] != CHOSEN_FIX:
         raise ValueError(f"the inner block chooses {fix['selection']['recommended']!r}; CHOSEN_FIX is {CHOSEN_FIX!r}")
-    inner_v2 = [d["v2"] for d in days if _in(d["date"], INNER)]
-    if fix_candidate_vectors[CHOSEN_FIX] != inner_v2:
-        raise ValueError("v2's inner vectors are not the chosen fix's")
-    if fix_candidate_vectors["iv_base"] != [d["tracked"] for d in days if _in(d["date"], INNER)]:
+    inner_base = [d for d in base_days if _in(d["date"], INNER)]
+    inner_final = [d for d in days if _in(d["date"], INNER)]
+    if fix_candidate_vectors[CHOSEN_FIX] != [d["v2"] for d in inner_base]:
+        raise ValueError("the base walk's inner vectors are not the chosen fix's")
+    if fix_candidate_vectors["iv_base"] != [d["tracked"] for d in inner_base]:
         raise ValueError("(iv)'s inner vectors are not the walk's interior layer")
     first_look = {row[0]: row[3] for row in before_fix["per_day_h1"]["rows"]}
-    if any(first_look[d["date"]] != d["tracked"] for d in days if d["date"] in first_look):
+    if any(first_look[d["date"]] != d["tracked"] for d in base_days if d["date"] in first_look):
         raise ValueError("the interior layer differs from the record as it stood before the fix")
-    for d, e in zip(inner_days, (d for d in days if _in(d["date"], INNER))):
+    for d, e, f in zip(inner_days, inner_base, inner_final):
         d["fixed"] = e["v2"]
+        d["final"] = f["v2"]
+
+    # The quarter-end term, chosen on the inner block only; it must be the candidate committed as CHOSEN_QE_FIX.
+    qe_inner = {name: with_day_types([d for d in doc["days"] if _in(d["date"], INNER)], rows, splits)
+                for name, doc in candidate_walks.items()}
+    qe = quarter_end_choice(qe_inner, v1_inner, cells, rows, splits)
+    qe_vectors = qe.pop("vectors")
+    if qe["selection"]["recommended"] != CHOSEN_QE_FIX:
+        raise ValueError(f"the inner block chooses {qe['selection']['recommended']!r}; CHOSEN_QE_FIX is "
+                         f"{CHOSEN_QE_FIX!r}")
+    if qe_vectors[CHOSEN_QE_FIX] != [d["v2"] for d in inner_final] or qe_vectors["base"] != [d["v2"] for d in inner_base]:
+        raise ValueError("the quarter-end choice's vectors are not the walks'")
     diagnosis_block = inner_diagnosis(
-        inner_days, {"v1": "v1", "iv": "v2 before the fix: (iv)", "fixed": "v2 after the fix"},
+        inner_days, {"v1": "v1", "iv": "v2 before the fix: (iv)", "fixed": "v2 after the width fix, no quarter-end term",
+                     "final": f"v2 with the quarter-end choice: {CHOSEN_QE_FIX}"},
         splits.regime_labels)
 
     def validation_block(window, label):
@@ -1292,13 +1347,26 @@ def assemble_command(args) -> int:
 
     inner_block = validation_block(INNER, "inner")
     outer_block = validation_block(OUTER, "outer")
-    outer_block["label"] = ("a second look at 2023-2025, scored once for v1 and the fixed v2 only. The first "
-                            "look, for (iv) before the fix, is `outer_block_before_fix`; the fix was declared "
-                            "and chosen on the inner block (`fix_choice`, committed as CHOSEN_FIX) after "
-                            "that look, so this block is no longer unseen by the design")
-    first_outer = dict(before_fix["outer_block"])
-    first_outer["label"] = ("the first look at 2023-2025, for v1 and (iv) before the fix, as the PR's earlier "
-                            "head scored it; kept, not re-scored")
+    outer_block["label"] = (THIRD_LOOK_LABEL)
+    looks = json.loads(args.second_look_record.read_text(encoding="utf-8"))
+    first_outer, second_outer = looks["outer_block_before_fix"], looks["outer_block"]
+    if "first look" not in first_outer["label"] or "second look" not in second_outer["label"]:
+        raise ValueError("--second-look-record does not carry the first and second looks")
+    outer_days = [d for d in days if _in(d["date"], OUTER)]
+    outer_base = [d for d in base_days if _in(d["date"], OUTER)]
+    outer_scored = [date.fromisoformat(d["date"]) for d in outer_days]
+    from repo_model.baseline import _split_labels
+
+    _regimes, outer_types = _split_labels(splits, rows, outer_scored)
+    outer_diag = [{"date": d["date"], "y": d["y"], "v1": d["v1"], "base": b["v2"], "v2": d["v2"], "type": kind,
+                   "cells": set(cells[d["date"]])} for d, b, kind in zip(outer_days, outer_base, outer_types)]
+    outer_diagnosis = {"label": ("diagnostics only, outer block, third look: counts and intervals per day type; "
+                                 "no interval under the minimum-cell rule ('too few days')"),
+                       "models": {}}
+    for field, label in (("v1", "v1"), ("base", "v2 before the quarter-end term"), ("v2", "v2 final")):
+        outer_diagnosis["models"][field] = {"label": label, "by_cell": {
+            cell: _diagnostic_cell([d for d in outer_diag if _cell_members(d)[cell]], field, ("outer", field, cell))
+            for cell in ("all", "quarter_end", "year_end", "tax_date", "month_end", "ordinary")}}
 
     main_block = window_block(decides, rows, splits, persistence, "2018-2025")
     main_block["bar"] = bar_verdict(main_block["coverage"], main_block["crps"]["v2_vs_v1"])
@@ -1323,10 +1391,13 @@ def assemble_command(args) -> int:
                            "v1's features, fold grid and nested PID on trees of maximum depth 3, with "
                            "each interior level tracked online; then the fix chosen on the inner block "
                            "(rulings of 14:02 and 14:24): an online width tracker on the 50% band, one "
-                           "class for turn days and one for ordinary days"),
+                           "class for turn days and one for ordinary days; then the quarter-end term chosen "
+                           f"on the inner block (ruling of 16:48): {CHOSEN_QE_FIX}"),
             "v1": walks[1]["model"],
             "settings": walks[1]["settings"],
             "tree_settings": V2_TREE_SETTINGS,
+            "quarter_end_candidate": CHOSEN_QE_FIX,
+            "features": walks[1]["features"],
             "code": ("src/repo_model/interior.py (NestedInteriorFoldPid); the tree setting is applied as "
                      "#247's walk applies it (scripts/interior_diagnosis._with_tree_settings)"),
         },
@@ -1365,13 +1436,18 @@ def assemble_command(args) -> int:
                                               "selection": FIX_SELECTION, "chosen": CHOSEN_FIX,
                                               "width_rates": list(WIDTH_RATES),
                                               "width_fallback": WIDTH_FALLBACK},
+                                      "quarter_end": {"candidates": QE_CANDIDATES, "selection": QE_SELECTION,
+                                                      "chosen": CHOSEN_QE_FIX},
                                       "historical_edge_label": EXPLORATORY},
+        "quarter_end_choice": qe,
         "inner_choice": choice,
         "inner_diagnosis": diagnosis_block,
         "fix_choice": fix,
         "inner_block": inner_block,
         "outer_block": outer_block,
         "outer_block_before_fix": first_outer,
+        "outer_block_second_look": second_outer,
+        "outer_diagnosis": outer_diagnosis,
         "window_2018_2025": main_block,
         "check_2026": check_block,
         "anchors": [[d["date"], d["anchor"]] for d in days],
@@ -1514,7 +1590,8 @@ def choose_quarter_end_command(args) -> int:
         if document["horizon"] != 1 or document.get("tree_settings") != V2_TREE_SETTINGS:
             raise ValueError(f"{path} is not a v2 walk at h = 1")
         # The walk reaches past the inner block; the choice reads the inner block's days and no others.
-        candidate_days[document["candidate"]] = [d for d in document["days"] if _in(d["date"], INNER)]
+        candidate_days[document["candidate"]] = with_day_types(
+            [d for d in document["days"] if _in(d["date"], INNER)], rows, splits)
     if set(candidate_days) != set(QE_CANDIDATES):
         raise ValueError(f"the walks are for {sorted(candidate_days)}, not {sorted(QE_CANDIDATES)}")
     v1 = json.loads(args.v1_walk.read_text(encoding="utf-8"))
@@ -1566,6 +1643,10 @@ def main(argv=None) -> int:
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
     asm.add_argument("--variant-walks", type=Path, nargs="+", required=True,
                      help="#247's walks: v1 and every variant at h = 1, and v1 at h = 2 to 5")
+    asm.add_argument("--candidate-walks", type=Path, nargs="+", required=True,
+                     help="every quarter-end candidate's v2 walk at h = 1")
+    asm.add_argument("--second-look-record", type=Path, required=True,
+                     help="the record as it stood at the second look: its first and second looks at the outer block")
     asm.add_argument("--before-fix-record", type=Path, required=True,
                      help="the record as it stood before the fix: its (iv) vectors and its first look at the outer block")
     asm.add_argument("--output", type=Path, default=RECORD)
