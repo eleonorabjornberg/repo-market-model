@@ -16,7 +16,17 @@ was applied to a fresh clone, the generator re-run, and the result read:
    `test_readme_carries_the_statement` -- `AssertionError: 0 != 1`.
 2. `scripts/emit_visual.py`: `use_limitation_fill` returns `{"use_limitation": ""}`,
    then `emit_visual.py` re-run. Kills `test_results_page_carries_the_statement_twice`
-   -- `AssertionError: 0 != 2`.
+   (renamed in #316 to `test_results_page_carries_the_plain_version_twice`) -- `AssertionError: 0 != 2`.
+
+#316 added the plain-English version, which the page now carries instead (the page test
+counts it, and no longer the technical statement). Two more, applied the same way:
+
+3. `scripts/emit_visual.py`: `use_limitation_fill` reads `## The statement` instead of
+   `## Plain-English version`, then `emit_visual.py` re-run. Kills
+   `test_results_page_carries_the_plain_version_twice` -- `AssertionError: 0 != 2`.
+4. `docs/use-limitation.md`: "market" in the plain version replaced by "regime". Kills
+   `test_plain_version_is_one_short_blockquote_without_jargon` -- `AssertionError: 'regime'
+   unexpectedly found in ...`.
 """
 
 import re
