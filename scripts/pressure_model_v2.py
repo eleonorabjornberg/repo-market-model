@@ -653,6 +653,25 @@ FOURTH_SELECTION = {
 }
 
 
+#: The term the extended inner block chose (`choose-fourth`, run on 6 October 2026), committed before the outer block is
+#: scored a fourth time. Under `FOURTH_SELECTION`, which is the third round's rule unchanged, it is `base`: v2 with NO
+#: quarter-end term. The kept term (`qe_indicator_and_month_end_countdown`) has the better inner CRPS than `base`
+#: (+0.020 [+0.001, +0.039]) but is not eligible on the extended block: with 23 quarter-ends the quarter-end cell is
+#: conclusive (it was inconclusive on 19 days) and the term fails the quarter-end 90% band gate (73.9%, at least 80
+#: declared), the quarter-end above-q95 gate (21.7%, at most 15) and the coupon-settlement gate (84.6%, at least 85).
+#: Eleonora's ruling of 18:29 said to keep the term; the declared rule does not, and which governs is hers (a question on
+#: the PR). `base` is also the candidate whose tax-date 50% band is the highest (56.1%), and no candidate recovers the
+#: quarter-end cell on the inner block (30.4% at `base`, 39.1% at best, 23 days).
+CHOSEN_FOURTH = "base"
+
+FOURTH_LOOK_LABEL = ("a fourth look at 2024-2025, scored once for v1 and the final v2 only (ruling of 6 October 2026, "
+                     "18:29 and 18:30). The outer block has now been read four times: 2023-2025 at the first three "
+                     "looks (`outer_block_before_fix`, `outer_block_second_look`, `outer_block_third_look`, kept as "
+                     "they were), and 2024-2025 now, after the inner block was extended through 2023, which had "
+                     "already been read at those looks. The term was designed after earlier looks, so this block is "
+                     "no longer unseen by the design, and every historical edge of v2 over v1 stays exploratory")
+
+
 def candidate_setup(fit, features, name):
     """A quarter-end candidate's fitter and feature list, from the published side's.
 
@@ -922,11 +941,11 @@ def with_day_types(days, rows, splits):
     return [dict(d, type=kind) for d, kind in zip(days, types)]
 
 
-def quarter_end_choice(candidate_days, v1_days, cells, rows, splits, *, block=INNER, candidates=QE_CANDIDATES,
+def quarter_end_choice(candidate_days, v1_days, cells, rows, splits, *, block=INNER, declared=QE_CANDIDATES,
                        selection=QE_SELECTION, tag="qe") -> dict:
     """The quarter-end term, chosen on the inner block only (`QE_SELECTION`).
 
-    The fourth round calls it with `block=INNER4`, `candidates=FOURTH_CANDIDATES`, `selection=FOURTH_SELECTION`
+    The fourth round calls it with `block=INNER4`, `declared=FOURTH_CANDIDATES`, `selection=FOURTH_SELECTION`
     and its own seed `tag`; the rule and the measures are the same.
 
     `candidate_days` maps each candidate to its days (`date`, `anchor`, `y`,
@@ -951,10 +970,10 @@ def quarter_end_choice(candidate_days, v1_days, cells, rows, splits, *, block=IN
         diagnostic = [{"date": d["date"], "y": d["y"], "v": v, "type": d["type"], "cells": set(cells[d["date"]])}
                       for d, v in zip(reference, vecs)]
         candidates[name] = {
-            "what": candidates[name]["what"],
-            "features_added": list(candidates[name]["features"]),
-            "training_pairs": candidates[name]["training_pairs"],
-            "complexity": list(candidates[name]["complexity"]),
+            "what": declared[name]["what"],
+            "features_added": list(declared[name]["features"]),
+            "training_pairs": declared[name]["training_pairs"],
+            "complexity": list(declared[name]["complexity"]),
             "inner": summaries[name],
             "conditional_gates_inner": gates[name],
             "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vecs, rows, splits, block, ("#244", tag, name, "v1")),
@@ -974,9 +993,9 @@ def quarter_end_choice(candidate_days, v1_days, cells, rows, splits, *, block=IN
         return pair_cache[(name, leader)]
 
     eligible = {n: summaries[n] for n in vectors if eligible_inner(summaries[n], gates[n], reading=BINDING_READING)}
-    chosen = select_quarter_end(eligible, paired_to_leader, candidates)
+    chosen = select_quarter_end(eligible, paired_to_leader, declared)
     return {
-        "declared": {"candidates": candidates, "selection": selection, "tree_settings": V2_TREE_SETTINGS,
+        "declared": {"candidates": declared, "selection": selection, "tree_settings": V2_TREE_SETTINGS,
                      "reading": BINDING_READING},
         "window": [block[0].isoformat(), block[1].isoformat()],
         "days": len(reference),
@@ -1079,6 +1098,26 @@ def _plain(value):
     return dict(value) if hasattr(value, "keys") else list(value)
 
 
+def tree_use(fitted) -> dict:
+    """How many split nodes, over every tree of a fit, read each input column (`design_names` order).
+
+    `fitted` is a `ml.FittedGradientBoostedQuantiles`; its estimators are scikit-learn `HistGradientBoostingRegressor`s,
+    one per level, whose trees are `_predictors[iteration][0].nodes` (a leaf's `feature_idx` is meaningless).
+    A column no tree splits on, however many days carry its indicator, is a column the term cannot use.
+    """
+
+    names = list(fitted.design_names)
+    counts = {name: 0 for name in names}
+    for estimator in fitted._estimators:
+        for iteration in estimator._predictors:
+            for predictor in iteration:
+                nodes = predictor.nodes
+                for leaf, column in zip(nodes["is_leaf"], nodes["feature_idx"]):
+                    if not leaf:
+                        counts[names[int(column)]] += 1
+    return counts
+
+
 def walk_command(args) -> int:
     from repo_model.evaluation_splits import load_split_declaration as load_splits
 
@@ -1096,6 +1135,15 @@ def walk_command(args) -> int:
     name, fit, features, _v1_online = sides["published"]
     fit, features = candidate_setup(fit, features, args.candidate)
     built = []
+    uses = []
+    published_fit_at_origin = lr._fit_at_origin
+
+    def recording_fit_at_origin(*a, **k):
+        fitted = published_fit_at_origin(*a, **k)
+        uses.append({"cutoff": str(fitted.cutoff), "splits": tree_use(fitted)})
+        return fitted
+
+    lr._fit_at_origin = recording_fit_at_origin
 
     def v2_online(rows_, rule):
         calibration = interior.NestedInteriorFoldPid(
@@ -1103,11 +1151,14 @@ def walk_command(args) -> int:
         built.append(calibration)
         return calibration
 
-    walk, levels, settings = fto.distribution_walk(
-        rows, fit=fit, features=features, online_calibration=v2_online,
-        registry=registry, horizon=h, minimum_history=parsed.minimum_history,
-        refit_every=parsed.refit_every,
-    )
+    try:
+        walk, levels, settings = fto.distribution_walk(
+            rows, fit=fit, features=features, online_calibration=v2_online,
+            registry=registry, horizon=h, minimum_history=parsed.minimum_history,
+            refit_every=parsed.refit_every,
+        )
+    finally:
+        lr._fit_at_origin = published_fit_at_origin
     if tuple(levels) != LEVELS:
         raise ValueError(f"levels {levels}")
     (calibration,) = built
@@ -1125,7 +1176,7 @@ def walk_command(args) -> int:
                 "model": name, "settings": settings, "tree_settings": V2_TREE_SETTINGS,
                 "candidate": args.candidate, "features": list(features),
                 "interior_blocks": account["interior_blocks"], "width_blocks": account["width_blocks"],
-                "days": days}
+                "tree_use": uses, "days": days}
     args.output.write_text(json.dumps(document, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "days": len(days)}))
     return 0
@@ -1285,8 +1336,8 @@ def assemble_command(args) -> int:
             raise ValueError(f"{path} reads a day after {LAST_READ}")
         if document.get("tree_settings") != V2_TREE_SETTINGS:
             raise ValueError(f"{path} was not walked with v2's trees")
-        if document.get("candidate") != CHOSEN_QE_FIX:
-            raise ValueError(f"{path} was walked for {document.get('candidate')!r}, not for CHOSEN_QE_FIX")
+        if document.get("candidate") != CHOSEN_FOURTH:
+            raise ValueError(f"{path} was walked for {document.get('candidate')!r}, not for CHOSEN_FOURTH")
         walks[document["horizon"]] = document
     candidate_walks = {}
     for path in args.candidate_walks:
@@ -1296,10 +1347,10 @@ def assemble_command(args) -> int:
         if document.get("tree_settings") != V2_TREE_SETTINGS:
             raise ValueError(f"{path} was not walked with v2's trees")
         candidate_walks[document["candidate"]] = document
-    if set(candidate_walks) != set(QE_CANDIDATES):
-        raise ValueError(f"the candidate walks are for {sorted(candidate_walks)}, not {sorted(QE_CANDIDATES)}")
-    if candidate_walks[CHOSEN_QE_FIX]["days"] != walks[1]["days"]:
-        raise ValueError("CHOSEN_QE_FIX's candidate walk is not the walk the record is assembled from")
+    if set(candidate_walks) != set(FOURTH_CANDIDATES):
+        raise ValueError(f"the candidate walks are for {sorted(candidate_walks)}, not {sorted(FOURTH_CANDIDATES)}")
+    if candidate_walks[CHOSEN_FOURTH]["days"] != walks[1]["days"]:
+        raise ValueError("CHOSEN_FOURTH's candidate walk is not the walk the record is assembled from")
     base_days = candidate_walks["base"]["days"]
 
     # v1 at each horizon is its own walk (#247's, unchanged trees), joined by date.
@@ -1386,19 +1437,34 @@ def assemble_command(args) -> int:
         d["fixed"] = e["v2"]
         d["final"] = f["v2"]
 
-    # The quarter-end term, chosen on the inner block only; it must be the candidate committed as CHOSEN_QE_FIX.
-    qe_inner = {name: with_day_types([d for d in doc["days"] if _in(d["date"], INNER)], rows, splits)
-                for name, doc in candidate_walks.items()}
-    qe = quarter_end_choice(qe_inner, v1_inner, cells, rows, splits)
-    qe_vectors = qe.pop("vectors")
-    if qe["selection"]["recommended"] != CHOSEN_QE_FIX:
-        raise ValueError(f"the inner block chooses {qe['selection']['recommended']!r}; CHOSEN_QE_FIX is "
-                         f"{CHOSEN_QE_FIX!r}")
-    if qe_vectors[CHOSEN_QE_FIX] != [d["v2"] for d in inner_final] or qe_vectors["base"] != [d["v2"] for d in inner_base]:
-        raise ValueError("the quarter-end choice's vectors are not the walks'")
+    # The third round's quarter-end choice and looks are kept as they were; its walk is reproduced to the bit.
+    looks = json.loads(args.third_look_record.read_text(encoding="utf-8"))
+    third_walk = candidate_walks[CHOSEN_QE_FIX]["days"]
+    third_rows = {row[0]: row[4] for row in looks["per_day_h1"]["rows"]}
+    if any(third_rows[d["date"]] != d["v2"] for d in third_walk):
+        raise ValueError("the third round's walk is not the record at the third look")
+    if looks["quarter_end_choice"]["selection"]["recommended"] != CHOSEN_QE_FIX:
+        raise ValueError("--third-look-record does not carry the third round's choice")
+
+    # The fourth round: the term chosen on the extended inner block only; it must be CHOSEN_FOURTH.
+    qe4_inner = {name: with_day_types([d for d in doc["days"] if _in(d["date"], INNER4)], rows, splits)
+                 for name, doc in candidate_walks.items()}
+    v1_inner4 = [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["v1"]}
+                 for d in days if _in(d["date"], INNER4)]
+    fourth = quarter_end_choice(qe4_inner, v1_inner4, cells, rows, splits, block=INNER4,
+                                declared=FOURTH_CANDIDATES, selection=FOURTH_SELECTION, tag="qe4")
+    fourth_vectors = fourth.pop("vectors")
+    if fourth["selection"]["recommended"] != CHOSEN_FOURTH:
+        raise ValueError(f"the extended inner block chooses {fourth['selection']['recommended']!r}; CHOSEN_FOURTH is "
+                         f"{CHOSEN_FOURTH!r}")
+    if fourth_vectors[CHOSEN_FOURTH] != [d["v2"] for d in days if _in(d["date"], INNER4)]:
+        raise ValueError("the fourth choice's vectors are not the walks'")
+    for name, doc in candidate_walks.items():
+        fourth["candidates"][name]["tree_use"] = tree_use_summary(doc["tree_use"])
+    fourth["quarter_ends_in_block"] = sum(1 for d in qe4_inner["base"] if d["type"] == "quarter_end")
     diagnosis_block = inner_diagnosis(
         inner_days, {"v1": "v1", "iv": "v2 before the fix: (iv)", "fixed": "v2 after the width fix, no quarter-end term",
-                     "final": f"v2 with the quarter-end choice: {CHOSEN_QE_FIX}"},
+                     "final": f"v2 final: {CHOSEN_FOURTH}"},
         splits.regime_labels)
 
     def validation_block(window, label):
@@ -1410,25 +1476,29 @@ def assemble_command(args) -> int:
         block["conditional_gates_v1"] = conditional_gates(_with_cells(sub, cells, "v1"), "v1")
         return block
 
-    inner_block = validation_block(INNER, "inner")
-    outer_block = validation_block(OUTER, "outer")
-    outer_block["label"] = (THIRD_LOOK_LABEL)
-    looks = json.loads(args.second_look_record.read_text(encoding="utf-8"))
-    first_outer, second_outer = looks["outer_block_before_fix"], looks["outer_block"]
-    if "first look" not in first_outer["label"] or "second look" not in second_outer["label"]:
-        raise ValueError("--second-look-record does not carry the first and second looks")
-    outer_days = [d for d in days if _in(d["date"], OUTER)]
-    outer_base = [d for d in base_days if _in(d["date"], OUTER)]
+    inner_block = validation_block(INNER4, "inner (extended through 2023)")
+    outer_block = validation_block(OUTER4, "outer (2024-2025)")
+    outer_block["label"] = FOURTH_LOOK_LABEL
+    first_outer, second_outer = looks["outer_block_before_fix"], looks["outer_block_second_look"]
+    third_outer = looks["outer_block"]
+    if ("first look" not in first_outer["label"] or "second look" not in second_outer["label"]
+            or "third look" not in third_outer["label"]):
+        raise ValueError("--third-look-record does not carry the first, second and third looks")
+    outer_days = [d for d in days if _in(d["date"], OUTER4)]
+    outer_base = [d for d in base_days if _in(d["date"], OUTER4)]
+    outer_third = [d for d in third_walk if _in(d["date"], OUTER4)]
     outer_scored = [date.fromisoformat(d["date"]) for d in outer_days]
     from repo_model.baseline import _split_labels
 
     _regimes, outer_types = _split_labels(splits, rows, outer_scored)
-    outer_diag = [{"date": d["date"], "y": d["y"], "v1": d["v1"], "base": b["v2"], "v2": d["v2"], "type": kind,
-                   "cells": set(cells[d["date"]])} for d, b, kind in zip(outer_days, outer_base, outer_types)]
-    outer_diagnosis = {"label": ("diagnostics only, outer block, third look: counts and intervals per day type; "
+    outer_diag = [{"date": d["date"], "y": d["y"], "v1": d["v1"], "base": b["v2"], "third": t["v2"], "v2": d["v2"],
+                   "type": kind, "cells": set(cells[d["date"]])}
+                  for d, b, t, kind in zip(outer_days, outer_base, outer_third, outer_types)]
+    outer_diagnosis = {"label": ("diagnostics only, outer block (2024-2025), fourth look: counts and intervals per day type; "
                                  "no interval under the minimum-cell rule ('too few days')"),
                        "models": {}}
-    for field, label in (("v1", "v1"), ("base", "v2 before the quarter-end term"), ("v2", "v2 final")):
+    for field, label in (("v1", "v1"), ("base", "v2 before the quarter-end term"),
+                         ("third", f"v2 as at the third look: {CHOSEN_QE_FIX}"), ("v2", "v2 final")):
         outer_diagnosis["models"][field] = {"label": label, "by_cell": {
             cell: _diagnostic_cell([d for d in outer_diag if _cell_members(d)[cell]], field, ("outer", field, cell))
             for cell in ("all", "quarter_end", "year_end", "tax_date", "month_end", "ordinary")}}
@@ -1457,11 +1527,12 @@ def assemble_command(args) -> int:
                            "each interior level tracked online; then the fix chosen on the inner block "
                            "(rulings of 14:02 and 14:24): an online width tracker on the 50% band, one "
                            "class for turn days and one for ordinary days; then the quarter-end term chosen "
-                           f"on the inner block (ruling of 16:48): {CHOSEN_QE_FIX}"),
+                           f"on the inner block (ruling of 16:48): {CHOSEN_QE_FIX}; then the fourth round (rulings of 18:29 and 18:30), "
+                           f"chosen on the inner block extended through 2023: {CHOSEN_FOURTH}"),
             "v1": walks[1]["model"],
             "settings": walks[1]["settings"],
             "tree_settings": V2_TREE_SETTINGS,
-            "quarter_end_candidate": CHOSEN_QE_FIX,
+            "quarter_end_candidate": CHOSEN_FOURTH,
             "features": walks[1]["features"],
             "code": ("src/repo_model/interior.py (NestedInteriorFoldPid); the tree setting is applied as "
                      "#247's walk applies it (scripts/interior_diagnosis._with_tree_settings)"),
@@ -1503,8 +1574,13 @@ def assemble_command(args) -> int:
                                               "width_fallback": WIDTH_FALLBACK},
                                       "quarter_end": {"candidates": QE_CANDIDATES, "selection": QE_SELECTION,
                                                       "chosen": CHOSEN_QE_FIX},
+                                      "fourth_round": {"inner": [INNER4[0].isoformat(), INNER4[1].isoformat()],
+                                                       "outer": [OUTER4[0].isoformat(), OUTER4[1].isoformat()],
+                                                       "candidates": FOURTH_CANDIDATES,
+                                                       "selection": FOURTH_SELECTION, "chosen": CHOSEN_FOURTH},
                                       "historical_edge_label": EXPLORATORY},
-        "quarter_end_choice": qe,
+        "quarter_end_choice": looks["quarter_end_choice"],
+        "fourth_round_choice": fourth,
         "inner_choice": choice,
         "inner_diagnosis": diagnosis_block,
         "fix_choice": fix,
@@ -1512,6 +1588,8 @@ def assemble_command(args) -> int:
         "outer_block": outer_block,
         "outer_block_before_fix": first_outer,
         "outer_block_second_look": second_outer,
+        "outer_block_third_look": third_outer,
+        "inner_block_third_round": looks["inner_block"],
         "outer_diagnosis": outer_diagnosis,
         "window_2018_2025": main_block,
         "check_2026": check_block,
@@ -1672,14 +1750,74 @@ def choose_quarter_end_command(args) -> int:
     return 0
 
 
+CALENDAR_COLUMNS = ("quarter_end", "tax_date", "days_to_month_end")
+
+
+def tree_use_summary(blocks, block=INNER4) -> dict:
+    """What `tree_use` found over the refits whose training ended inside `block`: do the trees split on each calendar column?
+
+    `blocks` is a walk's `tree_use`, one entry per refit. Per column: split nodes summed over those refits, the number of refits that split on it,
+    and the count at the last such refit.
+    """
+
+    inside = [b for b in blocks if block[0].isoformat() <= b["cutoff"] <= block[1].isoformat()]
+    if not inside:
+        raise ValueError("no refit ended inside the block")
+    out = {"refits": len(inside), "last_cutoff": inside[-1]["cutoff"]}
+    for column in CALENDAR_COLUMNS:
+        counts = [b["splits"].get(column) for b in inside]
+        if all(c is None for c in counts):
+            continue
+        counts = [c or 0 for c in counts]
+        out[column] = {"split_nodes_all_refits": sum(counts), "refits_that_split": sum(1 for c in counts if c),
+                       "split_nodes_at_last_refit": counts[-1]}
+    return out
+
+
+def choose_fourth_command(args) -> int:
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    if panel_sha256(args.panel) != fp._frozen_panel_sha256():
+        raise ValueError("the panel is not the published panel")
+    splits = load_split_declaration(fp.SPLITS)
+    candidate_days, use = {}, {}
+    for path in args.walks:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if document["panel_sha256"] != panel_sha256(args.panel):
+            raise ValueError(f"{path} was walked on another panel")
+        if document["horizon"] != 1 or document.get("tree_settings") != V2_TREE_SETTINGS:
+            raise ValueError(f"{path} is not a v2 walk at h = 1")
+        # The walk reaches past the extended inner block; the choice reads that block's days and no others.
+        candidate_days[document["candidate"]] = with_day_types(
+            [d for d in document["days"] if _in(d["date"], INNER4)], rows, splits)
+        use[document["candidate"]] = tree_use_summary(document["tree_use"])
+    if set(candidate_days) != set(FOURTH_CANDIDATES):
+        raise ValueError(f"the walks are for {sorted(candidate_days)}, not {sorted(FOURTH_CANDIDATES)}")
+    v1 = json.loads(args.v1_walk.read_text(encoding="utf-8"))
+    if v1["variant"] != "v1" or v1["horizon"] != 1 or v1["panel_sha256"] != panel_sha256(args.panel):
+        raise ValueError(f"{args.v1_walk} is not v1's walk at h = 1 on the published panel")
+    v1_days = [d for d in v1["days"] if _in(d["date"], INNER4)]
+    scored = [date.fromisoformat(d["date"]) for d in candidate_days["base"]]
+    cells = day_cells(rows, scored)
+    result = quarter_end_choice(candidate_days, v1_days, cells, rows, splits, block=INNER4,
+                                declared=FOURTH_CANDIDATES, selection=FOURTH_SELECTION, tag="qe4")
+    result.pop("vectors")
+    for name, summary in use.items():
+        result["candidates"][name]["tree_use"] = summary
+    result["quarter_ends_in_block"] = sum(1 for d in candidate_days["base"] if d["type"] == "quarter_end")
+    args.output.write_text(json.dumps(result, indent=1, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
+    print(json.dumps({"selection": result["selection"], "quarter_ends": result["quarter_ends_in_block"]}, indent=1))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     wk = sub.add_parser("walk", help="the published side's walk with v2's calibration")
     wk.add_argument("--panel", type=Path, required=True)
     wk.add_argument("--horizon", type=int, choices=dx.HORIZONS, default=1)
-    wk.add_argument("--candidate", choices=sorted(QE_CANDIDATES), default="base",
-                    help="the quarter-end candidate whose trees v2 is built on (QE_CANDIDATES)")
+    wk.add_argument("--candidate", choices=sorted({**QE_CANDIDATES, **FOURTH_CANDIDATES}), default="base",
+                    help="the quarter-end candidate whose trees v2 is built on (QE_CANDIDATES, FOURTH_CANDIDATES)")
     wk.add_argument("--output", type=Path, required=True)
     wk.set_defaults(func=walk_command)
     ch = sub.add_parser("choose", help="#247's choice, redone on the inner block (ruling on PR #252)")
@@ -1703,6 +1841,12 @@ def main(argv=None) -> int:
     cq.add_argument("--v1-walk", type=Path, required=True, help="#247's v1 walk at h = 1")
     cq.add_argument("--output", type=Path, required=True)
     cq.set_defaults(func=choose_quarter_end_command)
+    c4 = sub.add_parser("choose-fourth", help="the fourth round's term, chosen on the extended inner block only")
+    c4.add_argument("--panel", type=Path, required=True)
+    c4.add_argument("--walks", type=Path, nargs="+", required=True, help="every FOURTH_CANDIDATES walk at h = 1")
+    c4.add_argument("--v1-walk", type=Path, required=True, help="#247's v1 walk at h = 1")
+    c4.add_argument("--output", type=Path, required=True)
+    c4.set_defaults(func=choose_fourth_command)
     asm = sub.add_parser("assemble", help="the record, from the walks")
     asm.add_argument("--panel", type=Path, required=True)
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
@@ -1710,8 +1854,9 @@ def main(argv=None) -> int:
                      help="#247's walks: v1 and every variant at h = 1, and v1 at h = 2 to 5")
     asm.add_argument("--candidate-walks", type=Path, nargs="+", required=True,
                      help="every quarter-end candidate's v2 walk at h = 1")
-    asm.add_argument("--second-look-record", type=Path, required=True,
-                     help="the record as it stood at the second look: its first and second looks at the outer block")
+    asm.add_argument("--third-look-record", type=Path, required=True,
+                     help="the record as it stood at the third look (0e3feb7): its first, second and third looks at the "
+                          "outer block, its inner block and its quarter-end choice, kept as they were")
     asm.add_argument("--before-fix-record", type=Path, required=True,
                      help="the record as it stood before the fix: its (iv) vectors and its first look at the outer block")
     asm.add_argument("--output", type=Path, default=RECORD)

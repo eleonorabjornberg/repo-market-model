@@ -685,6 +685,9 @@ class FourthRoundDeclarationTests(unittest.TestCase):
                         v2.FOURTH_CANDIDATES["qe_indicator_leaf10"]["complexity"])
         self.assertIn(v2.CHOSEN_QE_FIX, v2.FOURTH_CANDIDATES)
 
+    def test_the_chosen_candidate_is_a_declared_one(self):
+        self.assertIn(v2.CHOSEN_FOURTH, v2.FOURTH_CANDIDATES)
+
     def test_the_rule_is_the_fixs(self):
         self.assertEqual(v2.FOURTH_SELECTION["rule"], v2.FIX_SELECTION["rule"])
         self.assertEqual(v2.FOURTH_SELECTION["unchanged"], v2.QE_SELECTION["unchanged"])
@@ -722,6 +725,48 @@ class FourthRoundDeclarationTests(unittest.TestCase):
         with self.assertRaises(Exception) as caught:
             v2.quarter_end_choice({"base": in_2023}, [], {}, [], None, block=v2.INNER4)
         self.assertNotIn("inner block only", str(caught.exception))
+
+
+class TreeUseTests(unittest.TestCase):
+    """`tree_use`: the number of split nodes that read each input column, over every tree of a fit."""
+
+    @staticmethod
+    def _tree(*nodes):
+        """A tree as scikit-learn's histogram booster stores it: (is_leaf, feature_idx) per node."""
+        from types import SimpleNamespace
+        return SimpleNamespace(nodes={"is_leaf": [n[0] for n in nodes], "feature_idx": [n[1] for n in nodes]})
+
+    def test_it_counts_split_nodes_by_column_and_ignores_leaves(self):
+        from types import SimpleNamespace
+        # A leaf's feature_idx is meaningless (0 here, which would count against column 0 if leaves were read).
+        first = SimpleNamespace(_predictors=[[self._tree((0, 1), (1, 0), (1, 0), (0, 1))], [self._tree((0, 2), (1, 0))]])
+        second = SimpleNamespace(_predictors=[[self._tree((1, 0))]])
+        fitted = SimpleNamespace(design_names=("spread_bps", "quarter_end", "tax_date"),
+                                 _estimators=(first, second))
+        self.assertEqual(v2.tree_use(fitted), {"spread_bps": 0, "quarter_end": 2, "tax_date": 1})
+
+    def test_a_column_no_tree_reads_counts_zero(self):
+        from types import SimpleNamespace
+        stump = SimpleNamespace(_predictors=[[self._tree((0, 0), (1, 0), (1, 0))]])
+        fitted = SimpleNamespace(design_names=("a", "quarter_end"), _estimators=(stump,))
+        self.assertEqual(v2.tree_use(fitted), {"a": 1, "quarter_end": 0})
+
+
+class TreeUseSummaryTests(unittest.TestCase):
+    def test_it_reads_the_refits_that_ended_inside_the_block(self):
+        blocks = [{"cutoff": "2023-06-01", "splits": {"quarter_end": 0, "tax_date": 2}},
+                  {"cutoff": "2023-12-29", "splits": {"quarter_end": 3, "tax_date": 0}},
+                  {"cutoff": "2024-01-31", "splits": {"quarter_end": 9, "tax_date": 9}}]
+        summary = v2.tree_use_summary(blocks, v2.INNER4)
+        self.assertEqual(summary["refits"], 2)
+        self.assertEqual(summary["last_cutoff"], "2023-12-29")
+        self.assertEqual(summary["quarter_end"],
+                         {"split_nodes_all_refits": 3, "refits_that_split": 1, "split_nodes_at_last_refit": 3})
+        self.assertEqual(summary["tax_date"],
+                         {"split_nodes_all_refits": 2, "refits_that_split": 1, "split_nodes_at_last_refit": 0})
+        self.assertNotIn("days_to_month_end", summary)  # a column the candidate did not add is not reported
+        with self.assertRaises(ValueError):
+            v2.tree_use_summary(blocks[2:], v2.INNER4)
 
 
 def _sha(rows):
