@@ -25,9 +25,13 @@ scores nothing: no model is run and no record in `docs/runs/` changes.
   splits do. The pooled row's 90% interval is checked against the record's own
   `coverage_interval` and the build refuses if they differ.
 * **A cell under `MINIMUM_DAYS` days** says so and is never flagged.
-* **h = 2 to 5** have no per-origin series in any record. `v1_interior_diagnosis.json`
-  carries their coverage by exclusive day type and regime as shares, so those are
-  tabled from it, with no interval, and say so.
+* **h = 2 to 5** (#290) come from `docs/runs/published_distribution_daily_h{2..5}.json`,
+  the same published distribution walked at each horizon (`scripts/forecast_daily.py
+  --horizon H`), kept over the h = 1 record's own window and no later day. Their cells
+  are built exactly as h = 1's, with the h = 1 record's block length, seed and
+  replications. No record has a pooled interval they reproduce, so each horizon's pooled
+  shares are checked against `v1_interior_diagnosis.json`'s (`check_against_diagnosis`),
+  which was walked separately.
 """
 
 from __future__ import annotations
@@ -51,6 +55,10 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.onset import MINIMUM_EVENTS  # noqa: E402
 
 RECORD = "backtest_gbm_conformal_pid_nested_funding.json"
+LATER_HORIZONS = (2, 3, 4, 5)
+DAILY = "published_distribution_daily_h%d.json"
+DAILY_PATTERN = "published_distribution_daily_h{2..5}.json"
+LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
 DIAGNOSIS = "v1_interior_diagnosis.json"
 MANIFEST = ROOT / "metadata" / "funding_panel_manifest.json"
 SPLITS = ROOT / "metadata" / "evaluation_splits.json"
@@ -142,6 +150,36 @@ def day_table(record, rows, splits):
     return days
 
 
+def daily_day_table(daily, rows, splits, last):
+    """`day_table`'s entries for a daily record (h = 2 to 5): the same fields, from its quantiles.
+
+    Refuses a day after `last`, the h = 1 record's own last scored day: a later day is outside
+    the window the table is for (and, past 2026-09-03, locked).
+    """
+
+    if daily["levels"] != LEVELS:
+        raise BandError("h = %s levels are %s" % (daily["horizon"], daily["levels"]))
+    days = []
+    for entry in daily["days"]:
+        iso = entry["date"]
+        if iso > last:
+            raise BandError("the h = %s record holds %s, after the window's last day %s"
+                            % (daily["horizon"], iso, last))
+        if iso not in rows:
+            raise BandError("scored day %s is not a row of the published panel" % iso)
+        when = date.fromisoformat(iso)
+        quantiles = entry["quantiles_bps"]
+        actual = entry["actual_bps"]
+        hits = {}
+        for lower, upper, nominal in BANDS:
+            hits[nominal] = 1.0 if quantiles[lower] <= actual <= quantiles[upper] else 0.0
+        side = "below" if actual < quantiles[0] else "above" if actual > quantiles[4] else "inside"
+        days.append({"date": iso, "regime": splits.regime(when),
+                     "tags": tags_for(rows[iso], when, splits.month_end_window),
+                     "hits": hits, "side": side})
+    return days
+
+
 def _members(days, kind, name):
     if kind == "all":
         return [True] * len(days)
@@ -152,8 +190,13 @@ def _members(days, kind, name):
     return [name in day["tags"] for day in days]
 
 
-def cells(record, days, splits):
-    """Every cell: `{"kind", "name", "days", "bands": {nominal: {...}}, "below", "above"}`."""
+def cells(record, days, splits, check=True):
+    """Every cell: `{"kind", "name", "days", "bands": {nominal: {...}}, "below", "above"}`.
+
+    The bootstrap is the `record`'s own (block length, seed, replications). With `check` the
+    pooled 90% interval must reproduce the record's; h = 2 to 5 have no such record and pass
+    `check=False`.
+    """
 
     calibration = record["metrics"]["interval_calibration"]
     interval = calibration["coverage_interval"]
@@ -204,7 +247,8 @@ def cells(record, days, splits):
                                       "excludes": bool(excludes)}
         out.append(cell)
     pooled = out[0]["bands"][0.9]
-    if abs(pooled["lower"] - interval["lower"]) > 1e-12 or abs(pooled["upper"] - interval["upper"]) > 1e-12:
+    if check and (abs(pooled["lower"] - interval["lower"]) > 1e-12
+                  or abs(pooled["upper"] - interval["upper"]) > 1e-12):
         raise BandError("the pooled 90%% interval does not reproduce the record's own "
                         "(%.6f to %.6f against %.6f to %.6f)" % (
                             pooled["lower"], pooled["upper"], interval["lower"], interval["upper"]))
@@ -223,85 +267,74 @@ def _pct(value):
     return "%.1f%%" % (100.0 * value)
 
 
-def horizon_cells(diagnosis):
-    """h = 2 to 5 coverage shares by exclusive day type and regime, from the diagnosis record.
+def check_against_diagnosis(horizon, days, diagnosis):
+    """A horizon's pooled and per-regime shares against `v1_interior_diagnosis.json`'s, exactly.
 
-    Each is `{"horizon", "kind", "name", "days", "band_50", "band_90", "miss_below", "miss_above"}`
-    in percent, the half-edge definition (an outcome exactly on an edge counts one half).
+    The diagnosis walked the same distribution separately (`scripts/interior_diagnosis.py walk`),
+    so agreement on the day count and the closed 50% and 90% shares is the reproduction check.
+    Raises `BandError` otherwise.
     """
 
-    out = []
-    for horizon in (2, 3, 4, 5):
-        block = diagnosis["q1_calibration"]["h%d_2018_2025" % horizon]
-        pooled = block["issued"]
-        out.append({"horizon": horizon, "kind": "all", "name": "all days", "days": pooled["days"],
-                    "band_50": pooled["band_50_half_edge"], "band_90": pooled["band_90_half_edge"],
-                    "miss_below": pooled["band_50_miss_below"], "miss_above": pooled["band_50_miss_above"]})
-        for kind, key in (("day type", "by_day_type"), ("regime", "by_regime")):
-            for name, entry in block["splits"][key].items():
-                if not entry.get("days"):
-                    continue
-                out.append({"horizon": horizon, "kind": kind, "name": name.replace("_", " "),
-                            "days": entry["days"], "band_50": entry["band_50_half_edge"],
-                            "band_90": entry["band_90_half_edge"],
-                            "miss_below": entry["band_50_miss_below"],
-                            "miss_above": entry["band_50_miss_above"]})
-    return out
+    block = diagnosis["q1_calibration"]["h%d_2018_2025" % horizon]
+    pooled = block["issued"]
+
+    def share(subset, nominal):
+        return 100.0 * sum(day["hits"][nominal] for day in subset) / len(subset)
+
+    if len(days) != pooled["days"]:
+        raise BandError("h = %d: %d days, the diagnosis has %d" % (horizon, len(days), pooled["days"]))
+    for nominal, key in ((0.5, "band_50_closed"), (0.9, "band_90_closed")):
+        if abs(share(days, nominal) - pooled[key]) > 1e-9:
+            raise BandError("h = %d: the %d%% band's share is %.6f, the diagnosis has %.6f"
+                            % (horizon, round(100 * nominal), share(days, nominal), pooled[key]))
+    for name, entry in block["splits"]["by_regime"].items():
+        subset = [day for day in days if day["regime"] == name]
+        if len(subset) != entry.get("days", 0) or (
+                subset and abs(share(subset, 0.5) - entry["band_50_closed"]) > 1e-9):
+            raise BandError("h = %d, regime %s: does not reproduce the diagnosis" % (horizon, name))
 
 
 def cell_label(cell):
     return cell["name"].replace("_", " ")
 
 
-def finding_sentence(table):
-    """The sentence the README carries in place of the pooled one: every excluding cell, named."""
+def _names(found):
+    def figures(band, cell):
+        return cell["bands"][0.5 if band == "50%" else 0.9]
 
-    found = excluded(table)
-    if not found:
-        return ("Split by pressure-day type and regime (`%s`), no cell of at least %d days "
-                "has an interval that excludes its nominal coverage." % (PATH, MINIMUM_DAYS))
-    names = "; ".join("%s band on %s (%s, %s to %s)" % (
+    return "; ".join("%s band on %s (%s, %s to %s)" % (
         band, "%s %s" % (cell["kind"], cell_label(cell)) if cell["kind"] != "all" else "all days",
-        _pct(cell["bands"][0.5 if band == "50%" else 0.9]["coverage"]),
-        _pct(cell["bands"][0.5 if band == "50%" else 0.9]["lower"]),
-        _pct(cell["bands"][0.5 if band == "50%" else 0.9]["upper"])) for band, cell in found)
-    return ("Split by pressure-day type and regime (`%s`), the published distribution's "
-            "h = 1 bands do not hold on %d cells, each an interval that excludes the nominal "
-            "level: %s." % (PATH, len(found), names))
+        _pct(figures(band, cell)["coverage"]), _pct(figures(band, cell)["lower"]),
+        _pct(figures(band, cell)["upper"])) for band, cell in found)
+
+
+def finding_sentence(table, later=()):
+    """The sentence the README carries in place of the pooled one: every excluding cell, named.
+
+    `table` is h = 1's cells, `later` the h = 2 to 5 horizons (`{"horizon", "table", ...}`), each
+    named in turn, so no excluding cell at any horizon goes unsaid.
+    """
+
+    horizons = [(1, table)] + [(entry["horizon"], entry["table"]) for entry in later]
+    counted = [(h, excluded(cells_)) for h, cells_ in horizons]
+    span = "h = 1" if not later else "h = 1 to %d" % horizons[-1][0]
+    total = sum(len(found) for _, found in counted)
+    if not total:
+        return ("Split by pressure-day type and regime (`%s`), no cell of at least %d days "
+                "at %s has an interval that excludes its nominal coverage." % (PATH, MINIMUM_DAYS, span))
+    parts = ["at h = %d, %s" % (h, "%d %s: %s" % (len(found), "cell" if len(found) == 1 else "cells",
+                                                   _names(found)) if found else "none")
+             for h, found in counted]
+    return ("Split by pressure-day type and regime (`%s`), the published distribution's %s "
+            "bands do not hold on %d cells, each an interval that excludes the nominal "
+            "level: %s." % (PATH, span, total, "; ".join(parts)))
 
 
 PATH = "docs/band_coverage_by_split.md"  # emit_results.BAND_PAGE
 
 
-def render(record, table, diagnosis_cells, days):
-    """The reported-only page, as Markdown."""
-
-    n = len(days)
-    calibration = record["metrics"]["interval_calibration"]["coverage_interval"]
-    lines = [
-        "# Band coverage by day type, regime and horizon",
-        "",
-        "<!-- generated: band-coverage -->",
-        "",
-        "**Generated by `scripts/emit_results.py` from `scripts/band_coverage.py`; never hand-edited.** "
-        "Reported only: no new scoring, and no record in `docs/runs/` changes.",
-        "",
-        "The published distribution (`docs/runs/%s`) at h = 1, **%d origins**, %s to %s. "
-        "A band's coverage is the share of scored days whose outcome fell inside it, edges "
-        "included. The 50%% band runs from the 25th to the 75th percentile and the 90%% band "
-        "from the 5th to the 95th. Each interval is a stationary bootstrap on the whole series "
-        "(block length %d, seed %d, %d replications) averaging the resampled days of the "
-        "group, the pooled row's 90%% interval reproducing the record's own. A cell with "
-        "fewer than %d days is marked **too few days** (the project's minimum of %d, "
-        "`onset.MINIMUM_EVENTS`, counted in days) and is never flagged. Day-type groups "
-        "overlap, because a day can carry several tags; a day with none is `other`."
-        % (RECORD, n, days[0]["date"], days[-1]["date"], calibration["block_length"],
-           calibration["seed"], calibration["replications"], MINIMUM_DAYS, MINIMUM_DAYS),
-        "",
-        "| Split | Group | Days | 50% band | 50% interval | 90% band | 90% interval | "
-        "90% misses below | 90% misses above | Excludes nominal |",
-        "|---|---|---|---|---|---|---|---|---|---|",
-    ]
+def _rows(table):
+    lines = []
     for cell in table:
         if not cell["enough"]:
             lines.append("| %s | %s | %d | too few days (under %d) | | too few days (under %d) | | "
@@ -317,37 +350,76 @@ def render(record, table, diagnosis_cells, days):
                 "%d (%s)" % (cell["above"], _pct(cell["above"] / cell["days"])),
                 ", ".join(flags) or "no"]
         lines.append("| " + " | ".join(row) + " |")
-    lines += [
+    return lines
+
+
+HEADER = ["| Split | Group | Days | 50% band | 50% interval | 90% band | 90% interval | "
+          "90% misses below | 90% misses above | Excludes nominal |",
+          "|---|---|---|---|---|---|---|---|---|---|"]
+
+
+def render(record, table, later, days):
+    """The reported-only page, as Markdown."""
+
+    n = len(days)
+    calibration = record["metrics"]["interval_calibration"]["coverage_interval"]
+    lines = [
+        "# Band coverage by day type, regime and horizon",
         "",
-        "## h = 2 to 5",
+        "<!-- generated: band-coverage -->",
         "",
-        "No record carries a per-origin series at h = 2 to 5, so there is **no interval** here "
-        "and a bootstrap would need new scoring. The shares are `docs/runs/%s`' "
-        "(question 1, 2018-06-29 to 2025-12-31), by its four exclusive day types and by regime, "
-        "with an outcome exactly on an edge counting one half. Misses are shares of the 50%% band's "
-        "days. A cell with fewer than %d days is marked **too few days**." % (DIAGNOSIS, MINIMUM_DAYS),
+        "**Generated by `scripts/emit_results.py` from `scripts/band_coverage.py`; never hand-edited.** "
+        "Reported only: the records it reads are scored elsewhere, and no record in `docs/runs/` changes.",
         "",
-        "| h | Split | Group | Days | 50% band | 90% band | 50% misses below | 50% misses above |",
-        "|---|---|---|---|---|---|---|---|",
-    ]
-    for cell in diagnosis_cells:
-        if cell["days"] < MINIMUM_DAYS:
-            lines.append("| %d | %s | %s | %d | too few days (under %d) | too few days (under %d) | | |"
-                         % (cell["horizon"], cell["kind"], cell["name"], cell["days"],
-                            MINIMUM_DAYS, MINIMUM_DAYS))
-            continue
-        lines.append("| %d | %s | %s | %d | %.1f%% | %.1f%% | %.1f%% | %.1f%% |" % (
-            cell["horizon"], cell["kind"], cell["name"], cell["days"], cell["band_50"],
-            cell["band_90"], cell["miss_below"], cell["miss_above"]))
+        "The published distribution at h = 1 (`docs/runs/%s`), **%d origins**, %s to %s, and at "
+        "h = 2 to 5 (`docs/runs/%s`, from `scripts/forecast_daily.py --horizon H`, the same "
+        "walk, kept over the same window). A band's coverage is the share of scored days whose "
+        "outcome fell inside it, edges included. The 50%% band runs from the 25th to the 75th "
+        "percentile and the 90%% band from the 5th to the 95th. Each interval is a stationary "
+        "bootstrap on the whole series (block length %d, seed %d, %d replications, the h = 1 "
+        "record's, for every horizon) averaging the resampled days of the group; the pooled h = 1 "
+        "90%% interval reproduces the record's own, and each later horizon's pooled shares "
+        "reproduce `docs/runs/%s`' exactly. A cell with fewer than %d days is marked **too few "
+        "days** (the project's minimum of %d, `onset.MINIMUM_EVENTS`, counted in days) and is "
+        "never flagged. Day-type groups overlap, because a day can carry several tags; a day with "
+        "none is `other`."
+        % (RECORD, n, days[0]["date"], days[-1]["date"], DAILY_PATTERN, calibration["block_length"],
+           calibration["seed"], calibration["replications"], DIAGNOSIS, MINIMUM_DAYS, MINIMUM_DAYS),
+        "",
+        "## h = 1",
+        "",
+    ] + HEADER + _rows(table)
+    for entry in later:
+        lines += ["", "## h = %d" % entry["horizon"], "",
+                  "%d scored days, %s to %s." % (len(entry["days"]), entry["days"][0]["date"],
+                                                 entry["days"][-1]["date"]), ""]
+        lines += HEADER + _rows(entry["table"])
     lines += ["", "<!-- end generated: band-coverage -->", ""]
     return "\n".join(lines)
 
 
 def compute(runs):
-    """`(record, table, diagnosis_cells, days)` from the records in `runs`."""
+    """`(record, table, later, days)` from the records in `runs`.
+
+    `later` is `[{"horizon", "days", "table"}]` for h = 2 to 5, each reproduced against the
+    diagnosis record before it is returned.
+    """
 
     record = json.loads((runs / RECORD).read_text(encoding="utf-8"))
     diagnosis = json.loads((runs / DIAGNOSIS).read_text(encoding="utf-8"))
     splits = load_split_declaration(SPLITS)
-    days = day_table(record, build_panel_rows(), splits)
-    return record, cells(record, days, splits), horizon_cells(diagnosis), days
+    rows = build_panel_rows()
+    days = day_table(record, rows, splits)
+    later = []
+    for horizon in LATER_HORIZONS:
+        daily = json.loads((runs / (DAILY % horizon)).read_text(encoding="utf-8"))
+        if daily["horizon"] != horizon:
+            raise BandError("%s is the record of h = %s" % (DAILY % horizon, daily["horizon"]))
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        if daily["panel_sha256"] != manifest["sha256"]:
+            raise BandError("h = %d was scored on a panel that is not the published one" % horizon)
+        entries = daily_day_table(daily, rows, splits, days[-1]["date"])
+        check_against_diagnosis(horizon, entries, diagnosis)
+        later.append({"horizon": horizon, "days": entries,
+                      "table": cells(record, entries, splits, check=False)})
+    return record, cells(record, days, splits), later, days

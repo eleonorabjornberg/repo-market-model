@@ -2624,56 +2624,56 @@ def band_coverage_block(repo):
     """The band-coverage table for the "Grading it honestly" chapter (#265, her ruling on #291).
 
     The same cells and sentence as `docs/band_coverage_by_split.md` and the README, from
-    `scripts/band_coverage.py`: h = 1 by day type and regime with intervals, and h = 2 to 5 as
-    shares the record gives no interval for. Nothing is scored here.
+    `scripts/band_coverage.py`: every horizon, h = 1 to 5 (#290), by day type and regime with
+    intervals. Nothing is scored here.
     """
     spec = importlib.util.spec_from_file_location("band_coverage", ROOT / "scripts" / "band_coverage.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules["band_coverage"] = module
     spec.loader.exec_module(module)
-    record, table, horizons, days = module.compute(Path(repo) / RUNS)
+    record, table, later, days = module.compute(Path(repo) / RUNS)
     minimum, pct = module.MINIMUM_DAYS, module._pct
     calibration = record["metrics"]["interval_calibration"]["coverage_interval"]
-    sentence = html.escape(module.finding_sentence(table))
+    sentence = html.escape(module.finding_sentence(table, later))
     sentence = re.sub(r"`([^`]*)`", r"<code>\1</code>", sentence)
-    rows = []
-    for cell in table:
-        head = f"<th scope='row'>{html.escape(cell['kind'])}: {html.escape(module.cell_label(cell))}</th><td>{cell['days']}</td>"
-        if not cell["enough"]:
-            rows.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td>"
-                        f"<td>{cell['below']}</td><td>{cell['above']}</td><td></td></tr>")
-            continue
-        flags = ", ".join(band for band, _ in module.excluded([cell])) or "no"
-        cols = "".join(f"<td>{pct(b['coverage'])}</td><td>{pct(b['lower'])} to {pct(b['upper'])}</td>"
-                       for b in (cell["bands"][0.5], cell["bands"][0.9]))
-        rows.append(f"<tr>{head}{cols}<td>{cell['below']} ({pct(cell['below'] / cell['days'])})</td>"
-                    f"<td>{cell['above']} ({pct(cell['above'] / cell['days'])})</td><td>{flags}</td></tr>")
-    first = (f"<div class='heat' role='region' aria-label='Band coverage at one day ahead, by day type and regime' tabindex='0'>"
-             f"<table class='fttab'><caption>One day ahead, {len(days)} scored days, {days[0]['date']} to {days[-1]['date']}: "
-             f"how often the outcome fell inside each band.</caption><thead><tr>"
-             f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
-             f"<th scope='col'>50% interval</th><th scope='col'>90% band</th><th scope='col'>90% interval</th>"
-             f"<th scope='col'>90% misses below</th><th scope='col'>90% misses above</th>"
-             f"<th scope='col'>Excludes nominal</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>")
-    later = []
-    for cell in horizons:
-        head = (f"<th scope='row'>{cell['horizon']}</th><td>{html.escape(cell['kind'])}: {html.escape(cell['name'])}</td>"
-                f"<td>{cell['days']}</td>")
-        if cell["days"] < minimum:
-            later.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td></tr>")
-            continue
-        later.append(f"<tr>{head}<td>{cell['band_50']:.1f}%</td><td>{cell['band_90']:.1f}%</td>"
-                     f"<td>{cell['miss_below']:.1f}%</td><td>{cell['miss_above']:.1f}%</td></tr>")
-    second = (f"<div class='heat' role='region' aria-label='Band coverage two to five days ahead' tabindex='0'>"
-              f"<table class='fttab'><caption>Two to five days ahead: shares only, no interval: the record keeps no "
-              f"per-origin data for h = 2\u20135.</caption><thead><tr><th scope='col'>Days ahead</th>"
-              f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
-              f"<th scope='col'>90% band</th><th scope='col'>50% misses below</th>"
-              f"<th scope='col'>50% misses above</th></tr></thead><tbody>{''.join(later)}</tbody></table></div>")
+
+    def rows_of(cells):
+        rows = []
+        for cell in cells:
+            head = (f"<th scope='row'>{html.escape(cell['kind'])}: {html.escape(module.cell_label(cell))}</th>"
+                    f"<td>{cell['days']}</td>")
+            if not cell["enough"]:
+                rows.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td>"
+                            f"<td>{cell['below']}</td><td>{cell['above']}</td><td></td></tr>")
+                continue
+            flags = ", ".join(band for band, _ in module.excluded([cell])) or "no"
+            cols = "".join(f"<td>{pct(b['coverage'])}</td><td>{pct(b['lower'])} to {pct(b['upper'])}</td>"
+                           for b in (cell["bands"][0.5], cell["bands"][0.9]))
+            rows.append(f"<tr>{head}{cols}<td>{cell['below']} ({pct(cell['below'] / cell['days'])})</td>"
+                        f"<td>{cell['above']} ({pct(cell['above'] / cell['days'])})</td><td>{flags}</td></tr>")
+        return "".join(rows)
+
+    def table_of(cells, label, caption):
+        return (f"<div class='heat' role='region' aria-label='Band coverage {label}, by day type and regime' tabindex='0'>"
+                f"<table class='fttab'><caption>{caption}</caption><thead><tr>"
+                f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
+                f"<th scope='col'>50% interval</th><th scope='col'>90% band</th><th scope='col'>90% interval</th>"
+                f"<th scope='col'>90% misses below</th><th scope='col'>90% misses above</th>"
+                f"<th scope='col'>Excludes nominal</th></tr></thead><tbody>{rows_of(cells)}</tbody></table></div>")
+
+    first = table_of(table, "at one day ahead",
+                     f"One day ahead, {len(days)} scored days, {days[0]['date']} to {days[-1]['date']}: "
+                     f"how often the outcome fell inside each band.")
+    second = "".join(
+        table_of(entry["table"], f"at {entry['horizon']} days ahead",
+                 f"{entry['horizon']} days ahead, {len(entry['days'])} scored days, "
+                 f"{entry['days'][0]['date']} to {entry['days'][-1]['date']}: how often the outcome fell "
+                 f"inside each band.") for entry in later)
     note = (f"Each interval is a stationary bootstrap on the day series (block length {calibration['block_length']}, "
-            f"seed {calibration['seed']}, {calibration['replications']:,} replications). A group of fewer than "
+            f"seed {calibration['seed']}, {calibration['replications']:,} replications, the one-day-ahead "
+            f"record's, used at every horizon). A group of fewer than "
             f"{minimum} days is marked too few days and never flagged. Day-type groups overlap, because a day can carry "
-            f"several tags. Reported from the record; nothing is scored again.")
+            f"several tags. Reported from the records; nothing is scored again.")
     fills = {"bc_sentence": sentence, "bc_table": first, "bc_later_table": second, "bc_note": html.escape(note)}
     return fills
 
