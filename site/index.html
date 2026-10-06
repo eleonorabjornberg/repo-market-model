@@ -241,6 +241,7 @@ table.fttab caption{text-align:left;font-weight:600;color:var(--ink);padding:0 0
 table.fttab th,table.fttab td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--rule);background:none;color:var(--ink-2);border-radius:0;min-width:0;white-space:normal}
 table.fttab th[scope=row]{color:var(--ink);font-weight:600;white-space:nowrap}
 table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.uselimit{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink);border-left:3px solid var(--ink-2);padding:2px 0 2px 12px;margin:14px 0;max-width:80ch}
 .ftlinks{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:18px 0 0;max-width:80ch}
 .ftlinks code{font-size:.78rem;word-break:break-all}
 </style>
@@ -252,6 +253,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <div class="prose intro">
     <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on 3 September 2026 it was set from about <strong>$2.9 trillion</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
   </div>
+  <p class="uselimit"><b>Use limitation.</b> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.</p>
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
@@ -457,6 +459,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <p class="kicker">The result</p>
   <h2 id="final-test-title">The final test</h2>
   <p class="prose lede">From 2 January to 3 September 2026, the model's next-day forecast of the range of SOFR − IORB was more accurate than carrying the latest spread forward: 1.66 bp against 1.83 bp of CRPS, where lower is better, and the 90% interval of the gap, +0.03 to +0.36 bp, lies above zero. Result: <b>pass</b>, on a test that is near-blind, not blind: these days had appeared inside earlier pooled results, though the record says no choice was made on them by name.</p>
+  <p class="uselimit"><b>Use limitation.</b> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.</p>
   <p class='ftclaim'><b>The claim, as pre-registered:</b> the published model&#x27;s one-day-ahead forecast of the full distribution of SOFR − IORB was more accurate than as-of persistence over January to September 2026. It is a pass on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, 2 January to 3 September 2026</div>
@@ -690,7 +693,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>74b58f430bd4c997055bc2673519ca686da7dadb</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
+  <p>Built from the project's verified data panel: 2,104 business days from 3 April 2018 to 3 September 2026, SHA-256 <code>4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999</code>, repository commit <code>34ffe341228e74a0e6137c5edf4cd71060052878</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.</p>
   <p>Chapters 5 and 6 are drawn only from the six run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
