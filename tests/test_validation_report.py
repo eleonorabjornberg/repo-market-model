@@ -209,12 +209,15 @@ class ClearingMandateTests(unittest.TestCase):
 
 
 class LockboxTests(unittest.TestCase):
-    def test_the_block_names_the_declared_tiers_and_says_headline_results_score_earlier_days(self):
+    def test_the_block_names_the_declared_tiers_and_states_which_records_scored_which_days(self):
         block = _blocks(_text())["validation-lockbox"]
         tiers = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"]
         for tier in tiers:
             self.assertIn(tier["start"], block)
-        self.assertIn("headline results score only days before", block.lower().replace("**", ""))
+        flat = block.replace("**", "")
+        self.assertNotIn("Headline results score only days before", flat)
+        self.assertIn("older pooled distribution tables scored days through", flat)
+        self.assertIn("records published since score only days before %s" % tiers[0]["start"], flat)
 
 
 class MonitoringTests(unittest.TestCase):

@@ -213,6 +213,15 @@ def _lag(lag):
                              lag.get("basis", "n/a").replace("_", " "))
 
 
+def _lockbox_scope(first_locked, last_scored):
+    if last_scored < first_locked:
+        return "**Every record scores only days before %s.**" % first_locked
+    return ("**The older pooled distribution tables scored days through %s (the near-blind tier); the records "
+            "published since score only days before %s.** Each table states the window it scores. "
+            "`docs/decisions/lockbox.md` records this, and the older figures are history, not a holdout."
+            % (last_scored, first_locked))
+
+
 def lockbox_block(emit):
     declaration = _json(ROOT / "metadata/lockbox.json")
     first_locked = declaration["tiers"][0]["start"]
@@ -220,7 +229,7 @@ def lockbox_block(emit):
     last_scored = emit.require(persistence, "folds", "last", "scored_date")
     lines = [
         "**The lockbox** (`docs/decisions/lockbox.md`, `metadata/lockbox.json`). A comparison scores only days "
-        "before the first locked day. **Headline results score only days before %s.**" % first_locked,
+        "before the first locked day. %s" % _lockbox_scope(first_locked, last_scored),
         "",
         "| Tier | Days | Opened |",
         "|---|---|---|",
@@ -236,13 +245,6 @@ def lockbox_block(emit):
         "Every scoring entry point refuses a scored day in a tier that is not opened, with `LookAheadError`. An "
         "opened tier becomes ordinary history, and the near-blind tier's single pre-registered opening is reported "
         "separately and labelled."])
-    if last_scored >= first_locked:
-        lines.extend([
-            "",
-            "**Records scored before the lockbox.** The pooled distribution record that predates it was scored "
-            "through %s, so its figures cover the near-blind tier's days as well. `docs/decisions/lockbox.md` "
-            "records this, and those figures are history, not a holdout. Each table states the window it scores; "
-            "the records published since score only days before %s." % (last_scored, first_locked)])
     return lines
 
 
