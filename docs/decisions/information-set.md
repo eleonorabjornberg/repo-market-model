@@ -32,7 +32,8 @@ A forecast for scored day `T` is made at the declared decision time on the last 
 
 `docs/process/AGENT_CONTRACT.md`'s "The purge stays a scalar", wherever the purge chooses what a forecast reads. The contract's own
 as-of rule is unchanged, and this decision is what implements it. The evidence and the alternatives considered are in
-[`docs/pivot/lag-assessment.md`](../pivot/lag-assessment.md).
+[`docs/pivot/lag-assessment.md`](../pivot/lag-assessment.md). That assessment's §4 verdicts were not re-measured
+when the feature set was fixed; re-scoring them belongs with next-version research.
 
 ## Decided with it
 

@@ -231,6 +231,8 @@ def key_findings(persistence, exceedance, conditional):
     add("Every figure here is scored under the as-of information rule")
     add("(`docs/decisions/information-set.md`). The records scored under the earlier purge")
     add("rule are archived in `docs/runs/archive/pre-asof/` (`docs/pivot/lag-assessment.md` §4).")
+    add("The feature set was fixed without re-measuring that assessment's verdicts; re-scoring them")
+    add("belongs with next-version research.")
     add("Phase 2's verdict, made again on these as-of records, is in `PLAN.md`.")
     add("")
     add("**Target.** The next-business-day value of the panel field `spread_bps` — the SOFR")
