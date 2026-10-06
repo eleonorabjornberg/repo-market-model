@@ -83,6 +83,16 @@ AMENDMENT_HEADING = "## Amendment: the live record (#215)"
 FIRST_SCORING_DATES = (date(2027, 4, 1), date(2027, 10, 1))
 #: The live record's primary result (ruling of 4 October 2026 on #215).
 HEADLINE = {"target": "crps", "horizon": 1}
+#: The fewest days a regime or day-type cell needs before it carries an interval
+#: (#276, ruling #269 item 14). A cell below it reports its mean and "too few
+#: days", whatever a bootstrap replicate would have drawn. **Proposed, not
+#: decided**: the number is Eleonora's; 20 is the minimum the final test's pages
+#: already use (`onset.MINIMUM_EVENTS`, there a count of events), applied here to
+#: days. Published records adopt it only at their next publish.
+MINIMUM_CELL_DAYS = onset.MINIMUM_EVENTS
+TOO_FEW_DAYS = "too few days"
+#: From this year each calendar year is its own regime (#276, ruling #269 item 4).
+FIRST_YEAR_REGIME = 2027
 HORIZONS = (1, 2, 3, 4, 5)
 #: Each target, the baselines it is paired with.
 BASELINES = {
@@ -250,6 +260,30 @@ def crps_from_record(record, side: str, h: int, outcome: float) -> float:
     return crps_from_quantiles(levels, quantiles, outcome)
 
 
+def _regime(splits, when: date) -> str:
+    """The regime of `when`: the declared one, else its calendar year from 2027, else "undeclared"."""
+
+    try:
+        return splits.regime(when)
+    except ValueError:
+        return str(when.year) if when.year >= FIRST_YEAR_REGIME else "undeclared"
+
+
+def _small_cell(differences, positions):
+    """The cell's entry when it has fewer than `MINIMUM_CELL_DAYS` days, else None.
+
+    The mean is reported; the interval is not, so a small cell never gets one
+    by the luck of the bootstrap seed.
+    """
+
+    if len(positions) >= MINIMUM_CELL_DAYS:
+        return None
+    entry = {"days": len(positions), "note": TOO_FEW_DAYS, "minimum_days": MINIMUM_CELL_DAYS}
+    if positions:
+        entry["mean"] = sum(differences[k] for k in positions) / len(positions)
+    return entry
+
+
 def score_crps(records, rows, splits, day: date) -> dict:
     """The CRPS cells, cumulatively over `records`: h = 1 primary, h = 2 to 5 reported only."""
 
@@ -265,10 +299,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
             days.append(when)
             published.append(crps_from_record(record, "published", h, row.spread_bps))
             persistence.append(crps_from_record(record, "persistence", h, row.spread_bps))
-            try:
-                regimes.append(splits.regime(when))
-            except ValueError:
-                regimes.append("undeclared")
+            regimes.append(_regime(splits, when))
             types.append(splits.reporting_day_type(when, row.values))
         primary = h == HEADLINE["horizon"]
         cell = {"days": len(days), "role": "primary" if primary else "reported only",
@@ -312,11 +343,9 @@ def score_crps(records, rows, splits, day: date) -> dict:
             cell[label] = {}
             for key in sorted(set(keys)):
                 positions = [k for k in every if keys[k] == key]
-                cell[label][key] = (
-                    onset.paired_difference(persistence, published, positions,
-                                            block_length=block, seed=_seed_from((str(day), "crps", str(h), key)))
-                    if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
-                )
+                cell[label][key] = _small_cell(differences, positions) or onset.paired_difference(
+                    persistence, published, positions, block_length=block,
+                    seed=_seed_from((str(day), "crps", str(h), key)))
         if primary:
             # A reported-only cell (h = 2 to 5) carries no verdict: it cannot pass or fail, and
             # its label says it is not evidence (#267, second review finding 19).
@@ -359,10 +388,7 @@ def score(records, rows, splits, day: date) -> dict:
                     model.setdefault(name, []).append(entry["forecasts"][str(h)][cell_name])
                 for name in baselines:
                     bench[name].append(record["baselines"][name]["forecasts"][str(h)][cell_name])
-                try:
-                    regimes.append(splits.regime(when))
-                except ValueError:
-                    regimes.append("undeclared")
+                regimes.append(_regime(splits, when))
                 types.append(splits.reporting_day_type(when, row.values))
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
@@ -383,10 +409,9 @@ def score(records, rows, splits, day: date) -> dict:
                         paired[label] = {}
                         for key in sorted(set(keys)):
                             positions = [k for k in every if keys[k] == key]
-                            paired[label][key] = (
-                                _paired(losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
-                                if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
-                            )
+                            gaps = [x - y for x, y in zip(losses[b], losses[name])]
+                            paired[label][key] = _small_cell(gaps, positions) or _paired(
+                                losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
                     entry["paired"][b] = paired
                 cell["models"][name] = entry
             cell["baseline_brier"] = {b: sum(losses[b]) / len(days) for b in baselines}
