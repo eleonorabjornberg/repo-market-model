@@ -154,6 +154,7 @@ __all__ = [
     "log_score",
     "pinball_loss",
     "crps_from_quantiles",
+    "crps_trapezoid_from_quantiles",
     "precision_recall_curve",
     "stationary_bootstrap_indices",
     "stationary_bootstrap_interval",
@@ -792,6 +793,44 @@ def crps_from_quantiles(
     return 2.0 * sum(
         pinball_loss(level, value, observed) for level, value in zip(grid, values)
     ) / len(grid)
+
+
+def crps_trapezoid_from_quantiles(
+    levels: Sequence[float],
+    predicted: Sequence[float],
+    observed: float,
+) -> float:
+    """The CRPS integral from a quantile vector, trapezoid weighted: a reported-only companion.
+
+    `crps_from_quantiles` is the unweighted mean of the pinball losses at the
+    declared levels. On a grid that is not uniform it overweights the outer
+    levels, so it is a fixed score and not a numerical approximation of the
+    integral `CRPS = 2 * integral over (0, 1) of the quantile loss`. This is the
+    reviewer's rule (#259) for that integral: the quantile loss between two
+    declared levels is the straight line through its two ends (the trapezoid),
+    and beyond the lowest and highest declared levels it is held constant at
+    its value there (constant tails). It reduces to `|observed - point|` for a
+    point mass, as the plain score does.
+
+    It decides nothing: every primary cell stays on `crps_from_quantiles`.
+    """
+
+    grid = _validate_levels(levels)
+    values = [float(value) for value in predicted]
+    if len(values) != len(grid):
+        raise MetricError(f"{len(grid)} levels against {len(values)} quantiles")
+    for position in range(1, len(values)):
+        if values[position] < values[position - 1]:
+            raise MetricError(
+                f"quantiles cross: level {grid[position - 1]} predicts "
+                f"{values[position - 1]} but level {grid[position]} predicts "
+                f"{values[position]}"
+            )
+    losses = [pinball_loss(level, value, observed) for level, value in zip(grid, values)]
+    area = grid[0] * losses[0] + (1.0 - grid[-1]) * losses[-1]
+    for position in range(1, len(grid)):
+        area += (grid[position] - grid[position - 1]) * (losses[position - 1] + losses[position]) / 2.0
+    return 2.0 * area
 
 
 def _validate_levels(levels: Sequence[float]) -> Tuple[float, ...]:

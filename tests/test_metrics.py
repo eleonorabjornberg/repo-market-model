@@ -53,6 +53,7 @@ from repo_model.metrics import (
     corp_decomposition,
     corp_reliability_curve,
     crps_from_quantiles,
+    crps_trapezoid_from_quantiles,
     crps_on_grid,
     log_score,
     pinball_loss,
@@ -950,6 +951,42 @@ class ContinuousTargetTests(unittest.TestCase):
         tight = crps_from_quantiles(levels, (9.0, 10.0, 11.0), 10.0)
         loose = crps_from_quantiles(levels, (0.0, 10.0, 20.0), 10.0)
         self.assertLess(tight, loose)
+
+    def test_trapezoid_crps_is_the_integral_with_constant_tails(self):
+        """The reviewer's rule (#259), worked by hand on levels 0.25 and 0.75.
+
+        Observed 0, quantiles (-1, 1): the pinball losses are 0.25 and 0.25, so
+        the loss is 0.25 everywhere on (0, 1): constant tails and a flat
+        trapezoid, an integral of 0.25 and a CRPS of 0.5. Observed 2 with the
+        same quantiles: the losses are 0.25 * 3 = 0.75 and 0.75 * 1 = 0.75,
+        again flat, a CRPS of 1.5.
+        """
+
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles((0.25, 0.75), (-1.0, 1.0), 0.0), 0.5)
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles((0.25, 0.75), (-1.0, 1.0), 2.0), 1.5)
+
+    def test_trapezoid_crps_weights_the_gaps_the_plain_mean_does_not(self):
+        levels = (0.05, 0.5, 0.95)
+        predicted = (-2.0, 0.0, 2.0)
+        losses = [pinball_loss(level, value, 1.0) for level, value in zip(levels, predicted)]
+        area = 0.05 * losses[0] + 0.05 * losses[2]
+        area += 0.45 * (losses[0] + losses[1]) / 2 + 0.45 * (losses[1] + losses[2]) / 2
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles(levels, predicted, 1.0), 2 * area)
+        self.assertNotAlmostEqual(
+            crps_trapezoid_from_quantiles(levels, predicted, 1.0),
+            crps_from_quantiles(levels, predicted, 1.0),
+        )
+
+    def test_trapezoid_crps_of_a_point_mass_is_the_absolute_error(self):
+        self.assertAlmostEqual(
+            crps_trapezoid_from_quantiles((0.05, 0.25, 0.5, 0.75, 0.95), (3.0,) * 5, 7.5), 4.5
+        )
+
+    def test_trapezoid_crps_rejects_crossing_quantiles_and_mismatched_lengths(self):
+        with self.assertRaisesRegex(MetricError, "quantiles cross"):
+            crps_trapezoid_from_quantiles((0.1, 0.9), (10.0, 5.0), 7.0)
+        with self.assertRaisesRegex(MetricError, "levels against"):
+            crps_trapezoid_from_quantiles((0.1, 0.9), (10.0,), 7.0)
 
     def test_crossing_quantiles_are_rejected(self):
         with self.assertRaisesRegex(MetricError, "quantiles cross"):

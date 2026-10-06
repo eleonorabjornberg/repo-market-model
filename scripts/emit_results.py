@@ -250,7 +250,7 @@ def key_findings(persistence, exceedance, conditional):
     add("|---|---|---|---|")
     add("| Mean absolute error | persistence | %s bp | %s to %s bp |" % (
         bp(metrics["mae_bps"]), bp(interval["lower"]), bp(interval["upper"])))
-    add("| CRPS | persistence | %s bp | not intervalled |" % bp(metrics["crps_bps"]))
+    add("| Five-quantile score | persistence | %s bp | not intervalled |" % bp(metrics["crps_bps"]))
     add("| Interval coverage | nominal %s | **%s** | %s to %s |" % (
         pct(metrics["interval_probability"], 0), pct(metrics["interval_coverage"]),
         pct(coverage["lower"]), pct(coverage["upper"])))
@@ -286,8 +286,8 @@ def key_findings(persistence, exceedance, conditional):
     table, groups = challenger_section()
     lines.extend(table)
     add("")
-    add("**The paired difference by regime and by pressure-day type** (persistence's CRPS "
-        "minus the challenger's, bp, with its 90% interval):")
+    add("**The paired difference by regime and by pressure-day type** (persistence's five-quantile "
+        "score minus the challenger's, bp, with its 90% interval):")
     add("")
     for position, challengers in enumerate(groups):
         if position:
@@ -594,6 +594,7 @@ def correction_section():
 #: The final test (#150, #151): the near-blind tier opened once. Its page carries the
 #: sections for the validation report (#119) and the plain-language page (#120).
 FINAL_TEST = "final_test_near_blind.json"
+FINAL_TEST_INTEGRAL = "final_test_near_blind_integral_sensitivity.json"
 FINAL_TEST_PAGE = ROOT / "docs/final-test.md"
 FINAL_TEST_BEGIN = "<!-- generated: final-test -->"
 FINAL_TEST_END = "<!-- end generated: final-test -->"
@@ -604,6 +605,14 @@ FINAL_TEST_DAY_TYPES = ("ordinary", "month_end", "quarter_end", "tax_date")
 #: the CRPS rule (`crps_verdict`) labels.
 FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown",
                      "worse": "shown worse"}
+
+
+#: The pre-registered claim says what was scored in a broader phrase than the score
+#: supports (#259): the score is the mean pinball loss over five published quantiles. The
+#: record and the pre-registration keep their wording; a generated page names what is
+#: scored.
+def final_test_claim_wording(claim):
+    return claim.replace("the full distribution of", "the five published quantiles of")
 
 
 def _ft_interval(entry, places=3):
@@ -636,12 +645,13 @@ def final_test_section():
         "once, on %s, on Eleonora's go: %s. "
         "The frozen command of `docs/decisions/final-test-preregistration.md` was run once. Its one "
         "primary cell is the published distribution (#169's gbm with nested conformal PID) against "
-        "as-of persistence, by CRPS, one day ahead. The record is `docs/runs/%s`."
+        "as-of persistence, by the five-quantile score (the mean pinball loss over the published "
+        "quantiles; the record's field names say CRPS), one day ahead. The record is `docs/runs/%s`."
         % (require(cell, "first"), require(cell, "last"), require(opened, "date"),
            require(opened, "ruling"), FINAL_TEST))
     add("")
-    add("**The primary cell: %s.** Mean CRPS %s bp for as-of persistence and %s bp for the published "
-        "distribution, over %d scored days. The paired difference (persistence minus published; "
+    add("**The primary cell: %s.** Mean five-quantile score %s bp for as-of persistence and %s bp for the published "
+        "quantiles, over %d scored days. The paired difference (persistence minus published; "
         "positive favours the published distribution) is %s bp, 90%% interval %s bp (stationary "
         "bootstrap, mean block length %d). Label: **%s**. At mean block length %d, reported only, "
         "the interval is %s bp."
@@ -653,14 +663,26 @@ def final_test_section():
            "%s to %s" % (signed(require(cell, "sensitivity_interval", "lower"), 3),
                          signed(require(cell, "sensitivity_interval", "upper"), 3))))
     add("")
+    sensitivity = require(load(FINAL_TEST_INTEGRAL), "cell")
+    add("**Sensitivity to the weights, reported only (#259).** The score above is the unweighted mean of "
+        "the pinball losses at the five published quantile levels, which is not the integral that CRPS "
+        "is defined as. Re-scored with the trapezoid rule (`docs/runs/%s`; decides nothing), the "
+        "mean difference is %s bp, 90%% interval %s bp (mean block length %d) and %s bp (mean block "
+        "length %d)."
+        % (FINAL_TEST_INTEGRAL, signed(require(sensitivity, "mean_difference_bps"), 3),
+           _ft_interval(sensitivity), require(sensitivity, "interval", "block_length"),
+           "%s to %s" % (signed(require(sensitivity, "sensitivity_interval", "lower"), 3),
+                         signed(require(sensitivity, "sensitivity_interval", "upper"), 3)),
+           require(sensitivity, "sensitivity_interval", "block_length")))
+    add("")
     if passed:
         add("**The claim, as pre-registered:** %s. It is not a claim that the model warns of stress."
-            % require(record, "primary", "claim"))
+            % final_test_claim_wording(require(record, "primary", "claim")))
     else:
         add("**No claim is made:** the pre-registered claim is stated only on a pass.")
     add("")
-    add("**Near-blind, not blind.** These days had been scored inside pooled CRPS aggregates of "
-        "archived records before #169, though no 2026-only CRPS was published and no choice was made "
+    add("**Near-blind, not blind.** These days had been scored inside pooled aggregates of this score in "
+        "archived records before #169, though no 2026-only figure of it was published and no choice was made "
         "on them by name. 2026 was known to be calm when the test was designed.")
     add("")
     add("**By pressure-day type** (the split decides nothing; every window day falls in the "
@@ -677,7 +699,7 @@ def final_test_section():
         add("| %s | %d | %s | %s |" % (key, entry["count"], signed(entry["mean"], 3),
                                        _ft_interval(entry)))
     add("")
-    add("**CRPS at horizons 2 to 5, reported only.** The published distribution at each horizon is "
+    add("**Five-quantile score at horizons 2 to 5, reported only.** The published distribution at each horizon is "
         "pressure model v1's declaration. Each cell carries Eleonora's label of 4 October 2026.")
     add("")
     add("| Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |")
@@ -712,9 +734,9 @@ def final_test_section():
     add("")
     if passed:
         add("In January to September 2026, a stretch of days that no choice of model had been made on, "
-            "the published model's next-day forecast of the range of SOFR − IORB was more accurate on "
+            "the published model's next-day forecast of the range of SOFR − IORB (its five quantiles) was more accurate on "
             "average than the benchmark that carries the latest known spread forward "
-            "(as-of persistence): %s bp against %s bp by CRPS, where lower is better. The gap's 90%% "
+            "(as-of persistence): %s bp against %s bp by the five-quantile score, where lower is better. The gap's 90%% "
             "interval, %s bp, lies above zero. The test was fixed before these days were scored and run "
             "once. These days had appeared inside earlier pooled results, so the test is near-blind rather "
             "than blind. It is a statement about the range forecast, not a warning of stress, and 2026 "
@@ -725,7 +747,7 @@ def final_test_section():
         add("In January to September 2026, a stretch of days that no choice of model had been made on, "
             "the published model's next-day forecast of the range of SOFR − IORB was not shown to be "
             "more accurate than the benchmark that carries the latest known "
-            "spread forward (as-of persistence): %s bp against %s bp by CRPS, where lower is better, with a 90%% "
+            "spread forward (as-of persistence): %s bp against %s bp by the five-quantile score, where lower is better, with a 90%% "
             "interval for the gap of %s bp. The test was fixed before these days were scored and run once. "
             "These days had appeared inside earlier pooled results, so the test is near-blind rather "
             "than blind."
@@ -1029,8 +1051,9 @@ def _challenger_table(rows):
     add = lines.append
     add("**Challengers against persistence.** Each challenger is scored on the same "
         "%d origins (minimum history %d, refitted every %d scored days); persistence's "
-        "CRPS is %s bp. "
-        "The difference is persistence's CRPS minus the challenger's, so a positive "
+        "five-quantile score is %s bp (the mean pinball loss over the published quantiles; CRPS, in the "
+        "records' field names, where it is defined as this). "
+        "The difference is persistence's score minus the challenger's, so a positive "
         "value favours the challenger; its interval is a stationary bootstrap "
         "(block length %d, %d replications) on the per-origin differences."
         % (comparison["origin_count"], first["declaration"]["minimum_history"],
@@ -1038,7 +1061,7 @@ def _challenger_table(rows):
            comparison["mean_difference_interval"]["block_length"],
            comparison["mean_difference_interval"]["replications"]))
     add("")
-    add("| Challenger | CRPS | Difference | 90% interval | Verdict |")
+    add("| Challenger | Five-quantile score | Difference | 90% interval | Verdict |")
     add("|---|---|---|---|---|")
     for label, record in rows:
         c = record["comparison"]

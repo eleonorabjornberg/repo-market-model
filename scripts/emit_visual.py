@@ -2485,8 +2485,8 @@ def final_test(records, locked):
     Every figure goes through `from_record`. The verdict is the record's
     result, stated next to the near-blind disclosure; the claim is the record's
     pre-registered sentence, quoted only on a pass. The split by day type
-    decides nothing, and a cell the record gives no interval says so. The CRPS
-    cells at h = 2 to 5 each carry their verbatim label from the record (#229).
+    decides nothing, and a cell the record gives no interval says so. The five-quantile
+    score cells at h = 2 to 5 each carry their verbatim label from the record (#229).
     """
     rel = FINAL_TEST
 
@@ -2503,7 +2503,9 @@ def final_test(records, locked):
     first, last, n = get(*cell, "first"), get(*cell, "last"), get(*cell, "days")
     if (result == "pass") != (lower > 0):
         raise VisualError(f"{rel}: the result {result!r} does not match its interval {lower} to {upper}")
-    claim = get("primary", "claim")
+    # The pre-registered wording says "full distribution"; the score is the mean pinball loss over
+    # five published quantiles (#259), so a generated page names what is scored.
+    claim = get("primary", "claim").replace("the full distribution of", "the five published quantiles of")
     opened = get("opened", "date")
     checksum = get("crps_declaration_sha256")
     prereg = get("pre_registration")
@@ -2550,14 +2552,14 @@ def final_test(records, locked):
     if result == "pass":
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
-                   f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
+                   f"five-quantile score, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
                    f"Result: <b>pass</b>, on a test that is {near_blind}.")
         claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
                       f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
-                   f"{persistence:.2f} bp of CRPS, where lower is better, with a {level}% interval for the gap of "
+                   f"{persistence:.2f} bp of five-quantile score, where lower is better, with a {level}% interval for the gap of "
                    f"{gap}. Result: <b>fail</b>, on a test that is {near_blind}. No claim is made.")
         claim_html = ""
 
@@ -2578,8 +2580,8 @@ def final_test(records, locked):
         f"<td>{c['persistence']:.3f}</td><td>{c['published']:.3f}</td>"
         f"<td>{signed(c['mean'], 3)} ({signed(c['lower'], 3)} to {signed(c['upper'], 3)})</td>"
         f"<td>{c['verdict']}; {html.escape(c['label'])}</td></tr>" for c in later)
-    later_table = (f"<div class='heat' role='region' aria-label='CRPS at two to five days ahead, not evidence' "
-                   f"tabindex='0'><table class='fttab'><caption>CRPS further ahead, reported only and not evidence"
+    later_table = (f"<div class='heat' role='region' aria-label='Five-quantile score at two to five days ahead, not evidence' "
+                   f"tabindex='0'><table class='fttab'><caption>Five-quantile score further ahead, reported only and not evidence"
                    f"</caption><thead><tr><th scope='col'>Ahead</th><th scope='col'>Days</th>"
                    f"<th scope='col'>Persistence, bp</th><th scope='col'>Model, bp</th>"
                    f"<th scope='col'>Difference ({level}% interval), bp</th><th scope='col'>Label</th></tr></thead>"
@@ -2617,14 +2619,14 @@ def final_test(records, locked):
         "ft_once": f"<b>Run once,</b> on {day(opened)}, on Eleonora's go, and published whatever it showed.",
         "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, "
                          "forecasts the next day from the latest spread known at the decision time. Both are graded "
-                         "by CRPS: how far a forecast range was from the spread that actually came, in basis "
-                         "points, so lower is better."),
+                         "by the five-quantile score (the mean pinball loss over the five published quantiles): how far "
+                         "a forecast range was from the spread that actually came, in basis points, so lower is better."),
         "ft_not_stress": stress_text,
         "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
                         f"though no choice of model was made on them by name.{blind_text}",
         "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
                     f"The test says nothing about a stressed period."),
-        "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
+        "ft_later": (f"<b>The five-quantile score two to five days ahead is not evidence.</b> Those cells use a different model from "
                      f"the one-day forecast, and each carries Eleonora's label."),
         "ft_later_table": later_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
