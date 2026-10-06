@@ -520,10 +520,59 @@ def check_annotations(notes):
     entries = list(notes["events"]) + list(notes["runoff"]) + list(notes["process"])
     entries += list(notes["guards"]) + [notes["validation"], notes["implementation_note"]]
     entries += list(notes["claims"].values())
+    entries += list(notes.get("fetched", []))
     for entry in entries:
-        src = entry.get("src", "")
-        if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
-            raise VisualError(f"annotation {entry} has no primary-source URL")
+        for src in [entry.get("src", ""), *entry.get("also_src", [])]:
+            if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
+                raise VisualError(f"annotation {entry} has no primary-source URL")
+
+
+def check_fetched(repo, notes):
+    """Every fetched source is the bytes its checksum records, and the event that reads one names a fetched file."""
+    fetched = {f["path"]: f for f in notes.get("fetched", [])}
+    for path, meta in fetched.items():
+        if sha256(Path(repo) / path) != meta["sha256"]:
+            raise VisualError(f"{path} does not match its recorded SHA-256; refusing")
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is not None and path not in fetched:
+            raise VisualError(f"the annotation for {event['date']} reads {path}, which is not a checksummed source")
+    return fetched
+
+
+def standing_repo_rate(repo, path):
+    """The standing repo minimum bid rate an implementation note states, from its checksummed bytes."""
+    raw = (Path(repo) / path).read_bytes().decode("utf-8-sig")
+    raw = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S)
+    text = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", raw)))
+    m = re.search(r"standing overnight repurchase agreement operations (?:with a minimum bid rate of|at a rate of) "
+                  r"([\d.]+) percent", text)
+    if not m:
+        raise VisualError(f"{path} does not state the standing repo rate")
+    return Decimal(m.group(1))
+
+
+def check_above_standing_repo(repo, notes, rows):
+    """`[(event, SOFR, standing repo rate)]`: an annotation that says SOFR was above the standing repo rate is refused unless it was.
+
+    The rate is read from the checksummed implementation note the annotation names, and
+    SOFR from the panel row of the annotation's own day.
+    """
+    out = []
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is None:
+            continue
+        row = next((r for r in rows if r["date"] == event["date"]), None)
+        if row is None:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"and the panel has no row for that day")
+        rate = standing_repo_rate(repo, path)
+        if not Decimal(row["sofr"]) > rate:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"but SOFR was {row['sofr']}% and the rate {rate}%")
+        out.append((event, Decimal(row["sofr"]), rate))
+    return out
 
 
 def check_glossary(glossary):
@@ -667,6 +716,12 @@ def clock(t):
     suffix = "am" if h < 12 else "pm"
     h12 = h % 12 or 12
     return f"{h12}{'' if m == 0 else ':%02d' % m} {suffix}"
+
+
+def sources(event):
+    """The links after an event: its source, then any further source it rests on."""
+    links = [event["src"], *event.get("also_src", [])]
+    return ", ".join(f"<a href='{u}'>Source</a>" for u in links)
 
 
 def link(claim):
@@ -887,7 +942,7 @@ def regime_views(regimes, rows, clip_bp, second_bp):
     return views
 
 
-def history(rows, notes, thresholds, regimes, windows, locked):
+def history(rows, notes, thresholds, regimes, windows, locked, buffer_low):
     taus = [int(t) for t in thresholds["taus_bp"]]
     pressure_bp, second_bp, tail_bp = taus[0], taus[1], taus[-1]
     out_rows = []
@@ -961,13 +1016,23 @@ def history(rows, notes, thresholds, regimes, windows, locked):
     tail = [r for r in kept if r["s"] > tail_bp]
     tail_years = sorted({yr(r) for r in tail})
     events = [{"date": e["date"], "src": e["src"],
-               "text": marker_text(e, kept, "s")}
+               "text": marker_text(e, kept, "s") + (f". {e['response']}" if e.get("response") else "")}
               for e in notes["events"]]
     iorb_from = next(e["date"] for e in notes["events"] if e.get("role") == "iorb_from")
     late_qe = type_count(late, 0)
     quiet = all(type_count(ample, t)[0] == 0 for t in range(len(TYPES)))
     off = sum(1 for r in kept if r["s"] > CLIP_BP)
     above = lambda g: sum(1 for r in kept if in_regime(r, g) and r["s"] > 0)
+    ample_gap = statistics.median(r["s"] for r in kept if in_regime(r, ample))
+    if ample_gap >= 0:
+        raise VisualError(f"the median spread in {ample['label']} is {ample_gap} bp, not below IORB; the chapter's "
+                          f"sentence on why calm days sit below IORB would be false")
+    spike_event_n = next((i for i, e in enumerate(notes["events"], 1) if e["date"] == spike["date"]), None)
+    if spike_event_n is None:
+        raise VisualError(f"no annotation is dated {spike['date']}, the largest spread; chapter 2 points at it")
+    low = [r for r in kept if buffer_low(r["date"])]
+    high = [r for r in kept if not buffer_low(r["date"])]
+    low_ample = [r for r in low if in_regime(r, ample)]
     span_years = (date.fromisoformat(rows[-1]["date"]) - date.fromisoformat(rows[0]["date"])).days / 365.25
     fills = {
         "n_years_word": word(int(span_years)).capitalize(),
@@ -987,14 +1052,20 @@ def history(rows, notes, thresholds, regimes, windows, locked):
         "band_missing": days(sum(1 for r in kept if not (r["sofr_p25"] and r["sofr_p75"]))),
         "holdouts": " and ".join(span(w["start"], w["end"]) for w in windows),
         "holdout_months": " and ".join(date.fromisoformat(w["start"]).strftime("%B %Y") for w in windows),
+        "ample_gap": f"{abs(ample_gap):g} bp below",
+        "spike_event_n": spike_event_n,
+        "n_low_ample": days(len(low_ample)),
+        "n_low_ample_pressure": f"{sum(1 for r in low_ample if pressure(r))}",
+        "share_low": of(sum(1 for r in low if pressure(r)), len(low)),
+        "share_high": of(sum(1 for r in high if pressure(r)), len(high)),
         "iorb_from": day(iorb_from),
         "iorb_event_n": 1 + next(i for i, e in enumerate(notes["events"]) if e.get("role") == "iorb_from"),
         "ioer_until": day((date.fromisoformat(iorb_from) - timedelta(days=1)).isoformat()),
         "heat_table": table, "clip_bp": CLIP_BP,
         "n_off_scale": days(off).capitalize(), "n_off_scale_lc": days(off),
         "event_list": "".join(
-            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. <a href='{e['src']}'>Source</a></li>"
-            for i, e in enumerate(events)),
+            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. {sources(n)}</li>"
+            for i, (e, n) in enumerate(zip(events, notes["events"]))),
         "c_reserve_ratio": link(notes["claims"]["reserve_ratio"]),
         "c_quarter_end": link(notes["claims"]["quarter_end"]),
         "c_tax_date": link(notes["claims"]["tax_date"]),
@@ -3134,6 +3205,7 @@ def generate(repo, commit=None):
     declarations = run_record_declarations(repo)
     locked = locked_tiers(repo / LOCKBOX)
     check_annotations(notes)
+    fetched = check_fetched(repo, notes)
     check_glossary(glossary)
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
@@ -3157,7 +3229,14 @@ def generate(repo, commit=None):
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
-    hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
+    def buffer_low(iso):
+        return on_rrp_as_of(on_rrp, date.fromisoformat(iso), decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+
+    hist, fills = history(rows, notes, thresholds, regimes, windows, locked, buffer_low)
+    crossings = check_above_standing_repo(repo, notes, counted(rows, locked))
+    if len(crossings) != 1:
+        raise VisualError(f"chapter 1 quotes one day SOFR passed the standing repo rate; the annotations carry {len(crossings)}")
+    crossed, crossed_sofr, crossed_rate = crossings[0]
     fills.update(use_limitation_fill(repo))
     fills.update(n1_fills)
     fills.update(n2_fills)
@@ -3218,6 +3297,13 @@ def generate(repo, commit=None):
         "note_issued": day(note["issued"]), "note_effective": day(note["effective"]),
         "note_src": note["src"], "note_sha": note["sha256"], "note_retrieved": note["retrieved_at"],
         "srp_vs_iorb": bp(srp["vs_iorb_bp"]), "rrp_vs_iorb": bp(rrp["vs_iorb_bp"]),
+        "c_iorb_pays": link(c["iorb_pays"]), "c_sofr_median": link(c["sofr_median"]),
+        "c_srf_access": link(c["srf_access"]), "c_fhlb_fed_funds": link(c["fhlb_fed_funds"]),
+        "c_qe_foreign": link(c["qe_foreign"]), "c_mmf_on_rrp": link(c["mmf_on_rrp"]), "c_rrp_floor": link(c["rrp_floor"]),
+        "buffer_break": f"${ON_RRP_DEPLETION_BREAK_BN:,.0f}bn", "c_on_rrp_buffer": link(c["on_rrp_buffer"]),
+        "c_limitation_why": link(c["limitation_why"]),
+        "srp_cross_day": day(crossed["date"]), "srp_cross_sofr": f"{crossed_sofr:.2f}%",
+        "srp_cross_rate": f"{crossed_rate:.2f}%", "srp_event_n": 1 + notes["events"].index(crossed),
         "c_segments_tgcr": link(c["segments_tgcr"]), "c_segments_bgcr": link(c["segments_bgcr"]),
         "c_segments_sofr": link(c["segments_sofr"]), "c_sofr_trim": link(c["sofr_trim"]),
         "c_sofr_publication": link(c["sofr_publication"]),
@@ -3242,7 +3328,7 @@ def generate(repo, commit=None):
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
-               notes["implementation_note"]["path"])}
+               notes["implementation_note"]["path"], *fetched)}
     provenance = {
         "commit": commit,
         "generator": "scripts/emit_visual.py",
