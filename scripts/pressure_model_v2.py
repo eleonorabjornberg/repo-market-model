@@ -423,6 +423,375 @@ def vectors_sha256(rows) -> str:
 
 
 # ---------------------------------------------------------------------------
+# The calibration diagnosis and the fix (Eleonora's rulings on PR #252, 14:02 and 14:24)
+# ---------------------------------------------------------------------------
+
+#: The ruling of 6 October 2026, 14:02 ("diagnose, then fix") as the 14:24 ruling
+#: amends it: the diagnosis is made on the inner block only, by pressure-day type
+#: and by regime, and the per-day-type 50% bands are diagnostics, not gates. The
+#: month-end and quarter-end cells are too small to gate on.
+DIAGNOSIS = {
+    "window": "2018-06-29 to 2022-12-31 (the inner block), h = 1; the outer block is not read",
+    "models": "v1, and (iv) as it stood before the fix (v1's features, fold grid and nested PID on depth-3 trees, with the interior tracked)",
+    "measures": [
+        "50% band coverage and 90% band coverage, each half-inside, with a 90% stationary-bootstrap interval and the day count",
+        "P(y <= q25), P(y <= q50), P(y <= q75), an outcome on the quantile counting one half",
+        "the share of 50% band misses below and above the band",
+        "the mean and the median of y - q50, the median absolute y - q50, and the mean 50% band width",
+    ],
+    "cells": {
+        "all": "every inner day",
+        "quarter_end": "pressure-day type quarter_end (the split declaration's `day_type`, the definition in force)",
+        "year_end": "the quarter-end days of December (a subset of quarter_end)",
+        "tax_date": "pressure-day type tax_date",
+        "month_end": ("pressure-day type month_end under `day_type` (days_to_month_end calendar days, "
+                      "the definition the scorecaster uses); `by_reporting_day_type` re-splits it under #278's "
+                      "last two business days"),
+        "coupon_settlement": "treasury_settlement_coupons above 0, read as-of (`day_cells`)",
+        "scarce": "reserve_scarcity_state 3, read as-of (`day_cells`)",
+        "ordinary": "pressure-day type ordinary",
+    },
+    "status": "diagnostics only: none of these per-day-type figures is a pass/fail gate (ruling of 14:24)",
+}
+
+#: The fix's declaration, written before the fix is chosen and before the outer
+#: block is scored a second time. Each candidate is built on the inner block's
+#: days only, by the reference implementations below (`class_level_tracking`,
+#: `width_tracking`), and judged by `FIX_SELECTION`.
+#:
+#: What the diagnosis found, by day type, is the reason for these candidates: the
+#: trees and the pooled interior trackers issue the same 50% band width on a turn
+#: day as on an ordinary one, while the realised |y - q50| is larger there. (v)
+#: gives the level trackers a day type of their own; (vi) to (viii) add a width
+#: tracker after (iv)'s levels, by the partition they name.
+FIX_PARTITIONS = {
+    "pooled": "one class: every day",
+    "turn_vs_ordinary": "two classes: ordinary, and every other pressure-day type (quarter_end, month_end, tax_date)",
+    "by_type": "four classes: the split declaration's pressure-day types",
+}
+FIX_CANDIDATES = {
+    "iv_base": {"what": "(iv) unchanged: the choice before the fix", "complexity": (2, 1, 1)},
+    "v_level_tracking_by_type": {
+        "what": "(iv)'s trees, with each interior level tracked separately by pressure-day type (four classes)",
+        "partition": "by_type", "complexity": (2, 1, 4)},
+    "vi_width_pooled": {
+        "what": "(iv), then a pooled online width tracker on the 50% band", "partition": "pooled",
+        "complexity": (3, 1, 1)},
+    "vii_width_turn_vs_ordinary": {
+        "what": "(iv), then an online width tracker on the 50% band per class: turn days and ordinary days",
+        "partition": "turn_vs_ordinary", "complexity": (3, 1, 2)},
+    "viii_width_by_type": {
+        "what": "(iv), then an online width tracker on the 50% band per pressure-day type",
+        "partition": "by_type", "complexity": (3, 1, 4)},
+}
+#: The width tracker. Each class has a log scale, starting at 0, that multiplies
+#: q25 - q50 and q75 - q50 and moves by `rate * (0.5 - inside)` on each observable
+#: label (`inside` counts an edge tie as one half): a band that covers less than
+#: half widens, one that covers more narrows. The rate is chosen by nested
+#: walk-forward selection at each refit block, as (i)'s step is.
+WIDTH_RATES = (0.02, 0.05, 0.1, 0.2)
+WIDTH_FALLBACK = 0.05
+FIX_SELECTION = {
+    "window": INNER_SELECTION["window"],
+    "rule": ("#247's question 7 rule on the inner block, as `inner_choice` applies it under the binding reading "
+             "(the bar and the conditional gates in eligibility): the eligible candidate with the lowest mean "
+             "CRPS leads; a simpler eligible candidate whose paired CRPS interval against the leader includes 0 "
+             "is preferred. Simplicity is `complexity`: layers added to v1, then output patches, then classes"),
+    "diagnostic": "the per-day-type 50% bands are reported for every candidate and decide nothing (ruling of 14:24)",
+    "outer": ("the outer block is scored a second time, once, for the chosen candidate, after it is committed "
+              "as `CHOSEN_FIX`; the first look (for (iv)) is kept in the record"),
+}
+
+
+def _partition_class(partition, kind):
+    if partition == "pooled":
+        return "all"
+    if partition == "turn_vs_ordinary":
+        return "ordinary" if kind == "ordinary" else "turn"
+    if partition == "by_type":
+        return kind
+    raise ValueError(f"unknown partition {partition!r}")
+
+
+def _crps(vector, y):
+    return crps_from_quantiles(LEVELS, vector, y)
+
+
+def class_level_tracking(days, partition, *, steps=interior.INTERIOR_STEPS, fallback=interior.INTERIOR_FALLBACK,
+                         refit_every=dx.REFIT_EVERY):
+    """The reference for (v): `dx.interior_tracking`, each interior level tracked per class.
+
+    `days` carry `date`, `anchor`, `y`, `issued` (the vector to move) and `kind`
+    (the pressure-day type). With the `pooled` partition this is
+    `dx.interior_tracking`'s own computation.
+    """
+
+    import bisect
+
+    dates = [d["date"] for d in days]
+    offsets = {}
+    issued = {s: [] for s in steps}
+    losses = {s: [] for s in steps}
+    learned = 0
+    chosen = fallback
+    out, choices = [], []
+    for j, d in enumerate(days):
+        seen = bisect.bisect_right(dates, d["anchor"], 0, j)
+        if seen < learned:
+            raise ValueError("an anchor moved back")
+        for k in range(learned, seen):
+            y = days[k]["y"]
+            klass = _partition_class(partition, days[k]["kind"])
+            for s in steps:
+                vector = issued[s][k]
+                state = offsets.setdefault((s, klass), [0.0, 0.0, 0.0])
+                for slot, i in enumerate(dx.INTERIOR):
+                    state[slot] += s * (LEVELS[i] - interior.below_half_tie(y, vector[i]))
+                losses[s].append(_crps(vector, y))
+        learned = seen
+        if j % refit_every == 0:
+            chosen = min(steps, key=lambda s: (sum(losses[s][:seen]) / seen, s)) if seen else fallback
+            choices.append({"first": d["date"], "step": chosen, "observable": seen})
+        klass = _partition_class(partition, d["kind"])
+        for s in steps:
+            vector = list(d["issued"])
+            state = offsets.get((s, klass), [0.0, 0.0, 0.0])
+            for slot, i in enumerate(dx.INTERIOR):
+                vector[i] += state[slot]
+            issued[s].append(sorted(vector))
+        out.append(issued[chosen][j])
+    return out, choices
+
+
+def _inside_half_band(y, vector):
+    if _tied(y, vector[1]) or _tied(y, vector[3]):
+        return 0.5
+    return 1.0 if vector[1] < y < vector[3] else 0.0
+
+
+def width_tracking(days, partition, *, rates=WIDTH_RATES, fallback=WIDTH_FALLBACK, refit_every=dx.REFIT_EVERY):
+    """The reference for (vi) to (viii): the 50% band's width, tracked online per class (`FIX_CANDIDATES`).
+
+    `days` carry `date`, `anchor`, `y`, `issued` (the vector to widen: (iv)'s) and
+    `kind`. For each rate, each class keeps a log scale; the vector issued is
+    `issued` with q25 and q75 moved to `q50 + scale * (q - q50)`, sorted. A day
+    updates the scales of every rate once its label is observable at a later
+    day's anchor, from the band that rate issued for it. The rate is chosen at
+    the first day of each block of `refit_every` days by least pooled CRPS
+    over the observable days, `fallback` while there are none.
+    """
+
+    import bisect
+    import math
+
+    dates = [d["date"] for d in days]
+    log_scale = {}
+    issued = {r: [] for r in rates}
+    losses = {r: [] for r in rates}
+    learned = 0
+    chosen = fallback
+    out, choices = [], []
+    for j, d in enumerate(days):
+        seen = bisect.bisect_right(dates, d["anchor"], 0, j)
+        if seen < learned:
+            raise ValueError("an anchor moved back")
+        for k in range(learned, seen):
+            y = days[k]["y"]
+            klass = _partition_class(partition, days[k]["kind"])
+            for r in rates:
+                vector = issued[r][k]
+                log_scale[(r, klass)] = log_scale.get((r, klass), 0.0) + r * (0.5 - _inside_half_band(y, vector))
+                losses[r].append(_crps(vector, y))
+        learned = seen
+        if j % refit_every == 0:
+            chosen = min(rates, key=lambda r: (sum(losses[r][:seen]) / seen, r)) if seen else fallback
+            choices.append({"first": d["date"], "rate": chosen, "observable": seen})
+        klass = _partition_class(partition, d["kind"])
+        for r in rates:
+            scale = math.exp(log_scale.get((r, klass), 0.0))
+            vector = list(d["issued"])
+            centre = vector[2]
+            vector[1] = centre + (vector[1] - centre) * scale
+            vector[3] = centre + (vector[3] - centre) * scale
+            issued[r].append(sorted(vector))
+        out.append(issued[chosen][j])
+    return out, choices
+
+
+def fix_vectors(days):
+    """Each fix candidate's vectors on `days` (`date`, `anchor`, `y`, `pid`, `kind`), and its step or rate choices.
+
+    (iv) is `class_level_tracking` over the `pooled` partition of the PID
+    vectors; (vi) to (viii) move (iv)'s vectors by `width_tracking`.
+    """
+
+    on_pid = [dict(d, issued=d["pid"]) for d in days]
+    base, base_choices = class_level_tracking(on_pid, "pooled")
+    out = {"iv_base": (base, base_choices)}
+    for name, spec in FIX_CANDIDATES.items():
+        if name == "iv_base":
+            continue
+        if name == "v_level_tracking_by_type":
+            out[name] = class_level_tracking(on_pid, spec["partition"])
+        else:
+            out[name] = width_tracking([dict(d, issued=v) for d, v in zip(days, base)], spec["partition"])
+    return out
+
+
+def select_fix(summaries, paired_to_leader):
+    """`FIX_SELECTION`, applied to the eligible candidates' summaries."""
+
+    passing = sorted(summaries)
+    if not passing:
+        return {"recommended": None, "eligible": [], "leader": None, "reason": "no candidate is eligible"}
+    complexity = {name: FIX_CANDIDATES[name]["complexity"] for name in passing}
+    leader = min(passing, key=lambda n: (summaries[n]["crps"], complexity[n], n))
+    simpler = []
+    for name in passing:
+        if complexity[name] >= complexity[leader]:
+            continue
+        interval = paired_to_leader(name, leader)["interval"]
+        if interval["lower"] <= 0.0 <= interval["upper"]:
+            simpler.append(name)
+    if simpler:
+        chosen = min(simpler, key=lambda n: (complexity[n], summaries[n]["crps"], n))
+        reason = (f"{leader} has the lowest CRPS of the eligible candidates; {chosen} is simpler and its "
+                  f"CRPS difference against {leader} has a 90% interval including 0")
+    else:
+        chosen = leader
+        reason = (f"{leader} has the lowest CRPS of the eligible candidates, and no simpler eligible "
+                  f"candidate is within its interval")
+    return {"recommended": chosen, "eligible": passing, "leader": leader, "reason": reason}
+
+
+def fix_choice(days, v1_days, cells, rows, splits) -> dict:
+    """The fix, chosen on the inner block only (`FIX_SELECTION`).
+
+    `days` are the inner block's days (`date`, `anchor`, `y`, `pid`, `kind`);
+    `v1_days` the same days in #247's format, v1's vectors under `issued`.
+    """
+
+    if any(not _in(d["date"], INNER) for d in days):
+        raise ValueError("the fix is chosen on the inner block only")
+    vectors = fix_vectors(days)
+    v1_vectors = [d["issued"] for d in v1_days]
+    summaries, gates, candidates = {}, {}, {}
+    for name, (vecs, choices) in vectors.items():
+        summaries[name] = dx._summary(v1_days, vecs, INNER)
+        gates[name] = conditional_gates(_with_cells(days, cells, "v", vecs), "v")
+        candidates[name] = {
+            "what": FIX_CANDIDATES[name]["what"],
+            "partition": FIX_CANDIDATES[name].get("partition"),
+            "complexity": list(FIX_CANDIDATES[name]["complexity"]),
+            "inner": summaries[name],
+            "conditional_gates_inner": gates[name],
+            "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vecs, rows, splits, INNER, ("#244", "fix", name, "v1")),
+            "paired_vs_iv_inner": (None if name == "iv_base" else
+                                   dx.paired(v1_days, vectors["iv_base"][0], vecs, rows, splits, INNER,
+                                             ("#244", "fix", name, "iv"))),
+            "band_by_day_type": {
+                kind: band_coverage([{"y": d["y"], "v": v} for d, v in zip(days, vecs) if d["kind"] == kind], "v")
+                for kind in sorted({d["kind"] for d in days})},
+            "choices": choices,
+        }
+    pair_cache = {}
+
+    def paired_to_leader(name, leader):
+        if (name, leader) not in pair_cache:
+            pair_cache[(name, leader)] = dx.paired(v1_days, vectors[leader][0], vectors[name][0], rows, splits,
+                                                   INNER, ("#244", "fix", name, "vs", leader))
+        return pair_cache[(name, leader)]
+
+    eligible = {n: summaries[n] for n in vectors if eligible_inner(summaries[n], gates[n], reading=BINDING_READING)}
+    selection = select_fix(eligible, paired_to_leader)
+    return {
+        "declared": {"candidates": FIX_CANDIDATES, "partitions": FIX_PARTITIONS, "selection": FIX_SELECTION,
+                     "width_rates": list(WIDTH_RATES), "width_fallback": WIDTH_FALLBACK,
+                     "reading": BINDING_READING},
+        "window": [INNER[0].isoformat(), INNER[1].isoformat()],
+        "days": len(days),
+        "candidates": candidates,
+        "selection": selection,
+        "paired_against_leader": {f"{a}_vs_{b}": {k: v for k, v in p.items() if k != "splits"}
+                                  for (a, b), p in pair_cache.items()},
+        "vectors": {name: vecs for name, (vecs, _c) in vectors.items()},
+    }
+
+
+def _cell_members(day) -> dict:
+    kind = day["type"]
+    return {
+        "all": True,
+        "quarter_end": kind == "quarter_end",
+        "year_end": kind == "quarter_end" and day["date"][5:7] == "12",
+        "tax_date": kind == "tax_date",
+        "month_end": kind == "month_end",
+        "coupon_settlement": "coupon_settlement" in day["cells"],
+        "scarce": "scarce" in day["cells"],
+        "ordinary": kind == "ordinary",
+    }
+
+
+def _diagnostic_cell(days, field, seed_parts) -> dict:
+    n = len(days)
+    out = {"days": n}
+    if not n:
+        return out
+    cov = band_coverage(days, field)
+    interval = coverage_interval(days, field, seed_parts)
+    centre = sorted(d["y"] - d[field][2] for d in days)
+    out.update(
+        band_50={"coverage": cov["band_50_half_edge"], "lower": interval["band_50"]["lower"],
+                 "upper": interval["band_50"]["upper"]},
+        band_90={"coverage": cov["band_90_half_edge"], "lower": interval["band_90"]["lower"],
+                 "upper": interval["band_90"]["upper"]},
+        p_below={level: cov["coverage_half_tie"][level] for level in ("0.25", "0.5", "0.75")},
+        band_50_miss_below=cov["band_50_miss_below"],
+        band_50_miss_above=cov["band_50_miss_above"],
+        mean_y_minus_q50_bps=statistics.fmean(centre),
+        median_y_minus_q50_bps=statistics.median(centre),
+        median_abs_y_minus_q50_bps=statistics.median(abs(c) for c in centre),
+        band_50_mean_width_bps=cov["band_50_mean_width_bps"],
+    )
+    return out
+
+
+def inner_diagnosis(days, fields, regimes) -> dict:
+    """`DIAGNOSIS`: each model in `fields` by pressure-day type and by regime, on the inner block.
+
+    `days` carry `date`, `y`, one vector per field, `type`, `reporting_type`,
+    `regime` and `cells`.
+    """
+
+    if any(not _in(d["date"], INNER) for d in days):
+        raise ValueError("the diagnosis reads the inner block only")
+    out = {"declared": DIAGNOSIS, "days": len(days), "models": {}}
+    for field, label in fields.items():
+        by_cell = {}
+        for cell in DIAGNOSIS["cells"]:
+            subset = [d for d in days if _cell_members(d)[cell]]
+            by_cell[cell] = _diagnostic_cell(subset, field, ("diagnosis", field, cell))
+        by_regime = {}
+        for regime in regimes:
+            subset = [d for d in days if d["regime"] == regime]
+            by_regime[regime] = _diagnostic_cell(subset, field, ("diagnosis", field, "regime", regime))
+        by_regime_and_type = {}
+        for regime in regimes:
+            for kind in ("quarter_end", "tax_date", "month_end", "ordinary"):
+                subset = [d for d in days if d["regime"] == regime and d["type"] == kind]
+                by_regime_and_type[f"{regime} / {kind}"] = _diagnostic_cell(
+                    subset, field, ("diagnosis", field, regime, kind))
+        by_reporting = {}
+        for kind in ("quarter_end", "tax_date", "month_end", "ordinary"):
+            subset = [d for d in days if d["reporting_type"] == kind]
+            by_reporting[kind] = _diagnostic_cell(subset, field, ("diagnosis", field, "reporting", kind))
+        out["models"][field] = {"label": label, "by_cell": by_cell, "by_regime": by_regime,
+                                "by_regime_and_day_type": by_regime_and_type,
+                                "by_reporting_day_type": by_reporting}
+    return out
+
+
+# ---------------------------------------------------------------------------
 # The walk
 # ---------------------------------------------------------------------------
 
@@ -838,6 +1207,61 @@ def choose_command(args) -> int:
     return 0
 
 
+def inner_days_from_record(record, rows, splits):
+    """The inner block's days, from a record's per-day rows, with v1's vectors and each day's labels.
+
+    Reads the inner block only. A day carries `pid` (the depth-3 trees' nested
+    PID vector), `v2` (that record's vector), `v1`, its pressure-day type
+    (`type`, also `kind`), the type under #278's reporting split, its regime and
+    its conditional-gate cells.
+    """
+
+    from repo_model.baseline import _split_labels
+
+    anchors = dict(record["anchors"])
+    diagnosis = json.loads(DIAGNOSIS_RECORD.read_text(encoding="utf-8"))
+    v1 = {day: vector for day, _y, vector in diagnosis["v1_h1_per_day"]}
+    days = [{"date": day, "anchor": anchors[day], "y": y, "pid": pid, "v2": vector, "v1": v1[day]}
+            for day, y, pid, vector in record["per_day_h1"]["rows"] if _in(day, INNER)]
+    scored = [date.fromisoformat(d["date"]) for d in days]
+    regimes, types = _split_labels(splits, rows, scored)
+    cells = day_cells(rows, scored)
+    by_date = {row.date: row for row in rows}
+    for d, when, regime, kind in zip(days, scored, regimes, types):
+        d.update(regime=regime, type=kind, kind=kind, cells=set(cells[d["date"]]),
+                 reporting_type=splits.reporting_day_type(when, by_date[when].values))
+    return days, cells
+
+
+def _inner_inputs(args):
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    if panel_sha256(args.panel) != fp._frozen_panel_sha256():
+        raise ValueError("the panel is not the published panel")
+    splits = load_split_declaration(fp.SPLITS)
+    record = json.loads(args.before_fix_record.read_text(encoding="utf-8"))
+    days, cells = inner_days_from_record(record, rows, splits)
+    return rows, splits, days, cells
+
+
+def diagnose_command(args) -> int:
+    rows, splits, days, _cells = _inner_inputs(args)
+    result = inner_diagnosis(days, {"v1": "v1", "v2": "v2 before the fix: (iv)"}, splits.regime_labels)
+    args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"days": result["days"]}))
+    return 0
+
+
+def choose_fix_command(args) -> int:
+    rows, splits, days, cells = _inner_inputs(args)
+    v1_days = [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["v1"]} for d in days]
+    result = fix_choice(days, v1_days, cells, rows, splits)
+    result.pop("vectors")
+    args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"selection": result["selection"]}, indent=1))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -851,6 +1275,16 @@ def main(argv=None) -> int:
     ch.add_argument("--walks", type=Path, nargs="+", required=True, help="#247's h = 1 walks, v1 and every variant")
     ch.add_argument("--output", type=Path, required=True)
     ch.set_defaults(func=choose_command)
+    dg = sub.add_parser("diagnose", help="v1 and v2 before the fix, by pressure-day type and regime, inner block only")
+    dg.add_argument("--panel", type=Path, required=True)
+    dg.add_argument("--before-fix-record", type=Path, required=True, help="the record as it stood before the fix")
+    dg.add_argument("--output", type=Path, required=True)
+    dg.set_defaults(func=diagnose_command)
+    cf = sub.add_parser("choose-fix", help="the fix, chosen on the inner block only")
+    cf.add_argument("--panel", type=Path, required=True)
+    cf.add_argument("--before-fix-record", type=Path, required=True)
+    cf.add_argument("--output", type=Path, required=True)
+    cf.set_defaults(func=choose_fix_command)
     asm = sub.add_parser("assemble", help="the record, from the walks")
     asm.add_argument("--panel", type=Path, required=True)
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
