@@ -231,6 +231,18 @@ ol.n5list li{counter-increment:n5}
 .tagchip small{color:var(--ink-2);font-size:.72rem;margin-left:2px}
 #n5 .controls{margin-top:12px}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
+#final-test{border-top:3px solid var(--ink);padding-top:18px;margin-top:64px}
+#final-test .kicker{font-family:var(--sans);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 6px}
+.ftclaim{font-family:var(--sans);font-size:.9rem;color:var(--ink-2);border-left:3px solid var(--sofr);padding:2px 0 2px 12px;margin:14px 0 0;max-width:74ch}
+ul.ftlist{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink-2);padding-left:1.2em;margin:8px 0 0;max-width:80ch}
+ul.ftlist li{margin:0 0 8px} ul.ftlist b{color:var(--ink);font-weight:600}
+table.fttab{border-collapse:collapse;font-family:var(--sans);font-size:.84rem;font-variant-numeric:tabular-nums;min-width:0}
+table.fttab caption{text-align:left;font-weight:600;color:var(--ink);padding:0 0 6px;font-size:.86rem}
+table.fttab th,table.fttab td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--rule);background:none;color:var(--ink-2);border-radius:0;min-width:0;white-space:normal}
+table.fttab th[scope=row]{color:var(--ink);font-weight:600;white-space:nowrap}
+table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.ftlinks{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:18px 0 0;max-width:80ch}
+.ftlinks code{font-size:.78rem;word-break:break-all}
 </style>
 </head>
 <body>
@@ -242,6 +254,7 @@ ol.n5list li{counter-increment:n5}
   </div>
   <nav aria-label="Chapters">
     <ol>
+      <li class="live"><b>&#10003;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
       <li class="live"><b>1</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed's rates</small></span></li>
       <li class="live"><b>2</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
       <li class="live"><b>3</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
@@ -439,6 +452,34 @@ ol.n5list li{counter-increment:n5}
 </section>
 </div>
 <!-- /start-here -->
+
+<section id="final-test" aria-labelledby="final-test-title">
+  <p class="kicker">The result</p>
+  <h2 id="final-test-title">The final test</h2>
+  <p class="prose lede">{{ft_verdict}}</p>
+  {{ft_claim}}
+  <figure>
+    <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
+      <div class="s">Above: mean CRPS over the {{ft_days}} scored days, in basis points; lower is better. Below: the paired difference, persistence minus the model, day by day, with its {{ft_level}}% interval; right of zero favours the model</div></figcaption>
+    <div class="chart" id="ftchart"><div class="tip"></div></div>
+  </figure>
+  {{ft_split_table}}
+  <h3 class="sub">How the test was run</h3>
+  <ul class="ftlist">
+    <li>{{ft_fixed}}</li>
+    <li>{{ft_once}}</li>
+    <li>{{ft_benchmark}}</li>
+  </ul>
+  <h3 class="sub">What it does not show</h3>
+  <ul class="ftlist">
+    <li>{{ft_not_stress}}</li>
+    <li>{{ft_not_blind}}</li>
+    <li>{{ft_calm}}</li>
+    <li>{{ft_later}}
+      <details><summary>The cells two to five days ahead, each with its label</summary>{{ft_later_table}}</details></li>
+  </ul>
+  <p class="ftlinks">{{ft_links}}</p>
+</section>
 
 <section id="plumbing">
   <h2><span class="n">1</span>The plumbing</h2>
@@ -1433,7 +1474,38 @@ document.querySelectorAll("dfn .term").forEach(b => {
   def.addEventListener("keydown", ev => { if (ev.key === "Escape") { set(false); b.focus(); } });
 });
 
-const renderAll = () => { renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
+const FT = D.final_test;
+function renderFinalTest() {
+  const host = d3.select("#ftchart"); host.select("svg").remove();
+  const W = host.node().clientWidth, narrow = W < 560;
+  const m = {t: 10, r: 18, b: 34, l: narrow ? 10 : 190}, rowH = narrow ? 44 : 30, gap = 34;
+  const bars = [{label: "Carrying the latest spread forward", v: FT.persistence, c: "var(--ink-3)"},
+                {label: "The published model", v: FT.published, c: "var(--sofr)"}];
+  const f2 = v => v.toFixed(2), s2 = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
+  const H = m.t + bars.length * rowH + gap + rowH + m.b;
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+    .attr("aria-label", `Mean CRPS over ${FT.days} days: carrying the latest spread forward ${f2(FT.persistence)} bp, the published model ${f2(FT.published)} bp. Paired difference ${s2(FT.mean)} bp, ${FT.level}% interval ${s2(FT.lower)} to ${s2(FT.upper)} bp.`);
+  const xa = d3.scaleLinear([0, d3.max(bars, b => b.v) * 1.15], [m.l, W - m.r]);
+  const label = (y, text) => svg.append("text").attr("x", narrow ? m.l : m.l - 12).attr("y", narrow ? y - 12 : y + 4).attr("text-anchor", narrow ? "start" : "end").style("font-size", "11.5px").style("fill", "var(--ink)").text(text);
+  bars.forEach((b, i) => {
+    const cy = m.t + i * rowH + (narrow ? 27 : rowH / 2);
+    label(cy, b.label);
+    svg.append("rect").attr("x", xa(0)).attr("y", cy - 6).attr("width", xa(b.v) - xa(0)).attr("height", 12).attr("rx", 2).style("fill", b.c);
+    svg.append("text").attr("class", "lab").attr("x", xa(b.v) + 6).attr("y", cy + 4).text(`${f2(b.v)} bp`);
+  });
+  const top = m.t + bars.length * rowH + gap, cy = top + (narrow ? 27 : rowH / 2);
+  const ext = Math.max(Math.abs(FT.lower), Math.abs(FT.upper)) * 1.25;
+  const x = d3.scaleLinear([-ext, ext], [m.l, W - m.r]).nice();
+  svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 6)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", top).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
+  svg.append("g").attr("class", "axis").selectAll("text").data(x.ticks(narrow ? 4 : 6)).join("text").attr("x", d => x(d)).attr("y", H - m.b + 16).attr("text-anchor", "middle").text(d => d === 0 ? "0" : s2(d));
+  svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", H - 4).attr("text-anchor", "end").text("Persistence's CRPS minus the model's, bp");
+  label(cy, "Difference, day by day");
+  const col = FT.lower > 0 ? "var(--sofr)" : FT.upper < 0 ? "var(--pressure)" : "var(--ink-3)";
+  svg.append("line").attr("x1", x(FT.lower)).attr("x2", x(FT.upper)).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 2.4).style("stroke-linecap", "round");
+  svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
+  svg.append("text").attr("class", "lab").attr("x", x(FT.upper) + 6).attr("y", cy + 4).text(`${s2(FT.mean)} bp (${s2(FT.lower)} to ${s2(FT.upper)})`);
+}
+const renderAll = () => { renderFinalTest(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
