@@ -28,12 +28,22 @@ as `CHOSEN`. Only then is the outer block (`OUTER`, 2023-01-01 to 2025-12-31)
 scored, once, for v1 and the chosen candidate. Any historical edge of v2 over
 v1 is labelled `EXPLORATORY`.
 
-Three subcommands:
+Eleonora's rulings on PR #252 of 14:02 and 14:24 then asked for v2's calibration by
+pressure-day type to be diagnosed on the inner block and fixed. `DIAGNOSIS` and
+`FIX_CANDIDATES` were declared (3b9ccbb) before the fix was chosen, and `CHOSEN_FIX`
+was committed before the outer block was scored a second time. The fix is a width
+tracker on the 50% band after (iv)'s levels (`repo_model.interior.OnlineWidth`).
+
+Five subcommands:
+
+* `diagnose`: v1 and (iv), by pressure-day type and regime, on the inner block only.
+* `choose-fix`: the fix, chosen on the inner block only (`fix_choice`).
 
 * `choose`: #247's question 7, redone on the inner block (`inner_choice`).
 * `walk`: v2's walk: the published side's features and fold grid with v2's
   trees and calibration. Each scored day keeps its anchor, its outcome, the
-  PID vector of v2's trees and v2's vector.
+  PID vector of v2's trees, the interior layer's vector (`tracked`), its width
+  class and v2's vector.
 * `assemble`: the record, `docs/runs/pressure_model_v2_distribution_h1.json`.
   It first checks that v1's vectors are #247's to the byte
   (`v1_interior_diagnosis.json`), that they reproduce the published h = 1 CRPS
@@ -50,12 +60,18 @@ Three subcommands:
     # The inner block's choice (it printed the CHOSEN committed below).
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py choose --panel PUB.csv \\
         --walks OUT/walk_*_h1.json --output OUT/choice.json
-    # v2 (the chosen candidate) at h = 1 to 5, then the record.
+    # The diagnosis and the fix, on the inner block only, from the record as it stood before the fix
+    # (git show f33209e:docs/runs/pressure_model_v2_distribution_h1.json > OUT/before_fix.json).
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py diagnose --panel PUB.csv \\
+        --before-fix-record OUT/before_fix.json --output OUT/diagnosis.json
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py choose-fix --panel PUB.csv \\
+        --before-fix-record OUT/before_fix.json --output OUT/fix_choice.json
+    # v2 (the chosen candidate and the fix) at h = 1 to 5, then the record.
     OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py walk \\
         --panel PUB.csv --horizon H --output OUT/v2_hH.json
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/pressure_model_v2.py assemble --panel PUB.csv \\
         --walks OUT/v2_h*.json --variant-walks OUT/walk_*_h1.json OUT/v1walk_h*.json \\
-        --output docs/runs/pressure_model_v2_distribution_h1.json
+        --before-fix-record OUT/before_fix.json --output docs/runs/pressure_model_v2_distribution_h1.json
 """
 
 from __future__ import annotations
@@ -832,7 +848,7 @@ def walk_command(args) -> int:
 
     def v2_online(rows_, rule):
         calibration = interior.NestedInteriorFoldPid(
-            rows_, rule, splits=load_splits(fp.SPLITS), refit_every=parsed.refit_every)
+            rows_, rule, splits=load_splits(fp.SPLITS), refit_every=parsed.refit_every, width_layer=True)
         built.append(calibration)
         return calibration
 
@@ -851,10 +867,13 @@ def walk_command(args) -> int:
         if list(d.vector) != vector:
             raise ValueError(f"{rows[index].date}: the walk read another vector than v2 issued")
         days.append({"date": rows[index].date.isoformat(), "anchor": d.anchor.isoformat(),
-                     "y": rows[index].spread_bps, "pid": list(d.pid), "v2": list(d.vector)})
+                     "y": rows[index].spread_bps, "pid": list(d.pid), "tracked": list(d.tracked),
+                     "kind": d.kind, "v2": list(d.vector)})
+    account = calibration.account()
     document = {"directive": "#244", "horizon": h, "panel_sha256": panel_sha256(args.panel),
                 "model": name, "settings": settings, "tree_settings": V2_TREE_SETTINGS,
-                "interior_blocks": calibration.account()["interior_blocks"], "days": days}
+                "interior_blocks": account["interior_blocks"], "width_blocks": account["width_blocks"],
+                "days": days}
     args.output.write_text(json.dumps(document, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "days": len(days)}))
     return 0
@@ -1041,11 +1060,18 @@ def assemble_command(args) -> int:
         raise ValueError("v1's vectors differ from #247's walk")
     dx.reproduction_check([{"date": d["date"], "y": d["y"], "issued": d["v1"]} for d in days])
 
-    # v2 is #247's reference implementation of (iv): (i)'s tracking applied to (ii)'s PID vectors.
+    # The interior layer is #247's reference implementation of (iv): (i)'s tracking applied to (ii)'s PID
+    # vectors; v2 is the width reference over it, by the chosen fix's partition.
     reference, choices = dx.interior_tracking(
         [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["pid"]} for d in days])
-    if [d["v2"] for d in days] != reference:
-        raise ValueError("v2's vectors differ from #247's reference implementation")
+    if [d["tracked"] for d in days] != reference:
+        raise ValueError("the interior layer's vectors differ from #247's reference implementation")
+    fix_partition = FIX_CANDIDATES[CHOSEN_FIX]["partition"]
+    widened, width_choices = width_tracking(
+        [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["tracked"], "kind": d["kind"]}
+         for d in days], fix_partition)
+    if [d["v2"] for d in days] != widened:
+        raise ValueError("v2's vectors differ from the width reference implementation")
 
     persistence = persistence_losses()
     if set(persistence) != {d["date"] for d in days}:
@@ -1064,10 +1090,34 @@ def assemble_command(args) -> int:
     picks = {reading: choice["selection"][reading]["recommended"] for reading in READINGS}
     if picks[BINDING_READING] != CHOSEN:
         raise ValueError(f"the inner block chooses {picks}; CHOSEN is {CHOSEN!r}")
-    if chosen_vectors[CHOSEN] != [d["v2"] for d in days]:
-        raise ValueError("v2's vectors are not the chosen candidate's")
+    if chosen_vectors[CHOSEN] != [d["tracked"] for d in days]:
+        raise ValueError("the interior layer's vectors are not the chosen candidate's")
     if [d["issued"] for d in variant_walks[V2_TREE_VARIANT]] != [d["pid"] for d in days]:
         raise ValueError("v2's trees and PID are not #247's walk of its tree setting")
+
+    # The fix, chosen on the inner block only; it must be the candidate committed as CHOSEN_FIX.
+    before_fix = json.loads(args.before_fix_record.read_text(encoding="utf-8"))
+    inner_days, _inner_cells = inner_days_from_record(
+        {"anchors": [[d["date"], d["anchor"]] for d in days],
+         "per_day_h1": {"rows": [[d["date"], d["y"], d["pid"], d["tracked"]] for d in days]}}, rows, splits)
+    v1_inner = [{"date": d["date"], "anchor": d["anchor"], "y": d["y"], "issued": d["v1"]} for d in inner_days]
+    fix = fix_choice(inner_days, v1_inner, cells, rows, splits)
+    fix_candidate_vectors = fix.pop("vectors")
+    if fix["selection"]["recommended"] != CHOSEN_FIX:
+        raise ValueError(f"the inner block chooses {fix['selection']['recommended']!r}; CHOSEN_FIX is {CHOSEN_FIX!r}")
+    inner_v2 = [d["v2"] for d in days if _in(d["date"], INNER)]
+    if fix_candidate_vectors[CHOSEN_FIX] != inner_v2:
+        raise ValueError("v2's inner vectors are not the chosen fix's")
+    if fix_candidate_vectors["iv_base"] != [d["tracked"] for d in days if _in(d["date"], INNER)]:
+        raise ValueError("(iv)'s inner vectors are not the walk's interior layer")
+    first_look = {row[0]: row[3] for row in before_fix["per_day_h1"]["rows"]}
+    if any(first_look[d["date"]] != d["tracked"] for d in days if d["date"] in first_look):
+        raise ValueError("the interior layer differs from the record as it stood before the fix")
+    for d, e in zip(inner_days, (d for d in days if _in(d["date"], INNER))):
+        d["fixed"] = e["v2"]
+    diagnosis_block = inner_diagnosis(
+        inner_days, {"v1": "v1", "iv": "v2 before the fix: (iv)", "fixed": "v2 after the fix"},
+        splits.regime_labels)
 
     def validation_block(window, label):
         sub = [d for d in days if _in(d["date"], window)]
@@ -1080,8 +1130,13 @@ def assemble_command(args) -> int:
 
     inner_block = validation_block(INNER, "inner")
     outer_block = validation_block(OUTER, "outer")
-    outer_block["label"] = ("scored once, for v1 and the chosen candidate only, after the inner block's "
-                            "choice was committed as CHOSEN; no candidate, setting or rule was chosen on it")
+    outer_block["label"] = ("a second look at 2023-2025, scored once for v1 and the fixed v2 only. The first "
+                            "look, for (iv) before the fix, is `outer_block_before_fix`; the fix was declared "
+                            "and chosen on the inner block (`fix_choice`, committed as CHOSEN_FIX) after "
+                            "that look, so this block is no longer unseen by the design")
+    first_outer = dict(before_fix["outer_block"])
+    first_outer["label"] = ("the first look at 2023-2025, for v1 and (iv) before the fix, as the PR's earlier "
+                            "head scored it; kept, not re-scored")
 
     main_block = window_block(decides, rows, splits, persistence, "2018-2025")
     main_block["bar"] = bar_verdict(main_block["coverage"], main_block["crps"]["v2_vs_v1"])
@@ -1104,7 +1159,9 @@ def assemble_command(args) -> int:
             "name": "pressure model v2 (distribution)",
             "built_from": ("#247's candidate (iv), chosen again on the inner block (ruling on PR #252): "
                            "v1's features, fold grid and nested PID on trees of maximum depth 3, with "
-                           "each interior level tracked online"),
+                           "each interior level tracked online; then the fix chosen on the inner block "
+                           "(rulings of 14:02 and 14:24): an online width tracker on the 50% band, one "
+                           "class for turn days and one for ordinary days"),
             "v1": walks[1]["model"],
             "settings": walks[1]["settings"],
             "tree_settings": V2_TREE_SETTINGS,
@@ -1130,19 +1187,29 @@ def assemble_command(args) -> int:
         },
         "v2_vectors_sha256": vectors_sha256([[d["date"], d["v2"]] for d in days]),
         "v2_equals_reference": True,
-        "per_day_h1": {"columns": ["date", "y", "pid_of_v2_trees", "v2"],
-                       "rows": [[d["date"], d["y"], d["pid"], d["v2"]] for d in days]},
+        "per_day_h1": {"columns": ["date", "y", "pid_of_v2_trees", "interior_tracked", "v2"],
+                       "rows": [[d["date"], d["y"], d["pid"], d["tracked"], d["v2"]] for d in days]},
+        "width_classes_per_day": [[d["date"], d["kind"]] for d in days],
         "days_the_sort_moved_an_outer_quantile": outer_moved,
         "interior_step_choices": walks[1]["interior_blocks"],
+        "width_rate_choices": walks[1]["width_blocks"],
         "outer_validation_declared": {"inner": [INNER[0].isoformat(), INNER[1].isoformat()],
                                       "outer": [OUTER[0].isoformat(), OUTER[1].isoformat()],
                                       "inner_selection": INNER_SELECTION,
                                       "conditional_gates": CONDITIONAL_GATES,
                                       "chosen": CHOSEN,
+                                      "diagnosis": DIAGNOSIS,
+                                      "fix": {"candidates": FIX_CANDIDATES, "partitions": FIX_PARTITIONS,
+                                              "selection": FIX_SELECTION, "chosen": CHOSEN_FIX,
+                                              "width_rates": list(WIDTH_RATES),
+                                              "width_fallback": WIDTH_FALLBACK},
                                       "historical_edge_label": EXPLORATORY},
         "inner_choice": choice,
+        "inner_diagnosis": diagnosis_block,
+        "fix_choice": fix,
         "inner_block": inner_block,
         "outer_block": outer_block,
+        "outer_block_before_fix": first_outer,
         "window_2018_2025": main_block,
         "check_2026": check_block,
         "anchors": [[d["date"], d["anchor"]] for d in days],
@@ -1219,7 +1286,7 @@ def inner_days_from_record(record, rows, splits):
     """The inner block's days, from a record's per-day rows, with v1's vectors and each day's labels.
 
     Reads the inner block only. A day carries `pid` (the depth-3 trees' nested
-    PID vector), `v2` (that record's vector), `v1`, its pressure-day type
+    PID vector), `iv` ((iv)'s vector, the record's before the fix), `v1`, its pressure-day type
     (`type`, also `kind`), the type under #278's reporting split, its regime and
     its conditional-gate cells.
     """
@@ -1229,8 +1296,9 @@ def inner_days_from_record(record, rows, splits):
     anchors = dict(record["anchors"])
     diagnosis = json.loads(DIAGNOSIS_RECORD.read_text(encoding="utf-8"))
     v1 = {day: vector for day, _y, vector in diagnosis["v1_h1_per_day"]}
-    days = [{"date": day, "anchor": anchors[day], "y": y, "pid": pid, "v2": vector, "v1": v1[day]}
-            for day, y, pid, vector in record["per_day_h1"]["rows"] if _in(day, INNER)]
+    # The first column after the PID vector is (iv)'s vector: the record's `v2` before the fix, its `interior_tracked` after it.
+    days = [{"date": day, "anchor": anchors[day], "y": y, "pid": pid, "iv": row[0], "v1": v1[day]}
+            for day, y, pid, *row in record["per_day_h1"]["rows"] if _in(day, INNER)]
     scored = [date.fromisoformat(d["date"]) for d in days]
     regimes, types = _split_labels(splits, rows, scored)
     cells = day_cells(rows, scored)
@@ -1254,7 +1322,7 @@ def _inner_inputs(args):
 
 def diagnose_command(args) -> int:
     rows, splits, days, _cells = _inner_inputs(args)
-    result = inner_diagnosis(days, {"v1": "v1", "v2": "v2 before the fix: (iv)"}, splits.regime_labels)
+    result = inner_diagnosis(days, {"v1": "v1", "iv": "v2 before the fix: (iv)"}, splits.regime_labels)
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"days": result["days"]}))
     return 0
@@ -1298,6 +1366,8 @@ def main(argv=None) -> int:
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
     asm.add_argument("--variant-walks", type=Path, nargs="+", required=True,
                      help="#247's walks: v1 and every variant at h = 1, and v1 at h = 2 to 5")
+    asm.add_argument("--before-fix-record", type=Path, required=True,
+                     help="the record as it stood before the fix: its (iv) vectors and its first look at the outer block")
     asm.add_argument("--output", type=Path, default=RECORD)
     asm.set_defaults(func=assemble_command)
     args = parser.parse_args(argv)

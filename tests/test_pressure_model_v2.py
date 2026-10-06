@@ -17,6 +17,10 @@ trees of maximum depth 3. That is pressure model v2. These tests hold it to that
 * `FoldLoopTests`: inside a fold loop, `NestedInteriorFoldPid`'s inner PID
   vector is `NestedFoldPid`'s to the bit (v1 is untouched), and the vector it
   issues is `OnlineInterior`'s over those PID vectors.
+* `WidthReferenceTests`, `WidthObservabilityTests`: the width layer (the fix chosen on
+  the inner block) issues `width_tracking`'s vectors to the bit, and a label reaches
+  it only once it was public at the decision instant (`LookAheadError`).
+* `FixDeclarationTests`: the diagnosis and the fix, as declared before the choice.
 * `OuterValidationDeclarationTests`: the inner and outer blocks, the
   conditional gates and the eligibility readings, as declared before scoring.
 * `RecordTests`: `docs/runs/pressure_model_v2_distribution_h1.json` against
@@ -24,7 +28,21 @@ trees of maximum depth 3. That is pressure model v2. These tests hold it to that
   of the chosen candidate), the published CRPS records, the declared bar and
   gate, the inner choice and the outer block.
 
-Red first: written before `repo_model.interior` and
+Mutation record (`WidthObservabilityTests`, the width layer's label guard, which
+`WidthState` inherits from `InteriorState`). Disposable copy, CPython 3.11,
+`PYTHONDONTWRITEBYTECODE=1`, the class run alone, control green. In
+`InteriorState.observe`, `if day.scored_date > decision.anchor:` was changed to
+`if False:`, and `diff` confirmed it was applied.
+`test_a_label_after_the_decision_anchor_is_refused` (of `WidthObservabilityTests`) then
+failed with `AssertionError: LookAheadError not raised`. Restored, green.
+
+Mutation record (`WidthObservabilityTests`, the width layer's issue guard). Same
+copy and setup. In `OnlineInterior.issue`, `if day.anchor >= day.scored_date:` was
+changed to `if day.anchor > day.scored_date:`, and `diff` confirmed it.
+`test_a_width_day_anchored_on_its_own_scored_day_is_refused` then failed with
+`AssertionError: LookAheadError not raised`. Restored, green.
+
+Red first (the earlier tests): `repo_model.interior` and
 `scripts/pressure_model_v2.py` existed (`ModuleNotFoundError`).
 
 Mutation record (`ObservabilityTests`, the tracker's label guard). In a
@@ -142,6 +160,122 @@ class ReferenceTests(unittest.TestCase):
         self.assertEqual(interior.below_half_tie(18.0, 17.0), 0.0)
 
 
+KINDS = ("ordinary", "ordinary", "ordinary", "quarter_end", "tax_date", "month_end")
+
+
+def _kinded_days(n, *, anchor_lag=1, seed=7):
+    """`_days`, each with a pressure-day type, and the vectors the level layer would hand the width layer."""
+
+    days = _days(n, anchor_lag=anchor_lag, seed=seed)
+    rng = random.Random(seed + 100)
+    for d in days:
+        d["kind"] = rng.choice(KINDS)
+        d["pid"] = d["issued"]
+    return days
+
+
+def _drive_width(days, partition, *, refit_every):
+    """`OnlineWidth` one day at a time over `days`' `issued` vectors, classes by `partition`."""
+
+    online = interior.OnlineWidth(LEVELS, refit_every=refit_every)
+    out = []
+    for d in days:
+        kind = v2._partition_class(partition, d["kind"])
+        day = interior.InteriorDay(date.fromisoformat(d["date"]), date.fromisoformat(d["anchor"]),
+                                   tuple(d["issued"]), kind)
+        out.append(list(online.issue(day)))
+        online.record(day, d["y"])
+    return out, online
+
+
+class WidthReferenceTests(unittest.TestCase):
+    """The width layer is `pressure_model_v2.width_tracking`'s, to the bit; the level layer is unchanged."""
+
+    def test_the_vectors_and_choices_are_the_reference_s_to_the_bit(self):
+        for lag, refit, partition in ((1, 21, "turn_vs_ordinary"), (3, 5, "by_type"), (2, 21, "pooled")):
+            with self.subTest(anchor_lag=lag, refit_every=refit, partition=partition):
+                days = _kinded_days(300, anchor_lag=lag, seed=lag)
+                expected, choices = v2.width_tracking(days, partition, refit_every=refit)
+                issued, online = _drive_width(days, partition, refit_every=refit)
+                self.assertEqual(issued, expected)
+                self.assertEqual(
+                    [{"first": b.first_scored.isoformat(), "rate": interior.WIDTH_RATES[b.chosen],
+                      "observable": b.past_days} for b in online.blocks],
+                    choices)
+                self.assertTrue(any(c["rate"] != interior.WIDTH_FALLBACK for c in choices))
+
+    def test_the_level_reference_is_the_pooled_one_of_247(self):
+        for lag, refit in ((1, 21), (3, 5)):
+            days = _kinded_days(300, anchor_lag=lag, seed=lag)
+            pooled, choices = v2.class_level_tracking(days, "pooled", refit_every=refit)
+            expected, expected_choices = dx.interior_tracking(days, refit_every=refit)
+            self.assertEqual(pooled, expected)
+            self.assertEqual(choices, expected_choices)
+
+    def test_the_declared_constants_are_the_script_s(self):
+        self.assertEqual(interior.WIDTH_RATES, v2.WIDTH_RATES)
+        self.assertEqual(interior.WIDTH_FALLBACK, v2.WIDTH_FALLBACK)
+        self.assertEqual(v2.FIX_CANDIDATES[v2.CHOSEN_FIX]["partition"], "turn_vs_ordinary")
+        for kind in ("quarter_end", "month_end", "tax_date", "ordinary"):
+            self.assertEqual(interior.WIDTH_CLASSES[kind], v2._partition_class("turn_vs_ordinary", kind))
+
+    def test_a_band_that_misses_widens_and_one_that_covers_narrows(self):
+        state = interior.WidthState(LEVELS, 0.1)
+        vector = (-4.0, -1.0, 0.0, 1.0, 4.0)
+        first = interior.InteriorDay(date(2024, 1, 3), date(2024, 1, 2), vector, "turn")
+        decision = interior.InteriorDay(date(2024, 1, 9), date(2024, 1, 8), vector, "turn")
+        state.observe(first, vector, 9.0, decision)
+        wide = state.issue(vector, "turn")
+        self.assertGreater(wide[3] - wide[1], vector[3] - vector[1])
+        self.assertEqual(state.issue(vector, "ordinary"), vector)
+        second = interior.InteriorDay(date(2024, 1, 4), date(2024, 1, 2), vector, "ordinary")
+        state.observe(second, vector, 0.0, decision)
+        narrow = state.issue(vector, "ordinary")
+        self.assertLess(narrow[3] - narrow[1], vector[3] - vector[1])
+
+    def test_an_outcome_on_a_band_edge_counts_one_half(self):
+        state = interior.WidthState(LEVELS, 0.1)
+        vector = (-4.0, -1.0, 0.0, 1.0, 4.0)
+        day = interior.InteriorDay(date(2024, 1, 3), date(2024, 1, 2), vector, "turn")
+        decision = interior.InteriorDay(date(2024, 1, 9), date(2024, 1, 8), vector, "turn")
+        state.observe(day, vector, 1.0 + 1e-12, decision)
+        self.assertEqual(state.log_scale["turn"], 0.0)
+
+
+class WidthObservabilityTests(unittest.TestCase):
+    """A label reaches a width tracker only once it was public at the decision instant."""
+
+    def test_a_label_after_the_decision_anchor_is_refused(self):
+        state = interior.WidthState(LEVELS, 0.05)
+        vector = (-2.0, -1.0, 0.0, 1.0, 2.0)
+        early = interior.InteriorDay(date(2024, 1, 3), date(2024, 1, 2), vector, "turn")
+        decision = interior.InteriorDay(date(2024, 1, 4), date(2024, 1, 2), vector, "turn")
+        with self.assertRaises(LookAheadError):
+            state.observe(early, state.issue(vector, "turn"), 0.0, decision)
+
+    def test_a_width_day_anchored_on_its_own_scored_day_is_refused(self):
+        online = interior.OnlineWidth(LEVELS, refit_every=21)
+        with self.assertRaises(LookAheadError):
+            online.issue(interior.InteriorDay(date(2024, 1, 3), date(2024, 1, 3),
+                                              (-2.0, -1.0, 0.0, 1.0, 2.0), "turn"))
+
+    def test_a_label_after_the_anchor_never_moves_a_width_vector(self):
+        days = _kinded_days(160, anchor_lag=15)
+        j = 140
+        base, _ = _drive_width(days, "turn_vs_ordinary", refit_every=21)
+        changed = [dict(d, y=1e3) if d["date"] > days[j]["anchor"] else d for d in days]
+        moved, _ = _drive_width(changed, "turn_vs_ordinary", refit_every=21)
+        self.assertEqual(base[: j + 1], moved[: j + 1])
+
+    def test_every_width_vector_is_ordered(self):
+        days = _kinded_days(200)
+        for d in days:
+            d["y"] += 6.0
+        issued, _ = _drive_width(days, "turn_vs_ordinary", refit_every=21)
+        for vector in issued:
+            self.assertEqual(vector, sorted(vector))
+
+
 class ObservabilityTests(unittest.TestCase):
     """A label reaches a tracker only once it was public at the decision instant."""
 
@@ -217,6 +351,34 @@ class FoldLoopTests(unittest.TestCase):
         self.assertEqual([list(d.vector) for d in pid.issued_days], expected)
         # The point forecast stays the fit's own, as under v1.
         self.assertEqual([point for _, point in issued], [point for _, point in v1])
+
+    def test_the_width_layer_is_the_reference_over_the_interior_layer(self):
+        model = _UncalibratedModel()
+        pid = interior.NestedInteriorFoldPid(
+            self.rows, self.rule, splits=self.splits, refit_every=self.REFIT_EVERY, width_layer=True)
+        issued = self.drive(pid, model)
+        kinds = [self.splits.day_type(self.rows[d.index].values) for d in pid.issued_days]
+        self.assertTrue({"ordinary", "quarter_end", "tax_date"} <= set(kinds))
+        days = [{"date": d.scored_date.isoformat(), "anchor": d.anchor.isoformat(),
+                 "y": self.rows[d.index].spread_bps, "issued": list(d.pid), "kind": kind}
+                for d, kind in zip(pid.issued_days, kinds)]
+        tracked, _ = v2.class_level_tracking(days, "pooled", refit_every=self.REFIT_EVERY)
+        self.assertEqual([list(d.tracked) for d in pid.issued_days], tracked)
+        expected, _ = v2.width_tracking([dict(d, issued=v) for d, v in zip(days, tracked)],
+                                        "turn_vs_ordinary", refit_every=self.REFIT_EVERY)
+        self.assertEqual([list(vector) for vector, _ in issued], expected)
+        self.assertEqual([list(d.vector) for d in pid.issued_days], expected)
+        self.assertNotEqual(expected, tracked)
+        settings = pid.settings["width_calibration"]
+        self.assertEqual(settings["rates"], list(interior.WIDTH_RATES))
+        self.assertEqual(settings["classes"], interior.WIDTH_CLASSES)
+        self.assertTrue(pid.account()["width_blocks"])
+
+    def test_without_the_width_layer_nothing_is_added(self):
+        pid = interior.NestedInteriorFoldPid(
+            self.rows, self.rule, splits=self.splits, refit_every=self.REFIT_EVERY)
+        self.assertNotIn("width_calibration", pid.settings)
+        self.assertNotIn("width_blocks", pid.account())
 
     def test_the_settings_declare_v2(self):
         pid = interior.NestedInteriorFoldPid(
@@ -327,6 +489,68 @@ class OuterValidationDeclarationTests(unittest.TestCase):
         self.assertEqual(v2.EXPLORATORY, "exploratory (selection-adjusted uncertainty not computed)")
 
 
+class FixDeclarationTests(unittest.TestCase):
+    """The diagnosis and the fix (rulings on PR #252 of 14:02 and 14:24), declared before the choice."""
+
+    def test_the_candidates_and_their_complexity(self):
+        self.assertEqual(set(v2.FIX_CANDIDATES),
+                         {"iv_base", "v_level_tracking_by_type", "vi_width_pooled",
+                          "vii_width_turn_vs_ordinary", "viii_width_by_type"})
+        for name, spec in v2.FIX_CANDIDATES.items():
+            self.assertEqual(len(spec["complexity"]), 3, name)
+            if "partition" in spec:
+                self.assertIn(spec["partition"], v2.FIX_PARTITIONS)
+        self.assertIn(v2.CHOSEN_FIX, v2.FIX_CANDIDATES)
+        self.assertEqual(v2.FIX_CANDIDATES["iv_base"]["complexity"], (2, 1, 1))
+
+    def test_no_asymmetric_edge_rule(self):
+        # Ruling item 4: an asymmetric or upper-only 5-95 edge rule would reopen interval-side-balance.md.
+        # The width layer scales the 50% band about q50 symmetrically; no edge is moved on one side only.
+        vector = [-4.0, -1.0, 0.0, 1.0, 4.0]
+        days = [{"date": f"2020-01-{k + 1:02d}", "anchor": f"2020-01-{k:02d}", "y": 9.0, "issued": vector,
+                 "kind": "quarter_end"} for k in range(1, 28)]
+        out, _ = v2.width_tracking(days, "by_type", refit_every=5)
+        for v in out:
+            self.assertAlmostEqual(v[2] - v[0], v[4] - v[2])
+            self.assertAlmostEqual(v[2] - v[1], v[3] - v[2])
+        self.assertNotEqual(out[-1], vector)
+
+    def test_partitions(self):
+        self.assertEqual({v2._partition_class("pooled", k) for k in ("quarter_end", "ordinary")}, {"all"})
+        self.assertEqual(v2._partition_class("turn_vs_ordinary", "tax_date"), "turn")
+        self.assertEqual(v2._partition_class("turn_vs_ordinary", "ordinary"), "ordinary")
+        self.assertEqual(v2._partition_class("by_type", "month_end"), "month_end")
+        with self.assertRaises(ValueError):
+            v2._partition_class("nope", "ordinary")
+
+    def test_the_selection_rule(self):
+        summaries = {"iv_base": {"crps": 1.85}, "vi_width_pooled": {"crps": 1.84},
+                     "vii_width_turn_vs_ordinary": {"crps": 1.83}}
+        excludes = {"interval": {"lower": 0.01, "upper": 0.03}}
+        includes = {"interval": {"lower": -0.01, "upper": 0.03}}
+        self.assertEqual(v2.select_fix(summaries, lambda n, leader: excludes)["recommended"],
+                         "vii_width_turn_vs_ordinary")
+        simpler = v2.select_fix(summaries, lambda n, leader: includes)
+        self.assertEqual(simpler["leader"], "vii_width_turn_vs_ordinary")
+        self.assertEqual(simpler["recommended"], "iv_base")
+        self.assertIsNone(v2.select_fix({}, lambda n, leader: includes)["recommended"])
+
+    def test_the_diagnosis_and_the_choice_refuse_the_outer_block(self):
+        outer = [{"date": "2023-01-03", "anchor": "2022-12-30", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary",
+                  "type": "ordinary", "reporting_type": "ordinary", "regime": "2021-23", "cells": set(),
+                  "iv": [0.0] * 5, "v1": [0.0] * 5}]
+        with self.assertRaises(ValueError):
+            v2.inner_diagnosis(outer, {"iv": "iv"}, ["2021-23"])
+        with self.assertRaises(ValueError):
+            v2.fix_choice(outer, [], {}, [], None)
+
+    def test_year_end_is_the_december_quarter_end(self):
+        day = {"date": "2020-12-31", "type": "quarter_end", "cells": set()}
+        self.assertTrue(v2._cell_members(day)["year_end"])
+        self.assertTrue(v2._cell_members(dict(day, date="2020-09-30"))["quarter_end"])
+        self.assertFalse(v2._cell_members(dict(day, date="2020-09-30"))["year_end"])
+
+
 def _sha(rows):
     return v2.vectors_sha256(rows)
 
@@ -350,10 +574,17 @@ class RecordTests(unittest.TestCase):
 
         anchors = dict(self.record["anchors"])
         rows = self.record["per_day_h1"]["rows"]
-        days = [{"date": day, "anchor": anchors[day], "y": y, "issued": pid} for day, y, pid, _v2 in rows]
+        self.assertEqual(self.record["per_day_h1"]["columns"],
+                         ["date", "y", "pid_of_v2_trees", "interior_tracked", "v2"])
+        days = [{"date": day, "anchor": anchors[day], "y": y, "issued": pid} for day, y, pid, _t, _v2 in rows]
         expected, _ = dx.interior_tracking(days)
-        self.assertEqual([v for *_, v in rows], expected)
-        self.assertEqual(self.record["v2_vectors_sha256"], _sha([[d["date"], v] for d, v in zip(days, expected)]))
+        self.assertEqual([tracked for *_, tracked, _v2 in rows], expected)
+        kinds = dict(self.record["width_classes_per_day"])
+        widened, _ = v2.width_tracking(
+            [dict(d, issued=v, kind=kinds[d["date"]]) for d, v in zip(days, expected)],
+            v2.FIX_CANDIDATES[v2.CHOSEN_FIX]["partition"])
+        self.assertEqual([vector for *_, vector in rows], widened)
+        self.assertEqual(self.record["v2_vectors_sha256"], _sha([[d["date"], v] for d, v in zip(days, widened)]))
         self.assertEqual([[day, y] for day, y, _v in self.diagnosis["v1_h1_per_day"]],
                          [[day, y] for day, y, *_ in rows])
         self.assertTrue(self.record["v2_equals_reference"])
@@ -395,6 +626,48 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(choice["selection"][v2.BINDING_READING]["recommended"], v2.CHOSEN)
         self.assertEqual(set(choice["selection"]), set(v2.READINGS))
         self.assertTrue(all(c["first"] <= "2022-12-31" for c in choice["i_step_choices_inner"]))
+
+    def test_the_fix_was_chosen_on_the_inner_block_by_the_declared_rule(self):
+        declared = self.record["outer_validation_declared"]["fix"]
+        self.assertEqual(declared["chosen"], v2.CHOSEN_FIX)
+        self.assertEqual(declared["candidates"], json.loads(json.dumps(v2.FIX_CANDIDATES)))
+        self.assertEqual(self.record["outer_validation_declared"]["diagnosis"], v2.DIAGNOSIS)
+        fix = self.record["fix_choice"]
+        self.assertEqual(fix["window"], ["2018-06-29", "2022-12-31"])
+        self.assertEqual(fix["selection"]["recommended"], v2.CHOSEN_FIX)
+        self.assertEqual(set(fix["candidates"]), set(v2.FIX_CANDIDATES))
+        # The rule applied again, to the recorded summaries: the leader has the lowest CRPS of the eligible.
+        eligible = fix["selection"]["eligible"]
+        leader = min(eligible, key=lambda n: (fix["candidates"][n]["inner"]["crps"],
+                                              tuple(fix["candidates"][n]["complexity"]), n))
+        self.assertEqual(fix["selection"]["leader"], leader)
+        for name, candidate in fix["candidates"].items():
+            gates = candidate["conditional_gates_inner"]
+            self.assertEqual(name in eligible,
+                             dx.eligible(candidate["inner"]) and not any(g["verdict"] == "fail" for g in gates.values()))
+        self.assertTrue(all(n in fix["candidates"] for n in eligible))
+
+    def test_the_diagnosis_reads_the_inner_block_only(self):
+        diagnosis = self.record["inner_diagnosis"]
+        self.assertEqual(diagnosis["declared"], v2.DIAGNOSIS)
+        self.assertEqual(diagnosis["days"], self.record["inner_block"]["days"])
+        self.assertEqual(set(diagnosis["models"]), {"v1", "iv", "fixed"})
+        for model in diagnosis["models"].values():
+            self.assertEqual(set(model["by_cell"]), set(v2.DIAGNOSIS["cells"]))
+            self.assertEqual(model["by_cell"]["all"]["days"], diagnosis["days"])
+            kinds = ("quarter_end", "tax_date", "month_end", "ordinary")
+            self.assertEqual(sum(model["by_cell"][k]["days"] for k in kinds), diagnosis["days"])
+            self.assertEqual(sum(c["days"] for c in model["by_regime"].values()), diagnosis["days"])
+            self.assertEqual(sum(c["days"] for c in model["by_reporting_day_type"].values()), diagnosis["days"])
+            self.assertLessEqual(model["by_cell"]["year_end"]["days"], model["by_cell"]["quarter_end"]["days"])
+        self.assertIn("diagnostics only", v2.DIAGNOSIS["status"])
+
+    def test_the_outer_block_was_looked_at_twice_and_says_so(self):
+        first, second = self.record["outer_block_before_fix"], self.record["outer_block"]
+        self.assertEqual((first["first"], first["last"]), (second["first"], second["last"]))
+        self.assertIn("first look", first["label"])
+        self.assertIn("second look", second["label"])
+        self.assertEqual(first["coverage_v1"], second["coverage_v1"])
 
     def test_the_inner_and_outer_verdicts_are_the_declared_rules_applied(self):
         for name in ("inner_block", "outer_block"):
