@@ -2337,6 +2337,102 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertEqual(self.block.count("too few days for an interval"), len(thin))
         self.assertIn("decides nothing", self.text)
 
+    def _robustness(self, **over):
+        """`final_test_robustness` on a small invented set of numbers, each overridable."""
+        args = dict(mean=0.17, drops={0: 0.17, 1: 0.11, 5: 0.03, 10: -0.04}, wins=87, n=169, minimum=20,
+                    groups=[{"key": "ordinary", "label": "Ordinary", "count": 147, "mean": 0.15,
+                             "lower": -0.01, "upper": 0.36}])
+        args.update(over)
+        return emit_visual.final_test_robustness(**args)
+
+    def test_the_robustness_sentences_follow_the_record(self):
+        """#313: the lead sentences carry the record's figures, and the chart data are the record's."""
+        got = self.data["robustness"]
+        influence = self.data["influence"]
+        text = visible_text(self.fills["ft_robust_sentences"])
+        self.assertIn(f"{emit_visual.signed(influence['mean'], 2)} bp to {emit_visual.signed(influence['drop'][5], 2)} bp", text)
+        self.assertIn(f"{influence['wins']} of {influence['n']} days", text)
+        self.assertEqual([d["mean"] for d in got["drops"]],
+                         [influence["mean"]] + [influence["drop"][k] for k in (1, 5, 10)])
+        self.assertEqual([d["k"] for d in got["drops"]], [0, 1, 5, 10])
+        cell = self.record["primary"]["cell"]
+        by_key = {g["key"]: g for g in got["groups"]}
+        self.assertEqual(by_key["all"]["mean"], cell["mean_difference_bps"])
+        self.assertEqual(by_key["all"]["lower"], cell["interval"]["lower"])
+        for key, source in cell["splits"]["by_day_type"].items():
+            with self.subTest(day_type=key):
+                self.assertEqual(by_key[key]["count"], source["count"])
+                self.assertEqual(by_key[key]["mean"], source["mean"])
+        for key, source in cell["splits"]["by_quarter_end_window"].items():
+            with self.subTest(window=key):
+                self.assertEqual(by_key[key]["count"], source["count"])
+                self.assertEqual(by_key[key]["mean"], source["mean"])
+        self.assertIn(self.fills["ft_robust_sentences"], self.block)
+
+    def test_a_group_under_the_minimum_is_too_few_days_to_say(self):
+        """The rule: under the minimum cell (20 days) the group is never called better or worse, interval or not."""
+        thin = {"key": "t", "label": "Thin", "count": 19, "mean": 1.0, "lower": 0.5, "upper": 1.5}
+        full = dict(thin, key="f", label="Full", count=20)
+        verdict = {g["key"]: g["verdict"] for g in self._robustness(groups=[thin, full])["groups"]}
+        self.assertEqual(verdict, {"t": "thin", "f": "better"})
+        self.assertEqual(emit_visual.final_test_robustness(**dict(
+            mean=0.17, drops={0: 0.17, 1: 0.1, 5: 0.03, 10: -0.04}, wins=87, n=169, minimum=19,
+            groups=[thin]))["groups"][0]["verdict"], "better")
+        self.assertIn("too few days to say", visible_text(" ".join(self._robustness(groups=[thin])["sentences"])))
+
+    def test_an_interval_through_zero_flips_the_sentence(self):
+        def sentence(lower, upper):
+            group = {"key": "g", "label": "Ordinary", "count": 147, "mean": 0.1, "lower": lower, "upper": upper}
+            return visible_text(" ".join(self._robustness(groups=[group])["sentences"]))
+        self.assertIn("can't be told apart from zero", sentence(-0.01, 0.2))
+        self.assertIn("the model was better on ordinary", sentence(0.01, 0.2))
+        self.assertIn("worse on ordinary", sentence(-0.2, -0.01))
+        self.assertNotIn("can't be told apart", sentence(0.01, 0.2))
+
+    def test_the_concentration_rule_flips_at_half_the_edge(self):
+        def sentence(drop5, drop10):
+            got = self._robustness(drops={0: 0.2, 1: 0.15, 5: drop5, 10: drop10}, mean=0.2)
+            return visible_text(got["sentences"][0])
+        self.assertIn("rests on a handful of days", sentence(0.09, -0.04))
+        self.assertIn("without the top 10 it reverses, to −0.04 bp", sentence(0.09, -0.04))
+        self.assertIn("without the top 10 it is still +0.02 bp", sentence(0.09, 0.02))
+        self.assertIn("does not depend on a few days", sentence(0.1, 0.05))
+        self.assertNotIn("handful", sentence(0.1, 0.05))
+
+    def test_the_win_share_phrase_flips(self):
+        def sentence(wins):
+            return visible_text(self._robustness(wins=wins, n=100)["sentences"][1])
+        self.assertIn("about half", sentence(45))
+        self.assertIn("about half", sentence(55))
+        self.assertIn("fewer than half", sentence(44))
+        self.assertIn("most of them", sentence(56))
+        self.assertIn("a few large wins", sentence(50))
+        self.assertNotIn("a few large wins", sentence(60))
+
+    def test_a_negative_mean_makes_no_edge_claim(self):
+        got = self._robustness(mean=-0.1, drops={0: -0.1, 1: -0.12, 5: -0.2, 10: -0.3})
+        text = visible_text(" ".join(got["sentences"]))
+        self.assertNotIn("edge", text)
+        self.assertNotIn("handful", text)
+
+    def test_the_numbers_are_kept_in_one_collapsed_details_and_the_label_is_said_once(self):
+        """#313 criteria 3 and 4: the three tables sit in a closed "Show the numbers" details; the label is once."""
+        self.assertEqual(self.block.count("Post hoc; decides nothing"), 1)
+        at = self.block.index("<details class='ftnumbers'>")
+        inner = self.block[at:self.block.index("</details>", self.block.index("The ten days that contribute most")) + 10]
+        self.assertIn("Show the numbers", inner)
+        for caption in ("By type of day", "By quarter-end window", "Influence of single days"):
+            with self.subTest(table=caption):
+                self.assertEqual(self.block.count(f"<caption>{caption}</caption>"), 1)
+                self.assertIn(f"<caption>{caption}</caption>", inner)
+        self.assertNotIn("<details class='ftnumbers' open", self.block)
+
+    def test_the_chart_has_a_text_alternative_and_the_rule_text_is_generated(self):
+        self.assertIn('id="ftrob"', self.block)
+        alt = self.data["robustness"]["alt"]
+        self.assertIn(emit_visual.signed(self.data["mean"], 2), alt)
+        self.assertIn("too few days", alt)
+
     def test_the_section_sits_after_start_here_before_the_chapters(self):
         at = self.page.index('<section id="final-test"')
         self.assertLess(self.page.index("<!-- /start-here -->"), at)

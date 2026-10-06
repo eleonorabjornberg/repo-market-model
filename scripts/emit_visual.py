@@ -115,6 +115,7 @@ from repo_model.ingest import (  # noqa: E402
 )
 from repo_model.lockbox import load_lockbox, locked_tier, locked_tiers  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
+from repo_model.onset import MINIMUM_EVENTS  # noqa: E402
 from repo_model.scarcity import (  # noqa: E402
     BOOTSTRAP_BLOCK_LENGTH,
     BOOTSTRAP_LEVEL,
@@ -2685,6 +2686,85 @@ def _influence_module():
     return module
 
 
+#: How the final test's robustness block names its groups (#313): day types and the two quarter-end windows.
+FINAL_TEST_GROUPS = {"ordinary": "Ordinary", "month_end": "Month-end", "quarter_end": "Quarter-end",
+                     "tax_date": "Tax date", "outside_quarter_end_window": "Outside the quarter-end window",
+                     "quarter_end_window": "Inside the quarter-end window"}
+#: The days the robustness block drops, best first: the influence figures, plus none dropped.
+FINAL_TEST_DROPS = (0, 1, 5, 10)
+
+
+def _group_verdict(group, minimum):
+    """The rule for one group: under the minimum cell, or without an interval, "thin"; else by the interval against zero."""
+    if group["count"] < minimum or "lower" not in group:
+        return "thin"
+    if group["lower"] > 0:
+        return "better"
+    if group["upper"] < 0:
+        return "worse"
+    return "tied"
+
+
+def final_test_robustness(mean, drops, wins, n, groups, minimum):
+    """The plain sentences, the chart's rows and a text alternative for the final test's robustness block (#313).
+
+    Every sentence is chosen by a rule from the record's numbers; nothing is typed. The rules: (1) the gain "rests
+    on a handful of days" when the mean without the best five days is under half the mean; the best ten days are
+    then said to reverse it, zero it, or leave it positive. (2) The win share is "about half" from 45% to 55%,
+    "most of them" above and "fewer than half" below; the "few large wins" clause is added only when rule 1 found
+    the gain concentrated and the share is not above 55%. (3) A group under `minimum` days is "too few days to
+    say", whatever its interval; otherwise its interval against zero says better, worse, or "can't be told apart
+    from zero". A mean that is not above zero makes no claim about an edge. Reported only: it decides nothing.
+    """
+    sign = lambda v: signed(v, 2) + " bp"
+    rows = [dict(g, verdict=_group_verdict(g, minimum)) for g in groups]
+    concentrated = mean > 0 and drops[5] < mean / 2
+    if mean <= 0:
+        first = (f"Without the 5 days where the model did best, the mean difference moves from {sign(mean)} "
+                 f"to {sign(drops[5])}.")
+    elif concentrated:
+        tail = (f"without the top 10 it reverses, to {sign(drops[10])}." if drops[10] < 0 else
+                f"without the top 10 it is {sign(drops[10])}." if drops[10] == 0 else
+                f"without the top 10 it is still {sign(drops[10])}.")
+        first = (f"On this near-blind test, the pass rests on a handful of days: without the 5 days where the "
+                 f"model did best, the edge falls from {sign(mean)} to {sign(drops[5])}; {tail}")
+    else:
+        first = (f"The edge does not depend on a few days: without the 5 days where the model did best, it is "
+                 f"still {sign(drops[5])}, against {sign(mean)} with all of them.")
+    share = wins / n
+    phrase = "about half" if 0.45 <= share <= 0.55 else "most of them" if share > 0.55 else "fewer than half"
+    second = f"The model did better on {wins} of {n} days, {phrase}"
+    second += (": its edge comes from a few large wins, not from being better on most days."
+               if concentrated and share <= 0.55 else ".")
+    # "All days" is the headline cell, which the lede states; the sentence is about the groups inside it.
+    part = {v: [f"{g['label'].lower()} ({g['count']} days)" for g in rows if g["verdict"] == v and g["key"] != "all"]
+            for v in ("better", "worse", "tied", "thin")}
+
+    def names(items):
+        return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+    clauses = []
+    if part["better"]:
+        clauses.append(f"the model was better on {names(part['better'])}")
+    if part["worse"]:
+        clauses.append(f"worse on {names(part['worse'])}")
+    if part["tied"]:
+        clauses.append(f"{names(part['tied'])} can't be told apart from zero")
+    if part["thin"]:
+        clauses.append(f"{names(part['thin'])}: too few days to say (under {minimum})"
+                       if len(part["thin"]) == 1 else
+                       f"{names(part['thin'])} have too few days to say (under {minimum} each)")
+    third = ("By type of day and by quarter-end window: " + "; ".join(clauses) + ".") if clauses else ""
+    sentences = [first, second] + ([third] if third else [])
+    alt = (" ".join(sentences) + " Chart: the mean paired difference with its interval for "
+           + ", ".join(f"{g['label']} {sign(g['mean'])}" + (", too few days" if g["verdict"] == "thin" else "")
+                       for g in rows) + ". Then the mean after dropping the best days: "
+           + ", ".join(f"{k} days dropped {sign(drops[k])}" for k in FINAL_TEST_DROPS) + ".")
+    return {"groups": rows, "drops": [{"k": k, "mean": drops[k]} for k in FINAL_TEST_DROPS],
+            "wins": wins, "n": n, "minimum": minimum, "concentrated": concentrated,
+            "sentences": sentences, "alt": alt}
+
+
 def final_test(records, locked):
     """The "Final test" section (#238), read off `FINAL_TEST` alone.
 
@@ -2784,7 +2864,7 @@ def final_test(records, locked):
         f"<tr><th scope='row'>{r['label']}</th><td>{r['count']}</td><td>{signed(r['mean'], 3)}</td>{interval_cell(r)}</tr>"
         for r in split)
     split_table = (f"<div class='heat' role='region' aria-label='The final test by type of day' tabindex='0'>"
-                   f"<table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr>"
+                   f"<table class='fttab'><caption>By type of day</caption><thead><tr>"
                    f"<th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
                    f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>{split_rows}</tbody></table></div>")
     top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
@@ -2794,7 +2874,7 @@ def final_test(records, locked):
         for k in influence_module.DROPS)
     influence_table = (
         f"<div class='heat' role='region' aria-label='How much a few days carry of the final test' tabindex='0'>"
-        f"<table class='fttab'><caption>Influence of single days. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<table class='fttab'><caption>Influence of single days</caption><thead><tr>"
         f"<th scope='col'>Measure</th><th scope='col'>Paired difference, bp</th></tr></thead><tbody>"
         f"<tr><th scope='row'>Mean</th><td>{signed(got['mean'], 4)}</td></tr>"
         f"<tr><th scope='row'>Median</th><td>{signed(got['median'], 4)}</td></tr>{drop_rows}"
@@ -2814,22 +2894,45 @@ def final_test(records, locked):
 
     window_table = (
         f"<div class='heat' role='region' aria-label='The final test by quarter-end window' tabindex='0'>"
-        f"<table class='fttab'><caption>By quarter-end window. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<table class='fttab'><caption>By quarter-end window</caption><thead><tr>"
         f"<th scope='col'>Window</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
         f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
         f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
         f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
+    rob_groups = [{"key": "all", "label": "All days", "count": n, "mean": mean, "lower": lower, "upper": upper}]
+    for row in split:
+        rob_groups.append(dict({"key": row["key"], "label": FINAL_TEST_GROUPS[row["key"]], "count": row["count"],
+                                "mean": row["mean"]}, **({"lower": row["lower"], "upper": row["upper"]}
+                                                         if "lower" in row else {})))
+    for key in ("outside_quarter_end_window", "quarter_end_window"):
+        entry = by_window.get(key, {})
+        if not entry.get("count"):
+            continue
+        rob_groups.append(dict({"key": key, "label": FINAL_TEST_GROUPS[key], "count": entry["count"],
+                                "mean": entry["mean"]}, **({"lower": entry["interval"]["lower"],
+                                                            "upper": entry["interval"]["upper"]}
+                                                           if "interval" in entry else {})))
+    robustness = final_test_robustness(mean, {0: got["mean"], **got["drop"]}, got["wins"], got["n"], rob_groups,
+                                       MINIMUM_EVENTS)
+    sentences_html = "".join(f"<li>{html.escape(t)}</li>" for t in robustness["sentences"])
+    numbers = (f"<details class='ftnumbers'><summary>Show the numbers</summary>{split_table}{window_table}"
+               f"{influence_table}</details>")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
             "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
-            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap}
+            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap,
+            "robustness": robustness}
     fills = {
         "ft_verdict": verdict,
         "ft_claim": claim_html,
         "ft_days": f"{n:,}",
         "ft_level": level,
         "ft_window": window,
+        "ft_robust_sentences": f"<ul class='ftlist'>{sentences_html}</ul>",
+        "ft_numbers": numbers,
         "ft_split_table": split_table,
+        "ft_influence_table": influence_table,
+        "ft_window_table": window_table,
         "ft_fixed": (f"<b>Fixed first.</b> The design, the benchmark and the command were written down and "
                      f"checksummed (<code>{checksum[:12]}</code>) before any of these days was scored "
                      f"(<a href='{BLOB}{prereg}'>the pre-registration</a>)."),
@@ -2846,8 +2949,6 @@ def final_test(records, locked):
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
                          "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
-        "ft_influence_table": influence_table,
-        "ft_window_table": window_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
                      f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
                      f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
