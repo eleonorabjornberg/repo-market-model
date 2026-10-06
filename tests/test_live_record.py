@@ -585,8 +585,10 @@ class CrpsScoringTests(unittest.TestCase):
                 with self.subTest(case=name, h=h):
                     cell = cells[f"crps/h{h}"]
                     self.assertEqual(cell["verdict_label"], label)
+                    # A reported-only cell cannot pass or fail, so it carries no verdict (#267).
+                    self.assertNotIn("verdict", cell)
                     if name == "scored":
-                        self.assertIn("verdict", cell)
+                        self.assertIn("served stale", cell["design"])
                     else:
                         self.assertEqual(cell["days"], 0)
             with self.subTest(case=name, h=1):

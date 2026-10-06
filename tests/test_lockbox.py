@@ -338,6 +338,10 @@ NOT_ENTRY_POINTS = {
         "builds direct training pairs inside a fit's own training frame (#37); "
         "scores nothing, the backtest that calls the forecaster guards the scored days"
     ),
+    "scripts/reserves_sensitivity.measure": (
+        "fits the published gbm at fixed folds on days before 2026 and re-reads one "
+        "feature row, scoring nothing (#267); refuses any day on or after 2026-01-01 itself"
+    ),
     "scripts/calibration_masking_exposure.exposure": (
         "counts masked training pairs per refit block; scores nothing"
     ),
@@ -381,7 +385,8 @@ NOT_ENTRY_POINTS = {
         "the desk outputs' walk of the published distribution and as-of "
         "persistence at h = 1 to 5 (#232), reporting only; it refuses a locked "
         "scored day itself before any fit (tests/test_desk_outputs.py, "
-        "HistoryLockboxTests)"
+        "DistributionHistoryLockboxTests, which calls the walk across a blind-tier "
+        "day with the fit stubbed unreachable)"
     ),
     "scripts/desk_outputs.scarcity_at": (
         "reads the declared scarcity state as of one forecast's decision instant "

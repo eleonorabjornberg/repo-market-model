@@ -52,6 +52,16 @@ jobs:
           PYTHONPATH: src
         run: python3 -B -m unittest discover -s tests -v
 
+      # The same suite again with the network namespace empty, so a test that
+      # reaches a host fails here by name even if the in-process guard
+      # (tests/netguard.py) were bypassed (#262). `sudo` for the namespace;
+      # the environment and PATH are passed through so it is this job's python.
+      - name: Run the suite with networking disabled
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH env "PATH=$PATH" unshare --net python3 -B -m unittest discover -s tests
+
   ml:
     # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep), with
     # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
@@ -101,3 +111,32 @@ jobs:
           else
             python3 -B -m unittest discover -s tests -v
           fi
+
+  owner-attested:
+    # A binding change (a lockbox tier, the live pin, a model joining the live
+    # record) counts only with Eleonora's own GitHub comment, not one posted
+    # through an app (#256; draft rule docs/decisions/drafts/owner-attestation.md).
+    # The pull request cites it in metadata/owner_attestations.json, and this
+    # job fetches it. With no binding change and no new citation it fetches
+    # nothing.
+    name: owner attestation
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Binding changes cite an owner-attested comment
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA"

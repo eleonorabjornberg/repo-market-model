@@ -104,8 +104,8 @@ predict_stress(feature_row) -> exceedance vector aligned to metadata taus_bp
   `docs/decisions/pressure-probability.md`. It is scored as state, not onset. Labels use fixed bp thresholds and never a
   full-sample percentile.
 - **Two holdout roles, never conflated.**
-  - The scoring holdout: crisis dates excluded from the headline metric but available for training once past
-    (the backtests in `repo_model.baseline`).
+  - The scoring holdout: crisis dates are scored and pooled in the headline metric like every other date, and are
+    available for training once past (the backtests in `repo_model.baseline`). Nothing excludes them.
   - The knowledge holdout: crises stripped from training and scored once per window (`event_eval`), reported separately.
   Window boundaries live in `metadata/events.json`, each with a checksum verified through
   `contract.event_window_digest`.

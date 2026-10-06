@@ -1,0 +1,697 @@
+{
+  "days": [
+    {
+      "scored_day": "2025-07-15",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        -11.917632805028667,
+        -10.116026703404067,
+        -9.469653626475257,
+        -8.060192165542277,
+        -6.565115194645366
+      ],
+      "base_reserve_balances": 3225.98,
+      "base_tga": 359.516,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.9145185440575485
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.9058033053337748
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 2.9559977493087564
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 2.9559977493087564
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.0057786818150465
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.9058033053337748
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 2.8524582834988124
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 2.8524582834988124
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.2544219813351054
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.0000308387763237
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 3.917712578156202
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 3.917712578156202
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.8187182281151264
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.2479913797109834
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 4.148157294242085
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 4.148157294242085
+        }
+      ],
+      "worst_change_bp": 4.148157294242085,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    },
+    {
+      "scored_day": "2025-09-30",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        -7.043357391751986,
+        -0.1746829310383481,
+        0.9617071233867494,
+        1.4448941893432279,
+        3.6728494450448173
+      ],
+      "base_reserve_balances": 3073.355,
+      "base_tga": 756.376,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.4742194838159479
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.5246527222737118
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.16702616752912036
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.5451761826689667
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.4716236371510665
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.2476569465891778
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.26008666064779007
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.5483292806464304
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.39219300503338106
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.32319571057628416
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.816280905774545
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.8274989846202754
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.7277090068027625
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.6541022462200249
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.7664224988352236
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.7413067973910324
+        }
+      ],
+      "worst_change_bp": 0.8274989846202754,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    },
+    {
+      "scored_day": "2025-10-15",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        -2.858301919151021,
+        -1.3518044805376042,
+        -0.6370093663994846,
+        -0.32181686436136747,
+        6.357212181089818
+      ],
+      "base_reserve_balances": 2998.471,
+      "base_tga": 807.428,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.9952916119099484
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.1552169396636431
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.11068119435373625
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.1353013970427943
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 0.8565926072991692
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.2739810139390197
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.05760317210030286
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.06024264736931029
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.0163299234200531
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.1146459979453232
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.7687538638618987
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.7928940831476536
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 2.220851857468353
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 0.5833626168242897
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 1.7864626962627064
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 1.8212995396563922
+        }
+      ],
+      "worst_change_bp": 2.220851857468353,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    },
+    {
+      "scored_day": "2025-11-14",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        0.678707162302384,
+        3.4583008220680034,
+        7.844448014778837,
+        10.375599090171429,
+        11.651838694230586
+      ],
+      "base_reserve_balances": 2862.569,
+      "base_tga": 940.979,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.5448222627658126
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.4934053255572994
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.2504939644246651
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.08489988140969373
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.4937265085763851
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.442309571367872
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.3104846511957433
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.277627888398003
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 2.1729471474785598
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 2.121530210270045
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 1.093973042316593
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 1.0611162795188527
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 3.864155755355607
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 3.673226531098703
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 3.6146544105399276
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 3.6146544105399276
+        }
+      ],
+      "worst_change_bp": 3.864155755355607,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    },
+    {
+      "scored_day": "2025-12-15",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        -1.4672715158809775,
+        1.0975921622151763,
+        1.6864973172438438,
+        2.7515187240636787,
+        4.489704613432682
+      ],
+      "base_reserve_balances": 2858.284,
+      "base_tga": 937.167,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.9339346695424253
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.7350331349170967
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.14796107372462952
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.5157759456018227
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 2.1446028266828394
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.9653329238464146
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.27452462740325956
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.22983986443850402
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 2.4192647105962153
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 2.059573984436916
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.5732910775858944
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.4765432170764967
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 2.341589668309491
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 2.15524533687635
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.973435692132379
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.9116343964860105
+        }
+      ],
+      "worst_change_bp": 2.4192647105962153,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    },
+    {
+      "scored_day": "2025-12-31",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "base_quantiles_bp": [
+        1.6679604705313515,
+        5.921075991332216,
+        10.427954255541033,
+        12.793355162253865,
+        14.679747329495955
+      ],
+      "base_reserve_balances": 2955.581,
+      "base_tga": 837.12,
+      "trained_range": {
+        "reserve_balances": [
+          1394.122,
+          4275.806
+        ],
+        "tga": [
+          44.756,
+          1816.687
+        ]
+      },
+      "grid": [
+        {
+          "reserve_balances": 2800.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.4577883614748566
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.137088853854006
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.7458005503338025
+        },
+        {
+          "reserve_balances": 2800.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 1.0121805762509961
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.60295293726201
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.2360190887513434
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.35194093166370166
+        },
+        {
+          "reserve_balances": 3000.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.6485234209543211
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.6519363065985266
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.3011219231436537
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 0.48273697295796225
+        },
+        {
+          "reserve_balances": 3200.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 0.3559743985067314
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 500.0,
+          "max_abs_quantile_change_bp": 1.9171732677348396
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 700.0,
+          "max_abs_quantile_change_bp": 1.6175125923143692
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 900.0,
+          "max_abs_quantile_change_bp": 1.419543112411076
+        },
+        {
+          "reserve_balances": 3500.0,
+          "tga": 1100.0,
+          "max_abs_quantile_change_bp": 1.4355239321546982
+        }
+      ],
+      "worst_change_bp": 1.9171732677348396,
+      "claim_bp": 0.3,
+      "claim_holds": false
+    }
+  ],
+  "worst_change_bp": 4.148157294242085,
+  "worst_change_bp_by_day": {
+    "2025-07-15": 4.148157294242085,
+    "2025-09-30": 0.8274989846202754,
+    "2025-10-15": 2.220851857468353,
+    "2025-11-14": 3.864155755355607,
+    "2025-12-15": 2.4192647105962153,
+    "2025-12-31": 1.9171732677348396
+  }
+}

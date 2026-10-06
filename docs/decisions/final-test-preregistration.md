@@ -5,6 +5,10 @@ locked day is scored. #151 opens the lockbox once and runs exactly what is froze
 3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
 below ("The reading of the selection rule" and "The test").
 
+**Status note, 6 October 2026 (#260, her ruling on the independent review's finding 7).** The status line above is the
+draft's and is left as written. This record was merged and is in force, and the opening it fixed was run once, on
+2026-10-05 (#151, `docs/runs/final_test_near_blind.json`). The decision text below is unchanged.
+
 **The success criterion is the CRPS cell,** since her ruling of 4 October 2026 on #221 (below, "Amendment,
 4 October 2026: the full-range test is the primary cell"): the published distribution (#169's gbm with nested PID)
 against as-of persistence, by CRPS, at h = 1, on the 169 scored days from 2026-01-02 to 2026-09-03. It is
@@ -268,6 +272,13 @@ reported, and it decides nothing.
   pre-2026 data or from earlier rules, and are fixed above. Counting events in the locked period, to choose a threshold
   or for any other reason, is not allowed before #151 scores it.
 - **Labels are on whole basis points** (#155), so the test is scored on the corrected labels.
+- **`_refuse_locked` is a fixed boundary** (recorded on #279, Eleonora's ruling of 6 October 2026, #269 item 20).
+  The selection run's own lockbox check, `final_test_preregistration._refuse_locked`, refuses any scored day on or
+  after 2026-01-01. That date is part of the test's definition, not of the lockbox: the final test's selection is
+  defined on data through 2025-12-31, and it stays so whatever the lockbox later opens (the near-blind tier was
+  opened on 2026-10-05, and the selection is unchanged). The check is not under the declaration checksums, because
+  it is not among the definitions they hash; `RefuseLockedTests` in `tests/test_final_test_freeze.py` protects it,
+  with its recorded mutation. The frozen script is not edited to say this.
 
 ## Amendment, 4 October 2026, before any opening
 
@@ -388,7 +399,7 @@ was scored. Directive #220 writes it into this record and regenerates both check
    - *Also seen before deciding, on pre-2026 data only:* the published CRPS record
      (`docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`) split into each year's first
      169 scored days, 2019–2025. The lower bound was above zero in 4 of 7 years (2019, 2023, 2024 and 2025), and the
-     model was clearly worse in 2022, so about 60% of 169-day windows passed. This was computed in a planning session
+     model was clearly worse in 2022, so about 60% of 169-day windows passed. That 60% is how often a window passed in the years seen, which is the test's power if the model has the skill it showed then. It is not a base rate of false positives: under no skill the pass rate is the test's own false-positive rate, which this planning computation did not measure. (A wording correction proposed in #267, for Eleonora to review.) This was computed in a planning session
      with a stationary bootstrap at block length 2. It is context, not a figure for the record.
 5. **Both checksums are regenerated.** Both declarations carry the cells and their roles (`CELLS`, `PRIMARY_CELL`),
    and the CRPS declaration also carries the horizon and the claim. The pins are above ("What is frozen"). Without the
