@@ -68,6 +68,16 @@ jobs:
           PYTHONPATH: src
         run: python3 -B scripts/emit_visual.py --check
 
+      # The same suite again with the network namespace empty, so a test that
+      # reaches a host fails here by name even if the in-process guard
+      # (tests/netguard.py) were bypassed (#262). `sudo` for the namespace;
+      # the environment and PATH are passed through so it is this job's python.
+      - name: Run the suite with networking disabled
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH env "PATH=$PATH" unshare --net python3 -B -m unittest discover -s tests
+
   ml:
     # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep), with
     # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
