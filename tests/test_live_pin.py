@@ -109,6 +109,12 @@ def manifest_for(sha):
         "version": 1,
         "current": sha,
         "transitions": [{"id": "t0", "sha": sha, "record": "docs/decisions/live-pin.md"}],
+        "environment": {
+            "runner": "ubuntu-24.04",
+            "python": "3.11.16",
+            "lock": "metadata/live_requirements.lock",
+            "lock_sha256": "d" * 64,
+        },
     }
 
 
@@ -265,7 +271,7 @@ class WorkflowPinTests(_WorkflowText):
         self.assertLess(self.text.index("- name: Check out main and the pinned code"),
                         self.text.index("- name: Verify the pin is a registered transition"))
         self.assertLess(self.text.index("- name: Verify the pin is a registered transition"),
-                        self.text.index("- name: Install the ml extra"))
+                        self.text.index("- name: Install the locked environment"))
         self.assertIn("pin=${{ steps.pin.outcome }}", self._step("Open or update the failed-runs issue"))
 
     def test_the_digest_and_failed_runs_issues_are_found_by_number(self):
@@ -434,7 +440,8 @@ class WorkflowEnvironmentTests(_WorkflowText):
         self.assertIn("--require-hashes", step)
         self.assertIn("--no-deps", step)
         self.assertIn("--only-binary :all:", step)
-        self.assertIn("main/metadata/live_requirements.lock", step)
+        self.assertIn('-r "$lock"', step)
+        self.assertIn("jq -r .environment.lock main/metadata/live_pin.json", step)
         self.assertEqual(len(re.findall(r"pip install", self.text)), 1)
         self.assertNotIn('numpy==', self.text)
         self.assertLess(step.index("sha256sum -c"), step.index("pip install"))

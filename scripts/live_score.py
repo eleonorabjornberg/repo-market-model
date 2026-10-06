@@ -46,7 +46,9 @@ was logged:
   live log (`load_records`, `scripts/live_integrity.py`'s `verify`). Every
   file's SHA-256 must equal its #225 digest, the hash chain must be unbroken,
   and every file must have been added by `github-actions[bot]` in an add-only
-  commit. Otherwise it refuses (`ValueError`). `--live-dir` is therefore a
+  commit. Every record's `code.pinned_sha` must also be a registered
+  transition in `metadata/live_pin.json` (#255). Otherwise it refuses
+  (`ValueError`). `--live-dir` is therefore a
   clean checkout of `live-log`, and `--digests` holds the #225 comments, one
   JSON object per line, each with `author` and `body`.
 
@@ -147,18 +149,37 @@ def _integrity():
 _INTEGRITY = None
 
 
-def load_records(live_dir: Path, digests) -> list:
-    """The live log's records, after the log is verified (#254).
+def _pins():
+    """`scripts/live_pin.py`, loaded once."""
+
+    global _PINS
+    if _PINS is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_pin", REPO / "scripts" / "live_pin.py")
+        _PINS = module_from_spec(spec)
+        spec.loader.exec_module(_PINS)
+    return _PINS
+
+
+_PINS = None
+
+
+def load_records(live_dir: Path, digests, manifest=None) -> list:
+    """The live log's records, after the log is verified (#254) and each record's pin is registered (#255).
 
     Raises:
         ValueError: no digests, any integrity check failing, a malformed
-            record, or a dry run.
+            record, a dry run, or a record made at a code SHA that is not a
+            registered transition in `metadata/live_pin.json`.
     """
 
     if digests is None:
         raise ValueError("the live record is scored only against its #225 digests: pass --digests")
     integrity = _integrity()
     integrity.verify(live_dir, integrity.parse_digests(digests))
+    pins = _pins()
+    manifest = pins.load_manifest() if manifest is None else manifest
     live = _live()
     records = []
     for path in sorted((Path(live_dir) / "live").glob("*.json")):
@@ -166,6 +187,7 @@ def load_records(live_dir: Path, digests) -> list:
         live.validate_record(record)
         if record.get("dry_run"):
             raise ValueError(f"{path} is a dry run, not a logged day")
+        pins.require_registered(record["code"]["pinned_sha"], manifest)
         records.append(record)
     return records
 
