@@ -80,12 +80,16 @@ ATTRIBUTION = {
         "states the withdrawal and links the comment that records it; no figure rests on it"
     ),
     ("README.md", 256): (
-        "names the issue that asked for owner attestation; the sentence states the "
-        "rule's draft status; no figure rests on it"
+        "names the issue that asked for owner attestation; the sentence says "
+        "where the rule's text stands; no figure rests on it"
     ),
     ("README.md", 269): (
         "names the issue where Eleonora states which merges were hers, each linked to "
         "her comment; no figure rests on it"
+    ),
+    ("docs/decisions/workflow.md", 269): (
+        "names the comments where Eleonora confirmed the #153, #236, #216 and #224 merges; the note "
+        "quotes them and states no figure"
     ),
     ("README.md", 73): (
         "names the issue where the Phase 2 verdict was ruled; the verdict is stated in "

@@ -65,3 +65,26 @@ class ClosedForNowTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StatusFileShapeTest(unittest.TestCase):
+    """The published `docs/status.json` and the README sentence that reads from it agree (#270, finding 24)."""
+
+    def status(self):
+        import json
+        return json.loads((ROOT / "docs" / "status.json").read_text(encoding="utf-8"))
+
+    def test_the_file_names_its_schema(self):
+        self.assertIsInstance(self.status()["schema_version"], int)
+
+    def test_the_readme_phase_count_is_the_files_total(self):
+        import re
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        match = re.search(r"phase (\d+) of (\d+)", readme)
+        self.assertIsNotNone(match)
+        self.assertEqual(int(match.group(2)), self.status()["total_phases"])
+
+    def test_no_figure_calls_the_windows_held_out(self):
+        figures = self.status()["figures"]
+        self.assertNotIn("event_holdouts", figures)
+        self.assertIn("event_windows", figures)

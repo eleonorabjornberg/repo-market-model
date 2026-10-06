@@ -10683,6 +10683,24 @@ class DynamicPressureModelTests(unittest.TestCase):
         at_zero = ml._index_chain(xs, anchors, 0.0)
         numpy.testing.assert_allclose(at_zero[2], [3.0, 0.0])
 
+    def test_an_anchor_at_or_after_its_own_row_is_refused(self):
+        """The chain reads only an earlier row; a row its own anchor is leakage.
+
+        The line carries `pragma: no cover` because `history_ends` always names
+        an earlier row; the guard is driven directly all the same.
+
+        Recorded mutation (CLAUDE.md): in `ml._index_chain`, `if anchor >=
+        position:` mutated to `if False:`. This test then errors,
+        raising `IndexError` ("list index out of range"): the row's index is
+        read from a chain not yet built.
+        """
+
+        xs = [[1.0, 2.0], [3.0, 0.0], [0.5, 1.0]]
+        for anchors in ([0, 0, 1], [-1, 2, 1]):
+            with self.subTest(anchors=anchors):
+                with self.assertRaisesRegex(LookAheadError, "is not before it"):
+                    ml._index_chain(xs, anchors, 0.5)
+
     def test_a_backtest_at_horizon_three_runs_under_every_guard(self):
         """The lagged index is read off each forecast's own as-of history.
 
@@ -10886,6 +10904,23 @@ class StackedCombinerTests(unittest.TestCase):
             ml.stacked_combiner(bad, **self.options)
         # And the honest bases combine.
         ml.stacked_combiner(self.bases, **self.options)
+
+    def test_the_combiner_never_learns_from_an_outcome_not_yet_observable(self):
+        """A pair whose day is scored after the combiner's fit is refused.
+
+        Recorded mutation (CLAUDE.md): in `ml._check_out_of_fold`, `if
+        fold.scored_date > fit_end:` mutated to `if False:`. This test then
+        fails, raising `AssertionError` ("LookAheadError not raised"): the fold
+        here is out of fold, so only this guard can refuse it.
+        """
+
+        from types import SimpleNamespace
+
+        fold = SimpleNamespace(scored_date=date(2026, 3, 10), train_end=date(2026, 3, 5))
+        bases = {"stub": SimpleNamespace(folds=(fold,))}
+        with self.assertRaisesRegex(LookAheadError, "not yet observable"):
+            ml._check_out_of_fold(bases, [0], date(2026, 3, 9))
+        ml._check_out_of_fold(bases, [0], date(2026, 3, 10))
 
     def test_each_block_is_the_fit_on_its_observable_out_of_fold_past(self):
         """At horizon 3 a block's last days are not yet observable at the next fit."""

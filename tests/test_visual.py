@@ -1197,7 +1197,7 @@ class NewcomerBandBase(unittest.TestCase):
     def run_band(cls, scored, locked=None, status=None):
         return emit_visual.newcomer_band(list(scored), cls.locked if locked is None else locked, cls.thresholds,
                                          cls.registry, cls.decision, cls.on_rrp, cls.status if status is None
-                                         else status, cls.notes)
+                                         else status, cls.notes, cls.rows)
 
     def locked_days(self):
         return [emit_visual.date.fromisoformat(r["date"]) for r in self.rows
@@ -2656,3 +2656,66 @@ class ForecastDailySectionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FindingProseTests(unittest.TestCase):
+    """The page prose the second independent review found false or loose (#270, findings 23, 25, 31, 33)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = (ROOT / "site/index.html").read_text(encoding="utf-8")
+
+    def test_the_break_is_not_said_to_be_untuned_without_its_provenance(self):
+        provenance = emit_visual.break_provenance_note("$100bn")
+        self.assertIn(provenance, self.page)
+        self.assertIn("weekly 2018-2026 pressure frequencies", provenance)
+        self.assertIn("not chosen blind", provenance)
+
+    def test_no_view_says_its_days_were_chosen_in_advance(self):
+        self.assertNotIn("chosen in advance", self.page)
+        self.assertIn("fixed on 2 October 2026 that reads no rate or spread", self.page)
+
+    def test_an_annotation_quotes_its_own_days_row_not_the_largest_spread(self):
+        rows = [{"date": "2019-09-17", "sofr": "5.25", "s": 315},
+                {"date": "2025-12-01", "sofr": "9.00", "s": 999}]
+        event = {"date": "2019-09-17", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IOER"}
+        self.assertEqual(emit_visual.marker_text(event, rows, "s"), "SOFR prints 5.25%, 315 bp above IOER")
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.marker_text(event, rows[1:], "s")
+
+    def test_the_opened_days_inside_the_counts_are_marked(self):
+        rows = [{"date": "2025-12-31"}, {"date": "2026-01-02"}, {"date": "2026-09-03"}]
+        note = emit_visual.opened_days_note(rows, ROOT / emit_visual.LOCKBOX)
+        self.assertIn("2 of the days counted", note)
+        self.assertIn("near-blind", note)
+        self.assertIn("169 of the days counted", self.page)
+
+    def test_the_march_2020_cut_is_dated_as_the_sunday_it_was(self):
+        notes = json.loads((ROOT / "docs/visual/annotations.json").read_text(encoding="utf-8"))
+        text = next(e["text"] for e in notes["events"] if e["date"] == "2020-03-15")
+        self.assertIn("Sunday", text)
+
+    def test_the_band_view_holds_out_what_every_other_view_holds_out(self):
+        data = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_band.json").read_text(encoding="utf-8"))["data"]
+        n1 = json.loads((ROOT / emit_visual.DATA_DIR / "newcomer_n1.json").read_text(encoding="utf-8"))["data"]
+        self.assertEqual(data["held_out"], n1["held_out"])
+
+
+class OverviewNotebookTests(unittest.TestCase):
+    """`notebooks/00_overview.ipynb` states what it is and defines a pressure day as the project does (#270, finding 33)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = (ROOT / "notebooks/00_overview.ipynb").read_text(encoding="utf-8")
+
+    def test_no_stale_banner_or_roadmap_remains(self):
+        self.assertNotIn("re-score pending", self.text)
+        self.assertNotIn("Next, in order", self.text)
+
+    def test_it_says_it_is_a_pinned_pre_as_of_illustration(self):
+        self.assertIn("pinned to panel 4ddc3882", self.text)
+
+    def test_a_pressure_day_is_whole_bp_strictly_above_five(self):
+        self.assertNotIn(">= 5", self.text)
+        self.assertNotIn(">= threshold", self.text)
+        self.assertIn("round() > 5", self.text)
