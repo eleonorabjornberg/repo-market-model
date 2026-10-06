@@ -256,6 +256,72 @@ class DeclarationTests(unittest.TestCase):
                          ["crps_not_worse_than_v1"])
 
 
+def _cell_day(y, *, cells=(), q95=4.0):
+    return {"y": y, "v": [-4.0, -1.0, 0.0, 1.0, q95], "cells": set(cells)}
+
+
+class OuterValidationDeclarationTests(unittest.TestCase):
+    """The outer-validation design (Eleonora's ruling on PR #252, amending #247), declared before scoring."""
+
+    def test_the_blocks(self):
+        self.assertEqual(v2.INNER, (date(2018, 6, 29), date(2022, 12, 31)))
+        self.assertEqual(v2.OUTER, (date(2023, 1, 1), date(2025, 12, 31)))
+        self.assertEqual(v2.INNER[0], v2.DECIDES[0])
+        self.assertEqual(v2.OUTER[1], v2.DECIDES[1])
+        self.assertEqual(v2.OUTER[0] - v2.INNER[1], timedelta(days=1))
+
+    def test_the_gates(self):
+        gates = {g["name"]: g for g in v2.CONDITIONAL_GATES["gates"]}
+        self.assertEqual(v2.CONDITIONAL_GATES["minimum_days"], 20)
+        self.assertEqual(gates["band_90_quarter_end"]["at_least"], 80.0)
+        self.assertEqual(gates["band_90_scarce"]["at_least"], 85.0)
+        self.assertEqual(gates["band_90_coupon_settlement"]["at_least"], 85.0)
+        self.assertEqual(gates["above_q95_pooled"]["at_most"], 8.0)
+        self.assertEqual(gates["above_q95_quarter_end"]["at_most"], 15.0)
+        self.assertEqual(set(g["cell"] for g in gates.values()) - set(v2.CONDITIONAL_GATES["cells"]), set())
+
+    def test_a_cell_under_twenty_days_is_inconclusive(self):
+        days = [_cell_day(0.0) for _ in range(30)] + [_cell_day(9.0, cells=["quarter_end"]) for _ in range(19)]
+        out = v2.conditional_gates(days, "v")
+        self.assertEqual(out["band_90_quarter_end"]["days"], 19)
+        self.assertEqual(out["band_90_quarter_end"]["verdict"], "inconclusive")
+        self.assertEqual(out["above_q95_quarter_end"]["verdict"], "inconclusive")
+        days.append(_cell_day(9.0, cells=["quarter_end"]))
+        out = v2.conditional_gates(days, "v")
+        self.assertEqual(out["band_90_quarter_end"]["verdict"], "fail")
+        self.assertEqual(out["band_90_quarter_end"]["value"], 0.0)
+        self.assertEqual(out["above_q95_quarter_end"]["value"], 100.0)
+
+    def test_the_thresholds_are_inclusive_and_an_edge_counts_one_half(self):
+        # 17 inside and 3 above: 85% inside, 15% above q95.
+        days = [_cell_day(0.0, cells=["scarce", "quarter_end"]) for _ in range(17)]
+        days += [_cell_day(9.0, cells=["scarce", "quarter_end"]) for _ in range(3)]
+        out = v2.conditional_gates(days, "v")
+        self.assertEqual(out["band_90_scarce"]["verdict"], "pass")
+        self.assertEqual(out["above_q95_quarter_end"]["verdict"], "pass")
+        self.assertEqual(out["above_q95_pooled"]["verdict"], "fail")
+        # One of the three on the q95 edge instead: half inside, half above.
+        days[-1] = _cell_day(4.000000000000002, cells=["scarce", "quarter_end"])
+        out = v2.conditional_gates(days, "v")
+        self.assertAlmostEqual(out["band_90_scarce"]["value"], 87.5)
+        self.assertAlmostEqual(out["above_q95_quarter_end"]["value"], 12.5)
+
+    def test_eligibility_under_each_reading(self):
+        summary = {"coverage_half_tie": {"0.25": 25.0, "0.5": 50.0, "0.75": 75.0}, "band_90_half_edge": 90.0}
+        passing = {"g": {"verdict": "pass"}, "h": {"verdict": "inconclusive"}}
+        failing = dict(passing, k={"verdict": "fail"})
+        self.assertTrue(v2.eligible_inner(summary, failing, reading="bar_only"))
+        self.assertTrue(v2.eligible_inner(summary, passing, reading="bar_and_conditional_gates"))
+        self.assertFalse(v2.eligible_inner(summary, failing, reading="bar_and_conditional_gates"))
+        off = dict(summary, band_90_half_edge=86.0)
+        self.assertFalse(v2.eligible_inner(off, passing, reading="bar_only"))
+        with self.assertRaises(ValueError):
+            v2.eligible_inner(summary, passing, reading="neither")
+
+    def test_the_exploratory_label(self):
+        self.assertEqual(v2.EXPLORATORY, "exploratory (selection-adjusted uncertainty not computed)")
+
+
 def _sha(rows):
     return v2.vectors_sha256(rows)
 

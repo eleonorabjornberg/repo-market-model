@@ -18,6 +18,15 @@ ruling on #244) are declared here before anything is scored.
   from labels observable at that block's anchor.
 * No day after 2026-09-03 is read.
 
+Eleonora's ruling on PR #252 (6 October 2026) applies her amendment of #247
+here. #247 chose (i) on all of 2018-2025, the data it was diagnosed and tuned
+on, so the choice is redone on the inner block (`INNER`, 2018-06-29 to
+2022-12-31) under #247's rule, with the conditional gates
+(`CONDITIONAL_GATES`) added to the bar. The candidate it chooses is committed
+as `CHOSEN`. Only then is the outer block (`OUTER`, 2023-01-01 to 2025-12-31)
+scored, once, for v1 and the chosen candidate. Any historical edge of v2 over
+v1 is labelled `EXPLORATORY`.
+
 Two subcommands:
 
 * `walk`: the published side's walk with v2's calibration. Each scored day
@@ -108,6 +117,120 @@ GATE = {
     "crps_vs_v1": "paired CRPS(v1) - CRPS(v2): the 90% interval's upper bound is not below 0",
     "interval": "stationary bootstrap, mean block length 2, as the final test",
 }
+
+
+#: Eleonora's ruling on PR #252 (6 October 2026), applying her amendment of
+#: #247 here: the choice is redone on an inner block, and an outer block no
+#: choice has seen is scored once, for v1 and the chosen candidate only.
+INNER = (date(2018, 6, 29), date(2022, 12, 31))
+OUTER = (date(2023, 1, 1), date(2025, 12, 31))
+
+#: Any historical edge of v2 over v1 carries this label (ruling on PR #252,
+#: item 4). Only v2's live record can show that it is better.
+EXPLORATORY = "exploratory (selection-adjusted uncertainty not computed)"
+
+#: The conditional gates (ruling on PR #252, item 2), added to the bar and to
+#: the inner block's eligibility rule, declared before the outer block is
+#: scored. The thresholds are the orchestrating session's proposal; Eleonora
+#: may change them on the PR.
+CONDITIONAL_GATES = {
+    "declared": ("Eleonora's ruling on PR #252 and her amendment of #247 (6 October 2026); the thresholds "
+                 "were proposed by the orchestrating session, and she may change them on the PR"),
+    "applies_to": "the inner block, then the outer block, h = 1",
+    "minimum_days": 20,
+    "inconclusive": "a cell with fewer than 20 days is inconclusive: it neither passes nor fails",
+    "measures": {
+        "band_90_half_edge": "the 90% band's coverage, an outcome exactly on an edge counting one half inside",
+        "above_q95": "the share of outcomes above q95, an outcome exactly on q95 counting one half",
+    },
+    "cells": {
+        "all": "every scored day of the block",
+        "quarter_end": ("pressure-day type quarter_end (metadata/evaluation_splits.json): the turn day of each "
+                        "quarter; every year-end is a quarter-end"),
+        "scarce": ("reserve_scarcity_state 3, read as-of at the day's h = 1 decision instant "
+                   "(onset_post_mortem.as_of_reads)"),
+        "coupon_settlement": ("treasury_settlement_coupons above 0, read as-of at the day's h = 1 decision "
+                              "instant (onset_post_mortem.as_of_reads, as at_risk_by_state reads it)"),
+    },
+    "gates": [
+        {"name": "band_90_quarter_end", "cell": "quarter_end", "measure": "band_90_half_edge", "at_least": 80.0},
+        {"name": "band_90_scarce", "cell": "scarce", "measure": "band_90_half_edge", "at_least": 85.0},
+        {"name": "band_90_coupon_settlement", "cell": "coupon_settlement", "measure": "band_90_half_edge",
+         "at_least": 85.0},
+        {"name": "above_q95_pooled", "cell": "all", "measure": "above_q95", "at_most": 8.0},
+        {"name": "above_q95_quarter_end", "cell": "quarter_end", "measure": "above_q95", "at_most": 15.0},
+    ],
+}
+
+#: How the choice is redone on the inner block (ruling on PR #252, item 1).
+INNER_SELECTION = {
+    "window": "2018-06-29 to 2022-12-31, h = 1",
+    "rule": ("#247's question 7 rule (interior_diagnosis.SELECTION_RULE and select_candidate) on the inner "
+             "block only: the same candidates, the same eligibility gates, a simpler eligible candidate "
+             "preferred when its paired CRPS interval against the leader includes 0"),
+    "ii_setting": ("(ii)'s tree setting is chosen again on the inner block, by #247's rule: the question 4 "
+                   "variant meeting the bar with the lowest CRPS, or the lowest CRPS if none meets it"),
+    "readings": {
+        "bar_only": "eligible: #247's bar on the inner block (the ruling on PR #252: 'the same eligibility gates')",
+        "bar_and_conditional_gates": ("eligible: #247's bar, and no conditional gate failing, on the inner block "
+                                      "(#247's amendment, item 2)"),
+    },
+    "outer": ("v1 and the chosen candidate only are scored on the outer block, once, after the choice is "
+              "committed as CHOSEN"),
+}
+READINGS = tuple(INNER_SELECTION["readings"])
+
+#: The candidate the inner block chose, committed before the outer block is
+#: scored. None until `choose` has run.
+CHOSEN = None
+
+
+def _above_half_tie(y, q):
+    return 1.0 - interior.below_half_tie(y, q)
+
+
+def conditional_gates(days, field) -> dict:
+    """Each conditional gate on `days`: its cell's size, value, threshold and verdict.
+
+    Each day carries `y`, its vector under `field`, and `cells`, the set of
+    conditional cells it belongs to ("all" is implied).
+    """
+
+    out = {}
+    for gate in CONDITIONAL_GATES["gates"]:
+        cell = gate["cell"]
+        subset = [d for d in days if cell == "all" or cell in d["cells"]]
+        entry = {"cell": cell, "measure": gate["measure"], "days": len(subset)}
+        entry.update({k: gate[k] for k in ("at_least", "at_most") if k in gate})
+        if not subset:
+            entry.update(value=None, verdict="inconclusive")
+            out[gate["name"]] = entry
+            continue
+        if gate["measure"] == "band_90_half_edge":
+            value = 100.0 * statistics.fmean(_inside_half(d, field, 0, 4) for d in subset)
+        else:
+            value = 100.0 * statistics.fmean(_above_half_tie(d["y"], d[field][4]) for d in subset)
+        entry["value"] = value
+        if len(subset) < CONDITIONAL_GATES["minimum_days"]:
+            entry["verdict"] = "inconclusive"
+        elif "at_least" in gate:
+            entry["verdict"] = "pass" if value >= gate["at_least"] else "fail"
+        else:
+            entry["verdict"] = "pass" if value <= gate["at_most"] else "fail"
+        out[gate["name"]] = entry
+    return out
+
+
+def eligible_inner(summary: dict, gates: dict, *, reading: str) -> bool:
+    """A candidate's eligibility on the inner block under one of `READINGS`."""
+
+    if reading not in READINGS:
+        raise ValueError(f"unknown reading {reading!r}")
+    if not dx.eligible(summary):
+        return False
+    if reading == "bar_and_conditional_gates":
+        return not any(g["verdict"] == "fail" for g in gates.values())
+    return True
 
 
 def bar_verdict(coverage: dict, paired_vs_v1: dict) -> dict:
