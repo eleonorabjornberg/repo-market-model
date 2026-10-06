@@ -10,7 +10,7 @@
       "number": 2
     }
   ],
-  "commit": "b1be992",
+  "commit": "cc9e28b",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -43,6 +43,7 @@
     "exceedance_gbm_cross_conformal.json",
     "exceedance_persistence_logistic.json",
     "final_test_near_blind.json",
+    "final_test_near_blind_integral_sensitivity.json",
     "funding_panel.manifest.json",
     "persistence_funding.json",
     "pressure_model_v1_h1.json",
