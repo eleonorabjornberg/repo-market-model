@@ -1,0 +1,1105 @@
+{
+ "cell": {
+  "cell": "crps, h = 1, trapezoid",
+  "crps_integral_persistence_bps": 1.9898668639053316,
+  "crps_integral_published_bps": 1.8185575128030038,
+  "days": 169,
+  "first": "2026-01-02",
+  "horizon": 1,
+  "interval": {
+   "block_length": 2,
+   "level": 0.9,
+   "lower": 0.030215688673432356,
+   "method": "stationary_bootstrap",
+   "replications": 2000,
+   "seed": 1970125677,
+   "upper": 0.3515706584310039
+  },
+  "last": "2026-09-03",
+  "mean_difference_bps": 0.17130935110232606,
+  "role": "reported only",
+  "sensitivity_interval": {
+   "block_length": 10,
+   "level": 0.9,
+   "lower": 0.029764202729848362,
+   "method": "stationary_bootstrap",
+   "replications": 2000,
+   "seed": 1970125677,
+   "upper": 0.3365858987861773
+  },
+  "sign_convention": "persistence minus the published distribution, both by the trapezoid CRPS; positive favours the published distribution"
+ },
+ "command": [
+  "compare",
+  "PUB.csv",
+  "--registry",
+  "metadata/sources.json",
+  "--decision-time",
+  "16:00",
+  "--minimum-history",
+  "61",
+  "--refit-every",
+  "21",
+  "--splits",
+  "metadata/evaluation_splits.json",
+  "--end",
+  "2026-09-03",
+  "--loss",
+  "crps-integral",
+  "--model-a",
+  "persistence",
+  "--feature-a",
+  "spread_bps",
+  "--model-b",
+  "gbm",
+  "--calibration-b",
+  "conformal_pid_nested",
+  "--feature-b",
+  "reserve_balances",
+  "--feature-b",
+  "sofr_p25",
+  "--feature-b",
+  "sofr_p75",
+  "--feature-b",
+  "sofr_volume",
+  "--feature-b",
+  "spread_bps",
+  "--feature-b",
+  "tbill_13w",
+  "--feature-b",
+  "tbill_4w",
+  "--feature-b",
+  "tga",
+  "--feature-b",
+  "treasury_settlement",
+  "--report",
+  "OUT/crps.json"
+ ],
+ "crps_declaration_sha256": "d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59",
+ "directive": "#259",
+ "primary_cell_by_the_plain_score": {
+  "crps_persistence_bps": 1.8331360946745627,
+  "crps_published_bps": 1.6590767432383495,
+  "days": 169,
+  "mean_difference_bps": 0.1740593514362111
+ },
+ "primary_record": "docs/runs/final_test_near_blind.json",
+ "record": "the final test's primary cell, re-scored with the trapezoid CRPS: reported only, decides nothing",
+ "rule": "the trapezoid rule: the quantile loss is linear between the declared levels and constant beyond the lowest and highest, and the score is twice its integral over (0, 1) (`metrics.crps_trapezoid_from_quantiles`)",
+ "window_per_origin": [
+  {
+   "difference_bps": -0.2638127220638684,
+   "loss_a_bps": 3.0174999999999965,
+   "loss_b_bps": 3.281312722063865,
+   "scored_date": "2026-01-02"
+  },
+  {
+   "difference_bps": 10.975582001134335,
+   "loss_a_bps": 15.867499999999996,
+   "loss_b_bps": 4.891917998865661,
+   "scored_date": "2026-01-05"
+  },
+  {
+   "difference_bps": 5.067933966025358,
+   "loss_a_bps": 7.867499999999987,
+   "loss_b_bps": 2.799566033974629,
+   "scored_date": "2026-01-06"
+  },
+  {
+   "difference_bps": 0.9421615686047486,
+   "loss_a_bps": 3.867500000000028,
+   "loss_b_bps": 2.9253384313952795,
+   "scored_date": "2026-01-07"
+  },
+  {
+   "difference_bps": -0.670011655952959,
+   "loss_a_bps": 1.1675000000000102,
+   "loss_b_bps": 1.8375116559529692,
+   "scored_date": "2026-01-08"
+  },
+  {
+   "difference_bps": -0.6891421307549037,
+   "loss_a_bps": 0.467499999999994,
+   "loss_b_bps": 1.1566421307548977,
+   "scored_date": "2026-01-09"
+  },
+  {
+   "difference_bps": -0.8484422758345086,
+   "loss_a_bps": 0.21749999999999928,
+   "loss_b_bps": 1.0659422758345078,
+   "scored_date": "2026-01-12"
+  },
+  {
+   "difference_bps": 0.454139480915958,
+   "loss_a_bps": 0.9174999999999796,
+   "loss_b_bps": 0.46336051908402154,
+   "scored_date": "2026-01-13"
+  },
+  {
+   "difference_bps": -0.6283130820305329,
+   "loss_a_bps": 0.21749999999999928,
+   "loss_b_bps": 0.8458130820305322,
+   "scored_date": "2026-01-14"
+  },
+  {
+   "difference_bps": 0.1951934641327866,
+   "loss_a_bps": 0.9175000000000106,
+   "loss_b_bps": 0.722306535867224,
+   "scored_date": "2026-01-15"
+  },
+  {
+   "difference_bps": 0.4897119277323877,
+   "loss_a_bps": 0.9174999999999796,
+   "loss_b_bps": 0.42778807226759186,
+   "scored_date": "2026-01-16"
+  },
+  {
+   "difference_bps": -0.24701920451823867,
+   "loss_a_bps": 1.1675000000000102,
+   "loss_b_bps": 1.4145192045182489,
+   "scored_date": "2026-01-20"
+  },
+  {
+   "difference_bps": -0.4713802177846942,
+   "loss_a_bps": 1.1675000000000102,
+   "loss_b_bps": 1.6388802177847044,
+   "scored_date": "2026-01-21"
+  },
+  {
+   "difference_bps": -0.5243313522487573,
+   "loss_a_bps": 0.21749999999999928,
+   "loss_b_bps": 0.7418313522487565,
+   "scored_date": "2026-01-22"
+  },
+  {
+   "difference_bps": 0.8218895047418588,
+   "loss_a_bps": 1.6174999999999957,
+   "loss_b_bps": 0.7956104952581369,
+   "scored_date": "2026-01-23"
+  },
+  {
+   "difference_bps": 0.9145011946038923,
+   "loss_a_bps": 1.6174999999999957,
+   "loss_b_bps": 0.7029988053961034,
+   "scored_date": "2026-01-26"
+  },
+  {
+   "difference_bps": 0.15401987576205478,
+   "loss_a_bps": 0.9175000000000106,
+   "loss_b_bps": 0.7634801242379559,
+   "scored_date": "2026-01-27"
+  },
+  {
+   "difference_bps": -1.097098317570976,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 2.3920983175709822,
+   "scored_date": "2026-01-28"
+  },
+  {
+   "difference_bps": -0.4430175356777477,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 1.0380175356777688,
+   "scored_date": "2026-01-29"
+  },
+  {
+   "difference_bps": 0.8957128423078018,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 1.7992871576922056,
+   "scored_date": "2026-01-30"
+  },
+  {
+   "difference_bps": -0.19466971440288994,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.8896697144028973,
+   "scored_date": "2026-02-02"
+  },
+  {
+   "difference_bps": -0.388124195260208,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.983124195260198,
+   "scored_date": "2026-02-03"
+  },
+  {
+   "difference_bps": 0.2019219735142439,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.4930780264857644,
+   "scored_date": "2026-02-04"
+  },
+  {
+   "difference_bps": 0.6507840086600738,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.0442159913399345,
+   "scored_date": "2026-02-05"
+  },
+  {
+   "difference_bps": -0.7476432914860944,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 1.3426432914860844,
+   "scored_date": "2026-02-06"
+  },
+  {
+   "difference_bps": -0.7671054436946139,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 2.06210544369462,
+   "scored_date": "2026-02-09"
+  },
+  {
+   "difference_bps": 0.22548877598977107,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.3695112240102189,
+   "scored_date": "2026-02-10"
+  },
+  {
+   "difference_bps": 0.7087267468115918,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.5862732531884144,
+   "scored_date": "2026-02-11"
+  },
+  {
+   "difference_bps": 0.04374702391562635,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.30125297608436896,
+   "scored_date": "2026-02-12"
+  },
+  {
+   "difference_bps": 0.13559704368475844,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.4594029563152626,
+   "scored_date": "2026-02-13"
+  },
+  {
+   "difference_bps": 0.9735329873191754,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 3.721467012680834,
+   "scored_date": "2026-02-17"
+  },
+  {
+   "difference_bps": 1.641451909739553,
+   "loss_a_bps": 5.694999999999988,
+   "loss_b_bps": 4.053548090260435,
+   "scored_date": "2026-02-18"
+  },
+  {
+   "difference_bps": -0.20345790765871685,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.898457907658725,
+   "scored_date": "2026-02-19"
+  },
+  {
+   "difference_bps": 2.109233660229835,
+   "loss_a_bps": 5.694999999999988,
+   "loss_b_bps": 3.585766339770153,
+   "scored_date": "2026-02-20"
+  },
+  {
+   "difference_bps": -0.8392819603373216,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 1.4342819603373116,
+   "scored_date": "2026-02-23"
+  },
+  {
+   "difference_bps": 0.18499579025753815,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.41000420974245183,
+   "scored_date": "2026-02-24"
+  },
+  {
+   "difference_bps": 0.14960762356100743,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.44539237643898255,
+   "scored_date": "2026-02-25"
+  },
+  {
+   "difference_bps": -0.18401629405276687,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.5290162940527622,
+   "scored_date": "2026-02-26"
+  },
+  {
+   "difference_bps": -0.02219383167706135,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.6171938316770824,
+   "scored_date": "2026-02-27"
+  },
+  {
+   "difference_bps": 0.11233264826523826,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.582667351734769,
+   "scored_date": "2026-03-02"
+  },
+  {
+   "difference_bps": -0.4817253709549447,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.7767253709549509,
+   "scored_date": "2026-03-03"
+  },
+  {
+   "difference_bps": 0.9606467487478056,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 1.7343532512522017,
+   "scored_date": "2026-03-04"
+  },
+  {
+   "difference_bps": 1.2390345157674292,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 1.4559654842325782,
+   "scored_date": "2026-03-05"
+  },
+  {
+   "difference_bps": 0.061430272952750276,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2335697270472559,
+   "scored_date": "2026-03-06"
+  },
+  {
+   "difference_bps": -0.11008318462241395,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.705083184622435,
+   "scored_date": "2026-03-09"
+  },
+  {
+   "difference_bps": 0.3762993283544356,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.21870067164555443,
+   "scored_date": "2026-03-10"
+  },
+  {
+   "difference_bps": -0.06280600371196376,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.6578060037119537,
+   "scored_date": "2026-03-11"
+  },
+  {
+   "difference_bps": -0.4483525422559729,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 1.0433525422559629,
+   "scored_date": "2026-03-12"
+  },
+  {
+   "difference_bps": 0.1041894991352808,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.4908105008647092,
+   "scored_date": "2026-03-13"
+  },
+  {
+   "difference_bps": -0.3370009420756457,
+   "loss_a_bps": 3.6950000000000305,
+   "loss_b_bps": 4.032000942075676,
+   "scored_date": "2026-03-16"
+  },
+  {
+   "difference_bps": -0.30918381636025405,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.6541838163602494,
+   "scored_date": "2026-03-17"
+  },
+  {
+   "difference_bps": 1.7842773924225996,
+   "loss_a_bps": 6.695000000000012,
+   "loss_b_bps": 4.910722607577412,
+   "scored_date": "2026-03-18"
+  },
+  {
+   "difference_bps": 0.04413847354023526,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 1.950861526459756,
+   "scored_date": "2026-03-19"
+  },
+  {
+   "difference_bps": -0.9282954336250988,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 1.2732954336250941,
+   "scored_date": "2026-03-20"
+  },
+  {
+   "difference_bps": -0.9274294448895137,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 1.272429444889509,
+   "scored_date": "2026-03-23"
+  },
+  {
+   "difference_bps": 0.3567893668380515,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.23821063316193847,
+   "scored_date": "2026-03-24"
+  },
+  {
+   "difference_bps": 0.7830713267288105,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.5119286732711956,
+   "scored_date": "2026-03-25"
+  },
+  {
+   "difference_bps": 0.02214557000615347,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2728544299938527,
+   "scored_date": "2026-03-26"
+  },
+  {
+   "difference_bps": -0.46438761181374644,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 1.0593876118137675,
+   "scored_date": "2026-03-27"
+  },
+  {
+   "difference_bps": -0.052276692244384915,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.347276692244391,
+   "scored_date": "2026-03-30"
+  },
+  {
+   "difference_bps": 0.3855332589334237,
+   "loss_a_bps": 3.6950000000000305,
+   "loss_b_bps": 3.3094667410666068,
+   "scored_date": "2026-03-31"
+  },
+  {
+   "difference_bps": 0.6212259870131009,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.6737740129869052,
+   "scored_date": "2026-04-01"
+  },
+  {
+   "difference_bps": 0.8344414624313865,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.46055853756861964,
+   "scored_date": "2026-04-02"
+  },
+  {
+   "difference_bps": 0.10364814669630168,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.24135185330369363,
+   "scored_date": "2026-04-06"
+  },
+  {
+   "difference_bps": 0.10488101151304985,
+   "loss_a_bps": 2.695000000000008,
+   "loss_b_bps": 2.590118988486958,
+   "scored_date": "2026-04-07"
+  },
+  {
+   "difference_bps": 0.026063820001418492,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 4.668936179998591,
+   "scored_date": "2026-04-08"
+  },
+  {
+   "difference_bps": -0.845559175932729,
+   "loss_a_bps": 3.695000000000031,
+   "loss_b_bps": 4.54055917593276,
+   "scored_date": "2026-04-09"
+  },
+  {
+   "difference_bps": 0.29595844507769153,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.9990415549223146,
+   "scored_date": "2026-04-10"
+  },
+  {
+   "difference_bps": 0.9796499626646962,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 3.715350037335313,
+   "scored_date": "2026-04-13"
+  },
+  {
+   "difference_bps": -0.007689349375664012,
+   "loss_a_bps": 3.6950000000000305,
+   "loss_b_bps": 3.7026893493756945,
+   "scored_date": "2026-04-14"
+  },
+  {
+   "difference_bps": 0.8422933510178776,
+   "loss_a_bps": 7.695000000000034,
+   "loss_b_bps": 6.852706648982156,
+   "scored_date": "2026-04-15"
+  },
+  {
+   "difference_bps": -0.7144246701458141,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 1.309424670145804,
+   "scored_date": "2026-04-16"
+  },
+  {
+   "difference_bps": 3.5859857570006457,
+   "loss_a_bps": 5.695000000000033,
+   "loss_b_bps": 2.1090142429993874,
+   "scored_date": "2026-04-17"
+  },
+  {
+   "difference_bps": 0.5055164724271863,
+   "loss_a_bps": 2.695000000000008,
+   "loss_b_bps": 2.1894835275728215,
+   "scored_date": "2026-04-20"
+  },
+  {
+   "difference_bps": 0.5167447027608177,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.7782552972391884,
+   "scored_date": "2026-04-21"
+  },
+  {
+   "difference_bps": 0.1036677670574968,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.49133223294252426,
+   "scored_date": "2026-04-22"
+  },
+  {
+   "difference_bps": 0.05580240321502994,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2391975967849762,
+   "scored_date": "2026-04-23"
+  },
+  {
+   "difference_bps": 0.07192436494380194,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2230756350562042,
+   "scored_date": "2026-04-24"
+  },
+  {
+   "difference_bps": -0.3415605541727639,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.9365605541727849,
+   "scored_date": "2026-04-27"
+  },
+  {
+   "difference_bps": 0.3197430711547684,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.9752569288452377,
+   "scored_date": "2026-04-28"
+  },
+  {
+   "difference_bps": -0.7501255850142927,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.745125585014315,
+   "scored_date": "2026-04-29"
+  },
+  {
+   "difference_bps": 0.624546990000949,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.6704530099990571,
+   "scored_date": "2026-04-30"
+  },
+  {
+   "difference_bps": 0.20071530368815121,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.39428469631186985,
+   "scored_date": "2026-05-01"
+  },
+  {
+   "difference_bps": -0.6565082009527039,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.651508200952726,
+   "scored_date": "2026-05-04"
+  },
+  {
+   "difference_bps": -0.6849645922222343,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.9799645922222404,
+   "scored_date": "2026-05-05"
+  },
+  {
+   "difference_bps": -0.7913070040477832,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 2.0863070040477893,
+   "scored_date": "2026-05-06"
+  },
+  {
+   "difference_bps": -0.7586642545416762,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 2.0536642545416823,
+   "scored_date": "2026-05-07"
+  },
+  {
+   "difference_bps": -0.26198505172920017,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.8569850517291902,
+   "scored_date": "2026-05-08"
+  },
+  {
+   "difference_bps": -0.42540251580488864,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.770402515804884,
+   "scored_date": "2026-05-11"
+  },
+  {
+   "difference_bps": -0.16500795710289984,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.5100079571028951,
+   "scored_date": "2026-05-12"
+  },
+  {
+   "difference_bps": -0.5458532731543224,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 1.1408532731543435,
+   "scored_date": "2026-05-13"
+  },
+  {
+   "difference_bps": -0.19194640678348973,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.886946406783497,
+   "scored_date": "2026-05-14"
+  },
+  {
+   "difference_bps": 0.1940628013179171,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.5009371986820903,
+   "scored_date": "2026-05-15"
+  },
+  {
+   "difference_bps": -0.715360969528434,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.7103609695284563,
+   "scored_date": "2026-05-18"
+  },
+  {
+   "difference_bps": -0.275757888133088,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.9707578881330954,
+   "scored_date": "2026-05-19"
+  },
+  {
+   "difference_bps": -0.7408582923394049,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 2.735858292339396,
+   "scored_date": "2026-05-20"
+  },
+  {
+   "difference_bps": -0.867838502836171,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 1.2128385028361663,
+   "scored_date": "2026-05-21"
+  },
+  {
+   "difference_bps": 1.71015406019105,
+   "loss_a_bps": 3.694999999999986,
+   "loss_b_bps": 1.984845939808936,
+   "scored_date": "2026-05-22"
+  },
+  {
+   "difference_bps": 2.800601752128281,
+   "loss_a_bps": 10.695000000000014,
+   "loss_b_bps": 7.894398247871734,
+   "scored_date": "2026-05-26"
+  },
+  {
+   "difference_bps": 1.0387173271329688,
+   "loss_a_bps": 6.695000000000012,
+   "loss_b_bps": 5.656282672867043,
+   "scored_date": "2026-05-27"
+  },
+  {
+   "difference_bps": 0.13108104751445782,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.46391895248553217,
+   "scored_date": "2026-05-28"
+  },
+  {
+   "difference_bps": -0.4207106862728196,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.7657106862728149,
+   "scored_date": "2026-05-29"
+  },
+  {
+   "difference_bps": 0.38951173626541324,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 1.605488263734578,
+   "scored_date": "2026-06-01"
+  },
+  {
+   "difference_bps": -0.0260221074718342,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.3710221074718295,
+   "scored_date": "2026-06-02"
+  },
+  {
+   "difference_bps": 0.41565234827809316,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.279347651721915,
+   "scored_date": "2026-06-03"
+  },
+  {
+   "difference_bps": 0.19383526449454513,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.40116473550544485,
+   "scored_date": "2026-06-04"
+  },
+  {
+   "difference_bps": -0.6093011270983855,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.9043011270983916,
+   "scored_date": "2026-06-05"
+  },
+  {
+   "difference_bps": 0.06538797523357132,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.5296120247664187,
+   "scored_date": "2026-06-08"
+  },
+  {
+   "difference_bps": 0.3336828143325905,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 1.6613171856674007,
+   "scored_date": "2026-06-09"
+  },
+  {
+   "difference_bps": -0.24638449489357095,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.9413844948935792,
+   "scored_date": "2026-06-10"
+  },
+  {
+   "difference_bps": -0.13630165535564154,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.48130165535563685,
+   "scored_date": "2026-06-11"
+  },
+  {
+   "difference_bps": 0.18636680809501183,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 4.508633191904997,
+   "scored_date": "2026-06-12"
+  },
+  {
+   "difference_bps": 0.20126122468676844,
+   "loss_a_bps": 7.69499999999999,
+   "loss_b_bps": 7.493738775313221,
+   "scored_date": "2026-06-15"
+  },
+  {
+   "difference_bps": 0.35403418882123894,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.9409658111787672,
+   "scored_date": "2026-06-16"
+  },
+  {
+   "difference_bps": 2.566409384034659,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 2.1285906159653503,
+   "scored_date": "2026-06-17"
+  },
+  {
+   "difference_bps": 0.04032137895609145,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.5546786210438985,
+   "scored_date": "2026-06-18"
+  },
+  {
+   "difference_bps": -0.15944013011064628,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.4544401301106524,
+   "scored_date": "2026-06-22"
+  },
+  {
+   "difference_bps": 0.021694328968916654,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.32330567103107866,
+   "scored_date": "2026-06-23"
+  },
+  {
+   "difference_bps": -0.4552804416767311,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 1.0502804416767522,
+   "scored_date": "2026-06-24"
+  },
+  {
+   "difference_bps": 0.05261369447051689,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2423863055294893,
+   "scored_date": "2026-06-25"
+  },
+  {
+   "difference_bps": -0.4256711067046406,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.7706711067046359,
+   "scored_date": "2026-06-26"
+  },
+  {
+   "difference_bps": -0.2280115912566254,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.5230115912566315,
+   "scored_date": "2026-06-29"
+  },
+  {
+   "difference_bps": 0.3368382157451908,
+   "loss_a_bps": 4.695000000000009,
+   "loss_b_bps": 4.358161784254818,
+   "scored_date": "2026-06-30"
+  },
+  {
+   "difference_bps": 0.36721948845360464,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.3277805115464028,
+   "scored_date": "2026-07-01"
+  },
+  {
+   "difference_bps": 0.5067661456542489,
+   "loss_a_bps": 2.6950000000000083,
+   "loss_b_bps": 2.1882338543457593,
+   "scored_date": "2026-07-02"
+  },
+  {
+   "difference_bps": -0.333424275644127,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.3284242756441493,
+   "scored_date": "2026-07-06"
+  },
+  {
+   "difference_bps": -0.0846403067059156,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.3796403067059217,
+   "scored_date": "2026-07-07"
+  },
+  {
+   "difference_bps": 0.14722037882147365,
+   "loss_a_bps": 3.694999999999987,
+   "loss_b_bps": 3.5477796211785133,
+   "scored_date": "2026-07-08"
+  },
+  {
+   "difference_bps": 0.08478783328415762,
+   "loss_a_bps": 7.695000000000035,
+   "loss_b_bps": 7.610212166715877,
+   "scored_date": "2026-07-09"
+  },
+  {
+   "difference_bps": -0.35067666346310356,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.345676663463126,
+   "scored_date": "2026-07-10"
+  },
+  {
+   "difference_bps": 1.702350341493616,
+   "loss_a_bps": 5.695000000000033,
+   "loss_b_bps": 3.992649658506417,
+   "scored_date": "2026-07-13"
+  },
+  {
+   "difference_bps": 1.8537987030315835,
+   "loss_a_bps": 6.695000000000012,
+   "loss_b_bps": 4.841201296968428,
+   "scored_date": "2026-07-14"
+  },
+  {
+   "difference_bps": 0.2606559710162326,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.4343440289837748,
+   "scored_date": "2026-07-15"
+  },
+  {
+   "difference_bps": -0.03722448052316529,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.6322244805231553,
+   "scored_date": "2026-07-16"
+  },
+  {
+   "difference_bps": -0.23568991294327768,
+   "loss_a_bps": 3.6950000000000314,
+   "loss_b_bps": 3.930689912943309,
+   "scored_date": "2026-07-17"
+  },
+  {
+   "difference_bps": -0.9879669589320637,
+   "loss_a_bps": 3.6950000000000314,
+   "loss_b_bps": 4.682966958932095,
+   "scored_date": "2026-07-20"
+  },
+  {
+   "difference_bps": -0.05989666608300204,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.3548966660830082,
+   "scored_date": "2026-07-21"
+  },
+  {
+   "difference_bps": 0.8958720291963371,
+   "loss_a_bps": 3.6950000000000305,
+   "loss_b_bps": 2.7991279708036934,
+   "scored_date": "2026-07-22"
+  },
+  {
+   "difference_bps": -0.2480251153267421,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.2430251153267644,
+   "scored_date": "2026-07-23"
+  },
+  {
+   "difference_bps": 0.5351773008685228,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.7598226991314834,
+   "scored_date": "2026-07-24"
+  },
+  {
+   "difference_bps": 0.03819944831505595,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.30680055168493936,
+   "scored_date": "2026-07-27"
+  },
+  {
+   "difference_bps": -0.2602171084693533,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.8552171084693433,
+   "scored_date": "2026-07-28"
+  },
+  {
+   "difference_bps": -0.02065671242386924,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.6156567124238592,
+   "scored_date": "2026-07-29"
+  },
+  {
+   "difference_bps": -0.24304287397765423,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.5880428739776495,
+   "scored_date": "2026-07-30"
+  },
+  {
+   "difference_bps": -0.8892505151802659,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 1.484250515180287,
+   "scored_date": "2026-07-31"
+  },
+  {
+   "difference_bps": -0.2506083000153787,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.595608300015374,
+   "scored_date": "2026-08-03"
+  },
+  {
+   "difference_bps": -0.8128610466111494,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 1.1578610466111448,
+   "scored_date": "2026-08-04"
+  },
+  {
+   "difference_bps": -0.3487008099438059,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.9437008099437959,
+   "scored_date": "2026-08-05"
+  },
+  {
+   "difference_bps": 0.20141048751753776,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.3935895124824833,
+   "scored_date": "2026-08-06"
+  },
+  {
+   "difference_bps": -0.6816917685894821,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.9766917685894883,
+   "scored_date": "2026-08-07"
+  },
+  {
+   "difference_bps": -0.28240681289973635,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.5774068128997425,
+   "scored_date": "2026-08-10"
+  },
+  {
+   "difference_bps": 0.030661009295219976,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.2643389907047862,
+   "scored_date": "2026-08-11"
+  },
+  {
+   "difference_bps": -0.6149552143270756,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 1.2099552143270655,
+   "scored_date": "2026-08-12"
+  },
+  {
+   "difference_bps": -0.10360415354354435,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.3986041535435505,
+   "scored_date": "2026-08-13"
+  },
+  {
+   "difference_bps": -0.30319498998368477,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.6481949899836801,
+   "scored_date": "2026-08-14"
+  },
+  {
+   "difference_bps": 0.09479681840690501,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.6002031815931024,
+   "scored_date": "2026-08-17"
+  },
+  {
+   "difference_bps": 0.037228547416659596,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 1.9577714525833316,
+   "scored_date": "2026-08-18"
+  },
+  {
+   "difference_bps": -0.2733676997359016,
+   "loss_a_bps": 2.695000000000008,
+   "loss_b_bps": 2.9683676997359094,
+   "scored_date": "2026-08-19"
+  },
+  {
+   "difference_bps": 0.31179534048529,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 0.9832046595147161,
+   "scored_date": "2026-08-20"
+  },
+  {
+   "difference_bps": 0.6537748205518097,
+   "loss_a_bps": 1.9949999999999912,
+   "loss_b_bps": 1.3412251794481815,
+   "scored_date": "2026-08-21"
+  },
+  {
+   "difference_bps": 0.25089538335514483,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.0441046166448613,
+   "scored_date": "2026-08-24"
+  },
+  {
+   "difference_bps": -0.2422776113814994,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.8372776113815205,
+   "scored_date": "2026-08-25"
+  },
+  {
+   "difference_bps": -0.2294778610135091,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.8244778610134991,
+   "scored_date": "2026-08-26"
+  },
+  {
+   "difference_bps": 0.2682040306803759,
+   "loss_a_bps": 1.2950000000000061,
+   "loss_b_bps": 1.0267959693196302,
+   "scored_date": "2026-08-27"
+  },
+  {
+   "difference_bps": 0.21465589176577243,
+   "loss_a_bps": 0.59499999999999,
+   "loss_b_bps": 0.38034410823421755,
+   "scored_date": "2026-08-28"
+  },
+  {
+   "difference_bps": -0.1250850460019839,
+   "loss_a_bps": 2.6950000000000074,
+   "loss_b_bps": 2.8200850460019913,
+   "scored_date": "2026-08-31"
+  },
+  {
+   "difference_bps": -0.21740748921072373,
+   "loss_a_bps": 0.5950000000000211,
+   "loss_b_bps": 0.8124074892107448,
+   "scored_date": "2026-09-01"
+  },
+  {
+   "difference_bps": -0.2998675664782047,
+   "loss_a_bps": 1.9950000000000223,
+   "loss_b_bps": 2.294867566478227,
+   "scored_date": "2026-09-02"
+  },
+  {
+   "difference_bps": -0.1602890543571973,
+   "loss_a_bps": 0.3449999999999953,
+   "loss_b_bps": 0.5052890543571926,
+   "scored_date": "2026-09-03"
+  }
+ ]
+}
