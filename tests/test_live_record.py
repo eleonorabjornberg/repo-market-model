@@ -71,7 +71,7 @@ live = _script("live_record")
 score = _script("live_score")
 
 
-def _record(day="2026-10-02"):
+def _record(day="2026-10-02", pinned_sha="0" * 40):
     """A well-formed record, with made-up numbers, for the schema tests."""
 
     targets = []
@@ -96,7 +96,7 @@ def _record(day="2026-10-02"):
         "record_version": live.RECORD_VERSION,
         "decision_day": day,
         "decision_instant": f"{day}T16:00:00-04:00",
-        "code": {"sha": "0" * 40, "pinned_sha": "0" * 40},
+        "code": {"sha": "0" * 40, "pinned_sha": pinned_sha},
         "packages": {"python": "3.11.15", "numpy": "2.4.6", "scikit-learn": "1.9.1"},
         "inputs": {
             "snapshots": [

@@ -121,6 +121,13 @@ def _load():
 
 integrity = _load()
 
+#: A manifest registering the fixtures' `pinned_sha` (#255): the scorer refuses any other.
+FIXTURE_MANIFEST = {
+    "version": 1,
+    "current": "0" * 40,
+    "transitions": [{"id": "t0", "sha": "0" * 40, "record": "docs/decisions/live-pin.md"}],
+}
+
 BOT = {
     "GIT_AUTHOR_NAME": "github-actions[bot]",
     "GIT_AUTHOR_EMAIL": "41898282+github-actions[bot]@users.noreply.github.com",
@@ -149,12 +156,12 @@ def new_log(tmp) -> Path:
     return repo
 
 
-def write_day(repo: Path, day: str, *, chained=True) -> Path:
+def write_day(repo: Path, day: str, *, chained=True, pinned_sha="0" * 40) -> Path:
     """Write a day's record as the pinned code does, then chain it as the workflow does."""
 
     path = repo / "live" / f"{day}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(live.record_bytes(_record(day)))
+    path.write_bytes(live.record_bytes(_record(day, pinned_sha)))
     if chained:
         integrity.add_chain(repo, date.fromisoformat(day))
     return path
@@ -166,12 +173,12 @@ def commit_day(repo: Path, day: str, *, env=None) -> str:
     return git(repo, "rev-parse", "HEAD")
 
 
-def build_log(tmp, days=("2026-10-05", "2026-10-06", "2026-10-07"), unchained=("2026-10-05",)):
+def build_log(tmp, days=("2026-10-05", "2026-10-06", "2026-10-07"), unchained=("2026-10-05",), pinned_sha="0" * 40):
     """A live-log with the first day unchained, as on the real branch, and its digests."""
 
     repo = new_log(tmp)
     for day in days:
-        write_day(repo, day, chained=day not in unchained)
+        write_day(repo, day, chained=day not in unchained, pinned_sha=pinned_sha)
         commit_day(repo, day)
     return repo, digests_of(repo)
 
@@ -499,7 +506,7 @@ class ScorerRefusalTests(unittest.TestCase):
     def test_an_intact_log_is_loaded(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo, comments = build_log(tmp)
-            records = score.load_records(repo, save(comments, tmp))
+            records = score.load_records(repo, save(comments, tmp), FIXTURE_MANIFEST)
             self.assertEqual([r["decision_day"] for r in records], ["2026-10-05", "2026-10-06", "2026-10-07"])
 
     def test_a_tampered_log_is_refused_before_anything_is_scored(self):
@@ -507,13 +514,13 @@ class ScorerRefusalTests(unittest.TestCase):
             repo, comments = build_log(tmp)
             comments = [c for c in comments if not c["body"].startswith("2026-10-06")]
             with self.assertRaises(ValueError):
-                score.load_records(repo, save(comments, tmp))
+                score.load_records(repo, save(comments, tmp), FIXTURE_MANIFEST)
 
     def test_no_digests_no_score(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo, _ = build_log(tmp)
             with self.assertRaises(ValueError):
-                score.load_records(repo, None)
+                score.load_records(repo, None, FIXTURE_MANIFEST)
 
     def test_the_script_refuses_a_tampered_log(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -856,7 +863,7 @@ class WorkflowIntegrityTests(unittest.TestCase):
         self.assertIn("id: integrity", step)
         self.assertIn("if: always()", step)
         self.assertIn("live_integrity.py verify", step)
-        self.assertIn('"Live record: daily digests"', step)
+        self.assertIn("$DIGEST_ISSUE", step)
         failed = self._step("Open or update the failed-runs issue")
         self.assertIn("integrity=${{ steps.integrity.outcome }}", failed)
         self.assertLess(self.text.index("- name: Verify every logged file"),
@@ -890,7 +897,7 @@ class WorkflowIntegrityTests(unittest.TestCase):
     def test_an_anchor_failure_goes_to_the_failed_runs_issue_and_the_digest_carries_the_log_index(self):
         failed = self._step("Report an anchor that failed")
         self.assertIn("steps.anchor.outcome == 'failure'", failed)
-        self.assertIn('"Live record: failed runs"', failed)
+        self.assertIn("$FAILED_RUNS_ISSUE", failed)
         digest = self._step("Post the digest outside the repository")
         self.assertIn("Rekor log index", digest)
         self.assertIn("Rekor entry", digest)
