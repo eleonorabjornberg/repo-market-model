@@ -150,6 +150,8 @@ FINAL_TEST = f"{RUNS}/final_test_near_blind.json"
 SNAPSHOTS = "tests/fixtures/snapshots"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
+#: The use limitation (#261): one statement, read here and by `emit_results.py`.
+USE_LIMITATION = "docs/use-limitation.md"
 PAGE = "site/index.html"
 DATA_DIR = "docs/visual/data"
 
@@ -158,6 +160,7 @@ DATA_DIR = "docs/visual/data"
 INPUTS = (
     "scripts/emit_visual.py",
     "scripts/scarcity_validation.py",
+    USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
     GLOSSARY,
@@ -533,6 +536,16 @@ def newcomer_nav(template):
         f'<li class="live"><b>N{i}</b><span><a href="#{sid}">{title}</a><small>{sub}</small></span></li>'
         for i, (sid, title, sub) in enumerate(NEWCOMER_VIEWS, 1) if f'<section id="{sid}"' in template)
     return f"<ol>{items}</ol>"
+
+
+def use_limitation_fill(repo):
+    """`{{use_limitation}}`: the one blockquote line of `docs/use-limitation.md` (#261)."""
+    text = (Path(repo) / USE_LIMITATION).read_text(encoding="utf-8")
+    found = [line[2:].strip() for line in text.splitlines() if line.startswith("> ")]
+    if len(found) != 1 or not found[0]:
+        raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line, the statement; "
+                          f"found {len(found)}")
+    return {"use_limitation": html.escape(found[0], quote=False)}
 
 
 def fill(template, fills):
@@ -2724,6 +2737,7 @@ def generate(repo, commit=None):
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
     hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
+    fills.update(use_limitation_fill(repo))
     fills.update(n1_fills)
     fills.update(n2_fills)
     fills.update(n3_fills)
