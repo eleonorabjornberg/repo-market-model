@@ -390,10 +390,10 @@ class GapRecordTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gap.write_gap_record(Path(tmp), record, score.validate_gap_record)
 
-    def test_the_cutoff_is_the_decision_instant(self):
-        self.assertEqual(gap.decision_cutoff(date(2026, 9, 3)).isoformat(),
+    def test_the_decision_instant_is_16_00_new_york_time(self):
+        self.assertEqual(gap.decision_instant(date(2026, 9, 3)).isoformat(),
                          "2026-09-03T20:00:00+00:00")
-        self.assertEqual(gap.decision_cutoff(date(2026, 11, 2)).isoformat(),
+        self.assertEqual(gap.decision_instant(date(2026, 11, 2)).isoformat(),
                          "2026-11-02T21:00:00+00:00")
 
 

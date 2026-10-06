@@ -7,14 +7,20 @@ record and seen by no model choice, and the live record never backfills. They
 are scored once, on the first scoring date (2027-04-01), alongside the live
 record's first scoring, reported only (`scripts/live_score.py`, `score_gap`).
 
-This script makes their forecasts. For each decision day whose forecast
-reaches a gap day (`live_score.gap_decision_days`), it builds the panel as of
-that day's 16:00 ET decision instant (`decision_cutoff`) from inputs fetched at
-scoring time (the latest vintage), and runs the declared models, baselines and
-distributions exactly as the day's live run would have (`forecast_day`), with
-the code the live record is pinned to: every step that touches a model runs in
-a subprocess on a worktree at `live_record.py pin`, as the live-log workflow
-does. Each forecast is written once, with its inputs' digests, to
+This script makes their forecasts. It fetches the inputs once, at scoring time
+(the latest vintage), and builds one panel from them. For each decision day
+whose forecast reaches a gap day (`live_score.gap_decision_days`), it keeps the
+rows dated before that day and runs the declared models, baselines and
+distributions exactly as the day's live run does after its build
+(`forecast_day`). What each forecast may read is the as-of rule's
+(`docs/decisions/information-set.md`): every read is priced at the day's 16:00
+ET decision instant, field by field, and a read off a placeholder row is
+refused (`require_reads_on_real_rows`), as in the live run and the final test.
+The panel is not cut at each decision instant: a latest-vintage source (FRED's
+IORB, reserves and TGA) is available only from its snapshot's retrieval, so a
+build cut before the fetch has no IORB at all. Every step that touches a model
+runs in a subprocess on a worktree at `live_record.py pin`, as the live-log
+workflow does. Each forecast is written once, with its inputs' digests, to
 `OUT/gap/YYYY-MM-DD.json`, never into the live log (`require_outside_live_log`).
 
     git -C MAIN worktree add --detach ../pinned \\
@@ -57,8 +63,8 @@ def _load(path: Path, name: str):
     return module
 
 
-def decision_cutoff(day: date, decision: time = time(16)) -> datetime:
-    """The build cutoff of `day`'s reconstruction: its decision instant, in UTC."""
+def decision_instant(day: date, decision: time = time(16)) -> datetime:
+    """`day`'s decision instant, in UTC: what each reconstructed forecast is made as of."""
 
     return datetime.combine(day, decision, tzinfo=EASTERN).astimezone(timezone.utc)
 
@@ -117,22 +123,20 @@ def _pinned(root: Path):
     return live
 
 
-def forecast_day(live, raw_root: Path, day: date, work: Path) -> dict:
-    """`day`'s record, as its live run would have made it, with the panel cut at its decision instant.
+def forecast_day(live, raw_root: Path, panel: Path, day: date) -> dict:
+    """`day`'s record, as its live run makes it after the build, from the panel built at scoring time.
 
-    The steps after the fetch in `live_record.run_command`, in its order, with
-    the pinned module `live`. The build cutoff is the decision instant, not the
-    run's clock, so no row published after the decision is in the panel.
-    Returns the record without `code` and `reconstruction`, which the caller adds.
+    The steps after the build in `live_record.run_command`, in its order, with
+    the pinned module `live`: the rows dated before `day`, extended through
+    each horizon's target day, and every model, baseline and distribution run
+    through the target. Returns the record without `code` and
+    `reconstruction`, which the caller adds.
     """
 
     started = datetime.now(timezone.utc)
     durations = {}
-    work.mkdir(parents=True, exist_ok=True)
     tick = clock.monotonic()
-    cutoff = decision_cutoff(day, live.DECISION)
-    panel = work / "panel.csv"
-    live.build(raw_root, panel, cutoff)
+    manifest = json.loads(Path(f"{panel}.manifest.json").read_text(encoding="utf-8"))
     rows = live.load_daily_panel(panel)
     live.audit_panel(rows)
     real = [row for row in rows if row.date < day]
@@ -214,7 +218,8 @@ def forecast_day(live, raw_root: Path, day: date, work: Path) -> dict:
         "packages": live._packages(),
         "inputs": {
             "snapshots": live.snapshots(raw_root),
-            "build_cutoff": cutoff.isoformat(),
+            "build_cutoff": manifest["build_cutoff"],
+            "decision_instant_utc": decision_instant(day, live.DECISION).isoformat(),
             "panel_sha256": live._sha256(panel),
             "panel_last_date": real[-1].date.isoformat(),
             "registry_sha256": live._sha256(live.REGISTRY),
@@ -239,9 +244,15 @@ def fetch_command(args) -> int:
     return 0
 
 
+def build_command(args) -> int:
+    live = _pinned(args.pinned_root)
+    live.build(Path(args.raw_root), Path(args.panel), datetime.fromisoformat(args.cutoff))
+    return 0
+
+
 def forecast_command(args) -> int:
     live = _pinned(args.pinned_root)
-    record = forecast_day(live, Path(args.raw_root), date.fromisoformat(args.day), Path(args.work_dir))
+    record = forecast_day(live, Path(args.raw_root), Path(args.panel), date.fromisoformat(args.day))
     Path(args.output).write_text(json.dumps(record, sort_keys=True) + "\n", encoding="utf-8")
     return 0
 
@@ -298,21 +309,26 @@ def reconstruct_command(args) -> int:
     days = score.gap_decision_days(score.first_live_targets(first))
 
     work = Path(args.work_dir)
+    work.mkdir(parents=True, exist_ok=True)
     raw_root = Path(args.raw_root) if args.raw_root else work / "raw"
     if not args.raw_root:
         _under_pin(pinned_root, "fetch", "--pinned-root", str(pinned_root.resolve()),
                    "--raw-root", str(raw_root.resolve()), "--date", day.isoformat())
     stamp = fetched_at(raw_root, day)
+    panel = (work / "panel.csv").resolve()
+    if not panel.exists():
+        cutoff = datetime.now(timezone.utc).replace(microsecond=0)
+        _under_pin(pinned_root, "build", "--pinned-root", str(pinned_root.resolve()),
+                   "--raw-root", str(raw_root.resolve()), "--panel", str(panel),
+                   "--cutoff", cutoff.isoformat())
     written = []
     for decision_day, horizons in days.items():
         if (out_dir / "gap" / f"{decision_day.isoformat()}.json").exists():
             continue
-        day_work = (work / decision_day.isoformat()).resolve()
-        day_work.mkdir(parents=True, exist_ok=True)
-        output = day_work / "record.json"
+        output = (work / f"{decision_day.isoformat()}.json").resolve()
         _under_pin(pinned_root, "forecast", "--pinned-root", str(pinned_root.resolve()),
-                   "--raw-root", str(raw_root.resolve()), "--day", decision_day.isoformat(),
-                   "--work-dir", str(day_work), "--output", str(output))
+                   "--raw-root", str(raw_root.resolve()), "--panel", str(panel),
+                   "--day", decision_day.isoformat(), "--output", str(output))
         record = json.loads(output.read_text(encoding="utf-8"))
         record["code"] = {"sha": pin, "pinned_sha": pin}
         record["reconstruction"] = {
@@ -343,11 +359,17 @@ def main(argv=None) -> int:
     fetch.add_argument("--raw-root", required=True)
     fetch.add_argument("--date", required=True)
     fetch.set_defaults(func=fetch_command)
+    build = sub.add_parser("build", help="internal: the panel, under the pinned tree")
+    build.add_argument("--pinned-root", required=True)
+    build.add_argument("--raw-root", required=True)
+    build.add_argument("--panel", required=True)
+    build.add_argument("--cutoff", required=True)
+    build.set_defaults(func=build_command)
     forecast = sub.add_parser("forecast", help="internal: one day's forecast, under the pinned tree")
     forecast.add_argument("--pinned-root", required=True)
     forecast.add_argument("--raw-root", required=True)
+    forecast.add_argument("--panel", required=True)
     forecast.add_argument("--day", required=True)
-    forecast.add_argument("--work-dir", required=True)
     forecast.add_argument("--output", required=True)
     forecast.set_defaults(func=forecast_command)
     args = parser.parse_args(argv)
