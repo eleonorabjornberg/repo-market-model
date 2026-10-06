@@ -88,6 +88,13 @@ SIGN = "paired = Brier(baseline) - Brier(model) per day; a positive mean favours
 #: as-of persistence's quantiles are the same at every horizon.
 NOT_EVIDENCE = ("different model from h = 1, and as-of persistence does not widen with "
                 "horizon, so this comparison favours the model; not evidence.")
+#: What the h = 2 to 5 distribution is (#267, second review finding 8): the one-step
+#: gbm's quantiles served stale, so q25/q50/q75 are identical at h = 2 to 5 and only
+#: the PID outer pair (q05/q95) differs. Stated beside the verdict label, not in it:
+#: the label is Eleonora's wording, verbatim.
+INTERIOR_DESIGN = ("at h = 2 to 5 the published q25, q50 and q75 are the one-step gbm served "
+                   "stale, identical across h = 2 to 5; only the conformal PID outer pair "
+                   "(q05, q95) differs by horizon.")
 CRPS_SIGN = ("paired = CRPS(persistence) - CRPS(published) per day; a positive mean favours "
              "the published distribution")
 #: The blind gap (#235). The first logged day: its targets bound the gap.
@@ -222,6 +229,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
                 "sign_convention": CRPS_SIGN}
         if not primary:
             cell["verdict_label"] = NOT_EVIDENCE
+            cell["design"] = INTERIOR_DESIGN
         if not days:
             cell["result" if primary else "note"] = "inconclusive" if primary else "no scored day"
             out[f"crps/h{h}"] = cell
@@ -261,8 +269,10 @@ def score_crps(records, rows, splits, day: date) -> dict:
                                             block_length=block, seed=_seed_from((str(day), "crps", str(h), key)))
                     if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
                 )
-        cell["verdict"] = crps_verdict(cell)
         if primary:
+            # A reported-only cell (h = 2 to 5) carries no verdict: it cannot pass or fail, and
+            # its label says it is not evidence (#267, second review finding 19).
+            cell["verdict"] = crps_verdict(cell)
             cell["result"] = crps_result(cell["verdict"])
         out[f"crps/h{h}"] = cell
     return out
