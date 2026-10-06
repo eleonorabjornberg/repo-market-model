@@ -23,8 +23,9 @@ jobs:
   suite:
     name: unit tests (3.11)
     runs-on: ubuntu-latest
-    # The suite takes about 20 minutes; a hung run is stopped well after that.
-    timeout-minutes: 60
+    # The suite runs twice here (once with networking off, #262), about 20
+    # minutes each; a hung run is stopped well after that.
+    timeout-minutes: 90
     # 3.11 only, the one declared interpreter (requires-python, #53). 3.9 and
     # 3.10 left the matrix on the human's ruling of 30 Sep (#29): every
     # environment that runs this project is the rmm cloud environment, on 3.11.
