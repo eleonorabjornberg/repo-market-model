@@ -617,9 +617,18 @@ class QuarterEndDeclarationTests(unittest.TestCase):
         self.assertIsNone(v2.select_quarter_end({}, lambda n, leader: includes)["recommended"])
 
     def test_the_choice_refuses_the_outer_block(self):
+        """The quarter-end choice reads the inner block only (`ValueError`).
+
+        Mutation record. Disposable copy of the tree, CPython 3.11, `PYTHONDONTWRITEBYTECODE=1`, this class run
+        alone, control green. In `quarter_end_choice`, the inner-block test
+        `any(not _in(d["date"], INNER) ...)` was replaced by `False`, and `diff` confirmed it. This test then
+        failed with `AssertionError: "inner block only" does not match "fmean requires at least one data point"`
+        (a `StatisticsError` from the scoring that went ahead, not the guard's message). Restored, green.
+        """
+
         outer = [{"date": "2023-01-03", "anchor": "2022-12-30", "y": 1.0, "pid": [0.0] * 5, "kind": "ordinary",
-                  "type": "ordinary"}]
-        with self.assertRaises(ValueError):
+                  "type": "ordinary", "v2": [0.0] * 5}]
+        with self.assertRaisesRegex(ValueError, "inner block only"):
             v2.quarter_end_choice({"base": outer}, [], {}, [], None)
 
     def test_a_cell_under_the_minimum_gets_no_interval(self):
