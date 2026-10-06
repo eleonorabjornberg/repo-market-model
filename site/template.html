@@ -241,6 +241,7 @@ table.fttab caption{text-align:left;font-weight:600;color:var(--ink);padding:0 0
 table.fttab th,table.fttab td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--rule);background:none;color:var(--ink-2);border-radius:0;min-width:0;white-space:normal}
 table.fttab th[scope=row]{color:var(--ink);font-weight:600;white-space:nowrap}
 table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.uselimit{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink);border-left:3px solid var(--ink-2);padding:2px 0 2px 12px;margin:14px 0;max-width:80ch}
 .ftlinks{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:18px 0 0;max-width:80ch}
 .ftlinks code{font-size:.78rem;word-break:break-all}
 </style>
@@ -252,6 +253,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <div class="prose intro">
     <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
   </div>
+  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
@@ -457,6 +459,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <p class="kicker">The result</p>
   <h2 id="final-test-title">The final test</h2>
   <p class="prose lede">{{ft_verdict}}</p>
+  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
   {{ft_claim}}
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
