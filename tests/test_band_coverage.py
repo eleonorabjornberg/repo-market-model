@@ -28,8 +28,9 @@ Mutation record (disposable copy, `-B`, control green before and after):
    refusal of a day after the h = 1 record's last scored day. Kills
    `LaterHorizonTests.test_a_day_after_the_window_is_refused` with `AssertionError`
    (`BandError not raised`).
-6. `scripts/band_coverage.py`, `check_against_diagnosis`: `abs(share(days, nominal) - pooled[key]) > 1e-9`
-   -> `> 1e9`, so a walk that does not reproduce the diagnosis passes. Kills
+6. `scripts/band_coverage.py`, `check_against_diagnosis`, in `require`:
+   `if not opened - 1e-9 <= value <= closed + 1e-9:` -> `if False:`, so a walk that does not
+   reproduce the diagnosis passes. Kills
    `LaterHorizonTests.test_a_horizon_that_does_not_reproduce_the_diagnosis_is_refused` with
    `AssertionError` (`BandError not raised`).
 """
@@ -202,8 +203,12 @@ class LaterHorizonTests(unittest.TestCase):
             cell = entry["table"][0]
             with self.subTest(horizon=entry["horizon"]):
                 self.assertEqual(cell["days"], pooled["days"])
-                self.assertAlmostEqual(100.0 * cell["bands"][0.5]["coverage"], pooled["band_50_closed"], places=9)
-                self.assertAlmostEqual(100.0 * cell["bands"][0.9]["coverage"], pooled["band_90_closed"], places=9)
+                # The diagnosis counts an outcome within 1e-9 bp of an edge as on it; here it is
+                # on it only if exactly there. So the exact share lies between its open and closed.
+                for nominal, key in ((0.5, "band_50"), (0.9, "band_90")):
+                    value = 100.0 * cell["bands"][nominal]["coverage"]
+                    self.assertGreaterEqual(value, pooled[key + "_open"] - 1e-9)
+                    self.assertLessEqual(value, pooled[key + "_closed"] + 1e-9)
 
     def test_a_day_after_the_window_is_refused(self):
         rows = band.build_panel_rows()

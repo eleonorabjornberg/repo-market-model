@@ -268,30 +268,39 @@ def _pct(value):
 
 
 def check_against_diagnosis(horizon, days, diagnosis):
-    """A horizon's pooled and per-regime shares against `v1_interior_diagnosis.json`'s, exactly.
+    """A horizon's pooled and per-regime shares against `v1_interior_diagnosis.json`'s.
 
-    The diagnosis walked the same distribution separately (`scripts/interior_diagnosis.py walk`),
-    so agreement on the day count and the closed 50% and 90% shares is the reproduction check.
-    Raises `BandError` otherwise.
+    The diagnosis walked the same distribution separately (`scripts/interior_diagnosis.py walk`).
+    It counts an outcome within `TIE_BPS` (1e-9 bp) of a band edge as on the edge, while this table
+    counts an outcome on the edge only when it is exactly there, as the h = 1 record does. So the
+    exact share must lie between the diagnosis's open share (an edge outcome outside) and its
+    closed share (inside), and the day counts must be equal. Raises `BandError` otherwise.
     """
 
     block = diagnosis["q1_calibration"]["h%d_2018_2025" % horizon]
-    pooled = block["issued"]
 
     def share(subset, nominal):
         return 100.0 * sum(day["hits"][nominal] for day in subset) / len(subset)
 
+    def require(subset, nominal, opened, closed, where):
+        value = share(subset, nominal)
+        if not opened - 1e-9 <= value <= closed + 1e-9:
+            raise BandError("h = %d, %s: the %d%% band's share is %.6f, outside the diagnosis's "
+                            "%.6f to %.6f" % (horizon, where, round(100 * nominal), value, opened, closed))
+
+    pooled = block["issued"]
     if len(days) != pooled["days"]:
         raise BandError("h = %d: %d days, the diagnosis has %d" % (horizon, len(days), pooled["days"]))
-    for nominal, key in ((0.5, "band_50_closed"), (0.9, "band_90_closed")):
-        if abs(share(days, nominal) - pooled[key]) > 1e-9:
-            raise BandError("h = %d: the %d%% band's share is %.6f, the diagnosis has %.6f"
-                            % (horizon, round(100 * nominal), share(days, nominal), pooled[key]))
+    require(days, 0.5, pooled["band_50_open"], pooled["band_50_closed"], "pooled")
+    require(days, 0.9, pooled["band_90_open"], pooled["band_90_closed"], "pooled")
     for name, entry in block["splits"]["by_regime"].items():
         subset = [day for day in days if day["regime"] == name]
-        if len(subset) != entry.get("days", 0) or (
-                subset and abs(share(subset, 0.5) - entry["band_50_closed"]) > 1e-9):
-            raise BandError("h = %d, regime %s: does not reproduce the diagnosis" % (horizon, name))
+        if len(subset) != entry.get("days", 0):
+            raise BandError("h = %d, regime %s: %d days, the diagnosis has %s"
+                            % (horizon, name, len(subset), entry.get("days", 0)))
+        if subset:
+            closed = entry["band_50_closed"]
+            require(subset, 0.5, 2.0 * entry["band_50_half_edge"] - closed, closed, "regime " + name)
 
 
 def cell_label(cell):
@@ -379,7 +388,8 @@ def render(record, table, later, days):
         "bootstrap on the whole series (block length %d, seed %d, %d replications, the h = 1 "
         "record's, for every horizon) averaging the resampled days of the group; the pooled h = 1 "
         "90%% interval reproduces the record's own, and each later horizon's pooled shares "
-        "reproduce `docs/runs/%s`' exactly. A cell with fewer than %d days is marked **too few "
+        "agree with `docs/runs/%s`', which walked the same distribution separately and counts an "
+        "outcome within 1e-9 bp of an edge as on it. A cell with fewer than %d days is marked **too few "
         "days** (the project's minimum of %d, `onset.MINIMUM_EVENTS`, counted in days) and is "
         "never flagged. Day-type groups overlap, because a day can carry several tags; a day with "
         "none is `other`."
