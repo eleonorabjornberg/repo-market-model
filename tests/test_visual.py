@@ -2311,7 +2311,12 @@ class FinalTestSectionTests(unittest.TestCase):
             emit_visual.final_test(records, self.locked)
 
     def test_the_claim_is_the_preregistered_one(self):
-        self.assertIn(self.record["primary"]["claim"], self.text)
+        # The page names what is scored (#259): the pre-registered sentence, with "the full
+        # distribution of" rendered as "the five published quantiles of". The record keeps its wording.
+        claim = self.record["primary"]["claim"].replace(
+            "the full distribution of", "the five published quantiles of")
+        self.assertIn(claim, self.text)
+        self.assertNotIn("full distribution", self.text)
         self.assertNotRegex(self.text.lower(), r"warns? of stress")
         self.assertNotRegex(self.page.lower(), r"warns of stress")
 
