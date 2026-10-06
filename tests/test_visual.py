@@ -369,7 +369,7 @@ class HeldOutDayTests(unittest.TestCase):
         cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
 
     def history(self, rows, locked):
-        return emit_visual.history(copy.deepcopy(rows), *self.inputs, locked)
+        return emit_visual.history(copy.deepcopy(rows), *self.inputs, locked, lambda iso: False)
 
     def is_locked(self, row, locked):
         return lockbox.locked_tier(emit_visual.date.fromisoformat(row["date"]), locked) is not None
@@ -2311,7 +2311,12 @@ class FinalTestSectionTests(unittest.TestCase):
             emit_visual.final_test(records, self.locked)
 
     def test_the_claim_is_the_preregistered_one(self):
-        self.assertIn(self.record["primary"]["claim"], self.text)
+        # The page names what is scored (#259): the pre-registered sentence, with "the full
+        # distribution of" rendered as "the five published quantiles of". The record keeps its wording.
+        claim = self.record["primary"]["claim"].replace(
+            "the full distribution of", "the five published quantiles of")
+        self.assertIn(claim, self.text)
+        self.assertNotIn("full distribution", self.text)
         self.assertNotRegex(self.text.lower(), r"warns? of stress")
         self.assertNotRegex(self.page.lower(), r"warns of stress")
 
@@ -2336,6 +2341,102 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertTrue(thin)
         self.assertEqual(self.block.count("too few days for an interval"), len(thin))
         self.assertIn("decides nothing", self.text)
+
+    def _robustness(self, **over):
+        """`final_test_robustness` on a small invented set of numbers, each overridable."""
+        args = dict(mean=0.17, drops={0: 0.17, 1: 0.11, 5: 0.03, 10: -0.04}, wins=87, n=169, minimum=20,
+                    groups=[{"key": "ordinary", "label": "Ordinary", "count": 147, "mean": 0.15,
+                             "lower": -0.01, "upper": 0.36}])
+        args.update(over)
+        return emit_visual.final_test_robustness(**args)
+
+    def test_the_robustness_sentences_follow_the_record(self):
+        """#313: the lead sentences carry the record's figures, and the chart data are the record's."""
+        got = self.data["robustness"]
+        influence = self.data["influence"]
+        text = visible_text(self.fills["ft_robust_sentences"])
+        self.assertIn(f"{emit_visual.signed(influence['mean'], 2)} bp to {emit_visual.signed(influence['drop'][5], 2)} bp", text)
+        self.assertIn(f"{influence['wins']} of {influence['n']} days", text)
+        self.assertEqual([d["mean"] for d in got["drops"]],
+                         [influence["mean"]] + [influence["drop"][k] for k in (1, 5, 10)])
+        self.assertEqual([d["k"] for d in got["drops"]], [0, 1, 5, 10])
+        cell = self.record["primary"]["cell"]
+        by_key = {g["key"]: g for g in got["groups"]}
+        self.assertEqual(by_key["all"]["mean"], cell["mean_difference_bps"])
+        self.assertEqual(by_key["all"]["lower"], cell["interval"]["lower"])
+        for key, source in cell["splits"]["by_day_type"].items():
+            with self.subTest(day_type=key):
+                self.assertEqual(by_key[key]["count"], source["count"])
+                self.assertEqual(by_key[key]["mean"], source["mean"])
+        for key, source in cell["splits"]["by_quarter_end_window"].items():
+            with self.subTest(window=key):
+                self.assertEqual(by_key[key]["count"], source["count"])
+                self.assertEqual(by_key[key]["mean"], source["mean"])
+        self.assertIn(self.fills["ft_robust_sentences"], self.block)
+
+    def test_a_group_under_the_minimum_is_too_few_days_to_say(self):
+        """The rule: under the minimum cell (20 days) the group is never called better or worse, interval or not."""
+        thin = {"key": "t", "label": "Thin", "count": 19, "mean": 1.0, "lower": 0.5, "upper": 1.5}
+        full = dict(thin, key="f", label="Full", count=20)
+        verdict = {g["key"]: g["verdict"] for g in self._robustness(groups=[thin, full])["groups"]}
+        self.assertEqual(verdict, {"t": "thin", "f": "better"})
+        self.assertEqual(emit_visual.final_test_robustness(**dict(
+            mean=0.17, drops={0: 0.17, 1: 0.1, 5: 0.03, 10: -0.04}, wins=87, n=169, minimum=19,
+            groups=[thin]))["groups"][0]["verdict"], "better")
+        self.assertIn("too few days to say", visible_text(" ".join(self._robustness(groups=[thin])["sentences"])))
+
+    def test_an_interval_through_zero_flips_the_sentence(self):
+        def sentence(lower, upper):
+            group = {"key": "g", "label": "Ordinary", "count": 147, "mean": 0.1, "lower": lower, "upper": upper}
+            return visible_text(" ".join(self._robustness(groups=[group])["sentences"]))
+        self.assertIn("can't be told apart from zero", sentence(-0.01, 0.2))
+        self.assertIn("the model was better on ordinary", sentence(0.01, 0.2))
+        self.assertIn("worse on ordinary", sentence(-0.2, -0.01))
+        self.assertNotIn("can't be told apart", sentence(0.01, 0.2))
+
+    def test_the_concentration_rule_flips_at_half_the_edge(self):
+        def sentence(drop5, drop10):
+            got = self._robustness(drops={0: 0.2, 1: 0.15, 5: drop5, 10: drop10}, mean=0.2)
+            return visible_text(got["sentences"][0])
+        self.assertIn("rests on a handful of days", sentence(0.09, -0.04))
+        self.assertIn("without the top 10 it reverses, to −0.04 bp", sentence(0.09, -0.04))
+        self.assertIn("without the top 10 it is still +0.02 bp", sentence(0.09, 0.02))
+        self.assertIn("does not depend on a few days", sentence(0.1, 0.05))
+        self.assertNotIn("handful", sentence(0.1, 0.05))
+
+    def test_the_win_share_phrase_flips(self):
+        def sentence(wins):
+            return visible_text(self._robustness(wins=wins, n=100)["sentences"][1])
+        self.assertIn("about half", sentence(45))
+        self.assertIn("about half", sentence(55))
+        self.assertIn("fewer than half", sentence(44))
+        self.assertIn("most of them", sentence(56))
+        self.assertIn("a few large wins", sentence(50))
+        self.assertNotIn("a few large wins", sentence(60))
+
+    def test_a_negative_mean_makes_no_edge_claim(self):
+        got = self._robustness(mean=-0.1, drops={0: -0.1, 1: -0.12, 5: -0.2, 10: -0.3})
+        text = visible_text(" ".join(got["sentences"]))
+        self.assertNotIn("edge", text)
+        self.assertNotIn("handful", text)
+
+    def test_the_numbers_are_kept_in_one_collapsed_details_and_the_label_is_said_once(self):
+        """#313 criteria 3 and 4: the three tables sit in a closed "Show the numbers" details; the label is once."""
+        self.assertEqual(self.block.count("Post hoc; decides nothing"), 1)
+        at = self.block.index("<details class='ftnumbers'>")
+        inner = self.block[at:self.block.index("</details>", self.block.index("The ten days that contribute most")) + 10]
+        self.assertIn("Show the numbers", inner)
+        for caption in ("By type of day", "By quarter-end window", "Influence of single days"):
+            with self.subTest(table=caption):
+                self.assertEqual(self.block.count(f"<caption>{caption}</caption>"), 1)
+                self.assertIn(f"<caption>{caption}</caption>", inner)
+        self.assertNotIn("<details class='ftnumbers' open", self.block)
+
+    def test_the_chart_has_a_text_alternative_and_the_rule_text_is_generated(self):
+        self.assertIn('id="ftrob"', self.block)
+        alt = self.data["robustness"]["alt"]
+        self.assertIn(emit_visual.signed(self.data["mean"], 2), alt)
+        self.assertIn("too few days", alt)
 
     def test_the_section_sits_after_start_here_before_the_chapters(self):
         at = self.page.index('<section id="final-test"')
@@ -2652,3 +2753,135 @@ class OverviewNotebookTests(unittest.TestCase):
         self.assertNotIn(">= 5", self.text)
         self.assertNotIn(">= threshold", self.text)
         self.assertIn("round() > 5", self.text)
+
+
+class AdvisorChaptersTests(unittest.TestCase):
+    """Chapters 1 to 3 carry the advisor's suggestions (A1-A7, B1-B7), each on a checksummed source.
+
+    The new guards are data guards, not leakage or staleness guards. Mutations,
+    each applied to `scripts/emit_visual.py` and run with
+    `PYTHONPATH=src:tests python3 -m unittest test_visual.AdvisorChaptersTests`:
+
+    1. `check_above_standing_repo`: `if not Decimal(row["sofr"]) > rate:` -> `if False:`.
+       `test_a_ceiling_claim_is_refused_when_sofr_was_not_above_it` then failed with
+       `AssertionError: VisualError not raised`.
+    2. `check_fetched`: `if sha256(Path(repo) / path) != meta["sha256"]:` -> `if False:`.
+       `test_a_fetched_source_that_changed_is_refused` then failed with
+       `AssertionError: VisualError not raised`.
+    3. `history`: `if ample_gap >= 0:` -> `if False:`.
+       `test_the_calm_days_sentence_is_refused_when_the_median_is_not_below_iorb` then failed
+       with `AssertionError: VisualError not raised`.
+    """
+
+    notes = json.loads((ROOT / emit_visual.ANNOTATIONS).read_text(encoding="utf-8"))
+    page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+
+    @classmethod
+    def setUpClass(cls):
+        manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            raw, _ = emit_visual.build_panel(ROOT, manifest, tmp)
+        cls.rows = list(csv.DictReader(raw.decode().splitlines()))
+
+    @classmethod
+    def chapters(cls):
+        return cls.page[cls.page.index('<section id="plumbing"'):cls.page.index('<section id="clock"')]
+
+    @classmethod
+    def text(cls):
+        return html.unescape(re.sub(r"<[^>]+>", " ", cls.chapters()))
+
+    def test_every_fetched_source_matches_its_checksum(self):
+        fetched = emit_visual.check_fetched(ROOT, self.notes)
+        self.assertTrue(fetched)
+        self.assertEqual({f["path"] for f in self.notes["fetched"]}, set(fetched))
+
+    def test_a_fetched_source_that_changed_is_refused(self):
+        broken = copy.deepcopy(self.notes)
+        broken["fetched"][0]["sha256"] = "0" * 64
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.check_fetched(ROOT, broken)
+
+    def test_an_event_may_only_read_a_checksummed_source(self):
+        broken = copy.deepcopy(self.notes)
+        next(e for e in broken["events"] if "above_standing_repo" in e)["above_standing_repo"] = \
+            "docs/visual/sources/not-fetched.htm"
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.check_fetched(ROOT, broken)
+
+    def test_the_ceiling_day_is_above_the_rate_in_the_note(self):
+        [(event, sofr, rate)] = emit_visual.check_above_standing_repo(ROOT, self.notes, self.rows)
+        self.assertEqual((event["date"], str(sofr), str(rate)), ("2025-10-31", "4.22", "4.0"))
+
+    def test_a_ceiling_claim_is_refused_when_sofr_was_not_above_it(self):
+        rows = copy.deepcopy(self.rows)
+        next(r for r in rows if r["date"] == "2025-10-31")["sofr"] = "4.00"
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.check_above_standing_repo(ROOT, self.notes, rows)
+
+    def test_the_calm_days_sentence_is_refused_when_the_median_is_not_below_iorb(self):
+        manifest_inputs = [emit_visual.read_json(rel, ROOT) for rel in
+                           (emit_visual.ANNOTATIONS, emit_visual.THRESHOLDS)]
+        manifest_inputs += [emit_visual.read_json(emit_visual.SPLITS, ROOT)["regimes"],
+                            emit_visual.read_json(emit_visual.EVENTS, ROOT)["windows"]]
+        locked = lockbox.locked_tiers(PRE_OPENING_LOCKBOX)
+        rows = copy.deepcopy(self.rows)
+        emit_visual.history(copy.deepcopy(rows), *manifest_inputs, locked, lambda iso: False)
+        for r in rows:
+            if "2021-01-01" <= r["date"] <= "2023-12-31":
+                r["sofr"] = f"{float(r['iorb']) + 0.2:.2f}"
+        with self.assertRaises(emit_visual.VisualError):
+            emit_visual.history(rows, *manifest_inputs, locked, lambda iso: False)
+
+    def test_every_standing_source_is_a_primary_source(self):
+        for entry in self.notes["fetched"]:
+            self.assertTrue(entry["src"].startswith(emit_visual.ALLOWED_SOURCES), entry["src"])
+        for event in self.notes["events"]:
+            for src in event.get("also_src", []):
+                self.assertTrue(src.startswith(emit_visual.ALLOWED_SOURCES), src)
+
+    def test_part_a_is_on_the_page(self):
+        text = self.text()
+        self.assertIn("Reserves are only half of it", text)                       # A1
+        self.assertRegex(text, r"ON RRP was below \$100bn on \d+ days")
+        self.assertIn("Why IORB is the anchor", text)                             # A2
+        self.assertIn("a firm floor, its overnight reverse repo rate, and a soft ceiling", text)  # A3
+        self.assertRegex(text, r"on 31 October 2025 it printed 4\.22%, above the standing repo rate of 4\.00%")
+        self.assertIn("The payment also drains cash from the banking system, and reserves fall", text)  # A4
+        self.assertIn("mostly driven by a few large foreign dealers", text)       # A5
+        for left_out in ("leverage ratio", "snapshot", "strongest"):
+            self.assertNotIn(left_out, text)
+        self.assertIn("overnight repo operations, offering up to $75 billion", text)                   # A6
+        self.assertIn("announced the standing repo facility", text)
+        self.assertIn("from $60 billion to $25 billion", text)
+        self.assertIn("from $25 billion to $5 billion", text)
+        self.assertIn("the corporate tax dates and the business days after each", text)                # A7
+        self.assertNotIn("quarterly tax deadlines", text)
+
+    def test_part_b_is_on_the_page(self):
+        text = self.text()
+        self.assertIn("is the cost of borrowing cash overnight with Treasury securities as collateral", text)  # B1
+        self.assertIn("Bank-to-bank lending is a different rate, the federal funds rate", text)
+        self.assertRegex(text, r"it was set from about \$\d\.\d trillion of trades")                  # B2
+        self.assertRegex(text, r"the median day was \d+ bp below IORB")                                # B3
+        self.assertRegex(text, r"The largest, on 17 September 2019, was \+315 bp")                     # B4
+        self.assertIn("daily overnight repo operations, open to primary dealers", text)                # B5
+        self.assertIn("The use limitation rests on", text)                                             # B6
+        self.assertIn("possible, not certain", text)                                                   # B7
+
+    def test_the_event_numbers_in_the_prose_name_their_events(self):
+        events = self.notes["events"]
+        n = int(re.search(r"\(event (\d+) in chapter 2\)", self.text()).group(1))
+        self.assertEqual(events[n - 1]["date"], "2025-10-31")
+        n = int(re.search(r"\(event (\d+) below\)", self.text()).group(1))
+        self.assertEqual(events[n - 1]["date"], "2019-09-17")
+
+    def test_no_issue_number_is_on_the_page_chapters(self):
+        self.assertIsNone(re.search(r"#\d+", re.sub(r"<[^>]+>", " ", self.chapters())))
+
+    def test_the_limitation_is_not_stated_a_third_time(self):
+        plain = re.search(r"^> (.*)$", (ROOT / emit_visual.USE_LIMITATION).read_text(encoding="utf-8")
+                          .split("\n## Plain-English version\n")[1], re.M).group(1)
+        self.assertEqual(self.page.count(html.escape(plain, quote=False)), 2)
+        self.assertNotIn(html.escape(plain, quote=False), self.chapters())
