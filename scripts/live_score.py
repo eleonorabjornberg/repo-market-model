@@ -31,11 +31,23 @@ was logged:
 * **The lockbox:** logged days are blind-tier days. Until the drafted amendment
   (`docs/decisions/drafts/lockbox-live-record.md`) is merged into
   `docs/decisions/lockbox.md`, this script refuses to run at all.
+* **The blind gap** (Eleonora's ruling of 5 October 2026 on #235, "Option 2",
+  and "keep reported only"): at each horizon, the target days after the panel
+  end (2026-09-03) and before the first target day the live record carries
+  (`live/2026-10-05.json`'s `targets`). They are scored once, on the first
+  scoring date only (`GAP_SCORING_DATE`), in the same run as its live cells,
+  as a separate block (`score_gap`), from forecasts `scripts/live_gap.py`
+  reconstructs at the pinned code. Every gap cell is reported only, carries
+  `GAP_LABEL` verbatim and never reaches the verdict. Scoring a gap day on any
+  other date, or before the amendment heading is in `lockbox.md`, refuses
+  (`require_gap_scoring`, `ValueError`).
 
 Results are published whatever they show, as a new record:
 
     PYTHONPATH=src python3 scripts/live_score.py --date YYYY-MM-DD --live-dir LIVE \\
-        --panel PANEL --output OUT.json [--previous EARLIER.json ...]
+        --panel PANEL --output OUT.json [--gap-dir GAP] [--previous EARLIER.json ...]
+
+`--gap-dir` is required on the first scoring date and refused on every other.
 """
 
 from __future__ import annotations
@@ -43,7 +55,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -78,6 +90,29 @@ NOT_EVIDENCE = ("different model from h = 1, and as-of persistence does not wide
                 "horizon, so this comparison favours the model; not evidence.")
 CRPS_SIGN = ("paired = CRPS(persistence) - CRPS(published) per day; a positive mean favours "
              "the published distribution")
+#: The blind gap (#235). The first logged day: its targets bound the gap.
+FIRST_LIVE_DAY = date(2026, 10, 5)
+#: The gap is scored once, on the first scoring date, and on no other.
+GAP_SCORING_DATE = FIRST_SCORING_DATES[0]
+#: Eleonora's ruling of 5 October 2026 on #235, verbatim: every gap cell carries it.
+GAP_LABEL = ("blind but not live: forecasts reconstructed after the fact by the frozen code "
+             "from inputs fetched at scoring time (latest vintage); reported only, not evidence")
+
+
+def _live():
+    """`scripts/live_record.py`, loaded once."""
+
+    global _LIVE
+    if _LIVE is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_record", REPO / "scripts" / "live_record.py")
+        _LIVE = module_from_spec(spec)
+        spec.loader.exec_module(_LIVE)
+    return _LIVE
+
+
+_LIVE = None
 
 
 def _final_test():
@@ -301,35 +336,192 @@ def score(records, rows, splits, day: date) -> dict:
     return out
 
 
-def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--date", required=True)
-    parser.add_argument("--live-dir", required=True, type=Path)
-    parser.add_argument("--panel", required=True, type=Path, help="the outcome panel")
-    parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--previous", action="append", default=[], type=Path)
-    args = parser.parse_args(argv)
-    day = date.fromisoformat(args.date)
-    require_scoring_date(day)
-    require_amendment(LOCKBOX)
-    if args.output.exists():
-        raise ValueError(f"{args.output} exists: a result is published as a new record")
+# -- the blind gap (#235) ------------------------------------------------------
 
-    from importlib.util import module_from_spec, spec_from_file_location
 
-    spec = spec_from_file_location("live_record", REPO / "scripts" / "live_record.py")
-    live = module_from_spec(spec)
-    spec.loader.exec_module(live)
-    records = []
-    for path in sorted((args.live_dir / "live").glob("*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        live.validate_record(record)
-        if record.get("dry_run"):
-            raise ValueError(f"{path} is a dry run, not a logged day")
-        records.append(record)
-    previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
-    rows = load_daily_panel(args.panel)
-    splits = load_split_declaration(SPLITS)
+def require_gap_scoring(day: date, path: Path = LOCKBOX) -> None:
+    """Refuse to score a gap day except on the first scoring date, with the amendment merged.
+
+    Raises:
+        ValueError: on any date but `GAP_SCORING_DATE`, or while `path` carries
+            no `AMENDMENT_HEADING` (the type `require_amendment` raises).
+    """
+
+    if day != GAP_SCORING_DATE:
+        raise ValueError(
+            f"the blind gap is scored once, on {GAP_SCORING_DATE}, not on {day} (#235)"
+        )
+    require_amendment(path)
+
+
+def first_live_targets(record) -> dict:
+    """The first logged day's target day at each horizon: the gap ends before them."""
+
+    if record.get("decision_day") != FIRST_LIVE_DAY.isoformat():
+        raise ValueError(
+            f"the gap is bounded by the record for {FIRST_LIVE_DAY}, not "
+            f"{record.get('decision_day')}"
+        )
+    return {target["horizon"]: date.fromisoformat(target["target_date"])
+            for target in record["targets"]}
+
+
+def gap_target_days(h: int, first_targets) -> list:
+    """The gap at horizon `h`: decision days after the panel end, before the first live target."""
+
+    live = _live()
+    out, current = [], live.PANEL_END
+    while True:
+        current = live.next_decision_days(current, 1)[0]
+        if current >= first_targets[h]:
+            return out
+        out.append(current)
+
+
+def gap_decision_days(first_targets) -> dict:
+    """Each decision day whose forecast reaches a gap day, with the horizons it reaches one at."""
+
+    live = _live()
+    out = {}
+    for h in HORIZONS:
+        for target in gap_target_days(h, first_targets):
+            day = target
+            for _ in range(h):
+                day = live.previous_decision_day(day)
+            out.setdefault(day, []).append(h)
+    return {day: tuple(horizons) for day, horizons in sorted(out.items())}
+
+
+def validate_gap_record(record) -> None:
+    """A reconstructed gap forecast's schema. Raises `ValueError` naming what is wrong.
+
+    It is a live record's schema plus `reconstruction`, which carries
+    `GAP_LABEL` verbatim, for a decision day before `FIRST_LIVE_DAY`. The extra
+    key is why `live_record.validate_record` refuses it: a gap record is never
+    a live record.
+    """
+
+    live = _live()
+    keys = set(live.RECORD_KEYS) | {"reconstruction"}
+    if not isinstance(record, dict) or set(record) != keys:
+        raise ValueError(f"a gap record holds exactly {sorted(keys)}")
+    block = record["reconstruction"]
+    if not isinstance(block, dict) or block.get("label") != GAP_LABEL:
+        raise ValueError(f"reconstruction.label must be, verbatim: {GAP_LABEL}")
+    if block.get("scoring_date") != GAP_SCORING_DATE.isoformat():
+        raise ValueError(f"reconstruction.scoring_date must be {GAP_SCORING_DATE}")
+    datetime.fromisoformat(block.get("fetched_at") or "")
+    if record["record_version"] != live.RECORD_VERSION:
+        raise ValueError(f"record_version must be {live.RECORD_VERSION}")
+    day = date.fromisoformat(record["decision_day"])
+    if day >= FIRST_LIVE_DAY:
+        raise ValueError(f"{day} is a live-record day, never a gap record's")
+    datetime.fromisoformat(record["decision_instant"])
+    for key in ("sha", "pinned_sha"):
+        if not isinstance(record["code"].get(key), str) or len(record["code"][key]) != 40:
+            raise ValueError(f"code.{key} must be a full commit SHA")
+    inputs = record["inputs"]
+    if not inputs.get("snapshots"):
+        raise ValueError("inputs.snapshots is empty")
+    for key in ("build_cutoff", "panel_sha256", "panel_last_date"):
+        if not inputs.get(key):
+            raise ValueError(f"inputs.{key} is missing")
+    if [target.get("horizon") for target in record["targets"]] != list(HORIZONS):
+        raise ValueError(f"targets must hold horizons {list(HORIZONS)} in order")
+    for target in record["targets"]:
+        if date.fromisoformat(target["target_date"]) <= day:
+            raise ValueError("a target day falls after its decision day")
+        if not isinstance(target.get("anchor_spread_bp"), int):
+            raise ValueError("targets.anchor_spread_bp must be whole basis points")
+    if set(record["models"]) != {model["name"] for model in live.MODELS}:
+        raise ValueError(f"models must hold exactly {[model['name'] for model in live.MODELS]}")
+    for name, model in record["models"].items():
+        live._forecast_block(model.get("forecasts"), live.TARGET_NAMES, f"models.{name}.forecasts")
+    if set(record["baselines"]) != set(live.BASELINE_NAMES):
+        raise ValueError(f"baselines must hold exactly {sorted(live.BASELINE_NAMES)}")
+    for name, targets in live.BASELINE_NAMES.items():
+        live._forecast_block(record["baselines"][name].get("forecasts"), targets,
+                             f"baselines.{name}.forecasts")
+    live._validate_distributions(record["distributions"])
+
+
+def _as_gap_cell(cell) -> dict:
+    """A cell, reported only: no result, `GAP_LABEL` next to any verdict label."""
+
+    cell = dict(cell)
+    # A gap cell cannot pass or fail; one with too little to score says so.
+    if cell.pop("result", None) == "inconclusive":
+        cell["note"] = "inconclusive"
+    cell["role"] = "reported only"
+    cell["gap_label"] = GAP_LABEL
+    return cell
+
+
+def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = LOCKBOX) -> dict:
+    """The blind gap's cells (#235), scored once: every one reported only.
+
+    `records` are the reconstructed gap forecasts (`validate_gap_record`);
+    `first_live` is the first logged day's record, whose targets bound the gap.
+    At each horizon only the records whose target day is in that horizon's gap
+    are scored, with `score_crps` and `score`, the live cells' own functions
+    and bootstrap settings. The reconstructed forecasts are carried in the
+    output with their inputs' digests.
+
+    Raises:
+        ValueError: before anything is read, unless `require_gap_scoring`
+            passes; on a malformed or repeated gap record.
+    """
+
+    require_gap_scoring(day, lockbox)
+    bounds = first_live_targets(first_live)
+    for record in records:
+        validate_gap_record(record)
+    decided = [record["decision_day"] for record in records]
+    if len(decided) != len(set(decided)):
+        raise ValueError("a gap decision day is reconstructed twice")
+    crps, cells, boundaries = {}, {}, {}
+    for h in HORIZONS:
+        days = gap_target_days(h, bounds)
+        in_gap = set(days)
+        chosen = [record for record in records
+                  if date.fromisoformat(record["targets"][h - 1]["target_date"]) in in_gap]
+        reached = {date.fromisoformat(record["targets"][h - 1]["target_date"]) for record in chosen}
+        boundaries[str(h)] = {
+            "first": days[0].isoformat(), "last": days[-1].isoformat(), "days": len(days),
+            "first_live_target": bounds[h].isoformat(),
+            "not_reconstructed": sorted(day.isoformat() for day in in_gap - reached),
+        }
+        crps[f"crps/h{h}"] = _as_gap_cell(score_crps(chosen, rows, splits, day)[f"crps/h{h}"])
+        for name, cell in score(chosen, rows, splits, day)["cells"].items():
+            if name.endswith(f"/h{h}"):
+                cells[name] = _as_gap_cell(cell)
+    return {
+        "directive": "#235",
+        "label": GAP_LABEL,
+        "role": "reported only",
+        "boundaries": boundaries,
+        "crps": crps,
+        "cells": cells,
+        "forecasts": sorted(records, key=lambda record: record["decision_day"]),
+    }
+
+
+def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
+             lockbox: Path = LOCKBOX, require_gap: bool = False) -> dict:
+    """The scoring result: the live cells, the primary result, and the gap block apart.
+
+    The primary result and its status are read off the live cells alone; the
+    gap block (`score_gap`) is added beside them and never read back.
+
+    Raises:
+        ValueError: if `require_gap` and no gap records are given.
+    """
+
+    if require_gap and gap_records is None:
+        raise ValueError(
+            f"{day} scores the blind gap in the same run as its live cells (#235); "
+            f"pass --gap-dir"
+        )
     result = score(records, rows, splits, day)
     result["crps"] = score_crps(records, rows, splits, day)
     headline = result["crps"][f"{HEADLINE['target']}/h{HEADLINE['horizon']}"]
@@ -346,6 +538,52 @@ def main(argv=None) -> int:
             "headline_status": headline_status(day, days=headline["days"], previous=previous),
         }
     )
+    if gap_records is not None:
+        first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
+        if not first:
+            raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
+        result["gap"] = score_gap(gap_records, first[0], rows, splits, day, lockbox=lockbox)
+    return result
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--date", required=True)
+    parser.add_argument("--live-dir", required=True, type=Path)
+    parser.add_argument("--panel", required=True, type=Path, help="the outcome panel")
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--previous", action="append", default=[], type=Path)
+    parser.add_argument("--gap-dir", type=Path, default=None,
+                        help="the reconstructed gap forecasts (scripts/live_gap.py); "
+                             "the first scoring date only")
+    args = parser.parse_args(argv)
+    day = date.fromisoformat(args.date)
+    require_scoring_date(day)
+    require_amendment(LOCKBOX)
+    if args.output.exists():
+        raise ValueError(f"{args.output} exists: a result is published as a new record")
+    if args.gap_dir is not None:
+        require_gap_scoring(day, LOCKBOX)
+    elif day == GAP_SCORING_DATE:
+        raise ValueError(f"{day} scores the blind gap in the same run (#235): pass --gap-dir")
+
+    live = _live()
+    records = []
+    for path in sorted((args.live_dir / "live").glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        live.validate_record(record)
+        if record.get("dry_run"):
+            raise ValueError(f"{path} is a dry run, not a logged day")
+        records.append(record)
+    previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
+    rows = load_daily_panel(args.panel)
+    splits = load_split_declaration(SPLITS)
+    gap_records = None
+    if args.gap_dir is not None:
+        gap_records = [json.loads(path.read_text(encoding="utf-8"))
+                       for path in sorted((args.gap_dir / "gap").glob("*.json"))]
+    result = assemble(records, rows, splits, day, previous=previous, gap_records=gap_records,
+                      require_gap=day == GAP_SCORING_DATE)
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(args.output), "headline_status": result["headline_status"]}))
     return 0
