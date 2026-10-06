@@ -19,7 +19,7 @@ Mutation record (`ObservabilityTests`, the remedy's label guard). Disposable cop
 applied. `test_a_label_after_the_anchor_is_refused` then failed with `AssertionError: LookAheadError not
 raised`. Restored, green.
 
-Mutation record (`LayerTests`, the lockbox). Same copy and setup. In `quarter_end_remedy.require_read_window`,
+Mutation record (`DeclarationTests`, the lockbox). Same copy and setup. In `quarter_end_remedy.require_read_window`,
 `if end > LAST_READ:` was changed to `if False:`, and `diff` confirmed it was applied.
 `test_a_day_after_the_last_read_day_is_refused` (of `DeclarationTests`) then failed with `AssertionError:
 ValueError not raised`. Restored, green.
