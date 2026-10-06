@@ -1715,7 +1715,6 @@ class FittedGradientBoostedQuantiles:
         "garch_parameters",
         "imputations",
         "levels",
-        "max_depth",
         "ml_libraries",
         "random_state",
         "regressors",
@@ -1758,11 +1757,9 @@ class FittedGradientBoostedQuantiles:
         edge_widenings: Tuple[float, float] = (0.0, 0.0),
         calibration_masking: Optional[str] = None,
         training_pairs: Optional[str] = None,
-        max_depth: Optional[int] = None,
     ) -> None:
         self.calibration_masking: Optional[str] = calibration_masking
         self.training_pairs: Optional[str] = training_pairs
-        self.max_depth: Optional[int] = max_depth
         self.edge_widenings: Tuple[float, float] = (
             float(edge_widenings[0]),
             float(edge_widenings[1]),
@@ -1906,8 +1903,6 @@ class FittedGradientBoostedQuantiles:
             settings["tail"] = self.tail
         if self.training_pairs is not None:
             settings["training_pairs"] = self.training_pairs
-        if self.max_depth is not None:
-            settings["max_depth"] = self.max_depth
         if self.calibration_masking is not None:
             settings["calibration_masking"] = self.calibration_masking
         return MappingProxyType(settings)
@@ -2782,18 +2777,11 @@ def _fitted_levels(
     targets: Sequence[float],
     random_state: int,
     min_samples_leaf: int,
-    max_depth: Optional[int] = None,
 ) -> List[Any]:
-    """One estimator per level, fitted on `design` and `targets`, in level order.
-
-    `max_depth` is handed to the estimator only when set, so a fit that does
-    not set it builds exactly the estimators every published gbm record was
-    produced with.
-    """
+    """One estimator per level, fitted on `design` and `targets`, in level order."""
 
     estimators = []
     for level in grid:
-        depth = {} if max_depth is None else {"max_depth": max_depth}
         estimator = estimator_class(
             loss="quantile",
             quantile=level,
@@ -2804,7 +2792,6 @@ def _fitted_levels(
             early_stopping=False,
             random_state=random_state,
             min_samples_leaf=min_samples_leaf,
-            **depth,
         )
         estimator.fit(design, targets)
         estimators.append(estimator)
@@ -2916,7 +2903,6 @@ def fit_gradient_boosted_quantiles(
     tail: Optional[str] = None,
     calibration_masking: Optional[str] = None,
     training_pairs: Optional[str] = None,
-    max_depth: Optional[int] = None,
 ) -> FittedGradientBoostedQuantiles:
     """Fit one gradient-boosted quantile regressor per level and return the model.
 
@@ -3004,12 +2990,6 @@ def fit_gradient_boosted_quantiles(
             gbm record was produced with. `"direct"` pairs each target row
             with its own as-of read, the gap a forecast is served at, and
             needs `information`. See the module docstring.
-        max_depth: the maximum depth of every tree, an int of at least 1, or
-            `None`, the default, which leaves the depth unlimited (31 leaves)
-            and is the model every published gbm record was produced with. It
-            reaches the full fit's estimators and every excluding model's. Pressure model
-            v2's trees (#244, #247's candidate (iv)) are this model with
-            `max_depth=3`.
 
     Returns:
         A `FittedGradientBoostedQuantiles` carrying its fitted estimators, its
@@ -3253,13 +3233,6 @@ def fit_gradient_boosted_quantiles(
             f"pairs by leaving the setting out. A misspelt pairing fitted on "
             f"one-step pairs would publish today's gbm under a declaration "
             f"naming another"
-        )
-    if max_depth is not None and (
-        isinstance(max_depth, bool) or not isinstance(max_depth, int) or max_depth < 1
-    ):
-        raise ValueError(
-            f"max_depth must be an int of at least 1, or None for an unlimited "
-            f"depth, got {max_depth!r}"
         )
     direct = training_pairs == "direct"
     if direct and not isinstance(information, InformationRule):
@@ -3577,7 +3550,7 @@ def fit_gradient_boosted_quantiles(
     versions = _library_versions()
 
     estimators = _fitted_levels(
-        estimator_class, grid, design, targets, random_state, min_samples_leaf, max_depth
+        estimator_class, grid, design, targets, random_state, min_samples_leaf
     )
 
     # The residual sample, about this model's own rearranged median rather than
@@ -3680,7 +3653,6 @@ def fit_gradient_boosted_quantiles(
             block_targets,
             random_state,
             min_samples_leaf,
-            max_depth,
         )
         vectors = (
             _rearranged(block_estimators, [features for features, _, _, _ in held_out])
@@ -3761,8 +3733,60 @@ def fit_gradient_boosted_quantiles(
         edge_widenings=edge_widenings,
         calibration_masking=calibration_masking,
         training_pairs=training_pairs,
-        max_depth=max_depth,
     )
+
+
+#: Pressure model v2's trees (#244): v1's, with a maximum depth of 3. #247's candidate (iv) applied the setting by
+#: replacing the estimator class inside its own script; it is declared here, in the module that fits, and applied by
+#: `fit_depth_limited_quantiles`. The inner block chose it (`scripts/pressure_model_v2.py`, `V2_TREE_SETTINGS`).
+V2_TREE_SETTINGS = MappingProxyType({"max_depth": 3})
+
+
+def fit_depth_limited_quantiles(
+    train_frame: Sequence[DailyObservation],
+    regressors: Sequence[str],
+    cutoff: Optional[date] = None,
+    minimum_history: int = 20,
+    *,
+    max_depth: int,
+    information: Optional[InformationRule] = None,
+    **settings: Any,
+) -> FittedGradientBoostedQuantiles:
+    """`fit_gradient_boosted_quantiles`, with every tree limited to `max_depth` levels.
+
+    The published fitter itself, run with the estimator it builds limited in depth for the length of one fit: the
+    full fit's estimators and every excluding model's carry the setting. Everything else is
+    `fit_gradient_boosted_quantiles`' own: its arguments, its guards and its refusals. **The published fitter's
+    source is not touched** (the final test's CRPS declaration hashes it, and the definitions it reads), so a fit
+    made without this function builds exactly the estimators every published gbm record was produced with, and the
+    estimator class is put back when this fit ends, however it ends.
+
+    Args:
+        max_depth: an int of at least 1, **required**: a depth is a choice, and a default would be a silent one.
+        information: handed to `fit_gradient_boosted_quantiles` (named here so a fold loop sees that this fitter
+            reads the as-of rule, as it does for the published fitter).
+
+    Raises:
+        ValueError: if `max_depth` is not an int of at least 1; `MissingMLExtraError` without the `ml` extra; and
+            whatever `fit_gradient_boosted_quantiles` raises.
+    """
+
+    if isinstance(max_depth, bool) or not isinstance(max_depth, int) or max_depth < 1:
+        raise ValueError(f"max_depth must be an int of at least 1, got {max_depth!r}")
+    published = _estimator_class()
+
+    def limited(**kwargs: Any) -> Any:
+        return published(**kwargs, max_depth=max_depth)
+
+    module = globals()
+    original = module["_estimator_class"]
+    module["_estimator_class"] = lambda: limited
+    try:
+        return fit_gradient_boosted_quantiles(
+            train_frame, regressors, cutoff, minimum_history, information=information, **settings
+        )
+    finally:
+        module["_estimator_class"] = original
 
 
 def gbm_exceedance(

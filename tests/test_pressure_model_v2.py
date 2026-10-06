@@ -582,14 +582,18 @@ class QuarterEndDeclarationTests(unittest.TestCase):
 
     def test_the_trees_depth_is_an_ml_setting_not_a_script_override(self):
         self.assertEqual(v2.V2_TREE_SETTINGS, {"max_depth": 3})
+        self.assertEqual(v2.V2_TREE_SETTINGS, dict(ml.V2_TREE_SETTINGS))
         base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga", "sofr_volume"))
         before = ml._estimator_class
         fit, features = v2.candidate_setup(base, ("tga", "spread_bps", "sofr_volume"), "base")
         self.assertIs(ml._estimator_class, before)
+        self.assertIs(fit.func, ml.fit_depth_limited_quantiles)
         self.assertEqual(fit.keywords["max_depth"], 3)
         self.assertEqual(fit.keywords["regressors"], ("tga", "sofr_volume"))
         self.assertEqual(features, ("tga", "spread_bps", "sofr_volume"))
         self.assertNotIn("training_pairs", fit.keywords)
+        with self.assertRaises(ValueError):  # only the published fitter is limited
+            v2.candidate_setup(functools.partial(ml.fit_depth_limited_quantiles, max_depth=3), (), "base")
 
     def test_a_candidate_adds_exactly_what_it_declares(self):
         base = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=("tga",))

@@ -36,7 +36,7 @@ tracker on the 50% band after (iv)'s levels (`repo_model.interior.OnlineWidth`).
 
 Eleonora's ruling on PR #252 of 6 October 2026 (16:48) then asked for a quarter-end location term. `QE_CANDIDATES`
 and `QE_SELECTION` were declared in one commit before any candidate was walked, with (iv)'s depth-3 trees made a
-setting of the fit in `ml.py` (`ml.fit_gradient_boosted_quantiles(max_depth=3)`, `candidate_setup`). The choice is on
+setting declared in `ml.py` (`ml.V2_TREE_SETTINGS`, applied by `ml.fit_depth_limited_quantiles`, `candidate_setup`). The choice is on
 the inner block only (`choose-quarter-end`), committed as `CHOSEN_QE_FIX` before the outer block is scored a third time.
 
 Six subcommands:
@@ -96,7 +96,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import interior, onset  # noqa: E402
+from repo_model import interior, ml, onset  # noqa: E402
 from repo_model.baseline import panel_sha256, split_document  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -232,10 +232,12 @@ CHOSEN = "iv_regularised_and_tracking"
 #: (iv)'s trees: (ii)'s setting, chosen again on the inner block by #247's rule
 #: (no question 4 variant meets the bar there; max depth 3 has the lowest CRPS).
 #: #247's walk applied it by replacing the estimator class in its own process
-#: (`interior_diagnosis._with_tree_settings`); v2 applies it as a setting of the fit,
-#: `ml.fit_gradient_boosted_quantiles(max_depth=3)`, which names it in the fit's
-#: `model_settings` (`candidate_setup`). The two give the same trees, which `assemble` checks.
-V2_TREE_SETTINGS = {"max_depth": 3}
+#: (`interior_diagnosis._with_tree_settings`); v2 takes it from `ml.V2_TREE_SETTINGS`, where it is
+#: declared, and applies it with `ml.fit_depth_limited_quantiles` (`candidate_setup`). The two give the
+#: same trees, which `assemble` checks.
+#: The published fitter's source, and every definition it reads, is hashed by the final test's CRPS declaration
+#: (#220), so the setting is applied by a new function beside it and no definition the declaration hashes changes.
+V2_TREE_SETTINGS = dict(ml.V2_TREE_SETTINGS)
 V2_TREE_VARIANT = "max_depth_3"
 
 
@@ -603,9 +605,10 @@ def candidate_setup(fit, features, name):
 
     `fit` is the published side's `functools.partial` of
     `ml.fit_gradient_boosted_quantiles`, `features` its declared features. v2's
-    trees are the same fitter with `ml`'s `max_depth` setting (`V2_TREE_SETTINGS`);
-    the candidate adds its calendar columns to both lists, or its training
-    pairs, and nothing else. No estimator class is replaced.
+    trees are the same fitter run through `ml.fit_depth_limited_quantiles` with
+    `ml`'s declared depth (`V2_TREE_SETTINGS`); the candidate adds its calendar
+    columns to both lists, or its training pairs, and nothing else. This script
+    replaces no estimator class.
     """
 
     if name not in QE_CANDIDATES:
@@ -615,12 +618,14 @@ def candidate_setup(fit, features, name):
     clash = sorted(set(extras) & set(features))
     if clash:
         raise ValueError(f"{clash} are already among the published features")
+    if fit.func is not ml.fit_gradient_boosted_quantiles:
+        raise ValueError(f"{fit.func!r} is not the published gbm fitter")
     keywords = dict(fit.keywords)
     keywords["regressors"] = tuple(keywords["regressors"]) + extras
     keywords.update(V2_TREE_SETTINGS)
     if spec["training_pairs"] is not None:
         keywords["training_pairs"] = spec["training_pairs"]
-    return functools.partial(fit.func, *fit.args, **keywords), tuple(features) + extras
+    return functools.partial(ml.fit_depth_limited_quantiles, *fit.args, **keywords), tuple(features) + extras
 
 
 
