@@ -10,7 +10,7 @@
       "number": 2
     }
   ],
-  "commit": "e61b5a3",
+  "commit": "b1be992",
   "figures": {
     "dependencies": 0,
     "event_holdouts": 2,
@@ -49,7 +49,8 @@
     "pressure_model_v1_h2.json",
     "pressure_model_v1_h3.json",
     "pressure_model_v1_h4.json",
-    "pressure_model_v1_h5.json"
+    "pressure_model_v1_h5.json",
+    "v1_interior_diagnosis.json"
   ],
   "total_phases": 8
 }
