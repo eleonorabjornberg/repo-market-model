@@ -28,6 +28,10 @@ and nothing here writes into `docs/runs/`.
    its ON RRP leg as "buffer present" or "buffer gone". It is not an input to
    any model and stays off in every published declaration.
 
+At h = 2 to 5 the published q25, q50 and q75 are the one-step gbm served stale
+(`INTERIOR_LABEL`): bit-identical across h = 2 to 5 on every decision day, with only
+the conformal PID outer pair differing. Every h = 2 to 5 row carries that label.
+
 Wherever the published distribution's 25th-75th percentile band is shown, it
 carries `BAND_25_75_LABEL` (Eleonora's ruling on PR #241, #243): that band is
 not calibrated. The 5-95 band is shown unlabelled except on a quarter-end, year-end
@@ -152,6 +156,13 @@ PERIOD_RULE = (
 )
 #: The label beside the published distribution's 25-75 band (ruling on PR #241, #243).
 BAND_25_75_LABEL = "not yet calibrated (#243)"
+#: What h = 2 to 5 rows are (#267, second review finding 8): the one-step gbm's
+#: quantiles served stale, so q25, q50 and q75 are bit-identical across h = 2 to 5
+#: (2038 of 2038 decision days) and only the conformal PID outer pair differs. At
+#: h = 1 `treasury_settlement` is trained as settlement(p) predicting spread(p+1)
+#: and served as settlement(T) predicting spread(T): a change of meaning, not leakage.
+INTERIOR_LABEL = ("at h = 2 to 5 the q25, q50 and q75 are the one-step gbm served stale, "
+                  "identical across horizons; only the PID outer pair (q05, q95) differs")
 
 #: The published record whose coverage by day type the 5-95 band's label reads (#266).
 INTERIOR_RECORD = REPO / "docs" / "runs" / "v1_interior_diagnosis.json"
@@ -756,6 +767,7 @@ def _markdown(tables: dict, first: str, last: str) -> str:
              f"day of the horizon, mean block h + 1, {BOOTSTRAP_LEVEL:.0%}, "
              f"{BOOTSTRAP_REPLICATIONS} replications. Paired against as-of persistence; "
              "positive CRPS and turn-error differences favour the published distribution. "
+             f"Rows at h = 2 to 5: {INTERIOR_LABEL}. "
              f"A cell of fewer than {MINIMUM_CELL_DAYS} days carries no interval (\"too few "
              "days\"): the final test's minimum count, applied to days until a project-wide "
              "minimum is ruled.", ""]
@@ -878,6 +890,7 @@ def tables_command(args) -> int:
         "mean_bias": mean_bias_label(),
         "period_rule": PERIOD_RULE,
         "published_band_25_75": BAND_25_75_LABEL,
+        "interior_label": INTERIOR_LABEL,
         "scarcity": {"band": list(scarcity.SATIATION_BAND), "on_rrp_buffer_bn": scarcity.ON_RRP_BUFFER_BN},
         "tables": {str(h): table for h, table in tables.items()},
         "examples": _examples(annotated, args.example) if args.example else [],
