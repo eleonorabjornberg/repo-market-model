@@ -412,12 +412,30 @@ DERIVED_FEATURES = MappingProxyType(
 )
 
 #: The ON RRP balance, in USD billions, below which the facility's buffer is
-#: read as depleted (#88). Fixed in advance from the advisor evidence pack, PR
-#: #87, `docs/advisor/evidence-pack/MEMO.md`, Q4: weekly SOFR - IORB at +5 bp
-#: or more was rare with ON RRP above $100bn and frequent below it. It is never
-#: fitted, chosen or tuned on this repository's data; #88's sensitivity runs at
-#: $50bn and $200bn are reported beside it and select nothing.
+#: read as depleted (#88). Fixed in advance of #88's own runs from the advisor
+#: evidence pack, PR #87, `docs/advisor/evidence-pack/MEMO.md`, Q4: weekly SOFR -
+#: IORB at +5 bp or more was rare with ON RRP above $100bn and frequent below it.
+#: The pack read that break off weekly 2018-2026 pressure frequencies, which
+#: overlap the days scored here, so it was not chosen blind to them (the same
+#: statement as `scarcity.ON_RRP_BUFFER_BN`; #270). This repository never fits,
+#: re-chooses or tunes it on its own data; #88's sensitivity runs at $50bn and
+#: $200bn, and #96's re-check, are reported beside it and select nothing.
+#: `ON_RRP_BREAK_PROVENANCE` carries the same facts for the pages that state them.
 ON_RRP_DEPLETION_BREAK_BN = 100.0
+
+#: Where the break came from, for a page that states it (#270, finding 23): read
+#: off weekly 2018-2026 pressure frequencies that overlap the scored days, fixed
+#: before this repository used it, and insensitive to the choice between $25bn
+#: and $200bn on #96's re-check.
+ON_RRP_BREAK_PROVENANCE = MappingProxyType(
+    {
+        "read_off": "weekly 2018-2026 pressure frequencies",
+        "overlaps_scored_days": True,
+        "fixed_before_use": True,
+        "insensitive_between_bn": (25.0, 200.0),
+        "re_check": "#96",
+    }
+)
 
 #: The month-end clause of `settlement_day` (#97): a scored day within this
 #: many calendar days of the month's last day is a settlement day. Fixed in
