@@ -102,7 +102,8 @@ SATIATION_BAND: Tuple[float, float] = (0.12, 0.13)
 #: 13-15% below it, with no break between the <$10bn and $10-100bn bins. Taken
 #: as the directive states it (#115, step 2). Unlike SR 1019's band it was read
 #: off 2018-2026 data that overlaps this validation's, which the pull request
-#: that introduced it reports among what it did not check.
+#: that introduced it reports among what it did not check. `contract.
+#: ON_RRP_DEPLETION_BREAK_BN` makes the same statement of the same $100bn (#270).
 ON_RRP_BUFFER_BN = 100.0
 
 #: The score's names, for tables. The score is ordinal; the names are labels.

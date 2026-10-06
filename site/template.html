@@ -278,6 +278,7 @@ table.fttab.fdtab td{white-space:nowrap}
 <div id="start">
   <p class="kicker">Start here</p>
   <div class="prose"><p>New to this market? These views are for you, in order. Each says what it shows in one sentence, draws it, explains it in plain words, and ends with a fold that leads into the technical chapter below.</p></div>
+  {{opened_note}}
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
 <section id="n1" aria-labelledby="n1-title">
@@ -379,7 +380,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <ul>
       <li>{{n3_window_caption}}</li>
       <li>{{n3_read}} The amount is what the facility accepted that day, summed over its operations, from the New York Fed's operation results (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
-      <li>The {{n3_break}} break is the project's fixed constant, taken from the <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md">advisor evidence pack</a> and not tuned by this project on these days. The pack drew it from the same history, so it was not chosen blind to them: the review of that pack (#96) re-checked it on our definitions, on days before 2026 only. The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
+      <li>{{n3_break_note}} The reserve-scarcity state in the band above counts the same break, but reads it with that week's bank assets, so its reading can be older than this one.</li>
       <li>A day counts when its spread, in whole basis points, is strictly above the line (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{n3_interval}}</li>
     </ul>
     <p>The band:</p>
@@ -411,7 +412,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <div class="n4details">{{n4_details}}</div>
   </figure>
   <figure>
-    <figcaption><div class="t">The three segment rates, each less IORB, on days chosen in advance</div>
+    <figcaption><div class="t">The three segment rates, each less IORB, on days chosen by a rule fixed on 2 October 2026 that reads no rate or spread</div>
       <div class="s">Basis points. {{n4_seg_counts}}, chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. The rule never reads a rate or a spread</div></figcaption>
     <div class="chart" id="n4seg"><div class="tip"></div></div>
     <p class="held-note">{{n4_seg_held}}</p>
@@ -481,17 +482,6 @@ table.fttab.fdtab td{white-space:nowrap}
     <li>{{ft_once}}</li>
     <li>{{ft_benchmark}}</li>
     <li>{{ft_switch}}</li>
-  </ul>
-  <h3 class="sub">What it does not show</h3>
-  <ul class="ftlist">
-    <li>{{ft_rests}}</li>
-    <li>{{ft_why}}</li>
-    <li>{{ft_robust}}</li>
-    <li>{{ft_not_stress}}</li>
-    <li>{{ft_not_blind}}</li>
-    <li>{{ft_calm}}</li>
-    <li>{{ft_later}}
-      <details><summary>The cells two to five days ahead, each with its label</summary>{{ft_later_table}}</details></li>
   </ul>
   <p class="ftlinks">{{ft_links}}</p>
 </section>
@@ -1302,7 +1292,7 @@ function renderN4Seg() {
   const x = d3.scaleLinear([Math.min(0, d3.min(vals)), Math.max(0, d3.max(vals))], [m.l, W - m.r]).nice();
   const yc = i => m.t + i * rowH + rowH / 2;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen in advance, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
+    .attr("aria-label", `Dot chart of ${SEG.series.map(s => s.label).join(", ")}, each less IORB, in basis points, on ${days.length} days chosen by a rule fixed on 2 October 2026 that reads no rate or spread, from ${fmt(days[0].d)} to ${fmt(days.at(-1).d)}. The values are listed in the table under Go deeper.`);
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 8)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d))
     .attr("y1", m.t - 6).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(sgn).tickSizeOuter(0));
