@@ -2020,6 +2020,11 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
         spreads = [d.spread_bps for d in kept if d.state is not None and int(d.state) == state]
         by_state[str(state)] = {"label": STATE_LABELS[state], "n": len(spreads),
                                 "above": {str(t): rate_cell([int(exceeds_bp(s, t)) for s in spreads]) for t in taus}}
+    # The last year's own days by state (#267): the whole-period table pools years in which the
+    # state was mostly abundant, so a year spent in tight or scarce is shown on its own row.
+    last_year = kept[-1].day.year
+    year_n = {str(state): sum(1 for d in kept if d.day.year == last_year and d.state is not None
+                              and int(d.state) == state) for state in states}
     rises = {}
     for t in taus:
         rates = [by_state[str(k)]["above"][str(t)]["rate"] for k in states]
@@ -2030,7 +2035,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
     data = {
         "spans": spans, "buffer_spans": buffer_spans, "labels": {str(k): v for k, v in STATE_LABELS.items()},
         "band": list(SATIATION_BAND), "buffer_bn": ON_RRP_BUFFER_BN, "break_bn": ON_RRP_DEPLETION_BREAK_BN,
-        "by_state": by_state, "rises": rises, "taus": taus, "held_out": spans_held,
+        "by_state": by_state, "last_year": {"year": last_year, "days_by_state": year_n},
+        "rises": rises, "taus": taus, "held_out": spans_held,
         "status": {k: status[k] for k in ("key", "icon", "word")},
         "counted": {"first": kept[0].day.isoformat(), "last": last.isoformat(), "n": len(kept),
                     "unknown": sum(1 for d in kept if d.state is None)},
@@ -2067,6 +2073,8 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
                   f"{pct(by_state[str(k)]['above'][str(t)]['interval'][0])} to "
                   f"{pct(by_state[str(k)]['above'][str(t)]['interval'][1])}</td>" for t in taus)
         + "</tr>" for k in states)
+    body += (f"<tr><th scope='row'>{last_year} only</th><td colspan='{1 + len(taus)}'>days by state, "
+             + " / ".join(f"{k} {year_n[str(k)]}" for k in states) + "</td></tr>")
     low, high = SATIATION_BAND
     brk = f"${ON_RRP_BUFFER_BN:,.0f}bn"
     held = (f" Days from {day(spans_held[0]['start'])} on are {held_as(h['name'] for h in spans_held)}: "

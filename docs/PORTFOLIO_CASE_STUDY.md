@@ -168,7 +168,7 @@ earlier measurement on the old labels ([#134](https://github.com/eleonorabjornbe
 | 5 bp | +0.303 (+0.234 to +0.370) | +0.258 (+0.169 to +0.339) |
 | 10 bp | +0.089 (+0.004 to +0.158) | +0.056 (-0.039 to +0.129) |
 
-**Pressure model v1 by horizon.** The probability read from the published funding declaration's distribution and recalibrated out of fold (`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days and paired day by day with both benchmarks. Each cell is the benchmark's Brier score minus the model's, with its 90% stationary-bootstrap interval; a positive value favours the model.
+**Pressure model v1 by horizon.** The probability read from the published funding declaration's distribution and recalibrated out of fold (`docs/runs/pressure_model_v1_h*.json`), scored at each horizon in business days and paired day by day with both benchmarks. Each cell is the benchmark's Brier score minus the model's, with its 90% stationary-bootstrap interval; a positive value favours the model. At horizons 2 to 5 the published q25, q50 and q75 are the one-step gbm served stale, bit-identical across h = 2 to 5 on every decision day; only the conformal PID outer pair (q05, q95) differs by horizon. At h = 1 `treasury_settlement` is trained as settlement(p) predicting spread(p+1) and served as settlement(T) predicting spread(T): a change of meaning, not leakage.
 
 | Horizon | Scored days | vs calendar-type climatology, 5 bp | vs persistence-logistic, 5 bp | vs calendar-type climatology, 10 bp | vs persistence-logistic, 10 bp |
 |---|---|---|---|---|---|
