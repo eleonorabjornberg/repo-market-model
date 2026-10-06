@@ -503,6 +503,14 @@ FIX_SELECTION = {
 }
 
 
+#: The fix the inner block chose (`choose-fix`, run on 6 October 2026), committed
+#: before the outer block is scored a second time: (iv), then a width tracker on
+#: the 50% band with one class for turn days and one for ordinary days. It has the
+#: lowest inner CRPS of the eligible candidates, its CRPS gain over (iv) has a 90%
+#: interval above 0, and the simpler candidates' intervals against it exclude 0.
+CHOSEN_FIX = "vii_width_turn_vs_ordinary"
+
+
 def _partition_class(partition, kind):
     if partition == "pooled":
         return "all"
