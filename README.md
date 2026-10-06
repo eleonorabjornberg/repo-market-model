@@ -528,7 +528,7 @@ question.
   on the issue it approves. The rule that requires this for opening a lockbox tier, changing
   a pre-registered primary test, approving a model to join the live record and changing the
   live pin was asked for in [#256](https://github.com/eleonorabjornberg/repo-market-model/issues/256)
-  and is drafted in [`docs/decisions/drafts/owner-attestation.md`](docs/decisions/drafts/owner-attestation.md).
+  and is drafted in `docs/decisions/drafts/owner-attestation.md`.
   It is not yet part of `workflow.md`.
 - **A relay that was not her go.** On 3 October a "go for #151" was relayed there by the
   orchestrating session. On 4 October that relay was
