@@ -40,3 +40,20 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
   > different model from h = 1, and as-of persistence does not widen with horizon, so this comparison favours the model; not evidence.
 - **The verdict is fixed once**, at the first scoring date that scores any day of the primary cell (CRPS has no
   minimum event count). Every later scoring date is reported as an update and never replaces it.
+- **The blind gap is scored once, reported only** (Eleonora's ruling of 5 October 2026 on #235, "Option 2", and
+  "keep reported only"). At horizon *h*, the gap is every target day after 2026-09-03 and before the first target
+  day the live record carries at *h* (read from `live/2026-10-05.json`'s `targets`): at h = 1, 2026-09-04 to
+  2026-10-05. No target day is in both the gap and the live record at the same horizon.
+  - The gap's days are opened once, on the first scoring date (2027-04-01) only, for the published model and the
+    live record's baselines. Opening them opens nothing else.
+  - They are scored with the live record's cells, in the same run as that date's live cells, as a separate block
+    (`scripts/live_score.py`, `score_gap`). Every gap cell is **reported only**: it cannot pass or fail, and it
+    never enters or changes the verdict. No later scoring date scores them again.
+  - Their forecasts are reconstructed after the fact, each as of its own 16:00 ET decision instant, by the code
+    the live record is pinned to (`scripts/live_gap.py`). They are never written to `live-log`, and the live
+    record's no-backfill rule is unchanged.
+  - Each gap cell carries this label, verbatim, next to any verdict label:
+
+    > blind but not live: forecasts reconstructed after the fact by the frozen code from inputs fetched at scoring time (latest vintage); reported only, not evidence
+
+  - The CRPS gap cells at h = 2 to 5 also carry the "not evidence" label above (#229).
