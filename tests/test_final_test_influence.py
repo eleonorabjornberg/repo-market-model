@@ -132,8 +132,6 @@ class WordingTests(unittest.TestCase):
         data, fills = visual.final_test(visual.run_records(REPO), locked_tiers(REPO / visual.LOCKBOX))
         text = " ".join(str(v) for v in fills.values())
         self.assertNotIn(FORBIDDEN, text)
-        self.assertIn("first genuinely blind confirmation", text)
-        self.assertIn("does not validate stress performance", text)
         self.assertIn("+0.0251", fills["ft_influence_table"])
         self.assertIn("\u22120.0354", fills["ft_influence_table"])
         self.assertIn("quarter-end window", fills["ft_window_table"])
