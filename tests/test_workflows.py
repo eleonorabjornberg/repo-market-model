@@ -4,19 +4,17 @@ Stdlib only, so no YAML parser: each file is read as indented lines. What is
 held, for **every** file in `.github/workflows/`:
 
 * every `uses:` line names a full 40-hex commit SHA, with the tag in a trailing
-  comment, except the actions in `PENDING_PINS` (below);
+  comment, except the actions in `PENDING_PINS`, which is empty;
 * every job has `timeout-minutes`;
 * `tests.yml` checks out the whole history in each job (the results page and
   `docs/status.json` are stamped from git history, and the commit-stamp test
   skips on a shallow clone) and runs `emit_visual.py --check`.
 
-**Not done: the SHA pins.** `PENDING_PINS` lists the five actions the
-workflows use by tag. Resolving a tag to its commit SHA needs a read of the
-action's own repository (`actions/checkout`, and the others), which the session
-that wrote this had no access to, and a SHA cannot be written from memory. The
-test therefore holds the list exactly: a new unpinned action, or a pin that
-lands without leaving the list, fails here. Replacing a tag with
-`@<40 hex> # <tag>` and deleting its entry is the whole remaining change.
+**The SHA pins** were resolved on 6 October 2026 by the orchestrating session, under
+Eleonora's delegation, with `git ls-remote https://github.com/<action> refs/tags/<tag>
+'refs/tags/<tag>^{}'` (all five are lightweight tags, so the tag's commit is the SHA), and
+read again by the fix run with the same command. `PENDING_PINS` is kept as an empty set: a
+new unpinned action fails here unless it is listed on purpose.
 
 **Recorded mutation**, 6 October 2026: in `tests.yml`, the first
 `timeout-minutes: 60` line deleted. `test_every_job_has_a_timeout` then fails
@@ -33,14 +31,8 @@ from pathlib import Path
 
 WORKFLOWS = sorted((Path(__file__).resolve().parents[1] / ".github" / "workflows").glob("*.yml"))
 
-#: Actions still used by tag. See the module docstring.
-PENDING_PINS = {
-    "actions/checkout@v5",
-    "actions/setup-python@v6",
-    "actions/configure-pages@v5",
-    "actions/upload-pages-artifact@v3",
-    "actions/deploy-pages@v4",
-}
+#: Actions still used by tag. Empty: every action is pinned to its commit SHA.
+PENDING_PINS = set()
 
 USES = re.compile(r"^\s*-?\s*uses:\s*(\S+)(.*)$")
 PINNED = re.compile(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}$")
