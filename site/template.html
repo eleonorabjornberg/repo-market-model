@@ -658,6 +658,13 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <div class="chart" id="reliability"><div class="tip"></div></div>
     <p class="note" id="decomp"></p>
   </figure>
+  <div id="band-coverage" role="group" aria-labelledby="band-coverage-title">
+    <h3 class="sub" id="band-coverage-title">Do the bands hold?</h3>
+    <p class="prose">{{bc_sentence}}</p>
+    {{bc_table}}
+    {{bc_later_table}}
+    <p class="note">{{bc_note}}</p>
+  </div>
   <h3 class="sub">Lead time</h3>
   <p class="pending">{{lead_time_placeholder}}</p>
   <details>
