@@ -7,7 +7,7 @@ carries the plain-English version below instead of the technical statement (#316
 
 ## The statement
 
-> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
+> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated, its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
 
 ## Plain-English version
 

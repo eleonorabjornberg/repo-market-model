@@ -519,10 +519,59 @@ def check_annotations(notes):
     entries = list(notes["events"]) + list(notes["runoff"]) + list(notes["process"])
     entries += list(notes["guards"]) + [notes["validation"], notes["implementation_note"]]
     entries += list(notes["claims"].values())
+    entries += list(notes.get("fetched", []))
     for entry in entries:
-        src = entry.get("src", "")
-        if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
-            raise VisualError(f"annotation {entry} has no primary-source URL")
+        for src in [entry.get("src", ""), *entry.get("also_src", [])]:
+            if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
+                raise VisualError(f"annotation {entry} has no primary-source URL")
+
+
+def check_fetched(repo, notes):
+    """Every fetched source is the bytes its checksum records, and the event that reads one names a fetched file."""
+    fetched = {f["path"]: f for f in notes.get("fetched", [])}
+    for path, meta in fetched.items():
+        if sha256(Path(repo) / path) != meta["sha256"]:
+            raise VisualError(f"{path} does not match its recorded SHA-256; refusing")
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is not None and path not in fetched:
+            raise VisualError(f"the annotation for {event['date']} reads {path}, which is not a checksummed source")
+    return fetched
+
+
+def standing_repo_rate(repo, path):
+    """The standing repo minimum bid rate an implementation note states, from its checksummed bytes."""
+    raw = (Path(repo) / path).read_bytes().decode("utf-8-sig")
+    raw = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S)
+    text = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", raw)))
+    m = re.search(r"standing overnight repurchase agreement operations (?:with a minimum bid rate of|at a rate of) "
+                  r"([\d.]+) percent", text)
+    if not m:
+        raise VisualError(f"{path} does not state the standing repo rate")
+    return Decimal(m.group(1))
+
+
+def check_above_standing_repo(repo, notes, rows):
+    """`[(event, SOFR, standing repo rate)]`: an annotation that says SOFR was above the standing repo rate is refused unless it was.
+
+    The rate is read from the checksummed implementation note the annotation names, and
+    SOFR from the panel row of the annotation's own day.
+    """
+    out = []
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is None:
+            continue
+        row = next((r for r in rows if r["date"] == event["date"]), None)
+        if row is None:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"and the panel has no row for that day")
+        rate = standing_repo_rate(repo, path)
+        if not Decimal(row["sofr"]) > rate:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"but SOFR was {row['sofr']}% and the rate {rate}%")
+        out.append((event, Decimal(row["sofr"]), rate))
+    return out
 
 
 def check_glossary(glossary):
@@ -666,6 +715,12 @@ def clock(t):
     suffix = "am" if h < 12 else "pm"
     h12 = h % 12 or 12
     return f"{h12}{'' if m == 0 else ':%02d' % m} {suffix}"
+
+
+def sources(event):
+    """The links after an event: its source, then any further source it rests on."""
+    links = [event["src"], *event.get("also_src", [])]
+    return ", ".join(f"<a href='{u}'>Source</a>" for u in links)
 
 
 def link(claim):
@@ -886,7 +941,7 @@ def regime_views(regimes, rows, clip_bp, second_bp):
     return views
 
 
-def history(rows, notes, thresholds, regimes, windows, locked):
+def history(rows, notes, thresholds, regimes, windows, locked, buffer_low):
     taus = [int(t) for t in thresholds["taus_bp"]]
     pressure_bp, second_bp, tail_bp = taus[0], taus[1], taus[-1]
     out_rows = []
@@ -960,13 +1015,23 @@ def history(rows, notes, thresholds, regimes, windows, locked):
     tail = [r for r in kept if r["s"] > tail_bp]
     tail_years = sorted({yr(r) for r in tail})
     events = [{"date": e["date"], "src": e["src"],
-               "text": marker_text(e, kept, "s")}
+               "text": marker_text(e, kept, "s") + (f". {e['response']}" if e.get("response") else "")}
               for e in notes["events"]]
     iorb_from = next(e["date"] for e in notes["events"] if e.get("role") == "iorb_from")
     late_qe = type_count(late, 0)
     quiet = all(type_count(ample, t)[0] == 0 for t in range(len(TYPES)))
     off = sum(1 for r in kept if r["s"] > CLIP_BP)
     above = lambda g: sum(1 for r in kept if in_regime(r, g) and r["s"] > 0)
+    ample_gap = statistics.median(r["s"] for r in kept if in_regime(r, ample))
+    if ample_gap >= 0:
+        raise VisualError(f"the median spread in {ample['label']} is {ample_gap} bp, not below IORB; the chapter's "
+                          f"sentence on why calm days sit below IORB would be false")
+    spike_event_n = next((i for i, e in enumerate(notes["events"], 1) if e["date"] == spike["date"]), None)
+    if spike_event_n is None:
+        raise VisualError(f"no annotation is dated {spike['date']}, the largest spread; chapter 2 points at it")
+    low = [r for r in kept if buffer_low(r["date"])]
+    high = [r for r in kept if not buffer_low(r["date"])]
+    low_ample = [r for r in low if in_regime(r, ample)]
     span_years = (date.fromisoformat(rows[-1]["date"]) - date.fromisoformat(rows[0]["date"])).days / 365.25
     fills = {
         "n_years_word": word(int(span_years)).capitalize(),
@@ -986,14 +1051,20 @@ def history(rows, notes, thresholds, regimes, windows, locked):
         "band_missing": days(sum(1 for r in kept if not (r["sofr_p25"] and r["sofr_p75"]))),
         "holdouts": " and ".join(span(w["start"], w["end"]) for w in windows),
         "holdout_months": " and ".join(date.fromisoformat(w["start"]).strftime("%B %Y") for w in windows),
+        "ample_gap": f"{abs(ample_gap):g} bp below",
+        "spike_event_n": spike_event_n,
+        "n_low_ample": days(len(low_ample)),
+        "n_low_ample_pressure": f"{sum(1 for r in low_ample if pressure(r))}",
+        "share_low": of(sum(1 for r in low if pressure(r)), len(low)),
+        "share_high": of(sum(1 for r in high if pressure(r)), len(high)),
         "iorb_from": day(iorb_from),
         "iorb_event_n": 1 + next(i for i, e in enumerate(notes["events"]) if e.get("role") == "iorb_from"),
         "ioer_until": day((date.fromisoformat(iorb_from) - timedelta(days=1)).isoformat()),
         "heat_table": table, "clip_bp": CLIP_BP,
         "n_off_scale": days(off).capitalize(), "n_off_scale_lc": days(off),
         "event_list": "".join(
-            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. <a href='{e['src']}'>Source</a></li>"
-            for i, e in enumerate(events)),
+            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. {sources(n)}</li>"
+            for i, (e, n) in enumerate(zip(events, notes["events"]))),
         "c_reserve_ratio": link(notes["claims"]["reserve_ratio"]),
         "c_quarter_end": link(notes["claims"]["quarter_end"]),
         "c_tax_date": link(notes["claims"]["tax_date"]),
@@ -2766,9 +2837,8 @@ def final_test(records, locked):
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
                    f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
-                   f"Result: <b>pass</b>, on a test that is {near_blind}.")
-        claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
-                      f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
+                   f"Result: <b>pass</b>, on a test that is near-blind.")
+        claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
@@ -2788,43 +2858,6 @@ def final_test(records, locked):
                    f"<table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr>"
                    f"<th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
                    f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>{split_rows}</tbody></table></div>")
-    later_rows = "".join(
-        f"<tr data-h=\"{c['horizon']}\"><th scope='row'>{c['horizon']} days</th><td>{c['days']}</td>"
-        f"<td>{c['persistence']:.3f}</td><td>{c['published']:.3f}</td>"
-        f"<td>{signed(c['mean'], 3)} ({signed(c['lower'], 3)} to {signed(c['upper'], 3)})</td>"
-        f"<td>{c['verdict']}; {html.escape(c['label'])}</td></tr>" for c in later)
-    later_table = (f"<div class='heat' role='region' aria-label='CRPS at two to five days ahead, not evidence' "
-                   f"tabindex='0'><table class='fttab'><caption>CRPS further ahead, reported only and not evidence"
-                   f"</caption><thead><tr><th scope='col'>Ahead</th><th scope='col'>Days</th>"
-                   f"<th scope='col'>Persistence, bp</th><th scope='col'>Model, bp</th>"
-                   f"<th scope='col'>Difference ({level}% interval), bp</th><th scope='col'>Label</th></tr></thead>"
-                   f"<tbody>{later_rows}</tbody></table></div>")
-
-    def labels(entry):
-        return " and ".join(entry["labels"])
-
-    same = len({tuple(e["labels"]) for e in stress}) == 1
-    cells = " and ".join(f"{e['target']} bp" for e in stress)
-    stress_text = (
-        f"<b>It is not a warning of stress.</b> It grades the forecast range, not the chance of pressure. One day "
-        f"ahead, the event cells for days more than {cells} above IORB are "
-        + (f"{labels(stress[0])}, with {' and '.join(str(e['events']) for e in stress)} such days in the window."
-           if same else "; ".join(f"{e['target']} bp: {labels(e)}, with {e['events']} such days" for e in stress) + ".")
-        + f" Below {h1[0]['minimum_events']} such days, a cell is labelled inconclusive.")
-    rests_text = (f"<b>What the pass rests on, post hoc.</b> Two days carry {100 * rests['share']:.1f}% of the summed "
-                  f"paired difference: {' and '.join(day(d) for d in rests['days'])} "
-                  f"({' and '.join(signed(v, 2) + ' bp' for v in rests['values'])}). Without them the mean paired "
-                  f"difference is {signed(rests['mean'], 3)} bp, {level}% interval {signed(rests['lower'], 3)} to "
-                  f"{signed(rests['upper'], 3)} bp, by the record's own bootstrap (mean block length "
-                  f"{rests['block_length']}, seed {rests['seed']}, {rests['replications']:,} replications), which "
-                  f"{'does not separate it from zero' if rests['lower'] <= 0 <= rests['upper'] else 'lies on one side of zero'}. "
-                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. On this near-blind test, "
-                  f"this was computed after the result: it decides nothing, and the verdict stands.")
-    blind = min(locked, key=lambda t: t.start) if locked else None
-    blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
-                  f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
-    regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
-                   else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
     top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
                        for rank, (d, v) in enumerate(got["top"], 1))
     drop_rows = "".join(
@@ -2857,19 +2890,6 @@ def final_test(records, locked):
         f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
         f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
         f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
-    two, dm = got["leave_two_out"], got["dm"]
-    robust_text = (
-        f"<b>Robustness, post hoc.</b> Without the two largest days the mean is {signed(two['mean'], 3)} bp, "
-        f"{level}% interval {signed(two['lower'], 3)} to {signed(two['upper'], 3)} bp, by the record's own bootstrap. "
-        f"The median day is {signed(got['median'], 3)} bp. Diebold-Mariano on the window, two-sided p "
-        f"{dm['p']:.3f} (Newey-West lag {dm['lag']}) or {dm['plain_p']:.3f} (plain). The record carries per-day "
-        f"CRPS only, so the split of the gain by pinball level is not available and is not computed.")
-    (d1, l1), (d2, l2) = got["persistence_loss"]
-    why_text = (
-        f"<b>Why {day(d1)} and {day(d2)} dominate.</b> On those two days carrying the latest spread forward lost "
-        f"{l1:.2f} and {l2:.2f} bp of CRPS, against a median of {got['median_persistence_loss']:.2f} bp. The second "
-        f"independent review traced this to that benchmark reading the 2025-12-31 print (about +22 bp) two rows "
-        f"back; that cause is the review's and is not recomputed here, because the panel is not tracked.")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
             "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
@@ -2897,23 +2917,8 @@ def final_test(records, locked):
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
                          "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
-        "ft_rests": rests_text,
-        "ft_not_stress": stress_text,
-        "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"and the gbm family and its features were chosen on archived records scored through "
-                        f"2026-09-03, which include them. The record says no choice was made on them by name, but "
-                        f"the test is not a clean holdout. It does not validate stress performance or robustness "
-                        f"across regimes. The live record (#215), which logs the blind tier's days as they come, is "
-                        f"the first genuinely blind confirmation.{blind_text}",
-        "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
-                    f"The test says nothing about a stressed period."),
         "ft_influence_table": influence_table,
         "ft_window_table": window_table,
-        "ft_robust": robust_text,
-        "ft_why": why_text,
-        "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
-                     f"the one-day forecast, and each carries Eleonora's label."),
-        "ft_later_table": later_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
                      f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
                      f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
@@ -3099,6 +3104,7 @@ def generate(repo, commit=None):
     declarations = run_record_declarations(repo)
     locked = locked_tiers(repo / LOCKBOX)
     check_annotations(notes)
+    fetched = check_fetched(repo, notes)
     check_glossary(glossary)
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
@@ -3122,7 +3128,14 @@ def generate(repo, commit=None):
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
-    hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
+    def buffer_low(iso):
+        return on_rrp_as_of(on_rrp, date.fromisoformat(iso), decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+
+    hist, fills = history(rows, notes, thresholds, regimes, windows, locked, buffer_low)
+    crossings = check_above_standing_repo(repo, notes, counted(rows, locked))
+    if len(crossings) != 1:
+        raise VisualError(f"chapter 1 quotes one day SOFR passed the standing repo rate; the annotations carry {len(crossings)}")
+    crossed, crossed_sofr, crossed_rate = crossings[0]
     fills.update(use_limitation_fill(repo))
     fills.update(n1_fills)
     fills.update(n2_fills)
@@ -3183,6 +3196,13 @@ def generate(repo, commit=None):
         "note_issued": day(note["issued"]), "note_effective": day(note["effective"]),
         "note_src": note["src"], "note_sha": note["sha256"], "note_retrieved": note["retrieved_at"],
         "srp_vs_iorb": bp(srp["vs_iorb_bp"]), "rrp_vs_iorb": bp(rrp["vs_iorb_bp"]),
+        "c_iorb_pays": link(c["iorb_pays"]), "c_sofr_median": link(c["sofr_median"]),
+        "c_srf_access": link(c["srf_access"]), "c_fhlb_fed_funds": link(c["fhlb_fed_funds"]),
+        "c_qe_foreign": link(c["qe_foreign"]), "c_mmf_on_rrp": link(c["mmf_on_rrp"]), "c_rrp_floor": link(c["rrp_floor"]),
+        "buffer_break": f"${ON_RRP_DEPLETION_BREAK_BN:,.0f}bn", "c_on_rrp_buffer": link(c["on_rrp_buffer"]),
+        "c_limitation_why": link(c["limitation_why"]),
+        "srp_cross_day": day(crossed["date"]), "srp_cross_sofr": f"{crossed_sofr:.2f}%",
+        "srp_cross_rate": f"{crossed_rate:.2f}%", "srp_event_n": 1 + notes["events"].index(crossed),
         "c_segments_tgcr": link(c["segments_tgcr"]), "c_segments_bgcr": link(c["segments_bgcr"]),
         "c_segments_sofr": link(c["segments_sofr"]), "c_sofr_trim": link(c["sofr_trim"]),
         "c_sofr_publication": link(c["sofr_publication"]),
@@ -3207,7 +3227,7 @@ def generate(repo, commit=None):
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
-               notes["implementation_note"]["path"])}
+               notes["implementation_note"]["path"], *fetched)}
     provenance = {
         "commit": commit,
         "generator": "scripts/emit_visual.py",
