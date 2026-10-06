@@ -6,10 +6,11 @@ days, the turn's expected contribution to the period average, and the declared
 reserve-scarcity state (#115) read as of each forecast's decision instant.
 `scripts/desk_outputs.py` computes them. These tests hold:
 
-* the mean-from-quantiles rule (`mean_from_quantiles`), a choice put to
-  Eleonora, implemented as one stated rule;
-* the turn-contribution arithmetic (`business_days_in_month`,
-  `turn_contribution`), whose period is the other choice put to her;
+* the mean-from-quantiles rule (`mean_from_quantiles`), kept as ruled
+  (Q3 on PR #241) and labelled wherever the mean is shown (`MEAN_LABEL`);
+* the turn-contribution arithmetic (`calendar_days_carried`,
+  `turn_contribution`), calendar-day weighted as ruled (Q2 on PR #241);
+* the "not yet calibrated (#243)" label beside the published 25-75 band;
 * the scheduled pressure-day tags, read from the repository's own calendar
   columns and the split declaration;
 * the scarcity state's as-of read (`scarcity_at`), which reuses
@@ -18,6 +19,10 @@ reserve-scarcity state (#115) read as of each forecast's decision instant.
 
 Written first, and watched failing: before `scripts/desk_outputs.py` existed
 every class failed in `setUpClass` with `FileNotFoundError` on the script's path.
+The rulings' tests (`TurnContributionTests`, `LabelTests`, the labelled
+statements) were written before the code they hold, and failed with
+`AttributeError` on `calendar_days_carried`, `MEAN_LABEL` and `BAND_25_75_LABEL`,
+and on the unlabelled statement.
 """
 
 from __future__ import annotations
@@ -86,27 +91,72 @@ class MeanFromQuantilesTests(unittest.TestCase):
 
 
 class TurnContributionTests(unittest.TestCase):
-    """The day's expected spread over the business days of its calendar month."""
+    """Calendar-day weighting, as SOFR averages are computed (Eleonora's ruling on PR #241, Q2).
+
+    A weekend or holiday carries the previous business day's rate, so the
+    day's forecast mean counts once for each calendar day of its month it
+    carries, over the calendar days in the month. Business days come from
+    `metadata/market_holidays.json`.
+    """
 
     @classmethod
     def setUpClass(cls):
         cls.desk = _desk()
 
-    def test_business_days_come_from_the_market_holiday_table(self):
-        # December 2025: 23 weekdays, Christmas closed.
-        self.assertEqual(self.desk.business_days_in_month(date(2025, 12, 31)), 22)
-        # January 2026: 22 weekdays, New Year's Day and Martin Luther King Jr. Day closed.
-        self.assertEqual(self.desk.business_days_in_month(date(2026, 1, 2)), 20)
-        # February 2026: 20 weekdays, Washington's Birthday closed.
-        self.assertEqual(self.desk.business_days_in_month(date(2026, 2, 27)), 19)
+    def test_a_midweek_day_carries_itself(self):
+        self.assertEqual(self.desk.calendar_days_carried(date(2025, 12, 31)), 1)
+        self.assertEqual(self.desk.calendar_days_in_month(date(2025, 12, 31)), 31)
+        self.assertAlmostEqual(self.desk.turn_contribution(31.0, date(2025, 12, 31)), 1.0)
+        self.assertAlmostEqual(self.desk.turn_contribution(-6.2, date(2025, 12, 31)), -0.2)
 
-    def test_the_contribution_is_the_mean_over_the_month(self):
-        self.assertAlmostEqual(self.desk.turn_contribution(22.0, date(2025, 12, 31)), 1.0)
-        self.assertAlmostEqual(self.desk.turn_contribution(-4.4, date(2025, 12, 31)), -0.2)
+    def test_a_friday_month_end_counts_three_days(self):
+        # Friday 29 August 2025 carries Saturday 30 and Sunday 31 August.
+        self.assertEqual(self.desk.calendar_days_carried(date(2025, 8, 29)), 3)
+        self.assertAlmostEqual(self.desk.turn_contribution(31.0, date(2025, 8, 29)), 3.0)
+
+    def test_a_holiday_is_carried_by_the_business_day_before_it(self):
+        # Christmas 2025 is a Thursday, closed in the market holiday table.
+        self.assertEqual(self.desk.calendar_days_carried(date(2025, 12, 24)), 2)
+        # Friday 29 May 2026 carries the weekend in May; Memorial Day (25 May)
+        # is carried by Friday 22 May with its weekend.
+        self.assertEqual(self.desk.calendar_days_carried(date(2026, 5, 22)), 4)
+
+    def test_days_past_the_month_end_count_in_the_next_months_average(self):
+        # Friday 31 October 2025: Saturday 1 and Sunday 2 November carry its
+        # rate in November's average, not October's.
+        self.assertEqual(self.desk.calendar_days_carried(date(2025, 10, 31)), 1)
+        self.assertAlmostEqual(self.desk.turn_contribution(31.0, date(2025, 10, 31)), 1.0)
+
+    def test_a_day_that_is_not_a_business_day_raises(self):
+        with self.assertRaises(ValueError):
+            self.desk.calendar_days_carried(date(2025, 12, 25))
+        with self.assertRaises(ValueError):
+            self.desk.calendar_days_carried(date(2025, 8, 30))
 
     def test_a_day_the_table_does_not_cover_raises(self):
         with self.assertRaises(ValueError):
-            self.desk.business_days_in_month(date(2030, 1, 15))
+            self.desk.calendar_days_carried(date(2030, 1, 15))
+
+
+class LabelTests(unittest.TestCase):
+    """Eleonora's rulings on PR #241: the mean rule's label (Q3) and the #243 band label."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.desk = _desk()
+
+    def test_the_labels_are_the_rulings_words(self):
+        self.assertEqual(
+            self.desk.MEAN_LABEL,
+            "flat beyond the 5th and 95th percentiles, so it understates a right-skewed turn",
+        )
+        self.assertEqual(self.desk.BAND_25_75_LABEL, "not yet calibrated (#243)")
+
+    def test_the_markdown_labels_the_expected_value_and_turn_contribution(self):
+        days = SummaryTests.days()
+        tables = {1: self.desk.summarise(days, horizon=1, splits=SPLITS)}
+        markdown = self.desk._markdown(tables, "2025-01-02", "2025-01-29")
+        self.assertIn(self.desk.MEAN_LABEL, markdown)
 
 
 class PressureDayTagTests(unittest.TestCase):
@@ -174,13 +224,15 @@ class UpperTailTests(unittest.TestCase):
     def test_the_plain_statement(self):
         self.assertEqual(
             self.desk.upper_tail_statement(QUANTILE_LEVELS, (-2.0, 0.0, 1.0, 2.0, 20.0)),
-            "expected +3.4 bp, 5% chance above +20.0 bp",
+            "expected +3.4 bp (flat beyond the 5th and 95th percentiles, so it understates a "
+            "right-skewed turn), 5% chance above +20.0 bp",
         )
 
     def test_a_negative_expectation_keeps_its_sign(self):
         self.assertEqual(
             self.desk.upper_tail_statement(QUANTILE_LEVELS, (-9.0, -8.0, -7.0, -6.0, -5.0)),
-            "expected -7.0 bp, 5% chance above -5.0 bp",
+            "expected -7.0 bp (flat beyond the 5th and 95th percentiles, so it understates a "
+            "right-skewed turn), 5% chance above -5.0 bp",
         )
 
 
@@ -294,10 +346,13 @@ class SummaryTests(unittest.TestCase):
     def setUpClass(cls):
         cls.desk = _desk()
 
-    def test_a_tag_cell_counts_its_days_and_pairs_the_two_sides(self):
+    @staticmethod
+    def days():
         days = []
         for position, when in enumerate(
-            [date(2025, 1, 2 + offset) for offset in range(0, 28) if date(2025, 1, 2 + offset).weekday() < 5]
+            # Business days only: Martin Luther King Jr. Day (20 January) is closed.
+            [date(2025, 1, 2 + offset) for offset in range(0, 28)
+             if date(2025, 1, 2 + offset).weekday() < 5 and offset != 18]
         ):
             days.append(
                 {
@@ -310,6 +365,10 @@ class SummaryTests(unittest.TestCase):
                     "outcome_bps": 1.0 if position % 4 else 4.0,
                 }
             )
+        return days
+
+    def test_a_tag_cell_counts_its_days_and_pairs_the_two_sides(self):
+        days = self.days()
         table = self.desk.summarise(days, horizon=1, splits=SPLITS)
         cell = table["by_tag"]["month_end"]
         tagged = [day for day in days if day["tags"]]
@@ -372,12 +431,15 @@ class LiveOutputsTests(unittest.TestCase):
         self.assertEqual(quarter_end["p_above_5bp"], 0.1)
         grid = self.record["distributions"]["published"]["quantiles_bps"]["3"]
         self.assertEqual(quarter_end["statement"], self.desk.upper_tail_statement(QUANTILE_LEVELS, grid))
-        # September 2026: 22 weekdays, Labor Day closed.
+        # Wednesday 30 September 2026 carries itself, over September's 30 days.
         self.assertAlmostEqual(
             quarter_end["expected_turn_contribution_bps"],
-            self.desk.mean_from_quantiles(QUANTILE_LEVELS, grid) / 21,
+            self.desk.mean_from_quantiles(QUANTILE_LEVELS, grid) / 30,
         )
+        self.assertEqual(quarter_end["mean_label"], self.desk.MEAN_LABEL)
         self.assertIsNone(report["targets"][4]["expected_turn_contribution_bps"])
+        for target in report["targets"]:
+            self.assertEqual(target["published_band_25_75"], "not yet calibrated (#243)")
 
     def test_the_state_is_read_as_of_the_decision_and_ignores_later_rows(self):
         report = self.desk.live_outputs(self.record, self.rows, REGISTRY, SPLITS)

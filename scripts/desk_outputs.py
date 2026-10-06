@@ -17,13 +17,19 @@ and nothing here writes into `docs/runs/`.
    stationary-bootstrap interval, split by tag, regime and scarcity state. The
    upper tail is stated plainly (`upper_tail_statement`).
 3. **The turn's expected contribution to the period average**
-   (`turn_contribution`): the day's forecast mean (`mean_from_quantiles`) over
-   the business days of its calendar month (`business_days_in_month`). The
-   period and the mean rule are **choices put to Eleonora**, not settled ones.
+   (`turn_contribution`): the day's forecast mean (`mean_from_quantiles`)
+   times the calendar days of its month it carries
+   (`calendar_days_carried`), over the calendar days in the month, as SOFR
+   averages are computed. Eleonora ruled on both on PR #241 (Q2: the period;
+   Q3: the mean rule, kept and labelled `MEAN_LABEL` wherever it is shown).
 4. **The reserve-scarcity state** (#115, `repo_model.scarcity`) beside every
    forecast, read as of the forecast's decision instant (`scarcity_at`), with
    its ON RRP leg as "buffer present" or "buffer gone". It is not an input to
    any model and stays off in every published declaration.
+
+Wherever the published distribution's 25th-75th percentile band is shown, it
+carries `BAND_25_75_LABEL` (Eleonora's ruling on PR #241, #243): that band is
+not calibrated; the 5-95 band is, and is shown unlabelled.
 
 The history replays the published distribution and as-of persistence exactly
 as the live record runs them (`live_record._compare_sides`, the fold loop of
@@ -112,16 +118,22 @@ CRPS_RECORD = REPO / live.CRPS_RECORD
 #: window, and `coupon_settlement` a day with a Treasury coupon settlement.
 PRESSURE_DAY_TAGS = ("month_end", "quarter_end", "year_end", "tax_date", "coupon_settlement")
 
-#: The rule `mean_from_quantiles` states (a choice for Eleonora, #232).
+#: The rule `mean_from_quantiles` states (kept by Eleonora's ruling on PR #241, Q3).
 MEAN_RULE = (
     "the mean of the piecewise-linear quantile function through the grid's "
     "points, held flat beyond the outer levels"
 )
-#: The period `turn_contribution` states (a choice for Eleonora, #232).
+#: The label the ruling puts wherever the expected value or the turn
+#: contribution is shown.
+MEAN_LABEL = "flat beyond the 5th and 95th percentiles, so it understates a right-skewed turn"
+#: The period `turn_contribution` states (Eleonora's ruling on PR #241, Q2).
 PERIOD_RULE = (
-    "the day's calendar month, each business day (a weekday the market "
-    "holiday table does not close) weighted equally"
+    "the day's calendar month, weighted by calendar day as SOFR averages are "
+    "computed: a weekend or holiday (market holiday table) carries the previous "
+    "business day's rate; carried days in the next month count in that month's average"
 )
+#: The label beside the published distribution's 25-75 band (ruling on PR #241, #243).
+BAND_25_75_LABEL = "not yet calibrated (#243)"
 
 #: The interval's settings: the project's level and replications, the stationary
 #: bootstrap, and a mean block of h + 1 days -- overlapping h-step errors share
@@ -180,33 +192,58 @@ def mean_from_quantiles(levels: Sequence[float], quantiles: Sequence[float]) -> 
     return sum(weight * value for weight, value in zip(mean_weights(grid), values))
 
 
-def business_days_in_month(day: date) -> int:
-    """The business days of `day`'s calendar month (`PERIOD_RULE`).
+def _month(day: date) -> Tuple[date, date]:
+    """`day`'s calendar month as (first day, first day of the next month)."""
+
+    first = day.replace(day=1)
+    return first, (first + timedelta(days=32)).replace(day=1)
+
+
+def calendar_days_in_month(day: date) -> int:
+    first, following = _month(day)
+    return (following - first).days
+
+
+def calendar_days_carried(day: date) -> int:
+    """The calendar days of `day`'s month that carry its rate (`PERIOD_RULE`).
+
+    The day itself and every following weekend day or market holiday up to the
+    next business day, counted inside the day's month only: a carried day in
+    the next month counts in that month's average, as SOFR averages are
+    computed. A Friday whose weekend lies inside its month counts three days.
 
     Raises:
-        ValueError: if `metadata/market_holidays.json` does not cover the month.
+        ValueError: if `metadata/market_holidays.json` does not cover the month,
+            or `day` is not a business day (it carries no rate of its own).
     """
 
     table = market_holidays()
-    first = day.replace(day=1)
-    following = (first + timedelta(days=32)).replace(day=1)
-    last = following - timedelta(days=1)
-    if not (table.first <= first and last <= table.last):
+    first, following = _month(day)
+    if not (table.first <= first and following - timedelta(days=1) <= table.last):
         raise ValueError(
             f"{first:%Y-%m} is outside metadata/market_holidays.json ({table.first} to {table.last})"
         )
-    count, current = 0, first
-    while current < following:
-        if current.weekday() < 5 and current not in table.closed:
-            count += 1
+
+    def business(when: date) -> bool:
+        return when.weekday() < 5 and when not in table.closed
+
+    if not business(day):
+        raise ValueError(f"{day} is not a business day in metadata/market_holidays.json")
+    count, current = 1, day + timedelta(days=1)
+    while current < following and not business(current):
+        count += 1
         current += timedelta(days=1)
     return count
 
 
 def turn_contribution(mean_bps: float, day: date) -> float:
-    """The day's expected contribution to its period's average spread, in bp."""
+    """The day's expected contribution to its month's average spread, in bp.
 
-    return float(mean_bps) / business_days_in_month(day)
+    The mean times the calendar days it carries, over the calendar days in the
+    month (`PERIOD_RULE`).
+    """
+
+    return float(mean_bps) * calendar_days_carried(day) / calendar_days_in_month(day)
 
 
 # -- output 2: the pressure days and the tail --------------------------------
@@ -262,11 +299,11 @@ def calendar_values(day: date) -> Dict[str, float]:
 
 
 def upper_tail_statement(levels: Sequence[float], quantiles: Sequence[float]) -> str:
-    """The grid in a desk's words: the mean and the chance above the top quantile."""
+    """The grid in a desk's words: the mean, labelled, and the chance above the top quantile."""
 
     grid, values = _checked_grid(levels, quantiles)
     return (
-        f"expected {mean_from_quantiles(grid, values):+.1f} bp, "
+        f"expected {mean_from_quantiles(grid, values):+.1f} bp ({MEAN_LABEL}), "
         f"{1.0 - grid[-1]:.0%} chance above {values[-1]:+.1f} bp"
     )
 
@@ -618,9 +655,12 @@ def _markdown(tables: dict, first: str, last: str) -> str:
              "positive CRPS and turn-error differences favour the published distribution.", ""]
     lines.append("### By pressure-day tag")
     lines.append("")
-    lines.append("| h | Tag | Days | Mean / q95 / realised (bp) | Coverage published | "
+    lines.append(f"† Mean and expected turn contribution: {MEAN_LABEL}. Turn contribution: "
+                 "calendar-day weighted, as SOFR averages are computed.")
+    lines.append("")
+    lines.append("| h | Tag | Days | Mean† / q95 / realised (bp) | Coverage published | "
                  "Coverage persistence | CRPS persistence − published | Turn contribution "
-                 "expected / realised (bp) | Turn |error| persistence − published |")
+                 "expected† / realised (bp) | Turn |error| persistence − published |")
     lines.append("|---|---|---|---|---|---|---|---|---|")
     for h, table in tables.items():
         for tag, cell in table["by_tag"].items():
@@ -685,7 +725,9 @@ def _examples(annotated: Mapping[int, List[dict]], when: str) -> List[dict]:
                     "date": when,
                     "tags": day["tags"],
                     "published_grid_bps": day["published"],
+                    "published_band_25_75": BAND_25_75_LABEL,
                     "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
+                    "mean_label": MEAN_LABEL,
                     "expected_turn_contribution_bps": turn_contribution(
                         mean_from_quantiles(QUANTILE_LEVELS, day["published"]),
                         date.fromisoformat(when),
@@ -724,13 +766,17 @@ def tables_command(args) -> int:
         "last": args.last.isoformat(),
         "published_columns_digest": digest,
         "mean_rule": MEAN_RULE,
+        "mean_label": MEAN_LABEL,
         "period_rule": PERIOD_RULE,
+        "published_band_25_75": BAND_25_75_LABEL,
         "scarcity": {"band": list(scarcity.SATIATION_BAND), "on_rrp_buffer_bn": scarcity.ON_RRP_BUFFER_BN},
         "tables": {str(h): table for h, table in tables.items()},
         "examples": _examples(annotated, args.example) if args.example else [],
         "pressure_days": {
             str(h): [
-                {**day, "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
+                {**day, "published_band_25_75": BAND_25_75_LABEL,
+                 "statement": upper_tail_statement(QUANTILE_LEVELS, day["published"]),
+                 "mean_label": MEAN_LABEL,
                  "expected_turn_contribution_bps": turn_contribution(
                      mean_from_quantiles(QUANTILE_LEVELS, day["published"]),
                      date.fromisoformat(day["date"]))}
@@ -790,7 +836,9 @@ def live_outputs(record: dict, rows: Sequence[DailyObservation], registry, split
             "tags": list(tags),
             "coupon_settlement": "not read: the live file does not carry the day's settlement",
             "published_grid_bps": grid,
+            "published_band_25_75": BAND_25_75_LABEL,
             "statement": upper_tail_statement(levels, grid),
+            "mean_label": MEAN_LABEL,
             "expected_turn_contribution_bps": turn_contribution(mean, when) if tags else None,
             "scarcity": state,
         })
