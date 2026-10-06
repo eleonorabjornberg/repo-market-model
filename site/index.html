@@ -478,7 +478,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <ul class="ftlist">
       <li><b>Fixed first.</b> The design, the benchmark and the command were written down (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'>the pre-registration</a>) before any of these days was scored.</li>
       <li><b>Run once,</b> on 5 October 2026, and published whatever it showed.</li>
-      <li><b>Against carrying the latest spread forward.</b> Both forecasts are graded by the five-quantile score: how far the forecast range was from the spread that came, in basis points. Lower is better.</li>
+      <li><b>Against carrying the latest spread forward.</b> Both forecasts are graded by the five-quantile score, the mean pinball loss over the five published quantiles: how far the forecast range was from the spread that came, in basis points. Lower is better.</li>
       <li><b>One change before the test was opened.</b> The deciding comparison moved from the probability forecast to this five-quantile score (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/final-test-preregistration.md'>the pre-registration</a> records it). On the opened record the probability forecast does not beat calendar climatology: mean Brier difference +0.0053, 90% interval −0.0029 to +0.0137, label not shown (reported only).</li>
     </ul>
     <p class='ftclaim'><b>The claim:</b> the published model&#x27;s one-day-ahead forecast of the five published quantiles of SOFR − IORB was more accurate than as-of persistence over January to September 2026.</p>
@@ -1630,7 +1630,7 @@ function renderForecastDaily() {
     const d = days.find(r => fmtIso(r.t) === ms.date); if (!d) return;
     const cx = x(d.t), cy = y(d.y), right = cx < W - m.r - 70;
     svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 6).style("fill", "none").style("stroke", "var(--pressure)").style("stroke-width", 1.5);
-    svg.append("text").attr("class", "lab").attr("x", cx + (right ? 9 : -9)).attr("y", cy + 4).attr("text-anchor", right ? "start" : "end").text(ms.label);
+    svg.append("text").attr("class", "lab").attr("x", cx + (right ? 9 : -9)).attr("y", cy + 4).attr("text-anchor", right ? "start" : "end").style("paint-order", "stroke").style("stroke", "var(--paper)").style("stroke-width", 3).text(ms.label);
   });
   const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"]];
   const g = svg.append("g").attr("transform", `translate(${m.l},12)`);

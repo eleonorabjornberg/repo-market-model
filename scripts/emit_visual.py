@@ -3020,8 +3020,8 @@ def final_test(records, locked):
                      f"(<a href='{BLOB}{prereg}'>the pre-registration</a>) before any of these days was scored."),
         "ft_once": f"<b>Run once,</b> on {day(opened)}, and published whatever it showed.",
         "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> Both forecasts are graded by the "
-                         "five-quantile score: how far the forecast range was from the spread that came, in basis "
-                         "points. Lower is better."),
+                         "five-quantile score, the mean pinball loss over the five published quantiles: how far "
+                         "the forecast range was from the spread that came, in basis points. Lower is better."),
         "ft_switch": (f"<b>One change before the test was opened.</b> The deciding comparison moved from the "
                       f"probability forecast to this five-quantile score (<a href='{BLOB}{prereg}'>the "
                       f"pre-registration</a> records it). "

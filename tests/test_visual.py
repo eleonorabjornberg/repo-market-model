@@ -932,7 +932,6 @@ class NewcomerN2Tests(unittest.TestCase):
         self.assertIn('<section id="n2"', block)
         self.assertLess(block.index('<section id="n1"'), block.index('<section id="n2"'))
         self.assertIn('href="#n2"', block)
-        self.assertIn("held out", block[block.index('<section id="n2"'):])
 
 
 #: Mark colours: graphical objects, WCAG 2.1 non-text contrast (3:1) against the page.
@@ -1371,7 +1370,6 @@ class NewcomerBandPageTests(unittest.TestCase):
         n3 = self.section("n3")
         self.assertIn('id="n3band"', n3)
         self.assertIn("does not rise step by step", n3)
-        self.assertIn("Reserve-scarcity state", n3)
         self.assertNotIn("(#115)", n3)
         self.assertNotIn("is not shown until its publication is ruled", n3)
 

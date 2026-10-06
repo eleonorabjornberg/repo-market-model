@@ -1630,7 +1630,7 @@ function renderForecastDaily() {
     const d = days.find(r => fmtIso(r.t) === ms.date); if (!d) return;
     const cx = x(d.t), cy = y(d.y), right = cx < W - m.r - 70;
     svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 6).style("fill", "none").style("stroke", "var(--pressure)").style("stroke-width", 1.5);
-    svg.append("text").attr("class", "lab").attr("x", cx + (right ? 9 : -9)).attr("y", cy + 4).attr("text-anchor", right ? "start" : "end").text(ms.label);
+    svg.append("text").attr("class", "lab").attr("x", cx + (right ? 9 : -9)).attr("y", cy + 4).attr("text-anchor", right ? "start" : "end").style("paint-order", "stroke").style("stroke", "var(--paper)").style("stroke-width", 3).text(ms.label);
   });
   const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"]];
   const g = svg.append("g").attr("transform", `translate(${m.l},12)`);

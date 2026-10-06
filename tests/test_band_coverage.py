@@ -179,13 +179,16 @@ class SiteTests(unittest.TestCase):
         import re
         page = (REPO_ROOT / "site" / "index.html").read_text(encoding="utf-8")
         start = page.index('<div id="band-coverage"')
-        block = page[start:page.index("<h3 class=\"sub\">Lead time", start)]
+        block = page[start:page.index("</section>", start)]
         cls.text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", block)))
         cls.record, cls.table, cls.horizons, cls.days = band.compute(REPO_ROOT / "docs" / "runs")
 
-    def test_the_page_carries_the_readmes_sentence(self):
-        squash = lambda text: text.replace("`", "").replace(" ", "")  # a <code> tag leaves a space
-        self.assertIn(squash(band.finding_sentence(self.table)), squash(self.text))
+    def test_the_page_carries_a_plain_sentence_from_the_same_cells(self):
+        """#314: the page states the all-days shares and the count of missed groups; the README keeps the long sentence."""
+        everything = next(c for c in self.table if c["kind"] == "all")
+        self.assertIn("The central 50%% range held on %d%% of days" % round(100 * everything["bands"][0.5]["coverage"]),
+                      self.text)
+        self.assertIn("the 90%% range on %d%%" % round(100 * everything["bands"][0.9]["coverage"]), self.text)
 
     def test_every_h1_cell_is_on_the_page_with_its_interval(self):
         for cell in self.table:
