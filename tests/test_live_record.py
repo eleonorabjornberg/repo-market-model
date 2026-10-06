@@ -174,8 +174,13 @@ class WorkflowFileTests(unittest.TestCase):
     def test_triggers_are_schedule_and_dispatch_only(self):
         self.assertEqual(set(self._block("on")), {"schedule", "workflow_dispatch"})
 
-    def test_permissions_are_exactly_contents_and_issues_write(self):
-        self.assertEqual(self._block("permissions"), {"contents": "write", "issues": "write"})
+    def test_permissions_are_exactly_contents_issues_and_id_token_write(self):
+        # id-token: write is for cosign's keyless signing into Rekor (#254,
+        # Eleonora's ruling of 6 October 2026); it holds no secret.
+        self.assertEqual(
+            self._block("permissions"),
+            {"contents": "write", "issues": "write", "id-token": "write"},
+        )
         # Declared once, at the workflow level: no job grants itself more.
         declared = [line for line in self.lines if re.match(r"^\s*permissions:", line)]
         self.assertEqual(declared, ["permissions:"])

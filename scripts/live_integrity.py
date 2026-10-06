@@ -27,13 +27,28 @@ directive asks for. Each one raises `ValueError`:
   The workflow runs it every day, and `live_score.py` runs it before it scores
   anything.
 
+* **The anchor** (Eleonora's ruling of 6 October 2026: Sigstore Rekor). After
+  each day's record is pushed, the workflow signs the file's SHA-256 keylessly
+  (cosign, under the workflow's GitHub OIDC identity) into the public Rekor
+  log, and adds `live/<day>.rekor` in a second add-only commit: the Rekor log
+  index, the entry UUID and the entry itself, with its inclusion proof.
+  `verify` checks every such file offline (`verify_entry`): the entry is a
+  `hashedrekord` over the file's SHA-256, its inclusion proof rebuilds the
+  stated root, and its signing certificate names this repository's
+  `live-log.yml` on `main` and GitHub's OIDC issuer. A missing anchor never
+  blocks a record or fails `verify`; a later run anchors the day (`unanchored`).
+  What the offline check does not do (the Fulcio chain, the entry's signature,
+  the log's signed tree head) is cosign's, online: see `ONLINE_COMMAND`.
+
 The author check guards against a mistake, not an adversary. Anyone holding
-the repository token can set any author name. That is why the digests also
-need an anchor outside the repository, which is Eleonora's decision (#254, Do 4).
+the repository token can set any author name. The anchor is the control the
+token cannot touch: the entry sits in Rekor's public log.
 
     python3 scripts/live_integrity.py chain --live-dir LIVE_LOG --date YYYY-MM-DD
     python3 scripts/live_integrity.py check-append --live-dir LIVE_LOG --date YYYY-MM-DD --base SHA|none
     python3 scripts/live_integrity.py verify --live-dir LIVE_LOG --digests DIGESTS.jsonl
+    python3 scripts/live_integrity.py unanchored --live-dir LIVE_LOG
+    python3 scripts/live_integrity.py anchor-file --live-dir LIVE_LOG --date YYYY-MM-DD --entries ENTRIES.json
 
 `--digests` takes the #225 comments, one JSON object per line, each with
 `author` (the commenter's login) and `body`. This module is stdlib only and
@@ -44,6 +59,8 @@ runner's Python, before the pinned code's environment is needed.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import hashlib
 import json
 import re
@@ -58,6 +75,22 @@ BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
 DIGEST_AUTHOR = "github-actions[bot]"
 CHAIN_KEYS = ("prev_date", "prev_sha256", "prev_commit")
 FILE_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.json$")
+#: The anchor file. Not `.json`, so no reader of `live/*.json` mistakes it for a record.
+ANCHOR_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.rekor$")
+#: The only identity whose Rekor entry anchors a day: this repository's workflow, on main.
+IDENTITY = "https://github.com/eleonorabjornberg/repo-market-model/.github/workflows/live-log.yml@refs/heads/main"
+OIDC_ISSUER = "https://token.actions.githubusercontent.com"
+#: Fulcio's certificate extension for the OIDC issuer (v1: the raw string; v2: a DER UTF8String).
+_ISSUER_OIDS = ("1.3.6.1.4.1.57264.1.1", "1.3.6.1.4.1.57264.1.8")
+#: The online check, for a day D (cosign checks the Fulcio chain, the signature and the tree head):
+ONLINE_COMMAND = f"""\
+uuid=$(jq -r .uuid live/D.rekor)
+curl -fsS https://rekor.sigstore.dev/api/v1/log/entries/$uuid | jq -r '.[].body' | base64 -d > body.json
+jq -r .spec.signature.publicKey.content body.json | base64 -d > cert.pem
+jq -r .spec.signature.content body.json | base64 -d > sig.bin
+cosign verify-blob --certificate cert.pem --signature sig.bin \\
+  --certificate-identity '{IDENTITY}' \\
+  --certificate-oidc-issuer {OIDC_ISSUER} live/D.json"""
 #: git's empty tree, the parent a root commit is compared against.
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
@@ -90,20 +123,22 @@ def _has_commits(repo: Path) -> bool:
 
 
 def _day_of(rel: str) -> date:
-    match = FILE_PATTERN.match(rel)
+    match = FILE_PATTERN.match(rel) or ANCHOR_PATTERN.match(rel)
     if not match:
-        raise ValueError(f"{rel} is not a live record path (live/YYYY-MM-DD.json)")
+        raise ValueError(f"{rel} is not a live record path (live/YYYY-MM-DD.json or live/YYYY-MM-DD.rekor)")
     return date.fromisoformat(match.group(1))
 
 
 def require_add_only_commit(repo: Path, commit: str, expected: str | None = None) -> date:
-    """`commit` adds exactly one live record file, as the bot, and changes nothing else.
+    """`commit` adds exactly one live record or anchor file, as the bot, and changes nothing else.
 
     Returns the day it adds. `expected`, if given, is the only path it may add.
+    An anchor (`live/YYYY-MM-DD.rekor`) may only follow its day's record.
 
     Raises:
-        ValueError: a merge, another author or committer, or any change other
-            than adding one `live/YYYY-MM-DD.json`.
+        ValueError: a merge, another author or committer, any change other
+            than adding one `live/YYYY-MM-DD.json` or `.rekor`, or an anchor
+            for a day whose record is not already in the log.
     """
 
     fields = _git(repo, "show", "-s", "--format=%an%n%ae%n%cn%n%ce%n%P", commit).split("\n")
@@ -119,13 +154,21 @@ def require_add_only_commit(repo: Path, commit: str, expected: str | None = None
         expected = changes[0][1]
     if changes != [("A", expected)]:
         raise ValueError(f"{commit} must only add {expected or 'one live record file'}; it changes {changes}")
-    return _day_of(expected)
+    day = _day_of(expected)
+    if ANCHOR_PATTERN.match(expected):
+        record = f"live/{day.isoformat()}.json"
+        if parent == EMPTY_TREE or subprocess.run(
+            ["git", "cat-file", "-e", f"{parent}:{record}"], cwd=repo, capture_output=True
+        ).returncode != 0:
+            raise ValueError(f"{commit} anchors {record}, which the log does not yet hold")
+    return day
 
 
-def require_append_only(repo: Path, base: str | None, day: date) -> None:
-    """HEAD is one commit on top of `base` (`None`: a new branch) that only adds `live/<day>.json`.
+def require_append_only(repo: Path, base: str | None, day: date, anchor: bool = False) -> None:
+    """HEAD is one commit on top of `base` (`None`: a new branch) that only adds `live/<day>.json`
+    (`live/<day>.rekor` with `anchor`).
 
-    The workflow runs this after its commit and before `git push`.
+    The workflow runs this after each commit and before `git push`.
 
     Raises:
         ValueError: more than one new commit, or a commit that does anything
@@ -136,16 +179,39 @@ def require_append_only(repo: Path, base: str | None, day: date) -> None:
     parents = _git(repo, "show", "-s", "--format=%P", head).split()
     if parents != ([base] if base else []):
         raise ValueError(f"HEAD must be one commit on top of {base or 'nothing'}; its parents are {parents}")
-    require_add_only_commit(repo, head, f"live/{day.isoformat()}.json")
+    require_add_only_commit(repo, head, f"live/{day.isoformat()}.{'rekor' if anchor else 'json'}")
+
+
+def _paths(repo: Path) -> list:
+    if not _has_commits(repo):
+        return []
+    return [rel for rel in _git(repo, "ls-tree", "-r", "--name-only", "HEAD").splitlines() if rel]
 
 
 def logged_files(repo: Path) -> list:
-    """The committed record files, oldest day first, as (day, path relative to the repo)."""
+    """The committed record files, oldest day first, as (day, path relative to the repo).
 
-    if not _has_commits(repo):
-        return []
-    paths = _git(repo, "ls-tree", "-r", "--name-only", "HEAD").splitlines()
-    return sorted((_day_of(rel), rel) for rel in paths if rel)
+    Raises:
+        ValueError: a path that is neither a record nor an anchor.
+    """
+
+    paths = _paths(repo)
+    for rel in paths:
+        _day_of(rel)
+    return sorted((_day_of(rel), rel) for rel in paths if FILE_PATTERN.match(rel))
+
+
+def anchor_files(repo: Path) -> list:
+    """The committed anchor files, oldest day first, as (day, path relative to the repo)."""
+
+    return sorted((_day_of(rel), rel) for rel in _paths(repo) if ANCHOR_PATTERN.match(rel))
+
+
+def unanchored(repo: Path) -> list:
+    """The logged days with no anchor yet, oldest first."""
+
+    anchored = {day for day, _ in anchor_files(repo)}
+    return [day for day, _ in logged_files(repo) if day not in anchored]
 
 
 def adding_commit(repo: Path, rel: str) -> str:
@@ -229,6 +295,192 @@ def require_chain(repo: Path, files) -> None:
             raise ValueError(f"{rel}'s chain does not match {prev_rel}: {chain} != {expected}")
 
 
+def _der(buf: bytes, pos: int):
+    """One DER element at `pos`: (tag, content start, content end)."""
+
+    if pos + 2 > len(buf):
+        raise ValueError("the certificate is truncated")
+    tag, first = buf[pos], buf[pos + 1]
+    pos += 2
+    if first < 0x80:
+        length = first
+    else:
+        count = first & 0x7F
+        if count == 0 or count > 4 or pos + count > len(buf):
+            raise ValueError("the certificate has a malformed length")
+        length = int.from_bytes(buf[pos:pos + count], "big")
+        pos += count
+    if pos + length > len(buf):
+        raise ValueError("the certificate is truncated")
+    return tag, pos, pos + length
+
+
+def _children(buf: bytes, start: int, end: int) -> list:
+    out, pos = [], start
+    while pos < end:
+        tag, begin, stop = _der(buf, pos)
+        out.append((tag, begin, stop))
+        pos = stop
+    return out
+
+
+def _oid(content: bytes) -> str:
+    parts = [content[0] // 40, content[0] % 40]
+    value = 0
+    for byte in content[1:]:
+        value = (value << 7) | (byte & 0x7F)
+        if not byte & 0x80:
+            parts.append(value)
+            value = 0
+    return ".".join(str(p) for p in parts)
+
+
+def certificate_identity(pem: str):
+    """The signing certificate's identity (a SAN URI) and its OIDC issuer, from the DER.
+
+    Raises:
+        ValueError: not a certificate, or one without a single SAN URI.
+    """
+
+    body = "".join(line for line in pem.splitlines() if line and not line.startswith("-----"))
+    try:
+        der = base64.b64decode(body, validate=True)
+        cert = _der(der, 0)
+        tbs = _children(der, cert[1], cert[2])[0]
+        fields = _children(der, tbs[1], tbs[2])
+    except (binascii.Error, ValueError, IndexError) as error:
+        raise ValueError(f"the signing certificate cannot be read: {error}") from error
+    extensions = [f for f in fields if f[0] == 0xA3]
+    if len(extensions) != 1:
+        raise ValueError("the signing certificate has no extensions")
+    uris, issuer = [], None
+    seq = _children(der, extensions[0][1], extensions[0][2])[0]
+    for ext in _children(der, seq[1], seq[2]):
+        parts = _children(der, ext[1], ext[2])
+        oid = _oid(der[parts[0][1]:parts[0][2]])
+        value = parts[-1]
+        octets = der[value[1]:value[2]]
+        if oid == "2.5.29.17":
+            names = _der(octets, 0)
+            for tag, begin, stop in _children(octets, names[1], names[2]):
+                if tag == 0x86:
+                    uris.append(octets[begin:stop].decode("utf-8", "replace"))
+        elif oid in _ISSUER_OIDS:
+            issuer = octets.decode("utf-8", "replace")
+    if len(uris) != 1:
+        raise ValueError(f"the signing certificate must carry exactly one SAN URI, not {len(uris)}")
+    return uris[0], issuer
+
+
+def _inclusion_ok(index: int, size: int, leaf: bytes, proof: list, root: bytes) -> bool:
+    """RFC 9162 section 2.1.3.2: does `proof` take `leaf` at `index` in a tree of `size` to `root`?"""
+
+    if index >= size:
+        return False
+    fn, sn, node = index, size - 1, leaf
+    for sibling in proof:
+        if sn == 0:
+            return False
+        if fn & 1 or fn == sn:
+            node = hashlib.sha256(b"\x01" + sibling + node).digest()
+            while not fn & 1 and fn != 0:
+                fn >>= 1
+                sn >>= 1
+        else:
+            node = hashlib.sha256(b"\x01" + node + sibling).digest()
+        fn >>= 1
+        sn >>= 1
+    return sn == 0 and node == root
+
+
+def verify_entry(response: dict, sha256: str) -> dict:
+    """Check one Rekor entry (the API's `{uuid: entry}`) as an anchor of `sha256`, offline.
+
+    Checks that the entry is a `hashedrekord` over exactly `sha256`; that its
+    inclusion proof rebuilds the stated root from the entry's body; and that
+    its signing certificate names `IDENTITY` and `OIDC_ISSUER`. Not checked
+    here, and cosign's (`ONLINE_COMMAND`): the Fulcio chain, the signature
+    over the digest, and the signed tree head that authenticates the root.
+
+    Raises:
+        ValueError: any of those fails, or the entry is malformed.
+    """
+
+    if not isinstance(response, dict) or len(response) != 1:
+        raise ValueError("a Rekor response holds exactly one entry, keyed by its UUID")
+    uuid, entry = next(iter(response.items()))
+    try:
+        raw = base64.b64decode(entry["body"], validate=True)
+        body = json.loads(raw)
+        if body["kind"] != "hashedrekord":
+            raise ValueError(f"entry {uuid} is a {body['kind']}, not a hashedrekord")
+        data = body["spec"]["data"]["hash"]
+        if data["algorithm"] != "sha256" or data["value"] != sha256:
+            raise ValueError(f"entry {uuid} is over {data['algorithm']}:{data['value']}, not sha256:{sha256}")
+        proof = entry["verification"]["inclusionProof"]
+        index, size = int(proof["logIndex"]), int(proof["treeSize"])
+        if index != int(entry["logIndex"]):
+            raise ValueError(f"entry {uuid}'s proof is for log index {index}, not {entry['logIndex']}")
+        leaf = hashlib.sha256(b"\x00" + raw).digest()
+        if not uuid.endswith(leaf.hex()):
+            raise ValueError(f"entry {uuid} is not the leaf its body hashes to")
+        hashes = [bytes.fromhex(h) for h in proof["hashes"]]
+        root = bytes.fromhex(proof["rootHash"])
+        pem = base64.b64decode(body["spec"]["signature"]["publicKey"]["content"], validate=True).decode("ascii")
+    except (KeyError, TypeError, binascii.Error, UnicodeDecodeError) as error:
+        raise ValueError(f"entry {uuid} is malformed: {error!r}") from error
+    if not _inclusion_ok(index, size, leaf, hashes, root):
+        raise ValueError(f"entry {uuid}'s inclusion proof does not rebuild its root hash")
+    identity, issuer = certificate_identity(pem)
+    if identity != IDENTITY or issuer != OIDC_ISSUER:
+        raise ValueError(f"entry {uuid} was signed by {identity} via {issuer}, not {IDENTITY}")
+    return {"uuid": uuid, "log_index": int(entry["logIndex"]), "identity": identity}
+
+
+def write_anchor(repo: Path, day: date, entries: list) -> Path:
+    """Write `live/<day>.rekor` from the first of `entries` that anchors the committed record.
+
+    `entries` are Rekor responses found for the record's SHA-256: others may
+    have signed the same bytes, and only this workflow's counts.
+
+    Raises:
+        ValueError: the record is not committed, the day is already anchored,
+            or no entry anchors it.
+    """
+
+    repo = Path(repo)
+    rel = f"live/{day.isoformat()}.json"
+    if (day, rel) not in logged_files(repo):
+        raise ValueError(f"{rel} is not committed: nothing to anchor")
+    target = repo / f"live/{day.isoformat()}.rekor"
+    if target.exists() or any(d == day for d, _ in anchor_files(repo)):
+        raise ValueError(f"{day} is already anchored: an anchor is never replaced")
+    sha256 = file_sha256(repo / rel)
+    problems = []
+    for response in entries:
+        try:
+            found = verify_entry(response, sha256)
+        except ValueError as error:
+            problems.append(str(error))
+            continue
+        anchor = {"date": day.isoformat(), "sha256": sha256, **found, "entry": response}
+        target.write_text(json.dumps(anchor, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        return target
+    raise ValueError(f"no Rekor entry anchors {rel}: {problems or 'none found'}")
+
+
+def require_anchor(repo: Path, day: date, rel: str, record_sha256: str) -> dict:
+    """An anchor file is for its record's bytes, and its stored entry passes `verify_entry`."""
+
+    anchor = json.loads((Path(repo) / rel).read_text(encoding="utf-8"))
+    if anchor.get("date") != day.isoformat() or anchor.get("sha256") != record_sha256:
+        raise ValueError(f"{rel} anchors {anchor.get('date')} {anchor.get('sha256')}, not {day} {record_sha256}")
+    found = verify_entry(anchor.get("entry"), record_sha256)
+    if (anchor.get("uuid"), anchor.get("log_index")) != (found["uuid"], found["log_index"]):
+        raise ValueError(f"{rel}'s stated UUID or log index differs from its entry's")
+    return found
+
+
 def parse_digests(path) -> dict:
     """The #225 digests, by day: {"sha256", "commit"}. Only the bot's comments count.
 
@@ -270,7 +522,8 @@ def verify(repo: Path, digests: dict) -> list:
     Raises:
         ValueError: an uncommitted change; a commit that is not add-only by the
             bot; a file whose SHA-256 or adding commit differs from its digest;
-            a file with no digest, or a digest with no file; a broken chain.
+            a file with no digest, or a digest with no file; a broken chain; an
+            anchor that fails `require_anchor`. A day with no anchor passes.
     """
 
     repo = Path(repo)
@@ -293,6 +546,11 @@ def verify(repo: Path, digests: dict) -> list:
     if missing:
         raise ValueError(f"days digested on #225 with no file in the log: {[d.isoformat() for d in missing]}")
     require_chain(repo, files)
+    logged = {day: rel for day, rel in files}
+    for day, rel in anchor_files(repo):
+        if day not in logged:
+            raise ValueError(f"{rel} anchors a day the log holds no record for")
+        require_anchor(repo, day, rel, file_sha256(repo / logged[day]))
     return [day for day, _ in files]
 
 
@@ -306,6 +564,13 @@ def main(argv=None) -> int:
     check.add_argument("--live-dir", required=True, type=Path)
     check.add_argument("--date", required=True)
     check.add_argument("--base", required=True, help="origin/live-log's SHA, or 'none' for a new branch")
+    check.add_argument("--anchor", action="store_true", help="the commit adds the day's .rekor file")
+    missing = sub.add_parser("unanchored", help="the logged days with no anchor yet")
+    missing.add_argument("--live-dir", required=True, type=Path)
+    anchor = sub.add_parser("anchor-file", help="write the day's .rekor file from Rekor entries")
+    anchor.add_argument("--live-dir", required=True, type=Path)
+    anchor.add_argument("--date", required=True)
+    anchor.add_argument("--entries", required=True, type=Path, help="a JSON list of Rekor responses")
     every = sub.add_parser("verify", help="check every logged file, commit, digest and link")
     every.add_argument("--live-dir", required=True, type=Path)
     every.add_argument("--digests", required=True, type=Path)
@@ -316,8 +581,14 @@ def main(argv=None) -> int:
         record = json.loads(path.read_text(encoding="utf-8"))
         print(json.dumps({"file": str(path), "chain": record.get("chain")}))
     elif args.command == "check-append":
-        require_append_only(args.live_dir, None if args.base == "none" else args.base, day)
-        print(json.dumps({"append_only": f"live/{day.isoformat()}.json"}))
+        require_append_only(args.live_dir, None if args.base == "none" else args.base, day, args.anchor)
+        print(json.dumps({"append_only": f"live/{day.isoformat()}.{'rekor' if args.anchor else 'json'}"}))
+    elif args.command == "unanchored":
+        print(json.dumps({"unanchored": [d.isoformat() for d in unanchored(args.live_dir)]}))
+    elif args.command == "anchor-file":
+        path = write_anchor(args.live_dir, day, json.loads(args.entries.read_text(encoding="utf-8")))
+        anchor = json.loads(path.read_text(encoding="utf-8"))
+        print(json.dumps({"file": str(path), "uuid": anchor["uuid"], "log_index": anchor["log_index"]}))
     else:
         days = verify(args.live_dir, parse_digests(args.digests))
         print(json.dumps({"verified": [d.isoformat() for d in days]}))
