@@ -277,6 +277,11 @@ class FieldRead(NamedTuple):
     available_at: Optional[datetime]
     rows: int
     hours: Optional[float]
+    #: How long the observation behind the value had been observable, from the
+    #: observation's own declared instant. Equal to `hours` unless the field is
+    #: weekly: a weekly value is carried on every panel row until the next
+    #: print, so its row's declared instant is later than its observation's.
+    observation_hours: Optional[float] = None
 
 
 class InformationSet(NamedTuple):
@@ -560,6 +565,31 @@ class InformationRule:
 
     # -- reads ------------------------------------------------------------
 
+    def _observation_available(
+        self, dates: Sequence[date], fields, row: int, available: datetime
+    ) -> datetime:
+        """The declared instant of the observation behind row `row`'s value.
+
+        A weekly field (`field_frequencies`) is an H.4.1-style Wednesday level
+        carried forward on later panel rows (`docs/decisions/weekly-carry.md`).
+        Its observation is the latest Wednesday on or before the row, and a
+        calendar-day lag counted from that Wednesday is the row's declared
+        instant less the days between them. Any other field, or a lag counted
+        in business days, is aged from its own row.
+        """
+
+        for source_id, field in fields:
+            frequencies = self.registry[source_id].get("field_frequencies") or {}
+            if frequencies.get(field) != "weekly":
+                return available
+            lag = (self.registry[source_id].get("field_release_lags") or {}).get(
+                field
+            ) or self.registry[source_id].get("release_lag") or {}
+            if lag.get("unit") == "business_days":
+                return available
+        behind = (dates[row].weekday() - WEEKLY_OBSERVATION_WEEKDAY) % 7
+        return available - timedelta(days=behind)
+
     def information_set(self, dates: Sequence[date], scored_index: int) -> InformationSet:
         """Every declared read for the forecast of `dates[scored_index]`."""
 
@@ -601,6 +631,15 @@ class InformationRule:
                         None
                         if available is None
                         else (deadline - available).total_seconds() / 3600.0
+                    ),
+                    observation_hours=(
+                        None
+                        if available is None
+                        else (
+                            deadline
+                            - self._observation_available(dates, group.fields, row, available)
+                        ).total_seconds()
+                        / 3600.0
                     ),
                 )
             )
@@ -801,6 +840,18 @@ def fold_grid(
     )
 
 
+#: Which instant `hours_observable` counts from. Written into every record's
+#: summary, so a reader does not take it for the age of the row read.
+HOURS_OBSERVABLE_BASIS = (
+    "hours from the declared instant of the observation row (a carried weekly "
+    "value's own print, not the panel row it is read from) to the decision instant"
+)
+
+#: The weekday a weekly field is observed on: the Wednesday level of the H.4.1,
+#: FR 2004 and H.8 weeklies the registry declares.
+WEEKLY_OBSERVATION_WEEKDAY = 2
+
+
 def information_summary(
     rule: InformationRule, infos: Sequence[InformationSet]
 ) -> Dict[str, object]:
@@ -808,7 +859,9 @@ def information_summary(
 
     For each declared feature: its kind, its fields, how many scored rows read
     it at each distance (`rows` before the scored row), and the least and most
-    hours its value had been observable at the decision instant.
+    hours its observation had been observable at the decision instant
+    (`hours_observable`, counted from the observation row's declared instant;
+    `hours_observable_basis` says so in the record).
     """
 
     features: Dict[str, object] = {}
@@ -818,8 +871,8 @@ def information_summary(
         for info in infos:
             read = info.reads[position]
             counts[str(read.rows)] = counts.get(str(read.rows), 0) + 1
-            if read.hours is not None:
-                hours.append(read.hours)
+            if read.observation_hours is not None:
+                hours.append(read.observation_hours)
         features[group.feature] = {
             "kind": group.kind,
             "fields": [f"{source}.{field}" for source, field in group.fields],
@@ -827,6 +880,7 @@ def information_summary(
             "hours_observable": (
                 None if not hours else {"min": min(hours), "max": max(hours)}
             ),
+            "hours_observable_basis": HOURS_OBSERVABLE_BASIS,
         }
     summary: Dict[str, object] = {
         "rule": "as_of",
