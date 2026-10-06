@@ -338,6 +338,10 @@ NOT_ENTRY_POINTS = {
         "builds direct training pairs inside a fit's own training frame (#37); "
         "scores nothing, the backtest that calls the forecaster guards the scored days"
     ),
+    "scripts/reserves_sensitivity.measure": (
+        "fits the published gbm at fixed folds on days before 2026 and re-reads one "
+        "feature row, scoring nothing (#267); refuses any day on or after 2026-01-01 itself"
+    ),
     "scripts/calibration_masking_exposure.exposure": (
         "counts masked training pairs per refit block; scores nothing"
     ),

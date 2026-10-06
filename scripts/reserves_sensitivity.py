@@ -31,13 +31,24 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "scripts"))
 
-import live_record as live  # noqa: E402
+import importlib.util  # noqa: E402
+
+
+def _script(name):
+    spec = importlib.util.spec_from_file_location(f"rs_{name}", REPO / "scripts" / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+live = _script("live_record")
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import _AsOfFold, _at_decision, _fit_at_origin, _reads_information  # noqa: E402
 from repo_model.data import DailyObservation, load_daily_panel  # noqa: E402
 
+#: The first day this script refuses (`docs/decisions/lockbox.md`).
+LOCKED_FROM = date(2026, 1, 1)
 #: Ordinary days and the two quarter-ends of the last pre-2026 half-year; all inside the lockbox.
 SCORED_DAYS = (date(2025, 7, 15), date(2025, 9, 30), date(2025, 10, 15), date(2025, 11, 14),
                date(2025, 12, 15), date(2025, 12, 31))
@@ -48,6 +59,8 @@ CLAIM_BP = 0.3
 
 
 def measure(panel: Path, day: date) -> dict:
+    if day >= LOCKED_FROM:
+        raise ValueError(f"{day} is on or after {LOCKED_FROM}: docs/decisions/lockbox.md")
     rows = [row for row in load_daily_panel(panel) if row.date <= day]
     registry = json.loads((REPO / "metadata" / "sources.json").read_text())
     sides, args = live._compare_sides(1)
