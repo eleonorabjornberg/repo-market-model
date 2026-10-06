@@ -180,9 +180,24 @@ INNER_SELECTION = {
 }
 READINGS = tuple(INNER_SELECTION["readings"])
 
-#: The candidate the inner block chose, committed before the outer block is
-#: scored. None until `choose` has run.
-CHOSEN = None
+#: The reading that binds the choice. #247's amendment adds the conditional
+#: gates to the selection rule ("a candidate is eligible only if, on the inner
+#: block, ... meets the gates"), and the ruling on PR #252 applies that
+#: amendment's substance here. The other reading is reported beside it.
+BINDING_READING = "bar_and_conditional_gates"
+
+#: The candidate the inner block chose (`choose`, run on 6 October 2026),
+#: committed before the outer block is scored. Under the binding reading it is
+#: (iv), (ii)'s trees with (i)'s tracking: (i) is eligible but its paired CRPS
+#: against (iv) excludes 0, and (iii) fails the coupon-settlement gate. Under
+#: #247's bar alone it would be (iii). It is no longer (i).
+CHOSEN = "iv_regularised_and_tracking"
+
+#: (iv)'s trees: (ii)'s setting, chosen again on the inner block by #247's rule
+#: (no question 4 variant meets the bar there; max depth 3 has the lowest CRPS).
+#: Applied as #247's walk applies it (`interior_diagnosis._with_tree_settings`).
+V2_TREE_SETTINGS = {"max_depth": 3}
+V2_TREE_VARIANT = "max_depth_3"
 
 
 def _above_half_tie(y, q):
@@ -231,6 +246,132 @@ def eligible_inner(summary: dict, gates: dict, *, reading: str) -> bool:
     if reading == "bar_and_conditional_gates":
         return not any(g["verdict"] == "fail" for g in gates.values())
     return True
+
+
+def day_cells(rows, scored_dates) -> dict:
+    """Per scored date, the conditional cells it belongs to (`CONDITIONAL_GATES["cells"]`).
+
+    The quarter-end type is the split declaration's. The scarcity state and the
+    coupon settlement are read as-of at the day's h = 1 decision instant, through
+    #214's reads (`onset_post_mortem.as_of_reads`), on the measurement panel
+    whose published columns are the published panel's. Only days through
+    `OUTER`'s end are read: the lockbox refuses a later `end`.
+    """
+
+    import tempfile
+
+    from repo_model.baseline import _split_labels
+    from repo_model.scarcity import measurement_declaration, with_reserve_scarcity_state
+
+    if max(scored_dates) > OUTER[1]:
+        raise ValueError("the conditional cells are read on the inner and outer blocks only")
+    pm = _script("onset_post_mortem")
+    validation = _script("scarcity_validation")
+    _regimes, types = _split_labels(load_split_declaration(fp.SPLITS), rows, list(scored_dates))
+    with tempfile.TemporaryDirectory() as directory:
+        with measurement_declaration():
+            build, _digest, registry, decision = validation.build_measurement_panel(pm.REGISTRY, Path(directory))
+            measured = with_reserve_scarcity_state(build.observations)
+            reads = pm.as_of_reads(measured, registry, decision_time=decision,
+                                   minimum_history=pm.MINIMUM_HISTORY, end=OUTER[1])
+    out = {}
+    for when, kind in zip(scored_dates, types):
+        read = reads.get(when)
+        if read is None:
+            raise ValueError(f"{when} has no as-of read on the published fold grid")
+        cells = set()
+        if kind == "quarter_end":
+            cells.add("quarter_end")
+        if read["state"] == 3:
+            cells.add("scarce")
+        if read[pm.COUPONS] is not None and float(read[pm.COUPONS]) > 0.0:
+            cells.add("coupon_settlement")
+        out[when.isoformat()] = sorted(cells)
+    return out
+
+
+def _with_cells(days, cells, field, vectors=None):
+    return [{"date": d["date"], "y": d["y"], field: (vectors[k] if vectors else d[field]),
+             "cells": set(cells[d["date"]])} for k, d in enumerate(days)]
+
+
+def inner_choice(v1_days, variant_days, rows, splits, cells) -> dict:
+    """#247's question 7, redone on the inner block (`INNER_SELECTION`), under each reading.
+
+    `v1_days` is v1's h = 1 walk in #247's format (`date`, `anchor`, `y`,
+    `issued`); `variant_days` maps each question 4 variant to its walk's days.
+    Nothing outside `INNER` is read to choose.
+    """
+
+    rows_by_date = {row.date: row for row in rows}
+    v1_vectors = [d["issued"] for d in v1_days]
+    inner_positions = [k for k, d in enumerate(v1_days) if _in(d["date"], INNER)]
+    inner_days = [v1_days[k] for k in inner_positions]
+
+    # (ii)'s tree setting, by #247's rule on the inner block.
+    variants = {}
+    for name, days in variant_days.items():
+        if [d["date"] for d in days] != [d["date"] for d in v1_days]:
+            raise ValueError(f"{name} is not on v1's fold grid")
+        variants[name] = dx._summary(v1_days, [d["issued"] for d in days], INNER)
+    passing = [n for n in variants if dx.eligible(variants[n])]
+    best = min(passing or list(variants), key=lambda n: (variants[n]["crps"], n))
+    trees = [d["issued"] for d in variant_days[best]]
+
+    tracked, choices = dx.interior_tracking(v1_days)
+    tracked_trees, choices_trees = dx.interior_tracking([dict(d, issued=v) for d, v in zip(v1_days, trees)])
+    # The step selection is walk-forward: run on the inner block alone, it issues the same vectors.
+    inner_only, inner_choices = dx.interior_tracking(inner_days)
+    if inner_only != tracked[: len(inner_days)] or inner_positions != list(range(len(inner_days))):
+        raise ValueError("(i) on the inner block alone differs from its walk's inner days")
+    vectors = {
+        "i_interior_tracking": tracked,
+        "ii_regularised_trees": trees,
+        "iii_residual_law": dx.residual_law(v1_days, rows_by_date, scaled=False),
+        "iii_residual_law_scaled": dx.residual_law(v1_days, rows_by_date, scaled=True),
+        "iv_regularised_and_tracking": tracked_trees,
+    }
+    candidates, summaries, gates = {}, {}, {}
+    for name in dx.CANDIDATES:
+        summaries[name] = dx._summary(v1_days, vectors[name], INNER)
+        gates[name] = conditional_gates(_with_cells(inner_days, cells, "v", vectors[name]), "v")
+        candidates[name] = {
+            "inner": summaries[name],
+            "conditional_gates_inner": gates[name],
+            "paired_vs_v1_inner": dx.paired(v1_days, v1_vectors, vectors[name], rows, splits, INNER,
+                                            ("#244", "inner", name)),
+            "complexity": list(dx.COMPLEXITY[name]),
+        }
+    pair_cache = {}
+
+    def paired_to_leader(name, leader):
+        if (name, leader) not in pair_cache:
+            pair_cache[(name, leader)] = dx.paired(v1_days, vectors[leader], vectors[name], rows, splits,
+                                                   INNER, ("#244", "inner", name, "vs", leader))
+        return pair_cache[(name, leader)]
+
+    selections = {}
+    for reading in READINGS:
+        eligible = {n: summaries[n] for n in dx.CANDIDATES if eligible_inner(summaries[n], gates[n], reading=reading)}
+        selections[reading] = dx.select_candidate(eligible, paired_to_leader)
+    v1_inner = dx._summary(v1_days, v1_vectors, INNER)
+    return {
+        "declared": INNER_SELECTION,
+        "window": [INNER[0].isoformat(), INNER[1].isoformat()],
+        "days": len(inner_days),
+        "v1": {"inner": v1_inner,
+               "conditional_gates_inner": conditional_gates(_with_cells(inner_days, cells, "issued"), "issued")},
+        "q4_variants_inner": variants,
+        "ii_setting": {"variant": best, "tree_settings": dx.VARIANTS[best], "eligible_variants": sorted(passing)},
+        "candidates": candidates,
+        "selection": selections,
+        "paired_against_leader": {f"{a}_vs_{b}": {k: v for k, v in p.items() if k != "splits"}
+                                  for (a, b), p in pair_cache.items()},
+        "i_step_choices_inner": inner_choices,
+        "i_inner_alone_equals_walk": True,
+        "iv_step_choices_inner": [c for c in choices_trees if c["first"] <= INNER[1].isoformat()],
+        "vectors": vectors,
+    }
 
 
 def bar_verdict(coverage: dict, paired_vs_v1: dict) -> dict:
@@ -496,8 +637,39 @@ def assemble_command(args) -> int:
     decides = [d for d in days if _in(d["date"], DECIDES)]
     check = [d for d in days if _in(d["date"], CHECK)]
 
+    # The choice, redone on the inner block; it must be the candidate committed as CHOSEN.
+    variant_walks = _variant_walks(args.variant_walks, args.panel)
+    v1_walk = variant_walks.pop("v1")
+    if [[d["date"], d["issued"]] for d in v1_walk] != ours:
+        raise ValueError("#247's v1 walk and v2's walk carry different v1 vectors")
+    cells = _cells_through_outer(rows, v1_walk)
+    choice = inner_choice(v1_walk, variant_walks, rows, splits, cells)
+    chosen_vectors = choice.pop("vectors")
+    picks = {reading: choice["selection"][reading]["recommended"] for reading in READINGS}
+    if picks[BINDING_READING] != CHOSEN:
+        raise ValueError(f"the inner block chooses {picks}; CHOSEN is {CHOSEN!r}")
+    if chosen_vectors[CHOSEN] != [d["v2"] for d in days]:
+        raise ValueError("v2's vectors are not the chosen candidate's")
+
+    def validation_block(window, label):
+        sub = [d for d in days if _in(d["date"], window)]
+        block = window_block(sub, rows, splits, persistence, label)
+        block["crps"]["v2_vs_v1"]["edge_label"] = EXPLORATORY
+        block["bar"] = bar_verdict(block["coverage"], block["crps"]["v2_vs_v1"])
+        block["conditional_gates"] = conditional_gates(_with_cells(sub, cells, "v2"), "v2")
+        block["conditional_gates_v1"] = conditional_gates(_with_cells(sub, cells, "v1"), "v1")
+        return block
+
+    inner_block = validation_block(INNER, "inner")
+    outer_block = validation_block(OUTER, "outer")
+    outer_block["label"] = ("scored once, for v1 and the chosen candidate only, after the inner block's "
+                            "choice was committed as CHOSEN; no candidate, setting or rule was chosen on it")
+
     main_block = window_block(decides, rows, splits, persistence, "2018-2025")
     main_block["bar"] = bar_verdict(main_block["coverage"], main_block["crps"]["v2_vs_v1"])
+    main_block["crps"]["v2_vs_v1"]["edge_label"] = EXPLORATORY
+    main_block["label"] = ("pooled 2018-2025, the window #247 diagnosed, tuned and chose on: exploratory, "
+                           "superseded as evidence by the inner and outer blocks")
     check_block = window_block(check, rows, splits, persistence, "2026")
     check_block["label"] = CHECK_LABEL
     check_block["coverage_interval"] = coverage_interval(check, "v2", ("2026", "v2"))
@@ -538,6 +710,15 @@ def assemble_command(args) -> int:
         "v2_equals_reference": True,
         "days_the_sort_moved_an_outer_quantile": outer_moved,
         "interior_step_choices": walks[1]["interior_blocks"],
+        "outer_validation_declared": {"inner": [INNER[0].isoformat(), INNER[1].isoformat()],
+                                      "outer": [OUTER[0].isoformat(), OUTER[1].isoformat()],
+                                      "inner_selection": INNER_SELECTION,
+                                      "conditional_gates": CONDITIONAL_GATES,
+                                      "chosen": CHOSEN,
+                                      "historical_edge_label": EXPLORATORY},
+        "inner_choice": choice,
+        "inner_block": inner_block,
+        "outer_block": outer_block,
         "window_2018_2025": main_block,
         "check_2026": check_block,
         "anchors": [[d["date"], d["anchor"]] for d in days],
@@ -569,7 +750,43 @@ def assemble_command(args) -> int:
             **others,
         }
     args.output.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"bar": main_block["bar"], "gate": check_block["gate"]}, indent=1))
+    print(json.dumps({"chosen": CHOSEN, "bar_2018_2025": main_block["bar"], "gate_2026": check_block["gate"],
+                      **{name: {"bar": block["bar"],
+                                "conditional_gates": {k: g["verdict"] for k, g in block["conditional_gates"].items()}}
+                         for name, block in (("inner", inner_block), ("outer", outer_block))}}, indent=1))
+    return 0
+
+
+def _variant_walks(paths, panel):
+    walks = {}
+    for path in paths:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if document["panel_sha256"] != panel_sha256(panel) or document["horizon"] != 1:
+            raise ValueError(f"{path} is not an h = 1 walk on the published panel")
+        walks[document["variant"]] = document["days"]
+    missing = sorted(set(dx.VARIANTS) - set(walks))
+    if missing:
+        raise ValueError(f"missing #247 walks: {missing}")
+    return walks
+
+
+def _cells_through_outer(rows, days):
+    return day_cells(rows, [date.fromisoformat(d["date"]) for d in days if _in(d["date"], (DECIDES[0], OUTER[1]))])
+
+
+def choose_command(args) -> int:
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    if panel_sha256(args.panel) != fp._frozen_panel_sha256():
+        raise ValueError("the panel is not the published panel")
+    walks = _variant_walks(args.walks, args.panel)
+    v1_days = walks.pop("v1")
+    dx.reproduction_check(v1_days)
+    cells = _cells_through_outer(rows, v1_days)
+    choice = inner_choice(v1_days, walks, rows, load_split_declaration(fp.SPLITS), cells)
+    choice.pop("vectors")
+    args.output.write_text(json.dumps(choice, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"ii_setting": choice["ii_setting"], "selection": choice["selection"]}, indent=1))
     return 0
 
 
@@ -581,9 +798,16 @@ def main(argv=None) -> int:
     wk.add_argument("--horizon", type=int, choices=dx.HORIZONS, default=1)
     wk.add_argument("--output", type=Path, required=True)
     wk.set_defaults(func=walk_command)
+    ch = sub.add_parser("choose", help="#247's choice, redone on the inner block (ruling on PR #252)")
+    ch.add_argument("--panel", type=Path, required=True)
+    ch.add_argument("--walks", type=Path, nargs="+", required=True, help="#247's h = 1 walks, v1 and every variant")
+    ch.add_argument("--output", type=Path, required=True)
+    ch.set_defaults(func=choose_command)
     asm = sub.add_parser("assemble", help="the record, from the walks")
     asm.add_argument("--panel", type=Path, required=True)
     asm.add_argument("--walks", type=Path, nargs="+", required=True)
+    asm.add_argument("--variant-walks", type=Path, nargs="+", required=True,
+                     help="#247's h = 1 walks, v1 and every variant, for the inner choice")
     asm.add_argument("--output", type=Path, default=RECORD)
     asm.set_defaults(func=assemble_command)
     args = parser.parse_args(argv)

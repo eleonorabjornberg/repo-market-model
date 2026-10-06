@@ -372,6 +372,37 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(self.record["bar_declared"], v2.BAR)
         self.assertEqual(self.record["gate_declared"], v2.GATE)
 
+    def test_the_choice_was_redone_on_the_inner_block(self):
+        declared = self.record["outer_validation_declared"]
+        self.assertEqual(declared["conditional_gates"], v2.CONDITIONAL_GATES)
+        self.assertEqual(declared["inner_selection"], v2.INNER_SELECTION)
+        self.assertIsNotNone(v2.CHOSEN)
+        self.assertEqual(declared["chosen"], v2.CHOSEN)
+        choice = self.record["inner_choice"]
+        self.assertEqual(choice["window"], ["2018-06-29", "2022-12-31"])
+        self.assertEqual(choice["selection"][v2.BINDING_READING]["recommended"], v2.CHOSEN)
+        self.assertEqual(set(choice["selection"]), set(v2.READINGS))
+        self.assertTrue(all(c["first"] <= "2022-12-31" for c in choice["i_step_choices_inner"]))
+
+    def test_the_inner_and_outer_verdicts_are_the_declared_rules_applied(self):
+        for name in ("inner_block", "outer_block"):
+            block = self.record[name]
+            with self.subTest(block=name):
+                self.assertEqual(block["bar"], v2.bar_verdict(block["coverage"], block["crps"]["v2_vs_v1"]))
+                for gate in block["conditional_gates"].values():
+                    if gate["days"] < v2.CONDITIONAL_GATES["minimum_days"]:
+                        self.assertEqual(gate["verdict"], "inconclusive")
+                    elif "at_least" in gate:
+                        self.assertEqual(gate["verdict"], "pass" if gate["value"] >= gate["at_least"] else "fail")
+                    else:
+                        self.assertEqual(gate["verdict"], "pass" if gate["value"] <= gate["at_most"] else "fail")
+        self.assertEqual(self.record["outer_block"]["first"], "2023-01-03")
+        self.assertEqual(self.record["inner_block"]["last"], "2022-12-30")
+
+    def test_every_historical_edge_is_labelled_exploratory(self):
+        for name in ("inner_block", "outer_block", "window_2018_2025"):
+            self.assertEqual(self.record[name]["crps"]["v2_vs_v1"]["edge_label"], v2.EXPLORATORY)
+
     def test_crps_figures_are_finite(self):
         for window in ("window_2018_2025", "check_2026"):
             for side in ("v2_vs_v1", "v2_vs_persistence"):
