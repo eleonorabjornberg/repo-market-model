@@ -628,7 +628,7 @@ def held_as(names):
 
 
 def signed(value, places):
-    """A signed figure as the page prints it: '+0.17', '−0.13'."""
+    """A signed figure as the page prints it, with a true minus sign: '+0.5', '−0.5'."""
     text = f"{abs(value):.{places}f}"
     if float(text) == 0:
         return text
