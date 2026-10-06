@@ -117,8 +117,12 @@ SELECTION = {
               "the inner block chose, the outer block did not"),
 }
 
-#: The remedy the inner block chose (`choose`), committed before 2023-2025 is read. None until the choice is run.
-CHOSEN_REMEDY = None
+#: The remedy the inner block chose (`choose`, run on 6 October 2026), committed before 2023-2025 is read. Under
+#: `SELECTION` it is `base`: no remedy is adopted. Every candidate's paired CRPS gain over `base` on the inner block is
+#: negative (the best, `turn_pool`, -0.017 [-0.041, +0.009]), so none is eligible. On the 19 inner quarter-ends the
+#: shift remedies move the 50% band from 31.6% to 0-5%: a median taken over earlier quarter-ends is the wrong
+#: location for the next one, because the bias changes sign by regime (`docs/pivot/quarter-end-diagnosis.md`).
+CHOSEN_REMEDY = "base"
 
 LOOK_LABEL = ("a labelled look at 2023-2025: the remedy was chosen on 2018-2022 and these days chose nothing, "
               "but 2023-2025 was read by every earlier look at v2 and by the diagnosis, so the figures are "
