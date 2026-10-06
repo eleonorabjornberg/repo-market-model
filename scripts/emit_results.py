@@ -1371,7 +1371,7 @@ def coverage_section(challengers, persistence):
         # The pooled interval hides what the project's own split shows (#265): say so
         # from the split cells, never from the pooled figure alone.
         add("")
-        add(band_coverage_module().finding_sentence(band_coverage()[1]))
+        add(band_coverage_module().finding_sentence(band_coverage()[1], band_coverage()[2]))
     return lines
 
 
