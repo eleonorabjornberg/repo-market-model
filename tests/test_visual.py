@@ -2361,6 +2361,20 @@ class FinalTestSectionTests(unittest.TestCase):
         self.assertIn('href="#final-test"', self.page[:self.page.index("<!-- start-here -->")])
         self.assertRegex(self.block, r'<svg|id="ftchart"')
 
+    def test_the_nav_item_carries_no_result_marker(self):
+        """Review of c39eab4 on #240: a typed check mark beside "The final test" in the nav read as
+        "passed" whatever the record said, with no near-blind disclosure beside it. The nav item's
+        marker is neutral; the result is stated only in the section, read off the record."""
+        template = (ROOT / emit_visual.TEMPLATE).read_text(encoding="utf-8")
+        for name, text in (("template", template), ("page", self.page)):
+            with self.subTest(source=name):
+                item = re.search(r'<li[^>]*><b>([^<]*)</b><span><a href="#final-test">', text)
+                self.assertIsNotNone(item)
+                marker = html.unescape(item.group(1)).strip()
+                self.assertTrue(marker)
+                self.assertFalse(set(marker) & set("\u2713\u2714\u2717\u2718\u2715\u2716\u2705\u274c\u2611\u2612"), marker)
+                self.assertNotRegex(marker, r"(?i)pass|fail|^x$|[&#;]")
+
     def test_it_links_the_record_and_its_documents(self):
         for path in (emit_visual.FINAL_TEST, "docs/final-test.md", "docs/decisions/final-test-preregistration.md"):
             with self.subTest(path=path):

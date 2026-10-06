@@ -254,7 +254,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   </div>
   <nav aria-label="Chapters">
     <ol>
-      <li class="live"><b>&#10003;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
+      <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
       <li class="live"><b>1</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed's rates</small></span></li>
       <li class="live"><b>2</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
       <li class="live"><b>3</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
@@ -460,7 +460,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   {{ft_claim}}
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
-      <div class="s">Above: mean CRPS over the {{ft_days}} scored days, in basis points; lower is better. Below: the paired difference, persistence minus the model, day by day, with its {{ft_level}}% interval; right of zero favours the model</div></figcaption>
+      <div class="s">Above: mean CRPS over the {{ft_days}} scored days, in basis points; lower is better. Below: the mean paired difference, persistence minus the model, with its {{ft_level}}% interval; right of zero favours the model</div></figcaption>
     <div class="chart" id="ftchart"><div class="tip"></div></div>
   </figure>
   {{ft_split_table}}
@@ -1499,7 +1499,7 @@ function renderFinalTest() {
   svg.append("g").selectAll("line").data(x.ticks(narrow ? 4 : 6)).join("line").attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", top).attr("y2", H - m.b).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").selectAll("text").data(x.ticks(narrow ? 4 : 6)).join("text").attr("x", d => x(d)).attr("y", H - m.b + 16).attr("text-anchor", "middle").text(d => d === 0 ? "0" : s2(d));
   svg.append("text").attr("class", "lab").attr("x", W - m.r).attr("y", H - 4).attr("text-anchor", "end").text("Persistence's CRPS minus the model's, bp");
-  label(cy, "Difference, day by day");
+  label(cy, "Mean paired difference");
   const col = FT.lower > 0 ? "var(--sofr)" : FT.upper < 0 ? "var(--pressure)" : "var(--ink-3)";
   svg.append("line").attr("x1", x(FT.lower)).attr("x2", x(FT.upper)).attr("y1", cy).attr("y2", cy).style("stroke", col).style("stroke-width", 2.4).style("stroke-linecap", "round");
   svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
