@@ -8,12 +8,31 @@ name: live-log
 # rewritten: `live-log` is protected by repository ruleset 24422476 (no
 # deletion, no non-fast-forward push).
 #
+# The ruleset alone does not stop a fast-forward commit from changing an
+# existing file (#254). So `scripts/live_integrity.py`, run from main:
+# chains each new record to the one before it (`chain`), checks that the
+# day's commit only adds the day's file before it is pushed (`check-append`),
+# and every day re-checks every logged file against its digest on the
+# "Live record: daily digests" issue, its chain and its commit (`verify`).
+# A mismatch fails the run, and the failure reaches the failed-runs issue.
+#
+# Each day's digest is also anchored outside the repository's reach, in the
+# public Sigstore Rekor log (Eleonora's ruling of 6 October 2026, #254):
+# `cosign sign-blob` signs the file keylessly under this workflow's GitHub
+# OIDC identity, and the entry's log index, UUID and inclusion proof are
+# stored beside the record as `live/<day>.rekor`, in a second add-only commit.
+# If Rekor is unreachable the record is still written; the failure goes to
+# the failed-runs issue and a later run anchors the missed day. A missing
+# anchor never blocks a record. How to check one online: `ONLINE_COMMAND` in
+# `scripts/live_integrity.py`.
+#
 # The code that makes the record is pinned (`scripts/live_record.py pin`): this
 # file runs from main, and the record is made from a worktree at the pinned
 # SHA, which changes only through a dated version-bump record.
 #
 # No third-party action is used: Python 3.11 comes from the runner's own tool
-# cache, and git and gh are the runner's. So there is no action to pin.
+# cache, and git, gh, curl and jq are the runner's. So there is no action to
+# pin. cosign is one release binary, checked against its published SHA-256.
 
 on:
   schedule:
@@ -22,10 +41,13 @@ on:
   workflow_dispatch:
 
 # contents: write only to push to live-log; issues: write for the digest and
-# failure issues. Eleonora's decision of 3 October 2026 (#215).
+# failure issues. Eleonora's decision of 3 October 2026 (#215). id-token: write
+# only so cosign can sign keylessly under this workflow's identity, and holds
+# no secret (her ruling of 6 October 2026, #254).
 permissions:
   contents: write
   issues: write
+  id-token: write
 
 concurrency:
   group: live-log
@@ -99,14 +121,76 @@ jobs:
             echo "Not a decision day: nothing to append."
             exit 0
           fi
+          base=$(git rev-parse --verify -q HEAD || echo none)
+          "$PY" -B ../main/scripts/live_integrity.py chain --live-dir . --date "$DAY"
           git add "$file"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit --quiet -m "Live record for $DAY (code $PIN)"
+          "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$DAY" --base "$base"
           git push --quiet origin HEAD:refs/heads/live-log
           echo "SHA256=$(sha256sum "$file" | cut -d' ' -f1)" >> "$GITHUB_ENV"
           echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "WROTE=1" >> "$GITHUB_ENV"
+
+      - name: Anchor the digests in Sigstore Rekor
+        id: anchor
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          COSIGN_VERSION: v2.5.3
+          COSIGN_SHA256: 783b5d6c74105401c63946c68d9b2a4e1aab3c8abce043e06b8510b02b623ec9
+        run: |
+          set -euo pipefail
+          curl -fsSL -o cosign "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  cosign" | sha256sum -c -
+          chmod +x cosign
+          cd live-log
+          days=$("$PY" -B ../main/scripts/live_integrity.py unanchored --live-dir . | jq -r '.unanchored[]')
+          for day in $days; do
+            file="live/$day.json"
+            sha=$(sha256sum "$file" | cut -d' ' -f1)
+            ../cosign sign-blob --yes --bundle "../bundle-$day.json" "$file" > /dev/null
+            : > ../entries.jsonl
+            for uuid in $(curl -fsS -X POST -H 'Content-Type: application/json' \
+                -d "{\"hash\":\"sha256:$sha\"}" https://rekor.sigstore.dev/api/v1/index/retrieve | jq -r '.[]'); do
+              curl -fsS "https://rekor.sigstore.dev/api/v1/log/entries/$uuid" >> ../entries.jsonl
+              echo >> ../entries.jsonl
+            done
+            jq -s . ../entries.jsonl > ../entries.json
+            "$PY" -B ../main/scripts/live_integrity.py anchor-file --live-dir . --date "$day" --entries ../entries.json
+            base=$(git rev-parse HEAD)
+            git add "live/$day.rekor"
+            git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "Rekor anchor for $day"
+            "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$day" --base "$base" --anchor
+            git push --quiet origin HEAD:refs/heads/live-log
+            if [ "$day" != "$DAY" ]; then
+              n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
+                -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+              {
+                echo "$day anchored late in Sigstore Rekor (the digest above is unchanged):"
+                echo
+                jq -r '"- Rekor log index: \(.log_index)\n- Rekor entry: \(.uuid)"' "live/$day.rekor"
+                echo "- run: $RUN_URL"
+              } > late.md
+              gh api "repos/$REPO/issues/$n/comments" -F body=@../late.md > /dev/null
+            fi
+          done
+
+      - name: Report an anchor that failed
+        if: always() && steps.anchor.outcome == 'failure'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
+          if [ -z "$n" ]; then
+            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
+              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
+              -f 'labels[]=finding' -q .number)
+          fi
+          echo "Anchor failed: $DAY. The record is written; the Rekor anchor is not. A later run anchors every unanchored day (#254). Run: $RUN_URL" > anchor-failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@anchor-failed.md >/dev/null
 
       - name: Post the digest outside the repository
         id: digest
@@ -122,8 +206,22 @@ jobs:
             echo "- commit on live-log: $COMMIT"
             echo "- code: $PIN"
             echo "- run: $RUN_URL"
+            if [ -f "live-log/live/$DAY.rekor" ]; then
+              jq -r '"- Rekor log index: \(.log_index)\n- Rekor entry: \(.uuid)"' "live-log/live/$DAY.rekor"
+            fi
           } > digest.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
+
+      - name: Verify every logged file
+        id: integrity
+        if: always() && steps.branch.outcome == 'success'
+        run: |
+          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
+            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          test -n "$n"
+          gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests.jsonl
+          "$PY" -B main/scripts/live_integrity.py verify --live-dir live-log --digests digests.jsonl
 
       - name: Report missed days
         if: always() && env.MISSED_ANY == '1'
@@ -149,6 +247,7 @@ jobs:
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
             digest=${{ steps.digest.outcome }}
+            integrity=${{ steps.integrity.outcome }}
         run: |
           step=$(echo "$OUTCOMES" | tr ' ' '\n' | grep '=failure' | head -1 | cut -d= -f1)
           if [ "$step" = "record" ] && [ -f status.json ]; then
