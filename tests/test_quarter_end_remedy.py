@@ -121,6 +121,22 @@ class LayerTests(unittest.TestCase):
         out = qe.walk(past + [target], "qe_shift_width")[-1]
         self.assertEqual(out, [2.0 + 4.0 * q for q in BASE_VECTOR])
 
+    def test_the_recent_shift_reads_the_last_four_quarter_ends_only(self):
+        # Early quarter-ends at +20 bp, the last four at -10 bp: the all-history median is still +20.
+        past = _history([20.0] * 6 + [-10.0] * 4)
+        target = _day(date(2023, 6, 30), "quarter_end", 0.0)
+        recent = qe.walk(past + [target], "qe_shift_recent")[-1]
+        whole = qe.walk(past + [target], "qe_shift")[-1]
+        self.assertEqual(recent, [q - 10.0 for q in BASE_VECTOR])
+        self.assertEqual(whole, [q + 20.0 for q in BASE_VECTOR])
+
+    def test_the_recent_width_remedy_widens_by_the_last_four_only(self):
+        # Last four residuals -6, -6, 10, 10: median 2, |e - 2| all 8 (the earlier 0s are not read), scale 4.
+        past = _history([0.0, 0.0, 0.0, -6.0, -6.0, 10.0, 10.0])
+        target = _day(date(2023, 6, 30), "quarter_end", 0.0)
+        out = qe.walk(past + [target], "qe_shift_width_recent")[-1]
+        self.assertEqual(out, [2.0 + 4.0 * q for q in BASE_VECTOR])
+
     def test_the_scale_never_narrows_the_band(self):
         past = _history([1.0, -1.0, 1.0, -1.0, 1.0])
         target = _day(date(2021, 6, 30), "quarter_end", 0.0)
