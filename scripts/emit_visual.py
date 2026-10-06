@@ -24,6 +24,12 @@ half); and how the project was built. Nothing on the page is typed:
   alone, through `from_record`: the verdict, the pre-registered claim (quoted
   only on a pass, beside the near-blind disclosure), the split by day type and
   the reported-only cells with their verbatim labels.
+* The "Forecast against what happened" section (#246) reads
+  `docs/runs/published_distribution_daily_h1.json` alone, through
+  `from_record`: each scored day's five quantiles at h = 1 and the actual
+  spread, drawn by year, and an accuracy table in absolute basis points for
+  2018-2025 and 2026 apart. A day in a locked tier is refused, not drawn.
+  v2's line and bands join through `FORECAST_DAILY_SERIES` (#244).
 * Days in a locked tier of `metadata/lockbox.json` (`docs/decisions/lockbox.md`)
   are drawn greyed and labelled "held out", and are left out of every count,
   share, median and generated sentence (#141 ruling 3). The tiers are read
@@ -149,6 +155,8 @@ ISSUES = "docs/visual/issues.json"
 RUNS = "docs/runs"
 #: The final test (#151): the near-blind tier opened once. The site's "Final test" section (#238) reads it alone.
 FINAL_TEST = f"{RUNS}/final_test_near_blind.json"
+#: The published distribution's daily forecasts at h = 1 (#246).
+FORECAST_DAILY = f"{RUNS}/published_distribution_daily_h1.json"
 SNAPSHOTS = "tests/fixtures/snapshots"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
@@ -181,6 +189,7 @@ INPUTS = (
     MAP,
     ISSUES,
     FINAL_TEST,
+    FORECAST_DAILY,
     f":(glob){RUNS}/*.json",
     SNAPSHOTS,
 )
@@ -358,6 +367,24 @@ FINAL_TEST_DAY_TYPES = ("ordinary", "month_end", "quarter_end", "tax_date")
 #: The event cells the section names when it says the test is not a warning of stress.
 FINAL_TEST_STRESS_TARGETS = (("+5bp", "+5"), ("+10bp", "+10"))
 #: The second amendment's outcome labels (4 October 2026), as `scripts/emit_results.py` renders them.
+#: The distributions "Forecast against what happened" draws, in order (#246). Each
+#: names a published record holding every scored day's quantiles and actual
+#: spread on one grid. This is the hook for pressure model v2 (#244): when its
+#: daily record is published, it is added here, with no other change.
+FORECAST_DAILY_SERIES = (
+    {"key": "v1", "label": "The published model", "record": FORECAST_DAILY},
+)
+#: The quantile levels the section reads: the 90% band is the outer pair, the 50% band the inner.
+FORECAST_DAILY_LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
+#: The accuracy table's two periods: before 2026, and 2026 (opened history, #151).
+FORECAST_DAILY_SPLIT = "2026-01-01"
+#: The spread is whole basis points carried as floats; a tie is read within this.
+FORECAST_DAILY_TIE_BP = 1e-9
+#: How many of the largest misses the table names per period, and the 2026 list shows.
+FORECAST_DAILY_LARGEST, FORECAST_DAILY_MISSES = 3, 5
+#: The interior band's label until v2 replaces it (#243).
+FORECAST_DAILY_50_LABEL = "not yet calibrated (#243)"
+
 FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown", "worse": "shown worse"}
 
 
@@ -2826,6 +2853,166 @@ def final_test(records, locked):
     return data, fills
 
 
+def forecast_accuracy(days):
+    """The accuracy of one distribution on `days`, in absolute basis points.
+
+    `days` are a daily record's entries. The error is the actual spread minus
+    the median forecast. A band holds a day when the actual is inside it or on
+    its edge, within `FORECAST_DAILY_TIE_BP`; a miss is below or above it.
+    """
+    tol = FORECAST_DAILY_TIE_BP
+    n = len(days)
+    errors = [d["actual_bps"] - d["quantiles_bps"][2] for d in days]
+    absolute = sorted(abs(e) for e in errors)
+
+    def band(lo, hi):
+        below = sum(1 for d in days if d["actual_bps"] < d["quantiles_bps"][lo] - tol)
+        above = sum(1 for d in days if d["actual_bps"] > d["quantiles_bps"][hi] + tol)
+        return {"inside": (n - below - above) / n, "below": below, "above": above,
+                "width": sum(d["quantiles_bps"][hi] - d["quantiles_bps"][lo] for d in days) / n}
+
+    ranked = sorted(zip(days, errors), key=lambda pair: -abs(pair[1]))
+    return {
+        "days": n,
+        "mean_abs_error": sum(absolute) / n,
+        "median_abs_error": statistics.median(absolute),
+        "within_1": sum(1 for e in absolute if e <= 1 + tol) / n,
+        "within_2": sum(1 for e in absolute if e <= 2 + tol) / n,
+        "largest": [{"date": d["date"], "miss": e} for d, e in ranked[:FORECAST_DAILY_LARGEST]],
+        "band_90": band(0, 4),
+        "band_50": band(1, 3),
+    }
+
+
+def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
+    """The "Forecast against what happened" section (#246), read off each series' record.
+
+    Every number goes through `from_record`. Each series is a published daily
+    record on the same scored days; a day in a locked tier (the blind tier, and
+    the live record's days) is refused, so none is drawn or counted. The
+    accuracy table is in absolute basis points, 2018-2025 and 2026 apart; no
+    benchmark is in it.
+    """
+    drawn = []
+    for entry in series:
+        rel = entry["record"]
+        levels = from_record(records, rel, "levels")
+        if list(levels) != FORECAST_DAILY_LEVELS:
+            raise VisualError(f"{rel}: quantile levels {levels}, not {FORECAST_DAILY_LEVELS}")
+        days = from_record(records, rel, "days")
+        if not days:
+            raise VisualError(f"{rel} carries no day")
+        for d in days:
+            tier = locked_tier(date.fromisoformat(d["date"]), locked)
+            if tier is not None:
+                raise VisualError(f"{rel}: {d['date']} is in the locked {tier.name} tier; no blind or "
+                                  f"live-record day is drawn or counted")
+        drawn.append((entry, rel, days))
+    dates = [d["date"] for d in drawn[0][2]]
+    if dates != sorted(set(dates)):
+        raise VisualError(f"{drawn[0][1]}: its days are not in order, once each")
+    for entry, rel, days in drawn[1:]:
+        if [d["date"] for d in days] != dates:
+            raise VisualError(f"{rel} is not on the scored days of {drawn[0][1]}")
+    first, last = dates[0], dates[-1]
+
+    periods = []
+    for key, label, inside in (
+            ("2018-2025", f"{first[:4]}–2025", lambda iso: iso < FORECAST_DAILY_SPLIT),
+            ("2026", None, lambda iso: iso >= FORECAST_DAILY_SPLIT)):
+        rows = []
+        for entry, rel, days in drawn:
+            kept = [d for d in days if inside(d["date"])]
+            if not kept:
+                raise VisualError(f"{rel} carries no day in {key}")
+            rows.append({"series": entry["key"], **forecast_accuracy(kept)})
+        kept = [d for d in drawn[0][2] if inside(d["date"])]
+        a, b = date.fromisoformat(kept[0]["date"]), date.fromisoformat(kept[-1]["date"])
+        periods.append({"key": key, "label": label or f"{a.year}, {a:%B} to {b:%B}",
+                        "first": kept[0]["date"], "last": kept[-1]["date"], "rows": rows})
+
+    v1 = drawn[0][2]
+    later = [d for d in v1 if d["date"] >= FORECAST_DAILY_SPLIT]
+    ranked = sorted(later, key=lambda d: -abs(d["actual_bps"] - d["quantiles_bps"][2]))
+    misses = [{"date": d["date"], "actual": d["actual_bps"], "median": d["quantiles_bps"][2],
+               "low": d["quantiles_bps"][0], "high": d["quantiles_bps"][4],
+               "miss": d["actual_bps"] - d["quantiles_bps"][2]} for d in ranked[:FORECAST_DAILY_MISSES]]
+    years = sorted({int(iso[:4]) for iso in dates})
+    data = {
+        "records": [rel for _, rel, _ in drawn], "first": first, "last": last, "levels": FORECAST_DAILY_LEVELS,
+        "years": years, "default_year": years[-1], "band_50_label": FORECAST_DAILY_50_LABEL,
+        "series": [{"key": entry["key"], "label": entry["label"],
+                    "days": [[d["date"], *(round(v, 3) for v in (d["actual_bps"], *d["quantiles_bps"]))]
+                             for d in days]}
+                   for entry, rel, days in drawn],
+        "periods": periods, "misses_2026": misses,
+    }
+
+    many = len(drawn) > 1
+    heads = "".join(f"<th scope='col'>{p['label']}{', ' + html.escape(e['label']) if many else ''}</th>"
+                    for p in periods for e, _, _ in drawn)
+    cols = [row for p in periods for row in p["rows"]]
+
+    def line(name, cell):
+        return f"<tr><th scope='row'>{name}</th>" + "".join(f"<td>{cell(r)}</td>" for r in cols) + "</tr>"
+
+    def band(r, key):
+        b = r[key]
+        return f"{100 * b['inside']:.0f}% ({b['below']} below, {b['above']} above)"
+
+    def largest(r):
+        return "<br>".join(f"{signed(m['miss'], 1)} bp, {short_day(m['date'])}" for m in r["largest"])
+
+    body = "".join((
+        line("Days scored", lambda r: f"{r['days']:,}"),
+        line("Mean absolute error of the median, bp", lambda r: f"{r['mean_abs_error']:.2f}"),
+        line("Median absolute error of the median, bp", lambda r: f"{r['median_abs_error']:.2f}"),
+        line("Days within 1 bp of the median", lambda r: f"{100 * r['within_1']:.0f}%"),
+        line("Days within 2 bp of the median", lambda r: f"{100 * r['within_2']:.0f}%"),
+        line("Largest misses, actual minus median", largest),
+        line("Actual inside the 90% band (misses below, above)", lambda r: band(r, "band_90")),
+        line(f"Actual inside the 50% band, {FORECAST_DAILY_50_LABEL} (misses below, above)",
+             lambda r: band(r, "band_50")),
+        line("Mean width of the 90% band, bp", lambda r: f"{r['band_90']['width']:.2f}"),
+        line("Mean width of the 50% band, bp", lambda r: f"{r['band_50']['width']:.2f}"),
+    ))
+    table = (f"<div class='heat' role='region' aria-label='How far off the forecast was, in basis points' "
+             f"tabindex='0'><table class='fttab fdtab'><caption>How far off it was, in basis points. A band holds a day "
+             f"when the actual spread is inside it or on its edge.</caption><thead><tr><th scope='col'>Measure</th>"
+             f"{heads}</tr></thead><tbody>{body}</tbody></table></div>")
+    miss_rows = "".join(
+        f"<tr><td>{day(m['date'])}</td><td>{signed(m['actual'], 0)}</td><td>{signed(m['median'], 2)}</td>"
+        f"<td>{signed(m['low'], 2)} to {signed(m['high'], 2)}</td><td>{signed(m['miss'], 2)}</td></tr>"
+        for m in misses)
+    miss_table = (f"<div class='heat' role='region' aria-label='The biggest misses of 2026' tabindex='0'>"
+                  f"<table class='fttab'><caption>The biggest misses of {periods[1]['label']}</caption><thead><tr>"
+                  f"<th scope='col'>Date</th><th scope='col'>Actual, bp</th><th scope='col'>Forecast median, bp</th>"
+                  f"<th scope='col'>90% band, bp</th><th scope='col'>Miss, bp</th></tr></thead>"
+                  f"<tbody>{miss_rows}</tbody></table></div>")
+    recent = periods[1]["rows"][0]
+    options = "".join(f"<option value='{y}'{' selected' if y == years[-1] else ''}>{y}</option>" for y in years)
+    fills = {
+        "fd_lede": (f"Each day at the decision time the model forecasts the next day's SOFR − IORB as a range. In "
+                    f"{periods[1]['label']}, its median was off by {recent['mean_abs_error']:.2f} bp on an "
+                    f"average day and within 1 bp of the actual spread on {100 * recent['within_1']:.0f}% of "
+                    f"days, and the actual spread fell inside its 90% band on "
+                    f"{100 * recent['band_90']['inside']:.0f}% of days."),
+        "fd_year_options": options,
+        "fd_first_year": years[0],
+        "fd_band_50": FORECAST_DAILY_50_LABEL,
+        "fd_table": table,
+        "fd_misses": miss_table,
+        "fd_hidden": (f"<b>No day after {day(last)} is drawn or counted.</b> Later days are in the blind tier, "
+                      f"and the live record's forecasts are among them; none is shown until its scoring date "
+                      f"opens it (<a href='{LOCKBOX_RULE}'>the lockbox</a>)."),
+        "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
+                     f"</code></a>: each scored day from {day(first)} to {day(last)}, the published "
+                     f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "
+                     f"reproduces the published CRPS records exactly."),
+    }
+    return data, fills
+
+
 # ---------------------------------------------------------------- the page
 
 
@@ -2848,6 +3035,7 @@ def generate(repo, commit=None):
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
     final, final_fills = final_test(records, locked)
+    daily, daily_fills = forecast_daily(records, locked)
     pending = pending_figures(records)
     commit = commit or input_commit(repo)
 
@@ -2945,6 +3133,7 @@ def generate(repo, commit=None):
     })
     fills.update(model_fills)
     fills.update(final_fills)
+    fills.update(daily_fills)
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
@@ -2961,7 +3150,7 @@ def generate(repo, commit=None):
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
                 "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band,
-                "newcomer_n5": n5, "final_test": final}
+                "newcomer_n5": n5, "final_test": final, "forecast_daily": daily}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -2977,7 +3166,8 @@ def generate(repo, commit=None):
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
-    own = {"model": model_provenance, "final_test": final_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
+    daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
+    own = {"model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}
     out = {}
     for name, payload in payloads.items():
@@ -2985,7 +3175,8 @@ def generate(repo, commit=None):
         out[f"{DATA_DIR}/{name}.json"] = (json.dumps(doc, sort_keys=True, separators=(",", ":"),
                                                       ensure_ascii=False) + "\n").encode("utf-8")
     page_data = {k: payloads[k] for k in ("history", "plumbing", "clock", "model", "newcomer_n1", "newcomer_n2",
-                                          "newcomer_n3", "newcomer_band", "newcomer_n5", "final_test")}
+                                          "newcomer_n3", "newcomer_band", "newcomer_n5", "final_test",
+                                          "forecast_daily")}
     page_data["n4_segments"] = n4["segments"]
     template = (repo / TEMPLATE).read_text(encoding="utf-8")
     fills["newcomer_nav"] = newcomer_nav(template)

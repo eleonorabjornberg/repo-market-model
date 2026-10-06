@@ -53,6 +53,15 @@ interval is badly calibrated (coverage 0.5 against a declared 0.9) and
 Mutation record, the field-priced purge
 ---------------------------------------
 
+**Superseded (#271).** This record is history. The purge, and `_derive_purge`
+with it, were removed in directive 05 (#50): the backtest now reads each field
+as of its own decision instant (`asof.InformationRule`), and the guards that
+replaced the purge carry their own records -- `asof.InformationRule.check`
+(`tests/test_asof.py`, `GuardTests`) and
+`baseline._check_decision_relative_availability` (the record further down this
+file). The mutations below cannot be re-run: the line each one names no longer
+exists. Do not read them as a record of a live guard.
+
 Run against a copy of the tree under `$HOME` -- never the mount -- carrying
 `data/`, `metadata/`, `.github/` and the top-level documents, with
 `__pycache__` cleared, stdlib only, under `-B` with `PYTHONDONTWRITEBYTECODE=1`.
