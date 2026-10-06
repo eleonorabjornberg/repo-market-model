@@ -88,6 +88,34 @@ class LeakageGuardTests(unittest.TestCase):
         after = pc.venn_abers(forecasts, flipped, dates, train_ends)
         self.assertEqual(before[: cut + 21], after[: cut + 21])
 
+    def test_venn_abers_refuses_a_pair_scored_after_its_block_fit(self):
+        """The refusal itself, not only the invariance of the output.
+
+        `past_positions` already drops every pair scored after the block's train
+        end, so the guard in `venn_abers` is a second, independent check on what
+        it was handed. Here `past_positions` is made to hand it a later pair, as
+        a regression in it would.
+
+        Recorded mutation (CLAUDE.md): in `probability_calibration.venn_abers`,
+        `if any(scored_dates[i] > end for i in past):` mutated to `if False:`.
+        This test then fails, raising `AssertionError` ("LookAheadError not
+        raised").
+        """
+
+        from unittest import mock
+
+        dates, train_ends, forecasts, outcomes = _series()
+        first = pc.blocks(dates, train_ends)[20][0]
+        leaked = [i for i in range(len(dates)) if dates[i] > train_ends[first]][:1]
+        real = pc.past_positions
+
+        def handing_over_a_later_pair(scored_dates, ends, start):
+            return real(scored_dates, ends, start) + (leaked if start == first else [])
+
+        with mock.patch.object(pc, "past_positions", handing_over_a_later_pair):
+            with self.assertRaisesRegex(LookAheadError, "read a later outcome"):
+                pc.venn_abers(forecasts, outcomes, dates, train_ends)
+
     def test_a_block_is_fitted_on_its_earlier_observable_pairs_only(self):
         """At horizon 5 the four scored days before a block's train end are not yet observable."""
 
