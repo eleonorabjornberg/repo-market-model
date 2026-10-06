@@ -125,6 +125,13 @@ class MeasureTests(unittest.TestCase):
         self.assertEqual(dx.inside(1.0, 1.0, 3.0, mode="open"), 0.0)
         self.assertEqual(dx.inside(4.0, 1.0, 3.0, mode="closed"), 0.0)
 
+    def test_a_whole_bp_print_with_float_noise_is_a_tie(self):
+        # The panel's spreads are differences of percentages: 17 bp is 17.000000000000014.
+        self.assertEqual(dx.below(17.000000000000014, 17.0, half_tie=True), 0.5)
+        self.assertEqual(dx.inside(17.000000000000014, 17.0, 19.0, mode="half"), 0.5)
+        self.assertEqual(dx.pit_bins([15.0, 17.0, 18.0, 19.0, 20.0], 17.000000000000014),
+                         [0, 0.5, 0.5, 0, 0, 0])
+
     def test_pit_bins_carry_unit_weight(self):
         vector = [-2.0, 0.0, 0.0, 0.0, 3.0]
         for value in (-5.0, -2.0, -1.0, 0.0, 1.0, 3.0, 4.0):

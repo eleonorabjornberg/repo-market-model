@@ -160,6 +160,10 @@ RESIDUAL_MINIMUM = 60
 #: spread's daily changes over `VOLATILITY_DAYS` observable days, floored.
 VOLATILITY_DAYS = 20
 VOLATILITY_FLOOR = 0.5
+#: Two spreads within this many basis points are the same print. The panel's
+#: spreads are whole basis points carried as differences of percentages
+#: (17.000000000000014), so exact float equality would miss almost every tie.
+TIE_BPS = 1e-9
 
 
 def eligible(summary: dict) -> bool:
@@ -215,24 +219,26 @@ def select_candidate(summaries: dict, paired_to_leader) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _tied(a: float, b: float) -> bool:
+    return abs(a - b) <= TIE_BPS
+
+
+def _whole_bp(value: float) -> bool:
+    return _tied(value, round(value))
+
+
 def below(value: float, quantile: float, *, half_tie: bool) -> float:
-    if value < quantile:
-        return 1.0
-    if value == quantile:
+    if _tied(value, quantile):
         return 0.5 if half_tie else 1.0
-    return 0.0
+    return 1.0 if value < quantile else 0.0
 
 
 def inside(value: float, low: float, high: float, *, mode: str) -> float:
     """1 inside the band; an outcome on an edge counts by `mode` (closed, open, half)."""
 
-    if low < value < high:
-        return 1.0
-    if value == low or value == high:
-        if low == high:
-            return {"closed": 1.0, "open": 0.0, "half": 0.5}[mode]
+    if _tied(value, low) or _tied(value, high):
         return {"closed": 1.0, "open": 0.0, "half": 0.5}[mode]
-    return 0.0
+    return 1.0 if low < value < high else 0.0
 
 
 def pit_bins(vector, value):
@@ -247,8 +253,8 @@ def pit_bins(vector, value):
     """
 
     edges = (0.0,) + LEVELS + (1.0,)
-    lower = sum(1 for q in vector if q < value)
-    upper = sum(1 for q in vector if q <= value)
+    lower = sum(1 for q in vector if q < value - TIE_BPS)
+    upper = sum(1 for q in vector if q <= value + TIE_BPS)
     weights = [0.0] * 6
     if lower == upper:
         weights[lower] = 1.0
@@ -297,7 +303,7 @@ def coverage(days, field="issued") -> dict:
         "coverage_half_tie": {str(level): pct(sum(below(y, v[i], half_tie=True)
                                                   for v, y in zip(vectors, ys)))
                               for i, level in enumerate(LEVELS)},
-        "outcome_equals_quantile": {str(level): pct(sum(1 for v, y in zip(vectors, ys) if y == v[i]))
+        "outcome_equals_quantile": {str(level): pct(sum(1 for v, y in zip(vectors, ys) if _tied(y, v[i])))
                                     for i, level in enumerate(LEVELS)},
     }
     for name, (lo, hi) in (("band_50", (1, 3)), ("band_90", (0, 4))):
@@ -317,8 +323,8 @@ def jittered_band_50(days, seed) -> float:
     hits = 0
     for d in days:
         y = d["y"]
-        if y == round(y):
-            y = y + rng.random() - 0.5
+        if _whole_bp(y):
+            y = round(y) + rng.random() - 0.5
         hits += 1 if d["issued"][1] <= y <= d["issued"][3] else 0
     return 100.0 * hits / len(days) if days else None
 
@@ -448,19 +454,24 @@ class _Recorder:
         return self._inner.label(index, value)
 
 
-def _in_sample(fitted, frame) -> dict:
-    """The fitted trees read on their own one-step training pairs (h = 1)."""
+def _in_sample(fitted, frame, ml) -> dict:
+    """The fitted trees read on their own one-step training pairs (h = 1), in one batch."""
 
     tallies = {"pairs": 0, "half_tie": [0.0] * 5, "band_50_half_edge": 0.0, "band_90_half_edge": 0.0,
                "band_50_closed": 0.0}
+    designs, ys = [], []
     for k in range(1, len(frame)):
         y = frame[k].spread_bps
         if y is None:
             continue
         try:
-            v = [float(q) for q in fitted.predict(frame[k - 1])]
+            designs.append(fitted.design_row(frame[k - 1]))
         except Exception:  # a training row the model cannot read is not a pair it was fitted on
             continue
+        ys.append(y)
+    if not designs:
+        return tallies
+    for v, y in zip(ml._rearranged(fitted._estimators, designs), ys):
         tallies["pairs"] += 1
         for i in range(5):
             tallies["half_tie"][i] += below(y, v[i], half_tie=True)
@@ -498,7 +509,7 @@ def walk_command(args) -> int:
         fitted = fit(train_frame, minimum_history=minimum_history, information=information)
         if h == 1 and not args.no_in_sample:
             refits.append({"train_end": train_frame[-1].date.isoformat(),
-                           **_in_sample(fitted, train_frame)})
+                           **_in_sample(fitted, train_frame, ml)})
         return fitted
 
     walk, levels, settings = fto.distribution_walk(
@@ -653,6 +664,21 @@ def reproduction_check(days) -> dict:
     }
 
 
+def horizon_check(walks) -> dict:
+    """v1's mean CRPS at h = 2 to 5 over the opened window against the final test's cells, exactly."""
+
+    final = json.loads((REPO / "docs/runs/final_test_near_blind.json").read_text(encoding="utf-8"))
+    out = {}
+    for cell in final["crps_reported_only"]:
+        h = cell["horizon"]
+        sub = _window_days(walks[("v1", h)]["days"], OPENED)
+        ours = sum(_crps(d["issued"], d["y"]) for d in sub) / len(sub)
+        if len(sub) != cell["days"] or ours != cell["crps_published_bps"]:
+            raise ValueError(f"v1 at h = {h} does not reproduce the final test's cell")
+        out[f"h{h}"] = {"days": len(sub), "mean_crps_bps": ours, "exact": True}
+    return out
+
+
 def _split_coverage(days, rows, splits) -> dict:
     scored = [date.fromisoformat(d["date"]) for d in days]
     regimes, types = _split_labels(splits, rows, scored)
@@ -757,6 +783,7 @@ def assemble_command(args) -> int:
             "band_half_edge": "share strictly inside, an outcome exactly on an edge counting one half",
         },
         "reproduction": reproduction_check(v1),
+        "reproduction_h2_to_h5_opened_window": horizon_check(walks),
     }
 
     # Questions 1, 2, 5 and 6, per horizon and window.
@@ -776,11 +803,11 @@ def assemble_command(args) -> int:
                 "band_50_open": cov["band_50_open"],
                 "band_50_half_edge": cov["band_50_half_edge"],
                 "band_50_outcome_jittered": jittered_band_50(sub, onset._seed("#247", "jitter", h, tag)),
-                "share_outcomes_whole_bp": 100.0 * sum(1 for d in sub if d["y"] == round(d["y"])) / len(sub),
+                "share_outcomes_whole_bp": 100.0 * sum(1 for d in sub if _whole_bp(d["y"])) / len(sub),
                 "share_interior_quantiles_whole_bp": 100.0 * sum(
-                    1 for d in sub for i in INTERIOR if d["issued"][i] == round(d["issued"][i])) / (3 * len(sub)),
+                    1 for d in sub for i in INTERIOR if _whole_bp(d["issued"][i])) / (3 * len(sub)),
                 "share_days_outcome_on_a_50_band_edge": 100.0 * sum(
-                    1 for d in sub if d["y"] in (d["issued"][1], d["issued"][3])) / len(sub),
+                    1 for d in sub if _tied(d["y"], d["issued"][1]) or _tied(d["y"], d["issued"][3])) / len(sub),
             }
             raw = coverage(sub, "raw")
             q6[key] = {
