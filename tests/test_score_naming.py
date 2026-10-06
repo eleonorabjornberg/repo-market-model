@@ -7,8 +7,8 @@ forecast "the full distribution" and name the score as the five-quantile score.
 Records already published keep their field names and wording; only generated
 text is checked.
 
-Recorded mutation (the guard's text restored in `scripts/emit_results.py`, the
-claim passed through unchanged, `final_test_claim_wording = lambda claim: claim`):
+Recorded mutation (`final_test_claim_wording` in `scripts/emit_results.py` returns `claim`
+unchanged instead of `claim.replace(...)`):
 `test_the_generated_final_test_section_never_says_full_distribution` fails with
 `AssertionError`.
 """
