@@ -566,6 +566,10 @@ class WindowGuardTests(unittest.TestCase):
     ANCHOR = PANEL_DATES.index(date(2026, 1, 27))
 
     def test_a_training_row_inside_the_gap_raises(self):
+        """Recorded mutation (CLAUDE.md): in `_assert_window_is_clean`, `if
+        train_index[-1] > anchor:` mutated to `if False:`. This test then fails,
+        raising `AssertionError` ("LookAheadError not raised")."""
+
         dates = PANEL_DATES
         train = [i for i, w in enumerate(dates) if w <= date(2026, 1, 30)]
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
@@ -573,13 +577,46 @@ class WindowGuardTests(unittest.TestCase):
             _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, self.ANCHOR)
 
     def test_a_row_both_trained_on_and_scored_raises(self):
+        """Recorded mutation (CLAUDE.md): in `_assert_window_is_clean`, `if
+        set(train_index) & set(scored_index):` mutated to `if False:`. This test
+        then fails, raising `AssertionError` (the regex "both trained on and
+        scored" does not match: the anchor guard refuses the same input with its
+        own message, so this guard is pinned by its message)."""
+
         dates = PANEL_DATES
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
         train = [i for i, w in enumerate(dates) if w < date(2026, 1, 28)] + [scored[0]]
         with self.assertRaisesRegex(LookAheadError, "both trained on and scored"):
             _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, self.ANCHOR)
 
+    def test_a_training_row_after_the_first_scored_row_raises_whatever_the_anchor(self):
+        """The third guard stays, as defence in depth: `anchor` is an argument.
+
+        `train_index[-1] > anchor` fires first whenever the anchor is honest, so
+        the evaluator never reaches `train_index[-1] >= scored_index[0]`. The
+        function is called with the anchor as a parameter, though, and an anchor
+        at or after the window (a caller's slip) would otherwise let a training
+        row after the first scored row through. A row after the window is neither
+        scored nor before it, so the overlap guard does not see it either.
+
+        Recorded mutation (CLAUDE.md): in `event_eval._assert_window_is_clean`,
+        `if train_index[-1] >= scored_index[0]:` mutated to `if False:`. This
+        test then fails, raising `AssertionError` ("LookAheadError not raised").
+        """
+
+        dates = PANEL_DATES
+        scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
+        train = list(range(scored[0])) + [scored[-1] + 1]
+        late_anchor = len(dates) - 1
+        with self.assertRaisesRegex(LookAheadError, "is not before scored row"):
+            _assert_window_is_clean(dates, train, scored, EVENT_START, EVENT_END, late_anchor)
+
     def test_a_scored_row_outside_the_window_raises(self):
+        """Recorded mutation (CLAUDE.md): in `_assert_window_is_clean`, `if not
+        event_start <= dates[index] <= event_end:` mutated to `if False:`. This
+        test then fails, raising `AssertionError` ("LookAheadError not
+        raised")."""
+
         dates = PANEL_DATES
         train = [i for i, w in enumerate(dates) if w < date(2026, 1, 28)]
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
@@ -589,6 +626,11 @@ class WindowGuardTests(unittest.TestCase):
             )
 
     def test_non_contiguous_scored_rows_raise(self):
+        """Recorded mutation (CLAUDE.md): in `_assert_window_is_clean`, `if
+        list(scored_index) != list(range(...)):` mutated to `if False:`. This
+        test then fails, raising `AssertionError` ("LookAheadError not
+        raised")."""
+
         dates = PANEL_DATES
         train = [i for i, w in enumerate(dates) if w < date(2026, 1, 28)]
         scored = [i for i, w in enumerate(dates) if EVENT_START <= w <= EVENT_END]
@@ -1259,6 +1301,11 @@ class FeatureRowTests(EvaluatorHarness):
         states the pairing, which the rule cannot, and it is here because a
         rule only one function can reach stops being checked the moment a
         second caller appears.
+
+        Recorded mutation (CLAUDE.md): in
+        `_assert_feature_rows_precede_their_days`, `if feature >= scored:`
+        mutated to `if False:`. This test then fails, raising `AssertionError`
+        ("LookAheadError not raised").
         """
 
         scored = [i for i, w in enumerate(PANEL_DATES) if EVENT_START <= w <= EVENT_END]

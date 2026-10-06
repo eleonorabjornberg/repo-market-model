@@ -1339,6 +1339,19 @@ class ForecastInterfaceConformance:
         it was allowed to see. Without that a forecast cannot be audited for
         leakage at all: the training frame is gone by the time anyone reads the
         prediction, and "which rows went into this" becomes unanswerable.
+
+        Recorded mutations (CLAUDE.md), one per fitter, each the line `if
+        dates[-1] > declared:` (`declared_cutoff` in `fit_threshold`) mutated to
+        `if False:`. Each makes this test fail in its own subclass, raising
+        `AssertionError` ("LookAheadError not raised"):
+
+        * `baseline.fit` -- `ForecastInterfaceTests`;
+        * `baseline.fit_rolling_residual_law` --
+          `RollingResidualLawForecastInterfaceTests`;
+        * `baseline.fit_arx` -- `ArxForecastInterfaceTests`;
+        * `baseline.fit_threshold` -- `ThresholdForecastInterfaceTests`;
+        * `ml.fit_gradient_boosted_quantiles` (needs the `ml` extra) --
+          `test_ml.GradientBoostedForecastInterfaceTests`.
         """
 
         self.assertIsInstance(self.model, self.MODEL_CLASS)

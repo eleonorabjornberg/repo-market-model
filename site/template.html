@@ -244,6 +244,11 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 .uselimit{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink);border-left:3px solid var(--ink-2);padding:2px 0 2px 12px;margin:14px 0;max-width:80ch}
 .ftlinks{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);margin:18px 0 0;max-width:80ch}
 .ftlinks code{font-size:.78rem;word-break:break-all}
+.fdcontrol{font-family:var(--sans);font-size:.86rem;color:var(--ink-2);margin:4px 0 8px}
+.fdcontrol select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:2px 6px}
+.fdhidden{font-size:.9rem}
+table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
+table.fttab.fdtab td{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -257,6 +262,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
+      <li class="live"><b>&#9670;</b><span><a href="#forecast-actual">Forecast against what happened</a><small>Each day, in basis points</small></span></li>
       <li class="live"><b>1</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed's rates</small></span></li>
       <li class="live"><b>2</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
       <li class="live"><b>3</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
@@ -488,6 +494,22 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <details><summary>The cells two to five days ahead, each with its label</summary>{{ft_later_table}}</details></li>
   </ul>
   <p class="ftlinks">{{ft_links}}</p>
+</section>
+
+<section id="forecast-actual" aria-labelledby="forecast-actual-title">
+  <p class="kicker">Day by day</p>
+  <h2 id="forecast-actual-title">Forecast against what happened</h2>
+  <p class="prose lede">{{fd_lede}}</p>
+  <figure>
+    <figcaption><div class="t">The forecast one day ahead and the spread that came, <span id="fdyearlabel"></span></div>
+      <div class="s">SOFR − IORB in basis points. Points: the actual spread. Line: the model's median forecast. Shaded: its 90% band and, darker, its 50% band, {{fd_band_50}}</div></figcaption>
+    <p class="fdcontrol"><label for="fdyear">Year</label> <select id="fdyear">{{fd_year_options}}</select></p>
+    <div class="chart" id="fdchart"><div class="tip"></div></div>
+  </figure>
+  {{fd_table}}
+  {{fd_misses}}
+  <p class="prose fdhidden">{{fd_hidden}}</p>
+  <p class="ftlinks">{{fd_links}}</p>
 </section>
 
 <section id="plumbing">
@@ -1522,7 +1544,49 @@ function renderFinalTest() {
   svg.append("circle").attr("cx", x(FT.mean)).attr("cy", cy).attr("r", 4.5).style("fill", col).style("stroke", "var(--paper)").style("stroke-width", 1.5);
   svg.append("text").attr("class", "lab").attr("x", narrow ? W - m.r : x(FT.mean)).attr("y", narrow ? cy + 19 : cy - 11).attr("text-anchor", narrow ? "end" : "middle").style("fill", "var(--ink-2)").text(`${s2(FT.mean)} bp (${FT.level}%: ${s2(FT.lower)} to ${s2(FT.upper)})`);
 }
-const renderAll = () => { renderFinalTest(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
+const FD = D.forecast_daily;
+const FD_COLOURS = ["var(--sofr)", "var(--pressure)"];
+function renderForecastDaily() {
+  const host = d3.select("#fdchart"); host.select("svg").remove();
+  const year = +document.getElementById("fdyear").value;
+  document.getElementById("fdyearlabel").textContent = String(year);
+  const W = host.node().clientWidth, narrow = W < 560, H = narrow ? 300 : 340;
+  const m = {t: narrow ? 46 : 30, r: 14, b: 30, l: 40};
+  const rows = FD.series.map(s => s.days.filter(d => d[0].startsWith(String(year))).map(d => ({t: parse(d[0]), y: d[1], q: d.slice(2)})));
+  const days = rows[0];
+  if (!days.length) return;
+  const lo = d3.min(rows.flat(), d => Math.min(d.y, d.q[0])), hi = d3.max(rows.flat(), d => Math.max(d.y, d.q[4]));
+  const x = d3.scaleUtc(d3.extent(days, d => d.t), [m.l, W - m.r]);
+  const y = d3.scaleLinear([Math.min(lo, 0), Math.max(hi, 0)], [H - m.b, m.t]).nice();
+  const inside = days.filter(d => d.y >= d.q[0] - 1e-9 && d.y <= d.q[4] + 1e-9).length;
+  const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+    .attr("aria-label", `Daily chart for ${year}, ${days.length} scored days from ${fmt(days[0].t)} to ${fmt(days.at(-1).t)}: the actual SOFR − IORB as points, the model's median forecast one day ahead as a line, and its 90% and 50% bands shaded; the 50% band is not yet calibrated (#243). The actual spread fell inside the 90% band on ${inside} of the ${days.length} days. The accuracy table below gives the figures.`);
+  svg.append("g").selectAll("line").data(y.ticks(5)).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", d => y(d)).attr("y2", d => y(d)).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(sgn).tickSizeOuter(0));
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(d3.utcFormat(narrow ? "%b" : "%b %Y")).tickSizeOuter(0));
+  rows.forEach((pts, si) => {
+    const c = FD_COLOURS[si % FD_COLOURS.length];
+    svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[0])).y1(d => y(d.q[4]))).style("fill", c).style("opacity", .16);
+    svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[1])).y1(d => y(d.q[3]))).style("fill", c).style("opacity", .3);
+    svg.append("path").datum(pts).attr("d", d3.line().x(d => x(d.t)).y(d => y(d.q[2]))).style("fill", "none").style("stroke", c).style("stroke-width", 1.4).style("stroke-dasharray", si ? "4 3" : null);
+  });
+  svg.append("g").selectAll("circle").data(days).join("circle").attr("cx", d => x(d.t)).attr("cy", d => y(d.y)).attr("r", narrow ? 1.6 : 2.1).style("fill", "var(--ink)");
+  const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"], ["b50", "50% band, not yet calibrated (#243)"]];
+  const g = svg.append("g").attr("transform", `translate(${m.l},12)`);
+  let at = 0, row = 0;
+  key.forEach(([kind, text]) => {
+    const k = g.append("g");
+    if (kind === "dot") k.append("circle").attr("cx", 6).attr("cy", 0).attr("r", 2.6).style("fill", "var(--ink)");
+    else if (kind === "line") k.append("line").attr("x1", 0).attr("x2", 12).attr("y1", 0).attr("y2", 0).style("stroke", FD_COLOURS[0]).style("stroke-width", 1.6);
+    else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", kind === "b90" ? .16 : .3);
+    const w = 17 + k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text).node().getComputedTextLength() + 14;
+    if (at && at + w > W - m.l - m.r) { at = 0; row += 16; }
+    k.attr("transform", `translate(${at},${row})`);
+    at += w;
+  });
+}
+document.getElementById("fdyear").addEventListener("change", renderForecastDaily);
+const renderAll = () => { renderFinalTest(); renderForecastDaily(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
