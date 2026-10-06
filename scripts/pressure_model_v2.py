@@ -145,6 +145,12 @@ def vectors_sha256(rows) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _plain(value):
+    """A read-only mapping or a tuple in a declaration, as JSON writes it."""
+
+    return dict(value) if hasattr(value, "keys") else list(value)
+
+
 def walk_command(args) -> int:
     from repo_model.evaluation_splits import load_split_declaration as load_splits
 
@@ -187,7 +193,7 @@ def walk_command(args) -> int:
     document = {"directive": "#244", "horizon": h, "panel_sha256": panel_sha256(args.panel),
                 "model": name, "settings": settings,
                 "interior_blocks": calibration.account()["interior_blocks"], "days": days}
-    args.output.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(document, sort_keys=True, default=_plain) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "days": len(days)}))
     return 0
 
@@ -414,8 +420,14 @@ def assemble_command(args) -> int:
         "anchors": [[d["date"], d["anchor"]] for d in days],
     }
     others = {}
+    final_cells = {cell["horizon"]: cell
+                   for cell in json.loads(FINAL_RECORD.read_text(encoding="utf-8"))["crps_reported_only"]}
     for h in sorted(k for k in walks if k != 1):
         hd = walks[h]["days"]
+        opened = [d for d in hd if _in(d["date"], CHECK)]
+        v1_opened = sum(crps_from_quantiles(LEVELS, d["v1"], d["y"]) for d in opened) / len(opened)
+        if len(opened) != final_cells[h]["days"] or v1_opened != final_cells[h]["crps_published_bps"]:
+            raise ValueError(f"v1 at h = {h} does not reproduce the final test's cell")
         sub = [d for d in hd if _in(d["date"], DECIDES)]
         v1_losses = [crps_from_quantiles(LEVELS, d["v1"], d["y"]) for d in sub]
         v2_losses = [crps_from_quantiles(LEVELS, d["v2"], d["y"]) for d in sub]
@@ -424,6 +436,7 @@ def assemble_command(args) -> int:
                                        seed=onset._seed("#244", "carry-over", h))
         others[f"h{h}"] = {"days": len(sub), "crps_v1_bps": statistics.fmean(v1_losses),
                            "crps_v2_bps": statistics.fmean(v2_losses), "v2_vs_v1": cell,
+                           "v1_reproduces_final_test_cell": True,
                            "coverage": band_coverage(sub, "v2"), "coverage_v1": band_coverage(sub, "v1")}
     if others:
         record["carry_over_h2_to_h5_reported_only"] = {
