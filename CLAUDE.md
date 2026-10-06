@@ -66,8 +66,8 @@ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
   failing test raised. The record goes in the test's docstring. Other code needs no mutation
   ritual; CI and review cover it.
 - **Run the full suite in one process before you ask for review.** If it outlasts your shell's
-  time limit, run it in the background and wait for it. Do not split it: some classes pass only
-  when another class is loaded in the same run.
+  time limit, run it in the background and wait for it. CI runs it as one process, so do
+  you.
 - **Zero `expectedFailure` is load-bearing.** Skip counts vary by environment and mean nothing.
 - **Never put a count in an acceptance criterion or a published page.**
   `tests/test_docs_freshness.py` also refuses a hand-written future date, a `repo_model.cli`
