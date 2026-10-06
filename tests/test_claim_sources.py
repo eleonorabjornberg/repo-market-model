@@ -254,5 +254,104 @@ class ClaimSourceTests(unittest.TestCase):
         self.assertEqual(sorted(set(POINTERS_NO_RECORD_YET) - seen), [])
 
 
+#: Pages and sources a claim about the event windows is read in (#264). `docs/archive/`
+#: and `docs/pivot/` are not binding and are not read.
+EXCLUSION_PAGES = (
+    "README.md",
+    "docs/process/AGENT_CONTRACT.md",
+    "src/repo_model/event_eval.py",
+    "src/repo_model/baseline.py",
+)
+
+#: Wording that says an event window or crisis date is kept out of a headline score.
+EXCLUSION_CLAIM = re.compile(
+    r"(?:kept\s+out\s+of|excluded\s+from|held\s+out\s+of|left\s+out\s+of)\s+(?:the\s+|any\s+)?"
+    r"(?:headline|published)\s+(?:score|metric|number|result)"
+    r"|crisis\s+dates\s+excluded"
+    r"|frozen\s+as\s+knowledge\s+holdouts?,?\s+so\s+no\s+model\s+is\s+tuned",
+    re.IGNORECASE,
+)
+
+
+def _declares_exclusion(node):
+    """True when any key under a record's declaration names an exclusion."""
+    if isinstance(node, dict):
+        return any("exclu" in key.lower() or _declares_exclusion(value) for key, value in node.items())
+    if isinstance(node, list):
+        return any(_declares_exclusion(value) for value in node)
+    return False
+
+
+def published_records_declare_exclusion():
+    import json
+
+    for path in sorted((REPO_ROOT / "docs/runs").glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if _declares_exclusion(record.get("declaration") or {}):
+            return True
+    return False
+
+
+def exclusion_claims_in(pages):
+    found = []
+    for page in pages:
+        text = (REPO_ROOT / page).read_text(encoding="utf-8")
+        text = re.sub(r"\s+", " ", re.sub(r"(?m)^\s*(?:#|-|\*|>)+\s?", "", text))
+        for match in EXCLUSION_CLAIM.finditer(text):
+            found.append((page, match.group(0)))
+    return found
+
+
+def _pages_for_exclusion_claims():
+    pages = list(EXCLUSION_PAGES)
+    pages += sorted(p.relative_to(REPO_ROOT).as_posix() for p in (REPO_ROOT / "docs").glob("*.md"))
+    pages += sorted(p.relative_to(REPO_ROOT).as_posix() for p in (REPO_ROOT / "site").glob("*.html"))
+    return pages
+
+
+class EventWindowExclusionClaimTests(unittest.TestCase):
+    """No page says the stress windows are kept out of a headline score (#264).
+
+    **The defect.** `site/template.html` said the 2019 and 2020 stress windows "are
+    kept out of the headline score", and `docs/PORTFOLIO_CASE_STUDY.md` said they
+    are "frozen as knowledge holdouts, so no model is tuned on the episodes". The
+    records say otherwise: `compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json`
+    scores all 15 window days and they carry 43.3% of the pre-2026 paired gain.
+    `AGENT_CONTRACT.md` defined a "scoring holdout" as crisis dates "excluded from
+    the headline metric", which `baseline.py` never did.
+
+    **The rule.** A page may say a window is excluded from a headline score only
+    when a published record's declaration carries an exclusion. None does.
+
+    Mutation (6 Oct 2026, a disposable copy): the old template sentence ("They are
+    kept out of the headline score and reported on their own") put back into
+    `site/template.html` kills `test_no_page_says_the_windows_are_excluded` with
+    `AssertionError` naming the page; the same wording in the case study kills it
+    the same way. Written first, on `main` at `0c0a561`, it failed with
+    `AssertionError` naming `docs/PORTFOLIO_CASE_STUDY.md`, `docs/process/AGENT_CONTRACT.md`,
+    `src/repo_model/event_eval.py` and `src/repo_model/baseline.py`.
+    """
+
+    def test_the_pattern_reads_the_wording_it_was_written_for(self):
+        for sentence in (
+            "They are kept out of the headline score and reported on their own.",
+            "crisis dates excluded from the headline metric",
+            "the stress windows kept out of the headline score",
+            "frozen as knowledge holdouts, so no model is tuned on the episodes",
+        ):
+            self.assertTrue(EXCLUSION_CLAIM.search(sentence), sentence)
+        self.assertFalse(EXCLUSION_CLAIM.search("Their days are scored and pooled in the headline."))
+
+    def test_no_page_says_the_windows_are_excluded(self):
+        if published_records_declare_exclusion():
+            self.skipTest("a published record declares an exclusion; the wording may be true")
+        found = exclusion_claims_in(_pages_for_exclusion_claims())
+        self.assertFalse(
+            found,
+            "a page says event windows are excluded from a headline score, but no record "
+            "declares an exclusion: " + "; ".join(f"{page}: {text!r}" for page, text in found),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
