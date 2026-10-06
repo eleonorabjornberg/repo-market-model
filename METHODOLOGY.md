@@ -133,6 +133,9 @@ the data layer and the evaluation code, and each is held by a test rather than b
   interface.
 - **The two holdout roles stay apart.** Rolling-origin scoring and the frozen, checksummed
   September 2019 and March 2020 event windows are distinct in code and in reporting.
+  No published (calibrated) model is held out from the stress windows: the published records
+  score them like any other days and train on them once they are past. A knowledge holdout is a separate run, for the
+  models it names, and is labelled as such (Eleonora's ruling of 6 October 2026, #269 item 18).
 - **A run publishes a record, not a printout.** `backtest`, `compare` and
   `exceedance-backtest` write the declared feature set, the sources, the decision time, the
   panel's digest and extent, the folds, and the metrics unrounded, with stationary-bootstrap
@@ -185,7 +188,8 @@ still good for. What they said about volatility and the tails is not restated he
 reading of them rests on the stale information set, and a copy on this page would be one more
 copy to correct. The figures are in those records, and
 [`docs/pivot/lag-assessment.md`](docs/pivot/lag-assessment.md) §4 lists the conclusions drawn
-from them that re-open under the as-of rule. What the as-of records measure is in the README's
+from them that re-open under the as-of rule. The feature set was fixed without re-measuring those
+verdicts; re-scoring them belongs with next-version research. What the as-of records measure is in the README's
 generated blocks, and the verdict on them is in `PLAN.md`.
 
 *A reading, not a tested claim:* repo spikes arrive with the calendar and the balance sheet
