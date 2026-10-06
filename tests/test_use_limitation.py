@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "docs" / "use-limitation.md"
 RULED = ("A research forecast of the SOFR − IORB spread. It is not a stress-warning system and "
          "not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles "
-         "are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and "
+         "are not yet calibrated, its tail coverage is weaker on quarter-ends and turns, and "
          "it has little history in the current scarce-reserve regime. It needs revalidation after a "
          "material policy or regime change.")
 

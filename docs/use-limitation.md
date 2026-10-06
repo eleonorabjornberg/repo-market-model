@@ -6,7 +6,7 @@ never edited by hand. It is the wording of Eleonora's ruling of 6 October 2026 o
 
 ## The statement
 
-> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
+> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated, its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
 
 The reasons, each from a finding of the independent review:
 

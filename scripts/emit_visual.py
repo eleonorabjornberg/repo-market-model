@@ -2643,9 +2643,8 @@ def final_test(records, locked):
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
                    f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
-                   f"Result: <b>pass</b>, on a test that is {near_blind}.")
-        claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
-                      f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
+                   f"Result: <b>pass</b>, on a test that is near-blind.")
+        claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
