@@ -472,9 +472,11 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
     <li>{{ft_fixed}}</li>
     <li>{{ft_once}}</li>
     <li>{{ft_benchmark}}</li>
+    <li>{{ft_switch}}</li>
   </ul>
   <h3 class="sub">What it does not show</h3>
   <ul class="ftlist">
+    <li>{{ft_rests}}</li>
     <li>{{ft_not_stress}}</li>
     <li>{{ft_not_blind}}</li>
     <li>{{ft_calm}}</li>
@@ -531,7 +533,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <label class="tog"><input type="checkbox" id="bandToggle"> Show the middle half of the day's trades</label>
     </div>
     <div class="chart" id="spread"><div class="tip"></div></div>
-    <p class="note">Red line: days more than +{{pressure_bp}} bp above, also marked by the dashed threshold. Shaded: periods when the Fed was shrinking its balance sheet. Hatched: the stress windows kept out of the headline score. Numbered markers: the events listed below.</p>
+    <p class="note">Red line: days more than +{{pressure_bp}} bp above, also marked by the dashed threshold. Shaded: periods when the Fed was shrinking its balance sheet. Hatched: the stress windows. Numbered markers: the events listed below.</p>
     {{held_out_note}}
   </figure>
   <ol class="events" id="events">{{event_list}}</ol>
@@ -542,7 +544,7 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
       <li><b>The Fed's rate on reserves</b> is IORB from {{iorb_from}}. Before that the Fed paid IOER, the rate on excess reserves, and the chart uses it so that {{holdout_months}} are covered. The switch is marked as event {{iorb_event_n}}.</li>
       <li><b>The middle half of the day's trades</b> is the band between SOFR's 25th and 75th volume-weighted percentiles, less the same rate. The New York Fed did not publish it on {{band_missing}} in the sample.</li>
       <li><b>+{{pressure_bp}} and +{{second_bp}} bp</b> are the project's headline thresholds: the forecast gives the probability that tomorrow's spread is above each of them.</li>
-      <li><b>The stress windows</b>, {{holdouts}}, are frozen and checksummed. They are kept out of the headline score and reported on their own, so that a few extreme days cannot dominate the average.</li>
+      <li><b>The stress windows</b>, {{holdouts}}, are frozen and checksummed. Every published result pools those days with the rest.</li>
       <li>In the full view the scale stops at +{{clip_bp}} bp so that ordinary days stay readable. {{n_off_scale}} rise above it and leave the frame; the largest, {{spike_bp}} bp on {{spike_day}}, is labelled, and hovering shows the rest.</li>
     </ul>
     <p>To rebuild this data yourself, run section 4 of the <a href="https://colab.research.google.com/github/eleonorabjornberg/repo-market-model/blob/main/notebooks/00_overview.ipynb">overview notebook</a> in Colab.</p>

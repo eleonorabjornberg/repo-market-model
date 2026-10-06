@@ -17,6 +17,9 @@ leak.
 the tracked declaration to the date it was opened and a reference to
 Eleonora's ruling. Nothing else opens it: the scoring entry points take no
 declaration argument, and no CLI flag or environment variable is read here.
+A pull request that changes the tiers also cites Eleonora's own approval in
+`metadata/owner_attestations.json`, which CI checks (`scripts/owner_attested.py`,
+#256; the rule is a draft for her, `docs/decisions/drafts/owner-attestation.md`).
 """
 
 from __future__ import annotations
