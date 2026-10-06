@@ -385,7 +385,8 @@ NOT_ENTRY_POINTS = {
         "the desk outputs' walk of the published distribution and as-of "
         "persistence at h = 1 to 5 (#232), reporting only; it refuses a locked "
         "scored day itself before any fit (tests/test_desk_outputs.py, "
-        "HistoryLockboxTests)"
+        "DistributionHistoryLockboxTests, which calls the walk across a blind-tier "
+        "day with the fit stubbed unreachable)"
     ),
     "scripts/desk_outputs.scarcity_at": (
         "reads the declared scarcity state as of one forecast's decision instant "
