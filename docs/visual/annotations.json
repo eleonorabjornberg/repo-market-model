@@ -7,7 +7,7 @@
      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
     {"date": "2019-10-11", "text": "Fed announces Treasury bill purchases to keep reserves ample",
      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm"},
-    {"date": "2020-03-15", "text": "Fed cuts rates to near zero and announces large asset purchases",
+    {"date": "2020-03-15", "text": "Fed cuts rates to near zero and announces large asset purchases, on Sunday evening 15 March; the first business day to feel it is 16 March",
      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm"},
     {"date": "2021-07-29", "text": "IORB replaces IOER as the Fed's rate on reserves", "role": "iorb_from",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/iorb-availability.md"},

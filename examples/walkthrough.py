@@ -81,10 +81,11 @@ run("audit", PANEL)
 # %% [markdown]
 # ## 2. Backtest the persistence benchmark
 #
-# Purged rolling origin: every forecast is made from rows a builder could have
-# held at the declared decision time, and the rows within the purge window of the
-# scored date are withheld from training. The registry decides the purge; it is
-# not a parameter of this script.
+# As-of rolling origin: every forecast reads each input at the latest value
+# public at the declared decision time (`docs/decisions/information-set.md`),
+# and a training label is used only once it is observable. The registry's
+# declared availability decides what each input is, field by field; it is not a
+# parameter of this script.
 
 # %%
 run("backtest", PANEL,

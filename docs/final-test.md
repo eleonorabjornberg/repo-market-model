@@ -77,7 +77,7 @@ The ten days that contribute most:
 | 4 | 169 | 2.536 | 2.098 | +0.438 (+0.196 to +0.716) | shown better; different model from h = 1, and as-of persistence does not widen with horizon, so this comparison favours the model; not evidence. |
 | 5 | 169 | 2.618 | 2.166 | +0.452 (+0.199 to +0.746) | shown better; different model from h = 1, and as-of persistence does not widen with horizon, so this comparison favours the model; not evidence. |
 
-**The event cells, reported only.** The frozen dynamic logit (#137), recalibrated walk-forward by recency-weighted Platt, on all window days. Each paired cell is the baseline's Brier score minus the model's, with its 90% interval; a positive value favours the model. Below 20 events a cell is labelled inconclusive. None of these cells passes or fails the test, and a leap is not a stress warning.
+**The event cells, reported only.** The frozen dynamic logit (#137), recalibrated walk-forward by recency-weighted Platt, on all window days. Each paired cell is the baseline's Brier score minus the model's, with its 90% interval; a positive value favours the model. Below 20 events a cell is labelled inconclusive. None of these cells passes or fails the test, and a leap is not a stress warning. At h = 1 a plain leap is a rise of at least 3 bp over the as-of anchor two rows back, not over the previous day, so a day-on-day rise is not always one.
 
 | Horizon | Target | Events | Brier, model | vs calendar climatology | vs persistence-logistic |
 |---|---|---|---|---|---|

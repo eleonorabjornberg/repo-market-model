@@ -106,6 +106,23 @@ def _snapshots(raw_root: Path):
     return index, releases
 
 
+def check_stated_release_time(day: date, stated_time) -> None:
+    """Refuse a page that states a release time other than the declared one.
+
+    A later stated time would make the declaration early, which is the
+    direction that leaks. A page that states none (`None`) is not refused.
+
+    Raises:
+        ValueError: if the page states a time other than `FRB_H8_RELEASE_TIME`.
+    """
+
+    if stated_time is not None and stated_time != FRB_H8_RELEASE_TIME:
+        raise ValueError(
+            f"the H.8 release of {day} states {stated_time}, not the "
+            f"declared {FRB_H8_RELEASE_TIME}"
+        )
+
+
 def cut(raw_root: Path, start: date, end: date, declared_days: int):
     index, snapshots = _snapshots(raw_root)
     listed = [
@@ -139,11 +156,7 @@ def cut(raw_root: Path, start: date, end: date, declared_days: int):
                 f"the H.8 index lists {listed_day}; the page under {day} states "
                 f"{release.stated_date}"
             )
-        if release.stated_time is not None and release.stated_time != FRB_H8_RELEASE_TIME:
-            raise ValueError(
-                f"the H.8 release of {day} states {release.stated_time}, not the "
-                f"declared {FRB_H8_RELEASE_TIME}"
-            )
+        check_stated_release_time(day, release.stated_time)
         parsed.append((release, artifact.sha256))
         records.append(
             {
