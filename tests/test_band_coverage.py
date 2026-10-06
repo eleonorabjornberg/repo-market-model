@@ -1,4 +1,4 @@
-"""The band-coverage split and the sentence that cites it (#265).
+"""The band-coverage split and the sentence that cites it (#265), extended to h = 2 to 5 (#290).
 
 `README.md` once said, of the published distribution, "None of these models has
 one" (a calibration finding), from the pooled 90% interval. Split by the project's
@@ -23,7 +23,16 @@ Mutation record (disposable copy, `-B`, control green before and after):
    day without its tag).
 4. `scripts/emit_visual.py`, `band_coverage_block`: the sentence left out of the
    fill (`"bc_sentence": sentence` -> `"bc_sentence": ""`). Kills
-   `SiteTests.test_the_page_carries_the_readmes_sentence` with `AssertionError`.
+    `SiteTests.test_the_page_carries_the_readmes_sentence` with `AssertionError`.
+5. `scripts/band_coverage.py`, `daily_day_table` (#290): `if iso > last:` -> `if False:`, the
+   refusal of a day after the h = 1 record's last scored day. Kills
+   `LaterHorizonTests.test_a_day_after_the_window_is_refused` with `AssertionError`
+   (`BandError not raised`).
+6. `scripts/band_coverage.py`, `check_against_diagnosis`, in `require`:
+   `if not opened - 1e-9 <= value <= closed + 1e-9:` -> `if False:`, so a walk that does not
+   reproduce the diagnosis passes. Kills
+   `LaterHorizonTests.test_a_horizon_that_does_not_reproduce_the_diagnosis_is_refused` with
+   `AssertionError` (`BandError not raised`).
 """
 
 from __future__ import annotations
@@ -113,40 +122,123 @@ class CellSizeTests(unittest.TestCase):
 class PublishedSentenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.record, cls.table, cls.horizons, cls.days = emit.band_coverage()
+        cls.record, cls.table, cls.later, cls.days = emit.band_coverage()
         cls.readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     def test_the_pooled_sentence_never_stands_while_a_split_cell_excludes(self):
         self.assertTrue(band.excluded(self.table),
                         "the published split has no excluding cell; the check below proves nothing")
         self.assertNotIn(OLD_SENTENCE, self.readme)
-        self.assertIn(band.finding_sentence(self.table), self.readme)
+        self.assertIn(band.finding_sentence(self.table, self.later), self.readme)
         # And from the generator itself, so a README that was not regenerated cannot hide it.
         _, groups = emit.challenger_section()
         persistence = emit.load(emit.PERSISTENCE)
         text = "\n".join("\n".join(emit.coverage_section(group, persistence)) for group in groups)
         self.assertNotIn(OLD_SENTENCE, text)
-        self.assertIn(band.finding_sentence(self.table), text)
+        self.assertIn(band.finding_sentence(self.table, self.later), text)
 
     def test_the_sentence_names_every_excluding_cell_from_the_record(self):
-        sentence = band.finding_sentence(self.table)
-        found = band.excluded(self.table)
-        self.assertIn("%d cells" % len(found), sentence)
-        for label, cell in found:
-            figures = cell["bands"][0.5 if label == "50%" else 0.9]
-            self.assertIn("%.1f%%" % (100.0 * figures["coverage"]), sentence)
+        sentence = band.finding_sentence(self.table, self.later)
+        horizons = [(1, self.table)] + [(e["horizon"], e["table"]) for e in self.later]
+        self.assertIn("%d cells" % sum(len(band.excluded(t)) for _, t in horizons), sentence)
+        for horizon, table in horizons:
+            part = sentence.split("at h = %d, " % horizon)[1].split("; at h = ")[0]
+            for label, cell in band.excluded(table):
+                figures = cell["bands"][0.5 if label == "50%" else 0.9]
+                with self.subTest(horizon=horizon, cell=cell["name"], band=label):
+                    self.assertIn("%s band on %s" % (label, "all days" if cell["kind"] == "all" else
+                                                     "%s %s" % (cell["kind"], band.cell_label(cell))), part)
+                    self.assertIn("(%s, %s to %s)" % (band._pct(figures["coverage"]), band._pct(figures["lower"]),
+                                                     band._pct(figures["upper"])), part)
 
     def test_with_no_excluding_cell_the_sentence_says_so(self):
         self.assertIn("no cell", band.finding_sentence([]))
+        self.assertIn("h = 1 to 2", band.finding_sentence([], [{"horizon": 2, "table": []}]))
 
     def test_the_split_reproduces_the_reviews_quarter_end_row(self):
         cell = {c["name"]: c for c in self.table}["quarter_end"]
         self.assertEqual((cell["days"], cell["below"], cell["above"]), (31, 0, 7))
         self.assertAlmostEqual(cell["bands"][0.9]["coverage"], 24 / 31)
 
-    def test_h2_to_h5_carry_no_interval(self):
-        self.assertEqual({c["horizon"] for c in self.horizons}, {2, 3, 4, 5})
-        self.assertTrue(all("lower" not in c for c in self.horizons))
+    def test_h2_to_h5_carry_an_interval_and_a_day_count_in_every_live_cell(self):
+        self.assertEqual([e["horizon"] for e in self.later], [2, 3, 4, 5])
+        for entry in self.later:
+            for cell in entry["table"]:
+                with self.subTest(horizon=entry["horizon"], cell=cell["name"]):
+                    self.assertGreater(cell["days"], 0)
+                    if not cell["enough"]:
+                        self.assertEqual(band.excluded([cell]), [])
+                        continue
+                    for nominal in (0.5, 0.9):
+                        figures = cell["bands"][nominal]
+                        self.assertLessEqual(figures["lower"], figures["coverage"])
+                        self.assertLessEqual(figures["coverage"], figures["upper"])
+
+
+class LaterHorizonTests(unittest.TestCase):
+    """h = 2 to 5 (#290): the daily records, their window, and their reproduction of the diagnosis."""
+
+    @classmethod
+    def setUpClass(cls):
+        import json
+        cls.runs = REPO_ROOT / "docs" / "runs"
+        cls.record, cls.table, cls.later, cls.days = band.compute(cls.runs)
+        cls.daily = {h: json.loads((cls.runs / (band.DAILY % h)).read_text(encoding="utf-8"))
+                     for h in band.LATER_HORIZONS}
+        cls.diagnosis = json.loads((cls.runs / band.DIAGNOSIS).read_text(encoding="utf-8"))
+
+    def test_every_record_stays_inside_the_h1_window_and_no_locked_day(self):
+        for horizon, daily in self.daily.items():
+            with self.subTest(horizon=horizon):
+                dates = [day["date"] for day in daily["days"]]
+                self.assertEqual(dates, sorted(set(dates)))
+                self.assertLessEqual(dates[-1], self.days[-1]["date"])
+                self.assertLessEqual(dates[-1], "2025-12-31")
+                self.assertEqual(daily["horizon"], horizon)
+                self.assertEqual(daily["reproduces"]["exact"], True)
+
+    def test_the_pooled_and_regime_shares_are_the_diagnosis_shares(self):
+        for entry in self.later:
+            pooled = self.diagnosis["q1_calibration"]["h%d_2018_2025" % entry["horizon"]]["issued"]
+            cell = entry["table"][0]
+            with self.subTest(horizon=entry["horizon"]):
+                self.assertEqual(cell["days"], pooled["days"])
+                # The diagnosis counts an outcome within 1e-9 bp of an edge as on it; here it is
+                # on it only if exactly there. So the exact share lies between its open and closed.
+                for nominal, key in ((0.5, "band_50"), (0.9, "band_90")):
+                    value = 100.0 * cell["bands"][nominal]["coverage"]
+                    self.assertGreaterEqual(value, pooled[key + "_open"] - 1e-9)
+                    self.assertLessEqual(value, pooled[key + "_closed"] + 1e-9)
+
+    def test_a_day_after_the_window_is_refused(self):
+        rows = band.build_panel_rows()
+        splits = band.load_split_declaration(band.SPLITS)
+        daily = {"horizon": 2, "levels": band.LEVELS,
+                 "days": [dict(day) for day in self.daily[2]["days"][-2:]]}
+        last = daily["days"][0]["date"]
+        with self.assertRaises(band.BandError):
+            band.daily_day_table(daily, rows, splits, last)
+        daily["days"] = daily["days"][:1]
+        self.assertEqual(len(band.daily_day_table(daily, rows, splits, last)), 1)
+
+    def test_a_horizon_that_does_not_reproduce_the_diagnosis_is_refused(self):
+        entry = [e for e in self.later if e["horizon"] == 3][0]
+        days = [dict(day, hits=dict(day["hits"])) for day in entry["days"]]
+        band.check_against_diagnosis(3, days, self.diagnosis)
+        for day in days[:30]:
+            day["hits"][0.9] = 1.0 - day["hits"][0.9]
+        with self.assertRaises(band.BandError):
+            band.check_against_diagnosis(3, days, self.diagnosis)
+
+    def test_each_horizon_is_the_published_distribution_on_the_published_panel(self):
+        import json
+        manifest = json.loads(band.MANIFEST.read_text(encoding="utf-8"))
+        for horizon, daily in self.daily.items():
+            with self.subTest(horizon=horizon):
+                self.assertEqual(daily["panel_sha256"], manifest["sha256"])
+                self.assertEqual(daily["published_record"], "docs/runs/pressure_model_v1_h%d.json" % horizon)
+                self.assertEqual(daily["decides"], "nothing")
+                self.assertEqual(daily["directive"], "#290")
 
 
 class TagTests(unittest.TestCase):
@@ -181,11 +273,11 @@ class SiteTests(unittest.TestCase):
         start = page.index('<div id="band-coverage"')
         block = page[start:page.index("<h3 class=\"sub\">Lead time", start)]
         cls.text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", block)))
-        cls.record, cls.table, cls.horizons, cls.days = band.compute(REPO_ROOT / "docs" / "runs")
+        cls.record, cls.table, cls.later, cls.days = band.compute(REPO_ROOT / "docs" / "runs")
 
     def test_the_page_carries_the_readmes_sentence(self):
         squash = lambda text: text.replace("`", "").replace(" ", "")  # a <code> tag leaves a space
-        self.assertIn(squash(band.finding_sentence(self.table)), squash(self.text))
+        self.assertIn(squash(band.finding_sentence(self.table, self.later)), squash(self.text))
 
     def test_every_h1_cell_is_on_the_page_with_its_interval(self):
         for cell in self.table:
@@ -197,11 +289,16 @@ class SiteTests(unittest.TestCase):
                 self.assertIn("%s to %s" % (band._pct(b["lower"]), band._pct(b["upper"])), self.text)
                 self.assertIn(band._pct(b["coverage"]), self.text)
 
-    def test_h2_to_h5_are_shares_labelled_as_having_no_interval(self):
-        self.assertIn("no interval: the record keeps no per-origin data for h = 2\u20135", self.text)
-        for cell in self.horizons:
-            if cell["days"] >= band.MINIMUM_DAYS:
-                self.assertIn("%.1f%%" % cell["band_90"], self.text)
+    def test_every_h2_to_h5_cell_is_on_the_page_with_its_interval(self):
+        self.assertNotIn("no interval", self.text)
+        for entry in self.later:
+            self.assertIn("%d days ahead" % entry["horizon"], self.text)
+            for cell in entry["table"]:
+                with self.subTest(horizon=entry["horizon"], cell=cell["name"]):
+                    if not cell["enough"]:
+                        continue
+                    b = cell["bands"][0.9]
+                    self.assertIn("%s to %s" % (band._pct(b["lower"]), band._pct(b["upper"])), self.text)
 
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ The ten days that contribute most:
 | outside the quarter-end window | 157 | +0.106 | -0.001 to +0.226 |
 | in the quarter-end window | 12 | +1.071 | no interval |
 
-**Five-quantile score at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step gbm served stale, identical across those horizons; only the PID outer pair differs. Each cell carries Eleonora's label of 4 October 2026.
+**Five-quantile score at horizons 2 to 5, reported only.** The published distribution at each horizon is pressure model v1's declaration, whose q25, q50 and q75 at h = 2 to 5 are the one-step gbm served stale, identical across those horizons; only the PID outer pair differs. Each cell carries Eleonora's label of 4 October 2026. The lockbox was opened before a method was declared for these cells, so the method used is chosen after the 2026 days were seen (ruling of 6 October 2026, #223). The cells stay reported only and never change the final test's verdict.
 
 | Horizon | Days | Persistence | Published | Mean difference, bp (90% interval) | Label |
 |---|---|---|---|---|---|

@@ -419,8 +419,8 @@ def verify_entry(response: dict, sha256: str) -> dict:
             raise ValueError(f"entry {uuid} is over {data['algorithm']}:{data['value']}, not sha256:{sha256}")
         proof = entry["verification"]["inclusionProof"]
         index, size = int(proof["logIndex"]), int(proof["treeSize"])
-        if index != int(entry["logIndex"]):
-            raise ValueError(f"entry {uuid}'s proof is for log index {index}, not {entry['logIndex']}")
+        # `logIndex` is the sharded log's global index; the proof's is the active tree's own
+        # (#328), so the two differ. The proof places the leaf by the proof's index alone.
         leaf = hashlib.sha256(b"\x00" + raw).digest()
         if not uuid.endswith(leaf.hex()):
             raise ValueError(f"entry {uuid} is not the leaf its body hashes to")
