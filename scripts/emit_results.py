@@ -39,6 +39,7 @@ import importlib.util
 import json
 import math
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +52,9 @@ README = ROOT / "README.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
 BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
+#: The model documentation and validation report (#119): prose written by hand, every figure in a block
+#: `scripts/validation_report.py` renders from the records.
+VALIDATION_PAGE = ROOT / "docs/model/validation.md"
 
 BEGIN = "<!-- generated: key-findings -->"
 END = "<!-- end generated: key-findings -->"
@@ -1397,6 +1401,22 @@ def band_coverage_module():
 _BAND_MODULE = {}
 
 
+def validation_report_module():
+    """`scripts/validation_report.py`, loaded once."""
+
+    if "module" not in _VALIDATION_MODULE:
+        spec = importlib.util.spec_from_file_location(
+            "validation_report", ROOT / "scripts/validation_report.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["validation_report"] = module
+        spec.loader.exec_module(module)
+        _VALIDATION_MODULE["module"] = module
+    return _VALIDATION_MODULE["module"]
+
+
+_VALIDATION_MODULE = {}
+
+
 def band_coverage():
     """`(record, table, h2-5 cells, days)` of the published distribution's band split, computed once."""
 
@@ -1787,6 +1807,7 @@ def rendered(persistence, exceedance, conditional):
         FINAL_TEST_PAGE: (
             (FINAL_TEST_BEGIN, FINAL_TEST_END, final_test_section()),
         ),
+        VALIDATION_PAGE: tuple(validation_report_module().blocks(types.SimpleNamespace(**globals()))),
     }
     for page, blocks in pages.items():
         if not page.exists():
