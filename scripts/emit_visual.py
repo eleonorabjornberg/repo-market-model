@@ -570,12 +570,21 @@ def newcomer_nav(template):
 
 
 def use_limitation_fill(repo):
-    """`{{use_limitation}}`: the one blockquote line of `docs/use-limitation.md` (#261)."""
+    """`{{use_limitation}}`: the plain-English version in `docs/use-limitation.md` (#261, #316).
+
+    The one blockquote line under `## Plain-English version`. The README and `docs/final-test.md`
+    keep the technical statement; the page says it for a reader who is not a specialist.
+    """
     text = (Path(repo) / USE_LIMITATION).read_text(encoding="utf-8")
-    found = [line[2:].strip() for line in text.splitlines() if line.startswith("> ")]
+    heading = "\n## Plain-English version\n"
+    if heading not in text:
+        raise VisualError(f"{USE_LIMITATION} has no '## Plain-English version' section")
+    start = text.index(heading)
+    end = text.find("\n## ", start + 1)
+    found = [line[2:].strip() for line in text[start:end if end >= 0 else None].splitlines() if line.startswith("> ")]
     if len(found) != 1 or not found[0]:
-        raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line, the statement; "
-                          f"found {len(found)}")
+        raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line under '## Plain-English "
+                          f"version'; found {len(found)}")
     return {"use_limitation": html.escape(found[0], quote=False)}
 
 

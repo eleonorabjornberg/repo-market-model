@@ -648,12 +648,16 @@ def _influence_module():
 def use_limitation():
     """The use-limitation statement, from `docs/use-limitation.md` (#261).
 
-    Exactly one blockquote line is the statement. Anything else is a data error,
+    Exactly one blockquote line under `## The statement` is the statement (the
+    plain-English version, under its own heading, is the results page's: #316). Anything else is a data error,
     so an edit that leaves no statement, or two, fails here rather than
     publishing a page without it.
     """
 
-    found = [line[2:].strip() for line in USE_LIMITATION.read_text(encoding="utf-8").splitlines()
+    text = USE_LIMITATION.read_text(encoding="utf-8")
+    start = text.index("\n## The statement\n")
+    end = text.find("\n## ", start + 1)
+    found = [line[2:].strip() for line in text[start:end if end >= 0 else None].splitlines()
              if line.startswith("> ")]
     if len(found) != 1 or not found[0]:
         raise RecordError("%s must carry exactly one blockquote line, the statement; found %d"
