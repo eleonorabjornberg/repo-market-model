@@ -27,6 +27,7 @@ class failed at import or on the missing workflow file.
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import importlib.util
 import io
@@ -35,8 +36,9 @@ import re
 import shutil
 import tempfile
 import unittest
-from datetime import date, time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
+from unittest import mock
 
 from repo_model import onset
 from repo_model.asof import InformationRule
@@ -608,6 +610,17 @@ class CrpsScoringTests(unittest.TestCase):
         self.assertLess(date.fromisoformat(cell["last"]), cutoff)
 
 
+_AUCTIONS = []
+
+
+def _auctions():
+    """The fixture snapshot's auction records, loaded once (about 12 MB)."""
+
+    if not _AUCTIONS:
+        _AUCTIONS.extend(live.auction_records(FIXTURES))
+    return _AUCTIONS
+
+
 def _fixture_panel(tmp):
     """The published panel, built from the tracked fixtures, and its point-in-time rows."""
 
@@ -664,6 +677,199 @@ class PlaceholderGuardTests(unittest.TestCase):
             live.require_reads_on_real_rows(self.rows, self._rule(1), index, index - 3)
 
 
+class CashManagementBillTests(unittest.TestCase):
+    """A same-day bill settling on a target day is refused on the live path (#268, finding 16).
+
+    The placeholders read their settlement columns as scheduled inputs, which
+    holds only for an auction that closed before 15:00 on the panel day before
+    it settles. `check_settlement_schedule` judged only the auctions inside the
+    built panel's window, so a cash-management bill auctioned and settled on a
+    target day was read as known on the live day. `extend_panel` now judges the
+    auctions against the real days and the placeholders together.
+
+    This is an availability guard. **Recorded mutation**, 6 October 2026: in
+    `live_record.extend_panel`, the line `check_settlement_schedule(auctions, ...)`
+    replaced by `pass` (confirmed applied by grep). `test_a_same_day_bill_on_a_target_day_is_refused`
+    then fails with `AssertionError: ValueError not raised`, and
+    `test_an_unreadable_closing_time_on_a_target_day_is_refused` the same; the
+    rest of this module stays green. Reaches the live run only with a pin bump
+    (#255): the run executes the pinned `live_record.py`.
+    """
+
+    DECISION_DAY = date(2025, 12, 22)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp()
+        panel, cls.pit = _fixture_panel(cls.tmp)
+        cls.rows = load_daily_panel(panel)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def _extend(self, extra=()):
+        cut = [row for row in self.rows if row.date < self.DECISION_DAY]
+        return live.extend_panel(cut, self.DECISION_DAY, 2, self.pit, list(_auctions()) + list(extra))
+
+    @staticmethod
+    def bill(held, settled, close="11:30 AM"):
+        return {"cusip": "CMB000001", "auction_date": held.isoformat(),
+                "issue_date": settled.isoformat(), "closing_time_comp": close}
+
+    def test_the_fixture_auctions_pass(self):
+        _, targets = self._extend()
+        self.assertEqual(len(targets), 2)
+
+    def test_a_same_day_bill_on_a_target_day_is_refused(self):
+        _, targets = self._extend()
+        with self.assertRaisesRegex(ValueError, "CMB000001"):
+            self._extend([self.bill(targets[0], targets[0])])
+
+    def test_an_unreadable_closing_time_on_a_target_day_is_refused(self):
+        _, targets = self._extend()
+        with self.assertRaisesRegex(ValueError, "closing_time_comp"):
+            self._extend([self.bill(targets[0] - timedelta(days=7), targets[0], "null")])
+
+    def test_an_ordinary_auction_settling_on_a_target_day_passes(self):
+        _, targets = self._extend()
+        self._extend([self.bill(targets[0] - timedelta(days=7), targets[0], "01:00 PM")])
+
+    def test_the_run_loads_the_snapshot_auctions(self):
+        records = live.auction_records(FIXTURES)
+        self.assertGreater(len(records), 3000)
+        self.assertTrue(all("closing_time_comp" in record for record in records))
+
+
+class DecisionInstantGuardTests(unittest.TestCase):
+    """`run_command` refuses a record made before the day's 16:00 ET decision instant (#268, finding 21).
+
+    A record is made on its own day after the decision instant; a missed day is
+    never backfilled. The clock is patched: `live.datetime` is a subclass whose
+    `now` returns a fixed instant, and `live._git` raises once the guard is
+    passed, so nothing is fetched or built.
+
+    **Recorded mutation**, 6 October 2026: in `live_record.run_command`, the
+    condition `if now.date() != day or now < instant:` replaced by
+    `if False:` (confirmed applied by grep). `test_before_the_instant_is_refused`,
+    `test_a_later_day_is_refused` and `test_an_earlier_day_is_refused` then raise
+    `DecisionInstantGuardTests.Past` (the run went on to its first git call)
+    instead of the `ValueError`. Restored, all green.
+    """
+
+    DAY = date(2026, 10, 7)
+
+    class Past(Exception):
+        pass
+
+    def _run(self, at, tmp, dry_run=False):
+        class Fixed(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return at.astimezone(tz) if tz else at
+
+        args = argparse.Namespace(
+            date=self.DAY.isoformat(), out_dir=str(tmp), work_dir=None, raw_root=None,
+            status=None, pinned_sha=None, dry_run=dry_run,
+        )
+
+        def stop(*argv):
+            raise self.Past()
+
+        with mock.patch.object(live, "datetime", Fixed), mock.patch.object(live, "_git", stop):
+            return live.run_command(args)
+
+    def test_before_the_instant_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            at = datetime(2026, 10, 7, 15, 59, tzinfo=live.EASTERN)
+            with self.assertRaisesRegex(ValueError, "never backfilled"):
+                self._run(at, tmp)
+
+    def test_a_later_day_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "never backfilled"):
+                self._run(datetime(2026, 10, 8, 9, 0, tzinfo=live.EASTERN), tmp)
+
+    def test_an_earlier_day_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "never backfilled"):
+                self._run(datetime(2026, 10, 6, 17, 0, tzinfo=live.EASTERN), tmp)
+
+    def test_the_instant_and_after_pass_the_guard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for at in (datetime(2026, 10, 7, 16, 0, tzinfo=live.EASTERN),
+                       datetime(2026, 10, 7, 23, 59, tzinfo=live.EASTERN)):
+                with self.subTest(at=at), self.assertRaises(self.Past):
+                    self._run(at, tmp)
+
+    def test_a_dry_run_is_not_held_to_the_clock(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(self.Past):
+                self._run(datetime(2026, 10, 7, 9, 0, tzinfo=live.EASTERN), tmp, dry_run=True)
+
+
+class ResolvePinTests(unittest.TestCase):
+    """`resolve_pin` is the constant, or the first merge on main's first-parent history that carried the file."""
+
+    def test_a_declared_pin_is_returned_without_asking_git(self):
+        def unreachable(*argv):
+            raise AssertionError("git was asked")
+
+        with mock.patch.object(live, "PINNED_CODE_SHA", "a" * 40), mock.patch.object(live, "_git", unreachable):
+            self.assertEqual(live.resolve_pin(), "a" * 40)
+
+    def test_with_no_declared_pin_it_is_the_oldest_first_parent_commit(self):
+        seen = []
+
+        def git(*argv):
+            seen.append(argv)
+            return "b" * 40 + "\n" + "c" * 40
+
+        with mock.patch.object(live, "PINNED_CODE_SHA", None), mock.patch.object(live, "_git", git):
+            self.assertEqual(live.resolve_pin("origin/main"), "b" * 40)
+        self.assertEqual(seen, [("rev-list", "--first-parent", "--reverse", "origin/main", "--", "scripts/live_record.py")])
+
+    def test_a_file_not_yet_on_the_ref_is_refused(self):
+        with mock.patch.object(live, "PINNED_CODE_SHA", None), mock.patch.object(live, "_git", lambda *argv: ""):
+            with self.assertRaisesRegex(ValueError, "not on origin/main"):
+                live.resolve_pin("origin/main")
+
+
+class MissedCommandTests(unittest.TestCase):
+    """`missed` lists the decision days between the latest logged day and `--date`, exclusive of both."""
+
+    def _missed(self, logged, day):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "live").mkdir()
+            for when in logged:
+                (Path(tmp) / "live" / f"{when}.json").write_text("{}", encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = live.missed_command(argparse.Namespace(live_dir=tmp, date=day))
+        self.assertEqual(code, 0)
+        return json.loads(out.getvalue())["missed"]
+
+    def test_weekends_and_holidays_are_not_missed(self):
+        # Fri 9 Oct logged; Sat, Sun and Columbus Day (Mon 12 Oct) are closed.
+        self.assertEqual(self._missed(["2026-10-09"], "2026-10-14"), ["2026-10-13"])
+
+    def test_the_day_itself_and_the_logged_day_are_not_counted(self):
+        self.assertEqual(self._missed(["2026-10-07"], "2026-10-08"), [])
+
+    def test_the_latest_logged_day_counts_not_the_first(self):
+        self.assertEqual(self._missed(["2026-10-01", "2026-10-07"], "2026-10-09"), ["2026-10-08"])
+
+    def test_an_empty_log_misses_nothing(self):
+        self.assertEqual(self._missed([], "2026-10-09"), [])
+
+    def test_a_missing_live_directory_misses_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                live.missed_command(argparse.Namespace(live_dir=tmp, date="2026-10-09"))
+        self.assertEqual(json.loads(out.getvalue()), {"missed": []})
+
+
 class BaselineAgreementTests(unittest.TestCase):
     """A record's baseline forecasts are the repository's baseline functions'.
 
@@ -698,14 +904,14 @@ class BaselineAgreementTests(unittest.TestCase):
 
     def test_the_extension_follows_the_market_calendar(self):
         extended, targets = live.extend_panel(
-            self._cut(), self.DECISION_DAY, max(live.HORIZONS), self.pit
+            self._cut(), self.DECISION_DAY, max(live.HORIZONS), self.pit, _auctions()
         )
         real = [row.date for row in self.rows if row.date >= self.DECISION_DAY][: 1 + max(live.HORIZONS)]
         self.assertEqual([row.date for row in extended[-len(real):]], real)
         self.assertEqual(targets, real[1:])
 
     def test_the_extension_carries_the_calendar_and_the_settlements(self):
-        extended, _ = live.extend_panel(self._cut(), self.DECISION_DAY, max(live.HORIZONS), self.pit)
+        extended, _ = live.extend_panel(self._cut(), self.DECISION_DAY, max(live.HORIZONS), self.pit, _auctions())
         truth = {row.date: row for row in self.rows}
         for row in extended[len(self._cut()):]:
             for column in live.PLACEHOLDER_COLUMNS:
@@ -714,11 +920,11 @@ class BaselineAgreementTests(unittest.TestCase):
 
     def test_a_panel_that_misses_the_day_before_is_refused(self):
         with self.assertRaises(ValueError):
-            live.extend_panel(self._cut()[:-1], self.DECISION_DAY, 1, self.pit)
+            live.extend_panel(self._cut()[:-1], self.DECISION_DAY, 1, self.pit, _auctions())
 
     def test_the_baselines_match_the_repository_functions(self):
         for h in (1, 3):
-            extended, targets = live.extend_panel(self._cut(), self.DECISION_DAY, h, self.pit)
+            extended, targets = live.extend_panel(self._cut(), self.DECISION_DAY, h, self.pit, _auctions())
             target = targets[h - 1]
             got = live.baseline_forecasts(extended, h, self.registry, self.splits, self.taus)
             for name, predictor, features in (
@@ -809,7 +1015,7 @@ class DistributionAgreementTests(unittest.TestCase):
         cls.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
         cls.splits = load_split_declaration(SPLITS)
         cut = [row for row in cls.rows if row.date < cls.DECISION_DAY]
-        cls.extended, cls.targets = live.extend_panel(cut, cls.DECISION_DAY, 1, cls.pit)
+        cls.extended, cls.targets = live.extend_panel(cut, cls.DECISION_DAY, 1, cls.pit, _auctions())
         cls.got = live.distribution_forecasts(cls.extended, 1, cls.registry, cls.splits)
         final = _script("final_test_preregistration")
         argv = [str(cls.short) if part == "PUB.csv" else part for part in final.CRPS_COMMAND]

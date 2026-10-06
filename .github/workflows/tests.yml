@@ -23,11 +23,18 @@ jobs:
   suite:
     name: unit tests (3.11)
     runs-on: ubuntu-latest
+    # The suite takes about 20 minutes; a hung run is stopped well after that.
+    timeout-minutes: 60
     # 3.11 only, the one declared interpreter (requires-python, #53). 3.9 and
     # 3.10 left the matrix on the human's ruling of 30 Sep (#29): every
     # environment that runs this project is the rmm cloud environment, on 3.11.
     steps:
+      # The whole history, not a depth-1 clone: the results page and
+      # docs/status.json are stamped with the latest commit that changed an
+      # input, and the commit-stamp test skips on a shallow clone (#268).
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -52,6 +59,15 @@ jobs:
           PYTHONPATH: src
         run: python3 -B -m unittest discover -s tests -v
 
+      # The results page is generated, never hand-edited; this refuses a stale
+      # one (the same check tests/test_visual.py makes, run as the command a
+      # contributor runs). Needs the history, hence fetch-depth above.
+      - name: Check the results page is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+        run: python3 -B scripts/emit_visual.py --check
+
   ml:
     # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep), with
     # REPO_MODEL_REQUIRE_ML=1 so tests/test_ml.py fails rather than skips if
@@ -73,8 +89,14 @@ jobs:
     # the whole suite here too, so a merge is never under-tested on the way in.
     name: unit tests with the ml extra (3.11)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
+      # The whole history, not a depth-1 clone: the results page and
+      # docs/status.json are stamped with the latest commit that changed an
+      # input, and the commit-stamp test skips on a shallow clone (#268).
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:

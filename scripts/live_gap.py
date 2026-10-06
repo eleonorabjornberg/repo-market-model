@@ -144,7 +144,8 @@ def forecast_day(live, raw_root: Path, panel: Path, day: date) -> dict:
     registry = json.loads(live.REGISTRY.read_text(encoding="utf-8"))
     splits = live.load_split_declaration(live.SPLITS)
     taus = tuple(float(tau) for tau in live.load_stress_thresholds(live.THRESHOLDS)["taus_bp"])
-    extended = {h: live.extend_panel(real, day, h, pit) for h in live.HORIZONS}
+    auctions = live.auction_records(raw_root)
+    extended = {h: live.extend_panel(real, day, h, pit, auctions) for h in live.HORIZONS}
     durations["build"] = clock.monotonic() - tick
 
     targets = []

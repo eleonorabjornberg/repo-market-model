@@ -29,6 +29,7 @@ jobs:
     # branch rule or a reader of check runs may name it.
     name: publish docs/status.json
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # The file is stamped with the latest commit that changed an input, which
       # needs the history, not a depth-1 clone.
