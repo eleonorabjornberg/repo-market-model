@@ -83,7 +83,7 @@ to the table and make `quarter_end` respect them.
 
 ## A quarter-end window
 
-Decided by Eleonora, 2 October 2026 (#140; ruling on PR #186), in force once PR #186 merges.
+Decided by Eleonora, 2 October 2026 (#140; ruling on PR #186), in force: merged in PR #186, 2 October 2026.
 [`quarter-end-window.md`](quarter-end-window.md) adds a column `quarter_end_window` covering the quarter's last
 business day and the two business days either side, a split reported alongside the day types on every new record,
 and a per-quarter peak of SOFR − IORB. It leaves `quarter_end` as decided above.

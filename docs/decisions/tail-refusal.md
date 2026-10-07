@@ -3,7 +3,7 @@
 **Superseded by [`tail-shape-floor.md`](tail-shape-floor.md) (#63, 1 October 2026): a negative fitted shape is
 floored at zero, which takes in the refusal below.**
 
-**Status: decided. Implementation is in flight; no verdict on Phase 2's tail clause is recorded on
+**Status: decided, merged in PR #66, 1 October 2026, and superseded (above). Implementation was in flight; no verdict on Phase 2's tail clause is recorded on
 the strength of it, and `PLAN.md` is deliberately unchanged until the rule is implemented and
 re-scored end to end.**
 

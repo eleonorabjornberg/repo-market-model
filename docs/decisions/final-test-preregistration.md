@@ -1,6 +1,6 @@
 # Decision: the final test, pre-registered
 
-**Status: a draft for Eleonora (#150), in force once she merges it.** It fixes the design of the final test before any
+**Status: in force: merged in PR #216, 3 October 2026 (#150).** It fixes the design of the final test before any
 locked day is scored. #151 opens the lockbox once and runs exactly what is frozen here. Her two rulings of
 3 October 2026 on #216, on the reading of "within the interval of the best" and on the CRPS target, are recorded
 below ("The reading of the selection rule" and "The test").
