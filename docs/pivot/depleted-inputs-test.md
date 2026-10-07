@@ -44,3 +44,18 @@ touched either way.
 
 Not part of the test: the $50bn and $200bn breaks (#131 reported them as sensitivity; the declared break stays
 $100bn), and the plain `on_rrp` form (not meeting the rule on #176's re-score).
+
+## Result
+
+Scored after the declaration commit, on the scratch panel `scripts/pressure_v1_1.py panel` builds (published columns
+checked against the published digest first), days 2018-06-29 to 2025-12-31. The figures are in
+`evidence/depleted-inputs/depleted_inputs.json`; positive favours the candidate.
+
+| Figure | Mean difference | 90% interval | Gate | Cells worse beyond their interval |
+|---|---|---|---|---|
+| CRPS (bp) | +0.0076 | +0.0027 to +0.0124 | met | none |
+| Brier at +5 bp | +0.00041 | +0.00012 to +0.00075 | met | regime 2020 |
+| Brier at +10 bp | +0.00008 | -0.00001 to +0.00018 | **not met** | regime 2020, tax date |
+
+The rule is not met (the +10 bp gate, and cells under 4), so the inputs stay off the published declaration. No
+published record or page moves.
