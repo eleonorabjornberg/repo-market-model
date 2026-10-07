@@ -16,6 +16,13 @@ name: live-log
 # digest issue (#225), its chain and its commit (`verify`).
 # A mismatch fails the run, and the failure reaches the failed-runs issue.
 #
+# The raw bytes of each day's inputs are archived too (#257): `scripts/live_raw.py`
+# copies the day's raw root, with the digests the record carries, to `raw/<day>/` of the
+# append-only `live-raw` branch, in one add-only commit checked before the push. The
+# record keeps only each input's URL, retrieval time and digest, and a later download
+# may differ, so without the bytes the outcome panel cannot be rebuilt. A failed archive
+# never blocks the record.
+#
 # Each day's digest is also anchored outside the repository's reach, in the
 # public Sigstore Rekor log (Eleonora's ruling of 6 October 2026, #254):
 # `cosign sign-blob` signs the file keylessly under this workflow's GitHub
@@ -195,6 +202,34 @@ jobs:
           echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "WROTE=1" >> "$GITHUB_ENV"
 
+      - name: Archive the raw inputs on live-raw
+        id: raw
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        run: |
+          # The record keeps each input's URL, retrieval time and digest, not its bytes (#257).
+          # Archive the day's raw root, content addressed by those digests, on an append-only
+          # branch of its own. A failure here never blocks a record: it goes to the failed-runs
+          # issue, and the day stays unarchived (`live_raw.py verify-records` lists it).
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" live-raw >/dev/null; then
+            git clone --quiet --branch live-raw --single-branch "$url" live-raw
+          else
+            git init --quiet -b live-raw live-raw
+            git -C live-raw remote add origin "$url"
+          fi
+          export PYTHONPATH=main/src
+          "$PY" -B main/scripts/live_raw.py archive --raw-root work/raw --day "$DAY" --out-dir live-raw
+          cd live-raw
+          base=$(git rev-parse --verify -q HEAD || true)
+          git add "raw/$DAY"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Raw inputs for $DAY"
+          "$PY" -B ../main/scripts/live_raw.py check-append --repo . --day "$DAY" --base "$base"
+          git push --quiet origin HEAD:refs/heads/live-raw
+
       - name: Anchor the digests in Sigstore Rekor
         id: anchor
         if: steps.push.outcome == 'success'
@@ -263,6 +298,13 @@ jobs:
           echo "Anchor failed: $DAY. The record is written; the Rekor anchor is not. A later run anchors every unanchored day (#254). Run: $RUN_URL" > anchor-failed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@anchor-failed.md >/dev/null
 
+      - name: Report a raw archive that failed
+        if: always() && steps.raw.outcome == 'failure'
+        run: |
+          n=$FAILED_RUNS_ISSUE
+          echo "Raw archive failed: $DAY. The record is written; its raw inputs are not archived on live-raw, so the day cannot be rebuilt from bytes (#257). Run: $RUN_URL" > raw-failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@raw-failed.md >/dev/null
+
       - name: Post the digest outside the repository
         id: digest
         if: env.WROTE == '1'
@@ -281,6 +323,25 @@ jobs:
             fi
           } > digest.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
+
+      - name: Reconcile digests missing from the digest issue
+        id: reconcile
+        if: always() && steps.branch.outcome == 'success'
+        run: |
+          # A record pushed to live-log whose digest post failed (#263). Every run
+          # posts the digest of any logged file that has none, marked "reconciled
+          # late". It reads live-log and writes nothing in it; a posted digest that
+          # differs from its file fails the step, and the next step re-checks them all.
+          n=$DIGEST_ISSUE
+          test -n "$n"
+          gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests-before.jsonl
+          "$PY" -B main/scripts/live_integrity.py reconcile --live-dir live-log \
+            --digests digests-before.jsonl --out-dir reconcile --run-url "$RUN_URL"
+          for body in reconcile/*.md; do
+            [ -e "$body" ] || continue
+            gh api "repos/$REPO/issues/$n/comments" -F body=@"$body" >/dev/null
+          done
 
       - name: Verify every logged file
         id: integrity
@@ -311,6 +372,7 @@ jobs:
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
             digest=${{ steps.digest.outcome }}
+            reconcile=${{ steps.reconcile.outcome }}
             integrity=${{ steps.integrity.outcome }}
         run: |
           step=$(echo "$OUTCOMES" | tr ' ' '\n' | grep '=failure' | head -1 | cut -d= -f1)

@@ -542,7 +542,7 @@ class ScorerRefusalTests(unittest.TestCase):
                 score.main(
                     ["--date", "2027-10-01", "--live-dir", str(repo), "--digests",
                      str(save(comments, tmp)), "--panel", str(Path(tmp) / "missing.csv"),
-                     "--output", str(out)]
+                     "--archive-dir", str(Path(tmp) / "no-archive"), "--output", str(out)]
                 )
             self.assertFalse(out.exists())
 
@@ -1002,8 +1002,9 @@ class WorkflowIntegrityTests(unittest.TestCase):
 
     def test_the_workflow_writes_no_existing_path(self):
         # Only the day's record and its panel (one commit) and its anchor (another) are ever staged.
+        # `"raw/$DAY"` is staged in a different clone, of the `live-raw` branch (#257).
         adds = re.findall(r'git add ("[^"]*"(?: "[^"]*")*)', self.text)
-        self.assertEqual(adds, ['"$file" "$panel"', '"live/$day.rekor"'])
+        self.assertEqual(adds, ['"$file" "$panel"', '"raw/$DAY"', '"live/$day.rekor"'])
 
     def test_the_days_panel_is_copied_beside_its_record_and_required_by_the_append_check(self):
         step = self._step("Append it to live-log")

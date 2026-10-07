@@ -1,0 +1,184 @@
+name: live-score
+
+# Scoring the live record, end to end (#257). Started by hand, on or after a scoring date
+# (2027-04-01, 2027-10-01, then every 1 October), after that day's live-log run has
+# archived its raw inputs. It builds the outcome panel from archived bytes only, verifies
+# the log before it scores, and writes a result that carries the digest of every input.
+#
+# What it refuses, and where:
+#
+# * a date that is not a scoring date, or that has not come in New York
+#   (`live_score.py`: `require_scoring_date`, `require_clock`). There is no input for an
+#   override: the workflow never passes `--override-clock`;
+# * a log whose chain, digests, add-only commits or Rekor anchors do not verify, or a record
+#   made at a code SHA that is not a registered pin transition (`live_integrity.py verify`,
+#   `live_pin.py verify`, both run again inside `live_score.py`);
+# * an archive whose bytes differ from their index, or a record whose input digests the
+#   archive does not hold (`live_raw.py verify`). A day logged before the archive began is
+#   listed in the result, not counted as checked;
+# * an outcome panel that `live_raw.py build-panel` did not build from archived bytes
+#   (`live_score.py`: `require_registered_panel`);
+# * a locked day: `lockbox.require_unlocked` reads `metadata/lockbox.json`. Until Eleonora
+#   commits the split that opens the days before the scoring date (#256), this run scores
+#   nothing and fails. Running it does not open a tier.
+#
+# On the first scoring date it also reconstructs the blind gap (#235). Its inputs are fetched
+# once, at scoring time, into a raw root that is archived on `live-raw` as `raw/<date>-gap/`
+# before the reconstruction reads it, so the gap's inputs are bytes too.
+#
+# The result is not committed anywhere: it is uploaded as a workflow artifact, and publishing
+# it as a record is a pull request (docs/decisions/publish-rule.md).
+#
+# Nothing here is third-party except the artifact upload, pinned to a commit.
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "The scoring date, YYYY-MM-DD (2027-04-01, 2027-10-01, or a later 1 October)"
+        required: true
+        type: string
+      previous:
+        description: "Earlier results, as paths in main, space separated (docs/runs/<name>.json); none on the first date"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  # contents: write only to append the gap's raw inputs to live-raw on the first scoring date.
+  contents: write
+  issues: read
+
+concurrency:
+  group: live-score
+  cancel-in-progress: false
+
+jobs:
+  score:
+    name: score the live record
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SCORE_DATE: ${{ inputs.date }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      OMP_NUM_THREADS: "1"
+      DIGEST_ISSUE: 225
+    steps:
+      - name: Check out main and the pinned code
+        id: checkout
+        run: |
+          echo "$SCORE_DATE" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
+          pin=$(jq -r .current main/metadata/live_pin.json)
+          echo "$pin" | grep -Eq '^[0-9a-f]{40}$'
+          git -C main merge-base --is-ancestor "$pin" origin/main
+          git -C main worktree add --quiet --detach ../pinned "$pin"
+          echo "PIN=$pin" >> "$GITHUB_ENV"
+
+      - name: Python from the runner's tool cache, at the pinned patch release
+        id: python
+        run: |
+          patch=$(jq -r .environment.python main/metadata/live_pin.json)
+          base=/opt/hostedtoolcache/Python/$patch/x64
+          test -x "$base/bin/python3"
+          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+
+      - name: Verify the pin is a registered transition
+        id: pin
+        run: |
+          "$PY" -B main/scripts/live_pin.py verify --repo main --ref origin/main
+
+      - name: Install the locked environment
+        id: install
+        run: |
+          lock=main/$(jq -r .environment.lock main/metadata/live_pin.json)
+          echo "$(jq -r .environment.lock_sha256 main/metadata/live_pin.json)  $lock" | sha256sum -c -
+          "$PY" -m venv venv
+          venv/bin/python -m pip install --quiet --require-hashes --no-deps --only-binary :all: -r "$lock"
+
+      - name: Check out live-log and live-raw
+        id: branches
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git clone --quiet --branch live-log --single-branch "$url" live-log
+          git clone --quiet --branch live-raw --single-branch "$url" live-raw
+          gh api --paginate "repos/$REPO/issues/$DIGEST_ISSUE/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests.jsonl
+
+      - name: Verify the log, the raw archive and every record's inputs
+        id: verify
+        run: |
+          export PYTHONPATH=main/src
+          "$PY" -B main/scripts/live_integrity.py verify --live-dir live-log --digests digests.jsonl
+          "$PY" -B main/scripts/live_raw.py verify --archive-dir live-raw --live-dir live-log
+
+      - name: Build the outcome panel from the archive
+        id: panel
+        run: |
+          export PYTHONPATH=main/src
+          # The latest archived day on or before the scoring date: its fetch holds every
+          # outcome published by then. A target day it lacks is listed as skipped in the result.
+          day=$(ls live-raw/raw | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | awk -v d="$SCORE_DATE" '$0 <= d' | tail -1)
+          test -n "$day"
+          echo "RAW_DAY=$day" >> "$GITHUB_ENV"
+          "$PY" -B main/scripts/live_raw.py build-panel --archive-dir live-raw --day "$day" --panel panel.csv
+
+      - name: Reconstruct the blind gap (first scoring date only)
+        id: gap
+        if: inputs.date == '2027-04-01'
+        run: |
+          W=$GITHUB_WORKSPACE
+          # Fetch once, under the pinned tree, archive the bytes on live-raw, and only then
+          # reconstruct from them.
+          PYTHONPATH="$W/pinned/src" "$W/venv/bin/python" -B "$W/main/scripts/live_gap.py" fetch \
+            --pinned-root "$W/pinned" --raw-root "$W/gap-raw" --date "$SCORE_DATE"
+          PYTHONPATH="$W/main/src" "$PY" -B main/scripts/live_raw.py archive \
+            --raw-root gap-raw --day "$SCORE_DATE" --label gap --out-dir live-raw
+          cd live-raw
+          base=$(git rev-parse HEAD)
+          git add "raw/$SCORE_DATE-gap"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Raw inputs for the blind gap, $SCORE_DATE"
+          PYTHONPATH="$W/main/src" "$PY" -B ../main/scripts/live_raw.py check-append \
+            --repo . --day "$SCORE_DATE" --label gap --base "$base"
+          git push --quiet origin HEAD:refs/heads/live-raw
+          cd ../main
+          PYTHONPATH=src "$W/venv/bin/python" -B scripts/live_gap.py reconstruct \
+            --date "$SCORE_DATE" --live-dir "$W/live-log" --pinned-root "$W/pinned" \
+            --out-dir "$W/gap-out" --work-dir "$W/gap-work" --raw-root "$W/gap-raw"
+
+      - name: Score
+        id: score
+        env:
+          PREVIOUS: ${{ inputs.previous }}
+        run: |
+          W=$GITHUB_WORKSPACE
+          export PYTHONPATH="$W/main/src"
+          args=(--date "$SCORE_DATE" --live-dir "$W/live-log" --digests "$W/digests.jsonl"
+                --panel "$W/panel.csv" --archive-dir "$W/live-raw"
+                --output "$W/score-$SCORE_DATE.json")
+          if [ "$SCORE_DATE" = "2027-04-01" ]; then
+            args+=(--gap-dir "$W/gap-out" --pinned-tree "$W/pinned")
+          fi
+          # Earlier results are published records, read from main, never from the input's own paths.
+          for earlier in $PREVIOUS; do
+            echo "$earlier" | grep -Eq '^docs/runs/[A-Za-z0-9_.-]+\.json$'
+            args+=(--previous "$W/main/$earlier")
+          done
+          cd main
+          "$PY" -B scripts/live_score.py "${args[@]}"
+
+      - name: Keep the result
+        id: keep
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: live-score-${{ inputs.date }}
+          path: |
+            score-${{ inputs.date }}.json
+            panel.csv
+            panel.csv.manifest.json
+            panel.csv.provenance.json
+          if-no-files-found: error
