@@ -35,7 +35,7 @@ import re
 import shutil
 import tempfile
 import unittest
-from datetime import date, time
+from datetime import date, datetime, time, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -72,6 +72,10 @@ def _script(name):
 
 live = _script("live_record")
 score = _script("live_score")
+#: Every scoring date in these tests is in the future of the real clock; the scorer's clock guard
+#: (#257) reads `score.now_utc`, so the tests read a clock after the last date they use. The tests
+#: of the guard itself patch it (`test_live_score_provenance.py`).
+score.now_utc = lambda: datetime(2030, 1, 1, 12, tzinfo=timezone.utc)
 
 
 def _record(day="2026-10-02", pinned_sha="0" * 40):
@@ -357,7 +361,7 @@ class ScoringGuardTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 score.main(
                     ["--date", "2027-04-02", "--live-dir", tmp, "--panel", str(Path(tmp) / "p.csv"),
-                     "--output", str(Path(tmp) / "out.json")]
+                     "--archive-dir", tmp, "--output", str(Path(tmp) / "out.json")]
                 )
 
 

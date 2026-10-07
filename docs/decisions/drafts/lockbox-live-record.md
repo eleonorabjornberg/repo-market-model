@@ -1,7 +1,7 @@
 # Draft amendment to `lockbox.md`: the live record
 
 **Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #215, as that directive
-asks, and amended by the one that closes #277. It takes effect only when Eleonora merges the
+asks, and amended by the ones that close #277 and #257. It takes effect only when Eleonora merges the
 section below into `docs/decisions/lockbox.md`, under the heading it carries. Since #277
 (Eleonora's ruling on #269 item 6), `scripts/live_score.py` no longer reads that heading: it scores only through
 `lockbox.require_unlocked`, so it refuses any day `metadata/lockbox.json` has not opened. A scoring date opens
@@ -18,9 +18,12 @@ The section to merge, as drafted:
 pressure model's forecast every business day as a frozen live record, written before its outcome exists, on the
 append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_record.py`).
 
-- **The live record's days are blind-tier days.** They are opened only on the scoring dates #215 pre-registers,
-  fixed in `scripts/live_score.py` (`FIRST_SCORING_DATES`, then every 1 October), and only for the models the
-  record carries. On those dates every logged day whose outcome is observable is scored, cumulatively from the
+- **The live record's days are blind-tier days.** They are opened only on the scoring dates #215 pre-registers
+  (`FIRST_SCORING_DATES` in `scripts/live_score.py`, then every 1 October), and only for the models the record carries. The scorer
+  enforces two things about the date, and neither opens a day: it refuses a date that is not a scoring date
+  (`require_scoring_date`), and a date that has not come in America/New_York (`require_clock`; an override flag
+  is recorded in the output). Which days may be scored is `metadata/lockbox.json` and nothing else
+  (`lockbox.require_unlocked`). On those dates every logged day whose outcome is observable is scored, cumulatively from the
   first logged day, and published whatever it shows. No other comparison scores a logged day, and opening them
   for the live record opens nothing else.
 - **No overlap with the final test.** The final test (#150, #151) scores no day after the panel end,
@@ -61,3 +64,40 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
     > blind but not live: forecasts reconstructed after the fact by the frozen code from inputs fetched at scoring time (latest vintage); reported only, not evidence
 
   - The CRPS gap cells at h = 2 to 5 also carry the "not evidence" label above (#229).
+
+### The scoring procedure, the outcome source, the observation cutoff and the publication behaviour (#257)
+
+Drafted for her. It fixes how a scoring run is made, so that the evidence can be reproduced from bytes.
+
+- **The raw inputs are archived.** Each day's live run copies the raw snapshots its record was built from to
+  `raw/<day>/` of the append-only `live-raw` branch (`scripts/live_raw.py archive`, in `live-log.yml`), content
+  addressed by the digests the record already carries, in one add-only commit by the bot that is checked
+  before the push (`check-append`). The record format does not change. The ruleset on `live-raw` (no deletion,
+  no non-fast-forward push) is the repository setting `live-log` has, and is Eleonora's to add. A failed archive
+  never blocks a record; it is reported to the failed-runs issue, and that day is listed as unarchived.
+- **The outcome source is the archive.** The outcome panel is built only by `live_raw.py build-panel`, from the
+  latest archived day on or before the scoring date, with the repository's own `build`, the live record's columns
+  and decision time, and the build cutoff set to the latest retrieval time in that day. The scorer refuses any
+  other panel (`require_registered_panel`): one with no build manifest, bytes that differ from it, no provenance
+  sidecar, or a source digest the archive does not hold.
+- **The observation cutoff.** A logged day is scored at a horizon only if its target day is before the scoring
+  date and is in the outcome panel. Every record and horizon not scored is listed in the result with its reason:
+  the target day is not in the outcome panel, or it is not before the scoring date. Nothing is skipped silently.
+- **The scoring procedure.** The scoring workflow (`.github/workflows/live-score.yml`, started by hand on or after
+  a scoring date) verifies the log (hash chain, digests, add-only commits, Rekor anchors, registered pins) and the
+  raw archive, builds the panel from the archive, and runs `scripts/live_score.py`. The scorer refuses a date that
+  has not come, a locked day, and an unregistered panel. The workflow never passes the clock override.
+- **What a result records.** Its start time (UTC), the clock it read, the outcome panel's SHA-256 and the command
+  that built it, the digests and retrieval times of every input the panel was built from, the scoring command, the
+  code SHA, `sys.version`, the digest of the dependency lock, every live record's digest, each earlier result's
+  digest, which days are archived and which are not, and the skipped list above.
+- **The event cells.** The Brier cells (+5 bp, +10 bp, the plain leap) use the stationary bootstrap with mean block
+  length h + 1, the horizon overlap the final test's event cells and the live CRPS cells use (it was h). Each
+  cell's seed is `baseline._seed_from((scoring date, cell, horizon, model, baseline[, regime or day type]))`.
+  *Proposed, hers to merge:* the block rule and the seed derivation are part of this amendment.
+- **The gap.** The blind gap's raw inputs, fetched once at scoring time, are archived on `live-raw` as
+  `raw/<date>-gap/` before the reconstruction reads them. Its day boundaries are computed by the pinned code's own
+  calendar and the scorer asserts they equal the ones it computes from main's; a difference refuses the run.
+- **Publication.** A result is published whatever it shows, as a new record in `docs/runs/` by a pull request
+  (`docs/decisions/publish-rule.md`), together with the skipped list and the provenance above. The scoring
+  workflow itself writes only to its artifact.

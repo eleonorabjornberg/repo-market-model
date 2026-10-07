@@ -28,7 +28,7 @@ workflow does. Each forecast is written once, with its inputs' digests, to
     PYTHONPATH=src python3 scripts/live_gap.py reconstruct --date 2027-04-01 \\
         --live-dir LIVE-LOG --pinned-root ../pinned --out-dir GAP --work-dir WORK [--raw-root RAW]
     PYTHONPATH=src python3 scripts/live_score.py --date 2027-04-01 --live-dir LIVE-LOG \\
-        --gap-dir GAP --panel PANEL --output OUT.json
+        --gap-dir GAP --pinned-tree ../pinned --panel PANEL --archive-dir LIVE-RAW --output OUT.json
 
 `reconstruct` refuses on any date but the first scoring date
 (`live_score.require_gap_scoring`); the gap's days are scored later through the
