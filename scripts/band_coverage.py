@@ -206,6 +206,10 @@ def cells(record, days, splits, check=True):
     masks = [_members(days, "all" if kind == "all" else
                       ("regime" if kind == "regime" else "tag"), name)
              for kind, name in plan]
+    # A declared regime that no scored day falls in (a regime declared ahead of its days) has no row.
+    kept = [k for k, mask in enumerate(masks) if sum(mask) or plan[k][0] != "regime"]
+    plan = [plan[k] for k in kept]
+    masks = [masks[k] for k in kept]
     sizes = [sum(mask) for mask in masks]
     live = [k for k, size in enumerate(sizes) if size >= MINIMUM_DAYS]
     series = {nominal: [day["hits"][nominal] for day in days] for _, _, nominal in BANDS}

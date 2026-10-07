@@ -757,8 +757,7 @@ class MinimumCellSizeTests(unittest.TestCase):
 class YearRegimeTests(unittest.TestCase):
     """Each calendar year from 2027 is its own regime (#276, ruling #269 item 4).
 
-    `metadata/evaluation_splits.json` declares regimes to 2026-12-31 and is left
-    as it is, so the scorer labels a later target day with its year rather than
+    `metadata/evaluation_splits.json` declared regimes to 2026-12-31, so the scorer labels a later target day with its year rather than
     "undeclared". A day before 2027 that no regime covers stays "undeclared".
 
     Red first: before the rule, a 2027 target day was labelled "undeclared"
@@ -773,6 +772,18 @@ class YearRegimeTests(unittest.TestCase):
     def test_a_2027_day_is_its_own_year(self):
         self.assertEqual(score._regime(self.splits, date(2027, 1, 4)), "2027")
         self.assertEqual(score._regime(self.splits, date(2028, 6, 1)), "2028")
+
+    def test_the_file_declares_the_2027_regime(self):
+        """#362: `metadata/evaluation_splits.json` carries `2027`, so a live day is not `2025-26`.
+
+        Red first: before the edit the file covered no 2027 day (`ValueError`
+        from `regime`). Recorded mutation: the 2027 row's `first`
+        changed to `2027-01-05` -> this test fails on 2027-01-04.
+        """
+
+        self.assertEqual(self.splits.regime(date(2027, 1, 4)), "2027")
+        self.assertEqual(self.splits.regime(date(2027, 12, 31)), "2027")
+        self.assertEqual(self.splits.regime(date(2026, 12, 31)), "2025-26")
 
     def test_a_declared_day_keeps_its_declared_regime(self):
         self.assertEqual(score._regime(self.splits, date(2026, 12, 31)), self.splits.regime(date(2026, 12, 31)))

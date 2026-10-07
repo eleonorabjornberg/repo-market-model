@@ -5,9 +5,10 @@ Three things the live record needs and nothing checked:
 * **Runway** (`RunwayTests`): a dated table the live record reads must have at
   least `data.RUNWAY_DAYS` (180) days left after today. `data.require_runway`
   is the guard; the real tables are checked against today's date, so CI goes red
-  months before a live run would fail. `metadata/evaluation_splits.json` is
-  short already and is listed with an exemption naming #354, which expires the
-  day the table is extended (the test then demands the exemption be removed).
+  months before a live run would fail. `metadata/evaluation_splits.json` was
+  short and was exempt under #354 until the 2027 regime was added (#362); no
+  table is exempt now, and an exemption would expire the day its table is
+  extended (the test then demands the exemption be removed).
 * **Holiday coverage** (`HolidayCoverageTests`): `metadata/market_holidays.json`
   runs to 2030-12-31, and its rows for 2028-2030 follow the Federal Reserve
   Board's K.8 table. SIFMA has published no list beyond 2027, so the days that
@@ -72,7 +73,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 #: Tables the live record reads whose last covered day is a date, and how to read it.
 #: A table short of the runway is exempt only under an issue that rules on it.
-EXEMPT = {"metadata/evaluation_splits.json": "#354"}
+EXEMPT: dict = {}
 
 
 def last_days():
