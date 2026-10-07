@@ -590,8 +590,8 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/information-set.md` | Decision: a forecast uses exactly the information public at its decision instant | Status: decided and implemented. |
 | `docs/decisions/lockbox.md` | Decision: a locked final test period | Status: decided by Eleonora, 2 October 2026. |
 | `docs/decisions/pressure-probability.md` | Decision: the pressure probability comes from the best model | Status: decided by Eleonora, 1 October 2026. |
-| `docs/decisions/final-test-preregistration.md` | Decision: the final test, pre-registered | Status: a draft for Eleonora (#150), in force once she merges it. |
-| `docs/decisions/live-scoring-declaration.md` | Decision: how the live record is scored | Status: a draft for Eleonora (#276), in force once she merges it. |
+| `docs/decisions/final-test-preregistration.md` | Decision: the final test, pre-registered | Status: in force: merged in PR #216, 3 October 2026 (#150). |
+| `docs/decisions/live-scoring-declaration.md` | Decision: how the live record is scored | Status: in force: merged in PR #286, 6 October 2026 (#276). |
 | `docs/decisions/calendar-columns.md` | Decision: the calendar columns | Status: decided and declared; the columns build. |
 | `docs/decisions/fomc-point-in-time.md` | Decision: what a cancelled FOMC meeting contributes, and when it stops | Status: decided, and prospective. |
 | `docs/decisions/interval-side-balance.md` | Decision: which side the intervals miss on, and what the asymmetric variant corrects | Status: measured and published. |
@@ -599,7 +599,7 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/live-pin.md` | The live record's code pin | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/materiality.md` | Decision: a bounded, listed defect is handled, not a reason to refuse a series | Status: decided by Eleonora, 30 September 2026. |
 | `docs/decisions/quarter-end-window.md` | Decision: a quarter-end window and per-quarter peak pressure | Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). |
-| `docs/decisions/tail-refusal.md` | Decision: refusing a tail fit clamped at the lower shape bound | Status: decided. |
+| `docs/decisions/tail-refusal.md` | Decision: refusing a tail fit clamped at the lower shape bound | Status: decided, merged in PR #66, 1 October 2026, and superseded (above). |
 | `docs/decisions/tail-shape-floor.md` | Decision: the fitted tail shape is never negative | Status: decided by Eleonora, 1 October 2026, in her ruling on [#63](https://github.com/eleonorabjornberg/repo-market-model/issues/63). |
 | `docs/decisions/weekly-carry.md` | Decision: a weekly column carries its last print forward, under a bound | Status: decided and implemented. |
 

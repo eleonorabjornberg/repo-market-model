@@ -1,6 +1,6 @@
 # Decision: a locked final test period
 
-**Status: decided by Eleonora, 2 October 2026. In force once this record merges.**
+**Status: decided by Eleonora, 2 October 2026. In force: merged in PR #93, 1 October 2026.**
 
 ## The rule
 
@@ -58,7 +58,7 @@ therefore a weak test above +10 bp until the blind tier adds to it.
 
 ## Amendment: the near-blind tier is opened (#151)
 
-**Status: a draft for Eleonora (#151), in force once she merges it.** Drafted by the pull request that closes #151,
+**Status: in force: merged in PR #236, 5 October 2026 (#151).** Drafted by the pull request that closes #151,
 as that directive asks.
 
 - **Opened once, on 2026-10-05, for the final test.** Eleonora gave the go ("GO #151", 4 October 2026, relayed on
