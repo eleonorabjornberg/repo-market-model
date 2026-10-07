@@ -277,7 +277,7 @@ class EffrAdapterTests(unittest.TestCase):
         self.assertEqual(effr.value, 3.64)
         self.assertEqual(
             effr.available_at,
-            datetime(2026, 1, 1, 15, 0, tzinfo=ZoneInfo("America/New_York")),
+            datetime(2026, 1, 2, 15, 0, tzinfo=ZoneInfo("America/New_York")),
         )
 
 

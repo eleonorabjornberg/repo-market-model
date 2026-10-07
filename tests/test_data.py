@@ -791,16 +791,24 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             for series_id in source["fields"]:
                 declarations[series_id] = lag
 
+        from repo_model.data import market_holidays
+
+        holidays = market_holidays()
+        fr2004_fields = set(registry["nyfed_fr2004"]["fields"])
         checked = 0
         for row in self.observations():
             lag = declarations.get(row.series_id)
             if lag is None:
                 continue
+            # A business day is a weekday not in the market holiday table (#201).
+            # FR 2004 still counts weekdays: the table would date its 2018-12-21
+            # value past the declared worst case of 11 calendar days.
+            closed = set() if row.series_id in fr2004_fields else holidays.closed
             current = row.ref_date
             remaining = lag["days"]
             while remaining:
                 current += timedelta(days=1)
-                if current.weekday() < 5:
+                if current.weekday() < 5 and current not in closed:
                     remaining -= 1
             declared = datetime.combine(
                 current,
