@@ -72,6 +72,12 @@ class UseLimitationTests(unittest.TestCase):
         text = read("README.md")
         self.assertIn("<!-- generated: use-limitation -->", text)
         self.assertEqual(text.count(RULED), 1)
+        self.assertLess(text.index(RULED), text.index("## Everything else"))
+
+    def test_the_guide_carries_the_statement_above_the_findings(self):
+        text = read("PROJECT_GUIDE.md")
+        self.assertIn("<!-- generated: use-limitation -->", text)
+        self.assertEqual(text.count(RULED), 1)
         self.assertLess(text.index(RULED), text.index("## Key findings"))
 
     def test_final_test_page_carries_the_statement(self):
