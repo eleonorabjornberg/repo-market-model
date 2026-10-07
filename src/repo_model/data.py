@@ -1751,9 +1751,14 @@ def validate_publication_gaps(
                 f"{source_id}: ref_date source lacks a valid publication-gap bound"
             )
         for field in source.get("fields", []):
-            if field in field_bounds:
+            earlier = field_bounds.get(str(field))
+            # Rows carry no source, so two sources declaring one series are
+            # only checkable when they declare the same bound: then the answer
+            # does not depend on which of them owns the series (#180).
+            if earlier is not None and earlier[1] != bound:
                 raise DataContractError(f"series {field!r} belongs to multiple sources")
-            field_bounds[str(field)] = (source_id, bound)
+            if earlier is None:
+                field_bounds[str(field)] = (source_id, bound)
 
     worst: Dict[str, int] = {}
     for row in observations:

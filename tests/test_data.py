@@ -237,6 +237,44 @@ class PointInTimeDataContractTests(unittest.TestCase):
         with self.assertRaisesRegex(DataContractError, "published 7 calendar days"):
             validate_publication_gaps(rows, registry)
 
+    def test_a_series_declared_by_two_sources_with_one_bound_is_checked(self):
+        """#180: `EFFR` is declared by `frb_ddp` and `nyfed_effr`, both at 6 days.
+
+        The bound is the same whichever source owns the series, so the answer
+        does not depend on which one does; the guard no longer refuses the pair.
+
+        Mutation: `if earlier is not None and earlier[1] != bound:` changed to
+        `if earlier is not None:` (the old unconditional refusal) made this test
+        raise `DataContractError: series 'A' belongs to multiple sources`.
+        """
+
+        lag = {"basis": "ref_date", "worst_case_calendar_days": 6}
+        registry = {
+            "one": {"fields": ["A"], "release_lag": dict(lag)},
+            "two": {"fields": ["A"], "release_lag": dict(lag)},
+        }
+        ok = [self.observation("A", "2026-01-01", "2026-01-07T12:00:00+00:00", 1, "v1")]
+        self.assertEqual(validate_publication_gaps(ok, registry), {"A": 6})
+        late = [self.observation("A", "2026-01-01", "2026-01-08T12:00:00+00:00", 1, "v1")]
+        with self.assertRaisesRegex(DataContractError, "published 7 calendar days"):
+            validate_publication_gaps(late, registry)
+
+    def test_a_series_declared_by_two_sources_with_different_bounds_is_refused(self):
+        """Rows carry no source, so differing bounds would make the bound a guess."""
+
+        registry = {
+            "one": {
+                "fields": ["A"],
+                "release_lag": {"basis": "ref_date", "worst_case_calendar_days": 6},
+            },
+            "two": {
+                "fields": ["A"],
+                "release_lag": {"basis": "ref_date", "worst_case_calendar_days": 8},
+            },
+        }
+        with self.assertRaisesRegex(DataContractError, "belongs to multiple sources"):
+            validate_publication_gaps([], registry)
+
     def test_missingness_grid_uses_same_source_and_frequency_peer(self):
         rows = [
             self.observation("daily_anchor", "2026-01-01", "2026-01-02T12:00:00+00:00", 1, "v1"),
@@ -772,7 +810,14 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
 
     def test_no_observed_publication_gap_exceeds_the_declared_bound(self):
         registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
-        validate_publication_gaps(self.observations(), registry)
+        rows = self.observations()
+        # The sources that supplied snapshots, as `ingest.py` selects them.
+        found = {
+            json.loads(path.read_text(encoding="utf-8"))["source_id"]
+            for path in self.RAW_ROOT.glob("*/*.manifest.json")
+        }
+        selected = {name: registry[name] for name in sorted(found) if name in registry}
+        validate_publication_gaps(rows, selected)
 
     def test_no_row_is_available_later_than_the_registry_declares(self):
         """Row resolution, where the bound is only source resolution.
@@ -891,6 +936,29 @@ class RealSnapshotPublicationGapSkipTests(unittest.TestCase):
         failed = {test.id().rsplit(".", 1)[-1] for test, _ in result.failures + result.errors}
         self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", failed)
         self.assertNotIn("none is a ref_date source", stderr)
+
+    def test_the_gap_check_reads_only_the_sources_that_supplied_snapshots(self):
+        """#180: a registry-wide read refused `EFFR` (two `ref_date` sources).
+
+        `ingest.py` passes `validate_publication_gaps` only the sources that
+        supplied snapshots; the test now selects the same way. Before the
+        change this root's `test_no_observed_publication_gap_exceeds_the_declared_bound`
+        errored with `DataContractError: series 'EFFR' belongs to multiple sources`.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            self.copy_snapshot(
+                raw_root,
+                self.FIXTURES
+                / "on_rrp_inputs"
+                / "nyfed_on_rrp"
+                / "20261002T012422Z_0dfe701aee28.json.manifest.json",
+            )
+            result, _ = self.run_gap_tests(raw_root)
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
 
     def test_a_ref_date_source_with_no_rows_still_fails(self):
         """`checked > 0` still holds once a `ref_date` source supplied a snapshot."""
