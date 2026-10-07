@@ -39,6 +39,10 @@ name: live-log
 # through a registered transition (`scripts/live_pin.py`), a dated decision
 # record and Eleonora's own approval.
 #
+# Three slots a day (#275): the primary and two fallbacks. A first job reads live-log
+# and, when the day's record is already there, ends the run green with nothing
+# written. Each record's commit also carries the panel it was made from.
+#
 # No third-party action is used: Python 3.11 comes from the runner's own tool
 # cache, and git, gh, curl and jq are the runner's. So there is no action to
 # pin. cosign is one release binary, checked against its published SHA-256.
@@ -47,6 +51,12 @@ on:
   schedule:
     # 21:30 UTC is 17:30 EDT and 16:30 EST: after the decision instant either way.
     - cron: "30 21 * * 1-5"
+    # Two fallback slots (#275), for a delayed or dropped scheduled run. 23:15 UTC is
+    # 19:15 EDT / 18:15 EST, the same ET day as the primary slot. 01:15 UTC on
+    # Tuesday to Saturday is 21:15 EDT / 20:15 EST on the ET day before, Monday to
+    # Friday. A slot that finds the day already on live-log does nothing.
+    - cron: "15 23 * * 1-5"
+    - cron: "15 1 * * 2-6"
   workflow_dispatch:
 
 # contents: write only to push to live-log; issues: write for the digest and
@@ -63,8 +73,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    name: is the day already recorded
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      recorded: ${{ steps.exists.outputs.recorded }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      # A second or third slot for a day already logged ends here, green, with nothing
+      # fetched, built or written (#275). Any failure to read live-log counts as "not
+      # recorded": the record job then runs, and the record script and the add-only
+      # check still refuse a second record for the day.
+      - name: Skip when the day is already on live-log
+        id: exists
+        run: |
+          day=$(TZ=America/New_York date +%F)
+          if gh api "repos/$REPO/contents/live/$day.json?ref=live-log" --silent 2>/dev/null; then
+            echo "recorded=true" >> "$GITHUB_OUTPUT"
+            echo "live/$day.json is already on live-log: nothing to do."
+          else
+            echo "recorded=false" >> "$GITHUB_OUTPUT"
+          fi
+
   log:
     name: log the day's forecast
+    needs: check
+    if: ${{ !cancelled() && needs.check.outputs.recorded != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
@@ -151,11 +188,15 @@ jobs:
           "$PY" -B ../main/scripts/live_pin.py environment --repo ../main --freeze ../freeze.txt \
             --python "$(../venv/bin/python -c 'import platform; print(platform.python_version())')" > ../environment.json
           "$PY" -B ../main/scripts/live_integrity.py environment --live-dir . --date "$DAY" --block ../environment.json
-          git add "$file"
+          # The panel the run built, beside the record (#275). The record names its
+          # SHA-256 (`inputs.panel_sha256`), so the record's digest covers it too.
+          panel="live/$DAY.panel.csv"
+          cp ../work/panel.csv "$panel"
+          git add "$file" "$panel"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit --quiet -m "Live record for $DAY (code $PIN)"
-          "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$DAY" --base "$base"
+          "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$DAY" --base "$base" --panel
           git push --quiet origin HEAD:refs/heads/live-log
           echo "SHA256=$(sha256sum "$file" | cut -d' ' -f1)" >> "$GITHUB_ENV"
           echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"

@@ -101,6 +101,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
+from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.metrics import (  # noqa: E402
     crps_from_quantiles, crps_trapezoid_from_quantiles, stationary_bootstrap_interval,
 )
@@ -504,10 +505,94 @@ def _paired(baseline, model, positions, h, *parts):
     )
 
 
+def _opening():
+    """`scripts/final_test_opening.py`, loaded once: the final test's group scoring (#363)."""
+
+    global _OPENING
+    if _OPENING is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_score_final_opening", REPO / "scripts" / "final_test_opening.py")
+        _OPENING = module_from_spec(spec)
+        spec.loader.exec_module(_OPENING)
+    return _OPENING
+
+
+_OPENING = None
+
+
+def _event_groups(cell_name, h, dates, rows, splits, day, cache):
+    """The final test's group for a Brier cell, as positions into `dates` (#363).
+
+    The leap cell gets the leap-onset group (`onset.leap_onset_group`); the +5 bp and +10 bp
+    cells get the at-risk group (`onset.day_groups`). Both are read from the panel rows before
+    `day` only: a group never reads a day the scoring date has not opened.
+    """
+
+    before = [row for row in rows if row.date < day]
+    if cell_name == "leap":
+        if h not in cache:
+            rule = InformationRule(json.loads(final_test.REGISTRY.read_text()), ("spread_bps",),
+                                   decision_time=final_test.DECISION, horizon=h)
+            cache[h] = onset.LeapTargets(before, rule, final_test.leap_jump_bp(h))
+        return {onset.GROUP_LEAP_ONSET: onset.leap_onset_group(cache[h], dates)}
+    return {onset.GROUP_ONSET: onset.day_groups(before, dates, splits)[onset.GROUP_ONSET]}
+
+
+def _paired_cell(losses, baseline, name, positions, regimes, types, h, day, cell_name, tail=()):
+    """The model paired against one baseline over `positions`: all days, by regime, by day type.
+
+    `tail` is added to every seed after the baseline, so a group's cells draw their own.
+    """
+
+    paired = {"all_days": _paired(losses[baseline], losses[name], positions, h, day, cell_name, h, name,
+                                  baseline, *tail)}
+    gaps = [x - y for x, y in zip(losses[baseline], losses[name])]
+    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
+        paired[label] = {}
+        for key in sorted({keys[k] for k in positions}):
+            part = [k for k in positions if keys[k] == key]
+            paired[label][key] = _small_cell(gaps, part) or _paired(
+                losses[baseline], losses[name], part, h, day, cell_name, h, name, baseline, *tail, key)
+    return paired
+
+
+def _group_cell(group, positions, outcomes, losses, columns, models, baselines, regimes, types, h, day,
+                cell_name):
+    """One final-test group inside a Brier cell: its Brier, paired cells and false-alarm level."""
+
+    events = sum(outcomes[k] for k in positions)
+    cell = {"days": len(positions), "events": events, "role": "reported only"}
+    if not positions:
+        cell["result"] = "inconclusive"
+        cell["reason"] = "no days in the group"
+        return cell
+    cell["false_alarm_level"] = _opening().false_alarm_level(group, positions, outcomes, columns)
+    if events < onset.MINIMUM_EVENTS:
+        cell["result"] = "inconclusive"
+        cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
+        return cell
+    cell["models"] = {}
+    for name in models:
+        entry = {"brier": sum(losses[name][k] for k in positions) / len(positions), "paired": {}}
+        for b in baselines:
+            paired = _paired_cell(losses, b, name, positions, regimes, types, h, day, cell_name,
+                                  tail=(group,))
+            paired["all_days"]["label"] = _opening().label(paired["all_days"], events)
+            entry["paired"][b] = paired
+        cell["models"][name] = entry
+    cell["baseline_brier"] = {b: sum(losses[b][k] for k in positions) / len(positions) for b in baselines}
+    return cell
+
+
 def score(records, rows, splits, day: date) -> dict:
-    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only."""
+    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only.
+
+    Each cell also carries the final test's group for it, under `groups` (#363).
+    """
 
     by_date = {row.date: row for row in rows}
+    leap_targets = {}
     out = {"cells": {}}
     for cell_name, baselines in BASELINES.items():
         for h in HORIZONS:
@@ -530,26 +615,25 @@ def score(records, rows, splits, day: date) -> dict:
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
+            groups = _event_groups(cell_name, h, [date.fromisoformat(d) for d in days], rows, splits, day,
+                                   leap_targets)
+            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
+                      for name, column in {**model, **bench}.items()}
+            columns = {**model, **bench}
+            cell["groups"] = {group: _group_cell(group, positions, outcomes, losses, columns, list(model),
+                                                 baselines, regimes, types, h, day, cell_name)
+                              for group, positions in groups.items()}
             if events < onset.MINIMUM_EVENTS:
                 cell["result"] = "inconclusive"
                 cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
                 out["cells"][f"{cell_name}/h{h}"] = cell
                 continue
-            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
-                      for name, column in {**model, **bench}.items()}
             every = list(range(len(days)))
             for name in model:
                 entry = {"brier": sum(losses[name]) / len(days), "paired": {}}
                 for b in baselines:
-                    paired = {"all_days": _paired(losses[b], losses[name], every, h, day, cell_name, h, name, b)}
-                    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
-                        paired[label] = {}
-                        for key in sorted(set(keys)):
-                            positions = [k for k in every if keys[k] == key]
-                            gaps = [x - y for x, y in zip(losses[b], losses[name])]
-                            paired[label][key] = _small_cell(gaps, positions) or _paired(
-                                losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
-                    entry["paired"][b] = paired
+                    entry["paired"][b] = _paired_cell(losses, b, name, every, regimes, types, h, day,
+                                                      cell_name)
                 cell["models"][name] = entry
             cell["baseline_brier"] = {b: sum(losses[b]) / len(days) for b in baselines}
             out["cells"][f"{cell_name}/h{h}"] = cell
@@ -906,6 +990,58 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
         result["gap"] = score_gap(gap_records, first[0], rows, splits, day,
                                   override_clock=override_clock, pinned_days=pinned_days)
     return result
+
+
+#: The code the live scorer is (#282, ruling on #269 item 5), hashed the way the final test's
+#: `_CRPS_SOURCE` is: each root and every top-level name of its file it mentions, so the
+#: cells, the intervals, the minimum-cell rule, the regime and month-end splits and the gap
+#: scoring are all covered. The clock, integrity, pin and provenance code scores nothing and is
+#: left out (`tests/test_live_score_freeze.py` lists it and refuses a scoring function outside).
+LIVE_SOURCE = (
+    ("scripts/live_score.py", (
+        "crps_from_record", "integral_crps_from_record", "headline_status", "_regime", "_small_cell",
+        "score_crps", "_outcome", "_paired", "_event_groups", "_paired_cell", "_group_cell", "score",
+        "skipped_records", "first_live_targets", "gap_target_days", "gap_decision_days",
+        "validate_gap_record", "_as_gap_cell", "require_gap_boundaries_equal", "pinned_gap_days",
+        "require_gap_scoring", "score_gap", "assemble", "_require_scored_days_unlocked",
+        "EVENT_BLOCK_RULE", "EVENT_SEED_RULE", "NOT_EVIDENCE", "INTERIOR_DESIGN", "GAP_LABEL",
+    )),
+    ("scripts/final_test_preregistration.py", ("crps_verdict", "crps_result", "leap_jump_bp",
+                                               "CRPS_BLOCK_LENGTH", "CRPS_SENSITIVITY_BLOCK_LENGTH")),
+    ("scripts/final_test_opening.py", ("false_alarm_level", "label")),
+    ("src/repo_model/metrics.py", ("crps_from_quantiles", "crps_trapezoid_from_quantiles",
+                                   "stationary_bootstrap_interval")),
+    ("src/repo_model/baseline.py", ("_seed_from",)),
+    ("src/repo_model/onset.py", ("paired_difference", "whole_bp", "day_groups", "leap_onset_group",
+                                 "LeapTargets", "MINIMUM_EVENTS", "REPLICATIONS", "LEVEL")),
+    ("src/repo_model/data.py", ("exceeds_bp",)),
+    ("src/repo_model/lockbox.py", ("require_unlocked",)),
+    ("src/repo_model/evaluation_splits.py", ("SplitDeclaration", "MONTH_END_RULE", "DAY_TYPES",
+                                             "DAY_TYPE_COLUMNS", "quarter_end_window_label",
+                                             "load_split_declaration")),
+)
+
+
+def live_declaration() -> dict:
+    """Everything the live scorer is: its scoring code and the constants it reads."""
+
+    source = {}
+    for path, names in LIVE_SOURCE:
+        source[path] = {**source.get(path, {}), **final_test._top_level_source(path, names)}
+    return {
+        "constants": {
+            "horizons": list(HORIZONS), "minimum_cell_days": MINIMUM_CELL_DAYS,
+            "minimum_events": onset.MINIMUM_EVENTS, "replications": onset.REPLICATIONS,
+            "level": onset.LEVEL, "first_year_regime": FIRST_YEAR_REGIME,
+            "baselines": {cell: list(names) for cell, names in BASELINES.items()},
+        },
+        "source_sha256": source,
+    }
+
+
+def live_declaration_checksum() -> str:
+    text = json.dumps(live_declaration(), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _raw():
