@@ -294,7 +294,7 @@ class V2AgreementTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
 
-        from test_live_record import REGISTRY, _fixture_panel
+        from test_live_record import REGISTRY, _auctions, _fixture_panel
         from repo_model.data import load_daily_panel
 
         cls.tmp = tempfile.mkdtemp()
@@ -308,7 +308,7 @@ class V2AgreementTests(unittest.TestCase):
         rows = load_daily_panel(short)
         cls.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
         cut = [row for row in rows if row.date < cls.DECISION_DAY]
-        cls.extended, cls.targets = live.extend_panel(cut, cls.DECISION_DAY, 1, pit)
+        cls.extended, cls.targets = live.extend_panel(cut, cls.DECISION_DAY, 1, pit, _auctions())
         cls.got = live.v2_distribution_forecast(cls.extended, cls.registry)
         cls.again = live.v2_distribution_forecast(cls.extended, cls.registry)
 
