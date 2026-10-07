@@ -688,6 +688,7 @@ _FROZEN_PIPELINE = (
     ("src/repo_model/splits.py", ("*",)),
     ("src/repo_model/evaluation_splits.py", ("*",)),
     ("src/repo_model/contract.py", ("*",)),
+    ("src/repo_model/registry.py", ("*",)),
 )
 
 #: Each candidate's declared inputs at horizon 1, as `candidate` scored them.

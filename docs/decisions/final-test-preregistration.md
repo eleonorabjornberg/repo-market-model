@@ -30,7 +30,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 - **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `2f2f3abc5f971d59df46404c912adebb78602d7730ef77c269bb7040754250c8`
+- **Declaration checksum:** `8f98fb9fcae9d0008e31804b6fb8bd05c08e523f6d63a545f0e47fa30b7bdf32`
 - **Declaration checksum at opening:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
@@ -55,7 +55,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `2864827538171065759efc0b3b0f788a217e9b5b202af6c39101f4599af004bf`
+- **CRPS declaration checksum:** `81a7ef4acaf2b5c93a1d384a62b7d893b2291bab88e716f3a2c4a918bcac8e02`
 - **CRPS declaration checksum at opening:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
 - **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
@@ -488,7 +488,8 @@ and the pass rule are as the amendments above left them.
 
 - `metadata_sha256`: the sha256 of each of the three metadata files, by their bytes;
 - `source_sha256`: the sha256 of every top-level definition of `src/repo_model/asof.py`, `splits.py`,
-  `evaluation_splits.py` and `contract.py`, and of `data.py`'s `load_point_in_time_panel`, `load_daily_panel` and
+  `evaluation_splits.py`, `contract.py` and `registry.py` (which turns each source's declared lateness into the instant a
+  value counts as public; Eleonora's ruling of 7 October 2026 added it, and left `lockbox.py` out), and of `data.py`'s `load_point_in_time_panel`, `load_daily_panel` and
   `market_holidays` with every top-level definition of that file they reach, hashed as the existing `source_sha256` is.
 
 The library and Python versions are not in the declaration: they are in the locked environment and in each live
@@ -501,4 +502,5 @@ record is not edited and still names the declaration it ran. The test's design, 
 
 **Consequence for later pull requests.** An edit to a frozen metadata file, such as extending the holiday table, or to
 a frozen definition now fails `tests/test_final_test_freeze.py` until the pins above are re-pinned in a PR she merges.
-The queue puts the scorer's freeze (#282) after this change; if #282 adds code roots, its pull request re-pins again.
+This pull request merges last, after #282, #360, #361, #362 and #363, so the pins above are taken once over the final
+metadata and code; a run that finds any of them moved since the pins were taken re-pins on the merged tree before the merge.

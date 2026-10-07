@@ -38,6 +38,13 @@ Extension of the freeze (#324, Eleonora's `GO` on that issue): `FrozenInputsTest
 listed two files, not three), and `test_an_edited_metadata_file_moves_both_checksums` raised
 `FileNotFoundError` for the file the scratch copy no longer took. Restored, green.
 
+`registry.py` joined the frozen code on Eleonora's ruling of 7 October 2026 (#324): the two registry cases of
+`FrozenInputsTests` were added first and failed with `KeyError: 'src/repo_model/registry.py'`. Mutation record: the entry
+`("src/repo_model/registry.py", ("*",))` deleted from `_FROZEN_PIPELINE` in
+`scripts/final_test_preregistration.py`, confirmed applied by grep; `test_both_declarations_carry_the_asof_loader_splitter_and_contract_code`
+then failed with `KeyError` and `test_an_edit_to_the_code_moves_both_checksums` raised `FileNotFoundError`
+(the scratch copy no longer took `registry.py`). Restored, green.
+
 Mutation record (`CrpsCellTests`, the CRPS cell's lockbox check):
 `lockbox.require_unlocked(window, where="final test CRPS cell")` in
 `crps_cell` deleted, confirmed applied by grep; the test
@@ -324,6 +331,7 @@ class FrozenInputsTests(unittest.TestCase):
         "src/repo_model/splits.py": "ensure_strictly_ascending",
         "src/repo_model/evaluation_splits.py": "load_split_declaration",
         "src/repo_model/contract.py": "FEATURE_FIELDS",
+        "src/repo_model/registry.py": "max_release_lag_days",
     }
 
     def _both(self):
@@ -381,6 +389,7 @@ class FrozenInputsTests(unittest.TestCase):
             "src/repo_model/splits.py": "def ensure_strictly_ascending(",
             "src/repo_model/evaluation_splits.py": "def load_split_declaration(",
             "src/repo_model/contract.py": "def validate_field_release_lag(",
+            "src/repo_model/registry.py": "def max_release_lag_days(",
         }
         leap, crps = fp.declaration_checksum(), fp.crps_declaration_checksum()
         for path, marker in markers.items():
