@@ -1547,25 +1547,6 @@ def load_snapshot_manifest(path: Path) -> SnapshotArtifact:
     return artifact
 
 
-def _next_weekday(value: date, days: int) -> date:
-    """`days` weekdays after `value`, holidays not skipped.
-
-    Only `_fr2004_rows` still counts this way. Skipping the market holidays
-    there dates 2018-12-21's value 12 calendar days out, past the 11 that
-    `nyfed_fr2004.release_lag.worst_case_calendar_days` declares, and moving
-    that bound is a declaration change for Eleonora (#201's pull request opens
-    the question). Every other adapter uses `_next_business_day`.
-    """
-
-    current = value
-    remaining = days
-    while remaining:
-        current += timedelta(days=1)
-        if current.weekday() < 5:
-            remaining -= 1
-    return current
-
-
 def _next_business_day(value: date, days: int) -> date:
     """`days` business days after `value`: the registry's `business_days` unit (#201).
 
@@ -2305,7 +2286,7 @@ def _fr2004_rows(
                 series_id=series_id,
                 ref_date=ref_date,
                 available_at=datetime.combine(
-                    _next_weekday(ref_date, lag_days), available_time, tzinfo=zone
+                    _next_business_day(ref_date, lag_days), available_time, tzinfo=zone
                 ),
                 value=value / FR2004_MILLIONS_PER_BILLION,
                 vintage_id=artifact.retrieved_at,
