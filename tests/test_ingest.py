@@ -4442,7 +4442,7 @@ class NextBusinessDayTests(unittest.TestCase):
         from repo_model.data import next_business_day
 
         with self.assertRaises(ValueError):
-            next_business_day(date(2027, 12, 31), 1)
+            next_business_day(date(2030, 12, 31), 1)
 
     def test_days_before_the_table_count_as_weekdays(self):
         from repo_model.data import next_business_day
