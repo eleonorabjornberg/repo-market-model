@@ -122,6 +122,10 @@ class ManifestTests(unittest.TestCase):
     def test_the_real_manifest_is_valid_and_its_pin_is_on_main(self):
         manifest = pins.load_manifest()
         self.assertEqual(manifest["current"], PIN_SHA)
+        shallow = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
+                                 capture_output=True, text=True).stdout.strip()
+        if shallow != "false":
+            self.skipTest("a shallow clone does not hold the pin's commit, so its ancestry cannot be read")
         pins.verify_manifest(manifest, ROOT, "HEAD")
 
     def test_a_well_formed_manifest_verifies(self):
