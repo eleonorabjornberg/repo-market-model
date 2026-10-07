@@ -978,13 +978,18 @@ class NewcomerN3Base(unittest.TestCase):
     def is_locked(self, row):
         return lockbox.locked_tier(emit_visual.date.fromisoformat(row["date"]), self.locked) is not None
 
+    def n3_days(self, locked=None):
+        """The days N3 counts: in no locked tier, and with a panel day before them (#198)."""
+        locked = self.locked if locked is None else locked
+        return emit_visual.counted(self.rows, locked)[1:]
+
 
 class NewcomerN3Tests(NewcomerN3Base):
     """N3's 2x2: quarter-end window against scarce or abundant cash, a rate per cell."""
 
     def test_the_cells_partition_the_counted_days(self):
         data, _ = self.base
-        kept = emit_visual.counted(self.rows, self.locked)
+        kept = self.n3_days()
         self.assertEqual(len(data["cells"]), 4)
         self.assertEqual({(c["scarce"], c["quarter_end"]) for c in data["cells"]},
                          {(True, True), (True, False), (False, True), (False, False)})
@@ -997,7 +1002,7 @@ class NewcomerN3Tests(NewcomerN3Base):
         data, fills = self.base
         self.assertEqual(data["column"], "quarter_end_window")
         self.assertEqual(data["window_business_days"], panel_data.QUARTER_END_WINDOW_BUSINESS_DAYS)
-        kept = emit_visual.counted(self.rows, self.locked)
+        kept = self.n3_days()
         in_window = sum(1 for r in kept
                         if panel_data.quarter_end_window(emit_visual.date.fromisoformat(r["date"])) == 1.0)
         self.assertEqual(sum(c["n"] for c in data["cells"] if c["quarter_end"]), in_window)
@@ -1062,6 +1067,60 @@ class NewcomerN3AsOfReadTests(NewcomerN3Base):
             with self.subTest(day=r["date"]):
                 self.assertLess(ref, today)
                 self.assertLessEqual(published[ref], emit_visual.datetime.combine(today, self.decision, zone))
+
+
+class NewcomerN3DecisionInstantTests(NewcomerN3Base):
+    """N3 classes a day by the ON RRP result public at its decision instant, as N4 and N5 do (#198).
+
+    The decision instant of day T is the declared decision time on the last
+    panel day before T (`docs/decisions/information-set.md`). The first panel
+    day has none, so it is in no cell. On 2021-03-31 N3 once read the result
+    public at 16:00 that day (abundant) while N4 read the one public at 16:00
+    on the day before (scarce).
+
+    Recorded mutation: in `newcomer_n3`, `on_rrp_as_of(on_rrp, date.fromisoformat(rows[i - 1]["date"]), ...)`
+    -> `on_rrp_as_of(on_rrp, today, ...)`. test_each_cell_holds_the_days_its_decision_instant_classes
+    then failed with AssertionError (the cells held 61, 821, 92 and 960 days, not 62, 820, 91 and 961).
+    """
+
+    def decision_class(self, i):
+        prev = emit_visual.date.fromisoformat(self.rows[i - 1]["date"])
+        _, value = emit_visual.on_rrp_as_of(self.on_rrp, prev, self.decision, self.registry)
+        return value < emit_visual.ON_RRP_DEPLETION_BREAK_BN
+
+    def test_each_cell_holds_the_days_its_decision_instant_classes(self):
+        from repo_model import data as panel_data
+        data, _ = self.base
+        expected = {}
+        for i, r in enumerate(self.rows):
+            today = emit_visual.date.fromisoformat(r["date"])
+            if i == 0 or self.is_locked(r):
+                continue
+            key = (self.decision_class(i), panel_data.quarter_end_window(today) == 1.0)
+            expected[key] = expected.get(key, 0) + 1
+        self.assertEqual({(c["scarce"], c["quarter_end"]): c["n"] for c in data["cells"] if c["n"]}, expected)
+
+    def test_the_first_panel_day_has_no_decision_day_and_is_not_counted(self):
+        data, _ = self.base
+        self.assertEqual(data["counted"]["first"], self.rows[1]["date"])
+        self.assertEqual(sum(c["n"] for c in data["cells"]), len(self.n3_days()))
+
+    def test_n3_and_n4_class_every_quarter_end_alike(self):
+        chosen = {d["date"]: d for d in emit_visual.segment_days(self.rows, self.locked, self.on_rrp,
+                                                                 self.registry, self.decision)}
+        checked = 0
+        for i, r in enumerate(self.rows):
+            if r["quarter_end"] != "1" or i == 0 or self.is_locked(r) or r["date"] >= emit_visual.SEGMENT_DAY_RULE["before"]:
+                continue
+            checked += 1
+            with self.subTest(day=r["date"]):
+                self.assertEqual("quarter_end" in chosen.get(r["date"], {"why": []})["why"], self.decision_class(i))
+        self.assertGreater(checked, 0)
+        self.assertIn("2021-03-31", [r["date"] for r in self.rows])
+
+    def test_the_2021_03_31_quarter_end_is_scarce_in_n3(self):
+        i = next(i for i, r in enumerate(self.rows) if r["date"] == "2021-03-31")
+        self.assertTrue(self.decision_class(i))
 
 
 class NewcomerN3StaleReadTests(NewcomerN3Base):
@@ -1129,7 +1188,7 @@ class NewcomerN3HeldOutDayTests(NewcomerN3Base):
     def test_an_opened_tier_is_counted(self):
         data, fills = self.run_n3(self.rows, locked=())
         self.assertEqual(data["held_out"], [])
-        self.assertEqual(sum(c["n"] for c in data["cells"]), len(self.rows))
+        self.assertEqual(sum(c["n"] for c in data["cells"]), len(self.rows) - 1)
         self.assertNotIn("class='held'", fills["n3_table"])
 
 
