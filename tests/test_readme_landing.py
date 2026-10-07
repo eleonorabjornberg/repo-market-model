@@ -16,6 +16,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 README = (ROOT / "README.md").read_text(encoding="utf-8").splitlines()
+GUIDE = (ROOT / "PROJECT_GUIDE.md").read_text(encoding="utf-8").splitlines()  # the map moved there (#344)
 SITE = "https://eleonorabjornberg.github.io/repo-market-model/"
 
 
@@ -52,7 +53,7 @@ class LandingTest(unittest.TestCase):
         self.assertIn("repo_model.cli", block)
 
     def test_map_and_agent_files(self):
-        text = "\n".join(README)
+        text = "\n".join(GUIDE)
         self.assertIn("## Architecture and ownership", text)
         self.assertLess(text.index("## Architecture and ownership"), text.index("## Why this project"))
         self.assertIn("#who-decides-and-who-reviews", text)

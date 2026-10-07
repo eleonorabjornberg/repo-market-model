@@ -217,7 +217,7 @@ class StressWindowShareTests(unittest.TestCase):
         self.assertIn("scored and pooled", sentence)
         figures = generator.stress_window_figures(self.record())
         self.assertIn("%.1f%%" % (100 * figures["share"]), sentence)
-        self.assertIn(sentence, (REPO_ROOT / "README.md").read_text(encoding="utf-8"))
+        self.assertIn(sentence, (REPO_ROOT / "PROJECT_GUIDE.md").read_text(encoding="utf-8"))
 
     def test_the_sentence_follows_the_record(self):
         generator = load_generator()
