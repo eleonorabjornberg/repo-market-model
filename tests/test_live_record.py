@@ -31,9 +31,12 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import re
 import shutil
+import subprocess
 import tempfile
+import textwrap
 import unittest
 from datetime import date, datetime, time, timezone
 from pathlib import Path
@@ -216,10 +219,55 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertIn("scripts/live_record.py run", text)
         self.assertNotIn("--dry-run", text)
 
-    def test_it_runs_after_the_decision_instant_on_weekdays(self):
-        schedule = [line for line in self.lines if "cron:" in line]
-        self.assertEqual(len(schedule), 1)
-        self.assertIn('"30 21 * * 1-5"', schedule[0])
+    def test_it_runs_after_the_decision_instant_on_weekdays_with_two_fallback_slots(self):
+        # #275. 21:30 UTC is 17:30 EDT / 16:30 EST on the ET day itself. 23:15 UTC is 19:15 EDT /
+        # 18:15 EST, the same ET day. 01:15 UTC on Tuesday to Saturday is 21:15 EDT / 20:15 EST on
+        # the ET day before: Monday to Friday.
+        schedule = [line.strip() for line in self.lines if "cron:" in line]
+        self.assertEqual(
+            schedule,
+            ['- cron: "30 21 * * 1-5"', '- cron: "15 23 * * 1-5"', '- cron: "15 1 * * 2-6"'],
+        )
+
+    def test_the_concurrency_group_still_serialises_the_runs_and_never_cancels_one_in_progress(self):
+        self.assertEqual(
+            self._block("concurrency"), {"group": "live-log", "cancel-in-progress": "false"}
+        )
+
+    def _job(self, name):
+        match = re.search(rf"\n  {name}:\n(.*?)(?=\n  [a-z-]+:\n|\Z)", "\n".join(self.lines), re.S)
+        self.assertIsNotNone(match, name)
+        return match.group(1)
+
+    def test_a_day_already_on_live_log_ends_green_with_nothing_written(self):
+        # The check runs in a job of its own, before the record job, and reads live-log through the
+        # API: no checkout, no fetch, no model. A skipped job is a green run.
+        check = self._job("check")
+        self.assertIn("live/$day.json?ref=live-log", check)
+        self.assertIn("recorded=true", check)
+        self.assertNotIn("live_record.py", check)
+        self.assertNotIn("git push", check)
+        log = self._job("log")
+        self.assertIn("needs: check", log)
+        self.assertIn("needs.check.outputs.recorded != 'true'", log)
+        # A failed check never blocks a record: the log job runs unless the day is known recorded.
+        self.assertIn("!cancelled()", log)
+        # The step's own shell, run with a stub `gh`: found -> recorded, anything else -> not.
+        body = check.split("run: |\n", 1)[1]
+        script = textwrap.dedent(body)
+        for code, expected in ((0, "recorded=true"), (1, "recorded=false")):
+            with self.subTest(gh_exit=code), tempfile.TemporaryDirectory() as tmp:
+                stub = Path(tmp) / "gh"
+                stub.write_text(f"#!/bin/sh\nexit {code}\n", encoding="utf-8")
+                stub.chmod(0o755)
+                out = Path(tmp) / "output"
+                env = {"PATH": f"{tmp}:{os.environ['PATH']}", "REPO": "o/r", "GITHUB_OUTPUT": str(out)}
+                done = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertEqual(out.read_text(encoding="utf-8").strip(), expected)
+        # The existing refusal in the script stays as the second line of defence.
+        script = (ROOT / "scripts" / "live_record.py").read_text(encoding="utf-8")
+        self.assertIn('raise ValueError(f"{record_path(out_dir, day)} exists: a day is logged once")', script)
 
 
 class DecisionDayTests(unittest.TestCase):
