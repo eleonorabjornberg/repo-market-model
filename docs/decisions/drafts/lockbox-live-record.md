@@ -95,6 +95,17 @@ Drafted for her. It fixes how a scoring run is made, so that the evidence can be
   length h + 1, the horizon overlap the final test's event cells and the live CRPS cells use (it was h). Each
   cell's seed is `baseline._seed_from((scoring date, cell, horizon, model, baseline[, regime or day type]))`.
   *Proposed, hers to merge:* the block rule and the seed derivation are part of this amendment.
+- **The final test's groups and false-alarm level (#363).** Each Brier cell also reports the group the final test
+  (`scripts/final_test_opening.py`) reports for it, at every horizon, reported only: the plain leap's **leap-onset
+  group** (`leap_onset_days`: no leap on the five panel days before the day, `onset.leap_onset_group`), and the
+  +5 bp and +10 bp cells' **at-risk group** (`onset_days`: five panel days before it, all at or below 5 bp,
+  `onset.day_groups`). Both are read from the outcome panel's rows before the scoring date only. A group cell has
+  the cell's Brier, the model paired against each baseline over all its days, by regime and by day type (the same
+  regime and day-type splits, minimum cell size and h + 1 block rule as the cell), the final test's label for the
+  all-days pair (`shown better`, `shown worse`, `not shown`), and the **false-alarm level**: each column's mean
+  probability on the group's days whose outcome is 0, computed by the final test's own `false_alarm_level`. A
+  group with fewer than `MINIMUM_EVENTS` events is `inconclusive` and carries only its false-alarm level. The
+  seeds add the group's name after the baseline. No other cell moves.
 - **The gap.** The blind gap's raw inputs, fetched once at scoring time, are archived on `live-raw` as
   `raw/<date>-gap/` before the reconstruction reads them. Its day boundaries are computed by the pinned code's own
   calendar and the scorer asserts they equal the ones it computes from main's; a difference refuses the run.
