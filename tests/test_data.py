@@ -275,6 +275,36 @@ class PointInTimeDataContractTests(unittest.TestCase):
         with self.assertRaisesRegex(DataContractError, "belongs to multiple sources"):
             validate_publication_gaps([], registry)
 
+    def test_the_registry_declares_effr_under_one_ref_date_source(self):
+        """#360: `EFFR` has one `ref_date` source, `nyfed_effr`, and no second owner.
+
+        `frb_ddp` still lists `EFFR` in `fields` (the #129 history study reads
+        it) but prices it by a `field_release_lags` entry, so the source-level
+        `release_lag` the publication-gap check reads is not `ref_date`.
+        Declaring a second `ref_date` source for any field is refused here, not
+        merely tolerated when the bounds happen to match (#345).
+
+        Mutation: `frb_ddp.release_lag.basis` set back to `ref_date` made this
+        test fail with `AssertionError: Lists differ: ['frb_ddp', 'nyfed_effr']
+        != ['nyfed_effr']`.
+        """
+
+        registry = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        owners: dict[str, list[str]] = {}
+        for source_id, source in registry.items():
+            lag = source.get("release_lag")
+            if isinstance(lag, dict) and lag.get("basis") == "ref_date":
+                for field in source.get("fields", []):
+                    owners.setdefault(field, []).append(source_id)
+        self.assertEqual(owners["EFFR"], ["nyfed_effr"])
+        self.assertEqual(
+            {field: ids for field, ids in owners.items() if len(ids) > 1}, {}
+        )
+
     def test_missingness_grid_uses_same_source_and_frequency_peer(self):
         rows = [
             self.observation("daily_anchor", "2026-01-01", "2026-01-02T12:00:00+00:00", 1, "v1"),

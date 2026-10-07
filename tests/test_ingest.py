@@ -4321,12 +4321,24 @@ class AvailableAtDerivationTests(unittest.TestCase):
             tzinfo=ZoneInfo(lag["timezone"]),
         )
 
+    def ref_date_lags(self):
+        """(source id, lag) for each `ref_date` declaration, source- or field-level.
+
+        `frb_ddp` prices `EFFR` by a field entry and not by its source-level lag
+        (#360), so the adapter check must read field entries too.
+        """
+
+        out = []
+        for source_id, source in sorted(self.REGISTRY.items()):
+            if source.get("release_lag", {}).get("basis") == "ref_date":
+                out.append((source_id, source["release_lag"]))
+            for lag in (source.get("field_release_lags") or {}).values():
+                if lag.get("basis") == "ref_date":
+                    out.append((source_id, lag))
+        return out
+
     def ref_date_sources(self):
-        return sorted(
-            source_id
-            for source_id, source in self.REGISTRY.items()
-            if source.get("release_lag", {}).get("basis") == "ref_date"
-        )
+        return sorted({source_id for source_id, _ in self.ref_date_lags()})
 
     def test_every_ref_date_source_is_covered_by_this_test(self):
         """A source added to the registry without a case here would go unchecked."""
@@ -4340,8 +4352,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
-        for source_id in self.ref_date_sources():
-            lag = self.REGISTRY[source_id]["release_lag"]
+        for source_id, lag in self.ref_date_lags():
             # A midweek date and a Friday: the Friday is the only one whose
             # calendar gap differs from its business-day lag. Then the days
             # whose next weekday is a market holiday (#201): 2025-12-31 (New
