@@ -1435,6 +1435,22 @@ def plain_page_module():
 _PLAIN_MODULE = {}
 
 
+def desk_outputs_module():
+    """`scripts/desk_outputs.py`, loaded once (the page quotes its declared rules and labels)."""
+
+    if "module" not in _DESK_MODULE:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        spec = importlib.util.spec_from_file_location("desk_outputs", ROOT / "scripts/desk_outputs.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["desk_outputs"] = module
+        spec.loader.exec_module(module)
+        _DESK_MODULE["module"] = module
+    return _DESK_MODULE["module"]
+
+
+_DESK_MODULE = {}
+
+
 def band_coverage():
     """`(record, table, h2-5 cells, days)` of the published distribution's band split, computed once."""
 

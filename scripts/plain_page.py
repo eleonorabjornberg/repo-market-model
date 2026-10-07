@@ -322,6 +322,24 @@ def _final_test_sentence(emit, cell, passed):
 # the scarcity state and the other desk outputs
 
 
+def turn_block(emit):
+    """The third desk output: the turn's expected contribution to the period average, and what is not yet calibrated."""
+
+    desk = emit.desk_outputs_module()
+    return [
+        "<p>Month-end, quarter-end and year-end \"turns\" are the days when the rate tends to jump. Funds and "
+        "lenders watch the <strong>average</strong> of the rate over a month, and one jump day counts for as many "
+        "calendar days as it stays in force. The model therefore reports, for a scheduled pressure day, how much "
+        "that day's forecast adds to the period average.</p>",
+        "<p>It is worked out as follows. The forecast mean is %s. That mean is multiplied by the calendar days the "
+        "day carries and divided by the calendar days in the period: %s.</p>" % (
+            _e(desk.MEAN_RULE), _e(desk.PERIOD_RULE)),
+        "<p class=\"limit\">Status of this output: %s. At two to five business days ahead, %s.</p>" % (
+            _e(desk.MEAN_LABEL), _e(desk.INTERIOR_LABEL)),
+        _sources(emit, extra=[_link("scripts/desk_outputs.py"), _link("docs/decisions/pressure-probability.md")]),
+    ]
+
+
 def scarcity_block(emit):
     from repo_model import scarcity
 
@@ -339,10 +357,6 @@ def scarcity_block(emit):
         "literature and from the same history they are checked on, so they describe the market and have not been "
         "proven in a separate test.</p>" % (
             "%g" % (low * 100), "%g" % (high * 100), int(scarcity.ON_RRP_BUFFER_BN)),
-        "<p>Besides the pressure probability and the scarcity state, the model's daily outputs are the range of "
-        "the gap on scheduled pressure days one to five days ahead, and the expected contribution of a "
-        "month-end or quarter-end turn to the period average. They report on the same frozen model. "
-        "They are described in the validation report and have no separate scored record yet.</p>",
         _sources(emit, extra=[_link("src/repo_model/scarcity.py"), _link("scripts/desk_outputs.py")]),
     ]
     return lines
@@ -433,6 +447,7 @@ BLOCKS = {
     "plain-question": question_block,
     "plain-pressure": pressure_block,
     "plain-distribution": distribution_block,
+    "plain-turn": turn_block,
     "plain-scarcity": scarcity_block,
     "plain-limits": limits_block,
     "plain-place": place_block,
