@@ -181,6 +181,24 @@ def _differences(published, rebuilt, prefix=""):
     return []
 
 
+def _scored_declaration(declaration, folds):
+    """A splits declaration as it bears on the days a record scored.
+
+    A regime none of whose days the record scored cannot change a figure it
+    publishes, so a declaration that gains one (the 2027 regime, #362) still
+    reproduces the record. The file's `sha256` covers those regimes too, so it
+    is not compared here; the scored regimes, the precedence and the window are.
+    """
+    first, last = folds["first"]["scored_date"], folds["last"]["scored_date"]
+    kept = dict(declaration)
+    kept.pop("sha256", None)
+    kept["regimes"] = [
+        regime for regime in declaration["regimes"]
+        if regime["first"] <= last and regime["last"] >= first
+    ]
+    return kept
+
+
 def reproduce_panel(workdir):
     """Steps 1 and 2: build the panel from tracked inputs and verify its digest.
 
@@ -263,8 +281,16 @@ def reproduce(workdir):
     rebuilt = json.loads(report.read_text(encoding="utf-8"))
 
     found = []
-    for block in COMPARED_BLOCKS + (("splits",) if "splits" in record else ()):
+    for block in COMPARED_BLOCKS:
         found.extend(_differences(record.get(block), rebuilt.get(block), block))
+    if "splits" in record:
+        found.extend(
+            _differences(
+                _scored_declaration(record["splits"]["declaration"], record["folds"]),
+                _scored_declaration(rebuilt["splits"]["declaration"], record["folds"]),
+                "splits.declaration",
+            )
+        )
     for key in COMPARED_PANEL:
         found.extend(
             _differences(record["panel"].get(key), rebuilt["panel"].get(key), "panel." + key)
