@@ -14,7 +14,7 @@ import random
 import unittest
 from datetime import date, timedelta
 
-from repo_model import probability_calibration as pc
+from repo_model import pressure, probability_calibration as pc
 from repo_model.metrics import _recalibrate
 from repo_model.splits import LookAheadError
 
@@ -192,6 +192,27 @@ class CalibratorTests(unittest.TestCase):
 
     def test_monotone_in_tau(self):
         self.assertEqual(pc.monotone_curves([(0.4, 0.5), (0.2, 0.1)]), [(0.4, 0.4), (0.2, 0.1)])
+
+
+class WhichCalibratorIsPublishedTests(unittest.TestCase):
+    """The published recalibration is Platt; the isotonic control is not it (#211).
+
+    #138's directive called `corp_isotonic` the published recalibration. It is
+    the CORP reliability-curve method name; pressure model v1 is published with
+    Platt scaling out of fold (`pressure.RECALIBRATION`). The module names both,
+    so a reader pairs against the right one.
+    """
+
+    def test_the_published_calibrator_is_platt_and_is_not_the_control(self):
+        self.assertEqual(pressure.RECALIBRATION["method"], "platt_out_of_fold")
+        self.assertEqual(pc.PUBLISHED, "platt")
+        self.assertIn(pc.PUBLISHED, pc.CALIBRATORS)
+        self.assertNotEqual(pc.PUBLISHED, pc.CONTROL)
+
+    def test_the_frozen_declaration_is_unchanged_by_the_naming(self):
+        # `final_test_preregistration` hashes `declaration()`; naming the
+        # published calibrator must not add a key to it.
+        self.assertNotIn("published", pc.declaration())
 
 
 if __name__ == "__main__":
