@@ -1,7 +1,7 @@
 {
-  "description": "Weekdays with no scheduled SOFR publication, 2018-01-01 to 2027-12-31: the days `data.quarter_end` does not count as business days, besides Saturdays and Sundays. The panel's target is SOFR - IORB, so a business day for the calendar columns is a day the New York Fed publishes SOFR, and this table is that schedule, known in advance (#59, decided under Eleonora's delegation, 1 October 2026; the table itself follows her ruling of 1 October 2026 on #44, option A). The New York Fed publishes SOFR every business day, including days SIFMA recommends an early close, but not on days SIFMA recommends a full close, and it may, with advance notice, not publish on a day the Treasury repo market broadly treats as a holiday ('publication_source' on the rows that rest on that clause). An entry with basis 'statute' is a legal public holiday under 5 U.S.C. 6103(a) on its observed day (a Saturday holiday on the Friday before, a Sunday one on the Monday after); tests/test_data.py derives them from the statute and checks this list against the derivation. An entry with basis 'sifma' is a day beyond the statute, sourced to the SIFMA page that states SIFMA's recommendation; its reason records that recommendation, which is a full close except where it says early close. verified true means the row was read at its source on 1 October 2026 (#59). 'statutory_days_the_market_opened' lists observed statutory holidays on which SIFMA recommended no full close and SOFR was published; they are not in 'closed'. An unscheduled closure is a new entry, added by a reviewed pull request. data.MARKET_HOLIDAYS_SHA256 pins this file's sha256, and data.quarter_end refuses a file that does not match it, so a changed entry is a reviewed code change too.",
+  "description": "Weekdays with no scheduled SOFR publication, 2018-01-01 to 2030-12-31: the days `data.quarter_end` does not count as business days, besides Saturdays and Sundays. The panel's target is SOFR - IORB, so a business day for the calendar columns is a day the New York Fed publishes SOFR, and this table is that schedule, known in advance (#59, decided under Eleonora's delegation, 1 October 2026; the table itself follows her ruling of 1 October 2026 on #44, option A). The New York Fed publishes SOFR every business day, including days SIFMA recommends an early close, but not on days SIFMA recommends a full close, and it may, with advance notice, not publish on a day the Treasury repo market broadly treats as a holiday ('publication_source' on the rows that rest on that clause). An entry with basis 'statute' is a legal public holiday under 5 U.S.C. 6103(a) on its observed day (a Saturday holiday on the Friday before, a Sunday one on the Monday after); tests/test_data.py derives them from the statute and checks this list against the derivation. An entry with basis 'sifma' is a day beyond the statute, sourced to the SIFMA page that states SIFMA's recommendation; its reason records that recommendation, which is a full close except where it says early close. verified true means the row was read at its source on 1 October 2026 (#59). 'statutory_days_the_market_opened' lists observed statutory holidays on which SIFMA recommended no full close and SOFR was published; they are not in 'closed'. An unscheduled closure is a new entry, added by a reviewed pull request. data.MARKET_HOLIDAYS_SHA256 pins this file's sha256, and data.quarter_end refuses a file that does not match it, so a changed entry is a reviewed code change too. The table was extended from 2027-12-31 to 2030-12-31 on 7 October 2026 (#263, #228): the statutory rows for 2028-2030 follow from 5 U.S.C. 6103 and match the Federal Reserve Board's table K.8, 'Holidays Observed by the Federal Reserve System 2026-2030' (https://www.federalreserve.gov/aboutthefed/k8.htm, last updated 8 July 2026, read on 7 October 2026). SIFMA's recommendations stop at 2027 (https://www.sifma.org/resources/guides-playbooks/holiday-schedule, read on 7 October 2026), so the days that rest on one are in 'sifma_not_yet_published' and not in 'closed': Good Friday 2028-2030, and 2028-11-10, the Friday observed for Veterans Day on a Saturday. data.quarter_end and the business-day counts read them as open weekdays until SIFMA publishes; a test refuses a table on which any of them is within 30 days, and another refuses a table with less than 180 days left.",
   "first": "2018-01-01",
-  "last": "2027-12-31",
+  "last": "2030-12-31",
   "closed": [
     {
       "date": "2018-01-01",
@@ -810,6 +810,223 @@
       "basis": "statute",
       "source": "https://www.law.cornell.edu/uscode/text/5/6103",
       "verified": true
+    },
+    {
+      "date": "2028-01-17",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-02-21",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-05-29",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-09-04",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-10-09",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-11-23",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2028-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-01-15",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-02-19",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-05-28",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-09-03",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-10-08",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-11-12",
+      "reason": "Veterans Day (2029-11-11, a Sunday), observed",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-11-22",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2029-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-01-01",
+      "reason": "New Year's Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-01-21",
+      "reason": "Birthday of Martin Luther King, Jr.",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-02-18",
+      "reason": "Washington's Birthday",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-05-27",
+      "reason": "Memorial Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-06-19",
+      "reason": "Juneteenth National Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-07-04",
+      "reason": "Independence Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-09-02",
+      "reason": "Labor Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-10-14",
+      "reason": "Columbus Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-11-11",
+      "reason": "Veterans Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-11-28",
+      "reason": "Thanksgiving Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
+    },
+    {
+      "date": "2030-12-25",
+      "reason": "Christmas Day",
+      "basis": "statute",
+      "source": "https://www.law.cornell.edu/uscode/text/5/6103",
+      "verified": true
     }
   ],
   "statutory_days_the_market_opened": [
@@ -836,6 +1053,36 @@
       "reason": "New Year's Day (2028-01-01, a Saturday), observed. SIFMA recommended an early close only (2:00 p.m. Eastern Time) on Friday 31 December 2027 (SIFMA's 2027 list, issued 17 December 2025).",
       "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
       "verified": true
+    }
+  ],
+  "sifma_not_yet_published": [
+    {
+      "date": "2028-04-14",
+      "reason": "Good Friday. SIFMA's 2028 list is not yet published. SIFMA recommended a full close for Good Friday in 2018-2020, 2022, 2024 and 2025, and an early close in 2021, 2023 and 2026; the New York Fed published no SOFR on any of those days, so the table closes all of them. The row is recorded, not assumed.",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": false
+    },
+    {
+      "date": "2028-11-10",
+      "reason": "Veterans Day (2028-11-11, a Saturday), observed. The Federal Reserve Banks are open and the Board closed (K.8). SIFMA's 2028 list is not yet published: it decides whether the market is open, as it did for 2021-12-31 and 2023-11-10, or closed, as for 2026-07-03.",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": false
+    },
+    {
+      "date": "2029-03-30",
+      "reason": "Good Friday. SIFMA's 2029 list is not yet published. SIFMA recommended a full close for Good Friday in 2018-2020, 2022, 2024 and 2025, and an early close in 2021, 2023 and 2026; the New York Fed published no SOFR on any of those days, so the table closes all of them. The row is recorded, not assumed.",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": false
+    },
+    {
+      "date": "2030-04-19",
+      "reason": "Good Friday. SIFMA's 2030 list is not yet published. SIFMA recommended a full close for Good Friday in 2018-2020, 2022, 2024 and 2025, and an early close in 2021, 2023 and 2026; the New York Fed published no SOFR on any of those days, so the table closes all of them. The row is recorded, not assumed.",
+      "basis": "sifma",
+      "source": "https://www.sifma.org/resources/guides-playbooks/holiday-schedule",
+      "verified": false
     }
   ]
 }

@@ -48,6 +48,7 @@ token cannot touch: the entry sits in Rekor's public log.
     python3 scripts/live_integrity.py environment --live-dir LIVE_LOG --date YYYY-MM-DD --block BLOCK.json
     python3 scripts/live_integrity.py check-append --live-dir LIVE_LOG --date YYYY-MM-DD --base SHA|none
     python3 scripts/live_integrity.py verify --live-dir LIVE_LOG --digests DIGESTS.jsonl
+    python3 scripts/live_integrity.py reconcile --live-dir LIVE_LOG --digests DIGESTS.jsonl --out-dir OUT [--run-url URL]
     python3 scripts/live_integrity.py unanchored --live-dir LIVE_LOG
     python3 scripts/live_integrity.py anchor-file --live-dir LIVE_LOG --date YYYY-MM-DD --entries ENTRIES.json
 
@@ -544,6 +545,42 @@ def parse_digests(path) -> dict:
     return digests
 
 
+def reconcile(repo: Path, digests: dict, run_url: str = "") -> dict:
+    """The digests the #225 issue lacks, by day: each logged file with no posted digest (#263).
+
+    A push to `live-log` and the digest post are separate steps, so a failed
+    post leaves a record with no digest. This returns the comment to post for
+    each such day, in the format `parse_digests` reads, marked "reconciled
+    late". It reads the log and writes nothing in it.
+
+    Raises:
+        ValueError: a posted digest whose SHA-256 or commit differs from the
+            file's, which no late digest can repair.
+    """
+
+    repo = Path(repo)
+    made = {}
+    for day, rel in logged_files(repo):
+        posted = digests.get(day)
+        if posted is not None:
+            if posted["sha256"] != file_sha256(repo / rel):
+                raise ValueError(f"{rel}'s posted digest {posted['sha256']} differs from the file's SHA-256")
+            if posted["commit"] != adding_commit(repo, rel):
+                raise ValueError(f"{rel}'s posted digest names commit {posted['commit']}, not the one that added it")
+            continue
+        lines = [
+            f"{day.isoformat()}: `{rel}`",
+            "",
+            f"- SHA-256: `{file_sha256(repo / rel)}`",
+            f"- commit on live-log: {adding_commit(repo, rel)}",
+            "- reconciled late: the record was pushed, and its digest was not posted by the run that wrote it",
+        ]
+        if run_url:
+            lines.append(f"- run: {run_url}")
+        made[day] = "\n".join(lines)
+    return made
+
+
 def verify(repo: Path, digests: dict) -> list:
     """Check the whole live log. Returns the logged days, oldest first.
 
@@ -606,6 +643,11 @@ def main(argv=None) -> int:
     every = sub.add_parser("verify", help="check every logged file, commit, digest and link")
     every.add_argument("--live-dir", required=True, type=Path)
     every.add_argument("--digests", required=True, type=Path)
+    late = sub.add_parser("reconcile", help="write the #225 digest of every logged file that has none")
+    late.add_argument("--live-dir", required=True, type=Path)
+    late.add_argument("--digests", required=True, type=Path)
+    late.add_argument("--out-dir", required=True, type=Path, help="outside the log: one DAY.md per comment to post")
+    late.add_argument("--run-url", default="")
     args = parser.parse_args(argv)
     day = date.fromisoformat(args.date) if getattr(args, "date", None) else None
     if args.command == "chain":
@@ -624,6 +666,12 @@ def main(argv=None) -> int:
         path = write_anchor(args.live_dir, day, json.loads(args.entries.read_text(encoding="utf-8")))
         anchor = json.loads(path.read_text(encoding="utf-8"))
         print(json.dumps({"file": str(path), "uuid": anchor["uuid"], "log_index": anchor["log_index"]}))
+    elif args.command == "reconcile":
+        made = reconcile(args.live_dir, parse_digests(args.digests), args.run_url)
+        args.out_dir.mkdir(parents=True, exist_ok=True)
+        for made_day, body in made.items():
+            (args.out_dir / f"{made_day.isoformat()}.md").write_text(body + "\n", encoding="utf-8")
+        print(json.dumps({"reconciled": [d.isoformat() for d in made]}))
     else:
         days = verify(args.live_dir, parse_digests(args.digests))
         print(json.dumps({"verified": [d.isoformat() for d in days]}))

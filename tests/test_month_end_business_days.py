@@ -62,7 +62,7 @@ class LastBusinessDaysTests(unittest.TestCase):
 
     def test_a_month_outside_the_holiday_table_is_refused(self):
         with self.assertRaises(ValueError):
-            data.last_business_days_of_month(2028, 1)
+            data.last_business_days_of_month(2031, 1)
 
 
 class ReportingDayTypeTests(unittest.TestCase):
