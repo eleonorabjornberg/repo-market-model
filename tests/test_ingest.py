@@ -4372,13 +4372,42 @@ class AvailableAtDerivationTests(unittest.TestCase):
                     )
                     rows = list(observations_from_snapshots([snapshot]))
                     self.assertTrue(rows)
-                    # FR 2004 still counts weekdays: skipping holidays moves its
-                    # 2018-12-21 value past the declared 11-day bound (#201).
-                    expected = self.declared_available_at(
-                        lag, ref_date, holidays=source_id != "nyfed_fr2004"
-                    )
+                    expected = self.declared_available_at(lag, ref_date)
                     for row in rows:
                         self.assertEqual(row.available_at, expected)
+
+    def test_fr2004_counts_business_days_on_the_holiday_table(self):
+        """FR 2004 is dated by business days on `metadata/market_holidays.json`, as every other adapter is (#361).
+
+        Counted by weekdays alone, the value for 2018-12-21 was dated 2018-12-31
+        and so available before the sixth business day after it, 2019-01-02
+        (Christmas Day and New Year's Day fall in between). That is the leakage
+        direction (#201, #350). The 2019-01-02 instant is a literal, not
+        recomputed from the declaration, and the declared bound must cover the
+        12 calendar days the holiday table's widest span needs.
+
+        Mutation record (each applied to a clean copy, then restored):
+
+        1. `_next_business_day` counting weekdays only (the pre-#361
+           `_next_weekday`): `AssertionError`, 2018-12-31 16:30 != 2019-01-02
+           16:30.
+        2. `nyfed_fr2004.release_lag.worst_case_calendar_days` back at 11:
+           `AssertionError`, 12 not less than or equal to 11.
+        """
+
+        ref_date = date(2018, 12, 21)
+        snapshot = self.fr2004_snapshot(ref_date.isoformat(), "2026-06-01T00:00:00+00:00")
+        rows = list(observations_from_snapshots([snapshot]))
+        self.assertTrue(rows)
+        zone = ZoneInfo("America/New_York")
+        for row in rows:
+            self.assertEqual(
+                row.available_at, datetime(2019, 1, 2, 16, 30, tzinfo=zone)
+            )
+            self.assertLessEqual(
+                (row.available_at.date() - ref_date).days,
+                self.REGISTRY["nyfed_fr2004"]["release_lag"]["worst_case_calendar_days"],
+            )
 
     def test_a_registry_lag_the_adapter_does_not_honour_is_caught(self):
         """The tripwire above is only worth having if a divergence actually fails it.
