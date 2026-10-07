@@ -295,7 +295,7 @@ def _forecast_block(block, targets, where):
 def validate_record(record) -> None:
     """The record's schema. Raises `ValueError` naming what is wrong."""
 
-    optional = {"dry_run", "chain"} & set(record) if isinstance(record, dict) else set()
+    optional = {"dry_run", "chain", "environment"} & set(record) if isinstance(record, dict) else set()
     if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | optional:
         missing = sorted(set(RECORD_KEYS) - set(record or {}))
         raise ValueError(f"a record holds exactly {list(RECORD_KEYS)}; missing {missing}")
@@ -348,6 +348,25 @@ def validate_record(record) -> None:
         raise ValueError(f"run.durations_seconds must hold {list(STEPS)}")
     if "chain" in record:
         _validate_chain(record["chain"], day)
+    if "environment" in record:
+        _validate_environment(record["environment"])
+
+
+def _validate_environment(env) -> None:
+    """The environment block `scripts/live_pin.py` builds and the workflow adds before a record is committed (#255).
+
+    Its values are checked against the pin manifest's lock when the record is
+    written; this is only their shape.
+    """
+
+    if not isinstance(env, dict) or set(env) != {"runner", "python", "lock_sha256", "packages"}:
+        raise ValueError("environment must hold exactly runner, python, lock_sha256 and packages")
+    if not isinstance(env["lock_sha256"], str) or len(env["lock_sha256"]) != 64 or set(env["lock_sha256"]) - set("0123456789abcdef"):
+        raise ValueError("environment.lock_sha256 must be 64 lowercase hex digits")
+    if not isinstance(env["packages"], dict) or not env["packages"] or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in env["packages"].items()
+    ):
+        raise ValueError("environment.packages must map package names to versions")
 
 
 def _validate_chain(chain, day: date) -> None:

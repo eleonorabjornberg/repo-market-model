@@ -1751,9 +1751,14 @@ def validate_publication_gaps(
                 f"{source_id}: ref_date source lacks a valid publication-gap bound"
             )
         for field in source.get("fields", []):
-            if field in field_bounds:
+            earlier = field_bounds.get(str(field))
+            # Rows carry no source, so two sources declaring one series are
+            # only checkable when they declare the same bound: then the answer
+            # does not depend on which of them owns the series (#180).
+            if earlier is not None and earlier[1] != bound:
                 raise DataContractError(f"series {field!r} belongs to multiple sources")
-            field_bounds[str(field)] = (source_id, bound)
+            if earlier is None:
+                field_bounds[str(field)] = (source_id, bound)
 
     worst: Dict[str, int] = {}
     for row in observations:
@@ -2539,6 +2544,40 @@ def market_holidays(path: Optional[Path] = None) -> MarketHolidays:
     )
     _MARKET_HOLIDAYS_CACHE[key] = holidays
     return holidays
+
+
+def next_business_day(value: date, days: int) -> date:
+    """The date `days` business days after `value`: weekdays not in the market holiday table.
+
+    A snapshot adapter dates a value to the registry's `business_days` lag with
+    this (#201). The panel counts the same lag on its own dates, which are the
+    days the New York Fed publishes SOFR, so a holiday is skipped here exactly
+    as it is there; counting weekdays alone dates a value before the declared
+    lag allows, which is the leakage direction.
+
+    The table starts on 2018-01-01. A day before it is counted as a weekday, as
+    every adapter did before #201: the table says nothing about it, and the
+    panel reads no value dated that early (its first date is 2018-04-03).
+
+    Raises:
+        ValueError: if the count reaches a day after the table's last, rather
+            than counting weekdays alone.
+    """
+
+    holidays = market_holidays()
+    current = value
+    remaining = days
+    while remaining:
+        current += timedelta(days=1)
+        if current > holidays.last:
+            raise ValueError(
+                f"the market holiday table covers {holidays.first.isoformat()} to "
+                f"{holidays.last.isoformat()}, not {current.isoformat()}, "
+                f"{days} business days after {value.isoformat()}"
+            )
+        if current.weekday() < 5 and current not in holidays.closed:
+            remaining -= 1
+    return current
 
 
 def quarter_end(day: date) -> float:

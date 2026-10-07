@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Emit the README's Key-findings block and its figure from the run records.
+"""Emit the Key-findings block (in `PROJECT_GUIDE.md`) and its figure from the run records.
 
 Nothing in the block is typed. Every figure is read out of `docs/runs/*.json` --
 the records `backtest`, `compare` and `exceedance-backtest` wrote, each carrying the panel
 manifest it was built from and the commit it ran at -- and rendered into
-`README.md` between two markers, plus a reliability figure under `docs/figures/`.
+`PROJECT_GUIDE.md` between two markers, plus a reliability figure under `docs/figures/`.
 
 **Why this is a generator and not a paragraph.** Milestone A's exit criterion was
 that no figure from a run record is transcribed into any Markdown page, and
@@ -50,12 +50,17 @@ from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 RUNS = ROOT / "docs/runs"
 FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
+#: The rest of what the README once carried (#344): the findings, the tail clause and the headline.
+GUIDE = ROOT / "PROJECT_GUIDE.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
 BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
 #: The model documentation and validation report (#119): prose written by hand, every figure in a block
 #: `scripts/validation_report.py` renders from the records.
 VALIDATION_PAGE = ROOT / "docs/model/validation.md"
+#: The plain-language results page (#120): hand-written shell, every figure in a block
+#: `scripts/plain_page.py` renders from the records.
+PLAIN_PAGE = ROOT / "site/plain.html"
 
 BEGIN = "<!-- generated: key-findings -->"
 END = "<!-- end generated: key-findings -->"
@@ -1452,6 +1457,37 @@ def validation_report_module():
 _VALIDATION_MODULE = {}
 
 
+def plain_page_module():
+    """`scripts/plain_page.py`, loaded once."""
+
+    if "module" not in _PLAIN_MODULE:
+        spec = importlib.util.spec_from_file_location("plain_page", ROOT / "scripts/plain_page.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["plain_page"] = module
+        spec.loader.exec_module(module)
+        _PLAIN_MODULE["module"] = module
+    return _PLAIN_MODULE["module"]
+
+
+_PLAIN_MODULE = {}
+
+
+def desk_outputs_module():
+    """`scripts/desk_outputs.py`, loaded once (the page quotes its declared rules and labels)."""
+
+    if "module" not in _DESK_MODULE:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        spec = importlib.util.spec_from_file_location("desk_outputs", ROOT / "scripts/desk_outputs.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["desk_outputs"] = module
+        spec.loader.exec_module(module)
+        _DESK_MODULE["module"] = module
+    return _DESK_MODULE["module"]
+
+
+_DESK_MODULE = {}
+
+
 def band_coverage():
     """`(record, table, h2-5 cells, days)` of the published distribution's band split, computed once."""
 
@@ -1830,12 +1866,15 @@ def rendered(persistence, exceedance, conditional):
     }
     pages = {
         README: (
-            (BEGIN, END, key_findings(persistence, exceedance, conditional)),
-            (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
             (STATUS_BEGIN, STATUS_END, status_line()),
-            (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
             (USE_LIMITATION_BEGIN, USE_LIMITATION_END, use_limitation_block()),
             (LANDING_BEGIN, LANDING_END, landing_block()),
+        ),
+        GUIDE: (
+            (BEGIN, END, key_findings(persistence, exceedance, conditional)),
+            (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
+            (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
+            (USE_LIMITATION_BEGIN, USE_LIMITATION_END, use_limitation_block()),
         ),
         CASE_STUDY: (
             (CORRECTION_BEGIN, CORRECTION_END, correction_section()),
@@ -1844,6 +1883,7 @@ def rendered(persistence, exceedance, conditional):
             (FINAL_TEST_BEGIN, FINAL_TEST_END, final_test_section()),
         ),
         VALIDATION_PAGE: tuple(validation_report_module().blocks(types.SimpleNamespace(**globals()))),
+        PLAIN_PAGE: tuple(plain_page_module().blocks(types.SimpleNamespace(**globals()))),
     }
     for page, blocks in pages.items():
         if not page.exists():
