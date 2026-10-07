@@ -1,7 +1,7 @@
 # Narrowed coupon-settlement flag: the test, declared before scoring (#339)
 
 Status: declared in a commit before any candidate was scored. Eleonora's ruling on #339 ("Publish if it improves the
-model") and her ruling on PR #341 set the test below; this file only fixes its details. The candidate and the test
+model") and her ruling on this pull request set the test below; this file only fixes its details. The candidate and the test
 are run by `scripts/settlement_flag_candidate.py`; nothing in this file changes after the scoring commit except by a
 new commit that says why.
 
