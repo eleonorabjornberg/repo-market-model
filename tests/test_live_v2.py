@@ -269,7 +269,7 @@ class ScoringTests(unittest.TestCase):
     def test_the_draft_amendment_covers_v2(self):
         text = (score.REPO / "docs" / "decisions" / "drafts" / "lockbox-live-record.md").read_text(
             encoding="utf-8")
-        for phrase in ("pressure model v2", "2027-04-01", "2018–2025", "#243"):
+        for phrase in ("pressure model v2", "FIRST_SCORING_DATES", "2018–2025", "#243"):
             self.assertIn(phrase, text)
 
 
