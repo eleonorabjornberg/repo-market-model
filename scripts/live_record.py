@@ -123,7 +123,12 @@ from repo_model.data import (  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.splits import LookAheadError, SplitError  # noqa: E402
 
+#: A file without pressure model v2 (every day before v2 is logged).
 RECORD_VERSION = 1
+#: A file that also carries `distributions.published_v2` (#245). The format only
+#: gains that block: every field a version 1 file has is written as before.
+RECORD_VERSION_V2 = 2
+READABLE_VERSIONS = (RECORD_VERSION, RECORD_VERSION_V2)
 #: The last day of the published panel. The final test (#150) scores no day
 #: after it; the live record logs no day on or before it.
 PANEL_END = date(2026, 9, 3)
@@ -163,6 +168,12 @@ CRPS_FEATURES = final_test.CRPS_FEATURES
 #: be scored from the file alone.
 CRPS_RECORD = "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 DISTRIBUTION_SIDES = ("published", "persistence")
+#: Pressure model v2 (#244), logged alongside the unchanged v1 (#245): the
+#: calibrated interior quantiles, at h = 1 only. Its published record and the
+#: horizons it logs. It is a separate block, never a side of v1's distributions.
+V2_NAME = "pressure_model_v2"
+V2_RECORD = "docs/runs/pressure_model_v2_distribution_h1.json"
+V2_HORIZONS = (1,)
 
 
 def published_distribution_record(h: int) -> str:
@@ -299,8 +310,8 @@ def validate_record(record) -> None:
     if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | optional:
         missing = sorted(set(RECORD_KEYS) - set(record or {}))
         raise ValueError(f"a record holds exactly {list(RECORD_KEYS)}; missing {missing}")
-    if record["record_version"] != RECORD_VERSION:
-        raise ValueError(f"record_version must be {RECORD_VERSION}")
+    if record["record_version"] not in READABLE_VERSIONS:
+        raise ValueError(f"record_version must be one of {list(READABLE_VERSIONS)}")
     day = date.fromisoformat(record["decision_day"])
     require_loggable(day)
     datetime.fromisoformat(record["decision_instant"])
@@ -342,7 +353,7 @@ def validate_record(record) -> None:
         raise ValueError(f"baselines must hold exactly {sorted(BASELINE_NAMES)}")
     for name, targets in BASELINE_NAMES.items():
         _forecast_block(record["baselines"][name].get("forecasts"), targets, f"baselines.{name}.forecasts")
-    _validate_distributions(record["distributions"])
+    _validate_distributions(record["distributions"], record["record_version"])
     durations = record["run"].get("durations_seconds", {})
     if set(durations) != set(STEPS):
         raise ValueError(f"run.durations_seconds must hold {list(STEPS)}")
@@ -386,11 +397,41 @@ def _validate_chain(chain, day: date) -> None:
             raise ValueError(f"chain.{key} must be {length} lowercase hex digits")
 
 
-def _validate_distributions(block) -> None:
-    """Both distributions, at every horizon, on the contract's quantile grid."""
+def _validate_v2(block) -> None:
+    """`distributions.published_v2`: v2's record, declaration digest and quantiles at its horizons (#245)."""
 
-    if not isinstance(block, dict) or set(block) != {"levels", *DISTRIBUTION_SIDES}:
-        raise ValueError(f"distributions must hold levels and exactly {list(DISTRIBUTION_SIDES)}")
+    horizons = {str(h) for h in V2_HORIZONS}
+    if not isinstance(block, dict) or set(block) != {"records", "declaration_sha256", "quantiles_bps"}:
+        raise ValueError("distributions.published_v2 holds records, declaration_sha256 and quantiles_bps")
+    if block["records"] != {h: V2_RECORD for h in horizons}:
+        raise ValueError(f"distributions.published_v2.records must name {V2_RECORD}")
+    digests = block["declaration_sha256"]
+    if not isinstance(digests, dict) or set(digests) != horizons or not all(
+        isinstance(digest, str) and len(digest) == 64 for digest in digests.values()
+    ):
+        raise ValueError("distributions.published_v2.declaration_sha256 must hold every v2 horizon")
+    quantiles = block["quantiles_bps"]
+    if not isinstance(quantiles, dict) or set(quantiles) != horizons:
+        raise ValueError(f"distributions.published_v2.quantiles_bps must hold horizons {sorted(horizons)}")
+    for h, vector in quantiles.items():
+        if not isinstance(vector, list) or len(vector) != len(QUANTILE_LEVELS) or not all(
+            isinstance(value, (int, float)) and not isinstance(value, bool) for value in vector
+        ):
+            raise ValueError(
+                f"distributions.published_v2.quantiles_bps[{h}] must be {len(QUANTILE_LEVELS)} numbers"
+            )
+
+
+def _validate_distributions(block, version: int = RECORD_VERSION) -> None:
+    """Both distributions, at every horizon, on the contract's quantile grid.
+
+    A version 2 file carries pressure model v2's block too (`_validate_v2`); a version 1 file
+    carries exactly the two sides.
+    """
+
+    sides = set(DISTRIBUTION_SIDES) | ({"published_v2"} if version == RECORD_VERSION_V2 else set())
+    if not isinstance(block, dict) or set(block) != {"levels", *sides}:
+        raise ValueError(f"distributions must hold levels and exactly {sorted(sides)}")
     if list(block["levels"]) != list(QUANTILE_LEVELS):
         raise ValueError(f"distributions.levels must be {list(QUANTILE_LEVELS)}")
     if block["published"].get("records") != {
@@ -402,6 +443,8 @@ def _validate_distributions(block) -> None:
         isinstance(digest, str) and len(digest) == 64 for digest in digests.values()
     ):
         raise ValueError("distributions.published.declaration_sha256 must hold every horizon")
+    if version == RECORD_VERSION_V2:
+        _validate_v2(block["published_v2"])
     for side in DISTRIBUTION_SIDES:
         quantiles = block[side].get("quantiles_bps")
         if not isinstance(quantiles, dict) or set(quantiles) != {str(h) for h in HORIZONS}:
@@ -931,6 +974,81 @@ def distribution_forecasts(rows, h, registry, splits=None) -> dict:
     return out
 
 
+def v2_distribution_forecast(rows, registry) -> dict:
+    """Pressure model v2's distribution at h = 1 for the last row (#245).
+
+    Pressure model v2 (`scripts/pressure_model_v2.py`, #244) is the published side of `compare`'s frozen
+    command at h = 1 with `CHOSEN_FOURTH`'s setup (the trees' declared depth) and the interior layer
+    (`repo_model.interior.NestedInteriorFoldPid`, width layer on) in place of the nested PID. It is run
+    through the same fold loop as the published distribution (`distribution_run`), so the last row's vector
+    is the one v2's walk issues. v1's own run is a separate call and is untouched. Returns
+    `{"levels", "quantiles", "declaration_sha256", "train_end"}`.
+    """
+
+    from repo_model import interior
+
+    v2 = _script("pressure_model_v2")
+    sides, args = _compare_sides(1)
+    name, fit, features, _v1_online = sides["published"]
+    fit, features = v2.candidate_setup(fit, features, v2.CHOSEN_FOURTH)
+    splits = load_split_declaration(SPLITS)
+
+    def online(rows_, rule):
+        return interior.NestedInteriorFoldPid(
+            rows_, rule, splits=splits, refit_every=args.refit_every, width_layer=True)
+
+    levels, quantiles, settings, train_end = distribution_run(
+        rows, fit=fit, features=features, online_calibration=online, registry=registry,
+        horizon=1, minimum_history=args.minimum_history, refit_every=args.refit_every,
+    )
+    declaration = {
+        "model": V2_NAME, "record": V2_RECORD, "candidate": v2.CHOSEN_FOURTH,
+        "tree_settings": dict(v2.V2_TREE_SETTINGS), "features": sorted(features),
+        "settings": json.loads(json.dumps(settings, default=str)),
+    }
+    canonical = json.dumps(declaration, sort_keys=True, separators=(",", ":"))
+    return {"levels": levels, "quantiles": quantiles, "train_end": train_end,
+            "declaration_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest()}
+
+
+def distributions_block(extended, registry, *, forecast=None, v2_forecast=None) -> dict:
+    """The record's `distributions`: v1's two sides as before, and v2's block beside them (#245).
+
+    `extended[h][0]` is the panel extended for horizon `h`. v1's block is built first and by the same
+    calls, in the same order, whether or not v2 is logged; v2's is added after, under its own key, and
+    reads nothing of v1's. `forecast` and `v2_forecast` default to `distribution_forecasts` and
+    `v2_distribution_forecast`; the tests substitute them.
+    """
+
+    forecast = distribution_forecasts if forecast is None else forecast
+    v2_forecast = v2_distribution_forecast if v2_forecast is None else v2_forecast
+    block = {
+        "levels": list(QUANTILE_LEVELS),
+        "published": {
+            "records": {str(h): published_distribution_record(h) for h in HORIZONS},
+            "declaration_sha256": {str(h): published_declaration_sha256(h) for h in HORIZONS},
+            "quantiles_bps": {},
+        },
+        "persistence": {"quantiles_bps": {}},
+    }
+    for h in HORIZONS:
+        got = forecast(extended[h][0], h, registry)
+        if got["levels"] != list(QUANTILE_LEVELS):
+            raise ValueError(f"the distributions at h={h} are on another quantile grid")
+        for side in DISTRIBUTION_SIDES:
+            block[side]["quantiles_bps"][str(h)] = got[side]
+    v2 = {"records": {}, "declaration_sha256": {}, "quantiles_bps": {}}
+    for h in V2_HORIZONS:
+        got = v2_forecast(extended[h][0], registry)
+        if got["levels"] != list(QUANTILE_LEVELS):
+            raise ValueError(f"pressure model v2 at h={h} is on another quantile grid")
+        v2["records"][str(h)] = V2_RECORD
+        v2["declaration_sha256"][str(h)] = got["declaration_sha256"]
+        v2["quantiles_bps"][str(h)] = got["quantiles"]
+    block["published_v2"] = v2
+    return block
+
+
 # -- provenance ---------------------------------------------------------------
 
 
@@ -1102,27 +1220,13 @@ def run_command(args) -> int:
 
     tick = clock.monotonic()
     _status(args.status, "fit_forecast_distributions")
-    distributions = {
-        "levels": list(QUANTILE_LEVELS),
-        "published": {
-            "records": {str(h): published_distribution_record(h) for h in HORIZONS},
-            "declaration_sha256": {str(h): published_declaration_sha256(h) for h in HORIZONS},
-            "quantiles_bps": {},
-        },
-        "persistence": {"quantiles_bps": {}},
-    }
-    for h in HORIZONS:
-        got = distribution_forecasts(extended[h][0], h, registry)
-        if got["levels"] != list(QUANTILE_LEVELS):
-            raise ValueError(f"the distributions at h={h} are on another quantile grid")
-        for side in DISTRIBUTION_SIDES:
-            distributions[side]["quantiles_bps"][str(h)] = got[side]
+    distributions = distributions_block(extended, registry)
     durations["fit_forecast_distributions"] = clock.monotonic() - tick
 
     tick = clock.monotonic()
     _status(args.status, "write")
     record = {
-        "record_version": RECORD_VERSION,
+        "record_version": RECORD_VERSION_V2,
         "decision_day": day.isoformat(),
         "decision_instant": instant.isoformat(),
         "code": {"sha": head, "pinned_sha": pinned},
