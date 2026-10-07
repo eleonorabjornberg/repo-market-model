@@ -30,6 +30,14 @@ primary cell and regenerated both checksums (`PrimaryCellTests`, red first
 with 6 failures and 13 errors): the checksum then moved to `b06fdaeb…`, and
 `test_the_leap_checksum_is_the_regenerated_one` stayed green.
 
+Extension of the freeze (#324, Eleonora's `GO` on that issue): `FrozenInputsTests` was committed before
+`frozen_inputs` existed and failed with `AttributeError` on `_FROZEN_METADATA`. Mutation record: the entry
+`"metadata/market_holidays.json"` deleted from `_FROZEN_METADATA` in
+`scripts/final_test_preregistration.py`, confirmed applied by grep; the test
+`test_both_declarations_carry_the_three_metadata_digests` then failed with `AssertionError` (the digests
+listed two files, not three), and `test_an_edited_metadata_file_moves_both_checksums` raised
+`FileNotFoundError` for the file the scratch copy no longer took. Restored, green.
+
 Mutation record (`CrpsCellTests`, the CRPS cell's lockbox check):
 `lockbox.require_unlocked(window, where="final test CRPS cell")` in
 `crps_cell` deleted, confirmed applied by grep; the test
@@ -109,10 +117,7 @@ class FreezeTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as scratch:
             root = Path(scratch)
-            for path, _names in fp._SHARED_SOURCE + fp._MODEL_SOURCE[fp.CHOSEN]:
-                target = root / path
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text((REPO / path).read_text(encoding="utf-8"), encoding="utf-8")
+            _copy_declared(root, {path for path, _names in fp._SHARED_SOURCE + fp._MODEL_SOURCE[fp.CHOSEN]})
             with mock.patch.object(fp, "REPO", root):
                 self.assertEqual(fp.declaration_checksum(), _pinned("Declaration checksum"))
                 walk = root / "src/repo_model/probability_calibration.py"
@@ -132,7 +137,30 @@ class FreezeTests(unittest.TestCase):
 #: #221 added the cells and their roles to the declaration.
 LEAP_CHECKSUM_AT_216 = "5f084e7568f242bc76b6faa34fdcae2cb0ca786d328ca86d1f1ccf00385c0449"
 LEAP_CHECKSUM = "28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432"
+#: The CRPS checksum the opening run (2026-10-05) carried, before #324 extended both declarations.
+CRPS_CHECKSUM_AT_OPENING = "d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59"
+#: The CRPS declaration at the opening, less the script's own source entry: that entry reaches
+#: `crps_declaration` and moves with any edit to it, so the opening's checksum cannot be
+#: recomputed. Everything else in the declaration hashes to this, before and after #324.
+CRPS_REST_AT_OPENING = "6edccd0ce0b6ad3aef2cb1d1b3345892fbb842900663014bd0d25c96ba5a9240"
 PUBLISHED_CRPS = REPO / "docs" / "runs" / "compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
+
+
+def _copy_declared(root, paths):
+    """Copy `paths` and everything #324 froze beside them (metadata, as-of, loader) into `root`."""
+
+    for each in set(paths) | set(fp._FROZEN_METADATA) | {p for p, _n in fp._FROZEN_PIPELINE}:
+        target = root / each
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text((REPO / each).read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def _without_inputs(declaration):
+    """A declaration's checksum as the opening run computed it: without #324's `inputs`."""
+
+    declaration = {key: value for key, value in declaration.items() if key != "inputs"}
+    text = json.dumps(declaration, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _published_declaration():
@@ -152,13 +180,14 @@ class CrpsFreezeTests(unittest.TestCase):
         self.assertEqual(fp.crps_declaration_checksum(), _pinned("CRPS declaration checksum"))
 
     def test_the_leap_checksum_is_the_regenerated_one(self):
-        self.assertEqual(_pinned("Declaration checksum"), LEAP_CHECKSUM)
-        self.assertEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
+        self.assertEqual(_pinned("Declaration checksum at opening"), LEAP_CHECKSUM)
+        self.assertEqual(_without_inputs(fp.declaration()), LEAP_CHECKSUM)
 
     def test_only_the_cells_moved_the_leap_checksum(self):
         """Without the cells, the leap declaration is byte-for-byte the one pinned at #216."""
 
         frozen = fp.declaration()
+        frozen.pop("inputs")
         self.assertEqual(frozen.pop("cells"), fp.cells())
         text = json.dumps(frozen, sort_keys=True, separators=(",", ":"))
         self.assertEqual(hashlib.sha256(text.encode("utf-8")).hexdigest(), LEAP_CHECKSUM_AT_216)
@@ -261,10 +290,7 @@ class CrpsFreezeTests(unittest.TestCase):
         for path, marker in edits:
             with self.subTest(path=path, marker=marker), tempfile.TemporaryDirectory() as scratch:
                 root = Path(scratch)
-                for each in paths:
-                    target = root / each
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text((REPO / each).read_text(encoding="utf-8"), encoding="utf-8")
+                _copy_declared(root, paths)
                 with mock.patch.object(fp, "REPO", root):
                     self.assertEqual(fp.crps_declaration_checksum(),
                                      _pinned("CRPS declaration checksum"))
@@ -277,7 +303,106 @@ class CrpsFreezeTests(unittest.TestCase):
                                         _pinned("CRPS declaration checksum"))
                     if path == "src/repo_model/ml.py":
                         # ml.py holds the leap test's model too; an edit outside it leaves it.
-                        self.assertEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
+                        self.assertEqual(fp.declaration_checksum(),
+                                         _pinned("Declaration checksum"))
+
+
+class FrozenInputsTests(unittest.TestCase):
+    """#324: both declarations also freeze the metadata the forecast reads and the code that reads it.
+
+    Eleonora's `GO` on #324 (6 October 2026, her own comment). Before it, editing
+    `nyfed_sofr.available_time` moved the persistence anchor on every window day and left
+    both checksums unchanged. The new `inputs` key is the only change: without it each
+    declaration hashes to the checksum the opening run carried.
+    """
+
+    METADATA = ("metadata/sources.json", "metadata/evaluation_splits.json",
+                "metadata/market_holidays.json")
+    CODE = {
+        "src/repo_model/asof.py": "InformationRule",
+        "src/repo_model/data.py": "load_point_in_time_panel",
+        "src/repo_model/splits.py": "ensure_strictly_ascending",
+        "src/repo_model/evaluation_splits.py": "load_split_declaration",
+        "src/repo_model/contract.py": "FEATURE_FIELDS",
+    }
+
+    def _both(self):
+        return {"leap": fp.declaration(), "crps": fp.crps_declaration()}
+
+    def test_both_declarations_carry_the_three_metadata_digests(self):
+        for name, declaration in self._both().items():
+            with self.subTest(declaration=name):
+                digests = declaration["inputs"]["metadata_sha256"]
+                self.assertEqual(sorted(digests), sorted(self.METADATA))
+                for path in self.METADATA:
+                    self.assertEqual(
+                        digests[path], hashlib.sha256((REPO / path).read_bytes()).hexdigest())
+
+    def test_both_declarations_carry_the_asof_loader_splitter_and_contract_code(self):
+        for name, declaration in self._both().items():
+            with self.subTest(declaration=name):
+                source = declaration["inputs"]["source_sha256"]
+                for path, root in self.CODE.items():
+                    self.assertIn(root, source[path])
+
+    def test_without_the_inputs_the_checksums_are_the_ones_the_opening_run_carried(self):
+        self.assertEqual(_without_inputs(fp.declaration()), LEAP_CHECKSUM)
+        rest = fp.crps_declaration()
+        rest["source_sha256"].pop("scripts/final_test_preregistration.py")
+        self.assertEqual(_without_inputs(rest), CRPS_REST_AT_OPENING)
+        self.assertEqual(_pinned("Declaration checksum at opening"), LEAP_CHECKSUM)
+        self.assertEqual(_pinned("CRPS declaration checksum at opening"), CRPS_CHECKSUM_AT_OPENING)
+
+    def test_the_extended_checksums_are_pinned_and_differ_from_the_opening_ones(self):
+        self.assertNotEqual(fp.declaration_checksum(), LEAP_CHECKSUM)
+        self.assertNotEqual(fp.crps_declaration_checksum(), CRPS_CHECKSUM_AT_OPENING)
+
+    def test_an_edited_metadata_file_moves_both_checksums(self):
+        """`available_time` of the SOFR source is the case #324 names."""
+
+        leap, crps = fp.declaration_checksum(), fp.crps_declaration_checksum()
+        for path in self.METADATA:
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as scratch:
+                root = Path(scratch)
+                _copy_declared(root, {p for p, _n in fp._SHARED_SOURCE + fp._MODEL_SOURCE[fp.CHOSEN]
+                                      + fp._CRPS_SOURCE})
+                with mock.patch.object(fp, "REPO", root):
+                    self.assertEqual(fp.declaration_checksum(), leap)
+                    self.assertEqual(fp.crps_declaration_checksum(), crps)
+                    target = root / path
+                    target.write_text(target.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+                    self.assertNotEqual(fp.declaration_checksum(), leap)
+                    self.assertNotEqual(fp.crps_declaration_checksum(), crps)
+
+    def test_an_edit_to_the_code_moves_both_checksums(self):
+        markers = {
+            "src/repo_model/asof.py": "def fold_grid(",
+            "src/repo_model/data.py": "def load_point_in_time_panel(",
+            "src/repo_model/splits.py": "def ensure_strictly_ascending(",
+            "src/repo_model/evaluation_splits.py": "def load_split_declaration(",
+            "src/repo_model/contract.py": "def validate_field_release_lag(",
+        }
+        leap, crps = fp.declaration_checksum(), fp.crps_declaration_checksum()
+        for path, marker in markers.items():
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as scratch:
+                root = Path(scratch)
+                _copy_declared(root, {p for p, _n in fp._SHARED_SOURCE + fp._MODEL_SOURCE[fp.CHOSEN]
+                                      + fp._CRPS_SOURCE})
+                with mock.patch.object(fp, "REPO", root):
+                    self.assertEqual(fp.declaration_checksum(), leap)
+                    edited = root / path
+                    text = edited.read_text(encoding="utf-8")
+                    self.assertIn(marker, text)
+                    edited.write_text(text.replace(marker, marker + "  # edited\n", 1),
+                                      encoding="utf-8")
+                    self.assertNotEqual(fp.declaration_checksum(), leap)
+                    self.assertNotEqual(fp.crps_declaration_checksum(), crps)
+
+    def test_a_missing_metadata_file_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            with mock.patch.object(fp, "REPO", Path(scratch)):
+                with self.assertRaises((OSError, ValueError)):
+                    fp.declaration()
 
 
 class PrimaryCellTests(unittest.TestCase):

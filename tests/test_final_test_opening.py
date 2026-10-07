@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -139,6 +140,13 @@ class WindowGuardTests(unittest.TestCase):
                                      minimum_history=61, refit_every=21)
 
 
+def _opening_pin(field):
+    text = (REPO / "docs" / "decisions" / "final-test-preregistration.md").read_text(encoding="utf-8")
+    found = re.findall(rf"^- \*\*{re.escape(field)}:\*\* `([^`]+)`", text, flags=re.MULTILINE)
+    assert len(found) == 1, field
+    return found[0]
+
+
 class RecordTests(unittest.TestCase):
     """The published record is the frozen run's, and its primary cell recomputes."""
 
@@ -148,8 +156,12 @@ class RecordTests(unittest.TestCase):
         cls.cell = cls.record["primary"]["cell"]
 
     def test_it_was_scored_under_both_frozen_declarations(self):
-        self.assertEqual(self.record["crps_declaration_sha256"], fp.crps_declaration_checksum())
-        self.assertEqual(self.record["declaration_sha256"], fp.declaration_checksum())
+        # The checksums the run carried are the record's "at opening" pins: #324 extended both
+        # declarations afterwards, and the run record is not edited in place.
+        self.assertEqual(self.record["crps_declaration_sha256"],
+                         _opening_pin("CRPS declaration checksum at opening"))
+        self.assertEqual(self.record["declaration_sha256"],
+                         _opening_pin("Declaration checksum at opening"))
         self.assertEqual(self.record["primary"]["command"], list(fp.CRPS_COMMAND))
         self.assertEqual(self.record["primary"]["compare_record"]["panel"]["sha256"],
                          fp._frozen_panel_sha256())

@@ -30,7 +30,8 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 - **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
+- **Declaration checksum:** `2f2f3abc5f971d59df46404c912adebb78602d7730ef77c269bb7040754250c8`
+- **Declaration checksum at opening:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
   scored day's quarter end, month end and tax date, the Treasury coupon settlement, each scheduled term times the
@@ -54,7 +55,8 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
+- **CRPS declaration checksum:** `2864827538171065759efc0b3b0f788a217e9b5b202af6c39101f4599af004bf`
+- **CRPS declaration checksum at opening:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
 - **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
   4 October 2026 (point 4). It is separate from the leap test's. It covers the CRPS test as set out under
@@ -470,3 +472,33 @@ applied to each reported leap and threshold comparison. "Inconclusive" still app
 
 **3. No substitute event target.** No other event target with more 2026 events (for example a lower threshold)
 replaces the plain leap among the reported jump cells.
+
+## Amendment, 7 October 2026 (#324): the freeze covers the metadata and the code that reads it
+
+**Drafted by the pull request that closes #324, for Eleonora to review.** In force only once she has merged it. It rests
+on her own `GO` on #324 ("Go freeze them", 6 October 2026, a comment by her, not through an app), given to the question
+on that issue. **It opens nothing, scores no day and reads no outcome.** The cells, their roles, the model, the window
+and the pass rule are as the amendments above left them.
+
+**The gap.** Neither checksum covered `metadata/sources.json`, `metadata/evaluation_splits.json` or
+`metadata/market_holidays.json`, nor the as-of rule, the panel loader, the splitter or the contract code. Editing
+`nyfed_sofr.available_time` moved the persistence anchor on every window day and left both checksums as they were.
+
+**What is added.** Both declarations carry one new key, `inputs`:
+
+- `metadata_sha256`: the sha256 of each of the three metadata files, by their bytes;
+- `source_sha256`: the sha256 of every top-level definition of `src/repo_model/asof.py`, `splits.py`,
+  `evaluation_splits.py` and `contract.py`, and of `data.py`'s `load_point_in_time_panel`, `load_daily_panel` and
+  `market_holidays` with every top-level definition of that file they reach, hashed as the existing `source_sha256` is.
+
+The library and Python versions are not in the declaration: they are in the locked environment and in each live
+record's `environment` block (#323).
+
+**The two checksums move once, and the opening's are kept.** The two pins above are the extended declarations'. The
+checksums the opening run (#151, `docs/runs/final_test_near_blind.json`) carried are kept as "at opening". Without the
+`inputs` key each declaration hashes to them, and `tests/test_final_test_freeze.py` checks that, so the published run
+record is not edited and still names the declaration it ran. The test's design, window and result are unchanged.
+
+**Consequence for later pull requests.** An edit to a frozen metadata file, such as extending the holiday table, or to
+a frozen definition now fails `tests/test_final_test_freeze.py` until the pins above are re-pinned in a PR she merges.
+The queue puts the scorer's freeze (#282) after this change; if #282 adds code roots, its pull request re-pins again.
