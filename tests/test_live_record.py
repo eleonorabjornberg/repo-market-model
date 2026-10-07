@@ -552,6 +552,21 @@ class CrpsScoringTests(unittest.TestCase):
         cell["sensitivity_interval"]["upper"] = -50.0
         self.assertEqual(score.crps_verdict(cell), "pass")
 
+    def test_the_integral_companion_is_reported_only_and_moves_nothing(self):
+        """#259: the trapezoid-weighted sensitivity rides beside the primary cell and decides nothing."""
+
+        cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        companion = cell["integral_sensitivity"]
+        self.assertEqual(companion["role"], "reported only")
+        self.assertEqual(companion["interval"]["block_length"], cell["interval"]["block_length"])
+        self.assertGreater(companion["mean_difference_bps"], 0)
+        self.assertNotEqual(companion["crps_integral_published_bps"], cell["crps_published_bps"])
+        before = (cell["verdict"], cell["result"])
+        companion["interval"]["lower"] = -100.0
+        companion["interval"]["upper"] = -50.0
+        companion["mean_difference_bps"] = -75.0
+        self.assertEqual((score.crps_verdict(cell), score.crps_result(score.crps_verdict(cell))), before)
+
     def test_every_other_horizon_is_reported_only(self):
         records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
         cells = score.score_crps(records, rows, self.splits, date(2027, 4, 1))

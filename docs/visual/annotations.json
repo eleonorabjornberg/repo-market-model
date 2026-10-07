@@ -3,16 +3,23 @@
   "events": [
     {"date": "2019-07-31", "text": "FOMC ends balance-sheet runoff two months early, effective August",
      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20190731a.htm"},
-    {"date": "2019-09-17", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IOER",
+    {"date": "2019-09-17", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IOER", "response": "The New York Fed answers with overnight repo operations, offering up to $75 billion each morning that week",
      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
     {"date": "2019-10-11", "text": "Fed announces Treasury bill purchases to keep reserves ample",
      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm"},
     {"date": "2020-03-15", "text": "Fed cuts rates to near zero and announces large asset purchases, on Sunday evening 15 March; the first business day to feel it is 16 March",
      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm"},
-    {"date": "2021-07-29", "text": "IORB replaces IOER as the Fed's rate on reserves", "role": "iorb_from",
-     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/iorb-availability.md"},
+    {"date": "2021-07-29", "text": "IORB replaces IOER as the Fed's rate on reserves. The day before, the FOMC announced the standing repo facility, a backstop for money markets", "role": "iorb_from",
+     "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/iorb-availability.md",
+     "also_src": ["https://www.federalreserve.gov/newsevents/pressreleases/monetary20210728b.htm"]},
     {"date": "2022-06-01", "text": "Balance-sheet runoff resumes",
      "src": "https://www.federalreserve.gov/monetarypolicy/policy-normalization.htm"},
+    {"date": "2024-06-01", "text": "Runoff slows: the monthly cap on Treasury securities the Fed lets run off falls from $60 billion to $25 billion",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240501a.htm"},
+    {"date": "2025-04-01", "text": "Runoff slows again: the monthly cap on Treasury securities falls from $25 billion to $5 billion",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm"},
+    {"date": "2025-10-31", "text": "SOFR prints {spike_sofr}, {spike_bp} bp above IORB and above the Fed's standing repo rate, so the ceiling is soft", "above_standing_repo": "docs/visual/sources/monetary20251029a1.htm",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20251029a1.htm"},
     {"date": "2025-12-01", "text": "Runoff ends, as announced on 29 Oct 2025",
      "src": "https://www.federalreserve.gov/monetarypolicy/policy-normalization.htm"},
     {"date": "2025-12-10", "text": "FOMC starts reserve-management purchases of bills",
@@ -31,7 +38,54 @@
     "retrieved_at": "2026-10-02T02:01:09Z",
     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm"
   },
+  "fetched": [
+    {"path": "docs/visual/sources/feds-quarter-ends-20250606.htm", "sha256": "5f0439836495cdd82937a920b271dc79dbffc8e823d70ae3d71d906b00a44391",
+     "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"},
+    {"path": "docs/visual/sources/feds-september-2019-20200227.htm", "sha256": "bde9360d9bf21fdaa0222c6f94560a2b708575bc516bd66e1619a8f868a44f03",
+     "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
+    {"path": "docs/visual/sources/feds-repo-markets-20260826.htm", "sha256": "53303561bee6d2a8d1bd52ff82754525d309cceffb7acf99fa2251aecaa4f818",
+     "src": "https://www.federalreserve.gov/econres/notes/feds-notes/repo-markets-and-the-feds-balance-sheet-implications-for-monetary-policy-implementation-20260826.html"},
+    {"path": "docs/visual/sources/nyfed-reference-rates-additional-information.htm", "sha256": "5a0a18c99a0c5329aa0786363679a432b380ab035cbbee9892b73889b095e2c9",
+     "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"},
+    {"path": "docs/visual/sources/monetary20251029a1.htm", "sha256": "7df8acedd3faa218c0cb93021f3e0dc82332e1684a92fa2335368db32915088c",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20251029a1.htm"},
+    {"path": "docs/visual/sources/monetary20210728b.htm", "sha256": "5d7b4a072a81b6c04a42187b214e9c2d4b4b0169d0c702c2305724d8f80a2e22",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210728b.htm"},
+    {"path": "docs/visual/sources/monetary20240501a.htm", "sha256": "9e2c71bbd6adaddc73dddda9ff0a47b165627ec79919a2dbc206f36dab2f3944",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240501a.htm"},
+    {"path": "docs/visual/sources/monetary20250319a.htm", "sha256": "b1524ea1c9687e91efd0db566bb5c1975777e911c954bd9747992d059dbff1a3",
+     "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm"}
+  ],
+  "fetched_about": "Sources fetched on 6 October 2026 and checksummed, so each claim that rests on one can be re-read against the bytes. The generator refuses a file that no longer matches.",
   "claims": {
+    "iorb_pays": {
+      "text": "The Fed pays banks the interest rate on reserve balances, IORB, on the cash they hold with it",
+      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm"
+    },
+    "sofr_median": {
+      "text": "It is the volume-weighted median of the rates on overnight Treasury repo trades, and the New York Fed publishes the volume of trades behind each day's rate",
+      "src": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates"
+    },
+    "srf_access": {
+      "text": "Under the standing repo facility the Fed conducts daily overnight repo operations, open to primary dealers and, over time, to more depository institutions",
+      "src": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210728b.htm"
+    },
+    "qe_foreign": {
+      "text": "Fed staff wrote in June 2025 that the quarter-end fall in tri-party repo borrowing is mostly driven by a few large foreign dealers",
+      "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happens-on-quarter-ends-in-the-repo-market-20250606.html"
+    },
+    "rrp_floor": {
+      "text": "In the advisor evidence pack the median spread was −10 bp while ON RRP held more than $500bn, the distance the ON RRP rate sat below IORB from July 2021 to December 2024",
+      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md"
+    },
+    "on_rrp_buffer": {
+      "text": "Weekly pressure above +5 bp was rare while the ON RRP balance was above $100bn and frequent below it, and more reserves mattered mainly once that buffer was gone",
+      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md"
+    },
+    "limitation_why": {
+      "text": "The use limitation rests on the history having few days of today's tight-reserves regime and on the forecast's tail coverage being weaker on quarter-ends",
+      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md"
+    },
     "h8_release": {
       "text": "The Federal Reserve Board publishes commercial banks' weekly balance sheets, total assets among them, in its H.8 release, generally on Fridays at 4:15 p.m. Eastern Time",
       "src": "https://www.federalreserve.gov/releases/h8/"
@@ -112,7 +166,7 @@
       "text": "On corporate tax dates, payments move from bank and money-fund accounts into the Treasury's account at the Fed, which drains reserves",
       "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"},
     "settlement": {
-      "text": "When Treasury auctions settle, primary dealers pay for the securities they bought and finance them in repo, so more Treasuries need financing with the same cash",
+      "text": "When Treasury auctions settle, primary dealers pay for the securities they bought and finance them in repo, so more Treasuries need financing. The payment also drains cash from the banking system, and reserves fall",
       "src": "https://www.federalreserve.gov/econres/notes/feds-notes/what-happened-in-money-markets-in-september-2019-20200227.html"}
   },
   "process": [
@@ -122,7 +176,7 @@
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
     {"step": "Pull request", "text": "The pull request is the report: what changed, the evidence, what was checked and what was not",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
-    {"step": "Review", "text": "A separate reviewer checks every acceptance criterion against the tree, and judgement calls go to Eleonora",
+    {"step": "Review", "text": "A separate Claude review routine, not Eleonora, checks each acceptance criterion against the tree and merges; judgement calls go to her",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
     {"step": "Publish", "text": "A record is published only while nothing that computes a figure, declares a source or supplies the panel has changed since it was scored",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/publish-rule.md"}

@@ -85,6 +85,16 @@ Mutations, each in a disposable copy under /tmp, one match confirmed by an
   `AssertionError: 'does not yet hold' not found in ...` (`verify`'s second check
   still refuses the log, with another message, so only the commit-level guard is
   killed here).
+* proof placed by its own index (#328): re-adding `if index != int(entry["logIndex"]):
+  raise ValueError(...)` before the leaf is hashed in `verify_entry` makes
+  `test_a_sharded_entry_whose_global_index_is_not_its_proofs_tree_index_anchors_the_digest`
+  error with `ValueError`, as the 2026-10-05 anchor did (and
+  `test_a_proof_for_another_leaf_position_is_still_refused` fail with `AssertionError`).
+* a bad entry skipped, not fatal (#328): in `write_anchor`, `problems.append(str(error))` +
+  `continue` -> `raise` makes
+  `test_an_older_entry_for_the_same_bytes_does_not_stop_the_new_one_anchoring_the_day`
+  and `test_the_anchor_is_found_among_other_entries_and_only_the_workflows_counts`
+  error with `ValueError`.
 * anchoring a committed record only: in `write_anchor`, `if (day, rel) not in
   logged_files(repo):` -> `if False:` makes
   `test_the_anchor_file_is_never_replaced_and_needs_a_committed_record` error
@@ -599,8 +609,11 @@ def _path(m, leaves):
 
 
 def rekor_response(sha256, *, identity=None, issuer=None, algorithm="sha256", value=None, uris=1,
-                   size=7, index=3, kind="hashedrekord"):
-    """A Rekor v1 `{uuid: entry}` response for `sha256`, with a real Merkle inclusion proof."""
+                   size=7, index=3, kind="hashedrekord", offset=0):
+    """A Rekor v1 `{uuid: entry}` response for `sha256`, with a real Merkle inclusion proof.
+
+    `offset` is the sharded log's: the entry's `logIndex` is global, the proof's is the active tree's.
+    """
 
     import base64
     body = {
@@ -616,7 +629,7 @@ def rekor_response(sha256, *, identity=None, issuer=None, algorithm="sha256", va
     leaves[index] = _h(b"\x00" + raw)
     return {"24296fb24b8ad77a" + leaves[index].hex(): {
         "body": base64.b64encode(raw).decode(), "integratedTime": 1790000000,
-        "logID": "c0d23d6a" * 8, "logIndex": index,
+        "logID": "c0d23d6a" * 8, "logIndex": index + offset,
         "verification": {"inclusionProof": {
             "logIndex": index, "treeSize": size, "rootHash": _mth(leaves).hex(),
             "hashes": [h.hex() for h in _path(index, leaves)]}},
@@ -745,6 +758,32 @@ class AnchorTests(unittest.TestCase):
             self.assertEqual(json.loads(path.read_text())["identity"], integrity.IDENTITY)
             with self.assertRaises(ValueError):
                 integrity.write_anchor(repo, date(2026, 10, 6), [foreign])
+
+    def test_a_sharded_entry_whose_global_index_is_not_its_proofs_tree_index_anchors_the_digest(self):
+        # The live failure of 2026-10-05 (#328): the entry's logIndex was 3116266281 and its
+        # inclusion proof's 2994362019, the proof being relative to the active shard's tree.
+        found = integrity.verify_entry(rekor_response(self.sha, offset=121903000), self.sha)
+        self.assertEqual(found["log_index"], 3 + 121903000)
+
+    def test_a_proof_for_another_leaf_position_is_still_refused(self):
+        response = rekor_response(self.sha, index=3, size=7)
+        next(iter(response.values()))["verification"]["inclusionProof"]["logIndex"] = 2
+        with self.assertRaises(ValueError) as caught:
+            integrity.verify_entry(response, self.sha)
+        self.assertIn("inclusion proof", str(caught.exception))
+
+    def test_an_older_entry_for_the_same_bytes_does_not_stop_the_new_one_anchoring_the_day(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo, _, sha = self._anchored_log(tmp)
+            older = rekor_response(sha, index=2, size=7)
+            next(iter(older.values()))["verification"]["inclusionProof"]["hashes"][0] = "00" * 32
+            newer = rekor_response(sha, index=4, size=9, offset=121903000)
+            path = integrity.write_anchor(repo, date(2026, 10, 7), [older, newer])
+            self.assertEqual(json.loads(path.read_text())["log_index"], 4 + 121903000)
+            other = integrity.file_sha256(repo / "live" / "2026-10-06.json")
+            path = integrity.write_anchor(repo, date(2026, 10, 6),
+                                          [rekor_response(other, index=4, size=9, offset=121903000), older])
+            self.assertEqual(json.loads(path.read_text())["log_index"], 4 + 121903000)
 
     def test_the_anchor_file_is_never_replaced_and_needs_a_committed_record(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -884,6 +923,15 @@ class WorkflowIntegrityTests(unittest.TestCase):
         names = [m.group(1) for m in re.finditer(r"\n      - name: (.*)", self.text)]
         self.assertLess(names.index("Append it to live-log"), names.index("Anchor the digests in Sigstore Rekor"))
         self.assertLess(names.index("Anchor the digests in Sigstore Rekor"), names.index("Post the digest outside the repository"))
+
+    def test_a_day_that_fails_to_anchor_does_not_stop_the_later_days(self):
+        step = self._step("Anchor the digests in Sigstore Rekor")
+        self.assertIn("anchor_day()", step)
+        self.assertRegex(step, r'if ! anchor_day "\$day"; then')
+        failed = step[step.index('if ! anchor_day "$day"; then'):]
+        self.assertIn('git reset --quiet --hard "$start"', failed)
+        self.assertLess(failed.index("git reset"), failed.index("done"))
+        self.assertRegex(step, r'\[ -z "\$failed" \]')
 
     def test_cosign_is_a_pinned_release_checked_against_its_sha256(self):
         step = self._step("Anchor the digests in Sigstore Rekor")

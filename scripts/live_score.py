@@ -78,7 +78,9 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
-from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
+from repo_model.metrics import (  # noqa: E402
+    crps_from_quantiles, crps_trapezoid_from_quantiles, stationary_bootstrap_interval,
+)
 from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration  # noqa: E402
@@ -284,6 +286,18 @@ def crps_from_record(record, side: str, h: int, outcome: float) -> float:
     return crps_from_quantiles(levels, quantiles, outcome)
 
 
+def integral_crps_from_record(record, side: str, h: int, outcome: float) -> float:
+    """`crps_from_record`'s companion: the trapezoid-weighted integral (#259), reported only."""
+
+    block = record.get("distributions") or {}
+    try:
+        levels = block["levels"]
+        quantiles = block[side]["quantiles_bps"][str(h)]
+    except (KeyError, TypeError) as error:
+        raise ValueError(f"the file carries no {side} distribution at h={h}") from error
+    return crps_trapezoid_from_quantiles(levels, quantiles, outcome)
+
+
 def _regime(splits, when: date) -> str:
     """The regime of `when`: the declared one, else its calendar year from 2027, else "undeclared"."""
 
@@ -315,6 +329,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
     out = {}
     for h in HORIZONS:
         days, published, persistence, regimes, types = [], [], [], [], []
+        integral_published, integral_persistence = [], []
         for record in records:
             when = date.fromisoformat(record["targets"][h - 1]["target_date"])
             if when >= day or when not in by_date:
@@ -323,6 +338,8 @@ def score_crps(records, rows, splits, day: date) -> dict:
             days.append(when)
             published.append(crps_from_record(record, "published", h, row.spread_bps))
             persistence.append(crps_from_record(record, "persistence", h, row.spread_bps))
+            integral_published.append(integral_crps_from_record(record, "published", h, row.spread_bps))
+            integral_persistence.append(integral_crps_from_record(record, "persistence", h, row.spread_bps))
             regimes.append(_regime(splits, when))
             types.append(splits.reporting_day_type(when, row.values))
         _require_scored_days_unlocked(days, where=f"live_score.score_crps h={h}")
@@ -363,6 +380,27 @@ def score_crps(records, rows, splits, day: date) -> dict:
                 "sensitivity_interval": interval(final_test.CRPS_SENSITIVITY_BLOCK_LENGTH),
             }
         )
+        # Reported only (#259): the same paired difference, scored by the trapezoid-weighted
+        # integral. It never reaches the verdict, the result or the primary cell.
+        integral = [a - b for a, b in zip(integral_persistence, integral_published)]
+
+        def integral_mean(indices):
+            return sum(integral[i] for i in indices) / len(indices)
+
+        lower, upper = stationary_bootstrap_interval(
+            integral_mean, len(integral), block_length=block, seed=seed,
+            replications=onset.REPLICATIONS, level=onset.LEVEL,
+        )
+        cell["integral_sensitivity"] = {
+            "role": "reported only",
+            "rule": "trapezoid-weighted CRPS integral (`metrics.crps_trapezoid_from_quantiles`)",
+            "crps_integral_persistence_bps": sum(integral_persistence) / len(days),
+            "crps_integral_published_bps": sum(integral_published) / len(days),
+            "mean_difference_bps": integral_mean(range(len(days))),
+            "interval": {"lower": lower, "upper": upper, "level": onset.LEVEL,
+                         "method": "stationary_bootstrap", "block_length": block,
+                         "replications": onset.REPLICATIONS, "seed": seed},
+        }
         every = list(range(len(days)))
         for label, keys in (("by_regime", regimes), ("by_day_type", types)):
             cell[label] = {}

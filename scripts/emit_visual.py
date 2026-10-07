@@ -115,6 +115,7 @@ from repo_model.ingest import (  # noqa: E402
 )
 from repo_model.lockbox import load_lockbox, locked_tier, locked_tiers  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
+from repo_model.onset import MINIMUM_EVENTS  # noqa: E402
 from repo_model.scarcity import (  # noqa: E402
     BOOTSTRAP_BLOCK_LENGTH,
     BOOTSTRAP_LEVEL,
@@ -519,10 +520,59 @@ def check_annotations(notes):
     entries = list(notes["events"]) + list(notes["runoff"]) + list(notes["process"])
     entries += list(notes["guards"]) + [notes["validation"], notes["implementation_note"]]
     entries += list(notes["claims"].values())
+    entries += list(notes.get("fetched", []))
     for entry in entries:
-        src = entry.get("src", "")
-        if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
-            raise VisualError(f"annotation {entry} has no primary-source URL")
+        for src in [entry.get("src", ""), *entry.get("also_src", [])]:
+            if not any(src.startswith(prefix) for prefix in ALLOWED_SOURCES):
+                raise VisualError(f"annotation {entry} has no primary-source URL")
+
+
+def check_fetched(repo, notes):
+    """Every fetched source is the bytes its checksum records, and the event that reads one names a fetched file."""
+    fetched = {f["path"]: f for f in notes.get("fetched", [])}
+    for path, meta in fetched.items():
+        if sha256(Path(repo) / path) != meta["sha256"]:
+            raise VisualError(f"{path} does not match its recorded SHA-256; refusing")
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is not None and path not in fetched:
+            raise VisualError(f"the annotation for {event['date']} reads {path}, which is not a checksummed source")
+    return fetched
+
+
+def standing_repo_rate(repo, path):
+    """The standing repo minimum bid rate an implementation note states, from its checksummed bytes."""
+    raw = (Path(repo) / path).read_bytes().decode("utf-8-sig")
+    raw = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S)
+    text = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", raw)))
+    m = re.search(r"standing overnight repurchase agreement operations (?:with a minimum bid rate of|at a rate of) "
+                  r"([\d.]+) percent", text)
+    if not m:
+        raise VisualError(f"{path} does not state the standing repo rate")
+    return Decimal(m.group(1))
+
+
+def check_above_standing_repo(repo, notes, rows):
+    """`[(event, SOFR, standing repo rate)]`: an annotation that says SOFR was above the standing repo rate is refused unless it was.
+
+    The rate is read from the checksummed implementation note the annotation names, and
+    SOFR from the panel row of the annotation's own day.
+    """
+    out = []
+    for event in notes["events"]:
+        path = event.get("above_standing_repo")
+        if path is None:
+            continue
+        row = next((r for r in rows if r["date"] == event["date"]), None)
+        if row is None:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"and the panel has no row for that day")
+        rate = standing_repo_rate(repo, path)
+        if not Decimal(row["sofr"]) > rate:
+            raise VisualError(f"the annotation for {event['date']} says SOFR was above the standing repo rate, "
+                              f"but SOFR was {row['sofr']}% and the rate {rate}%")
+        out.append((event, Decimal(row["sofr"]), rate))
+    return out
 
 
 def check_glossary(glossary):
@@ -666,6 +716,12 @@ def clock(t):
     suffix = "am" if h < 12 else "pm"
     h12 = h % 12 or 12
     return f"{h12}{'' if m == 0 else ':%02d' % m} {suffix}"
+
+
+def sources(event):
+    """The links after an event: its source, then any further source it rests on."""
+    links = [event["src"], *event.get("also_src", [])]
+    return ", ".join(f"<a href='{u}'>Source</a>" for u in links)
 
 
 def link(claim):
@@ -886,7 +942,7 @@ def regime_views(regimes, rows, clip_bp, second_bp):
     return views
 
 
-def history(rows, notes, thresholds, regimes, windows, locked):
+def history(rows, notes, thresholds, regimes, windows, locked, buffer_low):
     taus = [int(t) for t in thresholds["taus_bp"]]
     pressure_bp, second_bp, tail_bp = taus[0], taus[1], taus[-1]
     out_rows = []
@@ -960,13 +1016,23 @@ def history(rows, notes, thresholds, regimes, windows, locked):
     tail = [r for r in kept if r["s"] > tail_bp]
     tail_years = sorted({yr(r) for r in tail})
     events = [{"date": e["date"], "src": e["src"],
-               "text": marker_text(e, kept, "s")}
+               "text": marker_text(e, kept, "s") + (f". {e['response']}" if e.get("response") else "")}
               for e in notes["events"]]
     iorb_from = next(e["date"] for e in notes["events"] if e.get("role") == "iorb_from")
     late_qe = type_count(late, 0)
     quiet = all(type_count(ample, t)[0] == 0 for t in range(len(TYPES)))
     off = sum(1 for r in kept if r["s"] > CLIP_BP)
     above = lambda g: sum(1 for r in kept if in_regime(r, g) and r["s"] > 0)
+    ample_gap = statistics.median(r["s"] for r in kept if in_regime(r, ample))
+    if ample_gap >= 0:
+        raise VisualError(f"the median spread in {ample['label']} is {ample_gap} bp, not below IORB; the chapter's "
+                          f"sentence on why calm days sit below IORB would be false")
+    spike_event_n = next((i for i, e in enumerate(notes["events"], 1) if e["date"] == spike["date"]), None)
+    if spike_event_n is None:
+        raise VisualError(f"no annotation is dated {spike['date']}, the largest spread; chapter 2 points at it")
+    low = [r for r in kept if buffer_low(r["date"])]
+    high = [r for r in kept if not buffer_low(r["date"])]
+    low_ample = [r for r in low if in_regime(r, ample)]
     span_years = (date.fromisoformat(rows[-1]["date"]) - date.fromisoformat(rows[0]["date"])).days / 365.25
     fills = {
         "n_years_word": word(int(span_years)).capitalize(),
@@ -986,14 +1052,20 @@ def history(rows, notes, thresholds, regimes, windows, locked):
         "band_missing": days(sum(1 for r in kept if not (r["sofr_p25"] and r["sofr_p75"]))),
         "holdouts": " and ".join(span(w["start"], w["end"]) for w in windows),
         "holdout_months": " and ".join(date.fromisoformat(w["start"]).strftime("%B %Y") for w in windows),
+        "ample_gap": f"{abs(ample_gap):g} bp below",
+        "spike_event_n": spike_event_n,
+        "n_low_ample": days(len(low_ample)),
+        "n_low_ample_pressure": f"{sum(1 for r in low_ample if pressure(r))}",
+        "share_low": of(sum(1 for r in low if pressure(r)), len(low)),
+        "share_high": of(sum(1 for r in high if pressure(r)), len(high)),
         "iorb_from": day(iorb_from),
         "iorb_event_n": 1 + next(i for i, e in enumerate(notes["events"]) if e.get("role") == "iorb_from"),
         "ioer_until": day((date.fromisoformat(iorb_from) - timedelta(days=1)).isoformat()),
         "heat_table": table, "clip_bp": CLIP_BP,
         "n_off_scale": days(off).capitalize(), "n_off_scale_lc": days(off),
         "event_list": "".join(
-            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. <a href='{e['src']}'>Source</a></li>"
-            for i, e in enumerate(events)),
+            f"<li data-i='{i}'><time>{short_day(e['date'])}</time> {e['text']}. {sources(n)}</li>"
+            for i, (e, n) in enumerate(zip(events, notes["events"]))),
         "c_reserve_ratio": link(notes["claims"]["reserve_ratio"]),
         "c_quarter_end": link(notes["claims"]["quarter_end"]),
         "c_tax_date": link(notes["claims"]["tax_date"]),
@@ -2624,56 +2696,56 @@ def band_coverage_block(repo):
     """The band-coverage table for the "Grading it honestly" chapter (#265, her ruling on #291).
 
     The same cells and sentence as `docs/band_coverage_by_split.md` and the README, from
-    `scripts/band_coverage.py`: h = 1 by day type and regime with intervals, and h = 2 to 5 as
-    shares the record gives no interval for. Nothing is scored here.
+    `scripts/band_coverage.py`: every horizon, h = 1 to 5 (#290), by day type and regime with
+    intervals. Nothing is scored here.
     """
     spec = importlib.util.spec_from_file_location("band_coverage", ROOT / "scripts" / "band_coverage.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules["band_coverage"] = module
     spec.loader.exec_module(module)
-    record, table, horizons, days = module.compute(Path(repo) / RUNS)
+    record, table, later, days = module.compute(Path(repo) / RUNS)
     minimum, pct = module.MINIMUM_DAYS, module._pct
     calibration = record["metrics"]["interval_calibration"]["coverage_interval"]
-    sentence = html.escape(module.finding_sentence(table))
+    sentence = html.escape(module.finding_sentence(table, later))
     sentence = re.sub(r"`([^`]*)`", r"<code>\1</code>", sentence)
-    rows = []
-    for cell in table:
-        head = f"<th scope='row'>{html.escape(cell['kind'])}: {html.escape(module.cell_label(cell))}</th><td>{cell['days']}</td>"
-        if not cell["enough"]:
-            rows.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td>"
-                        f"<td>{cell['below']}</td><td>{cell['above']}</td><td></td></tr>")
-            continue
-        flags = ", ".join(band for band, _ in module.excluded([cell])) or "no"
-        cols = "".join(f"<td>{pct(b['coverage'])}</td><td>{pct(b['lower'])} to {pct(b['upper'])}</td>"
-                       for b in (cell["bands"][0.5], cell["bands"][0.9]))
-        rows.append(f"<tr>{head}{cols}<td>{cell['below']} ({pct(cell['below'] / cell['days'])})</td>"
-                    f"<td>{cell['above']} ({pct(cell['above'] / cell['days'])})</td><td>{flags}</td></tr>")
-    first = (f"<div class='heat' role='region' aria-label='Band coverage at one day ahead, by day type and regime' tabindex='0'>"
-             f"<table class='fttab'><caption>One day ahead, {len(days)} scored days, {days[0]['date']} to {days[-1]['date']}: "
-             f"how often the outcome fell inside each band.</caption><thead><tr>"
-             f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
-             f"<th scope='col'>50% interval</th><th scope='col'>90% band</th><th scope='col'>90% interval</th>"
-             f"<th scope='col'>90% misses below</th><th scope='col'>90% misses above</th>"
-             f"<th scope='col'>Excludes nominal</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>")
-    later = []
-    for cell in horizons:
-        head = (f"<th scope='row'>{cell['horizon']}</th><td>{html.escape(cell['kind'])}: {html.escape(cell['name'])}</td>"
-                f"<td>{cell['days']}</td>")
-        if cell["days"] < minimum:
-            later.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td></tr>")
-            continue
-        later.append(f"<tr>{head}<td>{cell['band_50']:.1f}%</td><td>{cell['band_90']:.1f}%</td>"
-                     f"<td>{cell['miss_below']:.1f}%</td><td>{cell['miss_above']:.1f}%</td></tr>")
-    second = (f"<div class='heat' role='region' aria-label='Band coverage two to five days ahead' tabindex='0'>"
-              f"<table class='fttab'><caption>Two to five days ahead: shares only, no interval: the record keeps no "
-              f"per-origin data for h = 2\u20135.</caption><thead><tr><th scope='col'>Days ahead</th>"
-              f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
-              f"<th scope='col'>90% band</th><th scope='col'>50% misses below</th>"
-              f"<th scope='col'>50% misses above</th></tr></thead><tbody>{''.join(later)}</tbody></table></div>")
+
+    def rows_of(cells):
+        rows = []
+        for cell in cells:
+            head = (f"<th scope='row'>{html.escape(cell['kind'])}: {html.escape(module.cell_label(cell))}</th>"
+                    f"<td>{cell['days']}</td>")
+            if not cell["enough"]:
+                rows.append(f"<tr>{head}<td colspan='4'>too few days (under {minimum})</td>"
+                            f"<td>{cell['below']}</td><td>{cell['above']}</td><td></td></tr>")
+                continue
+            flags = ", ".join(band for band, _ in module.excluded([cell])) or "no"
+            cols = "".join(f"<td>{pct(b['coverage'])}</td><td>{pct(b['lower'])} to {pct(b['upper'])}</td>"
+                           for b in (cell["bands"][0.5], cell["bands"][0.9]))
+            rows.append(f"<tr>{head}{cols}<td>{cell['below']} ({pct(cell['below'] / cell['days'])})</td>"
+                        f"<td>{cell['above']} ({pct(cell['above'] / cell['days'])})</td><td>{flags}</td></tr>")
+        return "".join(rows)
+
+    def table_of(cells, label, caption):
+        return (f"<div class='heat' role='region' aria-label='Band coverage {label}, by day type and regime' tabindex='0'>"
+                f"<table class='fttab'><caption>{caption}</caption><thead><tr>"
+                f"<th scope='col'>Group</th><th scope='col'>Days</th><th scope='col'>50% band</th>"
+                f"<th scope='col'>50% interval</th><th scope='col'>90% band</th><th scope='col'>90% interval</th>"
+                f"<th scope='col'>90% misses below</th><th scope='col'>90% misses above</th>"
+                f"<th scope='col'>Excludes nominal</th></tr></thead><tbody>{rows_of(cells)}</tbody></table></div>")
+
+    first = table_of(table, "at one day ahead",
+                     f"One day ahead, {len(days)} scored days, {days[0]['date']} to {days[-1]['date']}: "
+                     f"how often the outcome fell inside each band.")
+    second = "".join(
+        table_of(entry["table"], f"at {entry['horizon']} days ahead",
+                 f"{entry['horizon']} days ahead, {len(entry['days'])} scored days, "
+                 f"{entry['days'][0]['date']} to {entry['days'][-1]['date']}: how often the outcome fell "
+                 f"inside each band.") for entry in later)
     note = (f"Each interval is a stationary bootstrap on the day series (block length {calibration['block_length']}, "
-            f"seed {calibration['seed']}, {calibration['replications']:,} replications). A group of fewer than "
+            f"seed {calibration['seed']}, {calibration['replications']:,} replications, the one-day-ahead "
+            f"record's, used at every horizon). A group of fewer than "
             f"{minimum} days is marked too few days and never flagged. Day-type groups overlap, because a day can carry "
-            f"several tags. Reported from the record; nothing is scored again.")
+            f"several tags. Reported from the records; nothing is scored again.")
     fills = {"bc_sentence": sentence, "bc_table": first, "bc_later_table": second, "bc_note": html.escape(note)}
     return fills
 
@@ -2685,14 +2757,93 @@ def _influence_module():
     return module
 
 
+#: How the final test's robustness block names its groups (#313): day types and the two quarter-end windows.
+FINAL_TEST_GROUPS = {"ordinary": "Ordinary", "month_end": "Month-end", "quarter_end": "Quarter-end",
+                     "tax_date": "Tax date", "outside_quarter_end_window": "Outside the quarter-end window",
+                     "quarter_end_window": "Inside the quarter-end window"}
+#: The days the robustness block drops, best first: the influence figures, plus none dropped.
+FINAL_TEST_DROPS = (0, 1, 5, 10)
+
+
+def _group_verdict(group, minimum):
+    """The rule for one group: under the minimum cell, or without an interval, "thin"; else by the interval against zero."""
+    if group["count"] < minimum or "lower" not in group:
+        return "thin"
+    if group["lower"] > 0:
+        return "better"
+    if group["upper"] < 0:
+        return "worse"
+    return "tied"
+
+
+def final_test_robustness(mean, drops, wins, n, groups, minimum):
+    """The plain sentences, the chart's rows and a text alternative for the final test's robustness block (#313).
+
+    Every sentence is chosen by a rule from the record's numbers; nothing is typed. The rules: (1) the gain "rests
+    on a handful of days" when the mean without the best five days is under half the mean; the best ten days are
+    then said to reverse it, zero it, or leave it positive. (2) The win share is "about half" from 45% to 55%,
+    "most of them" above and "fewer than half" below; the "few large wins" clause is added only when rule 1 found
+    the gain concentrated and the share is not above 55%. (3) A group under `minimum` days is "too few days to
+    say", whatever its interval; otherwise its interval against zero says better, worse, or "can't be told apart
+    from zero". A mean that is not above zero makes no claim about an edge. Reported only: it decides nothing.
+    """
+    sign = lambda v: signed(v, 2) + " bp"
+    rows = [dict(g, verdict=_group_verdict(g, minimum)) for g in groups]
+    concentrated = mean > 0 and drops[5] < mean / 2
+    if mean <= 0:
+        first = (f"Without the 5 days where the model did best, the mean difference moves from {sign(mean)} "
+                 f"to {sign(drops[5])}.")
+    elif concentrated:
+        tail = (f"without the top 10 it reverses, to {sign(drops[10])}." if drops[10] < 0 else
+                f"without the top 10 it is {sign(drops[10])}." if drops[10] == 0 else
+                f"without the top 10 it is still {sign(drops[10])}.")
+        first = (f"On this near-blind test, the pass rests on a handful of days: without the 5 days where the "
+                 f"model did best, the edge falls from {sign(mean)} to {sign(drops[5])}; {tail}")
+    else:
+        first = (f"The edge does not depend on a few days: without the 5 days where the model did best, it is "
+                 f"still {sign(drops[5])}, against {sign(mean)} with all of them.")
+    share = wins / n
+    phrase = "about half" if 0.45 <= share <= 0.55 else "most of them" if share > 0.55 else "fewer than half"
+    second = f"The model did better on {wins} of {n} days, {phrase}"
+    second += (": its edge comes from a few large wins, not from being better on most days."
+               if concentrated and share <= 0.55 else ".")
+    # "All days" is the headline cell, which the lede states; the sentence is about the groups inside it.
+    part = {v: [f"{g['label'].lower()} ({g['count']} days)" for g in rows if g["verdict"] == v and g["key"] != "all"]
+            for v in ("better", "worse", "tied", "thin")}
+
+    def names(items):
+        return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+    clauses = []
+    if part["better"]:
+        clauses.append(f"the model was better on {names(part['better'])}")
+    if part["worse"]:
+        clauses.append(f"worse on {names(part['worse'])}")
+    if part["tied"]:
+        clauses.append(f"{names(part['tied'])} can't be told apart from zero")
+    if part["thin"]:
+        clauses.append(f"{names(part['thin'])}: too few days to say (under {minimum})"
+                       if len(part["thin"]) == 1 else
+                       f"{names(part['thin'])} have too few days to say (under {minimum} each)")
+    third = ("By type of day and by quarter-end window: " + "; ".join(clauses) + ".") if clauses else ""
+    sentences = [first, second] + ([third] if third else [])
+    alt = (" ".join(sentences) + " Chart: the mean paired difference with its interval for "
+           + ", ".join(f"{g['label']} {sign(g['mean'])}" + (", too few days" if g["verdict"] == "thin" else "")
+                       for g in rows) + ". Then the mean after dropping the best days: "
+           + ", ".join(f"{k} days dropped {sign(drops[k])}" for k in FINAL_TEST_DROPS) + ".")
+    return {"groups": rows, "drops": [{"k": k, "mean": drops[k]} for k in FINAL_TEST_DROPS],
+            "wins": wins, "n": n, "minimum": minimum, "concentrated": concentrated,
+            "sentences": sentences, "alt": alt}
+
+
 def final_test(records, locked):
     """The "Final test" section (#238), read off `FINAL_TEST` alone.
 
     Every figure goes through `from_record`. The verdict is the record's
     result, stated next to the near-blind disclosure; the claim is the record's
     pre-registered sentence, quoted only on a pass. The split by day type
-    decides nothing, and a cell the record gives no interval says so. The CRPS
-    cells at h = 2 to 5 each carry their verbatim label from the record (#229).
+    decides nothing, and a cell the record gives no interval says so. The five-quantile
+    score cells at h = 2 to 5 each carry their verbatim label from the record (#229).
     """
     rel = FINAL_TEST
 
@@ -2709,7 +2860,9 @@ def final_test(records, locked):
     first, last, n = get(*cell, "first"), get(*cell, "last"), get(*cell, "days")
     if (result == "pass") != (lower > 0):
         raise VisualError(f"{rel}: the result {result!r} does not match its interval {lower} to {upper}")
-    claim = get("primary", "claim")
+    # The pre-registered wording says "full distribution"; the score is the mean pinball loss over
+    # five published quantiles (#259), so a generated page names what is scored.
+    claim = get("primary", "claim").replace("the full distribution of", "the five published quantiles of")
     opened = get("opened", "date")
     checksum = get("crps_declaration_sha256")
     prereg = get("pre_registration")
@@ -2765,14 +2918,13 @@ def final_test(records, locked):
     if result == "pass":
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
-                   f"CRPS, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
-                   f"Result: <b>pass</b>, on a test that is {near_blind}.")
-        claim_html = (f"<p class='ftclaim'><b>The claim, as pre-registered:</b> {html.escape(claim)}. It is a pass "
-                      f"on a near-blind test, and a statement about the range forecast, not a warning of stress.</p>")
+                   f"five-quantile score, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
+                   f"Result: <b>pass</b>, on a test that is near-blind.")
+        claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
-                   f"{persistence:.2f} bp of CRPS, where lower is better, with a {level}% interval for the gap of "
+                   f"{persistence:.2f} bp of five-quantile score, where lower is better, with a {level}% interval for the gap of "
                    f"{gap}. Result: <b>fail</b>, on a test that is {near_blind}. No claim is made.")
         claim_html = ""
 
@@ -2785,46 +2937,9 @@ def final_test(records, locked):
         f"<tr><th scope='row'>{r['label']}</th><td>{r['count']}</td><td>{signed(r['mean'], 3)}</td>{interval_cell(r)}</tr>"
         for r in split)
     split_table = (f"<div class='heat' role='region' aria-label='The final test by type of day' tabindex='0'>"
-                   f"<table class='fttab'><caption>By type of day. This split decides nothing.</caption><thead><tr>"
+                   f"<table class='fttab'><caption>By type of day</caption><thead><tr>"
                    f"<th scope='col'>Day type</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
                    f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>{split_rows}</tbody></table></div>")
-    later_rows = "".join(
-        f"<tr data-h=\"{c['horizon']}\"><th scope='row'>{c['horizon']} days</th><td>{c['days']}</td>"
-        f"<td>{c['persistence']:.3f}</td><td>{c['published']:.3f}</td>"
-        f"<td>{signed(c['mean'], 3)} ({signed(c['lower'], 3)} to {signed(c['upper'], 3)})</td>"
-        f"<td>{c['verdict']}; {html.escape(c['label'])}</td></tr>" for c in later)
-    later_table = (f"<div class='heat' role='region' aria-label='CRPS at two to five days ahead, not evidence' "
-                   f"tabindex='0'><table class='fttab'><caption>CRPS further ahead, reported only and not evidence"
-                   f"</caption><thead><tr><th scope='col'>Ahead</th><th scope='col'>Days</th>"
-                   f"<th scope='col'>Persistence, bp</th><th scope='col'>Model, bp</th>"
-                   f"<th scope='col'>Difference ({level}% interval), bp</th><th scope='col'>Label</th></tr></thead>"
-                   f"<tbody>{later_rows}</tbody></table></div>")
-
-    def labels(entry):
-        return " and ".join(entry["labels"])
-
-    same = len({tuple(e["labels"]) for e in stress}) == 1
-    cells = " and ".join(f"{e['target']} bp" for e in stress)
-    stress_text = (
-        f"<b>It is not a warning of stress.</b> It grades the forecast range, not the chance of pressure. One day "
-        f"ahead, the event cells for days more than {cells} above IORB are "
-        + (f"{labels(stress[0])}, with {' and '.join(str(e['events']) for e in stress)} such days in the window."
-           if same else "; ".join(f"{e['target']} bp: {labels(e)}, with {e['events']} such days" for e in stress) + ".")
-        + f" Below {h1[0]['minimum_events']} such days, a cell is labelled inconclusive.")
-    rests_text = (f"<b>What the pass rests on, post hoc.</b> Two days carry {100 * rests['share']:.1f}% of the summed "
-                  f"paired difference: {' and '.join(day(d) for d in rests['days'])} "
-                  f"({' and '.join(signed(v, 2) + ' bp' for v in rests['values'])}). Without them the mean paired "
-                  f"difference is {signed(rests['mean'], 3)} bp, {level}% interval {signed(rests['lower'], 3)} to "
-                  f"{signed(rests['upper'], 3)} bp, by the record's own bootstrap (mean block length "
-                  f"{rests['block_length']}, seed {rests['seed']}, {rests['replications']:,} replications), which "
-                  f"{'does not separate it from zero' if rests['lower'] <= 0 <= rests['upper'] else 'lies on one side of zero'}. "
-                  f"The model beat persistence on {rests['wins']} of {rests['n']} days. On this near-blind test, "
-                  f"this was computed after the result: it decides nothing, and the verdict stands.")
-    blind = min(locked, key=lambda t: t.start) if locked else None
-    blind_text = (f" A blind test waits on the days from {day(blind.start.isoformat())} on: "
-                  f"the {blind.name.replace('_', '-')} tier, which no test has opened." if blind else "")
-    regime_text = (f"every scored day falls in one regime, {dash(regimes[0])}" if len(regimes) == 1
-                   else f"the scored days fall in {word(len(regimes))} regimes, {', '.join(map(dash, regimes))}")
     top_rows = "".join(f"<tr><th scope='row'>{rank}</th><td>{day(d)}</td><td>{signed(v, 2)}</td></tr>"
                        for rank, (d, v) in enumerate(got["top"], 1))
     drop_rows = "".join(
@@ -2832,7 +2947,7 @@ def final_test(records, locked):
         for k in influence_module.DROPS)
     influence_table = (
         f"<div class='heat' role='region' aria-label='How much a few days carry of the final test' tabindex='0'>"
-        f"<table class='fttab'><caption>Influence of single days. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<table class='fttab'><caption>Influence of single days</caption><thead><tr>"
         f"<th scope='col'>Measure</th><th scope='col'>Paired difference, bp</th></tr></thead><tbody>"
         f"<tr><th scope='row'>Mean</th><td>{signed(got['mean'], 4)}</td></tr>"
         f"<tr><th scope='row'>Median</th><td>{signed(got['median'], 4)}</td></tr>{drop_rows}"
@@ -2852,68 +2967,61 @@ def final_test(records, locked):
 
     window_table = (
         f"<div class='heat' role='region' aria-label='The final test by quarter-end window' tabindex='0'>"
-        f"<table class='fttab'><caption>By quarter-end window. Post hoc; decides nothing.</caption><thead><tr>"
+        f"<table class='fttab'><caption>By quarter-end window</caption><thead><tr>"
         f"<th scope='col'>Window</th><th scope='col'>Days</th><th scope='col'>Mean difference, bp</th>"
         f"<th scope='col'>{level}% interval, bp</th></tr></thead><tbody>"
         f"{window_row('outside_quarter_end_window', 'Outside the quarter-end window')}"
         f"{window_row('quarter_end_window', 'In the quarter-end window')}</tbody></table></div>")
-    two, dm = got["leave_two_out"], got["dm"]
-    robust_text = (
-        f"<b>Robustness, post hoc.</b> Without the two largest days the mean is {signed(two['mean'], 3)} bp, "
-        f"{level}% interval {signed(two['lower'], 3)} to {signed(two['upper'], 3)} bp, by the record's own bootstrap. "
-        f"The median day is {signed(got['median'], 3)} bp. Diebold-Mariano on the window, two-sided p "
-        f"{dm['p']:.3f} (Newey-West lag {dm['lag']}) or {dm['plain_p']:.3f} (plain). The record carries per-day "
-        f"CRPS only, so the split of the gain by pinball level is not available and is not computed.")
-    (d1, l1), (d2, l2) = got["persistence_loss"]
-    why_text = (
-        f"<b>Why {day(d1)} and {day(d2)} dominate.</b> On those two days carrying the latest spread forward lost "
-        f"{l1:.2f} and {l2:.2f} bp of CRPS, against a median of {got['median_persistence_loss']:.2f} bp. The second "
-        f"independent review traced this to that benchmark reading the 2025-12-31 print (about +22 bp) two rows "
-        f"back; that cause is the review's and is not recomputed here, because the panel is not tracked.")
+    rob_groups = [{"key": "all", "label": "All days", "count": n, "mean": mean, "lower": lower, "upper": upper}]
+    for row in split:
+        rob_groups.append(dict({"key": row["key"], "label": FINAL_TEST_GROUPS[row["key"]], "count": row["count"],
+                                "mean": row["mean"]}, **({"lower": row["lower"], "upper": row["upper"]}
+                                                         if "lower" in row else {})))
+    for key in ("outside_quarter_end_window", "quarter_end_window"):
+        entry = by_window.get(key, {})
+        if not entry.get("count"):
+            continue
+        rob_groups.append(dict({"key": key, "label": FINAL_TEST_GROUPS[key], "count": entry["count"],
+                                "mean": entry["mean"]}, **({"lower": entry["interval"]["lower"],
+                                                            "upper": entry["interval"]["upper"]}
+                                                           if "interval" in entry else {})))
+    robustness = final_test_robustness(mean, {0: got["mean"], **got["drop"]}, got["wins"], got["n"], rob_groups,
+                                       MINIMUM_EVENTS)
+    sentences_html = "".join(f"<li>{html.escape(t)}</li>" for t in robustness["sentences"])
+    numbers = (f"<details class='ftnumbers'><summary>Show the numbers</summary>{split_table}{window_table}"
+               f"{influence_table}</details>")
     data = {"record": rel, "result": result, "first": first, "last": last, "days": n, "level": level,
             "persistence": persistence, "published": published, "mean": mean, "lower": lower, "upper": upper,
             "by_day_type": split, "regimes": regimes, "stress": stress, "later": later, "rests": rests,
-            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap}
+            "influence": got, "quarter_end_window": by_window, "leap_vs_climatology": leap,
+            "robustness": robustness}
     fills = {
         "ft_verdict": verdict,
         "ft_claim": claim_html,
         "ft_days": f"{n:,}",
         "ft_level": level,
         "ft_window": window,
+        "ft_robust_sentences": f"<ul class='ftlist'>{sentences_html}</ul>",
+        "ft_numbers": numbers,
         "ft_split_table": split_table,
+        "ft_influence_table": influence_table,
+        "ft_window_table": window_table,
         "ft_fixed": (f"<b>Fixed first.</b> The design, the benchmark and the command were written down and "
                      f"checksummed (<code>{checksum[:12]}</code>) before any of these days was scored "
                      f"(<a href='{BLOB}{prereg}'>the pre-registration</a>)."),
         "ft_once": f"<b>Run once,</b> on {day(opened)}, on Eleonora's go, and published whatever it showed.",
         "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, "
                          "forecasts the next day from the latest spread known at the decision time. Both are graded "
-                         "by CRPS: how far a forecast range was from the spread that actually came, in basis "
-                         "points, so lower is better."),
+                         "by the five-quantile score (the mean pinball loss over the five published quantiles): how far "
+                         "a forecast range was from the spread that actually came, in basis points, so lower is better."),
         "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
-                      f"deciding cell was changed from the plain-leap probability cell (#216) to this CRPS cell, "
+                      f"deciding cell was changed from the plain-leap probability cell (#216) to this five-quantile score cell, "
                       f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment. "
                       + (f"On the opened record the plain leap does not beat calendar climatology: mean Brier "
                          f"difference {signed(leap['mean'], 4)}, {round(100 * leap['level'])}% interval "
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
                          "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
-        "ft_rests": rests_text,
-        "ft_not_stress": stress_text,
-        "ft_not_blind": f"<b>It is near-blind, not blind.</b> These days had appeared inside earlier pooled results, "
-                        f"and the gbm family and its features were chosen on archived records scored through "
-                        f"2026-09-03, which include them. The record says no choice was made on them by name, but "
-                        f"the test is not a clean holdout. It does not validate stress performance or robustness "
-                        f"across regimes. The live record (#215), which logs the blind tier's days as they come, is "
-                        f"the first genuinely blind confirmation.{blind_text}",
-        "ft_calm": (f"<b>2026 was calm,</b> and was known to be calm when the test was designed; {regime_text}. "
-                    f"The test says nothing about a stressed period."),
-        "ft_influence_table": influence_table,
-        "ft_window_table": window_table,
-        "ft_robust": robust_text,
-        "ft_why": why_text,
-        "ft_later": (f"<b>CRPS two to five days ahead is not evidence.</b> Those cells use a different model from "
-                     f"the one-day forecast, and each carries Eleonora's label."),
-        "ft_later_table": later_table,
         "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
                      f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
                      f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
@@ -3099,6 +3207,7 @@ def generate(repo, commit=None):
     declarations = run_record_declarations(repo)
     locked = locked_tiers(repo / LOCKBOX)
     check_annotations(notes)
+    fetched = check_fetched(repo, notes)
     check_glossary(glossary)
     records = run_records(repo)
     model, model_fills = model_chapters(records, thresholds["taus_bp"][:2])
@@ -3122,7 +3231,14 @@ def generate(repo, commit=None):
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
-    hist, fills = history(rows, notes, thresholds, regimes, windows, locked)
+    def buffer_low(iso):
+        return on_rrp_as_of(on_rrp, date.fromisoformat(iso), decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+
+    hist, fills = history(rows, notes, thresholds, regimes, windows, locked, buffer_low)
+    crossings = check_above_standing_repo(repo, notes, counted(rows, locked))
+    if len(crossings) != 1:
+        raise VisualError(f"chapter 1 quotes one day SOFR passed the standing repo rate; the annotations carry {len(crossings)}")
+    crossed, crossed_sofr, crossed_rate = crossings[0]
     fills.update(use_limitation_fill(repo))
     fills.update(n1_fills)
     fills.update(n2_fills)
@@ -3183,6 +3299,13 @@ def generate(repo, commit=None):
         "note_issued": day(note["issued"]), "note_effective": day(note["effective"]),
         "note_src": note["src"], "note_sha": note["sha256"], "note_retrieved": note["retrieved_at"],
         "srp_vs_iorb": bp(srp["vs_iorb_bp"]), "rrp_vs_iorb": bp(rrp["vs_iorb_bp"]),
+        "c_iorb_pays": link(c["iorb_pays"]), "c_sofr_median": link(c["sofr_median"]),
+        "c_srf_access": link(c["srf_access"]), "c_fhlb_fed_funds": link(c["fhlb_fed_funds"]),
+        "c_qe_foreign": link(c["qe_foreign"]), "c_mmf_on_rrp": link(c["mmf_on_rrp"]), "c_rrp_floor": link(c["rrp_floor"]),
+        "buffer_break": f"${ON_RRP_DEPLETION_BREAK_BN:,.0f}bn", "c_on_rrp_buffer": link(c["on_rrp_buffer"]),
+        "c_limitation_why": link(c["limitation_why"]),
+        "srp_cross_day": day(crossed["date"]), "srp_cross_sofr": f"{crossed_sofr:.2f}%",
+        "srp_cross_rate": f"{crossed_rate:.2f}%", "srp_event_n": 1 + notes["events"].index(crossed),
         "c_segments_tgcr": link(c["segments_tgcr"]), "c_segments_bgcr": link(c["segments_bgcr"]),
         "c_segments_sofr": link(c["segments_sofr"]), "c_sofr_trim": link(c["sofr_trim"]),
         "c_sofr_publication": link(c["sofr_publication"]),
@@ -3207,7 +3330,7 @@ def generate(repo, commit=None):
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
-               notes["implementation_note"]["path"])}
+               notes["implementation_note"]["path"], *fetched)}
     provenance = {
         "commit": commit,
         "generator": "scripts/emit_visual.py",
