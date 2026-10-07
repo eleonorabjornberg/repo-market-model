@@ -126,10 +126,6 @@ ATTRIBUTION = {
     ),
     ("docs/decisions/pressure-probability.md", 130): _DECISION,
     ("docs/decisions/pressure-probability.md", 152): _DECISION,
-    ("site/index.html", 38): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 88): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 98): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 115): "work-tracking issue on a source card; no figure rests on it",
     ("site/index.html", 127): "work-tracking issue on a source card; no figure rests on it",
 }
 
