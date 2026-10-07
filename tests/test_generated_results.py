@@ -377,6 +377,42 @@ class MilestoneAReproductionTests(unittest.TestCase):
         )
 
 
+class ScoredRegimesOnlyTests(unittest.TestCase):
+    """A declaration that gains a regime with no scored day still reproduces (#362).
+
+    Eleonora's ruling on #369: compare only the regimes that have scored days.
+    `docs/runs/persistence_funding.json` is not re-published.
+
+    Mutation record: the `regimes` filter in
+    `scripts/reproduce_milestone_a.py:_scored_declaration` removed. Kills
+    `test_a_regime_with_no_scored_day_is_not_compared`: `AssertionError`
+    (the two declarations differ by the 2099 regime). Control green before and after.
+    """
+
+    def test_a_regime_with_no_scored_day_is_not_compared(self):
+        script = load_reproduction()
+        record = json.loads(script.RECORD.read_text(encoding="utf-8"))
+        published = record["splits"]["declaration"]
+        gained = dict(published, sha256="0" * 64,
+                      regimes=published["regimes"] + [
+                          {"first": "2099-01-01", "label": "2099", "last": "2099-12-31"}])
+        self.assertEqual(
+            script._scored_declaration(published, record["folds"]),
+            script._scored_declaration(gained, record["folds"]),
+        )
+
+    def test_a_changed_scored_regime_is_still_compared(self):
+        script = load_reproduction()
+        record = json.loads(script.RECORD.read_text(encoding="utf-8"))
+        published = record["splits"]["declaration"]
+        moved = copy.deepcopy(published)
+        moved["regimes"][0]["last"] = "2019-12-30"
+        self.assertNotEqual(
+            script._scored_declaration(published, record["folds"]),
+            script._scored_declaration(moved, record["folds"]),
+        )
+
+
 class UnavailableMetricTests(unittest.TestCase):
     """A metric the run record declares unavailable is never given a number.
 
