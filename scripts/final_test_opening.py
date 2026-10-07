@@ -179,8 +179,19 @@ def score_target(columns, outcomes, groups, *, rows, scored, splits, block, seed
     return out
 
 
-def _at_risk_calm(groups, outcomes, name):
-    return [k for k in groups[name] if outcomes[k] == 0]
+def false_alarm_level(group, positions, outcomes, columns):
+    """Each column's mean probability on the at-risk group's days whose outcome is 0.
+
+    `positions` are the group's days, as positions into `outcomes` and every column. The
+    live scorer reports the same figure through this function (#363).
+    """
+
+    calm = [k for k in positions if outcomes[k] == 0]
+    return {
+        "group": group,
+        "days": len(calm),
+        "mean_probability": {name: _mean(column[k] for k in calm) for name, column in columns.items()},
+    }
 
 
 def events_command(args) -> int:
@@ -245,13 +256,8 @@ def events_command(args) -> int:
             group_map[onset.GROUP_LEAP_ONSET] = leap_at_risk
         entry = score_target(columns, outcomes, group_map, rows=rows, scored=scored,
                              splits=splits, block=block, seed_parts=(h, target))
-        entry["false_alarm_level"] = {
-            "group": onset.GROUP_LEAP_ONSET,
-            "days": len(_at_risk_calm({"g": leap_at_risk}, outcomes, "g")),
-            "mean_probability": {name: _mean(column[k] for k in
-                                             _at_risk_calm({"g": leap_at_risk}, outcomes, "g"))
-                                 for name, column in columns.items()},
-        }
+        entry["false_alarm_level"] = false_alarm_level(onset.GROUP_LEAP_ONSET, leap_at_risk,
+                                                       outcomes, columns)
         document["targets"][target] = entry
     baselines = {
         "calendar_climatology": fp._backtest(
@@ -277,13 +283,8 @@ def events_command(args) -> int:
                      onset.GROUP_ONSET: tau_at_risk}
         entry = score_target(columns, outcomes, group_map, rows=rows, scored=scored,
                              splits=splits, block=block, seed_parts=(h, f"+{tau:g}bp"))
-        calm = [k for k in tau_at_risk if outcomes[k] == 0]
-        entry["false_alarm_level"] = {
-            "group": onset.GROUP_ONSET,
-            "days": len(calm),
-            "mean_probability": {name: _mean(column[k] for k in calm)
-                                 for name, column in columns.items()},
-        }
+        entry["false_alarm_level"] = false_alarm_level(onset.GROUP_ONSET, tau_at_risk,
+                                                       outcomes, columns)
         document["targets"][f"+{tau:g}bp"] = entry
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({target: {"events": entry["all_days"]["events"],

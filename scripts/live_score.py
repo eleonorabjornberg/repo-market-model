@@ -5,8 +5,13 @@ was logged:
 
 * **Scoring dates:** 2027-04-01, 2027-10-01, then every 1 October. On each,
   every logged day whose target day is in the outcome panel and before the
-  scoring date is scored, cumulatively from the first logged day. On any other
-  date this script refuses to run (`ValueError`).
+  scoring date is scored, cumulatively from the first logged day. What the
+  script enforces about the date is two checks (#257): the date must be a scoring
+  date (`require_scoring_date`, `ValueError`), and it must have come, which is
+  today's date in America/New_York not being before it (`require_clock`,
+  `LookAheadError`; an override flag lets a run proceed and is recorded in the
+  output). Neither decides which days may be scored: that is
+  `metadata/lockbox.json`, below.
 * **The primary result** (Eleonora's ruling of 4 October 2026 on #215): the
   CRPS of the published distribution (#169's gbm with nested conformal PID)
   against as-of persistence's, at h = 1, both read from each day's file alone
@@ -47,6 +52,18 @@ was logged:
   other date refuses (`require_gap_scoring`, `ValueError`), and its days go
   through the lockbox guard like every other scored day.
 
+* **Provenance** (#257): the result carries the time it started (UTC), the SHA-256
+  of the outcome panel, the command that built the panel and the one that scored,
+  the code SHA, `sys.version`, the digest of `metadata/live_requirements.lock`,
+  every live record's digest, each earlier result's digest, and `skipped_records`:
+  every record and horizon it did not score, with the reason (`NO_OUTCOME` or
+  `NOT_YET_DUE`). Nothing is skipped silently. The outcome panel must be one
+  `scripts/live_raw.py build-panel` built from archived bytes
+  (`require_registered_panel`, `ValueError`): `--archive-dir` is a checkout of the
+  `live-raw` branch.
+* **Event cells** (#257, review finding 30): the Brier cells' bootstrap uses block
+  length h + 1, the horizon overlap the final test's event cells and this
+  script's CRPS cells use (`EVENT_BLOCK_RULE`, `EVENT_SEED_RULE`).
 * **Integrity** (#254): before reading any record, the script verifies the
   live log (`load_records`, `scripts/live_integrity.py`'s `verify`). Every
   file's SHA-256 must equal its #225 digest, the hash chain must be unbroken,
@@ -60,24 +77,31 @@ was logged:
 Results are published whatever they show, as a new record:
 
     PYTHONPATH=src python3 scripts/live_score.py --date YYYY-MM-DD --live-dir LIVE \\
-        --digests DIGESTS.jsonl --panel PANEL --output OUT.json [--gap-dir GAP] \\
-        [--previous EARLIER.json ...]
+        --digests DIGESTS.jsonl --panel PANEL --archive-dir LIVE_RAW --output OUT.json \\
+        [--gap-dir GAP --pinned-tree PINNED] [--previous EARLIER.json ...] [--override-clock]
 
-`--gap-dir` is required on the first scoring date and refused on every other.
+`--gap-dir` is required on the first scoring date and refused on every other; with it,
+`--pinned-tree` (a checkout of the pin) is required, and the gap's day boundaries are
+asserted equal to the ones that tree computes (#257, review finding 39).
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shlex
+import subprocess
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
+from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.metrics import (  # noqa: E402
     crps_from_quantiles, crps_trapezoid_from_quantiles, stationary_bootstrap_interval,
 )
@@ -85,8 +109,19 @@ from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
+from repo_model.splits import LookAheadError  # noqa: E402
 
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
+LOCK = REPO / "metadata" / "live_requirements.lock"
+EASTERN = ZoneInfo("America/New_York")
+#: Why a record's horizon is not in a result (`skipped_records`): nothing is skipped silently (#257).
+NO_OUTCOME = "target day is not in the outcome panel"
+NOT_YET_DUE = "target day is not before the scoring date"
+#: The event cells' block rule and seed derivation, declared in the draft amendment (#257, finding 30).
+EVENT_BLOCK_RULE = ("stationary bootstrap, mean block length h + 1: the horizon overlap, as the final "
+                    "test's event cells and the CRPS cells use")
+EVENT_SEED_RULE = ("`baseline._seed_from((scoring date, cell, horizon, model, baseline[, regime or "
+                   "day type]))` for each Brier cell")
 FIRST_SCORING_DATES = (date(2027, 4, 1), date(2027, 10, 1))
 #: The live record's primary result (ruling of 4 October 2026 on #215).
 HEADLINE = {"target": "crps", "horizon": 1}
@@ -220,6 +255,45 @@ def _final_test():
 final_test = _final_test()
 crps_verdict = final_test.crps_verdict
 crps_result = final_test.crps_result
+
+
+def now_utc() -> datetime:
+    """The wall clock, in UTC. Module-level so that tests patch it (never a flag or environment variable)."""
+
+    return datetime.now(timezone.utc)
+
+
+def today_new_york() -> date:
+    """Today's date in America/New_York, the calendar the scoring dates are fixed in."""
+
+    return now_utc().astimezone(EASTERN).date()
+
+
+def require_clock(day: date, *, override: bool = False) -> dict:
+    """Refuse a scoring date that has not yet come in New York (#257, review finding 4).
+
+    `require_scoring_date` checks the argument against the pre-registered list;
+    this checks it against the clock, so a synthetic record cannot be scored on
+    2026-10-06 by naming 2027-04-01. `override` lets a run proceed anyway, and
+    only if the output records that it did.
+
+    Returns the clock block the result carries: when it was read (UTC), today's
+    New York date and whether the override was used.
+
+    Raises:
+        LookAheadError: if today in New York is before `day` and `override` is false.
+    """
+
+    checked = now_utc()
+    today = checked.astimezone(EASTERN).date()
+    early = today < day
+    if early and not override:
+        raise LookAheadError(
+            f"{day} has not come: today in America/New_York is {today}, and the live record "
+            f"is scored on its scoring date or after it (#257)"
+        )
+    return {"checked_at_utc": checked.isoformat(), "today_new_york": today.isoformat(),
+            "override": early}
 
 
 def is_scoring_date(day: date) -> bool:
@@ -426,15 +500,99 @@ def _outcome(target, cell_name, spread):
 
 def _paired(baseline, model, positions, h, *parts):
     return onset.paired_difference(
-        baseline, model, positions, block_length=h,
+        baseline, model, positions, block_length=h + 1,
         seed=_seed_from(tuple(str(part) for part in parts)),
     )
 
 
+def _opening():
+    """`scripts/final_test_opening.py`, loaded once: the final test's group scoring (#363)."""
+
+    global _OPENING
+    if _OPENING is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_score_final_opening", REPO / "scripts" / "final_test_opening.py")
+        _OPENING = module_from_spec(spec)
+        spec.loader.exec_module(_OPENING)
+    return _OPENING
+
+
+_OPENING = None
+
+
+def _event_groups(cell_name, h, dates, rows, splits, day, cache):
+    """The final test's group for a Brier cell, as positions into `dates` (#363).
+
+    The leap cell gets the leap-onset group (`onset.leap_onset_group`); the +5 bp and +10 bp
+    cells get the at-risk group (`onset.day_groups`). Both are read from the panel rows before
+    `day` only: a group never reads a day the scoring date has not opened.
+    """
+
+    before = [row for row in rows if row.date < day]
+    if cell_name == "leap":
+        if h not in cache:
+            rule = InformationRule(json.loads(final_test.REGISTRY.read_text()), ("spread_bps",),
+                                   decision_time=final_test.DECISION, horizon=h)
+            cache[h] = onset.LeapTargets(before, rule, final_test.leap_jump_bp(h))
+        return {onset.GROUP_LEAP_ONSET: onset.leap_onset_group(cache[h], dates)}
+    return {onset.GROUP_ONSET: onset.day_groups(before, dates, splits)[onset.GROUP_ONSET]}
+
+
+def _paired_cell(losses, baseline, name, positions, regimes, types, h, day, cell_name, tail=()):
+    """The model paired against one baseline over `positions`: all days, by regime, by day type.
+
+    `tail` is added to every seed after the baseline, so a group's cells draw their own.
+    """
+
+    paired = {"all_days": _paired(losses[baseline], losses[name], positions, h, day, cell_name, h, name,
+                                  baseline, *tail)}
+    gaps = [x - y for x, y in zip(losses[baseline], losses[name])]
+    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
+        paired[label] = {}
+        for key in sorted({keys[k] for k in positions}):
+            part = [k for k in positions if keys[k] == key]
+            paired[label][key] = _small_cell(gaps, part) or _paired(
+                losses[baseline], losses[name], part, h, day, cell_name, h, name, baseline, *tail, key)
+    return paired
+
+
+def _group_cell(group, positions, outcomes, losses, columns, models, baselines, regimes, types, h, day,
+                cell_name):
+    """One final-test group inside a Brier cell: its Brier, paired cells and false-alarm level."""
+
+    events = sum(outcomes[k] for k in positions)
+    cell = {"days": len(positions), "events": events, "role": "reported only"}
+    if not positions:
+        cell["result"] = "inconclusive"
+        cell["reason"] = "no days in the group"
+        return cell
+    cell["false_alarm_level"] = _opening().false_alarm_level(group, positions, outcomes, columns)
+    if events < onset.MINIMUM_EVENTS:
+        cell["result"] = "inconclusive"
+        cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
+        return cell
+    cell["models"] = {}
+    for name in models:
+        entry = {"brier": sum(losses[name][k] for k in positions) / len(positions), "paired": {}}
+        for b in baselines:
+            paired = _paired_cell(losses, b, name, positions, regimes, types, h, day, cell_name,
+                                  tail=(group,))
+            paired["all_days"]["label"] = _opening().label(paired["all_days"], events)
+            entry["paired"][b] = paired
+        cell["models"][name] = entry
+    cell["baseline_brier"] = {b: sum(losses[b][k] for k in positions) / len(positions) for b in baselines}
+    return cell
+
+
 def score(records, rows, splits, day: date) -> dict:
-    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only."""
+    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only.
+
+    Each cell also carries the final test's group for it, under `groups` (#363).
+    """
 
     by_date = {row.date: row for row in rows}
+    leap_targets = {}
     out = {"cells": {}}
     for cell_name, baselines in BASELINES.items():
         for h in HORIZONS:
@@ -457,30 +615,89 @@ def score(records, rows, splits, day: date) -> dict:
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
+            groups = _event_groups(cell_name, h, [date.fromisoformat(d) for d in days], rows, splits, day,
+                                   leap_targets)
+            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
+                      for name, column in {**model, **bench}.items()}
+            columns = {**model, **bench}
+            cell["groups"] = {group: _group_cell(group, positions, outcomes, losses, columns, list(model),
+                                                 baselines, regimes, types, h, day, cell_name)
+                              for group, positions in groups.items()}
             if events < onset.MINIMUM_EVENTS:
                 cell["result"] = "inconclusive"
                 cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
                 out["cells"][f"{cell_name}/h{h}"] = cell
                 continue
-            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
-                      for name, column in {**model, **bench}.items()}
             every = list(range(len(days)))
             for name in model:
                 entry = {"brier": sum(losses[name]) / len(days), "paired": {}}
                 for b in baselines:
-                    paired = {"all_days": _paired(losses[b], losses[name], every, h, day, cell_name, h, name, b)}
-                    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
-                        paired[label] = {}
-                        for key in sorted(set(keys)):
-                            positions = [k for k in every if keys[k] == key]
-                            gaps = [x - y for x, y in zip(losses[b], losses[name])]
-                            paired[label][key] = _small_cell(gaps, positions) or _paired(
-                                losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
-                    entry["paired"][b] = paired
+                    entry["paired"][b] = _paired_cell(losses, b, name, every, regimes, types, h, day,
+                                                      cell_name)
                 cell["models"][name] = entry
             cell["baseline_brier"] = {b: sum(losses[b]) / len(days) for b in baselines}
             out["cells"][f"{cell_name}/h{h}"] = cell
     return out
+
+
+def skipped_records(records, rows, day: date) -> list:
+    """Every (record, horizon) the cells did not score, with the reason: nothing is skipped silently (#257).
+
+    A record's horizon is scored when its target day is before `day` and in the
+    outcome panel (`score_crps`, `score`). Any other is listed here.
+    """
+
+    by_date = {row.date for row in rows}
+    out = []
+    for record in records:
+        for target in record["targets"]:
+            when = date.fromisoformat(target["target_date"])
+            if when >= day:
+                reason = NOT_YET_DUE
+            elif when in by_date:
+                continue
+            else:
+                reason = NO_OUTCOME
+            out.append({"decision_day": record["decision_day"], "horizon": target["horizon"],
+                        "target_date": when.isoformat(), "reason": reason})
+    return out
+
+
+def _code_sha() -> str:
+    done = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True, text=True)
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def build_provenance(*, started_at: datetime, panel: Path, argv, panel_provenance, record_digests,
+                     previous) -> dict:
+    """What produced a result: when, from which bytes, by which command and code (#257, finding 4).
+
+    `panel_provenance` is the sidecar `scripts/live_raw.py build-panel` writes
+    beside the outcome panel: the command that built it and the archived inputs
+    it was built from. `record_digests` are the live records' SHA-256s as
+    verified; `previous` are the earlier results' files, linked by digest.
+    """
+
+    previous_scores = []
+    for path in previous:
+        data = Path(path).read_bytes()
+        previous_scores.append({"date": json.loads(data)["date"], "sha256": _sha256_bytes(data)})
+    return {
+        "started_at_utc": started_at.astimezone(timezone.utc).isoformat(),
+        "panel_sha256": _sha256_bytes(Path(panel).read_bytes()),
+        "panel_build_command": panel_provenance["build_command"],
+        "panel_inputs": panel_provenance.get("inputs", []),
+        "scoring_command": shlex.join(str(part) for part in argv),
+        "code_sha": _code_sha(),
+        "dependency_lock_sha256": _sha256_bytes(LOCK.read_bytes()),
+        "python_version": sys.version,
+        "live_records": list(record_digests),
+        "previous_scores": previous_scores,
+    }
 
 
 # -- the blind gap (#235) ------------------------------------------------------
@@ -514,10 +731,14 @@ def first_live_targets(record) -> dict:
             for target in record["targets"]}
 
 
-def gap_target_days(h: int, first_targets) -> list:
-    """The gap at horizon `h`: decision days after the panel end, before the first live target."""
+def gap_target_days(h: int, first_targets, live=None) -> list:
+    """The gap at horizon `h`: decision days after the panel end, before the first live target.
 
-    live = _live()
+    `live` is the `live_record` module whose calendar is used: main's by default,
+    the pinned tree's for `pinned_gap_days`.
+    """
+
+    live = live or _live()
     out, current = [], live.PANEL_END
     while True:
         current = live.next_decision_days(current, 1)[0]
@@ -605,7 +826,51 @@ def _as_gap_cell(cell) -> dict:
     return cell
 
 
-def score_gap(records, first_live, rows, splits, day: date) -> dict:
+def require_gap_boundaries_equal(pinned, first_targets) -> None:
+    """The gap's days, as the pinned tree computes them, equal main's (#257, finding 39).
+
+    The forecasts run at the pinned code, but the gap's day boundaries are
+    computed here, from main's `live_record.py` and holiday table. `pinned` is
+    each horizon's gap target days as the pinned tree's own `live_record.py`
+    computes them (`pinned_gap_days`).
+
+    Raises:
+        ValueError: naming the horizon and the days that differ.
+    """
+
+    for h in HORIZONS:
+        here = [day.isoformat() for day in gap_target_days(h, first_targets)]
+        there = list(pinned.get(h, pinned.get(str(h), [])))
+        if here != there:
+            extra = sorted(set(here) ^ set(there))
+            raise ValueError(
+                f"the gap at h={h} differs between main and the pinned tree "
+                f"({len(here)} days here, {len(there)} there; differing: {extra[:5]})"
+            )
+
+
+def pinned_gap_days(tree: Path, first_targets) -> dict:
+    """Each horizon's gap target days, computed by the pinned tree's own `live_record.py`.
+
+    Raises:
+        ValueError: if `tree` is not a checkout of the pin in `metadata/live_pin.json`.
+    """
+
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tree, capture_output=True, text=True)
+    pin = _pins().load_manifest()["current"]
+    if head.returncode != 0 or head.stdout.strip() != pin:
+        raise ValueError(f"{tree} is not a checkout of the pinned code {pin}")
+    spec = spec_from_file_location("live_record_pinned", Path(tree) / "scripts" / "live_record.py")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return {h: [day.isoformat() for day in gap_target_days(h, first_targets, live=module)]
+            for h in HORIZONS}
+
+
+def score_gap(records, first_live, rows, splits, day: date, *, override_clock: bool = False,
+              pinned_days=None) -> dict:
     """The blind gap's cells (#235), scored once: every one reported only.
 
     `records` are the reconstructed gap forecasts (`validate_gap_record`);
@@ -615,14 +880,23 @@ def score_gap(records, first_live, rows, splits, day: date) -> dict:
     and bootstrap settings. The reconstructed forecasts are carried in the
     output with their inputs' digests.
 
+    The gap carries the same clock guard and skipped-record list as the live
+    cells (#257, finding 39). `pinned_days` (`pinned_gap_days`), when given, is
+    asserted equal to the boundaries computed here.
+
     Raises:
         ValueError: before anything is read, unless `require_gap_scoring`
-            passes; on a malformed or repeated gap record.
-        LookAheadError: on a gap day the lockbox has not opened.
+            passes; on a malformed or repeated gap record, or boundaries that
+            differ from the pinned tree's.
+        LookAheadError: if `day` has not come in New York (`require_clock`), or on a
+            gap day the lockbox has not opened.
     """
 
+    clock_block = require_clock(day, override=override_clock)
     require_gap_scoring(day)
     bounds = first_live_targets(first_live)
+    if pinned_days is not None:
+        require_gap_boundaries_equal(pinned_days, bounds)
     for record in records:
         validate_gap_record(record)
     decided = [record["decision_day"] for record in records]
@@ -644,10 +918,19 @@ def score_gap(records, first_live, rows, splits, day: date) -> dict:
         for name, cell in score(chosen, rows, splits, day)["cells"].items():
             if name.endswith(f"/h{h}"):
                 cells[name] = _as_gap_cell(cell)
+    skipped = []
+    for h in HORIZONS:
+        in_gap = set(gap_target_days(h, bounds))
+        chosen = [r for r in records
+                  if date.fromisoformat(r["targets"][h - 1]["target_date"]) in in_gap]
+        skipped += [entry for entry in skipped_records(chosen, rows, day) if entry["horizon"] == h]
     return {
         "directive": "#235",
         "label": GAP_LABEL,
         "role": "reported only",
+        "clock": clock_block,
+        "boundaries_checked_against_pinned_tree": pinned_days is not None,
+        "skipped_records": skipped,
         "boundaries": boundaries,
         "crps": crps,
         "cells": cells,
@@ -656,16 +939,22 @@ def score_gap(records, first_live, rows, splits, day: date) -> dict:
 
 
 def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
-             require_gap: bool = False) -> dict:
+             require_gap: bool = False, override_clock: bool = False, provenance=None,
+             pinned_days=None) -> dict:
     """The scoring result: the live cells, the primary result, and the gap block apart.
 
     The primary result and its status are read off the live cells alone; the
-    gap block (`score_gap`) is added beside them and never read back.
+    gap block (`score_gap`) is added beside them and never read back. The
+    result carries the clock it was scored under, the records it did not score
+    and why (`skipped_records`), and `provenance` when given (`build_provenance`).
 
     Raises:
+        LookAheadError: before anything is computed, if `day` has not come in New York
+            (`require_clock`) and `override_clock` is false.
         ValueError: if `require_gap` and no gap records are given.
     """
 
+    clock_block = require_clock(day, override=override_clock)
     if require_gap and gap_records is None:
         raise ValueError(
             f"{day} scores the blind gap in the same run as its live cells (#235); "
@@ -686,14 +975,89 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
             "crps_sign_convention": CRPS_SIGN,
             "primary_result": headline.get("result"),
             "headline_status": headline_status(day, days=headline["days"], previous=previous),
+            "clock": clock_block,
+            "skipped_records": skipped_records(records, rows, day),
+            "event_block_rule": EVENT_BLOCK_RULE,
+            "event_seed": EVENT_SEED_RULE,
         }
     )
+    if provenance is not None:
+        result["provenance"] = provenance
     if gap_records is not None:
         first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
         if not first:
             raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
-        result["gap"] = score_gap(gap_records, first[0], rows, splits, day)
+        result["gap"] = score_gap(gap_records, first[0], rows, splits, day,
+                                  override_clock=override_clock, pinned_days=pinned_days)
     return result
+
+
+#: The code the live scorer is (#282, ruling on #269 item 5), hashed the way the final test's
+#: `_CRPS_SOURCE` is: each root and every top-level name of its file it mentions, so the
+#: cells, the intervals, the minimum-cell rule, the regime and month-end splits and the gap
+#: scoring are all covered. The clock, integrity, pin and provenance code scores nothing and is
+#: left out (`tests/test_live_score_freeze.py` lists it and refuses a scoring function outside).
+LIVE_SOURCE = (
+    ("scripts/live_score.py", (
+        "crps_from_record", "integral_crps_from_record", "headline_status", "_regime", "_small_cell",
+        "score_crps", "_outcome", "_paired", "_event_groups", "_paired_cell", "_group_cell", "score",
+        "skipped_records", "first_live_targets", "gap_target_days", "gap_decision_days",
+        "validate_gap_record", "_as_gap_cell", "require_gap_boundaries_equal", "pinned_gap_days",
+        "require_gap_scoring", "score_gap", "assemble", "_require_scored_days_unlocked",
+        "EVENT_BLOCK_RULE", "EVENT_SEED_RULE", "NOT_EVIDENCE", "INTERIOR_DESIGN", "GAP_LABEL",
+    )),
+    ("scripts/final_test_preregistration.py", ("crps_verdict", "crps_result", "leap_jump_bp",
+                                               "CRPS_BLOCK_LENGTH", "CRPS_SENSITIVITY_BLOCK_LENGTH")),
+    ("scripts/final_test_opening.py", ("false_alarm_level", "label")),
+    ("src/repo_model/metrics.py", ("crps_from_quantiles", "crps_trapezoid_from_quantiles",
+                                   "stationary_bootstrap_interval")),
+    ("src/repo_model/baseline.py", ("_seed_from",)),
+    ("src/repo_model/onset.py", ("paired_difference", "whole_bp", "day_groups", "leap_onset_group",
+                                 "LeapTargets", "MINIMUM_EVENTS", "REPLICATIONS", "LEVEL")),
+    ("src/repo_model/data.py", ("exceeds_bp",)),
+    ("src/repo_model/lockbox.py", ("require_unlocked",)),
+    ("src/repo_model/evaluation_splits.py", ("SplitDeclaration", "MONTH_END_RULE", "DAY_TYPES",
+                                             "DAY_TYPE_COLUMNS", "quarter_end_window_label",
+                                             "load_split_declaration")),
+)
+
+
+def live_declaration() -> dict:
+    """Everything the live scorer is: its scoring code and the constants it reads."""
+
+    source = {}
+    for path, names in LIVE_SOURCE:
+        source[path] = {**source.get(path, {}), **final_test._top_level_source(path, names)}
+    return {
+        "constants": {
+            "horizons": list(HORIZONS), "minimum_cell_days": MINIMUM_CELL_DAYS,
+            "minimum_events": onset.MINIMUM_EVENTS, "replications": onset.REPLICATIONS,
+            "level": onset.LEVEL, "first_year_regime": FIRST_YEAR_REGIME,
+            "baselines": {cell: list(names) for cell, names in BASELINES.items()},
+        },
+        "source_sha256": source,
+    }
+
+
+def live_declaration_checksum() -> str:
+    text = json.dumps(live_declaration(), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _raw():
+    """`scripts/live_raw.py`, loaded once."""
+
+    global _RAW
+    if _RAW is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_raw", REPO / "scripts" / "live_raw.py")
+        _RAW = module_from_spec(spec)
+        spec.loader.exec_module(_RAW)
+    return _RAW
+
+
+_RAW = None
 
 
 def main(argv=None) -> int:
@@ -702,32 +1066,60 @@ def main(argv=None) -> int:
     parser.add_argument("--live-dir", required=True, type=Path)
     parser.add_argument("--digests", type=Path, default=None,
                         help="the #225 digest comments, one JSON object per line (#254)")
-    parser.add_argument("--panel", required=True, type=Path, help="the outcome panel")
+    parser.add_argument("--panel", required=True, type=Path,
+                        help="the outcome panel, built by `scripts/live_raw.py build-panel`")
+    parser.add_argument("--archive-dir", required=True, type=Path,
+                        help="a checkout of the `live-raw` branch: the panel's inputs must be in it (#257)")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--previous", action="append", default=[], type=Path)
     parser.add_argument("--gap-dir", type=Path, default=None,
                         help="the reconstructed gap forecasts (scripts/live_gap.py); "
                              "the first scoring date only")
+    parser.add_argument("--pinned-tree", type=Path, default=None,
+                        help="a checkout of the pinned code: the gap's day boundaries are asserted "
+                             "equal to its own (required with --gap-dir)")
+    parser.add_argument("--override-clock", action="store_true",
+                        help="score a date that has not come; recorded in the output (#257)")
     args = parser.parse_args(argv)
+    started = now_utc()
     day = date.fromisoformat(args.date)
     require_scoring_date(day)
+    clock_block = require_clock(day, override=args.override_clock)
     if args.output.exists():
         raise ValueError(f"{args.output} exists: a result is published as a new record")
     if args.gap_dir is not None:
         require_gap_scoring(day)
+        if args.pinned_tree is None:
+            raise ValueError("--gap-dir needs --pinned-tree: the gap's boundaries are checked against the pinned code")
     elif day == GAP_SCORING_DATE:
         raise ValueError(f"{day} scores the blind gap in the same run (#235): pass --gap-dir")
 
     records = load_records(args.live_dir, args.digests)
+    panel_provenance = _raw().require_registered_panel(args.panel, args.archive_dir)
+    integrity = _integrity()
+    record_digests = [{"decision_day": path.stem, "sha256": integrity.file_sha256(path)}
+                      for path in sorted((args.live_dir / "live").glob("*.json"))]
+    archive_report = _raw().verify_records(args.archive_dir, args.live_dir)
     previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(SPLITS)
-    gap_records = None
+    gap_records, pinned_days = None, None
     if args.gap_dir is not None:
         gap_records = [json.loads(path.read_text(encoding="utf-8"))
                        for path in sorted((args.gap_dir / "gap").glob("*.json"))]
+        first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
+        if not first:
+            raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
+        pinned_days = pinned_gap_days(args.pinned_tree, first_live_targets(first[0]))
+    provenance = build_provenance(
+        started_at=started, panel=args.panel,
+        argv=["scripts/live_score.py", *(sys.argv[1:] if argv is None else argv)],
+        panel_provenance=panel_provenance, record_digests=record_digests, previous=args.previous)
+    provenance["raw_archive"] = archive_report
     result = assemble(records, rows, splits, day, previous=previous, gap_records=gap_records,
-                      require_gap=day == GAP_SCORING_DATE)
+                      require_gap=day == GAP_SCORING_DATE, override_clock=args.override_clock,
+                      provenance=provenance, pinned_days=pinned_days)
+    result["clock"] = {**result["clock"], "first_read_at_utc": clock_block["checked_at_utc"]}
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(args.output), "headline_status": result["headline_status"]}))
     return 0

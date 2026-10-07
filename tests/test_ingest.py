@@ -4321,12 +4321,24 @@ class AvailableAtDerivationTests(unittest.TestCase):
             tzinfo=ZoneInfo(lag["timezone"]),
         )
 
+    def ref_date_lags(self):
+        """(source id, lag) for each `ref_date` declaration, source- or field-level.
+
+        `frb_ddp` prices `EFFR` by a field entry and not by its source-level lag
+        (#360), so the adapter check must read field entries too.
+        """
+
+        out = []
+        for source_id, source in sorted(self.REGISTRY.items()):
+            if source.get("release_lag", {}).get("basis") == "ref_date":
+                out.append((source_id, source["release_lag"]))
+            for lag in (source.get("field_release_lags") or {}).values():
+                if lag.get("basis") == "ref_date":
+                    out.append((source_id, lag))
+        return out
+
     def ref_date_sources(self):
-        return sorted(
-            source_id
-            for source_id, source in self.REGISTRY.items()
-            if source.get("release_lag", {}).get("basis") == "ref_date"
-        )
+        return sorted({source_id for source_id, _ in self.ref_date_lags()})
 
     def test_every_ref_date_source_is_covered_by_this_test(self):
         """A source added to the registry without a case here would go unchecked."""
@@ -4340,8 +4352,7 @@ class AvailableAtDerivationTests(unittest.TestCase):
         )
 
     def test_adapter_available_at_matches_the_registry_declaration(self):
-        for source_id in self.ref_date_sources():
-            lag = self.REGISTRY[source_id]["release_lag"]
+        for source_id, lag in self.ref_date_lags():
             # A midweek date and a Friday: the Friday is the only one whose
             # calendar gap differs from its business-day lag. Then the days
             # whose next weekday is a market holiday (#201): 2025-12-31 (New
@@ -4361,13 +4372,42 @@ class AvailableAtDerivationTests(unittest.TestCase):
                     )
                     rows = list(observations_from_snapshots([snapshot]))
                     self.assertTrue(rows)
-                    # FR 2004 still counts weekdays: skipping holidays moves its
-                    # 2018-12-21 value past the declared 11-day bound (#201).
-                    expected = self.declared_available_at(
-                        lag, ref_date, holidays=source_id != "nyfed_fr2004"
-                    )
+                    expected = self.declared_available_at(lag, ref_date)
                     for row in rows:
                         self.assertEqual(row.available_at, expected)
+
+    def test_fr2004_counts_business_days_on_the_holiday_table(self):
+        """FR 2004 is dated by business days on `metadata/market_holidays.json`, as every other adapter is (#361).
+
+        Counted by weekdays alone, the value for 2018-12-21 was dated 2018-12-31
+        and so available before the sixth business day after it, 2019-01-02
+        (Christmas Day and New Year's Day fall in between). That is the leakage
+        direction (#201, #350). The 2019-01-02 instant is a literal, not
+        recomputed from the declaration, and the declared bound must cover the
+        12 calendar days the holiday table's widest span needs.
+
+        Mutation record (each applied to a clean copy, then restored):
+
+        1. `_next_business_day` counting weekdays only (the pre-#361
+           `_next_weekday`): `AssertionError`, 2018-12-31 16:30 != 2019-01-02
+           16:30.
+        2. `nyfed_fr2004.release_lag.worst_case_calendar_days` back at 11:
+           `AssertionError`, 12 not less than or equal to 11.
+        """
+
+        ref_date = date(2018, 12, 21)
+        snapshot = self.fr2004_snapshot(ref_date.isoformat(), "2026-06-01T00:00:00+00:00")
+        rows = list(observations_from_snapshots([snapshot]))
+        self.assertTrue(rows)
+        zone = ZoneInfo("America/New_York")
+        for row in rows:
+            self.assertEqual(
+                row.available_at, datetime(2019, 1, 2, 16, 30, tzinfo=zone)
+            )
+            self.assertLessEqual(
+                (row.available_at.date() - ref_date).days,
+                self.REGISTRY["nyfed_fr2004"]["release_lag"]["worst_case_calendar_days"],
+            )
 
     def test_a_registry_lag_the_adapter_does_not_honour_is_caught(self):
         """The tripwire above is only worth having if a divergence actually fails it.
@@ -4413,7 +4453,7 @@ class NextBusinessDayTests(unittest.TestCase):
         from repo_model.data import next_business_day
 
         with self.assertRaises(ValueError):
-            next_business_day(date(2027, 12, 31), 1)
+            next_business_day(date(2030, 12, 31), 1)
 
     def test_days_before_the_table_count_as_weekdays(self):
         from repo_model.data import next_business_day
@@ -6290,9 +6330,15 @@ class AbsentValueReasonTests(unittest.TestCase):
                 [(fixture.SUPPRESSED_REF_DATE, (suppressed_series,))],
             )
 
+        fetches = []
+
         def nyfed_artifacts(rate_payload, volume_payload):
+            # One output root per fetch: these payloads are synthetic and differ
+            # in length for one request, which a shared root would refuse as a
+            # shorter re-fetch (#268).
+            fetches.append(None)
             artifacts = fetch_nyfed_reference_rate(
-                self.root / "nyfed",
+                self.root / "nyfed" / str(len(fetches)),
                 "sofr",
                 "2026-01-01",
                 "2026-01-06",
@@ -8577,3 +8623,65 @@ class FrbH8ExtractRowsTests(unittest.TestCase):
                 ingest.parse_snapshots(
                     [self.artifact(directory, text)], registry=ingest.load_source_registry()
                 )
+
+
+class ShorterRefetchTests(unittest.TestCase):
+    """A fetch refuses a response shorter than the previous snapshot of the same request (#268).
+
+    A truncated or partial response to the same request (same source, same URL)
+    would otherwise be archived as the new latest snapshot and read as if the
+    source had lost rows. The comparison is on the bytes as saved, per request:
+    the same URL means the same range. A different range (a rolling end date) is
+    a different request and is not compared.
+
+    **Recorded mutation**, 6 October 2026: in `ingest._save_snapshot`, the
+    refusal condition `if len(payload) < previous:` replaced by `if False:`
+    (confirmed applied by grep). `test_a_shorter_response_for_the_same_request_is_refused`,
+    `test_the_guard_covers_the_fred_adapter` and
+    `test_nothing_is_written_when_it_refuses` then fail with
+    `AssertionError: ValueError not raised`. Restored, all green.
+    """
+
+    LONG = b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31},{"effectiveDate":"2026-01-03","percentRate":4.32}]}'
+    SHORT = b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31}]}'
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+
+    def fetch(self, payload, end="2026-01-03"):
+        # The rate and volume requests answer with different bytes, as they do
+        # live; two requests answered with one payload would share a file.
+        def downloader(url):
+            return payload if "type=rate" in url else payload.replace(b"percentRate", b"volumeInBillions")
+
+        return fetch_nyfed_reference_rate(self.root, "sofr", "2026-01-01", end, downloader)
+
+    def test_the_same_or_a_longer_response_is_saved(self):
+        self.fetch(self.SHORT)
+        self.fetch(self.SHORT)
+        saved = self.fetch(self.LONG)
+        self.assertEqual(saved[0].path.read_bytes(), self.LONG)
+
+    def test_a_shorter_response_for_the_same_request_is_refused(self):
+        self.fetch(self.LONG)
+        with self.assertRaisesRegex(ValueError, "shorter than the snapshot"):
+            self.fetch(self.SHORT)
+
+    def test_nothing_is_written_when_it_refuses(self):
+        self.fetch(self.LONG)
+        before = sorted(path.name for path in (self.root / "nyfed_sofr").iterdir())
+        with self.assertRaises(ValueError):
+            self.fetch(self.SHORT)
+        self.assertEqual(sorted(path.name for path in (self.root / "nyfed_sofr").iterdir()), before)
+
+    def test_a_different_range_is_not_compared(self):
+        self.fetch(self.LONG, end="2026-01-03")
+        self.fetch(self.SHORT, end="2026-01-02")
+
+    def test_the_guard_covers_the_fred_adapter(self):
+        first = b"observation_date,IORB\n2026-01-01,4.30\n2026-01-02,4.30\n"
+        fetch_fred_macro(self.root, lambda _: first)
+        with self.assertRaisesRegex(ValueError, "shorter than the snapshot"):
+            fetch_fred_macro(self.root, lambda _: b"observation_date,IORB\n2026-01-01,4.30\n")

@@ -103,6 +103,7 @@ Mutations, each in a disposable copy under /tmp, one match confirmed by an
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -541,7 +542,7 @@ class ScorerRefusalTests(unittest.TestCase):
                 score.main(
                     ["--date", "2027-10-01", "--live-dir", str(repo), "--digests",
                      str(save(comments, tmp)), "--panel", str(Path(tmp) / "missing.csv"),
-                     "--output", str(out)]
+                     "--archive-dir", str(Path(tmp) / "no-archive"), "--output", str(out)]
                 )
             self.assertFalse(out.exists())
 
@@ -874,6 +875,100 @@ class AnchorTests(unittest.TestCase):
 
 
 
+class PanelTests(unittest.TestCase):
+    """The day's panel is committed beside its record (#275).
+
+    `live/<day>.panel.csv` is added in the record's own commit. The record's
+    `inputs.panel_sha256` names its bytes, so the record's digest on #225 and
+    its Rekor anchor cover the panel through that field.
+
+    Recorded mutations (each applied, `PanelTests` run, then reverted):
+
+    * `verify`'s `if file_sha256(repo / rel) != named:` replaced by `if False:`:
+      `test_a_panel_that_is_not_the_one_the_record_names_is_refused` raised
+      `AssertionError: ValueError not raised`.
+    * `require_add_only_commit`'s `elif require_panel:` replaced by `elif False:`:
+      `test_a_record_commit_without_its_panel_is_refused_when_the_panel_is_required` and
+      `test_the_command_line_requires_the_panel_with_a_flag` raised
+      `AssertionError: ValueError not raised`.
+    """
+
+    PANEL = b"date,spread_bps\n2026-10-05,1.0\n2026-10-06,2.0\n"
+
+    def _commit(self, repo, day, panel=PANEL, *, sha=None, with_panel=True):
+        record = _record(day)
+        record["inputs"]["panel_sha256"] = sha or hashlib.sha256(panel).hexdigest()
+        path = repo / "live" / f"{day}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(live.record_bytes(record))
+        integrity.add_chain(repo, date.fromisoformat(day))
+        git(repo, "add", f"live/{day}.json")
+        if with_panel:
+            (repo / "live" / f"{day}.panel.csv").write_bytes(panel)
+            git(repo, "add", f"live/{day}.panel.csv")
+        git(repo, "commit", "--quiet", "-m", f"Live record for {day}")
+        return git(repo, "rev-parse", "HEAD")
+
+    def _verify(self, repo, tmp):
+        return integrity.verify(repo, integrity.parse_digests(save(digests_of(repo), tmp)))
+
+    def test_a_record_and_its_panel_added_together_pass_and_the_log_verifies(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            base = self._commit(repo, "2026-10-05")
+            self._commit(repo, "2026-10-06")
+            integrity.require_append_only(repo, base, date(2026, 10, 6), panel=True)
+            days = self._verify(repo, tmp)
+            self.assertEqual([d.isoformat() for d in days], ["2026-10-05", "2026-10-06"])
+            self.assertEqual(integrity.unanchored(repo), days)
+
+    def test_a_record_commit_without_its_panel_is_refused_when_the_panel_is_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit(repo, "2026-10-06", with_panel=False)
+            integrity.require_append_only(repo, None, date(2026, 10, 6))
+            with self.assertRaisesRegex(ValueError, "panel"):
+                integrity.require_append_only(repo, None, date(2026, 10, 6), panel=True)
+
+    def test_a_panel_that_is_not_the_one_the_record_names_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit(repo, "2026-10-06", sha="f" * 64)
+            with self.assertRaisesRegex(ValueError, "panel"):
+                self._verify(repo, tmp)
+
+    def test_a_panel_replaced_in_a_later_commit_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit(repo, "2026-10-06")
+            (repo / "live" / "2026-10-06.panel.csv").write_bytes(self.PANEL + b"2026-10-07,3.0\n")
+            git(repo, "add", "live/2026-10-06.panel.csv")
+            git(repo, "commit", "--quiet", "-m", "edit")
+            with self.assertRaises(ValueError):
+                self._verify(repo, tmp)
+
+    def test_a_panel_for_another_day_or_alone_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit(repo, "2026-10-06")
+            (repo / "live" / "2026-10-07.panel.csv").write_bytes(self.PANEL)
+            git(repo, "add", "live/2026-10-07.panel.csv")
+            git(repo, "commit", "--quiet", "-m", "orphan panel")
+            with self.assertRaises(ValueError):
+                self._verify(repo, tmp)
+            with self.assertRaises(ValueError):
+                integrity.require_append_only(repo, git(repo, "rev-parse", "HEAD~1"), date(2026, 10, 7))
+
+    def test_the_command_line_requires_the_panel_with_a_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit(repo, "2026-10-06", with_panel=False)
+            argv = ["check-append", "--live-dir", str(repo), "--date", "2026-10-06", "--base", "none"]
+            self.assertEqual(integrity.main(argv), 0)
+            with self.assertRaises(ValueError):
+                integrity.main(argv + ["--panel"])
+
+
 class WorkflowIntegrityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -906,9 +1001,17 @@ class WorkflowIntegrityTests(unittest.TestCase):
                         self.text.index("- name: Open or update the failed-runs issue"))
 
     def test_the_workflow_writes_no_existing_path(self):
-        # Only the day's record and its anchor are ever staged, each in its own commit.
-        adds = re.findall(r"git add (\S+)", self.text)
-        self.assertEqual(adds, ['"$file"', '"live/$day.rekor"'])
+        # Only the day's record and its panel (one commit) and its anchor (another) are ever staged.
+        # `"raw/$DAY"` is staged in a different clone, of the `live-raw` branch (#257).
+        adds = re.findall(r'git add ("[^"]*"(?: "[^"]*")*)', self.text)
+        self.assertEqual(adds, ['"$file" "$panel"', '"raw/$DAY"', '"live/$day.rekor"'])
+
+    def test_the_days_panel_is_copied_beside_its_record_and_required_by_the_append_check(self):
+        step = self._step("Append it to live-log")
+        self.assertIn('panel="live/$DAY.panel.csv"', step)
+        self.assertIn('cp ../work/panel.csv "$panel"', step)
+        self.assertLess(step.index("cp ../work/panel.csv"), step.index("git add"))
+        self.assertRegex(step, r"check-append[^\n]*--panel")
 
     def test_the_anchor_follows_the_push_and_precedes_the_digest_and_never_fails_the_run(self):
         step = self._step("Anchor the digests in Sigstore Rekor")

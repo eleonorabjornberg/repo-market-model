@@ -1751,9 +1751,14 @@ def validate_publication_gaps(
                 f"{source_id}: ref_date source lacks a valid publication-gap bound"
             )
         for field in source.get("fields", []):
-            if field in field_bounds:
+            earlier = field_bounds.get(str(field))
+            # Rows carry no source, so two sources declaring one series are
+            # only checkable when they declare the same bound: then the answer
+            # does not depend on which of them owns the series (#180).
+            if earlier is not None and earlier[1] != bound:
                 raise DataContractError(f"series {field!r} belongs to multiple sources")
-            field_bounds[str(field)] = (source_id, bound)
+            if earlier is None:
+                field_bounds[str(field)] = (source_id, bound)
 
     worst: Dict[str, int] = {}
     for row in observations:
@@ -2492,7 +2497,7 @@ def days_to_month_end(day: date) -> float:
 #: sha256 (#44). A changed table is refused until this pin moves with it, so an
 #: entry is added by a reviewed change to both.
 MARKET_HOLIDAYS_PATH = Path(__file__).parents[2] / "metadata" / "market_holidays.json"
-MARKET_HOLIDAYS_SHA256 = "671f31db6aba4fa822085514aae7c129786d0dfa335755e8a39db0d06874e1b9"
+MARKET_HOLIDAYS_SHA256 = "cf30bebe2cd768e7fb097081b271c5f43557d87e9362f88a648086414d96e05b"
 
 
 @dataclass(frozen=True)
@@ -2539,6 +2544,28 @@ def market_holidays(path: Optional[Path] = None) -> MarketHolidays:
     )
     _MARKET_HOLIDAYS_CACHE[key] = holidays
     return holidays
+
+
+#: A dated table the live record reads must cover at least this many days after today (#263).
+RUNWAY_DAYS = 180
+
+
+def require_runway(name: str, last: date, today: date, minimum_days: int = RUNWAY_DAYS) -> None:
+    """Refuse a dated table whose last covered day is less than `minimum_days` after `today`.
+
+    A live run fails the day it reaches the end of such a table (the holiday
+    table's `last`, a regime's last day). The check goes red months before.
+
+    Raises:
+        ValueError: if fewer than `minimum_days` days remain.
+    """
+
+    left = (last - today).days
+    if left < minimum_days:
+        raise ValueError(
+            f"{name} covers to {last}, {left} days after {today}; the live record needs "
+            f"at least {minimum_days}: extend it"
+        )
 
 
 def next_business_day(value: date, days: int) -> date:

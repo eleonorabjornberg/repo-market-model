@@ -145,7 +145,7 @@ class TurnContributionTests(unittest.TestCase):
 
     def test_a_day_the_table_does_not_cover_raises(self):
         with self.assertRaises(ValueError):
-            self.desk.calendar_days_carried(date(2030, 1, 15))
+            self.desk.calendar_days_carried(date(2031, 1, 15))
 
 
 class LabelTests(unittest.TestCase):

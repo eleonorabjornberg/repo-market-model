@@ -36,7 +36,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -63,6 +63,8 @@ def _script(name):
 
 
 score = _script("live_score")
+#: The scorer's clock guard (#257) reads `score.now_utc`: these tests score 2027 dates, so they read a later clock.
+score.now_utc = lambda: datetime(2030, 1, 1, 12, tzinfo=timezone.utc)
 
 
 def _tracked():
