@@ -65,7 +65,7 @@ def jobs(path):
 class WorkflowFileTests(unittest.TestCase):
     def test_there_are_workflows(self):
         self.assertEqual({path.name for path in WORKFLOWS},
-                         {"live-log.yml", "pages.yml", "status.yml", "tests.yml"})
+                         {"live-log.yml", "live-score.yml", "pages.yml", "status.yml", "tests.yml"})
 
     def test_every_action_is_pinned_to_a_full_commit_sha_or_pending(self):
         found = set()
