@@ -44,7 +44,7 @@ class FullDistributionTests(unittest.TestCase):
         self.assertIn("five published quantiles", section)
 
     def test_generated_blocks_and_pages_never_say_full_distribution(self):
-        for name in ("README.md", "docs/final-test.md", "METHODOLOGY.md", "PLAN.md"):
+        for name in ("README.md", "PROJECT_GUIDE.md", "docs/final-test.md", "METHODOLOGY.md", "PLAN.md"):
             text = (REPO / name).read_text(encoding="utf-8")
             for key, block in _generated_blocks(text):
                 with self.subTest(file=name, block=key):
@@ -96,7 +96,7 @@ pins what the code gives.
 
     def test_it_never_cites_a_figure_it_cannot_reproduce(self):
         text = json.dumps(self.record)
-        for path in ("README.md", "docs/final-test.md"):
+        for path in ("README.md", "PROJECT_GUIDE.md", "docs/final-test.md"):
             text += (REPO / path).read_text(encoding="utf-8")
         for figure in ("0.1816", "0.3624", "first review"):
             self.assertNotIn(figure, text)

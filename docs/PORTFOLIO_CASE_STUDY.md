@@ -86,11 +86,11 @@ The results are not restated on this page, apart from the correction note below:
 copy that the next re-score leaves behind. They are generated from the run records into `README.md`, and the verdict lives in
 `PLAN.md`.
 
-- **[Key findings](../README.md#key-findings).** Gradient-boosted quantile regression,
+- **[Key findings](../PROJECT_GUIDE.md#key-findings).** Gradient-boosted quantile regression,
   uncalibrated and cross-conformal, against as-of persistence on CRPS and on interval coverage,
   each difference paired with a stationary-bootstrap interval and split by regime and by type of
   day.
-- **[The tail clause, measured](../README.md#the-tail-clause-measured).** The pressure
+- **[The tail clause, measured](../PROJECT_GUIDE.md#the-tail-clause-measured).** The pressure
   probabilities at the pre-declared stress thresholds, against calendar-type climatology and
   the persistence-logistic benchmark. Where a forecast assigns probability zero to an event
   that occurs, the record reports no log score, because it refuses to replace an infinite loss

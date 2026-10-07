@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Emit the README's Key-findings block and its figure from the run records.
+"""Emit the Key-findings block (in `PROJECT_GUIDE.md`) and its figure from the run records.
 
 Nothing in the block is typed. Every figure is read out of `docs/runs/*.json` --
 the records `backtest`, `compare` and `exceedance-backtest` wrote, each carrying the panel
 manifest it was built from and the commit it ran at -- and rendered into
-`README.md` between two markers, plus a reliability figure under `docs/figures/`.
+`PROJECT_GUIDE.md` between two markers, plus a reliability figure under `docs/figures/`.
 
 **Why this is a generator and not a paragraph.** Milestone A's exit criterion was
 that no figure from a run record is transcribed into any Markdown page, and
@@ -50,6 +50,8 @@ from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 RUNS = ROOT / "docs/runs"
 FIGURES = ROOT / "docs/figures"
 README = ROOT / "README.md"
+#: The rest of what the README once carried (#344): the findings, the tail clause and the headline.
+GUIDE = ROOT / "PROJECT_GUIDE.md"
 WALKTHROUGH = ROOT / "examples/walkthrough.py"
 NOTEBOOK = ROOT / "notebooks/01_portfolio_walkthrough.ipynb"
 BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
@@ -1864,12 +1866,15 @@ def rendered(persistence, exceedance, conditional):
     }
     pages = {
         README: (
-            (BEGIN, END, key_findings(persistence, exceedance, conditional)),
-            (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
             (STATUS_BEGIN, STATUS_END, status_line()),
-            (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
             (USE_LIMITATION_BEGIN, USE_LIMITATION_END, use_limitation_block()),
             (LANDING_BEGIN, LANDING_END, landing_block()),
+        ),
+        GUIDE: (
+            (BEGIN, END, key_findings(persistence, exceedance, conditional)),
+            (TAIL_BEGIN, TAIL_END, tail_section(conditional)),
+            (HEADLINE_BEGIN, HEADLINE_END, headline(persistence, exceedance)),
+            (USE_LIMITATION_BEGIN, USE_LIMITATION_END, use_limitation_block()),
         ),
         CASE_STUDY: (
             (CORRECTION_BEGIN, CORRECTION_END, correction_section()),
